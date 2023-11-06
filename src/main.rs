@@ -2,11 +2,27 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 
+#[cfg(target_os = "espidf")]
+use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
+
 mod File_system;
 use File_system::*;
 
 
 fn main() {
+    // It is necessary to call this function once. Otherwise some patches to the runtime
+    // implemented by esp-idf-sys might not link properly. See https://github.com/esp-rs/esp-idf-template/issues/71
+    #[cfg(target_os = "espidf")]
+    esp_idf_sys::link_patches();
+
+    // Bind the log crate to the ESP Logging facilities
+    #[cfg(target_os = "espidf")]
+    esp_idf_svc::log::EspLogger::initialize_default();
+
+    #[cfg(target_os = "espidf")]
+    log::info!("Hello, world!");
+
+    #[cfg(target_os = "linux")]
     println!("Hello, world!");
   
 
@@ -21,7 +37,6 @@ use esp_idf_hal::{
     prelude::*,
     spi::{config::{Duplex, DriverConfig}, *},
 };
-use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 
 
 
@@ -136,14 +151,6 @@ fn get_partition() -> Result<(), ()>
 }
 
 fn main() {
-    // It is necessary to call this function once. Otherwise some patches to the runtime
-    // implemented by esp-idf-sys might not link properly. See https://github.com/esp-rs/esp-idf-template/issues/71
-    esp_idf_sys::link_patches();
-
-    // Bind the log crate to the ESP Logging facilities
-    esp_idf_svc::log::EspLogger::initialize_default();
-
-    log::info!("Hello, world!");
 
     log::info!("Starting 6-spi\nThis application writes to a micro-SD card\n");
 
