@@ -6,8 +6,8 @@ clear && echo "Setting up environment variables for Rust cross-compilation"
 # Variables
 Linux_target="--target x86_64-unknown-linux-gnu --features Linux"
 Windows_target="--target x86_64-pc-windows-gnu --features Windows"
-ESP32_target="--target xtensa-esp32-none-elf --features ESP32"
-ESP32_S3_target="--target xtensa-esp32s3-none-elf --features ESP32_S3"
+ESP32_target="--target xtensa-esp32s3-espidf --features ESP32"
+ESP32_S3_target="--target xtensa-esp32s3-espidf --features ESP32_S3"
 
 Cargo="clear && cargo"
 
@@ -25,9 +25,9 @@ unalias clean
 # Aliases
 Cargo_build="$Cargo build"
 alias build_linux="$Cargo_build $Linux_target"
-alias build_windows="$Cargo_build build $Windows_target"
-alias build_esp32="$Cargo_build build $ESP32_target"
-alias build_esp32_s3="$Cargo_build build $ESP32_S3_target"
+alias build_windows="$Cargo_build $Windows_target"
+alias build_esp32="$Cargo_build $ESP32_target"
+alias build_esp32_s3="$Cargo_build $ESP32_S3_target"
 
 Cargo_run="$Cargo run"
 alias run_linux="$Cargo_run $Linux_target"
