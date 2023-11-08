@@ -25,25 +25,25 @@ pub trait File_traits : Read + Write + Seek {
     }
     fn Write(&mut self, Buffer: &[u8]) -> Result<(), ()> {
         match self.write_all(Buffer) {
-            Ok(Size) => Ok(Size.into()),
+            Ok(_) => Ok(()),
             Err(_) => Err(()),
         }
     }
     fn Write_line(&mut self, Buffer: &[u8]) -> Result<(), ()> {
         match self.write_all(Buffer) {
-            Ok(Size) => Ok(Size.into()),
+            Ok(_) => Ok(()),
             Err(_) => Err(()),
         }
     }
     fn Read(&mut self, Buffer: &mut [u8]) -> Result<(), ()> {
         match self.read_exact(Buffer) {
-            Ok(Size) => Ok(Size.into()),
+            Ok(_) => Ok(()),
             Err(_) => Err(()),
         }
     }
     fn Read_line(&mut self, Buffer: &mut [u8]) -> Result<(), ()> {
         match self.read_exact(Buffer) {
-            Ok(Size) => Ok(Size.into()),
+            Ok(_) => Ok(()),
             Err(_) => Err(()),
         }
     }
