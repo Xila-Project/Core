@@ -5,29 +5,16 @@ authors = ["Alix ANNERAUD <alix@anneraud.fr>"]
 edition = "2021"
 resolver = "2"
 rust-version = "1.71"
-build = "Build/Main.rs"
+build = "Build/src/Main.rs"
 
 [profile.release]
-opt-level = "s"
+opt-level = "s" # Optimize binary size
 
 [profile.dev]
-debug = true    # Symbols are nice and they don't increase the size on Flash
-opt-level = "z"
-
-
-#[build]
-#target = "x86_64-unknown-linux-gnu"
-#target = "xtensa-esp32s3-espidf"
+debug = true    # Symbols are nice and they don't increase the size on Flash.
+opt-level = "z" # Optimize binary size and turn off loop vectorization.
 
 [features]
-# default = ["Linux"]
-
-
-Native_file_system = []
-Native = ["Native_file_system"]
-
-Linux = ["Native"]
-
 ESP32 = ["Xtensa"]
 ESP32_S3 = ["Xtensa"]
 
@@ -44,7 +31,7 @@ embassy = [
     "esp-idf-svc/embassy-time-driver",
 ]
 
-[target.xtensa-esp32s3-espidf.dependencies]
+[target.'cfg( target_os = "espidf" )'.dependencies]
 esp-idf-sys = { version = "0.33.5", features = ["binstart"] }
 esp-idf-hal = "0.42.4"
 log = { version = "0.4", default-features = false }
@@ -53,9 +40,11 @@ embedded-sdmmc = "0.6.0"
 embedded-hal = "0.2.7"
 fatfs = { version = "0.3.6" }
 byteorder = "1.5.0"
+wamr-sys = { git = "https://github.com/AlixANNERAUD/wamr-sys.git" }
 
 [build-dependencies]
 embuild = { version = "0.31.4", features = ["espidf"] }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 byteorder = "1.5.0"
+wamr-sys = { git = "https://github.com/AlixANNERAUD/wamr-sys.git" }
