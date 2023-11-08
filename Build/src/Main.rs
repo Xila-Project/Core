@@ -6,10 +6,8 @@ mod Target;
 use Target::*;
 
 mod Log;
-use Log::*;
 
 fn main() {
-
     let Target = Target_type::Get_current();
     
     Print_line!("Start Xila build");

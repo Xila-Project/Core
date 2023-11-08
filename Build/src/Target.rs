@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Architecture_type {
     x86,
