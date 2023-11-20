@@ -2,11 +2,22 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 
+use embedded_sdmmc::{TimeSource, Directory};
 #[cfg(target_os = "espidf")]
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 
 mod File_system;
 use File_system::*;
+
+use esp_idf_hal::{prelude::*, gpio::{OutputPin, Pin, PinDriver}};
+#[cfg(target_os = "espidf")]
+use esp_idf_hal::sys;
+
+struct D {
+    
+}
+
+
 
 
 fn main() {
@@ -24,8 +35,74 @@ fn main() {
 
     #[cfg(target_os = "linux")]
     println!("Hello, world!");
-  
 
+    let peripherals = esp_idf_hal::peripherals::Peripherals::take().unwrap();
+
+    let SPI = esp_idf_hal::spi::SpiDriver::new::<esp_idf_hal::spi::SPI3>(
+        peripherals.spi3,
+        peripherals.pins.gpio4,        // SCK
+        peripherals.pins.gpio5,        // PICO
+        Some(peripherals.pins.gpio27), // POCI
+        &esp_idf_hal::spi::config::DriverConfig::new(),
+    )
+    .unwrap();
+
+    let mut SPI_Config = esp_idf_hal::spi::config::Config::new().baudrate(4_u32.MHz().into());
+    let SPI_Device = esp_idf_hal::spi::SpiDeviceDriver::new(
+        SPI,
+        Option::<esp_idf_hal::gpio::Gpio4>::None,
+        &SPI_Config,
+    )
+    .unwrap();
+
+
+    unsafe {
+        let conf = esp_idf_hal::sys::sdspi_device_config_t {
+            host_id: esp_idf_hal::sys::spi_host_device_t_SPI3_HOST,
+            gpio_cs: esp_idf_hal::sys::gpio_num_t_GPIO_NUM_2,
+            gpio_cd: esp_idf_hal::sys::gpio_num_t_GPIO_NUM_NC,
+            gpio_wp: esp_idf_hal::sys::gpio_num_t_GPIO_NUM_NC,
+            gpio_int: esp_idf_hal::sys::gpio_num_t_GPIO_NUM_NC,
+        };
+
+        let mut handle : i32 = 0;
+
+        if esp_idf_hal::sys::sdspi_host_init_device(
+            &conf as *const esp_idf_hal::sys::sdspi_device_config_t,
+            &mut handle as *mut i32,
+        ) == esp_idf_hal::sys::ESP_OK
+        {
+            log::info!("sdspi_host_init_device success");
+        } else {
+            log::info!("sdspi_host_init_device failed");
+        }
+
+        let del = D;
+
+        let cs  = esp_idf_hal::gpio::PinDriver::output(peripherals.pins.gpio2).unwrap();
+
+        let mut card = embedded_sdmmc::sdcard::SdCard::new(SPI_Device, 
+            cs,
+            del);
+
+        
+        let mut volume_mgr = embedded_sdmmc::VolumeManager::new(card, SdMmcClock{});
+
+        log::info!("Card size is still {} bytes", volume_mgr.device().num_bytes().unwrap());
+
+        let volume0 = volume_mgr.open_volume(embedded_sdmmc::VolumeIdx(0)).unwrap();
+
+        log::info!("Volume 0: {:?}", volume0);
+
+        let mut root = volume_mgr.open_root_dir(volume0).unwrap();
+
+        volume_mgr.iterate_dir(root, |entry| {
+            log::info!("Entry: {:?}", entry);
+            
+        });
+          
+        //sys::gpio_install_isr_service(0);
+    }
 }
 
 /*

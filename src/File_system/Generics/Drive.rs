@@ -1,5 +1,5 @@
+use super::{Fundamentals::*, Master_boot_record::*, Partition::*};
 
-use super::{Partition::*, Fundamentals::*, Master_boot_record::*};
 use std::io::{Read, Write, Seek};
 
 pub trait Drive_traits : Read + Write + Seek {
