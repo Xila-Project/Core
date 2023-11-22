@@ -5,13 +5,13 @@ use std::fs::*;
 use std::io::{Read, Seek, Write};
 use std::path::Path;
 
-pub struct Native_file_system_type {
+pub struct File_system_type {
     Virtual_root_path: String,
 }
 
-impl Native_file_system_type {
+impl File_system_type {
     pub fn New() -> Self {
-        Native_file_system_type {
+        File_system_type {
             Virtual_root_path: String::new(),
         }
     }
@@ -25,8 +25,8 @@ impl Native_file_system_type {
     }
 }
 
-impl File_system_traits for Native_file_system_type {
-    type File_type = Native_file_type;
+impl File_system_traits for File_system_type {
+    type File_type = File_type;
 
     fn Initialize(&mut self) -> Result<(), ()> {
         match var("Xila_virtual_root_path") {
@@ -67,26 +67,26 @@ impl File_system_traits for Native_file_system_type {
         let Full_path = self.Get_full_path(Path);
         match Mode {
             Mode_type::Read => match File::open(&Full_path) {
-                Ok(Data) => Ok(Native_file_type(Data)),
+                Ok(Data) => Ok(File_type(Data)),
                 Err(_) => Err(()),
             },
             Mode_type::Write => match File::create(&Full_path) {
-                Ok(Data) => Ok(Native_file_type(Data)),
+                Ok(Data) => Ok(File_type(Data)),
                 Err(_) => Err(()),
             },
             Mode_type::Read_write => {
                 match OpenOptions::new().read(true).write(true).open(&Full_path) {
-                    Ok(Data) => Ok(Native_file_type(Data)),
+                    Ok(Data) => Ok(File_type(Data)),
                     Err(_) => Err(()),
                 }
             }
             Mode_type::Append => match OpenOptions::new().append(true).open(&Full_path) {
-                Ok(Data) => Ok(Native_file_type(Data)),
+                Ok(Data) => Ok(File_type(Data)),
                 Err(_) => Err(()),
             },
             Mode_type::Read_append => {
                 match OpenOptions::new().read(true).append(true).open(&Full_path) {
-                    Ok(Data) => Ok(Native_file_type(Data)),
+                    Ok(Data) => Ok(File_type(Data)),
                     Err(_) => Err(()),
                 }
             }
@@ -120,15 +120,15 @@ impl File_system_traits for Native_file_system_type {
 
 // - File
 
-pub struct Native_file_type(std::fs::File);
+pub struct File_type(std::fs::File);
 
-impl Read for Native_file_type {
+impl Read for File_type {
     fn read(&mut self, Buffer: &mut [u8]) -> Result<usize, std::io::Error> {
         self.0.read(Buffer)
     }
 }
 
-impl Write for Native_file_type {
+impl Write for File_type {
     fn write(&mut self, Buffer: &[u8]) -> Result<usize, std::io::Error> {
         self.0.write(Buffer)
     }
@@ -138,7 +138,7 @@ impl Write for Native_file_type {
     }
 }
 
-impl Seek for Native_file_type {
+impl Seek for File_type {
     fn seek(&mut self, Position: std::io::SeekFrom) -> Result<u64, std::io::Error> {
         self.0.seek(Position)
     }
@@ -155,7 +155,7 @@ impl From<FileType> for Type_type {
     }
 }
 
-impl File_traits for Native_file_type {
+impl File_traits for File_type {
     fn Get_size(&self) -> Result<Size_type, ()> {
         match self.0.metadata() {
             Ok(metadata) => Ok(metadata.len().into()),
@@ -184,7 +184,7 @@ mod tests {
         Test_directory_path.to_string() + std::path::MAIN_SEPARATOR.to_string().as_str() + Path
     }
 
-    fn Create_test_directory(File_system: &Native_file_system_type) {
+    fn Create_test_directory(File_system: &File_system_type) {
         let mut Test_path = Test_directory_path.to_string();
         Test_path = File_system.Get_full_path(Test_path.as_str());
         if !Path::new(&Test_path).exists() {
@@ -194,7 +194,7 @@ mod tests {
 
     #[test]
     fn Exists() {
-        let mut File_system = Native_file_system_type::New();
+        let mut File_system = File_system_type::New();
         assert!(File_system.Initialize().is_ok());
         Create_test_directory(&File_system);
         let File_path_string = Get_path_in_test("exists.txt");
@@ -209,7 +209,7 @@ mod tests {
 
     #[test]
     fn File_manipulation() {
-        let mut File_system = Native_file_system_type::New();
+        let mut File_system = File_system_type::New();
         assert!(File_system.Initialize().is_ok());
         Create_test_directory(&File_system);
 
@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn Directory_operations() {
-        let mut File_system = Native_file_system_type::New();
+        let mut File_system = File_system_type::New();
         assert!(File_system.Initialize().is_ok());
 
         let Directory_path_string = Get_path_in_test("directory");
@@ -238,7 +238,7 @@ mod tests {
 
     #[test]
     fn File_operations() {
-        let mut File_system = Native_file_system_type::New();
+        let mut File_system = File_system_type::New();
         assert!(File_system.Initialize().is_ok());
         Create_test_directory(&File_system);
 
@@ -254,7 +254,7 @@ mod tests {
 
     #[test]
     fn File_metadata() {
-        let mut File_system = Native_file_system_type::New();
+        let mut File_system = File_system_type::New();
         assert!(File_system.Initialize().is_ok());
         Create_test_directory(&File_system);
 
