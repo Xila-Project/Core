@@ -2,23 +2,17 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 
-use embedded_sdmmc::{TimeSource, Directory};
+use std::time::{Duration, Instant};
+
 #[cfg(target_os = "espidf")]
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
-
-mod File_system;
-use File_system::*;
-
+#[cfg(target_os = "espidf")]
 use esp_idf_hal::{prelude::*, gpio::{OutputPin, Pin, PinDriver}};
 #[cfg(target_os = "espidf")]
 use esp_idf_hal::sys;
 
-struct D {
-    
-}
-
-
-
+mod Screen;
+mod Graphics;
 
 fn main() {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -36,73 +30,42 @@ fn main() {
     #[cfg(target_os = "linux")]
     println!("Hello, world!");
 
-    let peripherals = esp_idf_hal::peripherals::Peripherals::take().unwrap();
+    const Horizontal_resolution: u32 = 800;
+    const Vertical_resolution: u32 = 480;
 
-    let SPI = esp_idf_hal::spi::SpiDriver::new::<esp_idf_hal::spi::SPI3>(
-        peripherals.spi3,
-        peripherals.pins.gpio4,        // SCK
-        peripherals.pins.gpio5,        // PICO
-        Some(peripherals.pins.gpio27), // POCI
-        &esp_idf_hal::spi::config::DriverConfig::new(),
-    )
-    .unwrap();
-
-    let mut SPI_Config = esp_idf_hal::spi::config::Config::new().baudrate(4_u32.MHz().into());
-    let SPI_Device = esp_idf_hal::spi::SpiDeviceDriver::new(
-        SPI,
-        Option::<esp_idf_hal::gpio::Gpio4>::None,
-        &SPI_Config,
-    )
-    .unwrap();
+    const Buffer_size: usize = (Horizontal_resolution * Vertical_resolution / 2) as usize;
 
 
-    unsafe {
-        let conf = esp_idf_hal::sys::sdspi_device_config_t {
-            host_id: esp_idf_hal::sys::spi_host_device_t_SPI3_HOST,
-            gpio_cs: esp_idf_hal::sys::gpio_num_t_GPIO_NUM_2,
-            gpio_cd: esp_idf_hal::sys::gpio_num_t_GPIO_NUM_NC,
-            gpio_wp: esp_idf_hal::sys::gpio_num_t_GPIO_NUM_NC,
-            gpio_int: esp_idf_hal::sys::gpio_num_t_GPIO_NUM_NC,
-        };
+    let mut Screen = match Screen::Drivers::SDL2::Screen_type::New(Screen::Prelude::Coordinates_type { X: Horizontal_resolution as i16, Y: Vertical_resolution as i16 }) {
+        Ok(Screen) => Screen,
+        Err(_) => panic!("Error while initializing screen.")
+    };
 
-        let mut handle : i32 = 0;
+    let Display = match Graphics::Display_type::New::<Screen::Drivers::SDL2::Screen_type, Buffer_size>(&mut Screen) {
+        Ok(Display) => Display,
+        Err(_) => panic!("Error while initializing display.")
+    };
 
-        if esp_idf_hal::sys::sdspi_host_init_device(
-            &conf as *const esp_idf_hal::sys::sdspi_device_config_t,
-            &mut handle as *mut i32,
-        ) == esp_idf_hal::sys::ESP_OK
-        {
-            log::info!("sdspi_host_init_device success");
-        } else {
-            log::info!("sdspi_host_init_device failed");
-        }
+    
+    let mut Display_object = match Display.Get_object() {
+        Ok(Display_object) => Display_object,
+        Err(_) => panic!("Error while getting display object.")
+    };
+    
+    let Calendar = match lvgl::widgets::Btn::create(&mut Display_object) {
+        Ok(Calendar) => Calendar,
+        Err(_) => panic!("Error while initializing calendar.")
+    };
 
-        let del = D;
-
-        let cs  = esp_idf_hal::gpio::PinDriver::output(peripherals.pins.gpio2).unwrap();
-
-        let mut card = embedded_sdmmc::sdcard::SdCard::new(SPI_Device, 
-            cs,
-            del);
-
-        
-        let mut volume_mgr = embedded_sdmmc::VolumeManager::new(card, SdMmcClock{});
-
-        log::info!("Card size is still {} bytes", volume_mgr.device().num_bytes().unwrap());
-
-        let volume0 = volume_mgr.open_volume(embedded_sdmmc::VolumeIdx(0)).unwrap();
-
-        log::info!("Volume 0: {:?}", volume0);
-
-        let mut root = volume_mgr.open_root_dir(volume0).unwrap();
-
-        volume_mgr.iterate_dir(root, |entry| {
-            log::info!("Entry: {:?}", entry);
-            
-        });
-          
-        //sys::gpio_install_isr_service(0);
+    loop {
+        let start = Instant::now();
+        lvgl::task_handler();
+        std::thread::sleep(Duration::from_millis(5));
+        lvgl::tick_inc(Instant::now().duration_since(start));
     }
+    
+
+     
 }
 
 /*
