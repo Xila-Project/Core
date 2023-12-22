@@ -5,14 +5,18 @@
 use std::time::{Duration, Instant};
 
 #[cfg(target_os = "espidf")]
-use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
-#[cfg(target_os = "espidf")]
-use esp_idf_hal::{prelude::*, gpio::{OutputPin, Pin, PinDriver}};
-#[cfg(target_os = "espidf")]
 use esp_idf_hal::sys;
+#[cfg(target_os = "espidf")]
+use esp_idf_hal::{
+    gpio::{OutputPin, Pin, PinDriver},
+    prelude::*,
+};
+#[cfg(target_os = "espidf")]
+use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
+use lvgl::Widget;
 
-mod Screen;
 mod Graphics;
+mod Screen;
 
 fn main() {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -29,43 +33,6 @@ fn main() {
 
     #[cfg(target_os = "linux")]
     println!("Hello, world!");
-
-    const Horizontal_resolution: u32 = 800;
-    const Vertical_resolution: u32 = 480;
-
-    const Buffer_size: usize = (Horizontal_resolution * Vertical_resolution / 2) as usize;
-
-
-    let mut Screen = match Screen::Drivers::SDL2::Screen_type::New(Screen::Prelude::Coordinates_type { X: Horizontal_resolution as i16, Y: Vertical_resolution as i16 }) {
-        Ok(Screen) => Screen,
-        Err(_) => panic!("Error while initializing screen.")
-    };
-
-    let Display = match Graphics::Display_type::New::<Screen::Drivers::SDL2::Screen_type, Buffer_size>(&mut Screen) {
-        Ok(Display) => Display,
-        Err(_) => panic!("Error while initializing display.")
-    };
-
-    
-    let mut Display_object = match Display.Get_object() {
-        Ok(Display_object) => Display_object,
-        Err(_) => panic!("Error while getting display object.")
-    };
-    
-    let Calendar = match lvgl::widgets::Btn::create(&mut Display_object) {
-        Ok(Calendar) => Calendar,
-        Err(_) => panic!("Error while initializing calendar.")
-    };
-
-    loop {
-        let start = Instant::now();
-        lvgl::task_handler();
-        std::thread::sleep(Duration::from_millis(5));
-        lvgl::tick_inc(Instant::now().duration_since(start));
-    }
-    
-
-     
 }
 
 /*

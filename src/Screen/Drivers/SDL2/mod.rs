@@ -1,79 +1,199 @@
 use crate::Screen::Generics;
 
-use Generics::Coordinates_type;
-use sdl2::{event, keyboard, pixels, render, video};
-use std::sync::RwLock;
+use embedded_graphics::geometry::Point;
+use lvgl::Event;
+use sdl2::{event, mouse, pixels, render::Canvas, video, EventPump};
 
-pub struct Screen_type(RwLock<render::Canvas<video::Window>>);
+use std::{
+    cell::{Ref, RefCell},
+    process::exit,
+    sync::{Arc, RwLock},
+    thread,
+};
+pub struct Screen_type(Canvas<video::Window>);
 
 impl Screen_type {
-    pub fn New(Size : Coordinates_type) -> Result<Self, ()> {
-        let Context = match sdl2::init() {
-            Ok(Context) => Context,
-            Err(_) => return Err(()),
-        };
-
-        let Video_subsystem = match Context.video() {
-            Ok(Video_subsystem) => Video_subsystem,
-            Err(_) => return Err(()),
-        };
-
-        let Window = match Video_subsystem
-            .window("Xila", Size.X as u32, Size.Y as u32)
-            .position_centered()
-            .build()
-        {
-            Ok(Window) => Window,
-            Err(_) => return Err(()),
-        };
-
+    pub fn New(Window: video::Window) -> Result<Self, ()> {
         let mut Canvas = match Window.into_canvas().build() {
             Ok(Canvas) => Canvas,
             Err(_) => return Err(()),
         };
 
-        Canvas.set_draw_color(pixels::Color::RGB(0, 0, 0));
         Canvas.clear();
         Canvas.present();
 
-        Ok(Self(RwLock::new(Canvas)))
+        Ok(Self(Canvas))
     }
 }
 
-impl<const B: usize> Generics::Screen_traits<B> for Screen_type {
-    fn Update(&mut self, Refresh_area: &Generics::Refresh_area_type<B>) {
-        let mut Canvas = match self.0.write() {
-            Ok(Canvas) => Canvas,
-            Err(_) => return,
-        };
+impl<const Buffer_size: usize> Generics::Screen_traits<Buffer_size> for Screen_type {
+    fn Update(&mut self, Refresh_area: &Generics::Refresh_area_type<Buffer_size>) {
+        let mut Buffer_iterator = Refresh_area.Buffer.iter();
 
-        for Y in
-            Refresh_area.Area.Position.Y..Refresh_area.Area.Position.Y + Refresh_area.Area.Size.Y
-        {
-            for X in Refresh_area.Area.Position.X
-                ..Refresh_area.Area.Position.X + Refresh_area.Area.Size.X
-            {
-                let Color = &Refresh_area.Buffer[(Y * Refresh_area.Area.Size.X + X) as usize];
+        for Y in 0..=Refresh_area.Area.Size.Y {
+            for X in 0..=Refresh_area.Area.Size.X {
+                let Color = Buffer_iterator.next().unwrap();
 
-                print!("At : {}, {} - Print color : {}, {}, {}\n", X, Y, Color.Red, Color.Green, Color.Blue);
-                Canvas.set_draw_color(pixels::Color::RGB(Color.Red, Color.Green, Color.Blue));
-                let _ = Canvas.draw_point(sdl2::rect::Point::new(X as i32, Y as i32));
+                self.0
+                    .set_draw_color(pixels::Color::RGB(Color.Red, Color.Green, Color.Blue));
+                let _ = self.0.draw_point(sdl2::rect::Point::new(
+                    (X + Refresh_area.Area.Position.X) as i32,
+                    (Y + Refresh_area.Area.Position.Y) as i32,
+                ));
             }
         }
-
-        Canvas.present();
+        self.0.present();
     }
 
-    fn Get_resolution(&self) -> Result<Generics::Coordinates_type, ()> {
-        match self.0.read() {
-            Ok(Canvas) => match Canvas.output_size() {
-                Ok(Resolution) => Ok(Generics::Coordinates_type {
-                    X: Resolution.0 as i16,
-                    Y: Resolution.1 as i16,
-                }),
-                Err(_) => Err(()),
-            },
+    fn Get_resolution(&self) -> Result<Generics::Point_type, ()> {
+        match self.0.output_size() {
+            Ok((Width, Height)) => Ok(Generics::Point_type::New(Width as i16, Height as i16)),
             Err(_) => Err(()),
+        }
+    }
+}
+
+pub struct Pointer_type {
+    Window_identifier: u32,
+    Event_pump: RefCell<EventPump>,
+    Last_input: Arc<RwLock<(Generics::Point_type, Generics::Touch_type)>>,
+}
+
+impl Pointer_type {
+    pub fn New(Window_identifier: u32, Event_pump: EventPump) -> Self {
+        Self {
+            Window_identifier,
+            Event_pump: RefCell::new(Event_pump),
+            Last_input: Arc::new(RwLock::new((
+                Generics::Point_type::New(0, 0),
+                Generics::Touch_type::Released,
+            ))),
+        }
+    }
+
+    pub fn Update(&mut self) {
+        for Event in self.Event_pump.borrow_mut().poll_iter() {
+            match Event {
+                event::Event::Quit { .. } => exit(0),
+                event::Event::MouseButtonDown {
+                    timestamp: _,
+                    window_id,
+                    which: _,
+                    mouse_btn,
+                    clicks: _,
+                    x,
+                    y,
+                } => {
+                    if (window_id == self.Window_identifier)
+                        && (mouse_btn == mouse::MouseButton::Left)
+                    {
+                        let mut Last_input = self.Last_input.write().unwrap();
+
+                        Last_input.0.X = x as i16;
+                        Last_input.0.Y = y as i16;
+                        Last_input.1 = Generics::Touch_type::Pressed;
+                    }
+                }
+                event::Event::MouseButtonUp {
+                    timestamp: _,
+                    window_id,
+                    which: _,
+                    mouse_btn,
+                    clicks: _,
+                    ..
+                } => {
+                    if (window_id == self.Window_identifier)
+                        && (mouse_btn == mouse::MouseButton::Left)
+                    {
+                        let mut Last_input = self.Last_input.write().unwrap();
+
+                        Last_input.1 = Generics::Touch_type::Released;
+                    }
+                }
+                event::Event::MouseMotion {
+                    timestamp: _,
+                    window_id,
+                    which: _,
+                    mousestate,
+                    x,
+                    y,
+                    ..
+                } => {
+                    if (window_id == self.Window_identifier) && (mousestate.left()) {
+                        let mut Last_input = self.Last_input.write().unwrap();
+
+                        Last_input.0.X = x as i16;
+                        Last_input.0.Y = y as i16;
+                    }
+                }
+                _ => {}
+            };
+        }
+    }
+}
+
+impl Generics::Input_traits for Pointer_type {
+    fn Get_latest_input(&self) -> (Generics::Point_type, Generics::Touch_type) {
+        *self.Last_input.read().unwrap()
+    }
+}
+
+pub fn New_touchscreen(Size: Generics::Point_type) -> Result<(Screen_type, Pointer_type), ()> {
+    let Context = match sdl2::init() {
+        Ok(Context) => Context,
+        Err(_) => return Err(()),
+    };
+
+    let Video_subsystem = match Context.video() {
+        Ok(Video_subsystem) => Video_subsystem,
+        Err(_) => return Err(()),
+    };
+
+    let Window = match Video_subsystem
+        .window("Xila", Size.X as u32, Size.Y as u32)
+        .position_centered()
+        .build()
+    {
+        Ok(Window) => Window,
+        Err(e) => return Err(()),
+    };
+
+    let Event_pump = match Context.event_pump() {
+        Ok(Event_pump) => Event_pump,
+        Err(_) => return Err(()),
+    };
+
+    let Pointer = Pointer_type::New(Window.id(), Event_pump);
+
+    let Screen = match Screen_type::New(Window) {
+        Ok(Canvas) => Canvas,
+        Err(_) => return Err(()),
+    };
+
+    Ok((Screen, Pointer))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn Test_touchscreen() {
+        const Horizontal_resolution: u32 = 800;
+        const Vertical_resolution: u32 = 480;
+        const Buffer_size: usize = (Horizontal_resolution * Vertical_resolution / 2) as usize;
+
+        let Touchscreen = New_touchscreen(Generics::Point_type::New(
+            Horizontal_resolution as i16,
+            Vertical_resolution as i16,
+        ));
+
+        assert!(Touchscreen.is_ok());
+
+        let (mut Screen, mut Pointer) = Touchscreen.unwrap();
+
+        unsafe {
+            sdl2::sys::SDL_Quit(); // Force SDL2 to quit to avoid conflicts with other tests.
         }
     }
 }
