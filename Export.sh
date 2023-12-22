@@ -5,15 +5,16 @@ clear && echo "Setting up environment variables for Rust cross-compilation"
 
 # Variables
 
+Linux_environment_variables="DEP_LV_CONFIG_PATH=\"$PWD\""
 Linux_target="--target x86_64-unknown-linux-gnu"
 Windows_target="--target x86_64-pc-windows-gnu"
 
-ESP32_environment_variables="MCU=esp32"
+ESP32_environment_variables="MCU=esp32 DEP_LV_CONFIG_PATH='pwd'"
 ESP32_target="--target xtensa-esp32-espidf --features ESP32"
-ESP32_S3_environment_variables="MCU=esp32s3"
+ESP32_S3_environment_variables="MCU=esp32s3 DEP_LV_CONFIG_PATH='pwd'"
 ESP32_S3_target="--target xtensa-esp32s3-espidf --features ESP32_S3"
 
-Cargo="clear && cargo"
+Cargo="cargo"
 
 # Remove all aliases
 {
@@ -25,33 +26,42 @@ unalias run_linux
 unalias run_windows 
 unalias run_esp32
 unalias run_esp32_s3
+unalias test_linux
+unalias test_windows
+unalias test_esp32
+unalias test_esp32_s3
+unalias check_linux
+unalias check_windows
+unalias check_esp32
+unalias check_esp32_s3
 unalias clean
 } &> /dev/null
 
 # Aliases
+Clear="clear &&"
 Cargo_build="$Cargo build"
-alias build_linux="$Cargo_build $Linux_target"
-alias build_windows="$Cargo_build $Windows_target"
-alias build_esp32="$ESP32_environment_variables $Cargo_build $ESP32_target"
-alias build_esp32_s3="$ESP32_S3_environment_variables $Cargo_build $ESP32_S3_target"
+alias build_linux="$Clear $Linux_environment_variables $Cargo_build $Linux_target"
+alias build_windows="$Clear $Cargo_build $Windows_target"
+alias build_esp32="$Clear $ESP32_environment_variables $Cargo_build $ESP32_target"
+alias build_esp32_s3="$Clear $ESP32_S3_environment_variables $Cargo_build $ESP32_S3_target"
 
 Cargo_run="$Cargo run"
-alias run_linux="$Cargo_run $Linux_target"
-alias run_windows="$Cargo_run $Windows_target"
-alias run_esp32="$ESP32_environment_variables $Cargo_run $ESP32_target"
-alias run_esp32_s3="$ESP32_S3_environment_variables $Cargo_run $ESP32_S3_target"
+alias run_linux="$Clear $Linux_environment_variables $Cargo_run $Linux_target"
+alias run_windows="$Clear $Cargo_run $Windows_target"
+alias run_esp32="$Clear $ESP32_environment_variables $Cargo_run $ESP32_target"
+alias run_esp32_s3="$Clear $ESP32_S3_environment_variables $Cargo_run $ESP32_S3_target"
 
-Cargo_test="$Cargo test"
-alias test_linux="$Cargo_test $Linux_target"
-alias test_windows="$Cargo_test $Windows_target"
-alias test_esp32="$ESP32_environment_variables $Cargo_test $ESP32_target"
-alias test_esp32_s3="$ESP32_S3_environment_variables $Cargo_test $ESP32_S3_target"
+Cargo_test="RUST_MIN_STACK=8388608 $Cargo test"
+alias test_linux="$Clear $Linux_environment_variables $Cargo_test $Linux_target"
+alias test_windows="$Clear $Cargo_test $Windows_target"
+alias test_esp32="$Clear $ESP32_environment_variables $Cargo_test $ESP32_target"
+alias test_esp32_s3="$Clear $ESP32_S3_environment_variables $Cargo_test $ESP32_S3_target"
 
 Cargo_check="$Cargo check"
-alias check_linux="$Cargo_check $Linux_target"
-alias check_windows="$Cargo_check $Windows_target"
-alias check_esp32="$ESP32_environment_variables $Cargo_check $ESP32_target"
-alias check_esp32_s3="$ESP32_S3_environment_variables $Cargo_check $ESP32_S3_target"
+alias check_linux="$Clear $Linux_environment_variables $Cargo_check $Linux_target"
+alias check_windows="$Clear $Cargo_check $Windows_target"
+alias check_esp32="$Clear $ESP32_environment_variables $Cargo_check $ESP32_target"
+alias check_esp32_s3="$Clear $ESP32_S3_environment_variables $Cargo_check $ESP32_S3_target"
 
 alias clean="$Cargo clean"
 

@@ -7,7 +7,7 @@ pub enum Architecture_type {
     Arm,
     Aarch64,
     Xtensa,
-    RiscV
+    RiscV,
 }
 
 impl From<String> for Architecture_type {
@@ -30,7 +30,7 @@ pub enum Operating_system_type {
     Linux,
     MacOS,
     ESP_IDF,
-} 
+}
 
 impl From<String> for Operating_system_type {
     fn from(s: String) -> Self {
@@ -64,9 +64,9 @@ impl From<String> for Family_type {
 
 #[derive(Debug, PartialEq)]
 pub struct Target_type {
-    Architecture : Architecture_type,
-    Operating_system : Operating_system_type,
-    Family : Family_type,
+    Architecture: Architecture_type,
+    Operating_system: Operating_system_type,
+    Family: Family_type,
 }
 
 impl Target_type {
@@ -84,9 +84,11 @@ impl Target_type {
 
     pub fn Get_current() -> Target_type {
         Target_type {
-            Architecture : Architecture_type::from(std::env::var("CARGO_CFG_TARGET_ARCH").unwrap()),
-            Operating_system : Operating_system_type::from(std::env::var("CARGO_CFG_TARGET_OS").unwrap()),
-            Family : Family_type::from(std::env::var("CARGO_CFG_TARGET_FAMILY").unwrap()),
+            Architecture: Architecture_type::from(std::env::var("CARGO_CFG_TARGET_ARCH").unwrap()),
+            Operating_system: Operating_system_type::from(
+                std::env::var("CARGO_CFG_TARGET_OS").unwrap(),
+            ),
+            Family: Family_type::from(std::env::var("CARGO_CFG_TARGET_FAMILY").unwrap()),
         }
     }
 }
