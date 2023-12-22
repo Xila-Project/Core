@@ -16,11 +16,9 @@ impl File_system_type {
         }
     }
 
-    pub fn Get_full_path(&self, Path: &str) -> String {
+    pub fn Get_full_path(&self, Path: &Path_type) -> String {
         let mut Full_path = self.Virtual_root_path.clone();
-        Full_path.reserve(Path.len() + 1);
-        Full_path.push(std::path::MAIN_SEPARATOR);
-        Full_path.push_str(Path);
+        Full_path += Path.to_string().as_str();
         Full_path
     }
 }
@@ -57,13 +55,13 @@ impl File_system_traits for File_system_type {
         Ok(())
     }
 
-    fn Exists(&self, Path: &str) -> Result<bool, ()> {
+    fn Exists(&self, Path: &Path_type) -> Result<bool, ()> {
         Path::new(&self.Get_full_path(Path))
             .try_exists()
             .map_err(|_| ())
     }
 
-    fn Open_file(&self, Path: &str, Mode: Mode_type) -> Result<Self::File_type, ()> {
+    fn Open_file(&self, Path: &Path_type, Mode: Mode_type) -> Result<Self::File_type, ()> {
         let Full_path = self.Get_full_path(Path);
         match Mode {
             Mode_type::Read => match File::open(&Full_path) {
@@ -93,27 +91,27 @@ impl File_system_traits for File_system_type {
         }
     }
 
-    fn Delete_file(&self, Path: &str) -> Result<(), ()> {
+    fn Delete_file(&self, Path: &Path_type) -> Result<(), ()> {
         remove_file(self.Get_full_path(Path)).map_err(|_| ())
     }
 
-    fn Create_directory(&self, Path: &str) -> Result<(), ()> {
+    fn Create_directory(&self, Path: &Path_type) -> Result<(), ()> {
         create_dir(self.Get_full_path(Path)).map_err(|_| ())
     }
 
-    fn Create_directory_recursive(&self, Path: &str) -> Result<(), ()> {
+    fn Create_directory_recursive(&self, Path: &Path_type) -> Result<(), ()> {
         create_dir_all(self.Get_full_path(Path)).map_err(|_| ())
     }
 
-    fn Delete_directory(&self, Path: &str) -> Result<(), ()> {
+    fn Delete_directory(&self, Path: &Path_type) -> Result<(), ()> {
         remove_dir(self.Get_full_path(Path)).map_err(|_| ())
     }
 
-    fn Delete_directory_recursive(&self, Path: &str) -> Result<(), ()> {
+    fn Delete_directory_recursive(&self, Path: &Path_type) -> Result<(), ()> {
         remove_dir_all(self.Get_full_path(Path)).map_err(|_| ())
     }
 
-    fn Move(&self, Path: &str, Destination: &str) -> Result<(), ()> {
+    fn Move(&self, Path: &Path_type, Destination: &Path_type) -> Result<(), ()> {
         rename(self.Get_full_path(Path), &self.Get_full_path(Destination)).map_err(|_| ())
     }
 }
@@ -180,15 +178,15 @@ mod tests {
 
     const Test_directory_path: &str = "Test";
 
-    fn Get_path_in_test(Path: &str) -> String {
-        Test_directory_path.to_string() + std::path::MAIN_SEPARATOR.to_string().as_str() + Path
+    fn Get_path_in_test(Path: &Path_type) -> Path_type {
+        Path_type::from(Test_directory_path) + Path
     }
 
-    fn Create_test_directory(File_system: &File_system_type) {
-        let mut Test_path = Test_directory_path.to_string();
-        Test_path = File_system.Get_full_path(Test_path.as_str());
-        if !Path::new(&Test_path).exists() {
-            create_dir(&Test_path).unwrap();
+    fn Reset_test_directory(File_system: &File_system_type) {
+        let Test_directory_full_path =
+            File_system.Get_full_path(&Path_type::from(Test_directory_path));
+        if !Path::new(&Test_directory_full_path).exists() {
+            create_dir(&Test_directory_full_path).unwrap();
         }
     }
 
@@ -196,30 +194,28 @@ mod tests {
     fn Exists() {
         let mut File_system = File_system_type::New();
         assert!(File_system.Initialize().is_ok());
-        Create_test_directory(&File_system);
-        let File_path_string = Get_path_in_test("exists.txt");
-        let File_path = File_path_string.as_str();
-        assert!(!File_system.Exists(File_path).unwrap());
-        let mut File = File::create(File_system.Get_full_path(File_path)).unwrap();
+        Reset_test_directory(&File_system);
+        let File_path = Get_path_in_test(&Path_type::from("exists.txt"));
+        assert!(!File_system.Exists(&File_path).unwrap());
+        let mut File = File::create(File_system.Get_full_path(&File_path)).unwrap();
         assert!(File.write_all(b"Hello, world!").is_ok());
-        assert!(File_system.Exists(File_path).unwrap());
-        assert!(remove_file(File_system.Get_full_path(File_path)).is_ok());
-        assert!(!File_system.Exists(File_path).unwrap());
+        assert!(File_system.Exists(&File_path).unwrap());
+        assert!(remove_file(File_system.Get_full_path(&File_path)).is_ok());
+        assert!(!File_system.Exists(&File_path).unwrap());
     }
 
     #[test]
     fn File_manipulation() {
         let mut File_system = File_system_type::New();
         assert!(File_system.Initialize().is_ok());
-        Create_test_directory(&File_system);
+        Reset_test_directory(&File_system);
 
-        let File_path_string = Get_path_in_test("delete_file.txt");
-        let File_path = File_path_string.as_str();
-        assert!(!File_system.Exists(File_path).unwrap());
-        assert!(File_system.Open_file(File_path, Mode_type::Write).is_ok());
-        assert!(File_system.Exists(File_path).unwrap());
-        assert!(File_system.Delete_file(File_path).is_ok());
-        assert!(!File_system.Exists(File_path).unwrap());
+        let File_path = Get_path_in_test(&Path_type::from("delete_file.txt"));
+        assert!(!File_system.Exists(&File_path).unwrap());
+        assert!(File_system.Open_file(&File_path, Mode_type::Write).is_ok());
+        assert!(File_system.Exists(&File_path).unwrap());
+        assert!(File_system.Delete_file(&File_path).is_ok());
+        assert!(!File_system.Exists(&File_path).unwrap());
     }
 
     #[test]
@@ -227,45 +223,42 @@ mod tests {
         let mut File_system = File_system_type::New();
         assert!(File_system.Initialize().is_ok());
 
-        let Directory_path_string = Get_path_in_test("directory");
-        let Directory_path = Directory_path_string.as_str();
-        assert!(!File_system.Exists(Directory_path).unwrap());
-        assert!(File_system.Create_directory(Directory_path).is_ok());
-        assert!(File_system.Exists(Directory_path).unwrap());
-        assert!(File_system.Delete_directory(Directory_path).is_ok());
-        assert!(!File_system.Exists(Directory_path).unwrap());
+        let Directory_path = Get_path_in_test(&Path_type::from("directory"));
+        assert!(!File_system.Exists(&Directory_path).unwrap());
+        assert!(File_system.Create_directory(&Directory_path).is_ok());
+        assert!(File_system.Exists(&Directory_path).unwrap());
+        assert!(File_system.Delete_directory(&Directory_path).is_ok());
+        assert!(!File_system.Exists(&Directory_path).unwrap());
     }
 
     #[test]
     fn File_operations() {
         let mut File_system = File_system_type::New();
         assert!(File_system.Initialize().is_ok());
-        Create_test_directory(&File_system);
+        Reset_test_directory(&File_system);
 
-        let File_path_string = Get_path_in_test("file_operations.txt");
-        let File_path = File_path_string.as_str();
-        assert!(!File_system.Exists(File_path).unwrap());
-        let mut File = File_system.Open_file(File_path, Mode_type::Write).unwrap();
+        let File_path = Get_path_in_test(&Path_type::from("file_operations.txt"));
+        assert!(!File_system.Exists(&File_path).unwrap());
+        let mut File = File_system.Open_file(&File_path, Mode_type::Write).unwrap();
         assert!(File.write_all(b"Hello, world!").is_ok());
-        assert!(File_system.Exists(File_path).unwrap());
-        assert!(File_system.Delete_file(File_path).is_ok());
-        assert!(!File_system.Exists(File_path).unwrap());
+        assert!(File_system.Exists(&File_path).unwrap());
+        assert!(File_system.Delete_file(&File_path).is_ok());
+        assert!(!File_system.Exists(&File_path).unwrap());
     }
 
     #[test]
     fn File_metadata() {
         let mut File_system = File_system_type::New();
         assert!(File_system.Initialize().is_ok());
-        Create_test_directory(&File_system);
+        Reset_test_directory(&File_system);
 
-        let File_path_string = Get_path_in_test("file_metadata.txt");
-        let File_path = File_path_string.as_str();
-        assert!(!File_system.Exists(File_path).unwrap());
-        let mut File = File_system.Open_file(File_path, Mode_type::Write).unwrap();
+        let File_path = Get_path_in_test(&Path_type::from("file_metadata.txt"));
+        assert!(!File_system.Exists(&File_path).unwrap());
+        let mut File = File_system.Open_file(&File_path, Mode_type::Write).unwrap();
         assert!(File.write_all(b"Hello, world!").is_ok());
-        assert!(File_system.Exists(File_path).unwrap());
+        assert!(File_system.Exists(&File_path).unwrap());
         assert!(File.Get_size().unwrap() == Size_type(13));
-        assert!(File_system.Delete_file(File_path).is_ok());
-        assert!(!File_system.Exists(File_path).unwrap());
+        assert!(File_system.Delete_file(&File_path).is_ok());
+        assert!(!File_system.Exists(&File_path).unwrap());
     }
 }

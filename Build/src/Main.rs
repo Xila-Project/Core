@@ -9,7 +9,7 @@ mod Log;
 
 fn main() {
     let Target = Target_type::Get_current();
-    
+
     Print_line!("Start Xila build");
 
     Print_line!("Target architecture: {:?}", Target);

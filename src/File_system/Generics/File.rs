@@ -1,5 +1,5 @@
 use super::Fundamentals::*;
-use std::io::{Read, Write, Seek};
+use std::io::{Read, Seek, Write};
 
 pub enum Mode_type {
     Read,
@@ -12,10 +12,10 @@ pub enum Mode_type {
 pub enum Type_type {
     File,
     Directory,
-    Symbolic_link
+    Symbolic_link,
 }
 
-pub trait File_traits : Read + Write + Seek {
+pub trait File_traits: Read + Write + Seek {
     // - Operations
     fn Set_position(&mut self, Offset: Size_type) -> Result<Size_type, ()> {
         match self.seek(std::io::SeekFrom::Start(Offset.0)) {
@@ -58,5 +58,4 @@ pub trait File_traits : Read + Write + Seek {
     // - Metadata
     fn Get_size(&self) -> Result<Size_type, ()>;
     fn Get_type(&self) -> Result<Type_type, ()>;
-
 }
