@@ -15,6 +15,7 @@ use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, alway
 mod Graphics;
 mod Screen;
 mod File_system;
+mod Users;
 
 fn main() {
     // It is necessary to call this function once. Otherwise some patches to the runtime
