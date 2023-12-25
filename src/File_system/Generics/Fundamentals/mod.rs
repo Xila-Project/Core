@@ -1,8 +1,18 @@
 use std::ops;
 
+pub mod Path;
+pub use Path::*;
+
 #[derive(Default, PartialOrd, PartialEq, Eq, Ord, Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct Size_type(pub u64);
+pub type Signed_size_type = i64;
+
+pub enum Position_type {
+    Start(Size_type),
+    Current(Signed_size_type),
+    End(Signed_size_type),
+}
 
 #[repr(transparent)]
 pub struct Block_type(pub [u8; 512]);

@@ -2,8 +2,6 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 
-use std::time::{Duration, Instant};
-
 #[cfg(target_os = "espidf")]
 use esp_idf_hal::sys;
 #[cfg(target_os = "espidf")]
@@ -13,10 +11,10 @@ use esp_idf_hal::{
 };
 #[cfg(target_os = "espidf")]
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
-use lvgl::Widget;
 
 mod Graphics;
 mod Screen;
+mod File_system;
 
 fn main() {
     // It is necessary to call this function once. Otherwise some patches to the runtime
