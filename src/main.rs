@@ -3,10 +3,18 @@
 #![allow(non_upper_case_globals)]
 
 #[cfg(target_os = "espidf")]
+use esp_idf_hal::sys;
+#[cfg(target_os = "espidf")]
+use esp_idf_hal::{
+    gpio::{OutputPin, Pin, PinDriver},
+    prelude::*,
+};
+#[cfg(target_os = "espidf")]
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 
+mod Graphics;
+mod Screen;
 mod File_system;
-use File_system::*;
 
 fn main() {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -23,7 +31,6 @@ fn main() {
 
     #[cfg(target_os = "linux")]
     println!("Hello, world!");
-    //sys::gpio_install_isr_service(0);
 }
 
 /*

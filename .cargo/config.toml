@@ -10,8 +10,8 @@ linker = "ldproxy"
 runner = "espflash flash --monitor" # Select this runner for espflash v2.x.x
 rustflags = [ "--cfg",  "espidf_time64"] # Extending time_t for ESP IDF 5: https://github.com/esp-rs/rust/issues/110
 
-[unstable]
-build-std = ["std", "panic_abort"]
+#[unstable]
+#build-std = ["std", "panic_abort"]
 
 [env]
 # Note: this variable is not used by the pio builder (`cargo build --features pio`)
