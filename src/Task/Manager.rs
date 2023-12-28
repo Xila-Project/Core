@@ -1,30 +1,45 @@
-// - Libraries
+// - Dependencies
+// - - Local
 use super::*;
-
+// - - External
+// - - - Standard library
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
 };
 
+/// Internal representation of a task.
 struct Task_internal_type {
     Thread: Thread_wrapper_type,
     Children: Vec<Task_identifier_type>,
 }
 
+/// A manager for tasks.
 pub struct Manager_type {
+    /// A map of all tasks managed by the manager.
     Tasks: Arc<RwLock<HashMap<Task_identifier_type, Task_internal_type>>>,
 }
 
 impl Manager_type {
+    /// The identifier of the root task (the task that is created when the manager is created).
     const Root_task_identifier: Task_identifier_type = 0;
 
     pub fn New<F>(Main_task_function: F) -> Self
     where
         F: FnOnce() + Send + 'static,
     {
-        Manager_type {
+        let Manager = Manager_type {
             Tasks: Arc::new(RwLock::new(HashMap::new())),
+        };
+
+        if Manager
+            .New_task(Self::Root_task_identifier, "Xila", None, Main_task_function)
+            .is_err()
+        {
+            panic!("Failed to create root task."); // If this happens, crazy shits are going on, so panic.
         }
+
+        Manager
     }
 
     fn Get_new_task_identifier(&self) -> Task_identifier_type {
@@ -37,7 +52,7 @@ impl Manager_type {
                 return Process_identifier;
             }
         }
-        panic!("No more process identifier available."); // Crazy shit
+        panic!("No more process identifier available."); // Should never happen since the maximum number of tasks is usize::MAX - 1 which is a lot.
     }
 
     pub fn Get_task_name(&self, Process_identifier: Task_identifier_type) -> Result<String, ()> {
@@ -50,20 +65,8 @@ impl Manager_type {
         }
     }
 
-    pub fn Get_process_child_processes(
-        &self,
-        Process_identifier: Task_identifier_type,
-    ) -> Result<Vec<Task_identifier_type>, ()> {
-        match self.Tasks.read().unwrap().get(&Process_identifier) {
-            Some(Process) => Ok(Process.Children.clone()),
-            None => Err(()),
-        }
-    }
-
-    pub fn Terminate_task(&self, Task_identifier: Task_identifier_type) {
-        todo!()
-    }
-
+    /// Create a new child task,
+    ///
     pub fn New_task<F>(
         &self,
         Parent_task_identifier: Task_identifier_type,
@@ -76,7 +79,7 @@ impl Manager_type {
     {
         let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
 
-        let mut Parent_task = match Tasks.get_mut(&Parent_task_identifier) {
+        let Parent_task = match Tasks.get_mut(&Parent_task_identifier) {
             Some(Parent_task) => Parent_task,
             None => return Err(()),
         };

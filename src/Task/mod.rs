@@ -7,4 +7,6 @@ pub use Task::*;
 mod Thread;
 pub use Thread::*;
 
+mod Pipe;
+
 pub mod Prelude;

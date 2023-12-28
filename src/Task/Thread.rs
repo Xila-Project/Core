@@ -1,8 +1,10 @@
 use std::thread;
 
+/// A wrapper around [std::thread::Thread].
 pub struct Thread_wrapper_type(thread::JoinHandle<()>);
 
 impl Thread_wrapper_type {
+    /// Creates a new thread with a given name, stack size and function.
     pub fn New<F>(Name: &str, Stack_size: Option<usize>, Function: F) -> Result<Self, ()>
     where
         F: FnOnce() + Send + 'static,
@@ -22,6 +24,7 @@ impl Thread_wrapper_type {
         Ok(Self(Join_handle))
     }
 
+    /// Block the current thread until the thread terminates.
     pub fn Join(self) -> Result<(), ()> {
         match self.0.join() {
             Ok(_) => Ok(()),
@@ -29,6 +32,7 @@ impl Thread_wrapper_type {
         }
     }
 
+    /// Gets the name of the thread.
     pub fn Get_name(&self) -> Option<&str> {
         self.0.thread().name()
     }
