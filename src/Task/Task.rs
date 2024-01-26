@@ -11,6 +11,7 @@ pub struct Task_type<'a> {
 }
 
 impl<'a> Task_type<'a> {
+    /// Internal method to create a new task.
     fn New(Identifier: Task_identifier_type, Manager: &'a Manager_type) -> Self {
         Self {
             Identifier,
@@ -18,6 +19,7 @@ impl<'a> Task_type<'a> {
         }
     }
 
+    /// Create a new child task.
     pub fn New_child_task<F>(
         &self,
         Name: &str,
