@@ -36,4 +36,8 @@ impl Thread_wrapper_type {
     pub fn Get_name(&self) -> Option<&str> {
         self.0.thread().name()
     }
+
+    pub fn Sleep(Duration: std::time::Duration) {
+        std::thread::sleep(Duration);
+    }
 }

@@ -54,6 +54,10 @@ impl<'a> Task_type<'a> {
         let Current_task_identifier = Manager.Get_current_task_identifier()?;
         Ok(Self::New(Current_task_identifier, Manager))
     }
+
+    pub fn Sleep(Duration: std::time::Duration) {
+        Thread_wrapper_type::Sleep(Duration)
+    }
 }
 
 #[cfg(test)]
@@ -66,12 +70,12 @@ mod tests {
 
         let Manager_copy = Manager.clone();
 
-        let Root_task = Manager.New_root_task(None, move || {
+        let _ = Manager.New_root_task(None, move || {
             let Task = Task_type::Get_current_task(&Manager_copy).unwrap();
 
-            let Child_task = Task
+            let _ = Task
                 .New_child_task("Child task", None, || {
-                    std::thread::sleep(std::time::Duration::from_secs(1));
+                    Task_type::Sleep(std::time::Duration::from_millis(100));
                 })
                 .unwrap();
         });

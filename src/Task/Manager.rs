@@ -171,7 +171,7 @@ mod tests {
         let Manager = Manager_type::New();
 
         Manager.New_root_task(None, || {
-            thread::sleep(Duration::from_millis(1000));
+            Task_type::Sleep(Duration::from_millis(100));
         });
 
         let _ = Manager
@@ -180,7 +180,7 @@ mod tests {
                 "Child task",
                 None,
                 || {
-                    thread::sleep(Duration::from_millis(1000));
+                    Task_type::Sleep(Duration::from_millis(100));
                 },
             )
             .unwrap();
