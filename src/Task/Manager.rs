@@ -10,7 +10,9 @@ use std::{
 
 /// Internal representation of a task.
 struct Task_internal_type {
+    /// The thread that runs the task.
     Thread: Thread_wrapper_type,
+    /// The identifiers of the children of the task.
     Children: Vec<Task_identifier_type>,
 }
 
@@ -24,20 +26,10 @@ impl Manager_type {
     /// The identifier of the root task (the task that is created when the manager is created).
     const Root_task_identifier: Task_identifier_type = 0;
 
-    pub fn New<F>(Main_task_function: F) -> Self
-    where
-        F: FnOnce() + Send + 'static,
-    {
+    pub fn New() -> Self {
         let Manager = Manager_type {
             Tasks: Arc::new(RwLock::new(HashMap::new())),
         };
-
-        if Manager
-            .New_task(Self::Root_task_identifier, "Xila", None, Main_task_function)
-            .is_err()
-        {
-            panic!("Failed to create root task."); // If this happens, crazy shits are going on, so panic.
-        }
 
         Manager
     }
@@ -65,7 +57,32 @@ impl Manager_type {
         }
     }
 
-    /// Create a new child task,
+    pub fn New_root_task<F>(&self, Stack_size: Option<usize>, Function: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        let Thread_wrapper = match Thread_wrapper_type::New("Xila", Stack_size, Function) {
+            Ok(Thread_wrapper) => Thread_wrapper,
+            Err(()) => panic!(),
+        };
+
+        let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
+
+        Tasks.insert(
+            Self::Root_task_identifier,
+            Task_internal_type {
+                Thread: Thread_wrapper,
+                Children: Vec::new(),
+            },
+        );
+    }
+
+    /// Create a new child task, returns the identifier of the child task.
+    /// # Arguments
+    /// * `Parent_task_identifier` - The identifier of the parent task.
+    /// * `Name` - The human readable name of the task.
+    /// * `Stack_size` - The size of the stack of the task.
+    /// * `Function` - The function that the task will execute.
     ///
     pub fn New_task<F>(
         &self,
@@ -77,6 +94,8 @@ impl Manager_type {
     where
         F: FnOnce() + Send + 'static,
     {
+        let Child_task_identifier = self.Get_new_task_identifier();
+
         let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
 
         let Parent_task = match Tasks.get_mut(&Parent_task_identifier) {
@@ -89,11 +108,10 @@ impl Manager_type {
             Err(()) => return Err(()),
         };
 
-        let Child_task_identifier = self.Get_new_task_identifier();
+        Parent_task.Children.push(Child_task_identifier);
 
-        let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock again
-
-        Tasks.insert(
+        std::mem::drop(Tasks); // Force Release lock    // TODO : Find a better way to do this
+        self.Tasks.write().unwrap().insert(
             Child_task_identifier,
             Task_internal_type {
                 Thread: Thread_wrapper,
@@ -101,8 +119,61 @@ impl Manager_type {
             },
         );
 
-        Parent_task.Children.push(Child_task_identifier);
-
         Ok(Child_task_identifier)
+    }
+
+    fn Delete_task(&self, Task_identifier: Task_identifier_type) -> Result<(), ()> {
+        let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
+
+        // - Remove task from hashmap and take ownership of it
+        let Task = match Tasks.remove(&Task_identifier) {
+            Some(Task) => Task,
+            None => return Err(()),
+        };
+
+        std::mem::drop(Tasks); // Force Release lock    // TODO : Find a better way to do this
+
+        // - Waiting for thread to terminate
+        Task.Thread.Join().unwrap();
+
+        let mut R = Ok(());
+
+        for Child_task_identifier in Task.Children.iter() {
+            if self.Delete_task(*Child_task_identifier).is_err() {
+                R = Err(());
+            }
+        }
+
+        R
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{thread, time::Duration};
+
+    #[test]
+    fn New_tasks() {
+        let Manager = Manager_type::New();
+
+        Manager.New_root_task(None, || {
+            thread::sleep(Duration::from_millis(1000));
+        });
+
+        let _ = Manager
+            .New_task(
+                Manager_type::Root_task_identifier,
+                "Child task",
+                None,
+                || {
+                    thread::sleep(Duration::from_millis(1000));
+                },
+            )
+            .unwrap();
+
+        Manager
+            .Delete_task(Manager_type::Root_task_identifier)
+            .unwrap();
     }
 }
