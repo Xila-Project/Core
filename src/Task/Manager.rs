@@ -164,7 +164,7 @@ impl Manager_type {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{thread, time::Duration};
+    use std::time::Duration;
 
     #[test]
     fn Test() {
