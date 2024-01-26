@@ -17,6 +17,7 @@ struct Task_internal_type {
 }
 
 /// A manager for tasks.
+#[derive(Clone)]
 pub struct Manager_type {
     /// A map of all tasks managed by the manager.
     Tasks: Arc<RwLock<HashMap<Task_identifier_type, Task_internal_type>>>,
@@ -146,6 +147,18 @@ impl Manager_type {
 
         R
     }
+
+    pub fn Get_current_task_identifier(&self) -> Result<Task_identifier_type, ()> {
+        let Tasks = self.Tasks.read().unwrap(); // Acquire lock
+
+        for (Task_identifier, Task) in Tasks.iter() {
+            if Task.Thread.Get_name().unwrap() == std::thread::current().name().unwrap() {
+                return Ok(*Task_identifier);
+            }
+        }
+
+        Err(())
+    }
 }
 
 #[cfg(test)]
@@ -154,7 +167,7 @@ mod tests {
     use std::{thread, time::Duration};
 
     #[test]
-    fn New_tasks() {
+    fn Test() {
         let Manager = Manager_type::New();
 
         Manager.New_root_task(None, || {

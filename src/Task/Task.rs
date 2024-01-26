@@ -41,4 +41,39 @@ impl<'a> Task_type<'a> {
     pub fn Get_name(&self) -> Result<String, ()> {
         self.Manager.Get_task_name(self.Identifier)
     }
+
+    pub fn Get_identifier(&self) -> Task_identifier_type {
+        self.Identifier
+    }
+
+    pub fn Get_manager(&self) -> &'a Manager_type {
+        self.Manager
+    }
+
+    pub fn Get_current_task(Manager: &'a Manager_type) -> Result<Self, ()> {
+        let Current_task_identifier = Manager.Get_current_task_identifier()?;
+        Ok(Self::New(Current_task_identifier, Manager))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn Test() {
+        let Manager = Manager_type::New();
+
+        let Manager_copy = Manager.clone();
+
+        let Root_task = Manager.New_root_task(None, move || {
+            let Task = Task_type::Get_current_task(&Manager_copy).unwrap();
+
+            let Child_task = Task
+                .New_child_task("Child task", None, || {
+                    std::thread::sleep(std::time::Duration::from_secs(1));
+                })
+                .unwrap();
+        });
+    }
 }
