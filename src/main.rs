@@ -1,6 +1,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
+#![allow(dead_code)]
 
 #[cfg(target_os = "espidf")]
 use esp_idf_hal::sys;
@@ -12,9 +13,10 @@ use esp_idf_hal::{
 #[cfg(target_os = "espidf")]
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 
+mod File_system;
 mod Graphics;
 mod Screen;
-mod File_system;
+mod Task;
 mod Users;
 
 fn main() {
