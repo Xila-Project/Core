@@ -18,6 +18,7 @@ mod Graphics;
 mod Screen;
 mod Task;
 mod Users;
+mod Virtual_machine;
 
 fn main() {
     // It is necessary to call this function once. Otherwise some patches to the runtime

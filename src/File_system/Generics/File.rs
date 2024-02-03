@@ -1,3 +1,5 @@
+use std::io::Read;
+
 use super::*;
 
 pub enum Mode_type {
@@ -61,7 +63,6 @@ impl<'a> File_type<'a> {
         self.File_system.Read_file(self.Get_identifier(), Buffer)
     }
     pub fn Read_line(&self, Buffer: &mut [u8]) -> Result<(), ()> {
-        let mut Index = 0;
         let mut Buffer = Buffer.iter_mut();
         loop {
             let Byte = self
@@ -75,9 +76,14 @@ impl<'a> File_type<'a> {
             if *Byte == b'\n' {
                 break;
             }
-            Index += 1;
         }
         Ok(())
+    }
+
+    pub fn Read_vector(&self) -> Result<Vec<u8>, ()> {
+        let Size = self.Get_size().map_err(|_| ())?;
+        let mut Buffer = vec![0; Size.0 as usize];
+        self.Read(&mut Buffer).map(|_| Buffer)
     }
 
     pub fn Get_position(&self) -> Size_type {

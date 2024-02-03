@@ -51,3 +51,4 @@ byteorder = "1.5.0"
 sdl2 = { version = "0.36.0", features = [] }
 lvgl = { version="0.6.2", features = [] }
 embedded-graphics = "0.8.1"
+wamr-sys = { git = "https://github.com/AlixANNERAUD/wamr-sys.git" }
