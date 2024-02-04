@@ -31,3 +31,22 @@ impl Symbol_type {
         self.Signature.to_str().unwrap()
     }
 }
+
+#[macro_export]
+macro_rules! Declare_native_symbol {
+    ($name:ident, $signature:expr) => {
+        mod Symbols {
+            use paste::paste;
+            use wamr_sys::NativeSymbol;
+            use std::ptr::null_mut;
+            paste!{
+                const $name: NativeSymbol = NativeSymbol {
+                    symbol: concat!(stringify!($name), "\0").as_ptr() as *const i8,
+                    func_ptr: super::$name as *mut _,
+                    signature: concat!($signature, "\0").as_ptr() as *const i8,
+                    attachment: null_mut(),
+                };
+            }
+        }
+    }
+}

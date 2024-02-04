@@ -4,9 +4,13 @@ use std::{
     sync::RwLock,
     usize,
 };
-use wamr_sys::*;
+
+use crate::Declare_native_symbol;
 
 use super::{Allocation_type, Function::Function_type, Pointer_type, Symbol::Symbol_type};
+
+use wamr_sys::*;
+
 
 #[derive(Debug)]
 pub struct Module_builder_type {
@@ -23,6 +27,8 @@ pub struct Module_builder_type {
 const Default_stack_size: usize = 8 * 1024;
 const Default_heap_size: usize = 8 * 1024;
 const Default_error_buffer_size: usize = 128;
+
+Declare_native_symbol!{wasm_runtime_addr_app_to_native, "i"}
 
 impl Module_builder_type {
     pub fn Load(
@@ -221,11 +227,9 @@ mod tests {
         let Test_data =
             include_bytes!("../../../Test/target/wasm32-wasi/release/Test.wasm").to_vec();
 
-        let v = vec!["argument1", "argument2", "argument3"];
-
         let Module = Module_builder_type::Load("test", Test_data, None)
             .unwrap()
-            .Set_arguments(v)
+            .Set_arguments(vec!["argument1", "argument2", "argument3"])
             .Build()
             .unwrap();
 
