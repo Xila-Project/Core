@@ -11,6 +11,8 @@ use super::{Allocation_type, Function::Function_type, Pointer_type, Symbol::Symb
 
 use wamr_sys::*;
 
+use Symbol::Use_native_function;
+
 
 #[derive(Debug)]
 pub struct Module_builder_type {
@@ -27,8 +29,6 @@ pub struct Module_builder_type {
 const Default_stack_size: usize = 8 * 1024;
 const Default_heap_size: usize = 8 * 1024;
 const Default_error_buffer_size: usize = 128;
-
-Declare_native_symbol!{wasm_runtime_addr_app_to_native, "i"}
 
 impl Module_builder_type {
     pub fn Load(
@@ -215,26 +215,49 @@ impl Module_instance_type {
     }
 }
 
+#[no_mangle]
+pub extern "C" fn Traire_la_vache(_ : wasm_exec_env_t, a : i32, b : i32) -> i32{
+    println!("Traire la vache");
+    a - b
+}
+
+Declare_native_symbol!(Traire_la_vache, "(ii)i");
+
+#[Use_native_function]
+fn Caresser_le_capitaine(a : &mut i32, b : i32) -> i32{
+    println!("Caresser le capitaine");
+    *a + b
+}
+
+
 #[cfg(test)]
 mod tests {
-    use super::super::{Destroy, Initialize};
+    use super::super::{Destroy, Initialize, Register_native_symbols};
     use super::*;
 
     #[test]
     fn test_module_builder() {
         Initialize().unwrap();
 
+        
+        let mut Native_symbols = [
+            Traire_la_vache_symbol,
+            ];
+            
+        Register_native_symbols(&mut Native_symbols).unwrap();
+
         let Test_data =
             include_bytes!("../../../Test/target/wasm32-wasi/release/Test.wasm").to_vec();
 
-        let Module = Module_builder_type::Load("test", Test_data, None)
+        let Module = Module_builder_type::Load("Test.wasm", Test_data, None)
             .unwrap()
             .Set_arguments(vec!["argument1", "argument2", "argument3"])
             .Build()
+            .unwrap()
+            .Execute_main()
             .unwrap();
-
-        Module.Execute_main().unwrap();
 
         Destroy();
     }
 }
+

@@ -1,10 +1,11 @@
 use std::ffi::CString;
-use wamr_sys::NativeSymbol;
+
+use super::Native_symbol_type;
 
 pub struct Symbol_type {
     Name: CString,
     Signature: CString,
-    Symbol: NativeSymbol,
+    Symbol: Native_symbol_type,
 }
 
 impl Symbol_type {
@@ -13,7 +14,7 @@ impl Symbol_type {
             Self {
                 Name: std::ffi::CString::new(Name).unwrap(),
                 Signature: std::ffi::CString::new(Signature).unwrap(),
-                Symbol: NativeSymbol {
+                Symbol: Native_symbol_type {
                     symbol: Name.as_ptr() as *const i8,
                     func_ptr: std::mem::transmute(&Function), // TODO: Check if this is correct
                     signature: Signature.as_ptr() as *const i8,
@@ -32,21 +33,3 @@ impl Symbol_type {
     }
 }
 
-#[macro_export]
-macro_rules! Declare_native_symbol {
-    ($name:ident, $signature:expr) => {
-        mod Symbols {
-            use paste::paste;
-            use wamr_sys::NativeSymbol;
-            use std::ptr::null_mut;
-            paste!{
-                const $name: NativeSymbol = NativeSymbol {
-                    symbol: concat!(stringify!($name), "\0").as_ptr() as *const i8,
-                    func_ptr: super::$name as *mut _,
-                    signature: concat!($signature, "\0").as_ptr() as *const i8,
-                    attachment: null_mut(),
-                };
-            }
-        }
-    }
-}
