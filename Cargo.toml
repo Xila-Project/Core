@@ -32,12 +32,12 @@ embassy = [
 ]
 
 [target.'cfg( target_os = "espidf" )'.dependencies]
-esp-idf-sys = { version = "0.33.5", features = ["binstart"] }
-esp-idf-hal = "0.42.4"
+esp-idf-sys = { version = "0.34.1", features = ["binstart"] }
+esp-idf-hal = "0.43.1"
 log = { version = "0.4", default-features = false }
-esp-idf-svc = { version = "0.47.1", default-features = false }
-embedded-sdmmc = "0.6.0"
-embedded-hal = "0.2.7"
+esp-idf-svc = { version = "0.48.1", default-features = false }
+embedded-sdmmc = "0.7.0"
+embedded-hal = "1.0.0"
 fatfs = { version = "0.3.6" }
 byteorder = "1.5.0"
 lvgl = { version="0.6.2", features = [] }
