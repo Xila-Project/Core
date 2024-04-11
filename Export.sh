@@ -5,14 +5,14 @@ clear && echo "Setting up environment variables for Rust cross-compilation"
 
 # Variables
 
-Linux_environment_variables="DEP_LV_CONFIG_PATH=\"$PWD\""
+Linux_environment_variables="DEP_LV_CONFIG_PATH=\"$PWD/Modules/LVGL\""
 Linux_target="--target x86_64-unknown-linux-gnu"
 Windows_target="--target x86_64-pc-windows-gnu"
 
-ESP32_environment_variables="MCU=esp32 DEP_LV_CONFIG_PATH='pwd'"
-ESP32_target="--target xtensa-esp32-espidf --features ESP32"
-ESP32_S3_environment_variables="MCU=esp32s3 DEP_LV_CONFIG_PATH='pwd'"
-ESP32_S3_target="--target xtensa-esp32s3-espidf --features ESP32_S3"
+ESP32_environment_variables="MCU=esp32 DEP_LV_CONFIG_PATH=\"$PWD/Modules/LVGL\""
+ESP32_target="--target xtensa-esp32-espidf --features ESP32 -Z build-std=std,panic_abort"
+ESP32_S3_environment_variables="MCU=esp32s3 DEP_LV_CONFIG_PATH=\"$PWD/Modules/LVGL\""
+ESP32_S3_target="--target xtensa-esp32s3-espidf --features ESP32_S3 -Z build-std=std,panic_abort"
 
 Cargo="cargo"
 
