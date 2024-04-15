@@ -35,6 +35,7 @@ unalias check_windows
 unalias check_esp32
 unalias check_esp32_s3
 unalias clean
+unalias format
 } &> /dev/null
 
 # Aliases
@@ -66,6 +67,8 @@ alias check_esp32_s3="$Clear $ESP32_S3_environment_variables $Cargo_check $ESP32
 alias clean="$Cargo clean"
 
 alias doc="$Linux_environment_variables $Cargo doc"
+
+alias format="$Cargo fmt"
 
 export RUST_BACKTRACE=1
 
