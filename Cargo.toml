@@ -1,3 +1,5 @@
+workspace = { members = ["Modules/Virtual_machine"] }
+
 [package]
 name = "Xila"
 version = "0.1.0"
@@ -31,6 +33,9 @@ embassy = [
     "esp-idf-svc/embassy-time-driver",
 ]
 
+[dependencies]
+Virtual_machine = { path = "Modules/Virtual_machine" }
+
 [target.'cfg( target_os = "espidf" )'.dependencies]
 esp-idf-sys = { version = "0.34.1", features = ["binstart"] }
 esp-idf-hal = "0.43.1"
@@ -43,15 +48,14 @@ byteorder = "1.5.0"
 lvgl = { version="0.6.2", default-features=false, features = ["embedded-graphics", "unsafe_no_autoinit"] }
 lvgl-sys = { version="0.6.2" }
 embedded-graphics = "0.8.1"
-wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk", branch = "main" }
 
 [build-dependencies]
 embuild = { version = "0.31.4", features = ["espidf"] }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-Virtual_machine = { path = "Virtual_machine" }
 byteorder = "1.5.0"
 sdl2 = { version = "0.36.0", features = [] }
 lvgl = { version="0.6.2", features = [] }
 embedded-graphics = "0.8.1"
-wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk", branch = "main" }
+log = { version = "0.4" }
+env_logger = { version = "0.11" }
