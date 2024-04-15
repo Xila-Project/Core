@@ -57,7 +57,7 @@ alias test_windows="$Clear $Cargo_test $Windows_target"
 alias test_esp32="$Clear $ESP32_environment_variables $Cargo_test $ESP32_target"
 alias test_esp32_s3="$Clear $ESP32_S3_environment_variables $Cargo_test $ESP32_S3_target"
 
-Cargo_check="$Cargo check"
+Cargo_check="$Cargo clippy"
 alias check_linux="$Clear $Linux_environment_variables $Cargo_check $Linux_target"
 alias check_windows="$Clear $Cargo_check $Windows_target"
 alias check_esp32="$Clear $ESP32_environment_variables $Cargo_check $ESP32_target"
