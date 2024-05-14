@@ -11,6 +11,8 @@ use wamr_rust_sdk::{
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Borrow;
+
     use super::*;
 
     extern "C" fn test(a: i32, b: i32) -> i32 {
@@ -18,14 +20,56 @@ mod tests {
         a + b
     }
 
+    pub struct Test_s {
+        pub a: i32,
+        pub b: i32,
+    }
+
+    impl Test_s {
+        pub fn new() -> Self {
+            Test_s { a: 0, b: 0 }
+        }
+
+        extern "C" fn add(&mut self, a: i32, b: i32) -> i32 {
+            println!("add : {:#16x}", &self as *const _ as usize);
+            self.a = a;
+            self.b = b;
+            self.a + self.b
+        }
+    }
+
+    extern "C" fn Test_s_add(a: u64, b: i32, c: i32) -> i32 {
+        println!("Test_s_add : {:#16x}", a);
+        let t = unsafe { &mut *(a as *mut Test_s) };
+        t.add(b, c)
+    }
+
+    static mut test_s: *mut Test_s = std::ptr::null_mut();
+
+    fn Get_test() -> &'static mut Test_s {
+        unsafe { &mut *test_s }
+    }
+
     #[test]
     fn Test() {
         std::thread::spawn(|| {
-            let runtime = Runtime::builder()
-                .use_system_allocator()
-                .register_host_function("test", test as *mut std::ffi::c_void)
-                .build()
-                .unwrap();
+            let t = Test_s::new();
+
+            //   unsafe {
+            //       test_s = &t as *const _ as usize;
+            //   }
+            //println!("Test_s : {:#16x}", unsafe { test_s });
+
+            let mut Runtime_builder = Runtime::builder().use_system_allocator();
+
+            unsafe {
+                Runtime_builder = Runtime_builder
+                    .register_host_function("Get_test", Get_test as *mut std::ffi::c_void)
+                    .register_host_function("Test_s_add", Test_s_add as *mut std::ffi::c_void)
+                    .register_host_function("test", test as *mut std::ffi::c_void);
+            }
+
+            let runtime = Runtime_builder.build().unwrap();
 
             //let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             //d.push("../Test/target/wasm32-wasi/debug/Test.wasm");
@@ -49,6 +93,7 @@ mod tests {
             let params: Vec<WasmValue> = vec![WasmValue::I32(9), WasmValue::I32(27)];
 
             let result = function.call(&instance, &params).unwrap();
+
             assert_eq!(result, WasmValue::I32(9));
         })
         .join()
