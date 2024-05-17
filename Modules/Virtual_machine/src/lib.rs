@@ -1,100 +1,57 @@
-#![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
-#![allow(non_upper_case_globals)]
 
-use std::path::PathBuf;
-use std::time::Duration;
-use wamr_rust_sdk::{
-    function::Function, host_function, instance::Instance, module::Module, runtime::Runtime,
-    value::WasmValue, wasi_context::WasiCtxBuilder, RuntimeError,
-};
+pub mod Instance;
+pub mod Module;
+pub mod Runtime;
+
+pub use Instance::*;
+pub use Module::*;
+pub use Runtime::*;
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Borrow;
+
+    use wamr_rust_sdk::{function::Function, value::WasmValue};
+
+    use crate::Runtime::Runtime_type;
 
     use super::*;
 
-    extern "C" fn test(a: i32, b: i32) -> i32 {
+    extern "C" fn Test_function(a: i32, b: i32) -> i32 {
         println!("test");
         a + b
-    }
-
-    pub struct Test_s {
-        pub a: i32,
-        pub b: i32,
-    }
-
-    impl Test_s {
-        pub fn new() -> Self {
-            Test_s { a: 0, b: 0 }
-        }
-
-        extern "C" fn add(&mut self, a: i32, b: i32) -> i32 {
-            println!("add : {:#16x}", &self as *const _ as usize);
-            self.a = a;
-            self.b = b;
-            self.a + self.b
-        }
-    }
-
-    extern "C" fn Test_s_add(a: u64, b: i32, c: i32) -> i32 {
-        println!("Test_s_add : {:#16x}", a);
-        let t = unsafe { &mut *(a as *mut Test_s) };
-        t.add(b, c)
-    }
-
-    static mut test_s: *mut Test_s = std::ptr::null_mut();
-
-    fn Get_test() -> &'static mut Test_s {
-        unsafe { &mut *test_s }
     }
 
     #[test]
     fn Test() {
         std::thread::spawn(|| {
-            let t = Test_s::new();
-
-            //   unsafe {
-            //       test_s = &t as *const _ as usize;
-            //   }
-            //println!("Test_s : {:#16x}", unsafe { test_s });
-
-            let mut Runtime_builder = Runtime::builder().use_system_allocator();
+            let mut Runtime_builder = Runtime_type::Builder();
 
             unsafe {
                 Runtime_builder = Runtime_builder
-                    .register_host_function("Get_test", Get_test as *mut std::ffi::c_void)
-                    .register_host_function("Test_s_add", Test_s_add as *mut std::ffi::c_void)
-                    .register_host_function("test", test as *mut std::ffi::c_void);
+                    .Register_function("Test_function", Test_function as *mut std::ffi::c_void);
             }
 
-            let runtime = Runtime_builder.build().unwrap();
+            let Runtime = Runtime_builder.Build().unwrap();
 
-            //let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            //d.push("../Test/target/wasm32-wasi/debug/Test.wasm");
-            //let mut module = Module::from_file(&runtime, d.as_path()).unwrap();
-
-            let buffer =
+            let Buffer =
                 include_bytes!("../../../../Test/target/wasm32-unknown-unknown/release/Test.wasm");
 
-            let mut module = Module::from_buf(&runtime, buffer, "main").unwrap();
+            let mut Module = Module_type::From_buffer(&Runtime, Buffer, "main").unwrap();
 
-            //let wasi_ctx = WasiCtxBuilder::new()
-            //    .set_pre_open_path(vec!["."], vec![])
-            //    .build();
+            let Instance = Instance_type::New(&Runtime, &Module, 1024 * 4).unwrap();
 
-            //module.set_wasi_context(wasi_ctx);
+            assert_eq!(
+                Instance.Call_main(&vec![WasmValue::I32(0)]).unwrap(),
+                WasmValue::I32(0)
+            );
 
-            let instance = Instance::new(&runtime, &module, 1024 * 4).unwrap();
-
-            let function = Function::find_export_func(&instance, "gcd").unwrap();
-
-            let params: Vec<WasmValue> = vec![WasmValue::I32(9), WasmValue::I32(27)];
-
-            let result = function.call(&instance, &params).unwrap();
-
-            assert_eq!(result, WasmValue::I32(9));
+            assert_eq!(
+                Instance
+                    .Call_export_function("gcd", &vec![WasmValue::I32(9), WasmValue::I32(27)])
+                    .unwrap(),
+                WasmValue::I32(9)
+            );
         })
         .join()
         .unwrap();
