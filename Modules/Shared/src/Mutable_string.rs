@@ -8,7 +8,7 @@ use std::{
     str::{Chars, Lines},
 };
 
-use crate::Size_trait;
+use crate::{Error_type, Size_trait};
 
 /// This structure is a safe wrapper for a mutable string slice from external pointers.
 ///
@@ -40,17 +40,21 @@ where
         }
     }
 
-    pub fn From(String: NonNull<u8>, mut Length: NonNull<S>, Size: S) -> Result<Self, String> {
+    pub fn From(String: NonNull<u8>, mut Length: NonNull<S>, Size: S) -> Result<Self, Error_type> {
         let Data: &'a mut [u8] = unsafe {
-            slice::from_raw_parts_mut(String.as_ptr(), Size.to_usize().ok_or("Invalid size")?)
+            slice::from_raw_parts_mut(
+                String.as_ptr(),
+                Size.to_usize()
+                    .ok_or(Error_type::Failed_to_convert_length_to_S)?,
+            )
         };
 
         if std::str::from_utf8(Data).is_err() {
-            return Err("Invalid UTF-8 string".to_string());
+            return Err(Error_type::Invalid_UTF8_string);
         }
 
         if unsafe { *Length.as_ref() } > Size {
-            return Err("Invalid length".to_string());
+            return Err(Error_type::Invalid_length);
         }
 
         Ok(Self {
@@ -63,13 +67,13 @@ where
         self.As_str() == String
     }
 
-    pub fn Concatenate(&mut self, String: &str) -> Result<(), String> {
+    pub fn Concatenate(&mut self, String: &str) -> Result<(), Error_type> {
         let String = String.as_bytes();
 
         let Length = String.len();
 
         if self.Get_length() + Length > self.Get_size() {
-            return Err("Buffer too small".to_string());
+            return Err(Error_type::Buffer_too_small);
         }
 
         let Self_length = self.Get_length();
@@ -77,8 +81,7 @@ where
         self.Data[Self_length..Self_length + Length].copy_from_slice(String);
 
         self.Set_length(
-            S::from(self.Get_length() + Length)
-                .ok_or("Failed to convert length to S".to_string())?,
+            S::from(self.Get_length() + Length).ok_or(Error_type::Failed_to_convert_length_to_S)?,
         );
 
         Ok(())

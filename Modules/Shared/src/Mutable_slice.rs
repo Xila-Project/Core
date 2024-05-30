@@ -7,6 +7,8 @@ use std::{
 
 use num::{Num, NumCast, ToPrimitive, Unsigned};
 
+use crate::Error_type;
+
 #[derive(Debug)]
 pub struct Mutable_slice_type<'a, T, S = u32>
 where
@@ -20,13 +22,17 @@ impl<'a, T, S> Mutable_slice_type<'a, T, S>
 where
     S: Unsigned + Num + NumCast + Num + PartialOrd + ToPrimitive + Copy,
 {
-    pub fn From(Slice: NonNull<T>, mut Length: NonNull<S>, Size: S) -> Result<Self, String> {
+    pub fn From(Slice: NonNull<T>, mut Length: NonNull<S>, Size: S) -> Result<Self, Error_type> {
         let Data: &'a mut [T] = unsafe {
-            std::slice::from_raw_parts_mut(Slice.as_ptr(), Size.to_usize().ok_or("Invalid size")?)
+            std::slice::from_raw_parts_mut(
+                Slice.as_ptr(),
+                Size.to_usize()
+                    .ok_or(Error_type::Failed_to_convert_length_to_S)?,
+            )
         };
 
         if unsafe { *Length.as_ref() } > Size {
-            return Err("Invalid length".to_string());
+            return Err(Error_type::Invalid_length);
         }
 
         Ok(Self {
@@ -35,18 +41,21 @@ where
         })
     }
 
-    pub fn Push(&mut self, Value: T) -> Result<(), ()> {
-        if self.Get_length() == self.Get_size() {
-            return Err(());
+    pub fn Push(&mut self, Value: T) -> Result<(), Error_type> {
+        if self.Get_length() >= self.Get_size() {
+            return Err(Error_type::Buffer_too_small);
         }
 
         self.Data[self.Get_length()] = Value;
-        self.Set_length(S::from(self.Get_length()).ok_or(())? + S::from(1).unwrap())
+        self.Set_length(
+            S::from(self.Get_length()).ok_or(Error_type::Failed_to_convert_length_to_S)?
+                + S::from(1).unwrap(),
+        )
     }
 
-    fn Set_length(&mut self, Length: S) -> Result<(), ()> {
-        if Length > S::from(self.Get_size()).unwrap() {
-            return Err(());
+    fn Set_length(&mut self, Length: S) -> Result<(), Error_type> {
+        if Length.to_usize().unwrap() > self.Get_size() {
+            return Err(Error_type::Invalid_length);
         }
 
         *self.Length = Length as S;
