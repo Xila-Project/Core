@@ -8,23 +8,31 @@ use std::{
     str::{Chars, Lines},
 };
 
+use crate::Size_trait;
+
 /// This structure is a safe wrapper for a mutable string slice from external pointers.
 ///
 /// This is specifically designed to be used with foreign function interfaces.
-#[derive(Debug, Eq)]
-pub struct Mutable_string_type<'a> {
+#[derive(Debug)]
+pub struct Mutable_string_type<'a, S = u32>
+where
+    S: Size_trait,
+{
     Data: &'a mut [u8],
     // This is the actual length of the string, not the size of the buffer.
-    Length: &'a mut u32,
+    Length: &'a mut S,
 }
 
-impl<'a> Mutable_string_type<'a> {
+impl<'a, S> Mutable_string_type<'a, S>
+where
+    S: Size_trait,
+{
     /// # Safety
     ///
     /// This function is unsafe because it does not check if the buffer contains a valid UTF-8 string and if the length is valid.
-    pub unsafe fn From_unchecked(String: NonNull<u8>, mut Length: NonNull<u32>, Size: u32) -> Self {
+    pub unsafe fn From_unchecked(String: NonNull<u8>, mut Length: NonNull<S>, Size: S) -> Self {
         let Data: &'a mut [u8] =
-            unsafe { slice::from_raw_parts_mut(String.as_ptr(), Size as usize) };
+            unsafe { slice::from_raw_parts_mut(String.as_ptr(), Size.to_usize().unwrap()) };
 
         Self {
             Data,
@@ -32,15 +40,16 @@ impl<'a> Mutable_string_type<'a> {
         }
     }
 
-    pub fn From(String: NonNull<u8>, mut Length: NonNull<u32>, Size: u32) -> Result<Self, String> {
-        let Data: &'a mut [u8] =
-            unsafe { slice::from_raw_parts_mut(String.as_ptr(), Size as usize) };
+    pub fn From(String: NonNull<u8>, mut Length: NonNull<S>, Size: S) -> Result<Self, String> {
+        let Data: &'a mut [u8] = unsafe {
+            slice::from_raw_parts_mut(String.as_ptr(), Size.to_usize().ok_or("Invalid size")?)
+        };
 
         if std::str::from_utf8(Data).is_err() {
             return Err("Invalid UTF-8 string".to_string());
         }
 
-        if unsafe { *Length.as_ref() } > Data.len() as u32 {
+        if unsafe { *Length.as_ref() } > Size {
             return Err("Invalid length".to_string());
         }
 
@@ -68,19 +77,19 @@ impl<'a> Mutable_string_type<'a> {
         self.Data[Self_length..Self_length + Length].copy_from_slice(String);
 
         self.Set_length(
-            u32::try_from(self.Get_length() + Length)
-                .map_err(|_| "Failed to convert length to u32".to_string())?,
+            S::from(self.Get_length() + Length)
+                .ok_or("Failed to convert length to S".to_string())?,
         );
 
         Ok(())
     }
 
     pub fn Clear(&mut self) {
-        self.Set_length(0)
+        self.Set_length(S::from(0).unwrap());
     }
 
-    fn Set_length(&mut self, Length: u32) {
-        *self.Length = Length as u32;
+    fn Set_length(&mut self, Length: S) {
+        *self.Length = Length;
     }
 
     pub fn Get_data(&'a mut self) -> &'a mut [u8] {
@@ -88,11 +97,11 @@ impl<'a> Mutable_string_type<'a> {
     }
 
     pub fn Get_length(&self) -> usize {
-        *self.Length as usize
+        (*self.Length).to_usize().unwrap()
     }
 
     pub fn Get_size(&self) -> usize {
-        self.Data.len() as usize
+        self.Data.len()
     }
 
     pub fn Get_characters(&self) -> Chars {
@@ -122,7 +131,10 @@ impl<'a> Mutable_string_type<'a> {
 /// # Safety
 ///
 /// This function can fail silently if the buffer is not large enough.
-impl AddAssign<&str> for Mutable_string_type<'_> {
+impl<S> AddAssign<&str> for Mutable_string_type<'_, S>
+where
+    S: Size_trait,
+{
     fn add_assign(&mut self, Other: &str) {
         let _ = self.Concatenate(Other);
     }
@@ -133,6 +145,8 @@ impl Display for Mutable_string_type<'_> {
         write!(Formatter, "{}", self.As_str())
     }
 }
+
+impl Eq for Mutable_string_type<'_> {}
 
 impl PartialEq for Mutable_string_type<'_> {
     fn eq(&self, Other: &Self) -> bool {
