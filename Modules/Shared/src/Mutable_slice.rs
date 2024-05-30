@@ -5,18 +5,27 @@ use std::{
     ptr::NonNull,
 };
 
+use num::{Num, NumCast, ToPrimitive, Unsigned};
+
 #[derive(Debug)]
-pub struct Mutable_slice_type<'a, T> {
+pub struct Mutable_slice_type<'a, T, S = u32>
+where
+    S: Unsigned + Num + NumCast + PartialOrd + ToPrimitive + Copy,
+{
     Data: &'a mut [T],
-    Length: &'a mut u32,
+    Length: &'a mut S,
 }
 
-impl<'a, T> Mutable_slice_type<'a, T> {
-    pub fn From(Slice: NonNull<T>, mut Length: NonNull<u32>, Size: u32) -> Result<Self, String> {
-        let Data: &'a mut [T] =
-            unsafe { std::slice::from_raw_parts_mut(Slice.as_ptr(), Size as usize) };
+impl<'a, T, S> Mutable_slice_type<'a, T, S>
+where
+    S: Unsigned + Num + NumCast + Num + PartialOrd + ToPrimitive + Copy,
+{
+    pub fn From(Slice: NonNull<T>, mut Length: NonNull<S>, Size: S) -> Result<Self, String> {
+        let Data: &'a mut [T] = unsafe {
+            std::slice::from_raw_parts_mut(Slice.as_ptr(), Size.to_usize().ok_or("Invalid size")?)
+        };
 
-        if unsafe { *Length.as_ref() } > Data.len() as u32 {
+        if unsafe { *Length.as_ref() } > Size {
             return Err("Invalid length".to_string());
         }
 
@@ -32,17 +41,20 @@ impl<'a, T> Mutable_slice_type<'a, T> {
         }
 
         self.Data[self.Get_length()] = Value;
-        self.Set_length(self.Get_length() + 1);
+        self.Set_length(S::from(self.Get_length()).ok_or(())? + S::from(1).unwrap())
+    }
 
+    fn Set_length(&mut self, Length: S) -> Result<(), ()> {
+        if Length > S::from(self.Get_size()).unwrap() {
+            return Err(());
+        }
+
+        *self.Length = Length as S;
         Ok(())
     }
 
-    fn Set_length(&mut self, Length: usize) {
-        *self.Length = Length as u32;
-    }
-
     pub fn Clear(&mut self) {
-        self.Set_length(0)
+        self.Set_length(S::from(0).unwrap()).unwrap();
     }
 
     pub fn Is_empty(&self) -> bool {
@@ -50,7 +62,7 @@ impl<'a, T> Mutable_slice_type<'a, T> {
     }
 
     pub fn Get_length(&self) -> usize {
-        *self.Length as usize
+        (*self.Length).to_usize().unwrap()
     }
 
     pub fn Get_size(&self) -> usize {
@@ -73,9 +85,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_mutable_slice() {
+    fn Test_mutable_slice() {
         let mut Data = [1, 2, 3, 4, 5];
-        let mut Length = 3;
+        let mut Length = 3 as u32;
 
         let Raw_slice = NonNull::new(Data.as_mut_ptr()).unwrap();
         let Length = NonNull::new(&mut Length).unwrap();
