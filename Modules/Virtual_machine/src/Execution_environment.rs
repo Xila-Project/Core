@@ -11,26 +11,26 @@ use wamr_rust_sdk::sys::{
 };
 use Shared::{Mutable_slice_type, Mutable_string_type};
 
-use crate::{Instance_type, WASM_pointer, WASM_usize};
+use crate::{Error_type, Instance_type, WASM_pointer, WASM_usize};
 
 pub type Environment_pointer_type = wasm_exec_env_t;
 
 pub struct Environment_type<'a>(Environment_pointer_type, PhantomData<&'a ()>);
 
 impl<'a> Environment_type<'a> {
-    pub fn From_raw_pointer(Raw_pointer: Environment_pointer_type) -> Result<Self, String> {
+    pub fn From_raw_pointer(Raw_pointer: Environment_pointer_type) -> Result<Self, Error_type> {
         if Raw_pointer.is_null() {
-            return Err("Pointer is null".to_string());
+            return Err(Error_type::Invalid_pointer);
         }
 
         Ok(Self(Raw_pointer as Environment_pointer_type, PhantomData))
     }
 
-    pub fn From_instance(Instance: &Instance_type) -> Result<Self, String> {
+    pub fn From_instance(Instance: &Instance_type) -> Result<Self, Error_type> {
         let Instance_pointer = Instance.Get_inner_reference().get_inner_instance();
 
         if Instance_pointer.is_null() {
-            return Err("Instance pointer is null".to_string());
+            return Err(Error_type::Invalid_pointer);
         }
         Ok(Self(
             unsafe { wasm_runtime_get_exec_env_singleton(Instance_pointer) },
@@ -59,10 +59,18 @@ impl<'a> Environment_type<'a> {
         }
     }
 
+    /// # Safety
+    ///
+    /// This function is unsafe because it is not checked that the address is valid.
+    /// Please use `Validate_WASM_pointer` to check the address.
     pub unsafe fn Convert_to_native_pointer(&self, Address: WASM_pointer) -> *mut c_void {
         wasm_runtime_addr_app_to_native(self.Get_instance_pointer(), Address as u64) as *mut c_void
     }
 
+    /// # Safety
+    ///
+    /// This function is unsafe because it is not checked that the address is valid.
+    /// Please use `Validate_WASM_pointer` to check the address.
     pub unsafe fn Convert_to_WASM_pointer<T>(&self, Pointer: *const T) -> WASM_pointer {
         wasm_runtime_addr_native_to_app(self.Get_instance_pointer(), Pointer as *mut c_void)
             as WASM_pointer
@@ -88,18 +96,18 @@ impl<'a> Environment_type<'a> {
         &self,
         Address: WASM_pointer,
         Size: WASM_usize,
-    ) -> Result<&str, String> {
+    ) -> Result<&str, Error_type> {
         if !self.Validate_WASM_pointer(Address, Size) {
-            return Err("Invalid pointer".to_string());
+            return Err(Error_type::Invalid_pointer);
         }
-
         let Pointer = unsafe { self.Convert_to_native_pointer(Address) };
 
         let Str = unsafe {
-            std::str::from_utf8_unchecked(std::slice::from_raw_parts(
+            std::str::from_utf8(std::slice::from_raw_parts(
                 Pointer as *const u8,
                 Size as usize,
             ))
+            .map_err(|_| Error_type::Invalid_UTF8_string)?
         };
 
         Ok(Str)
@@ -107,34 +115,34 @@ impl<'a> Environment_type<'a> {
 
     pub fn Convert_to_native_mutable_string(
         &self,
-        Address: WASM_pointer,
+        String: WASM_pointer,
         Length: WASM_pointer,
         Size: WASM_usize,
-    ) -> Result<Mutable_string_type<'a>, String> {
-        if !self.Validate_WASM_pointer(Address, Size) {
-            return Err("Invalid pointer to string".to_string());
+    ) -> Result<Mutable_string_type<'a>, Error_type> {
+        if !self.Validate_WASM_pointer(String, Size) {
+            return Err(Error_type::Invalid_pointer);
         }
         if !self.Validate_WASM_pointer(Length, size_of::<WASM_pointer>() as WASM_usize) {
-            return Err("Invalid pointer to length".to_string());
+            return Err(Error_type::Invalid_pointer);
         }
-
-        let Pointer = unsafe { self.Convert_to_native_pointer(Address) };
+        let String_pointer = unsafe { self.Convert_to_native_pointer(String) };
+        let Length_pointer = unsafe { self.Convert_to_native_pointer(Length) };
 
         Mutable_string_type::<'a>::From(
-            unsafe { NonNull::new_unchecked(Pointer as *mut u8) },
-            unsafe { NonNull::new_unchecked(Length as *mut WASM_usize) },
+            unsafe { NonNull::new_unchecked(String_pointer as *mut u8) },
+            unsafe { NonNull::new_unchecked(Length_pointer as *mut WASM_usize) },
             Size,
         )
-        .map_err(|_| "Invalid UTF-8 string".to_string())
+        .map_err(Error_type::Slice_conversion_failed)
     }
 
     pub fn Convert_to_native_slice<T>(
         &self,
         Address: WASM_pointer,
         Length: WASM_usize,
-    ) -> Result<&[T], String> {
+    ) -> Result<&[T], Error_type> {
         if !self.Validate_WASM_pointer(Address, Length) {
-            return Err("Invalid pointer".to_string());
+            return Err(Error_type::Invalid_pointer);
         }
 
         let Pointer = unsafe { self.Convert_to_native_pointer(Address) };
@@ -147,24 +155,18 @@ impl<'a> Environment_type<'a> {
     pub fn Convert_to_native_mutable_slice<T>(
         &self,
         Slice: WASM_pointer,
-        Length: WASM_pointer,
         Size: WASM_usize,
-    ) -> Result<Mutable_slice_type<'a, T>, String> {
+    ) -> Result<&'a mut [T], Error_type> {
         if !self.Validate_WASM_pointer(Slice, Size) {
-            return Err("Invalid pointer to slice".to_string());
-        }
-        if !self.Validate_WASM_pointer(Length, size_of::<WASM_usize>() as WASM_usize) {
-            return Err("Invalid pointer to length".to_string());
+            return Err(Error_type::Invalid_pointer);
         }
 
         let Slice_pointer = unsafe { self.Convert_to_native_pointer(Slice) };
-        let Length_pointer = unsafe { self.Convert_to_native_pointer(Length) };
 
-        Ok(Mutable_slice_type::<'a, T>::From(
-            NonNull::new(Slice_pointer as *mut T).ok_or("Invalid pointer")?,
-            NonNull::new(Length_pointer as *mut WASM_usize).ok_or("Invalid pointer")?,
-            Size,
-        )?)
+        let Slice =
+            unsafe { std::slice::from_raw_parts_mut(Slice_pointer as *mut T, Size as usize) };
+
+        Ok(Slice)
     }
 
     fn Get_instance_pointer(&self) -> wasm_module_inst_t {
