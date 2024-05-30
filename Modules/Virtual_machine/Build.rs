@@ -7,7 +7,7 @@ fn main() -> Result<(), ()> {
 
     // TODO : Add a check for test mode
 
-    if env::var("RUSTUP_TOOLCHAIN").unwrap() == "esp" {
+    if env::var("RUSTUP_TOOLCHAIN").unwrap().contains("esp") {
         println!("cargo:warning=Build of WASM tests are disabled for esp toolchain.");
         return Ok(());
     }
