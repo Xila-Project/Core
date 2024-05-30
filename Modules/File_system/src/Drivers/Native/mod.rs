@@ -276,6 +276,8 @@ impl From<FileType> for Generics::Type_type {
 // - Test
 #[cfg(test)]
 mod tests {
+    use crate::Prelude::Path_type;
+
     use super::{Generics::*, *};
     use std::fs::File as STD_File;
     use std::path::Path as STD_Path;
