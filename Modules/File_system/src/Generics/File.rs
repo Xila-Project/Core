@@ -1,5 +1,3 @@
-use std::io::Read;
-
 use super::*;
 
 pub enum Mode_type {
@@ -41,38 +39,31 @@ impl<'a> File_type<'a> {
         self.File_identifier
     }
 
-    pub fn Set_position(&mut self, Offset: Size_type) -> Result<Size_type, ()> {
+    pub fn Set_position(&mut self, Offset: Size_type) -> Result<Size_type, Error_type> {
         self.File_system
-            .Set_file_position(self.Get_identifier(), Position_type::Start(Offset.into()))
+            .Set_file_position(self.Get_identifier(), Position_type::Start(Offset))
     }
-    pub fn Write(&self, Buffer: &[u8]) -> Result<usize, ()> {
+    pub fn Write(&self, Buffer: &[u8]) -> Result<usize, Error_type> {
         self.File_system.Write_file(self.Get_identifier(), Buffer)
     }
-    pub fn Write_line(&self, Buffer: &[u8]) -> Result<usize, ()> {
-        let mut Size = self
-            .File_system
-            .Write_file(self.Get_identifier(), Buffer)
-            .map_err(|_| ())?;
-        Ok(Size
-            + self
-                .File_system
-                .Write_file(self.Get_identifier(), b"\n")
-                .map_err(|_| ())?)
+    pub fn Write_line(&self, Buffer: &[u8]) -> Result<usize, Error_type> {
+        let Size = self.File_system.Write_file(self.Get_identifier(), Buffer)?;
+        Ok(Size + self.File_system.Write_file(self.Get_identifier(), b"\n")?)
     }
-    pub fn Read(&self, Buffer: &mut [u8]) -> Result<usize, ()> {
+    pub fn Read(&self, Buffer: &mut [u8]) -> Result<usize, Error_type> {
         self.File_system.Read_file(self.Get_identifier(), Buffer)
     }
-    pub fn Read_line(&self, Buffer: &mut [u8]) -> Result<(), ()> {
+    pub fn Read_line(&self, Buffer: &mut [u8]) -> Result<(), Error_type> {
         let mut Buffer = Buffer.iter_mut();
         loop {
             let Byte = self
                 .File_system
-                .Read_file(self.Get_identifier(), &mut [0; 1])
-                .map_err(|_| ())?;
+                .Read_file(self.Get_identifier(), &mut [0; 1])?;
+
             if Byte == 0 {
-                return Err(());
+                return Ok(());
             }
-            let Byte = Buffer.next().ok_or(())?;
+            let Byte = Buffer.next().unwrap();
             if *Byte == b'\n' {
                 break;
             }
@@ -80,8 +71,8 @@ impl<'a> File_type<'a> {
         Ok(())
     }
 
-    pub fn Read_vector(&self) -> Result<Vec<u8>, ()> {
-        let Size = self.Get_size().map_err(|_| ())?;
+    pub fn Read_vector(&self) -> Result<Vec<u8>, Error_type> {
+        let Size = self.Get_size()?;
         let mut Buffer = vec![0; Size.0 as usize];
         self.Read(&mut Buffer).map(|_| Buffer)
     }
@@ -93,11 +84,11 @@ impl<'a> File_type<'a> {
     }
 
     // - Metadata
-    pub fn Get_size(&self) -> Result<Size_type, ()> {
+    pub fn Get_size(&self) -> Result<Size_type, Error_type> {
         self.File_system.Get_file_size(self.Get_identifier())
     }
 
-    pub fn Get_type(&self) -> Result<Type_type, ()> {
+    pub fn Get_type(&self) -> Result<Type_type, Error_type> {
         self.File_system.Get_file_type(self.Get_identifier())
     }
 }

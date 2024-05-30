@@ -1,4 +1,7 @@
-use std::ops::{Add, AddAssign};
+use std::{
+    fmt::{Display, Formatter},
+    ops::{Add, AddAssign},
+};
 
 #[derive(Clone)]
 pub struct Path_type(String);
@@ -15,9 +18,9 @@ impl From<String> for Path_type {
     }
 }
 
-impl ToString for Path_type {
-    fn to_string(&self) -> String {
-        self.0.clone()
+impl Display for Path_type {
+    fn fmt(&self, Formatter: &mut Formatter) -> Result<(), std::fmt::Error> {
+        write!(Formatter, "{}", self.0)
     }
 }
 
@@ -41,7 +44,7 @@ impl Add<&Path_type> for Path_type {
 
 impl AddAssign<Path_type> for Path_type {
     fn add_assign(&mut self, rhs: Path_type) {
-        self.Append(&rhs.0.as_str());
+        self.Append(rhs.0.as_str());
     }
 }
 
@@ -76,13 +79,11 @@ impl Path_type {
     }
 
     pub fn Revert_parent_directory(&mut self) -> &mut Self {
-        let mut Index = 0;
         let mut Last_index = 0;
-        for c in self.0.chars() {
+        for (i, c) in self.0.chars().enumerate() {
             if c == Self::Separator {
-                Last_index = Index;
+                Last_index = i;
             }
-            Index += 1;
         }
         if Last_index == 0 {
             self.0.clear();
@@ -95,24 +96,21 @@ impl Path_type {
 
     pub fn Get_extension(&self) -> Option<&str> {
         let mut extension = None;
-        let mut index = 0;
-        for c in self.0.chars() {
+
+        for (i, c) in self.0.chars().enumerate() {
             if c == Self::Extension_separator {
-                extension = Some(&self.0[index..]);
+                extension = Some(&self.0[i..]);
             }
-            index += 1;
         }
         extension
     }
 
     pub fn Get_file_name(&self) -> &str {
-        let mut Index = 0;
         let mut Last_index = 0;
-        for c in self.0.chars() {
+        for (i, c) in self.0.chars().enumerate() {
             if c == Self::Separator {
-                Last_index = Index;
+                Last_index = i;
             }
-            Index += 1;
         }
         if Last_index >= self.0.len() {
             return &self.0[Last_index..];
