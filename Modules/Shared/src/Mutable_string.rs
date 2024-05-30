@@ -41,19 +41,19 @@ where
     }
 
     pub fn From(String: NonNull<u8>, mut Length: NonNull<S>, Size: S) -> Result<Self, Error_type> {
-        let Data: &'a mut [u8] = unsafe {
-            slice::from_raw_parts_mut(
-                String.as_ptr(),
-                Size.to_usize()
-                    .ok_or(Error_type::Failed_to_convert_length_to_S)?,
-            )
-        };
+        let Size = Size
+            .to_usize()
+            .ok_or(Error_type::Failed_to_convert_length_to_S)?;
 
-        if std::str::from_utf8(Data).is_err() {
+        let Casted_length = unsafe { (*Length.as_ref()).to_usize().unwrap() };
+
+        let Data: &'a mut [u8] = unsafe { slice::from_raw_parts_mut(String.as_ptr(), Size) };
+
+        if std::str::from_utf8(&Data[..Casted_length]).is_err() {
             return Err(Error_type::Invalid_UTF8_string);
         }
 
-        if unsafe { *Length.as_ref() } > Size {
+        if Casted_length > Size {
             return Err(Error_type::Invalid_length);
         }
 
