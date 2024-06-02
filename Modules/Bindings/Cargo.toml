@@ -2,9 +2,14 @@
 name = "Bindings"
 version = "0.1.0"
 edition = "2021"
+build = "Build.rs"
 
 [dependencies]
 File_system = { path = "../File_system" }
 Virtual_machine = { path = "../Virtual_machine" }
 Binding_tool = { path = "../../../Binding_tool", features = ["Native"] }
 Shared = { path = "../Shared" }
+
+[[test]]
+name = "File_system_bindings_tests"
+path = "Tests/File_system.rs"
