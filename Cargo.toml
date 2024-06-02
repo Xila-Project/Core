@@ -1,4 +1,11 @@
-workspace = { members = ["Modules/ABI", "Modules/File_system", "Modules/Bindings", "Modules/Shared", "Modules/Virtual_machine", "Modules/Virtual_machine/Tests/WASM_test"] }
+workspace = { members = [
+    "Modules/File_system",
+    "Modules/Bindings",
+    "Modules/Shared",
+    "Modules/Virtual_machine",
+    "Modules/Virtual_machine/Tests/WASM_test",
+    "Modules/Bindings/Tests/WASM_test",
+] }
 
 [package]
 name = "Xila"
