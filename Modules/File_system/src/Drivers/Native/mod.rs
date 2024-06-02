@@ -1,3 +1,5 @@
+use Shared::Task_identifier;
+
 use crate::Generics::{self, Error_type};
 
 use std::collections::HashMap;
@@ -247,7 +249,7 @@ impl Generics::File_system_traits for File_system_type {
     fn Set_file_position(
         &self,
         File: Generics::File_identifier_type,
-        Position_type: Generics::Position_type,
+        Position_type: &Generics::Position_type,
     ) -> Result<Generics::Size_type, Error_type> {
         let mut Open_files = self.Open_files.write().unwrap();
         let File = match Open_files.get_mut(&File) {
