@@ -1,2 +1,0 @@
-[toolchain]
-channel = "stable" # Since workspace use esp as default toolchain, we need to specify the stable toolchain here to build wasm32-unknown-unknown target.
