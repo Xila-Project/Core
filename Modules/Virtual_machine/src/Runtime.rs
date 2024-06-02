@@ -2,7 +2,8 @@ use wamr_rust_sdk::{
     runtime::{Runtime, RuntimeBuilder},
     RuntimeError,
 };
-use ABI::ABI_trait;
+
+use crate::Registrable_trait;
 
 pub struct Runtime_builder_type(RuntimeBuilder);
 
