@@ -1,4 +1,4 @@
-#![allow(non_camel_case_types)]
+use wamr_rust_sdk::RuntimeError;
 
 #[derive(Debug)]
 pub enum Error_type {

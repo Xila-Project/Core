@@ -1,6 +1,3 @@
-#![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
-
 use wamr_rust_sdk::{module::Module, RuntimeError};
 
 use crate::Runtime::Runtime_type;

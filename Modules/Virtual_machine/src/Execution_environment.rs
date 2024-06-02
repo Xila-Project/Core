@@ -1,6 +1,3 @@
-#![allow(non_snake_case)]
-#![allow(non_camel_case_types)]
-
 use std::{marker::PhantomData, mem::size_of, os::raw::c_void, ptr::NonNull};
 
 use wamr_rust_sdk::sys::{
