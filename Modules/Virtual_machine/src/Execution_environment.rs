@@ -41,21 +41,27 @@ impl<'a> Environment_type<'a> {
     /// # Safety
     ///
     /// This function is unsafe because it is not checked that the user data is valid pointer.
-    pub unsafe fn Set_user_data<T>(&mut self, User_data: &mut T) {
-        wasm_runtime_set_user_data(self.0, User_data as *mut T as *mut std::ffi::c_void);
+    pub(crate) fn Set_user_data(&mut self, User_data: &Data_type) {
+        unsafe {
+            wasm_runtime_set_user_data(
+                self.0,
+                User_data as *const Data_type as *mut std::ffi::c_void,
+            );
+        }
     }
 
     /// # Safety
     ///
     /// This function is unsafe because it is not checked that the user data is valid pointer.
     #[allow(clippy::mut_from_ref)]
-    pub unsafe fn Get_user_data<T>(&self) -> Option<&mut T> {
+    pub fn Get_user_data(&self) -> &Data_type {
+        unsafe {
         let User_data = wasm_runtime_get_user_data(self.0);
 
         if User_data.is_null() {
-            None
-        } else {
-            Some(&mut *(User_data as *mut T))
+                panic!("Virtual machine user data is null");
+            }
+            &*(User_data as *const Data_type)
         }
     }
 

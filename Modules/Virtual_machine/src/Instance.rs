@@ -3,7 +3,9 @@
 
 use wamr_rust_sdk::{function::Function, instance::Instance, value::WasmValue, RuntimeError};
 
-use crate::{Module::Module_type, Runtime::Runtime_type};
+use crate::{
+    Data::Data_type, Environment_type, Error_type, Module::Module_type, Runtime::Runtime_type,
+};
 
 pub struct Instance_type(Instance);
 
@@ -12,12 +14,19 @@ impl Instance_type {
         Runtime: &Runtime_type,
         Module: &Module_type,
         Stack_size: usize,
-    ) -> Result<Self, RuntimeError> {
-        Ok(Instance_type(Instance::new(
+        Data: &Data_type,
+    ) -> Result<Self, Error_type> {
+        let Instance = Instance_type(Instance::new(
             Runtime.Get_inner_reference(),
             Module.Get_inner_reference(),
             Stack_size as u32,
-        )?))
+        )?);
+
+        let mut Execution_environment = Environment_type::From_instance(&Instance)?;
+
+        Execution_environment.Set_user_data(Data);
+
+        Ok(Instance)
     }
 
     pub fn Call_export_function(
