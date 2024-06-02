@@ -9,3 +9,7 @@ build = "Build.rs"
 wamr-rust-sdk = { git = "https://github.com/AlixANNERAUD/wamr-rust-sdk.git" }
 ABI = { path = "../ABI" }
 Shared = { version = "0.1.0", path = "../Shared" }
+
+[[test]]
+name = "Virtual_machine_test"
+path = "Tests/Test.rs"
