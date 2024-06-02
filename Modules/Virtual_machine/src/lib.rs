@@ -2,8 +2,10 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
+mod Data;
 mod Registrable;
 
+pub use Data::*;
 pub use Error::*;
 pub use Execution_environment::*;
 pub use Instance::*;
