@@ -1,7 +1,8 @@
-use std::ops;
+use std::{ops, u64};
 
 pub mod Path;
 pub use Path::*;
+use Shared::Discriminant_trait;
 
 #[derive(Default, PartialOrd, PartialEq, Eq, Ord, Clone, Copy, Debug)]
 #[repr(transparent)]
@@ -12,6 +13,36 @@ pub enum Position_type {
     Start(Size_type),
     Current(Signed_size_type),
     End(Signed_size_type),
+}
+
+impl Position_type {
+    pub fn From(Discriminant: u32, Value: u64) -> Self {
+        match Discriminant {
+            0 => Position_type::Start(Size_type(Value)),
+            1 => Position_type::Current(Value as i64),
+            2 => Position_type::End(Value as i64),
+            _ => panic!("Invalid discriminant"),
+        }
+    }
+}
+
+impl Discriminant_trait for Position_type {
+    fn Get_discriminant(&self) -> u32 {
+        match self {
+            Position_type::Start(_) => 0,
+            Position_type::Current(_) => 1,
+            Position_type::End(_) => 2,
+        }
+    }
+
+    fn From_discriminant(Discriminant: u32) -> Self {
+        match Discriminant {
+            0 => Position_type::Start(Size_type::default()),
+            1 => Position_type::Current(0),
+            2 => Position_type::End(0),
+            _ => panic!("Invalid discriminant"),
+        }
+    }
 }
 
 #[repr(transparent)]

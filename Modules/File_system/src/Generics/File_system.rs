@@ -24,7 +24,7 @@ pub trait File_system_traits {
     fn Set_file_position(
         &self,
         File: File_identifier_type,
-        Position: Position_type,
+        Position: &Position_type,
     ) -> Result<Size_type, Error_type>;
 
     fn Delete_file(&self, Path: &Path_type) -> Result<(), Error_type>;
