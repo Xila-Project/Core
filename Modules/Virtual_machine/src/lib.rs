@@ -3,7 +3,12 @@
 #![allow(non_upper_case_globals)]
 
 mod Data;
+mod Error;
+mod Execution_environment;
+mod Instance;
+mod Module;
 mod Registrable;
+mod Runtime;
 
 pub use Data::*;
 pub use Error::*;
