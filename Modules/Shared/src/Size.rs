@@ -1,4 +1,3 @@
-#![allow(non_camel_case_types)]
 use num::{Num, NumCast, ToPrimitive, Unsigned};
 
 pub trait Size_trait: Unsigned + Num + NumCast + PartialOrd + ToPrimitive + Copy {}

@@ -1,5 +1,3 @@
-#![allow(non_camel_case_types)]
-
 use core::slice;
 use std::{
     fmt::Display,
