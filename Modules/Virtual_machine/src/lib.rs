@@ -2,16 +2,13 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
-pub mod Error;
-pub mod Execution_environment;
-pub mod Instance;
-pub mod Module;
-pub mod Runtime;
+mod Registrable;
 
 pub use Error::*;
 pub use Execution_environment::*;
 pub use Instance::*;
 pub use Module::*;
+pub use Registrable::*;
 pub use Runtime::*;
 
 pub type WASM_pointer = u32;
