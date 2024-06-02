@@ -175,6 +175,36 @@ impl<'a> Environment_type<'a> {
         Ok(Slice)
     }
 
+    pub fn Convert_to_native_reference<T>(
+        &self,
+        Address: WASM_pointer,
+    ) -> Result<&'a T, Error_type> {
+        if !self.Validate_WASM_pointer(Address, size_of::<T>() as WASM_usize) {
+            return Err(Error_type::Invalid_pointer);
+        }
+
+        let Pointer = unsafe { self.Convert_to_native_pointer(Address) };
+
+        let Reference = unsafe { &*(Pointer as *const T) };
+
+        Ok(Reference)
+    }
+
+    pub fn Convert_to_native_mutable_reference<T>(
+        &self,
+        Address: WASM_pointer,
+    ) -> Result<&'a mut T, Error_type> {
+        if !self.Validate_WASM_pointer(Address, size_of::<T>() as WASM_usize) {
+            return Err(Error_type::Invalid_pointer);
+        }
+
+        let Pointer = unsafe { self.Convert_to_native_pointer(Address) };
+
+        let Reference = unsafe { &mut *(Pointer as *mut T) };
+
+        Ok(Reference)
+    }
+
     fn Get_instance_pointer(&self) -> wasm_module_inst_t {
         unsafe { wasm_runtime_get_module_inst(self.0) }
     }
