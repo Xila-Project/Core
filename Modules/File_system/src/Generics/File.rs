@@ -1,17 +1,47 @@
+use Shared::Discriminant_trait;
+
 use super::*;
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Mode_type {
-    Read,
+    Read = 1,
     Write,
     Read_write,
     Append,
     Read_append,
 }
 
+impl Discriminant_trait for Mode_type {
+    fn Get_discriminant(&self) -> u32 {
+        *self as u32
+    }
+
+    fn From_discriminant(Discriminant: u32) -> Self {
+        unsafe { std::mem::transmute(Discriminant as u8) }
+    }
+}
+
+impl From<u32> for Mode_type {
+    fn from(item: u32) -> Self {
+        Mode_type::From_discriminant(item)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Type_type {
-    File,
+    File = 1,
     Directory,
     Symbolic_link,
+}
+
+impl Discriminant_trait for Type_type {
+    fn Get_discriminant(&self) -> u32 {
+        *self as u32
+    }
+
+    fn From_discriminant(Discriminant: u32) -> Self {
+        unsafe { std::mem::transmute(Discriminant as u8) }
+    }
 }
 
 pub type File_identifier_type = u16;
@@ -41,7 +71,7 @@ impl<'a> File_type<'a> {
 
     pub fn Set_position(&mut self, Offset: Size_type) -> Result<Size_type, Error_type> {
         self.File_system
-            .Set_file_position(self.Get_identifier(), Position_type::Start(Offset))
+            .Set_file_position(self.Get_identifier(), &Position_type::Start(Offset))
     }
     pub fn Write(&self, Buffer: &[u8]) -> Result<usize, Error_type> {
         self.File_system.Write_file(self.Get_identifier(), Buffer)
@@ -120,17 +150,17 @@ impl std::io::Seek for File_type<'_> {
         match Position {
             std::io::SeekFrom::Start(Offset) => self
                 .File_system
-                .Set_file_position(self.File_identifier, Position_type::Start(Offset.into()))
+                .Set_file_position(self.File_identifier, &Position_type::Start(Offset.into()))
                 .map(|x| x.0)
                 .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "Error")),
             std::io::SeekFrom::End(Offset) => self
                 .File_system
-                .Set_file_position(self.File_identifier, Position_type::End(Offset))
+                .Set_file_position(self.File_identifier, &Position_type::End(Offset))
                 .map(|x| x.0)
                 .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "Error")),
             std::io::SeekFrom::Current(Offset) => self
                 .File_system
-                .Set_file_position(self.File_identifier, Position_type::Current(Offset))
+                .Set_file_position(self.File_identifier, &Position_type::Current(Offset))
                 .map(|x| x.0)
                 .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "Error")),
         }
