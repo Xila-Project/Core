@@ -258,8 +258,8 @@ impl Generics::File_system_traits for File_system_type {
         Ok(File
             .seek(match Position_type {
                 Generics::Position_type::Start(Value) => SeekFrom::Start(Value.0),
-                Generics::Position_type::Current(Value) => SeekFrom::Current(Value),
-                Generics::Position_type::End(Value) => SeekFrom::End(Value),
+                Generics::Position_type::Current(Value) => SeekFrom::Current(*Value),
+                Generics::Position_type::End(Value) => SeekFrom::End(*Value),
             })
             .map_err(|Error| Error_type::from(Error.kind()))?
             .into())
