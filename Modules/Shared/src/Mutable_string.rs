@@ -201,7 +201,7 @@ mod tests {
         String += "\n";
         String += "This is a new line.";
         String += "\n";
-        String += &Test_str_3;
+        String += Test_str_3;
         String += "\n";
         String += &Test_string_4;
 
