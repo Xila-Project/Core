@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn Test_mutable_slice() {
         let mut Data = [1, 2, 3, 4, 5];
-        let mut Length = 3 as u32;
+        let mut Length: u32 = 3;
 
         let Raw_slice = NonNull::new(Data.as_mut_ptr()).unwrap();
         let Length = NonNull::new(&mut Length).unwrap();
@@ -108,7 +108,7 @@ mod tests {
         Slice.Clear();
 
         assert_eq!(Slice.Get_length(), 0);
-        assert_eq!(Slice.Is_empty(), true);
+        assert!(Slice.Is_empty());
 
         Slice.Push(1).unwrap();
 
