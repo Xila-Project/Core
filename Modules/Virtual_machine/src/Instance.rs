@@ -34,11 +34,16 @@ impl Instance_type {
         Name: &str,
         Parameters: &Vec<WasmValue>,
     ) -> Result<WasmValue, RuntimeError> {
+        if Parameters.is_empty() {
+            Function::find_export_func(self.Get_inner_reference(), Name)?
+                .call(&self.0, &vec![WasmValue::I32(0)])
+        } else {
         Function::find_export_func(self.Get_inner_reference(), Name)?.call(&self.0, Parameters)
+    }
     }
 
     pub fn Call_main(&self, Parameters: &Vec<WasmValue>) -> Result<WasmValue, RuntimeError> {
-        Function::find_export_func(self.Get_inner_reference(), "main")?.call(&self.0, Parameters)
+        self.Call_export_function("main", Parameters)
     }
 
     pub(crate) fn Get_inner_reference(&self) -> &Instance {
