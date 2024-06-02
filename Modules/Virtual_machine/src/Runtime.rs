@@ -21,15 +21,12 @@ impl Runtime_builder_type {
         Self(self.0.register_host_function(Name, Function_pointer))
     }
 
-    pub fn Register_ABI(self, ABI: impl ABI_trait) -> Self {
-        let mut Runtime_builder = self;
-
-        for Function in ABI.Get_functions() {
-            Runtime_builder =
-                Runtime_builder.Register_function(Function.Name, Function.Function_pointer);
+    pub fn Register(mut self, Registrable: impl Registrable_trait) -> Self {
+        for Function_descriptor in Registrable.Get_functions() {
+            self = self.Register_function(Function_descriptor.Name, Function_descriptor.Pointer);
         }
 
-        Runtime_builder
+        self
     }
 
     pub fn Build(self) -> Result<Runtime_type, RuntimeError> {
