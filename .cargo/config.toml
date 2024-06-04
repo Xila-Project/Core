@@ -13,3 +13,5 @@ rustflags = [ "--cfg",  "espidf_time64"] # Extending time_t for ESP IDF 5: https
 [env]
 # Note: this variable is not used by the pio builder (`cargo build --features pio`)
 ESP_IDF_VERSION = "v5.1.1"
+
+DEP_LV_CONFIG_PATH = { value = "Modules/Graphics/include", relative = true }
