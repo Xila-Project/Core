@@ -1,0 +1,21 @@
+[package]
+name = "Graphics"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[target.'cfg( target_os = "espidf" )'.dependencies]
+lvgl = { version = "0.6.2", default-features = false, features = [
+    "embedded-graphics",
+    "unsafe_no_autoinit",
+] }
+lvgl-sys = { version = "0.6.2" }
+embedded-graphics = "0.8.1"
+Screen = { path = "../Screen" }
+
+[target.'cfg( target_arch = "x86_64" )'.dependencies]
+sdl2 = { version = "0.36.0", features = [] }
+lvgl = { version = "0.6.2", features = [] }
+embedded-graphics = "0.8.1"
+Screen = { path = "../Screen" }
