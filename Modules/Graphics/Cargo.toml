@@ -15,7 +15,6 @@ embedded-graphics = "0.8.1"
 Screen = { path = "../Screen" }
 
 [target.'cfg( target_arch = "x86_64" )'.dependencies]
-sdl2 = { version = "0.36.0", features = [] }
 lvgl = { version = "0.6.2", features = [] }
 embedded-graphics = "0.8.1"
 Screen = { path = "../Screen" }

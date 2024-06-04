@@ -5,7 +5,7 @@ use lvgl::{
     input_device::{pointer, InputDriver},
 };
 
-use crate::Screen::Prelude::*;
+use Screen::Prelude::*;
 
 pub struct Draw_buffer_type<const Buffer_size: usize>(lvgl::DrawBuffer<Buffer_size>);
 
