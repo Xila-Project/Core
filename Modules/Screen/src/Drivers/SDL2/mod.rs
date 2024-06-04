@@ -1,4 +1,4 @@
-use crate::Screen::Generics;
+use crate::Generics;
 
 use embedded_graphics::geometry::Point;
 use lvgl::Event;
