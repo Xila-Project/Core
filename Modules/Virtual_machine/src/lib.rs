@@ -31,7 +31,7 @@ pub fn Instantiate_test_environment(
         .Register(Registrable)
         .Build()
         .unwrap();
-    
+
     let Module = Module_type::From_buffer(&Runtime, Binary_buffer, "main").unwrap();
 
     let Instance = Instance_type::New(&Runtime, &Module, 1024 * 4, User_data).unwrap();
