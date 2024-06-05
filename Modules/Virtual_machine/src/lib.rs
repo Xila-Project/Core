@@ -10,6 +10,7 @@ mod Module;
 mod Registrable;
 mod Runtime;
 
+pub use wamr_rust_sdk::value::WasmValue;
 pub use Data::*;
 pub use Error::*;
 pub use Execution_environment::*;
