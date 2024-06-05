@@ -1,14 +1,10 @@
 use crate::Generics;
 
-use embedded_graphics::geometry::Point;
-use lvgl::Event;
 use sdl2::{event, mouse, pixels, render::Canvas, video, EventPump};
 
 use std::{
-    cell::{Ref, RefCell},
     process::exit,
     sync::{Arc, RwLock},
-    thread,
 };
 pub struct Screen_type(Canvas<video::Window>);
 
@@ -155,7 +151,7 @@ pub fn New_touchscreen(Size: Generics::Point_type) -> Result<(Screen_type, Point
         .build()
     {
         Ok(Window) => Window,
-        Err(e) => return Err(()),
+        Err(_) => return Err(()),
     };
 
     let Event_pump = match Context.event_pump() {
