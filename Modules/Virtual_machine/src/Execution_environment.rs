@@ -6,9 +6,9 @@ use wamr_rust_sdk::sys::{
     wasm_runtime_get_module_inst, wasm_runtime_get_user_data, wasm_runtime_set_user_data,
     wasm_runtime_validate_app_addr, wasm_runtime_validate_native_addr,
 };
-use Shared::{Mutable_slice_type, Mutable_string_type};
+use Shared::Mutable_string_type;
 
-use crate::{Error_type, Instance_type, WASM_pointer, WASM_usize};
+use crate::{Data::Data_type, Error_type, Instance_type, WASM_pointer, WASM_usize};
 
 pub type Environment_pointer_type = wasm_exec_env_t;
 
@@ -53,9 +53,9 @@ impl<'a> Environment_type<'a> {
     #[allow(clippy::mut_from_ref)]
     pub fn Get_user_data(&self) -> &Data_type {
         unsafe {
-        let User_data = wasm_runtime_get_user_data(self.0);
+            let User_data = wasm_runtime_get_user_data(self.0);
 
-        if User_data.is_null() {
+            if User_data.is_null() {
                 panic!("Virtual machine user data is null");
             }
             &*(User_data as *const Data_type)

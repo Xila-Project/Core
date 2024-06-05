@@ -3,10 +3,7 @@
 #![allow(non_upper_case_globals)]
 
 use Bindings::File_system_bindings;
-use File_system::{
-    Drivers::Native::{self, File_system_type},
-    Prelude::File_system_traits,
-};
+use File_system::{Drivers::Native::File_system_type, Prelude::File_system_traits};
 use Virtual_machine::{Data_type, Instantiate_test_environment, WasmValue};
 
 #[test]

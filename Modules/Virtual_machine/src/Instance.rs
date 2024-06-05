@@ -38,8 +38,8 @@ impl Instance_type {
             Function::find_export_func(self.Get_inner_reference(), Name)?
                 .call(&self.0, &vec![WasmValue::I32(0)])
         } else {
-        Function::find_export_func(self.Get_inner_reference(), Name)?.call(&self.0, Parameters)
-    }
+            Function::find_export_func(self.Get_inner_reference(), Name)?.call(&self.0, Parameters)
+        }
     }
 
     pub fn Call_main(&self, Parameters: &Vec<WasmValue>) -> Result<WasmValue, RuntimeError> {
