@@ -1,4 +1,4 @@
-use Shared::Task_identifier;
+use Shared::Task_identifier_type;
 
 use crate::Generics::{self, Error_type};
 

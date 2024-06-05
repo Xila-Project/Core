@@ -12,3 +12,5 @@ pub use Error::*;
 pub use Mutable_slice::*;
 pub use Mutable_string::*;
 pub use Size::*;
+
+pub type Task_identifier_type = u16;
