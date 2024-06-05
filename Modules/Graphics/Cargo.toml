@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+cstr_core = "0.2.6"
 
 [target.'cfg( target_os = "espidf" )'.dependencies]
 lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", default-features = false, features = [
@@ -13,8 +14,11 @@ lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", default-features =
 #lvgl-sys = { version = "0.6.2" }
 embedded-graphics = "0.8.1"
 Screen = { path = "../Screen" }
+Shared = { path = "../Shared" }
+
 
 [target.'cfg( target_arch = "x86_64" )'.dependencies]
 lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", features = [] }
 embedded-graphics = "0.8.1"
 Screen = { path = "../Screen" }
+Shared = { path = "../Shared" }
