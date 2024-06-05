@@ -127,6 +127,7 @@ mod tests {
         thread::sleep,
         time::{Duration, Instant},
     };
+    use Screen::Drivers::SDL2::New_touchscreen;
 
     #[test]
     #[ignore]

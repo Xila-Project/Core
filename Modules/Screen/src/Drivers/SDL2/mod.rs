@@ -3,6 +3,7 @@ use crate::Generics;
 use sdl2::{event, mouse, pixels, render::Canvas, video, EventPump};
 
 use std::{
+    cell::RefCell,
     process::exit,
     sync::{Arc, RwLock},
 };
