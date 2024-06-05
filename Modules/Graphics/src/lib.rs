@@ -111,7 +111,7 @@ impl Display_type {
         &self.0
     }
 
-    pub fn Get_object(&self) -> Result<lvgl::Obj, ()> {
+    pub fn Get_object(&self) -> Result<lvgl::Screen, ()> {
         match self.0.get_scr_act() {
             Ok(Object) => Ok(Object),
             Err(_) => Err(()),
