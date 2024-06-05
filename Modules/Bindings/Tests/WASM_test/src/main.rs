@@ -8,6 +8,12 @@ fn Open_file(Path: &str, Mode: u32, File_identifier: &mut u16) -> u32 {}
 #[Bind_function_WASM]
 fn Read_file(File_identifier: u16, Buffer: &mut [u8], Read_size: &mut u32) -> u32 {}
 
+extern crate wee_alloc;
+
+// Use `wee_alloc` as the global allocator saving kilobytes of code size
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
 fn main() -> Result<(), ()> {
     let mut File_identifier = 1;
 
