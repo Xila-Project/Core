@@ -108,7 +108,7 @@ fn Integration_test() {
     let (_Runtime, _Module, Instance) =
         Instantiate_test_environment(Binary_buffer, Registrable {}, &User_data);
 
-    let mut _Execution_environment =
+    let Environment =
         Environment_type::From_instance(&Instance).expect("Failed to get execution environment");
 
     assert_eq!(Instance.Call_main(&vec![]).unwrap(), WasmValue::I32(0));
@@ -119,4 +119,36 @@ fn Integration_test() {
             .unwrap(),
         WasmValue::I32(9)
     );
+
+    let mut Slices: Vec<&mut [f64]> = vec![];
+
+    for i in 1..10 {
+        let Slice: &mut [f64] = Environment.Allocate(i * 10).unwrap();
+
+        for Element in Slice.iter_mut() {
+            *Element = 42.69;
+        }
+
+        assert_eq!(
+            Instance
+                .Call_export_function("Get_allocations_count", &vec![])
+                .unwrap(),
+            WasmValue::I32(i as i32)
+        );
+    }
+
+    for (i, Slice) in Slices.iter_mut().enumerate() {
+        assert_eq!(
+            Instance
+                .Call_export_function("Get_allocations_count", &vec![])
+                .unwrap(),
+            WasmValue::I32(10 - i as i32)
+        );
+
+        for Element in Slice.iter() {
+            assert_eq!(*Element, 42.69);
+        }
+
+        Environment.Deallocate(Slice);
+    }
 }

@@ -11,6 +11,7 @@ pub enum Error_type {
     Instantiation_failure(String),
     Execution_error(String),
     Function_not_found,
+    Allocation_failure,
 }
 
 impl From<RuntimeError> for Error_type {

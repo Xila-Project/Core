@@ -1,10 +1,16 @@
-use std::{marker::PhantomData, mem::size_of, os::raw::c_void, ptr::NonNull};
+use std::{
+    marker::PhantomData,
+    mem::size_of,
+    os::raw::c_void,
+    ptr::{null_mut, NonNull},
+};
 
 use wamr_rust_sdk::sys::{
     wasm_exec_env_t, wasm_module_inst_t, wasm_runtime_addr_app_to_native,
     wasm_runtime_addr_native_to_app, wasm_runtime_get_exec_env_singleton,
-    wasm_runtime_get_module_inst, wasm_runtime_get_user_data, wasm_runtime_set_user_data,
-    wasm_runtime_validate_app_addr, wasm_runtime_validate_native_addr,
+    wasm_runtime_get_module_inst, wasm_runtime_get_user_data, wasm_runtime_module_free,
+    wasm_runtime_module_malloc, wasm_runtime_set_user_data, wasm_runtime_validate_app_addr,
+    wasm_runtime_validate_native_addr,
 };
 use Shared::Mutable_string_type;
 
@@ -200,6 +206,36 @@ impl<'a> Environment_type<'a> {
         let Reference = unsafe { &mut *(Pointer as *mut T) };
 
         Ok(Reference)
+    }
+
+    pub fn Allocate<T>(&self, Size: WASM_usize) -> Result<&mut [T], Error_type> {
+        let mut Pointer: *mut c_void = null_mut();
+
+        unsafe {
+            wasm_runtime_module_malloc(
+                self.Get_instance_pointer(),
+                Size as u64 * size_of::<T>() as u64,
+                &mut Pointer as *mut *mut _,
+            );
+        }
+
+        if Pointer.is_null() {
+            return Err(Error_type::Allocation_failure);
+        }
+
+        if !self.Validate_native_pointer(Pointer as *const T, Size as u64 * size_of::<T>() as u64) {
+            return Err(Error_type::Invalid_pointer);
+        }
+
+        Ok(unsafe { std::slice::from_raw_parts_mut(Pointer as *mut T, Size as usize) })
+    }
+
+    pub fn Deallocate<T>(&self, Slice: &mut [T]) {
+        let Pointer = unsafe { self.Convert_to_WASM_pointer(Slice.as_ptr()) };
+
+        unsafe {
+            wasm_runtime_module_free(self.Get_instance_pointer(), Pointer as u64);
+        }
     }
 
     fn Get_instance_pointer(&self) -> wasm_module_inst_t {
