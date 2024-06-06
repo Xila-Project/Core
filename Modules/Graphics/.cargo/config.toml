@@ -1,0 +1,2 @@
+[env]
+DEP_LV_CONFIG_PATH = { value = "include", relative = true }
