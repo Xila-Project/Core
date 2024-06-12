@@ -3,7 +3,7 @@ use std::{
     ops::{Add, AddAssign},
 };
 
-#[derive(Clone)]
+#[derive(Clone, Eq, Hash)]
 pub struct Path_type(String);
 
 impl From<&str> for Path_type {
@@ -51,6 +51,12 @@ impl AddAssign<Path_type> for Path_type {
 impl AddAssign<&Path_type> for Path_type {
     fn add_assign(&mut self, rhs: &Path_type) {
         self.Append(rhs.0.as_str());
+    }
+}
+
+impl PartialEq for Path_type {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
     }
 }
 
