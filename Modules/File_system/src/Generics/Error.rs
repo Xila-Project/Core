@@ -6,8 +6,7 @@ use Shared::Error_discriminant_trait;
 pub enum Error_type {
     Failed_to_initialize_file_system = 1,
     Permission_denied,
-    File_not_found,
-    Directory_not_found,
+    Not_found,
     File_already_exists,
     Directory_already_exists,
     File_system_full,
