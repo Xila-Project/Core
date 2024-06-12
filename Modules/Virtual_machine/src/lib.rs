@@ -3,8 +3,8 @@
 #![allow(non_upper_case_globals)]
 
 mod Data;
-mod Error;
 mod Environment;
+mod Error;
 mod Instance;
 mod Module;
 mod Registrable;
@@ -12,8 +12,8 @@ mod Runtime;
 
 pub use wamr_rust_sdk::value::WasmValue;
 pub use Data::*;
-pub use Error::*;
 pub use Environment::*;
+pub use Error::*;
 pub use Instance::*;
 pub use Module::*;
 pub use Registrable::*;
