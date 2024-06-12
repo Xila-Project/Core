@@ -1,57 +1,40 @@
-#![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
-use std::path::PathBuf;
-use std::time::Duration;
-use wamr_rust_sdk::{
-    function::Function, host_function, instance::Instance, module::Module, runtime::Runtime,
-    value::WasmValue, wasi_context::WasiCtxBuilder, RuntimeError,
-};
+mod Data;
+mod Environment;
+mod Error;
+mod Instance;
+mod Module;
+mod Registrable;
+mod Runtime;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub use wamr_rust_sdk::value::WasmValue;
+pub use Data::*;
+pub use Environment::*;
+pub use Error::*;
+pub use Instance::*;
+pub use Module::*;
+pub use Registrable::*;
+pub use Runtime::*;
 
-    extern "C" fn test(a: i32, b: i32) -> i32 {
-        println!("test");
-        a + b
-    }
+pub type WASM_pointer = u32;
+pub type WASM_usize = u32;
 
-    #[test]
-    fn Test() {
-        std::thread::spawn(|| {
-            let runtime = Runtime::builder()
-                .use_system_allocator()
-                .register_host_function("test", test as *mut std::ffi::c_void)
-                .build()
-                .unwrap();
-
-            //let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            //d.push("../Test/target/wasm32-wasi/debug/Test.wasm");
-            //let mut module = Module::from_file(&runtime, d.as_path()).unwrap();
-
-            let buffer =
-                include_bytes!("../../../../Test/target/wasm32-unknown-unknown/release/Test.wasm");
-
-            let mut module = Module::from_buf(&runtime, buffer, "main").unwrap();
-
-            //let wasi_ctx = WasiCtxBuilder::new()
-            //    .set_pre_open_path(vec!["."], vec![])
-            //    .build();
-
-            //module.set_wasi_context(wasi_ctx);
-
-            let instance = Instance::new(&runtime, &module, 1024 * 4).unwrap();
-
-            let function = Function::find_export_func(&instance, "gcd").unwrap();
-
-            let params: Vec<WasmValue> = vec![WasmValue::I32(9), WasmValue::I32(27)];
-
-            let result = function.call(&instance, &params).unwrap();
-            assert_eq!(result, WasmValue::I32(9));
-        })
-        .join()
+pub fn Instantiate_test_environment(
+    Binary_buffer: &[u8],
+    Registrable: impl Registrable_trait,
+    User_data: &Data_type,
+) -> (Runtime_type, Module_type, Instance_type) {
+    let Runtime = Runtime_type::Builder()
+        .Register(Registrable)
+        .Build()
         .unwrap();
-    }
+
+    let Module = Module_type::From_buffer(&Runtime, Binary_buffer, "main").unwrap();
+
+    let Instance = Instance_type::New(&Runtime, &Module, 1024 * 4, User_data).unwrap();
+
+    (Runtime, Module, Instance)
 }

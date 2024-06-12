@@ -2,8 +2,14 @@
 name = "Virtual_machine"
 version = "0.1.0"
 edition = "2021"
-
+build = "Build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wamr-rust-sdk = { path = "../../../wamr-rust-sdk" }
+wamr-rust-sdk = { git = "https://github.com/AlixANNERAUD/wamr-rust-sdk.git" }
+Shared = { version = "0.1.0", path = "../Shared" }
+File_system = { path = "../File_system" }
+
+[[test]]
+name = "Virtual_machine_test"
+path = "Tests/Test.rs"

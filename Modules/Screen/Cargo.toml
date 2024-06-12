@@ -1,0 +1,13 @@
+[package]
+name = "Screen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[target.'cfg( target_os = "espidf" )'.dependencies]
+embedded-graphics = "0.8"
+
+[target.'cfg( target_arch = "x86_64" )'.dependencies]
+sdl2 = { version = "0.36", features = [] }
+embedded-graphics = "0.8"

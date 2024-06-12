@@ -1,4 +1,12 @@
-workspace = { members = ["Modules/Virtual_machine"] }
+[workspace]
+members = [
+    "Modules/File_system",
+    "Modules/Bindings",
+    "Modules/Shared",
+    "Modules/Virtual_machine",
+    "Modules/Virtual_machine/Tests/WASM_test",
+    "Modules/Bindings/Tests/WASM_test", "Modules/Graphics", "Modules/Screen", "Modules/Task",
+]
 
 [package]
 name = "Xila"
@@ -36,6 +44,16 @@ embassy = [
 [dependencies]
 Virtual_machine = { path = "Modules/Virtual_machine" }
 
+[profile.release.package.File_system_bindings_WASM_test]
+# lto = true
+opt-level = 's'
+strip = true
+
+[profile.release.package.Virtual_machine_WASM_test]
+# lto = true
+opt-level = 's'
+strip = true
+
 [target.'cfg( target_os = "espidf" )'.dependencies]
 esp-idf-sys = { version = "0.34.1", features = ["binstart"] }
 esp-idf-hal = "0.43.1"
@@ -45,17 +63,11 @@ embedded-sdmmc = "0.7.0"
 embedded-hal = "1.0.0"
 fatfs = { version = "0.3.6" }
 byteorder = "1.5.0"
-lvgl = { version="0.6.2", default-features=false, features = ["embedded-graphics", "unsafe_no_autoinit"] }
-lvgl-sys = { version="0.6.2" }
-embedded-graphics = "0.8.1"
 
 [build-dependencies]
 embuild = { version = "0.31.4", features = ["espidf"] }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 byteorder = "1.5.0"
-sdl2 = { version = "0.36.0", features = [] }
-lvgl = { version="0.6.2", features = [] }
-embedded-graphics = "0.8.1"
 log = { version = "0.4" }
 env_logger = { version = "0.11" }
