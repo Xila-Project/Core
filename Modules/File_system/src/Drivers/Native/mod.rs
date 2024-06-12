@@ -102,8 +102,8 @@ impl Generics::File_system_traits for File_system_type {
         Xila_directory.Append("Xila");
         self.Virtual_root_path += Xila_directory;
 
-        if !Path::new(&self.Virtual_root_path.To_str()).exists() {
-            match create_dir(self.Virtual_root_path.To_str()) {
+        if !Path::new(&self.Virtual_root_path.As_str()).exists() {
+            match create_dir(self.Virtual_root_path.As_str()) {
                 Ok(_) => {}
                 Err(_) => {
                     return Err(Error_type::Failed_to_initialize_file_system);
@@ -115,7 +115,7 @@ impl Generics::File_system_traits for File_system_type {
     }
 
     fn Exists(&self, Path: &Generics::Path_type) -> Result<bool, Error_type> {
-        Path::new(&self.Get_full_path(Path).To_str())
+        Path::new(&self.Get_full_path(Path).As_str())
             .try_exists()
             .map_err(|Error_type| Error_type.kind().into())
     }
@@ -126,7 +126,7 @@ impl Generics::File_system_traits for File_system_type {
         Mode: Generics::Mode_type,
     ) -> Result<Generics::File_type, Error_type> {
         let Full_path = self.Get_full_path(Path);
-        let Full_path = Full_path.To_str();
+        let Full_path = Full_path.As_str();
 
         let File = match Mode {
             Generics::Mode_type::Read => File::open(Full_path).map_err(|Error| Error.kind())?,
@@ -268,23 +268,23 @@ impl Generics::File_system_traits for File_system_type {
     }
 
     fn Delete_file(&self, Path: &Generics::Path_type) -> Result<(), Error_type> {
-        remove_file(self.Get_full_path(Path).To_str()).map_err(|Error| Error.kind().into())
+        remove_file(self.Get_full_path(Path).As_str()).map_err(|Error| Error.kind().into())
     }
 
     fn Create_directory(&self, Path: &Generics::Path_type) -> Result<(), Error_type> {
-        create_dir(self.Get_full_path(Path).To_str()).map_err(|Error| Error.kind().into())
+        create_dir(self.Get_full_path(Path).As_str()).map_err(|Error| Error.kind().into())
     }
 
     fn Create_directory_recursive(&self, Path: &Generics::Path_type) -> Result<(), Error_type> {
-        create_dir_all(self.Get_full_path(Path).To_str()).map_err(|Error| Error.kind().into())
+        create_dir_all(self.Get_full_path(Path).As_str()).map_err(|Error| Error.kind().into())
     }
 
     fn Delete_directory(&self, Path: &Generics::Path_type) -> Result<(), Error_type> {
-        remove_dir(self.Get_full_path(Path).To_str()).map_err(|Error| Error.kind().into())
+        remove_dir(self.Get_full_path(Path).As_str()).map_err(|Error| Error.kind().into())
     }
 
     fn Delete_directory_recursive(&self, Path: &Generics::Path_type) -> Result<(), Error_type> {
-        remove_dir_all(self.Get_full_path(Path).To_str()).map_err(|Error| Error.kind().into())
+        remove_dir_all(self.Get_full_path(Path).As_str()).map_err(|Error| Error.kind().into())
     }
 
     fn Move(
@@ -293,8 +293,8 @@ impl Generics::File_system_traits for File_system_type {
         Destination: &Generics::Path_type,
     ) -> Result<(), Error_type> {
         rename(
-            self.Get_full_path(Path).To_str(),
-            self.Get_full_path(Destination).To_str(),
+            self.Get_full_path(Path).As_str(),
+            self.Get_full_path(Destination).As_str(),
         )
         .map_err(|Error| Error.kind().into())
     }
@@ -318,8 +318,8 @@ mod tests {
     fn Reset_test_directory(File_system: &File_system_type) {
         let Test_directory_full_path =
             File_system.Get_full_path(&Generics::Path_type::from(Test_directory_path));
-        if !STD_Path::new(&Test_directory_full_path.To_str()).exists() {
-            create_dir(&Test_directory_full_path.To_str()).unwrap();
+        if !STD_Path::new(&Test_directory_full_path.As_str()).exists() {
+            create_dir(&Test_directory_full_path.As_str()).unwrap();
         }
     }
 
@@ -330,10 +330,10 @@ mod tests {
         Reset_test_directory(&File_system);
         let File_path = Get_path_in_test(&Path_type::from("exists.txt"));
         assert!(!File_system.Exists(&File_path).unwrap());
-        let mut File = STD_File::create(File_system.Get_full_path(&File_path).To_str()).unwrap();
+        let mut File = STD_File::create(File_system.Get_full_path(&File_path).As_str()).unwrap();
         assert!(File.write_all(b"Hello, world!").is_ok());
         assert!(File_system.Exists(&File_path).unwrap());
-        assert!(remove_file(File_system.Get_full_path(&File_path).To_str()).is_ok());
+        assert!(remove_file(File_system.Get_full_path(&File_path).As_str()).is_ok());
         assert!(!File_system.Exists(&File_path).unwrap());
     }
 

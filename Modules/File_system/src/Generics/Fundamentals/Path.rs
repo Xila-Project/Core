@@ -66,7 +66,7 @@ impl Path_type {
         Path_type("/".to_string())
     }
 
-    pub fn To_str(&self) -> &str {
+    pub fn As_str(&self) -> &str {
         &self.0
     }
 
@@ -126,9 +126,9 @@ mod tests {
     #[test]
     fn Test_path_file_and_directory() {
         let mut Path = Path_type::Root();
-        assert_eq!(Path.To_str(), "/");
+        assert_eq!(Path.As_str(), "/");
         Path.Append("Directory");
-        assert_eq!(Path.To_str(), "/Directory");
+        assert_eq!(Path.As_str(), "/Directory");
         Path.Append("File");
         assert_eq!(Path.to_string(), "/Directory/File");
         Path.Revert_parent_directory();
@@ -169,8 +169,8 @@ mod tests {
     fn Test_path_addition() {
         let mut Path = Path_type::from("/");
         Path += Path_type::from("Folder");
-        assert_eq!(Path.To_str(), "/Folder");
+        assert_eq!(Path.As_str(), "/Folder");
         Path += Path_type::from("File");
-        assert_eq!(Path.To_str(), "/Folder/File");
+        assert_eq!(Path.As_str(), "/Folder/File");
     }
 }
