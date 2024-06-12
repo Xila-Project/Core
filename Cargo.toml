@@ -5,7 +5,7 @@ members = [
     "Modules/Shared",
     "Modules/Virtual_machine",
     "Modules/Virtual_machine/Tests/WASM_test",
-    "Modules/Bindings/Tests/WASM_test", "Modules/Graphics", "Modules/Screen",
+    "Modules/Bindings/Tests/WASM_test", "Modules/Graphics", "Modules/Screen", "Modules/Task",
 ]
 
 [package]
