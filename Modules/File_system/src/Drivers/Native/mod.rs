@@ -26,7 +26,7 @@ impl From<std::io::ErrorKind> for Error_type {
 
         match Error {
             ErrorKind::PermissionDenied => Error_type::Permission_denied,
-            ErrorKind::NotFound => Error_type::File_not_found,
+            ErrorKind::NotFound => Error_type::Not_found,
             ErrorKind::AlreadyExists => Error_type::File_already_exists,
             ErrorKind::InvalidInput => Error_type::Invalid_path,
             ErrorKind::InvalidData => Error_type::Invalid_file,
