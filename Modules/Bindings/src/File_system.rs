@@ -1,3 +1,5 @@
+use std::mem::MaybeUninit;
+
 use Binding_tool::Bind_function_native;
 use File_system::Prelude::*;
 use Shared::{Discriminant_trait, From_result_to_u32};
@@ -10,12 +12,24 @@ impl Registrable_trait for File_system_bindings {
     }
 }
 
+impl File_system_bindings {
+    pub fn New(File_system: &impl File_system_traits) -> Self {
+        unsafe {
+            Root_file_system.write(File_system);
+        }
+
+        Self {}
+    }
+}
+
 const File_system_bindings_functions: [Function_descriptor_type; 4] = Function_descriptors!(
     Open_file_binding,
     Close_file_binding,
     Read_file_binding,
     Write_file_binding
 );
+
+// static Root_file_system = MaybeUninit::uninit();
 
 #[Bind_function_native(Prefix = "File_system")]
 fn Open_file(Path: &str, Mode: u32, File_identifier: &mut u16) -> u32 {
