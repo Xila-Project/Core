@@ -1,4 +1,5 @@
 use super::*;
+use Users::User_identifier_type;
 
 pub type Task_identifier_type = usize;
 
@@ -23,6 +24,7 @@ impl<'a> Task_type<'a> {
     pub fn New_child_task<F>(
         &self,
         Name: &str,
+        Owner: Option<User_identifier_type>,
         Stack_size: Option<usize>,
         Function: F,
     ) -> Result<Task_type, ()>
@@ -31,7 +33,7 @@ impl<'a> Task_type<'a> {
     {
         match self
             .Manager
-            .New_task(self.Identifier, Name, Stack_size, Function)
+            .New_task(self.Identifier, Owner, Name, Stack_size, Function)
         {
             Ok(Child_task_identifier) => Ok(Self::New(Child_task_identifier, self.Manager)),
             Err(()) => Err(()),
@@ -48,6 +50,10 @@ impl<'a> Task_type<'a> {
 
     pub fn Get_manager(&self) -> &'a Manager_type {
         self.Manager
+    }
+
+    pub fn Get_owner(&self) -> Result<User_identifier_type, ()> {
+        self.Manager.Get_owner(self.Identifier)
     }
 
     pub fn Get_current_task(Manager: &'a Manager_type) -> Result<Self, ()> {

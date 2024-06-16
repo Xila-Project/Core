@@ -7,13 +7,16 @@ use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
 };
+use Users::User_identifier_type;
 
 /// Internal representation of a task.
 struct Task_internal_type {
     /// The thread that runs the task.
-    Thread: Thread_wrapper_type,
+    Threads: Vec<Thread_wrapper_type>,
     /// The identifiers of the children of the task.
     Children: Vec<Task_identifier_type>,
+
+    Owner: User_identifier_type,
 }
 
 /// A manager for tasks.
@@ -28,11 +31,9 @@ impl Manager_type {
     const Root_task_identifier: Task_identifier_type = 0;
 
     pub fn New() -> Self {
-        let Manager = Manager_type {
+        Manager_type {
             Tasks: Arc::new(RwLock::new(HashMap::new())),
-        };
-
-        Manager
+        }
     }
 
     fn Get_new_task_identifier(&self) -> Task_identifier_type {
@@ -50,7 +51,7 @@ impl Manager_type {
 
     pub fn Get_task_name(&self, Process_identifier: Task_identifier_type) -> Result<String, ()> {
         match self.Tasks.read().unwrap().get(&Process_identifier) {
-            Some(Task) => match Task.Thread.Get_name() {
+            Some(Task) => match Task.Threads[0].Get_name() {
                 Some(Name) => Ok(Name.to_string()),
                 None => Err(()),
             },
@@ -58,8 +59,12 @@ impl Manager_type {
         }
     }
 
-    pub fn New_root_task<F>(&self, Stack_size: Option<usize>, Function: F)
-    where
+    pub fn New_root_task<F>(
+        &self,
+        User_identifier: User_identifier_type,
+        Stack_size: Option<usize>,
+        Function: F,
+    ) where
         F: FnOnce() + Send + 'static,
     {
         let Thread_wrapper = match Thread_wrapper_type::New("Xila", Stack_size, Function) {
@@ -72,8 +77,9 @@ impl Manager_type {
         Tasks.insert(
             Self::Root_task_identifier,
             Task_internal_type {
-                Thread: Thread_wrapper,
+                Threads: vec![Thread_wrapper],
                 Children: Vec::new(),
+                Owner: User_identifier,
             },
         );
     }
@@ -88,6 +94,7 @@ impl Manager_type {
     pub fn New_task<F>(
         &self,
         Parent_task_identifier: Task_identifier_type,
+        User_identifier: Option<User_identifier_type>,
         Name: &str,
         Stack_size: Option<usize>,
         Function: F,
@@ -111,16 +118,31 @@ impl Manager_type {
 
         Parent_task.Children.push(Child_task_identifier);
 
+        let Owner = match User_identifier {
+            Some(Identifier) => Identifier,
+            None => self.Get_owner(Parent_task_identifier).unwrap(),
+        };
+
         std::mem::drop(Tasks); // Force Release lock    // TODO : Find a better way to do this
         self.Tasks.write().unwrap().insert(
             Child_task_identifier,
             Task_internal_type {
-                Thread: Thread_wrapper,
+                Threads: vec![Thread_wrapper],
                 Children: Vec::new(),
+                Owner,
             },
         );
 
         Ok(Child_task_identifier)
+    }
+
+    pub fn Get_owner(
+        &self,
+        Task_identifier: Task_identifier_type,
+    ) -> Result<User_identifier_type, ()> {
+        let Tasks = self.Tasks.read().unwrap();
+
+        Ok(Tasks.get(&Task_identifier).unwrap().Owner)
     }
 
     fn Delete_task(&self, Task_identifier: Task_identifier_type) -> Result<(), ()> {
@@ -135,7 +157,9 @@ impl Manager_type {
         std::mem::drop(Tasks); // Force Release lock    // TODO : Find a better way to do this
 
         // - Waiting for thread to terminate
-        Task.Thread.Join().unwrap();
+        for Thread in Task.Threads.into_iter() {
+            Thread.Join().unwrap();
+        }
 
         let mut R = Ok(());
 
@@ -152,7 +176,7 @@ impl Manager_type {
         let Tasks = self.Tasks.read().unwrap(); // Acquire lock
 
         for (Task_identifier, Task) in Tasks.iter() {
-            if Task.Thread.Get_name().unwrap() == std::thread::current().name().unwrap() {
+            if Task.Threads[0].Get_name().unwrap() == std::thread::current().name().unwrap() {
                 return Ok(*Task_identifier);
             }
         }
