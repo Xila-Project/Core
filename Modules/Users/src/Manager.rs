@@ -59,7 +59,7 @@ impl Manager_type {
         &self,
         Name: &str,
         Identifier: Option<Group_identifier_type>,
-    ) -> Result<Group_identifier_type, ()> {
+    ) -> Result<Group_identifier_type, Error_type> {
         let Identifier = match Identifier {
             Some(Identifier) => Identifier,
             None => self.Get_new_group_identifier(),
@@ -73,11 +73,11 @@ impl Manager_type {
         };
 
         if self.Exists_group(Identifier) {
-            return Err(());
+            return Err(Error_type::Duplicate_group_identifier);
         }
 
-        if let Some(_) = Groups.insert(Identifier, Group) {
-            return Err(());
+        if Groups.insert(Identifier, Group).is_some() {
+            return Err(Error_type::Duplicate_group_identifier); // Shouldn't happen
         }
         Ok(Identifier)
     }
@@ -98,10 +98,10 @@ impl Manager_type {
         &self,
         User_identifier: User_identifier_type,
         Group_identifier: Group_identifier_type,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error_type> {
         let mut Groups = self.Groups.write().unwrap();
         if !self.Exists_group(Group_identifier) {
-            return Err(());
+            return Err(Error_type::No_group_identifier);
         }
         if !Groups
             .get_mut(&Group_identifier)
@@ -109,18 +109,18 @@ impl Manager_type {
             .Users
             .insert(User_identifier)
         {
-            return Err(());
+            return Err(Error_type::Duplicate_group_identifier);
         }
         Ok(())
     }
 
     pub fn Get_group_name(&self, Identifier: Group_identifier_type) -> Option<String> {
-        let Groups = self.Users.read().unwrap();
+        let Groups = self.Groups.read().unwrap();
         Some(Groups.get(&Identifier).unwrap().Name.clone())
     }
 
-    pub fn Get_group_users<'a>(
-        &'a self,
+    pub fn Get_group_users(
+        &self,
         Identifier: Group_identifier_type,
     ) -> Option<Vec<User_identifier_type>> {
         let Groups = self.Groups.read().unwrap();
@@ -140,7 +140,7 @@ impl Manager_type {
         Some(Users.get(&Identifier).unwrap().Name.clone())
     }
 
-    pub fn Check_credentials(&self, User_name: &str, Password: &str) -> bool {
+    pub fn Check_credentials(&self, _User_name: &str, _Password: &str) -> bool {
         true
     }
 }
