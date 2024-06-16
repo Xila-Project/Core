@@ -1,3 +1,4 @@
+use super::*;
 use std::thread;
 
 /// A wrapper around [std::thread::Thread].
@@ -5,7 +6,7 @@ pub struct Thread_wrapper_type(thread::JoinHandle<()>);
 
 impl Thread_wrapper_type {
     /// Creates a new thread with a given name, stack size and function.
-    pub fn New<F>(Name: &str, Stack_size: Option<usize>, Function: F) -> Result<Self, ()>
+    pub fn New<F>(Name: &str, Stack_size: Option<usize>, Function: F) -> Result<Self, Error_type>
     where
         F: FnOnce() + Send + 'static,
     {
@@ -16,10 +17,9 @@ impl Thread_wrapper_type {
             None => Thread_builder,
         };
 
-        let Join_handle = match Thread_builder.spawn(Function) {
-            Ok(Join_handle) => Join_handle,
-            Err(_) => return Err(()),
-        };
+        let Join_handle = Thread_builder
+            .spawn(Function)
+            .map_err(|_| Error_type::Failed_to_spawn_thread)?;
 
         Ok(Self(Join_handle))
     }

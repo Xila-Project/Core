@@ -27,20 +27,18 @@ impl<'a> Task_type<'a> {
         Owner: Option<User_identifier_type>,
         Stack_size: Option<usize>,
         Function: F,
-    ) -> Result<Task_type, ()>
+    ) -> Result<Task_type, Error_type>
     where
         F: FnOnce() + Send + 'static,
     {
-        match self
-            .Manager
-            .New_task(self.Identifier, Owner, Name, Stack_size, Function)
-        {
-            Ok(Child_task_identifier) => Ok(Self::New(Child_task_identifier, self.Manager)),
-            Err(()) => Err(()),
-        }
+        Ok(Self::New(
+            self.Manager
+                .New_task(self.Identifier, Owner, Name, Stack_size, Function)?,
+            self.Manager,
+        ))
     }
 
-    pub fn Get_name(&self) -> Result<String, ()> {
+    pub fn Get_name(&self) -> Result<String, Error_type> {
         self.Manager.Get_task_name(self.Identifier)
     }
 
@@ -52,11 +50,11 @@ impl<'a> Task_type<'a> {
         self.Manager
     }
 
-    pub fn Get_owner(&self) -> Result<User_identifier_type, ()> {
+    pub fn Get_owner(&self) -> Result<User_identifier_type, Error_type> {
         self.Manager.Get_owner(self.Identifier)
     }
 
-    pub fn Get_current_task(Manager: &'a Manager_type) -> Result<Self, ()> {
+    pub fn Get_current_task(Manager: &'a Manager_type) -> Result<Self, Error_type> {
         let Current_task_identifier = Manager.Get_current_task_identifier()?;
         Ok(Self::New(Current_task_identifier, Manager))
     }

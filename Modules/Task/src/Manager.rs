@@ -41,7 +41,7 @@ impl Manager_type {
             return Self::Root_task_identifier;
         }
 
-        for Process_identifier in 0..std::usize::MAX - 1 {
+        for Process_identifier in 0..Task_identifier_type::MAX - 1 {
             if !self.Tasks.read().unwrap().contains_key(&Process_identifier) {
                 return Process_identifier;
             }
@@ -49,13 +49,16 @@ impl Manager_type {
         panic!("No more process identifier available."); // Should never happen since the maximum number of tasks is usize::MAX - 1 which is a lot.
     }
 
-    pub fn Get_task_name(&self, Process_identifier: Task_identifier_type) -> Result<String, ()> {
-        match self.Tasks.read().unwrap().get(&Process_identifier) {
+    pub fn Get_task_name(
+        &self,
+        Task_identifier: Task_identifier_type,
+    ) -> Result<String, Error_type> {
+        match self.Tasks.read().unwrap().get(&Task_identifier) {
             Some(Task) => match Task.Threads[0].Get_name() {
                 Some(Name) => Ok(Name.to_string()),
-                None => Err(()),
+                None => Err(Error_type::Invalid_task_identifier),
             },
-            None => Err(()),
+            None => Err(Error_type::Invalid_task_identifier),
         }
     }
 
@@ -69,7 +72,7 @@ impl Manager_type {
     {
         let Thread_wrapper = match Thread_wrapper_type::New("Xila", Stack_size, Function) {
             Ok(Thread_wrapper) => Thread_wrapper,
-            Err(()) => panic!(),
+            Err(e) => panic!("Failed to create root task : {:?}", e),
         };
 
         let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
@@ -98,7 +101,7 @@ impl Manager_type {
         Name: &str,
         Stack_size: Option<usize>,
         Function: F,
-    ) -> Result<Task_identifier_type, ()>
+    ) -> Result<Task_identifier_type, Error_type>
     where
         F: FnOnce() + Send + 'static,
     {
@@ -108,13 +111,10 @@ impl Manager_type {
 
         let Parent_task = match Tasks.get_mut(&Parent_task_identifier) {
             Some(Parent_task) => Parent_task,
-            None => return Err(()),
+            None => return Err(Error_type::Invalid_task_identifier),
         };
 
-        let Thread_wrapper = match Thread_wrapper_type::New(Name, Stack_size, Function) {
-            Ok(Thread_wrapper) => Thread_wrapper,
-            Err(()) => return Err(()),
-        };
+        let Thread_wrapper = Thread_wrapper_type::New(Name, Stack_size, Function)?;
 
         Parent_task.Children.push(Child_task_identifier);
 
@@ -139,10 +139,13 @@ impl Manager_type {
     pub fn Get_owner(
         &self,
         Task_identifier: Task_identifier_type,
-    ) -> Result<User_identifier_type, ()> {
+    ) -> Result<User_identifier_type, Error_type> {
         let Tasks = self.Tasks.read().unwrap();
 
-        Ok(Tasks.get(&Task_identifier).unwrap().Owner)
+        Ok(Tasks
+            .get(&Task_identifier)
+            .ok_or(Error_type::Invalid_task_identifier)?
+            .Owner)
     }
 
     fn Delete_task(&self, Task_identifier: Task_identifier_type) -> Result<(), ()> {
@@ -172,7 +175,7 @@ impl Manager_type {
         R
     }
 
-    pub fn Get_current_task_identifier(&self) -> Result<Task_identifier_type, ()> {
+    pub fn Get_current_task_identifier(&self) -> Result<Task_identifier_type, Error_type> {
         let Tasks = self.Tasks.read().unwrap(); // Acquire lock
 
         for (Task_identifier, Task) in Tasks.iter() {
@@ -181,7 +184,7 @@ impl Manager_type {
             }
         }
 
-        Err(())
+        Err(Error_type::No_thread_for_task)
     }
 }
 
