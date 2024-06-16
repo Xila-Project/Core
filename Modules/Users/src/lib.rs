@@ -1,4 +1,4 @@
-type Identifier_type = u8;
+pub type User_identifier_type = u16;
 
 mod Manager;
 pub use Manager::*;
