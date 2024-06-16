@@ -2,11 +2,11 @@ use super::*;
 
 pub struct User_type<'a> {
     User_manager: &'a Manager_type,
-    Identifier: Identifier_type,
+    Identifier: User_identifier_type,
 }
 
 impl<'a> User_type<'a> {
-    pub fn New(User_manager: &'a Manager_type, Identifier: Identifier_type) -> Self {
+    pub fn New(User_manager: &'a Manager_type, Identifier: User_identifier_type) -> Self {
         User_type {
             User_manager,
             Identifier,
