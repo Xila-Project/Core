@@ -82,7 +82,7 @@ impl Manager_type {
         Ok(Identifier)
     }
 
-    pub fn Is_root(&self, Identifier: User_identifier_type) -> bool {
+    pub fn Is_root(Identifier: User_identifier_type) -> bool {
         Self::Root_user_identifier == Identifier
     }
 
