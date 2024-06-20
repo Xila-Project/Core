@@ -114,6 +114,13 @@ impl Manager_type {
             None => return Err(Error_type::Invalid_task_identifier),
         };
 
+        let Manager = self.clone();
+
+        let Function = move || {
+            Function();
+            let _ = Manager.Delete_task(Child_task_identifier);
+        };
+
         let Thread_wrapper = Thread_wrapper_type::New(Name, Stack_size, Function)?;
 
         Parent_task.Children.push(Child_task_identifier);
@@ -197,23 +204,23 @@ mod tests {
     fn Test() {
         let Manager = Manager_type::New();
 
-        Manager.New_root_task(None, || {
+        Manager.clone().New_root_task(None, move || {
+            let _ = Manager
+                .New_task(
+                    Manager_type::Root_task_identifier,
+                    None,
+                    "Child task",
+                    None,
+                    || {
+                        Task_type::Sleep(Duration::from_millis(100));
+                    },
+                )
+                .unwrap();
+
+            Manager
+                .Delete_task(Manager_type::Root_task_identifier)
+                .unwrap();
             Task_type::Sleep(Duration::from_millis(100));
         });
-
-        let _ = Manager
-            .New_task(
-                Manager_type::Root_task_identifier,
-                "Child task",
-                None,
-                || {
-                    Task_type::Sleep(Duration::from_millis(100));
-                },
-            )
-            .unwrap();
-
-        Manager
-            .Delete_task(Manager_type::Root_task_identifier)
-            .unwrap();
     }
 }
