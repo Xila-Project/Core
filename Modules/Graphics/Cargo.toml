@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 cstr_core = "0.2.6"
+Task = { path = "../Task" }
 
 [target.'cfg( target_os = "espidf" )'.dependencies]
 lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", default-features = false, features = [

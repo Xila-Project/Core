@@ -4,7 +4,7 @@ use lvgl::{
     widgets::Label,
     LvError, NativeObject, Obj, Widget,
 };
-use Shared::Task_identifier_type;
+use Task::Task_identifier_type;
 
 pub type Windows_indentifier_type = u16;
 
