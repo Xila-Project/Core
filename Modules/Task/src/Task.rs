@@ -74,11 +74,11 @@ mod tests {
 
         let Manager_copy = Manager.clone();
 
-        let _ = Manager.New_root_task(None, move || {
+        Manager.New_root_task(None, move || {
             let Task = Task_type::Get_current_task(&Manager_copy).unwrap();
 
             let _ = Task
-                .New_child_task("Child task", None, || {
+                .New_child_task("Child task", None, None, || {
                     Task_type::Sleep(std::time::Duration::from_millis(100));
                 })
                 .unwrap();
