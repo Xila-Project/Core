@@ -62,14 +62,16 @@ impl Manager_type {
         }
     }
 
-    pub fn New_root_task<F>(
-        &self,
-        User_identifier: User_identifier_type,
-        Stack_size: Option<usize>,
-        Function: F,
-    ) where
+    pub fn New_root_task<F>(&self, Stack_size: Option<usize>, Function: F)
+    where
         F: FnOnce() + Send + 'static,
     {
+        let Manager = self.clone();
+        let Function = move || {
+            Function();
+            Manager.Delete_task(Self::Root_task_identifier).unwrap();
+        };
+
         let Thread_wrapper = match Thread_wrapper_type::New("Xila", Stack_size, Function) {
             Ok(Thread_wrapper) => Thread_wrapper,
             Err(e) => panic!("Failed to create root task : {:?}", e),
@@ -82,7 +84,7 @@ impl Manager_type {
             Task_internal_type {
                 Threads: vec![Thread_wrapper],
                 Children: Vec::new(),
-                Owner: User_identifier,
+                Owner: Users::Root_user_identifier,
             },
         );
     }
