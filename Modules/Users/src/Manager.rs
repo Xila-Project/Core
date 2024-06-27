@@ -190,3 +190,107 @@ impl Manager_type {
         true
     }
 }
+
+#[cfg(test)]
+mod Tests {
+    use super::*;
+
+    #[test]
+    fn New() {
+        let Manager = Manager_type::New();
+        assert!(Manager.0.read().unwrap().Groups.is_empty());
+    }
+
+    #[test]
+    fn Create_user() {
+        let Manager = Manager_type::New();
+        let User_name = "Alice";
+        let Result = Manager.Create_user(User_name);
+        assert!(Result.is_ok());
+        let User_id = Result.unwrap();
+        assert!(Manager.Exists_user(User_id).unwrap());
+    }
+
+    #[test]
+    fn Create_group() {
+        let Manager = Manager_type::New();
+        let Group_name = "Developers";
+        let Result = Manager.Create_group(Group_name, None);
+        assert!(Result.is_ok());
+        let Group_id = Result.unwrap();
+        assert!(Manager.Exists_group(Group_id).unwrap());
+    }
+
+    #[test]
+    fn Is_root() {
+        let Root_id = crate::Root_user_identifier;
+        assert!(Manager_type::Is_root(Root_id));
+    }
+
+    #[test]
+    fn Is_in_group() {
+        let Manager = Manager_type::New();
+        let User_name = "Bob";
+        let User_id = Manager.Create_user(User_name).unwrap();
+        let Group_name = "Admins";
+        let Group_id = Manager.Create_group(Group_name, None).unwrap();
+        Manager.Add_to_group(User_id, Group_id).unwrap();
+        assert!(Manager.Is_in_group(User_id, Group_id));
+    }
+
+    #[test]
+    fn Get_user_groups() {
+        let Manager = Manager_type::New();
+
+        let User_name = "Charlie";
+        let User_id = Manager.Create_user(User_name).unwrap();
+        let Group_name1 = "TeamA";
+        let Group_id1 = Manager.Create_group(Group_name1, None).unwrap();
+        let Group_name2 = "TeamB";
+        let Group_id2 = Manager.Create_group(Group_name2, None).unwrap();
+        Manager.Add_to_group(User_id, Group_id1).unwrap();
+        Manager.Add_to_group(User_id, Group_id2).unwrap();
+        let Groups = Manager.Get_user_groups(User_id).unwrap();
+        assert_eq!(Groups.len(), 2);
+        assert!(Groups.contains(&Group_id1) && Groups.contains(&Group_id2));
+    }
+
+    #[test]
+    fn Get_group_name() {
+        let Manager = Manager_type::New();
+        let Group_name = "QA";
+        let Group_id = Manager.Create_group(Group_name, None).unwrap();
+        let Retrieved_name = Manager.Get_group_name(Group_id).unwrap();
+        assert_eq!(Group_name, Retrieved_name);
+    }
+
+    #[test]
+    fn Get_group_users() {
+        let Manager = Manager_type::New();
+        let User_name = "Dave";
+        let User_id = Manager.Create_user(User_name).unwrap();
+        let Group_name = "Engineers";
+        let Group_id = Manager.Create_group(Group_name, None).unwrap();
+        Manager.Add_to_group(User_id, Group_id).unwrap();
+        let Users = Manager.Get_group_users(Group_id).unwrap();
+        assert_eq!(Users.len(), 1);
+        assert!(Users.contains(&User_id));
+    }
+
+    #[test]
+    fn Get_user_name() {
+        let Manager = Manager_type::New();
+        let User_name = "Eve";
+        let User_id = Manager.Create_user(User_name).unwrap();
+        let Retrieved_name = Manager.Get_user_name(User_id).unwrap();
+        assert_eq!(User_name, Retrieved_name);
+    }
+
+    #[test]
+    fn Check_credentials() {
+        let Manager = Manager_type::New();
+        let User_name = "Frank";
+        let Password = "password123";
+        assert!(Manager.Check_credentials(User_name, Password));
+    }
+}
