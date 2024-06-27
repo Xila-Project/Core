@@ -42,16 +42,30 @@ impl From<Size_type> for u64 {
         item.0
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
 pub enum Position_type {
-    Start(Size_type),
-    Current(Signed_size_type),
-    End(Signed_size_type),
+    Start(u64),
+    Current(i64),
+    End(i64),
+}
+
+#[cfg(feature = "std")]
+impl Into<std::io::SeekFrom> for Position_type {
+    fn into(self) -> std::io::SeekFrom {
+        match self {
+            Position_type::Start(Item) => std::io::SeekFrom::Start(Item),
+            Position_type::Current(Item) => std::io::SeekFrom::Current(Item),
+            Position_type::End(Item) => std::io::SeekFrom::End(Item),
+        }
+    }
 }
 
 impl Position_type {
     pub fn From(Discriminant: u32, Value: u64) -> Self {
         match Discriminant {
-            0 => Position_type::Start(Size_type(Value)),
+            0 => Position_type::Start(Value),
             1 => Position_type::Current(Value as i64),
             2 => Position_type::End(Value as i64),
             _ => panic!("Invalid discriminant"),
@@ -70,7 +84,7 @@ impl Discriminant_trait for Position_type {
 
     fn From_discriminant(Discriminant: u32) -> Self {
         match Discriminant {
-            0 => Position_type::Start(Size_type::default()),
+            0 => Position_type::Start(0),
             1 => Position_type::Current(0),
             2 => Position_type::End(0),
             _ => panic!("Invalid discriminant"),
@@ -92,17 +106,5 @@ impl ops::Add<Size_type> for Size_type {
 
     fn add(self, rhs: Size_type) -> Self::Output {
         Size_type(self.0 + rhs.0)
-    }
-}
-
-impl From<u64> for Size_type {
-    fn from(item: u64) -> Self {
-        Size_type(item)
-    }
-}
-
-impl From<usize> for Size_type {
-    fn from(item: usize) -> Self {
-        Size_type(item as u64)
     }
 }
