@@ -258,29 +258,177 @@ impl Manager_type {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
 
     #[test]
-    fn Test() {
+    fn Test_get_task_name() {
         let Manager = Manager_type::New();
+        let Task_name = "Test Task";
+        let (Task_identifier, _) = Manager
+            .New_task(None, None, Task_name, None, || {})
+            .unwrap();
+        assert_eq!(Manager.Get_task_name(Task_identifier).unwrap(), Task_name);
+    }
 
-        Manager.clone().New_root_task(None, move || {
-            let _ = Manager
-                .New_task(
-                    Manager_type::Root_task_identifier,
-                    None,
-                    "Child task",
-                    None,
-                    || {
-                        Task_type::Sleep(Duration::from_millis(100));
-                    },
-                )
-                .unwrap();
+    #[test]
+    fn Test_new_task() {
+        let Manager = Manager_type::New();
+        let Task_name = "Child Task";
+        let (Task_identifier, _) = Manager
+            .New_task(None, None, Task_name, None, || {})
+            .unwrap();
+        assert!(Manager.Get_task_name(Task_identifier).is_ok());
+    }
 
+    #[test]
+    fn Test_delete_task() {
+        let Manager = Manager_type::New();
+        let (Task_identifier, _) = Manager
+            .New_task(None, None, "Task to delete", None, || {})
+            .unwrap();
+        assert!(Manager.Delete_task(Task_identifier).is_ok());
+        assert!(Manager.Get_task_name(Task_identifier).is_err());
+    }
+
+    #[test]
+    fn Test_get_owner() {
+        let Manager = Manager_type::New();
+        let User_identifier = 123; // Assuming User_identifier_type is i32 for example
+        let (Task_identifier, _) = Manager
+            .New_task(None, Some(User_identifier), "Task with owner", None, || {})
+            .unwrap();
+        assert_eq!(Manager.Get_owner(Task_identifier).unwrap(), User_identifier);
+    }
+
+    #[test]
+    fn Test_get_current_task_identifier() {
+        // This test might be tricky to implement due to the nature of comparing thread IDs.
+        // Assuming there's a way to simulate or mock the thread ID comparison.
+        let Manager = Manager_type::New();
+        let Manager_copy = Manager.clone();
+        let (Task_identifier, Join_handle) = Manager
+            .New_task(None, None, "Current Task", None, move || {
+                let _ = Manager_copy.Get_current_task_identifier().unwrap();
+            })
+            .unwrap();
+        let _ = Manager.Get_task_name(Task_identifier); // Just to use Task_identifier and avoid unused variable warning.
+        Join_handle.Join().unwrap();
+    }
+
+    #[test]
+    fn Test_multiple_tasks_with_same_owner() {
+        let Manager = Manager_type::New();
+        let Manager_copy = Manager.clone();
+        let User_identifier = 123; // Assuming User_identifier_type is i32 for example
+        let (Task_identifier_1, _) = Manager
+            .New_task(None, Some(User_identifier), "Task 1", None, move || {
+                let Manager = Manager_copy.clone();
+                let Manager_copy = Manager.clone();
+
+                let (Task_identifier_2, _) = Manager
+                    .New_task(None, None, "Task 2", None, move || {
+                        let Manager = Manager_copy.clone();
+                        assert_eq!(
+                            Manager.Get_current_task().unwrap().Get_owner().unwrap(),
+                            User_identifier
+                        );
+                        assert_eq!(
+                            Manager.Get_current_task().unwrap().Get_name().unwrap(),
+                            "Task 2"
+                        );
+
+                        Task_type::Sleep(std::time::Duration::from_secs(1));
+                    })
+                    .unwrap();
+
+                assert_eq!(
+                    Manager.Get_owner(Task_identifier_2).unwrap(),
+                    User_identifier
+                );
+
+                let Manager_copy = Manager.clone();
+
+                let _ = Manager
+                    .New_task(None, Some(6969), "Task 3", None, move || {
+                        let Manager = Manager_copy.clone();
+                        assert_eq!(
+                            Manager.Get_current_task().unwrap().Get_owner().unwrap(),
+                            6969
+                        );
+                        assert_eq!(
+                            Manager.Get_current_task().unwrap().Get_name().unwrap(),
+                            "Task 3"
+                        );
+                    })
+                    .unwrap();
+            })
+            .unwrap();
+
+        assert_eq!(
+            Manager.Get_owner(Task_identifier_1).unwrap(),
+            User_identifier
+        );
+    }
+
+    #[test]
+    fn Test_environment_variables() {
+        let Manager = Manager_type::New();
+        let (Task_identifier, _) = Manager
+            .New_task(None, None, "Task with environment variables", None, || {})
+            .unwrap();
+        let Name = "Key";
+        let Value = "Value";
+        Manager
+            .Set_environment_variable(Task_identifier, Name, Value)
+            .unwrap();
+        assert_eq!(
             Manager
-                .Delete_task(Manager_type::Root_task_identifier)
-                .unwrap();
-            Task_type::Sleep(Duration::from_millis(100));
-        });
+                .Get_environment_variable(Task_identifier, Name)
+                .unwrap(),
+            Value
+        );
+        Manager
+            .Remove_environment_variable(Task_identifier, Name)
+            .unwrap();
+        assert!(Manager
+            .Get_environment_variable(Task_identifier, Name)
+            .is_err());
+    }
+
+    #[test]
+    fn Test_environment_variable_inheritance() {
+        let Manager = Manager_type::New();
+        let Manager_copy = Manager.clone();
+        let _ = Manager
+            .New_task(None, None, "Parent Task", None, || {
+                let Manager = Manager_copy;
+                let Manager_copy = Manager.clone();
+
+                let (Task_identifier_2, _) = Manager
+                    .New_task(None, None, "Child Task", None, move || {
+                        let Manager = Manager_copy;
+
+                        let Current_task = Manager.Get_current_task().unwrap();
+
+                        assert_eq!(
+                            Current_task.Get_environment_variable("Key").unwrap(),
+                            "Value"
+                        );
+                    })
+                    .unwrap();
+                Manager
+                    .Set_environment_variable(Task_identifier_2, "Key", "Value")
+                    .unwrap();
+            })
+            .unwrap();
+    }
+
+    #[test]
+    fn Test_join_handle() {
+        let Manager = Manager_type::New();
+        let (_, Join_handle) = Manager
+            .New_task(None, None, "Task with join handle", None, || 42)
+            .unwrap();
+        let Result = Join_handle.Join();
+        assert_eq!(Result.unwrap(), 42);
     }
 }
