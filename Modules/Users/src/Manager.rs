@@ -14,17 +14,20 @@ struct Internal_group_type {
     pub Users: HashSet<User_identifier_type>,
 }
 
-pub struct Manager_type {
-    Users: Arc<RwLock<HashMap<User_identifier_type, Internal_user_type>>>,
-    Groups: Arc<RwLock<HashMap<Group_identifier_type, Internal_group_type>>>,
+struct Internal_manager_type {
+    pub Users: HashMap<User_identifier_type, Internal_user_type>,
+    pub Groups: HashMap<Group_identifier_type, Internal_group_type>,
 }
+
+#[derive(Clone)]
+pub struct Manager_type(Arc<RwLock<Internal_manager_type>>);
 
 impl Manager_type {
     pub fn New() -> Self {
-        Self {
-            Users: Arc::new(RwLock::new(HashMap::new())),
-            Groups: Arc::new(RwLock::new(HashMap::new())),
-        }
+        Self(Arc::new(RwLock::new(Internal_manager_type {
+            Users: HashMap::new(),
+            Groups: HashMap::new(),
+        })))
     }
 
     fn Get_new_group_identifier(&self) -> Option<Group_identifier_type> {
