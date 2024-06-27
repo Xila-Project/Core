@@ -27,17 +27,16 @@ impl Manager_type {
         }
     }
 
-    pub fn Get_new_group_identifier(&self) -> Group_identifier_type {
-        let Groups = self.Groups.read().unwrap();
+    fn Get_new_group_identifier(&self) -> Option<Group_identifier_type> {
+        let Inner = self.0.read().ok()?;
 
-        let mut Group_identifier: Group_identifier_type = 0;
-        while Groups.contains_key(&Group_identifier) {
-            if Group_identifier == Group_identifier_type::MAX {
-                panic!("No remaining group identifier !");
-            }
-            Group_identifier += 1;
-        }
-        Group_identifier
+        (0..Group_identifier_type::MAX).find(|Identifier| !Inner.Groups.contains_key(Identifier))
+    }
+
+    fn Get_new_user_identifier(&self) -> Option<User_identifier_type> {
+        let Inner = self.0.read().ok()?;
+
+        (0..User_identifier_type::MAX).find(|Identifier| !Inner.Users.contains_key(Identifier))
     }
 
     pub fn Get_new_user_identifier(&self) -> User_identifier_type {
