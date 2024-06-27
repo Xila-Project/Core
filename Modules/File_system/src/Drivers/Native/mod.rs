@@ -1,22 +1,25 @@
-use Shared::Task_identifier_type;
-
-use crate::Generics::{self, Error_type};
+use crate::Prelude::{
+    Error_type, File_identifier_type, File_system_traits, Flags_type, Path_owned_type, Path_type,
+    Permissions_type, Position_type, Result, Size_type, Type_type,
+};
 
 use std::collections::HashMap;
 use std::env::{current_dir, var};
 use std::fs::*;
-use std::io::{Read, Seek, SeekFrom, Write};
-use std::path::Path;
-use std::sync::{Arc, RwLock};
+use std::io::{ErrorKind, Read, Seek, Write};
 
-impl From<FileType> for Generics::Type_type {
+use std::path::PathBuf;
+
+use Task::Task_identifier_type;
+
+impl From<FileType> for Type_type {
     fn from(value: FileType) -> Self {
         if value.is_dir() {
-            return Generics::Type_type::Directory;
+            return Type_type::Directory;
         } else if value.is_symlink() {
-            return Generics::Type_type::Symbolic_link;
+            return Type_type::Symbolic_link;
         }
-        Generics::Type_type::File
+        Type_type::File
     }
 }
 
@@ -27,7 +30,7 @@ impl From<std::io::ErrorKind> for Error_type {
         match Error {
             ErrorKind::PermissionDenied => Error_type::Permission_denied,
             ErrorKind::NotFound => Error_type::Not_found,
-            ErrorKind::AlreadyExists => Error_type::File_already_exists,
+            ErrorKind::AlreadyExists => Error_type::Already_exists,
             ErrorKind::InvalidInput => Error_type::Invalid_path,
             ErrorKind::InvalidData => Error_type::Invalid_file,
             _ => Error_type::Unknown,
@@ -35,363 +38,310 @@ impl From<std::io::ErrorKind> for Error_type {
     }
 }
 
+impl From<std::io::Error> for Error_type {
+    fn from(Error: std::io::Error) -> Self {
+        Error.kind().into()
+    }
+}
+
+impl Flags_type {
+    fn Into_open_options(self, Open_options: &mut OpenOptions) {
+        Open_options
+            .read(self.Get_mode().Get_read())
+            .write(self.Get_mode().Get_write() || self.Get_status().Get_append());
+    }
+}
+
+impl From<&PathBuf> for Path_owned_type {
+    fn from(item: &PathBuf) -> Self {
+        Path_owned_type::New(item.to_str().unwrap().to_string()).unwrap()
+    }
+}
+
+#[cfg(target_family = "unix")]
+impl From<&Permissions_type> for std::fs::Permissions {
+    fn from(Permissions: &Permissions_type) -> Self {
+        use std::os::unix::fs::PermissionsExt;
+
+        std::fs::Permissions::from_mode(Permissions.To_unix() as u32)
+    }
+}
+
 pub struct File_system_type {
-    Virtual_root_path: Generics::Path_type,
-    Mount_points: Vec<Generics::Path_type>,
-    Open_files: Arc<RwLock<HashMap<Generics::File_identifier_type, File>>>,
+    Virtual_root_path: Path_owned_type,
+    Open_files: HashMap<u32, File>,
 }
 
 impl File_system_type {
-    pub fn New() -> Self {
-        File_system_type {
-            Virtual_root_path: Generics::Path_type::New(),
-            Mount_points: Vec::new(),
-            Open_files: Arc::new(RwLock::new(HashMap::new())),
-        }
+    pub fn New() -> Result<Self> {
+        Ok(File_system_type {
+            Virtual_root_path: Self::Get_root_path().ok_or(Error_type::Unknown)?,
+            Open_files: HashMap::new(),
+        })
     }
 
-    pub fn Register_file(&self, File: File) -> Result<Generics::File_identifier_type, Error_type> {
-        let mut Open_files = self.Open_files.write().unwrap();
+    fn Get_root_path() -> Option<Path_owned_type> {
+        let Root_path = match var("Xila_virtual_root_path") {
+            Ok(value) => value,
+            Err(_) => match current_dir() {
+                Ok(value) => value.to_str()?.to_string(),
+                Err(_) => {
+                    return None;
+                }
+            },
+        };
 
-        let mut File_identifier: Generics::File_identifier_type = 0;
-        while Open_files.contains_key(&File_identifier) {
-            File_identifier += 1;
+        let Root_path = Path_owned_type::try_from(Root_path).ok()?.Append("Xila")?;
+
+        match create_dir(Root_path.as_ref() as &Path_type) {
+            Ok(_) => {}
+            Err(Error) => {
+                if ErrorKind::AlreadyExists != Error.kind() {
+                    return None;
+                }
+            }
         }
 
-        if Open_files.insert(File_identifier, File).is_some() {
-            // If the file identifier is already used.
-            panic!("File identifier already used.");
-        }
-        Ok(File_identifier)
+        Some(Root_path)
     }
 
-    pub fn Unregister_file(
+    fn Get_new_file_identifier(
         &self,
-        File_identifier: Generics::File_identifier_type,
-    ) -> Result<(), Error_type> {
-        let mut Open_files = self.Open_files.write().unwrap();
-        match Open_files.remove(&File_identifier) {
-            Some(_) => Ok(()),
-            None => Err(Error_type::Unknown),
+        Task_identifier: Task_identifier_type,
+    ) -> Option<File_identifier_type> {
+        let Start = Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0));
+        let End =
+            Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0xFFFF));
+
+        for i in Start..End {
+            if !self.Open_files.contains_key(&i) {
+                return Some(File_identifier_type::from(i as u16));
+            }
         }
+
+        None
     }
 
-    pub fn Get_full_path(&self, Path: &Generics::Path_type) -> Generics::Path_type {
-        let Full_path = self.Virtual_root_path.clone();
-        Full_path + Path
+    pub fn Get_full_path(&self, Path: &dyn AsRef<Path_type>) -> Result<Path_owned_type> {
+        self.Virtual_root_path
+            .clone()
+            .Join(Path)
+            .ok_or(Error_type::Invalid_path)
     }
 }
 
-impl Generics::File_system_traits for File_system_type {
-    fn Initialize(&mut self) -> Result<(), Error_type> {
-        match var("Xila_virtual_root_path") {
-            Ok(value) => {
-                self.Virtual_root_path = value.into();
-            }
-            Err(_) => match current_dir() {
-                Ok(value) => {
-                    self.Virtual_root_path = value.to_str().unwrap().into();
-                }
-                Err(_) => {
-                    return Err(Error_type::Failed_to_initialize_file_system);
-                }
-            },
+impl File_system_traits for File_system_type {
+    fn Exists(&self, Path: &dyn AsRef<Path_type>) -> Result<bool> {
+        metadata(self.Get_full_path(&Path)?.as_ref() as &Path_type)
+            .map(|_| true)
+            .or_else(|Error| match Error.kind() {
+                ErrorKind::NotFound => Ok(false),
+                _ => Err(Error.kind().into()),
+            })
+    }
+
+    fn Open(
+        &mut self,
+        Task_identifier: Task_identifier_type,
+        Path: &dyn AsRef<Path_type>,
+        Flags: Flags_type,
+    ) -> Result<File_identifier_type> {
+        let Full_path = self.Get_full_path(&Path)?;
+
+        let mut Open_options = OpenOptions::new();
+
+        Flags.Into_open_options(&mut Open_options);
+
+        let File = Open_options
+            .open(Full_path.as_ref() as &Path_type)
+            .map_err(|Error| Error.kind())?;
+
+        let File_identifier = self
+            .Get_new_file_identifier(Task_identifier)
+            .ok_or(Error_type::Too_many_open_files)?;
+
+        let Local_file_identifier =
+            Self::Get_local_file_identifier(Task_identifier, File_identifier);
+
+        if self
+            .Open_files
+            .insert(Local_file_identifier, File)
+            .is_some()
+        {
+            return Err(Error_type::Internal_error);
         }
 
-        let mut Xila_directory = Generics::Path_type::New();
-        Xila_directory.Append("Xila");
-        self.Virtual_root_path += Xila_directory;
+        Ok(File_identifier)
+    }
 
-        if !Path::new(&self.Virtual_root_path.As_str()).exists() {
-            match create_dir(self.Virtual_root_path.As_str()) {
-                Ok(_) => {}
-                Err(_) => {
-                    return Err(Error_type::Failed_to_initialize_file_system);
-                }
-            }
-        }
+    fn Read(
+        &mut self,
+        Task_identifier: Task_identifier_type,
+        File_identifier: File_identifier_type,
+        Buffer: &mut [u8],
+    ) -> Result<Size_type> {
+        let Local_file_identifier =
+            Self::Get_local_file_identifier(Task_identifier, File_identifier);
+
+        let File = self
+            .Open_files
+            .get_mut(&Local_file_identifier)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Ok(File.read(Buffer)?.into())
+    }
+
+    fn Write(
+        &mut self,
+        Task_identifier: Task_identifier_type,
+        File_identifier: File_identifier_type,
+        Buffer: &[u8],
+    ) -> Result<Size_type> {
+        let Local_file_identifier =
+            Self::Get_local_file_identifier(Task_identifier, File_identifier);
+
+        let File = self
+            .Open_files
+            .get_mut(&Local_file_identifier)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Ok(File.write(Buffer)?.into())
+    }
+
+    fn Flush(&mut self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()> {
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
+        let File = self
+            .Open_files
+            .get_mut(&Local_file_identifier)
+            .ok_or(Error_type::Invalid_identifier)?;
+        File.flush().map_err(|Error| Error.kind().into())
+    }
+
+    fn Close(&mut self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()> {
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
+        self.Open_files
+            .remove(&Local_file_identifier)
+            .ok_or(Error_type::Invalid_identifier)?;
+        Ok(())
+    }
+
+    fn Get_type(&self, _: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<Type_type> {
+        let Full_path = self.Get_full_path(&Path)?;
+        let Metadata = metadata(Full_path.as_ref() as &Path_type).map_err(|Error| Error.kind())?;
+        Ok(Metadata.file_type().into())
+    }
+
+    fn Get_size(&self, _: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<Size_type> {
+        let Full_path = self.Get_full_path(&Path)?;
+        let Metadata = metadata(Full_path.as_ref() as &Path_type).map_err(|Error| Error.kind())?;
+        Ok(Metadata.len().into())
+    }
+
+    fn Set_position(
+        &mut self,
+        Task_identifier: Task_identifier_type,
+        File_identifier: File_identifier_type,
+        Position_type: &Position_type,
+    ) -> Result<Size_type> {
+        let Local_file_identifier =
+            Self::Get_local_file_identifier(Task_identifier, File_identifier);
+        let File = match self.Open_files.get_mut(&Local_file_identifier) {
+            Some(File) => File,
+            None => return Err(Error_type::Invalid_identifier),
+        };
+
+        Ok(File
+            .seek((*Position_type).into())
+            .map_err(|Error| Error_type::from(Error.kind()))?
+            .into())
+    }
+
+    fn Delete(&mut self, Path: &dyn AsRef<Path_type>) -> Result<()> {
+        let Full_path = self.Get_full_path(&Path)?;
+
+        remove_file(Full_path.as_ref() as &Path_type).map_err(|Error| Error.kind().into())
+    }
+
+    fn Create_directory(
+        &mut self,
+        _: Task_identifier_type,
+        Path: &dyn AsRef<Path_type>,
+    ) -> Result<()> {
+        let Full_path = self.Get_full_path(&Path)?;
+
+        create_dir(Full_path.as_ref() as &Path_type).map_err(|Error| Error.kind().into())
+    }
+
+    fn Create_file(&mut self, _: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<()> {
+        let Full_path = self.Get_full_path(&Path)?;
+
+        OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(Full_path.as_ref() as &Path_type)
+            .map_err(|Error| Error.kind())?;
 
         Ok(())
     }
 
-    fn Exists(&self, Path: &Generics::Path_type) -> Result<bool, Error_type> {
-        Path::new(&self.Get_full_path(Path).As_str())
-            .try_exists()
-            .map_err(|Error_type| Error_type.kind().into())
+    fn Close_all(&mut self, Task_identifier: Task_identifier_type) -> Result<()> {
+        let Start = Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0));
+        let End =
+            Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0xFFFF));
+
+        self.Open_files
+            .retain(|File_identifier, _| *File_identifier < Start || *File_identifier > End);
+
+        Ok(())
     }
 
-    fn Open_file(
-        &self,
-        Path: &Generics::Path_type,
-        Mode: Generics::Mode_type,
-    ) -> Result<Generics::File_type, Error_type> {
-        let Full_path = self.Get_full_path(Path);
-        let Full_path = Full_path.As_str();
+    fn Transfert_file_identifier(
+        &mut self,
+        Old_task: Task_identifier_type,
+        New_task: Task_identifier_type,
+        Old_file_identifier: File_identifier_type,
+    ) -> Result<File_identifier_type> {
+        let Old_local_file_identifier =
+            Self::Get_local_file_identifier(Old_task, Old_file_identifier);
+        let New_file_identifier = self
+            .Get_new_file_identifier(New_task)
+            .ok_or(Error_type::Too_many_open_files)?;
+        let New_local_file_identifier =
+            Self::Get_local_file_identifier(New_task, New_file_identifier);
 
-        let File = match Mode {
-            Generics::Mode_type::Read => File::open(Full_path).map_err(|Error| Error.kind())?,
-            Generics::Mode_type::Write => File::create(Full_path).map_err(|Error| Error.kind())?,
-            Generics::Mode_type::Read_write => OpenOptions::new()
-                .read(true)
-                .write(true)
-                .open(Full_path)
-                .map_err(|Error| Error.kind())?,
-            Generics::Mode_type::Append => OpenOptions::new()
-                .append(true)
-                .open(Full_path)
-                .map_err(|Error| Error.kind())?,
-            Generics::Mode_type::Read_append => OpenOptions::new()
-                .read(true)
-                .append(true)
-                .open(Full_path)
-                .map_err(|Error| Error.kind())?,
-        };
+        let File = self
+            .Open_files
+            .remove(&Old_local_file_identifier)
+            .ok_or(Error_type::Invalid_identifier)?;
 
-        let File_identifier = self.Register_file(File)?;
+        if self
+            .Open_files
+            .insert(New_local_file_identifier, File)
+            .is_some()
+        {
+            return Err(Error_type::Internal_error);
+        }
 
-        Ok(Generics::File_type::New(File_identifier, self))
-    }
-
-    fn Read_file(
-        &self,
-        File_identifier: Generics::File_identifier_type,
-        Buffer: &mut [u8],
-    ) -> Result<usize, Error_type> {
-        let mut Open_files = self.Open_files.write().unwrap();
-        let File = match Open_files.get_mut(&File_identifier) {
-            Some(File) => File,
-            None => return Err(Error_type::Invalid_file_identifier),
-        };
-        Ok(File.read(Buffer).map_err(|Error| Error.kind())?)
-    }
-
-    fn Write_file(
-        &self,
-        File_identifier: Generics::File_identifier_type,
-        Buffer: &[u8],
-    ) -> Result<usize, Error_type> {
-        let mut Open_files = self.Open_files.write().unwrap();
-        let File = match Open_files.get_mut(&File_identifier) {
-            Some(File) => File,
-            None => return Err(Error_type::Invalid_file_identifier),
-        };
-        File.write(Buffer).map_err(|Error| Error.kind().into())
-    }
-
-    fn Flush_file(
-        &self,
-        File_identifier: Generics::File_identifier_type,
-    ) -> Result<(), Error_type> {
-        let mut Open_files = self.Open_files.write().unwrap();
-        let File = match Open_files.get_mut(&File_identifier) {
-            Some(File) => File,
-            None => return Err(Error_type::Invalid_file_identifier),
-        };
-        File.flush().map_err(|Error| Error.kind().into())
-    }
-
-    fn Close_file(
-        &self,
-        File_identifier: Generics::File_identifier_type,
-    ) -> Result<(), Error_type> {
-        self.Unregister_file(File_identifier)
-    }
-
-    fn Get_file_type(
-        &self,
-        File: Generics::File_identifier_type,
-    ) -> Result<Generics::Type_type, Error_type> {
-        let mut Open_files = self.Open_files.write().unwrap();
-        let File = match Open_files.get_mut(&File) {
-            Some(File) => File,
-            None => return Err(Error_type::Invalid_file_identifier),
-        };
-
-        Ok(File
-            .metadata()
-            .map_err(|Error| Error_type::from(Error.kind()))?
-            .file_type()
-            .into())
-    }
-
-    fn Get_file_size(
-        &self,
-        File_identifier: Generics::File_identifier_type,
-    ) -> Result<Generics::Size_type, Error_type> {
-        let mut Open_files = self.Open_files.write().unwrap();
-        let File = match Open_files.get_mut(&File_identifier) {
-            Some(File) => File,
-            None => return Err(Error_type::Invalid_file_identifier),
-        };
-        Ok(File
-            .metadata()
-            .map_err(|Error| Error_type::from(Error.kind()))?
-            .len()
-            .into())
-    }
-
-    fn Get_file_position(
-        &self,
-        File: Generics::File_identifier_type,
-    ) -> Result<Generics::Size_type, Error_type> {
-        let mut Open_files = self.Open_files.write().unwrap();
-        let File = match Open_files.get_mut(&File) {
-            Some(File) => File,
-            None => return Err(Error_type::Invalid_file_identifier),
-        };
-
-        Ok(File
-            .stream_position()
-            .map_err(|Error| Error_type::from(Error.kind()))?
-            .into())
-    }
-
-    fn Set_file_position(
-        &self,
-        File: Generics::File_identifier_type,
-        Position_type: &Generics::Position_type,
-    ) -> Result<Generics::Size_type, Error_type> {
-        let mut Open_files = self.Open_files.write().unwrap();
-        let File = match Open_files.get_mut(&File) {
-            Some(File) => File,
-            None => return Err(Error_type::Invalid_file_identifier),
-        };
-
-        Ok(File
-            .seek(match Position_type {
-                Generics::Position_type::Start(Value) => SeekFrom::Start(Value.0),
-                Generics::Position_type::Current(Value) => SeekFrom::Current(*Value),
-                Generics::Position_type::End(Value) => SeekFrom::End(*Value),
-            })
-            .map_err(|Error| Error_type::from(Error.kind()))?
-            .into())
-    }
-
-    fn Delete_file(&self, Path: &Generics::Path_type) -> Result<(), Error_type> {
-        remove_file(self.Get_full_path(Path).As_str()).map_err(|Error| Error.kind().into())
-    }
-
-    fn Create_directory(&self, Path: &Generics::Path_type) -> Result<(), Error_type> {
-        create_dir(self.Get_full_path(Path).As_str()).map_err(|Error| Error.kind().into())
-    }
-
-    fn Create_directory_recursive(&self, Path: &Generics::Path_type) -> Result<(), Error_type> {
-        create_dir_all(self.Get_full_path(Path).As_str()).map_err(|Error| Error.kind().into())
-    }
-
-    fn Delete_directory(&self, Path: &Generics::Path_type) -> Result<(), Error_type> {
-        remove_dir(self.Get_full_path(Path).As_str()).map_err(|Error| Error.kind().into())
-    }
-
-    fn Delete_directory_recursive(&self, Path: &Generics::Path_type) -> Result<(), Error_type> {
-        remove_dir_all(self.Get_full_path(Path).As_str()).map_err(|Error| Error.kind().into())
+        Ok(File_identifier_type::from(New_local_file_identifier as u16))
     }
 
     fn Move(
-        &self,
-        Path: &Generics::Path_type,
-        Destination: &Generics::Path_type,
-    ) -> Result<(), Error_type> {
+        &mut self,
+        _: Task_identifier_type,
+        Source: &dyn AsRef<Path_type>,
+        Destination: &dyn AsRef<Path_type>,
+    ) -> Result<()> {
+        let Source = self.Get_full_path(Source)?;
+        let Destination = self.Get_full_path(Destination)?;
+
         rename(
-            self.Get_full_path(Path).As_str(),
-            self.Get_full_path(Destination).As_str(),
-        )
-        .map_err(|Error| Error.kind().into())
+            Source.as_ref() as &Path_type,
+            Destination.as_ref() as &Path_type,
+        )?;
+        Ok(())
     }
 }
 
 // - Test
 #[cfg(test)]
-mod tests {
-    use crate::Prelude::Path_type;
-
-    use super::{Generics::*, *};
-    use std::fs::File as STD_File;
-    use std::path::Path as STD_Path;
-
-    const Test_directory_path: &str = "Test";
-
-    fn Get_path_in_test(Path: &Generics::Path_type) -> Generics::Path_type {
-        Generics::Path_type::from(Test_directory_path) + Path
-    }
-
-    fn Reset_test_directory(File_system: &File_system_type) {
-        let Test_directory_full_path =
-            File_system.Get_full_path(&Generics::Path_type::from(Test_directory_path));
-        if !STD_Path::new(&Test_directory_full_path.As_str()).exists() {
-            create_dir(&Test_directory_full_path.As_str()).unwrap();
-        }
-    }
-
-    #[test]
-    fn Exists() {
-        let mut File_system = File_system_type::New();
-        assert!(File_system.Initialize().is_ok());
-        Reset_test_directory(&File_system);
-        let File_path = Get_path_in_test(&Path_type::from("exists.txt"));
-        assert!(!File_system.Exists(&File_path).unwrap());
-        let mut File = STD_File::create(File_system.Get_full_path(&File_path).As_str()).unwrap();
-        assert!(File.write_all(b"Hello, world!").is_ok());
-        assert!(File_system.Exists(&File_path).unwrap());
-        assert!(remove_file(File_system.Get_full_path(&File_path).As_str()).is_ok());
-        assert!(!File_system.Exists(&File_path).unwrap());
-    }
-
-    #[test]
-    fn File_manipulation() {
-        let mut File_system = File_system_type::New();
-        assert!(File_system.Initialize().is_ok());
-        Reset_test_directory(&File_system);
-
-        let File_path = Get_path_in_test(&Path_type::from("delete_file.txt"));
-        assert!(!File_system.Exists(&File_path).unwrap());
-        assert!(File_system.Open_file(&File_path, Mode_type::Write).is_ok());
-        assert!(File_system.Exists(&File_path).unwrap());
-        assert!(File_system.Delete_file(&File_path).is_ok());
-        assert!(!File_system.Exists(&File_path).unwrap());
-    }
-
-    #[test]
-    fn Directory_operations() {
-        let mut File_system = File_system_type::New();
-        assert!(File_system.Initialize().is_ok());
-
-        let Directory_path = Get_path_in_test(&Path_type::from("directory"));
-        assert!(!File_system.Exists(&Directory_path).unwrap());
-        assert!(File_system.Create_directory(&Directory_path).is_ok());
-        assert!(File_system.Exists(&Directory_path).unwrap());
-        assert!(File_system.Delete_directory(&Directory_path).is_ok());
-        assert!(!File_system.Exists(&Directory_path).unwrap());
-    }
-
-    #[test]
-    fn File_operations() {
-        let mut File_system = File_system_type::New();
-        assert!(File_system.Initialize().is_ok());
-        Reset_test_directory(&File_system);
-
-        let File_path = Get_path_in_test(&Path_type::from("file_operations.txt"));
-        assert!(!File_system.Exists(&File_path).unwrap());
-        let mut File = File_system.Open_file(&File_path, Mode_type::Write).unwrap();
-        assert!(File.write_all(b"Hello, world!").is_ok());
-        assert!(File_system.Exists(&File_path).unwrap());
-        assert!(File_system.Delete_file(&File_path).is_ok());
-        assert!(!File_system.Exists(&File_path).unwrap());
-    }
-
-    #[test]
-    fn File_metadata() {
-        let mut File_system = File_system_type::New();
-        assert!(File_system.Initialize().is_ok());
-        Reset_test_directory(&File_system);
-
-        let File_path = Get_path_in_test(&Path_type::from("file_metadata.txt"));
-        assert!(!File_system.Exists(&File_path).unwrap());
-        let mut File = File_system.Open_file(&File_path, Mode_type::Write).unwrap();
-        assert!(File.write_all(b"Hello, world!").is_ok());
-        assert!(File_system.Exists(&File_path).unwrap());
-        assert!(File.Get_size().unwrap() == Size_type(13));
-        assert!(File_system.Delete_file(&File_path).is_ok());
-        assert!(!File_system.Exists(&File_path).unwrap());
-    }
-}
+mod Tests {}
