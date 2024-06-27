@@ -16,7 +16,7 @@ struct Task_internal_type {
     Thread: Thread_wrapper_type,
     /// The identifiers of the children of the task.
     Children: Vec<Task_identifier_type>,
-
+    /// The identifier of the user that owns the task.
     Owner: User_identifier_type,
     /// Environment variables of the task.
     Environment_variables: HashMap<Cow<'static, str>, Cow<'static, str>>,
