@@ -71,21 +71,23 @@ impl Manager_type {
     ) -> Result<Group_identifier_type> {
         let Identifier = match Identifier {
             Some(Identifier) => Identifier,
-            None => self.Get_new_group_identifier(),
+            None => self
+                .Get_new_group_identifier()
+                .ok_or(Error_type::Too_many_groups)?,
         };
-
-        let mut Groups = self.Groups.write().unwrap();
 
         let Group = Internal_group_type {
             Name: Name.to_string(),
             Users: HashSet::new(),
         };
 
-        if self.Exists_group(Identifier) {
+        if self.Exists_group(Identifier)? {
             return Err(Error_type::Duplicate_group_identifier);
         }
 
-        if Groups.insert(Identifier, Group).is_some() {
+        let mut Inner = self.0.write().unwrap();
+
+        if Inner.Groups.insert(Identifier, Group).is_some() {
             return Err(Error_type::Duplicate_group_identifier); // Shouldn't happen
         }
         Ok(Identifier)
@@ -129,7 +131,7 @@ impl Manager_type {
     }
 
     pub fn Exists_user(&self, Identifier: User_identifier_type) -> Result<bool> {
-        self.Users.read().unwrap().contains_key(&Identifier)
+        Ok(self.0.read()?.Users.contains_key(&Identifier))
     }
 
     pub fn Add_to_group(
@@ -137,8 +139,12 @@ impl Manager_type {
         User_identifier: User_identifier_type,
         Group_identifier: Group_identifier_type,
     ) -> Result<()> {
+        if !self.Exists_group(Group_identifier)? {
+            return Err(Error_type::Invalid_group_identifier);
         }
-        if !Groups
+        let mut Inner = self.0.write()?;
+        if !Inner
+            .Groups
             .get_mut(&Group_identifier)
             .unwrap()
             .Users
@@ -150,22 +156,23 @@ impl Manager_type {
     }
 
     pub fn Get_group_name(&self, Identifier: Group_identifier_type) -> Result<String> {
+        Ok(self.0.read()?.Groups.get(&Identifier).unwrap().Name.clone())
     }
 
     pub fn Get_group_users(
         &self,
         Identifier: Group_identifier_type,
     ) -> Result<Vec<User_identifier_type>> {
-        let Groups = self.Groups.read().unwrap();
-        Some(
-            Groups
-                .get(&Identifier)
-                .unwrap()
-                .Users
-                .clone()
-                .into_iter()
-                .collect(),
-        )
+        Ok(self
+            .0
+            .read()?
+            .Groups
+            .get(&Identifier)
+            .ok_or(Error_type::Invalid_group_identifier)?
+            .Users
+            .clone()
+            .into_iter()
+            .collect())
     }
 
     pub fn Get_user_name(&self, Identifier: User_identifier_type) -> Result<String> {
