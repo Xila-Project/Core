@@ -42,17 +42,26 @@ impl Manager_type {
         (0..User_identifier_type::MAX).find(|Identifier| !Inner.Users.contains_key(Identifier))
     }
 
-    pub fn Get_new_user_identifier(&self) -> User_identifier_type {
-        let Users = self.Users.read().unwrap();
+    pub fn Create_user(&self, Name: &str) -> Result<User_identifier_type> {
+        let Identifier = match self.Get_new_user_identifier() {
+            Some(Identifier) => Identifier,
+            None => return Err(Error_type::Too_many_users),
+        };
 
-        let mut User_identifier: User_identifier_type = 0;
-        while Users.contains_key(&User_identifier) {
-            if User_identifier == User_identifier_type::MAX {
-                panic!("No remaining group identifier !");
-            }
-            User_identifier += 1;
+        let User = Internal_user_type {
+            Name: Name.to_string(),
+        };
+
+        if self.Exists_user(Identifier)? {
+            return Err(Error_type::Duplicate_user_identifier);
         }
-        User_identifier
+
+        let mut Inner = self.0.write().unwrap();
+
+        if Inner.Users.insert(Identifier, User).is_some() {
+            return Err(Error_type::Duplicate_user_identifier); // Shouldn't happen
+        }
+        Ok(Identifier)
     }
 
     pub fn Create_group(
@@ -86,8 +95,37 @@ impl Manager_type {
         crate::Root_user_identifier == Identifier
     }
 
-    pub fn Exists_group(&self, Identifier: Group_identifier_type) -> bool {
-        self.Groups.read().unwrap().contains_key(&Identifier)
+    pub fn Is_in_group(
+        &self,
+        User_identifier: User_identifier_type,
+        Group_identifier: Group_identifier_type,
+    ) -> bool {
+        let Inner = self.0.read().unwrap();
+        Inner
+            .Groups
+            .get(&Group_identifier)
+            .unwrap()
+            .Users
+            .contains(&User_identifier)
+    }
+
+    pub fn Get_user_groups(
+        &self,
+        Identifier: User_identifier_type,
+    ) -> Option<Vec<Group_identifier_type>> {
+        let Inner = self.0.read().unwrap();
+        Some(
+            Inner
+                .Groups
+                .iter()
+                .filter(|(_, Group)| Group.Users.contains(&Identifier))
+                .map(|(Identifier, _)| *Identifier)
+                .collect(),
+        )
+    }
+
+    pub fn Exists_group(&self, Identifier: Group_identifier_type) -> Result<bool> {
+        Ok(self.0.read()?.Groups.contains_key(&Identifier))
     }
 
     pub fn Exists_user(&self, Identifier: User_identifier_type) -> bool {
@@ -135,9 +173,15 @@ impl Manager_type {
         )
     }
 
-    pub fn Get_user_name(&self, Identifier: User_identifier_type) -> Option<String> {
-        let Users = self.Users.read().unwrap();
-        Some(Users.get(&Identifier).unwrap().Name.clone())
+    pub fn Get_user_name(&self, Identifier: User_identifier_type) -> Result<String> {
+        Ok(self
+            .0
+            .read()?
+            .Users
+            .get(&Identifier)
+            .ok_or(Error_type::Invalid_user_identifier)?
+            .Name
+            .clone())
     }
 
     pub fn Check_credentials(&self, _User_name: &str, _Password: &str) -> bool {
