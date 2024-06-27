@@ -4,6 +4,7 @@ use super::*;
 // - - External
 // - - - Standard library
 use std::{
+    borrow::Cow,
     collections::HashMap,
     sync::{Arc, RwLock},
 };
@@ -17,6 +18,8 @@ struct Task_internal_type {
     Children: Vec<Task_identifier_type>,
 
     Owner: User_identifier_type,
+    /// Environment variables of the task.
+    Environment_variables: HashMap<Cow<'static, str>, Cow<'static, str>>,
 }
 
 /// A manager for tasks.
@@ -192,6 +195,75 @@ impl Manager_type {
         }
 
         Err(Error_type::No_thread_for_task)
+    }
+
+    pub fn Get_current_task(&self) -> Result<Task_type> {
+        Ok(Task_type::New(
+            self.Get_current_task_identifier()?,
+            self.clone(),
+        ))
+    }
+
+    pub fn Get_environment_variable(
+        &self,
+        Task_identifier: Task_identifier_type,
+        Name: &str,
+    ) -> Result<Cow<'static, str>> {
+        let Tasks = self.Tasks.read().unwrap(); // Acquire lock
+
+        Ok(Tasks
+            .get(&Task_identifier)
+            .ok_or(Error_type::Invalid_task_identifier)?
+            .Environment_variables
+            .get(Name)
+            .ok_or(Error_type::Invalid_environment_variable)?
+            .clone())
+    }
+
+    pub fn Get_environment_variables(
+        &self,
+        Task_identifier: Task_identifier_type,
+    ) -> Result<HashMap<Cow<'static, str>, Cow<'static, str>>> {
+        let Tasks = self.Tasks.read().unwrap(); // Acquire lock
+
+        Ok(Tasks
+            .get(&Task_identifier)
+            .ok_or(Error_type::Invalid_task_identifier)?
+            .Environment_variables
+            .clone())
+    }
+
+    pub fn Set_environment_variable(
+        &self,
+        Task_identifier: Task_identifier_type,
+        Name: &str,
+        Value: &str,
+    ) -> Result<()> {
+        let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
+
+        Tasks
+            .get_mut(&Task_identifier)
+            .ok_or(Error_type::Invalid_task_identifier)?
+            .Environment_variables
+            .insert(Cow::Owned(Name.to_string()), Cow::Owned(Value.to_string()));
+
+        Ok(())
+    }
+
+    pub fn Remove_environment_variable(
+        &self,
+        Task_identifier: Task_identifier_type,
+        Name: &str,
+    ) -> Result<()> {
+        let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
+
+        Tasks
+            .get_mut(&Task_identifier)
+            .ok_or(Error_type::Invalid_task_identifier)?
+            .Environment_variables
+            .remove(Name);
+
+        Ok(())
     }
 }
 

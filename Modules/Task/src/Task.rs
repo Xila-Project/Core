@@ -62,26 +62,18 @@ impl<'a> Task_type<'a> {
     pub fn Sleep(Duration: std::time::Duration) {
         Thread_wrapper_type::Sleep(Duration)
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+    pub fn Get_environment_variable(&self, Name: &str) -> Result<Cow<'static, str>> {
+        self.Manager.Get_environment_variable(self.Identifier, Name)
+    }
 
-    #[test]
-    fn Test() {
-        let Manager = Manager_type::New();
+    pub fn Set_environment_variable(&self, Name: &str, Value: &str) -> Result<()> {
+        self.Manager
+            .Set_environment_variable(self.Identifier, Name, Value)
+    }
 
-        let Manager_copy = Manager.clone();
-
-        Manager.New_root_task(None, move || {
-            let Task = Task_type::Get_current_task(&Manager_copy).unwrap();
-
-            let _ = Task
-                .New_child_task("Child task", None, None, || {
-                    Task_type::Sleep(std::time::Duration::from_millis(100));
-                })
-                .unwrap();
-        });
+    pub fn Remove_environment_variable(&self, Name: &str) -> Result<()> {
+        self.Manager
+            .Remove_environment_variable(self.Identifier, Name)
     }
 }
