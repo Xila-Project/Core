@@ -8,7 +8,7 @@ use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
 };
-use Users::User_identifier_type;
+use Users::{Root_user_identifier, User_identifier_type};
 
 /// Internal representation of a task.
 struct Task_internal_type {
