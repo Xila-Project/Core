@@ -4,16 +4,16 @@ use Users::User_identifier_type;
 pub type Task_identifier_type = usize;
 
 /// A wrapper for individual tasks that are managed by [Manager_type].
-pub struct Task_type<'a> {
+pub struct Task_type {
     /// The identifier of the task.
     Identifier: Task_identifier_type,
     /// A reference to the [Manager_type] that manages the task.
-    Manager: &'a Manager_type,
+    Manager: Manager_type,
 }
 
-impl<'a> Task_type<'a> {
+impl Task_type {
     /// Internal method to create a new task.
-    fn New(Identifier: Task_identifier_type, Manager: &'a Manager_type) -> Self {
+    pub(crate) fn New(Identifier: Task_identifier_type, Manager: Manager_type) -> Self {
         Self {
             Identifier,
             Manager,
