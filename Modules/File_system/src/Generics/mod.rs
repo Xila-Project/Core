@@ -1,7 +1,9 @@
-pub mod Error;
-pub mod File;
-pub mod File_system;
-pub mod Fundamentals;
+mod Error;
+mod File;
+mod File_system;
+mod Fundamentals;
+mod Pipe;
+mod Virtual_file_system;
 
 pub use Error::*;
 pub use File::*;
