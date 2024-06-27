@@ -21,7 +21,7 @@ impl Task_type {
     }
 
     /// Create a new child task.
-    pub fn New_child_task<F>(
+    pub fn New_child_task<T, F>(
         &self,
         Name: &str,
         Owner: Option<User_identifier_type>,
