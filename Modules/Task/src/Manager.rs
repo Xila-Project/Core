@@ -48,10 +48,7 @@ impl Manager_type {
             .find(|Identifier| !self.Tasks.read().unwrap().contains_key(Identifier))
     }
 
-    pub fn Get_task_name(
-        &self,
-        Task_identifier: Task_identifier_type,
-    ) -> Result<String, Error_type> {
+    pub fn Get_task_name(&self, Task_identifier: Task_identifier_type) -> Result<String> {
         match self.Tasks.read().unwrap().get(&Task_identifier) {
             Some(Task) => match Task.Thread.Get_name() {
                 Some(Name) => Ok(Name.to_string()),
@@ -146,10 +143,7 @@ impl Manager_type {
         Ok((Child_task_identifier, Join_handle))
     }
 
-    pub fn Get_owner(
-        &self,
-        Task_identifier: Task_identifier_type,
-    ) -> Result<User_identifier_type, Error_type> {
+    pub fn Get_owner(&self, Task_identifier: Task_identifier_type) -> Result<User_identifier_type> {
         let Tasks = self.Tasks.read().unwrap();
 
         Ok(Tasks
