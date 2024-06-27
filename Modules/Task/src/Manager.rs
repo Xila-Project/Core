@@ -158,31 +158,25 @@ impl Manager_type {
             .Owner)
     }
 
-    fn Delete_task(&self, Task_identifier: Task_identifier_type) -> Result<(), ()> {
-        let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
-
-        // - Remove task from hashmap and take ownership of it
-        let Task = match Tasks.remove(&Task_identifier) {
-            Some(Task) => Task,
-            None => return Err(()),
-        };
-
-        std::mem::drop(Tasks); // Force Release lock    // TODO : Find a better way to do this
-
-        // - Waiting for thread to terminate
-        for Thread in Task.Threads.into_iter() {
-            Thread.Join().unwrap();
+    fn Delete_task(&self, Task_identifier: Task_identifier_type) -> Result<()> {
+        // - Wait for all children to terminate
+        while !self
+            .Tasks
+            .read()?
+            .get(&Task_identifier)
+            .ok_or(Error_type::Invalid_task_identifier)?
+            .Children
+            .is_empty()
+        {
+            Task_type::Sleep(std::time::Duration::from_millis(10));
         }
 
-        let mut R = Ok(());
+        self.Tasks
+            .write()?
+            .remove(&Task_identifier)
+            .ok_or(Error_type::Invalid_task_identifier)?;
 
-        for Child_task_identifier in Task.Children.iter() {
-            if self.Delete_task(*Child_task_identifier).is_err() {
-                R = Err(());
-            }
-        }
-
-        R
+        Ok(())
     }
 
     pub fn Get_current_task_identifier(&self) -> Result<Task_identifier_type, Error_type> {
