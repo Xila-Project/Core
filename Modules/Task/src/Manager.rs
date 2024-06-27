@@ -36,17 +36,13 @@ impl Manager_type {
         }
     }
 
-    fn Get_new_task_identifier(&self) -> Task_identifier_type {
+    fn Get_new_task_identifier(&self) -> Option<Task_identifier_type> {
         if self.Tasks.read().unwrap().len() == 0 {
-            return Self::Root_task_identifier;
+            return Some(Self::Root_task_identifier);
         }
 
-        for Process_identifier in 0..Task_identifier_type::MAX - 1 {
-            if !self.Tasks.read().unwrap().contains_key(&Process_identifier) {
-                return Process_identifier;
-            }
-        }
-        panic!("No more process identifier available."); // Should never happen since the maximum number of tasks is usize::MAX - 1 which is a lot.
+        (0..Task_identifier_type::MAX)
+            .find(|Identifier| !self.Tasks.read().unwrap().contains_key(Identifier))
     }
 
     pub fn Get_task_name(
