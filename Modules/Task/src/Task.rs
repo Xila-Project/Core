@@ -42,7 +42,7 @@ impl Task_type {
         ))
     }
 
-    pub fn Get_name(&self) -> Result<String, Error_type> {
+    pub fn Get_name(&self) -> Result<String> {
         self.Manager.Get_task_name(self.Identifier)
     }
 
