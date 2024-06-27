@@ -1,7 +1,10 @@
-use super::*;
+use std::borrow::Cow;
+
 use Users::User_identifier_type;
 
-pub type Task_identifier_type = usize;
+use crate::{Join_handle_type, Manager_type, Result, Thread_wrapper_type};
+
+pub type Task_identifier_type = u16;
 
 /// A wrapper for individual tasks that are managed by [Manager_type].
 pub struct Task_type {
