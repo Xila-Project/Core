@@ -2,11 +2,14 @@ use std::ops;
 
 mod Flags;
 mod Identifiers;
+mod Path;
 mod Permission;
+
 pub use Flags::*;
 pub use Identifiers::*;
 pub use Path::*;
 pub use Permission::*;
+
 use Shared::Discriminant_trait;
 
 #[derive(Default, PartialOrd, PartialEq, Eq, Ord, Clone, Copy, Debug)]
