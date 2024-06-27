@@ -5,10 +5,12 @@ mod Discriminant;
 mod Error;
 mod Mutable_slice;
 mod Mutable_string;
+mod Ring_buffer;
 mod Size;
 
 pub use Discriminant::*;
 pub use Error::*;
 pub use Mutable_slice::*;
 pub use Mutable_string::*;
+pub use Ring_buffer::*;
 pub use Size::*;
