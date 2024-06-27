@@ -1,3 +1,5 @@
+use std::ops;
+
 mod Flags;
 mod Identifiers;
 mod Permission;
@@ -9,9 +11,37 @@ use Shared::Discriminant_trait;
 
 #[derive(Default, PartialOrd, PartialEq, Eq, Ord, Clone, Copy, Debug)]
 #[repr(transparent)]
-pub struct Size_type(pub u64);
-pub type Signed_size_type = i64;
+pub struct Size_type(u64);
 
+impl PartialEq<usize> for Size_type {
+    fn eq(&self, other: &usize) -> bool {
+        self.0 == *other as u64
+    }
+}
+
+impl From<usize> for Size_type {
+    fn from(item: usize) -> Self {
+        Size_type(item as u64)
+    }
+}
+
+impl From<u64> for Size_type {
+    fn from(item: u64) -> Self {
+        Size_type(item)
+    }
+}
+
+impl From<Size_type> for usize {
+    fn from(item: Size_type) -> Self {
+        item.0 as usize
+    }
+}
+
+impl From<Size_type> for u64 {
+    fn from(item: Size_type) -> Self {
+        item.0
+    }
+}
 pub enum Position_type {
     Start(Size_type),
     Current(Signed_size_type),
