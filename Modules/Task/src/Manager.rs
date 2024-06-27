@@ -62,33 +62,6 @@ impl Manager_type {
         }
     }
 
-    pub fn New_root_task<F>(&self, Stack_size: Option<usize>, Function: F)
-    where
-        F: FnOnce() + Send + 'static,
-    {
-        let Manager = self.clone();
-        let Function = move || {
-            Function();
-            Manager.Delete_task(Self::Root_task_identifier).unwrap();
-        };
-
-        let Thread_wrapper = match Thread_wrapper_type::New("Xila", Stack_size, Function) {
-            Ok(Thread_wrapper) => Thread_wrapper,
-            Err(e) => panic!("Failed to create root task : {:?}", e),
-        };
-
-        let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
-
-        Tasks.insert(
-            Self::Root_task_identifier,
-            Task_internal_type {
-                Threads: vec![Thread_wrapper],
-                Children: Vec::new(),
-                Owner: Users::Root_user_identifier,
-            },
-        );
-    }
-
     /// Create a new child task, returns the identifier of the child task.
     /// # Arguments
     /// * `Parent_task_identifier` - The identifier of the parent task.
@@ -96,49 +69,78 @@ impl Manager_type {
     /// * `Stack_size` - The size of the stack of the task.
     /// * `Function` - The function that the task will execute.
     ///
-    pub fn New_task<F>(
+    pub fn New_task<T, F>(
         &self,
-        Parent_task_identifier: Task_identifier_type,
+        Parent_task_identifier: Option<Task_identifier_type>,
         User_identifier: Option<User_identifier_type>,
         Name: &str,
         Stack_size: Option<usize>,
         Function: F,
-    ) -> Result<Task_identifier_type, Error_type>
+    ) -> Result<(Task_identifier_type, Join_handle_type<T>)>
     where
-        F: FnOnce() + Send + 'static,
+        T: Send + 'static,
+        F: FnOnce() -> T + Send + 'static,
     {
-        let Child_task_identifier = self.Get_new_task_identifier();
+        let Child_task_identifier = self
+            .Get_new_task_identifier()
+            .ok_or(Error_type::Too_many_tasks)?;
 
-        let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
+        // - Create the root task if it's the first task
+        let (Owner, Environment_variables) = if self.Tasks.read()?.is_empty() {
+            let Owner = match User_identifier {
+                Some(Identifier) => Identifier,
+                None => Root_user_identifier,
+            };
+            let Environment_variable = HashMap::new();
+            (Owner, Environment_variable)
+        }
+        // - Create a child task
+        else {
+            let Parent_task_identifier =
+                if let Some(Parent_task_identifier) = Parent_task_identifier {
+                    Parent_task_identifier
+                } else {
+                    self.Get_current_task_identifier()
+                        .unwrap_or(Self::Root_task_identifier)
+                };
 
-        let Parent_task = match Tasks.get_mut(&Parent_task_identifier) {
-            Some(Parent_task) => Parent_task,
-            None => return Err(Error_type::Invalid_task_identifier),
+            let mut Tasks = self.Tasks.write()?;
+
+            let Parent_task = Tasks
+                .get_mut(&Parent_task_identifier)
+                .ok_or(Error_type::Invalid_task_identifier)?;
+
+            Parent_task.Children.push(Child_task_identifier);
+
+            let Owner = match User_identifier {
+                Some(Identifier) => Identifier,
+                None => self.Get_owner(Parent_task_identifier).unwrap(),
+            };
+
+            let Environment_variable = Parent_task.Environment_variables.clone();
+
+            (Owner, Environment_variable)
         };
 
         let Manager = self.clone();
 
         let Function = move || {
-            Function();
+            let Result = Function();
             let _ = Manager.Delete_task(Child_task_identifier);
+            Result
         };
 
-        let Thread_wrapper = Thread_wrapper_type::New(Name, Stack_size, Function)?;
+        let Join_handle = Thread_wrapper_type::New(Name, Stack_size, Function)?;
 
-        Parent_task.Children.push(Child_task_identifier);
+        let Thread = Join_handle.Get_thread_wrapper();
 
-        let Owner = match User_identifier {
-            Some(Identifier) => Identifier,
-            None => self.Get_owner(Parent_task_identifier).unwrap(),
-        };
-
-        std::mem::drop(Tasks); // Force Release lock    // TODO : Find a better way to do this
-        self.Tasks.write().unwrap().insert(
+        self.Tasks.write()?.insert(
             Child_task_identifier,
             Task_internal_type {
-                Threads: vec![Thread_wrapper],
+                Thread,
                 Children: Vec::new(),
                 Owner,
+                Environment_variables,
             },
         );
 
