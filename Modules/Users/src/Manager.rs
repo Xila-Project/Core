@@ -68,7 +68,7 @@ impl Manager_type {
         &self,
         Name: &str,
         Identifier: Option<Group_identifier_type>,
-    ) -> Result<Group_identifier_type, Error_type> {
+    ) -> Result<Group_identifier_type> {
         let Identifier = match Identifier {
             Some(Identifier) => Identifier,
             None => self.Get_new_group_identifier(),
@@ -128,7 +128,7 @@ impl Manager_type {
         Ok(self.0.read()?.Groups.contains_key(&Identifier))
     }
 
-    pub fn Exists_user(&self, Identifier: User_identifier_type) -> bool {
+    pub fn Exists_user(&self, Identifier: User_identifier_type) -> Result<bool> {
         self.Users.read().unwrap().contains_key(&Identifier)
     }
 
@@ -136,10 +136,7 @@ impl Manager_type {
         &self,
         User_identifier: User_identifier_type,
         Group_identifier: Group_identifier_type,
-    ) -> Result<(), Error_type> {
-        let mut Groups = self.Groups.write().unwrap();
-        if !self.Exists_group(Group_identifier) {
-            return Err(Error_type::No_group_identifier);
+    ) -> Result<()> {
         }
         if !Groups
             .get_mut(&Group_identifier)
@@ -152,15 +149,13 @@ impl Manager_type {
         Ok(())
     }
 
-    pub fn Get_group_name(&self, Identifier: Group_identifier_type) -> Option<String> {
-        let Groups = self.Groups.read().unwrap();
-        Some(Groups.get(&Identifier).unwrap().Name.clone())
+    pub fn Get_group_name(&self, Identifier: Group_identifier_type) -> Result<String> {
     }
 
     pub fn Get_group_users(
         &self,
         Identifier: Group_identifier_type,
-    ) -> Option<Vec<User_identifier_type>> {
+    ) -> Result<Vec<User_identifier_type>> {
         let Groups = self.Groups.read().unwrap();
         Some(
             Groups
