@@ -179,7 +179,7 @@ impl Manager_type {
         Ok(())
     }
 
-    pub fn Get_current_task_identifier(&self) -> Result<Task_identifier_type, Error_type> {
+    pub fn Get_current_task_identifier(&self) -> Result<Task_identifier_type> {
         let Tasks = self.Tasks.read().unwrap(); // Acquire lock
 
         for (Task_identifier, Task) in Tasks.iter() {
