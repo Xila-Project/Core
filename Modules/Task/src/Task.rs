@@ -50,17 +50,8 @@ impl<'a> Task_type<'a> {
         self.Identifier
     }
 
-    pub fn Get_manager(&self) -> &'a Manager_type {
-        self.Manager
-    }
-
-    pub fn Get_owner(&self) -> Result<User_identifier_type, Error_type> {
+    pub fn Get_owner(&self) -> Result<User_identifier_type> {
         self.Manager.Get_owner(self.Identifier)
-    }
-
-    pub fn Get_current_task(Manager: &'a Manager_type) -> Result<Self, Error_type> {
-        let Current_task_identifier = Manager.Get_current_task_identifier()?;
-        Ok(Self::New(Current_task_identifier, Manager))
     }
 
     pub fn Sleep(Duration: std::time::Duration) {
