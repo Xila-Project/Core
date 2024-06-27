@@ -1,14 +1,34 @@
 use super::*;
-use std::thread;
+use std::{
+    any::Any,
+    thread::{self, ThreadId},
+};
+
+pub struct Join_handle_type<T>(thread::JoinHandle<T>);
+
+impl<T> Join_handle_type<T> {
+    pub fn Join(self) -> std::result::Result<T, Box<dyn Any + Send>> {
+        self.0.join()
+    }
+
+    pub(crate) fn Get_thread_wrapper(&self) -> Thread_wrapper_type {
+        Thread_wrapper_type(self.0.thread().clone())
+    }
+}
 
 /// A wrapper around [std::thread::Thread].
-pub struct Thread_wrapper_type(thread::JoinHandle<()>);
+pub struct Thread_wrapper_type(thread::Thread);
 
 impl Thread_wrapper_type {
     /// Creates a new thread with a given name, stack size and function.
-    pub fn New<F>(Name: &str, Stack_size: Option<usize>, Function: F) -> Result<Self, Error_type>
+    pub fn New<F, T>(
+        Name: &str,
+        Stack_size: Option<usize>,
+        Function: F,
+    ) -> Result<Join_handle_type<T>>
     where
-        F: FnOnce() + Send + 'static,
+        T: Send + 'static,
+        F: FnOnce() -> T + Send + 'static,
     {
         let Thread_builder = thread::Builder::new().name(Name.to_string());
 
@@ -21,20 +41,12 @@ impl Thread_wrapper_type {
             .spawn(Function)
             .map_err(|_| Error_type::Failed_to_spawn_thread)?;
 
-        Ok(Self(Join_handle))
-    }
-
-    /// Block the current thread until the thread terminates.
-    pub fn Join(self) -> Result<(), ()> {
-        match self.0.join() {
-            Ok(_) => Ok(()),
-            Err(_) => Err(()),
-        }
+        Ok(Join_handle_type(Join_handle))
     }
 
     /// Gets the name of the thread.
     pub fn Get_name(&self) -> Option<&str> {
-        self.0.thread().name()
+        self.0.name()
     }
 
     pub fn Sleep(Duration: std::time::Duration) {

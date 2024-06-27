@@ -27,14 +27,18 @@ impl<'a> Task_type<'a> {
         Owner: Option<User_identifier_type>,
         Stack_size: Option<usize>,
         Function: F,
-    ) -> Result<Task_type, Error_type>
+    ) -> Result<(Task_type, Join_handle_type<T>)>
     where
-        F: FnOnce() + Send + 'static,
+        T: Send + 'static,
+        F: FnOnce() -> T + Send + 'static,
     {
-        Ok(Self::New(
+        let (Task_identifier, Join_handle) =
             self.Manager
-                .New_task(self.Identifier, Owner, Name, Stack_size, Function)?,
-            self.Manager,
+                .New_task(Some(self.Identifier), Owner, Name, Stack_size, Function)?;
+
+        Ok((
+            Task_type::New(Task_identifier, self.Manager.clone()),
+            Join_handle,
         ))
     }
 

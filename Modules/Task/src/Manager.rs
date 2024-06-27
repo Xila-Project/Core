@@ -143,7 +143,7 @@ impl Manager_type {
             },
         );
 
-        Ok(Child_task_identifier)
+        Ok((Child_task_identifier, Join_handle))
     }
 
     pub fn Get_owner(
