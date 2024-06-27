@@ -12,7 +12,7 @@ use Users::User_identifier_type;
 /// Internal representation of a task.
 struct Task_internal_type {
     /// The thread that runs the task.
-    Threads: Vec<Thread_wrapper_type>,
+    Thread: Thread_wrapper_type,
     /// The identifiers of the children of the task.
     Children: Vec<Task_identifier_type>,
 
@@ -54,7 +54,7 @@ impl Manager_type {
         Task_identifier: Task_identifier_type,
     ) -> Result<String, Error_type> {
         match self.Tasks.read().unwrap().get(&Task_identifier) {
-            Some(Task) => match Task.Threads[0].Get_name() {
+            Some(Task) => match Task.Thread.Get_name() {
                 Some(Name) => Ok(Name.to_string()),
                 None => Err(Error_type::Invalid_task_identifier),
             },
@@ -190,7 +190,7 @@ impl Manager_type {
         let Tasks = self.Tasks.read().unwrap(); // Acquire lock
 
         for (Task_identifier, Task) in Tasks.iter() {
-            if Task.Threads[0].Get_name().unwrap() == std::thread::current().name().unwrap() {
+            if Task.Thread.Get_identifier() == std::thread::current().id() {
                 return Ok(*Task_identifier);
             }
         }
