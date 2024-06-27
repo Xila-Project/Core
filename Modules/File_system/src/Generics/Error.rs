@@ -2,6 +2,8 @@ use std::{num::NonZeroU32, sync::PoisonError};
 
 use Shared::Error_discriminant_trait;
 
+pub type Result<T> = std::result::Result<T, Error_type>;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[repr(C)]
 pub enum Error_type {
