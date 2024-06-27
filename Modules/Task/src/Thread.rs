@@ -52,4 +52,8 @@ impl Thread_wrapper_type {
     pub fn Sleep(Duration: std::time::Duration) {
         std::thread::sleep(Duration);
     }
+
+    pub fn Get_identifier(&self) -> ThreadId {
+        self.0.id()
+    }
 }
