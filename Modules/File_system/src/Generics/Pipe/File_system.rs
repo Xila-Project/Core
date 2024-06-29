@@ -6,7 +6,37 @@ use crate::Prelude::{
     Error_type, File_identifier_type, Flags_type, Mode_type, Result, Size_type, Status_type,
 };
 
-pub type Named_pipe_identifier_type = u32;
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
+#[repr(transparent)]
+pub struct Named_pipe_identifier_type(u32);
+
+impl Named_pipe_identifier_type {
+    pub const MAX: u32 = 0xFFFF_FFFF;
+}
+
+impl From<u32> for Named_pipe_identifier_type {
+    fn from(Identifier: u32) -> Self {
+        Named_pipe_identifier_type(Identifier)
+    }
+}
+
+impl From<Named_pipe_identifier_type> for u32 {
+    fn from(Identifier: Named_pipe_identifier_type) -> Self {
+        Identifier.0
+    }
+}
+
+impl From<[u8; 4]> for Named_pipe_identifier_type {
+    fn from(Identifier: [u8; 4]) -> Self {
+        Named_pipe_identifier_type(u32::from_ne_bytes(Identifier))
+    }
+}
+
+impl From<Named_pipe_identifier_type> for [u8; 4] {
+    fn from(Identifier: Named_pipe_identifier_type) -> Self {
+        Identifier.0.to_ne_bytes()
+    }
+}
 
 use super::Pipe_type;
 
@@ -25,7 +55,8 @@ impl Pipes_file_system_type {
 
     fn Get_named_pipe_identifier(&self) -> Option<Named_pipe_identifier_type> {
         (0..=Named_pipe_identifier_type::MAX)
-            .find(|&Identifier| !self.Named_pipes.contains_key(&Identifier))
+            .find(|&Identifier| !self.Named_pipes.contains_key(&Identifier.into()))
+            .map(|Identifier| Identifier.into())
     }
 
     fn Get_local_file_identifier(
@@ -33,7 +64,8 @@ impl Pipes_file_system_type {
         File_identifier: File_identifier_type,
     ) -> u32 {
         let File_identifier: u16 = File_identifier.into();
-        (Task_identifier as u32) << 16 | File_identifier as u32
+        let Task_identifier: u32 = Task_identifier.into();
+        Task_identifier << 16 | File_identifier as u32
     }
 
     fn Get_new_file_identifier(
