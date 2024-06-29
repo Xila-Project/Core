@@ -256,11 +256,10 @@ impl Pipes_file_system_type {
     }
 
     pub fn Get_size(&self, Identifier: Named_pipe_identifier_type) -> Result<Size_type> {
-        Ok(self
-            .Named_pipes
+        self.Named_pipes
             .get(&Identifier)
             .ok_or(Error_type::Not_found)?
-            .Get_size()?)
+            .Get_size()
     }
 
     pub fn Transfert_file_identifier(
