@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use Users::User_identifier_type;
 
-use crate::{Join_handle_type, Manager_type, Result, Thread_wrapper_type};
+use crate::{Join_handle_type, Manager_type, Result_type, Thread_wrapper_type};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[repr(transparent)]
@@ -48,7 +48,7 @@ impl Task_type {
         Owner: Option<User_identifier_type>,
         Stack_size: Option<usize>,
         Function: F,
-    ) -> Result<(Task_type, Join_handle_type<T>)>
+    ) -> Result_type<(Task_type, Join_handle_type<T>)>
     where
         T: Send + 'static,
         F: FnOnce() -> T + Send + 'static,
@@ -63,7 +63,7 @@ impl Task_type {
         ))
     }
 
-    pub fn Get_name(&self) -> Result<String> {
+    pub fn Get_name(&self) -> Result_type<String> {
         self.Manager.Get_task_name(self.Identifier)
     }
 
@@ -71,7 +71,7 @@ impl Task_type {
         self.Identifier
     }
 
-    pub fn Get_owner(&self) -> Result<User_identifier_type> {
+    pub fn Get_owner(&self) -> Result_type<User_identifier_type> {
         self.Manager.Get_owner(self.Identifier)
     }
 
@@ -79,16 +79,16 @@ impl Task_type {
         Thread_wrapper_type::Sleep(Duration)
     }
 
-    pub fn Get_environment_variable(&self, Name: &str) -> Result<Cow<'static, str>> {
+    pub fn Get_environment_variable(&self, Name: &str) -> Result_type<Cow<'static, str>> {
         self.Manager.Get_environment_variable(self.Identifier, Name)
     }
 
-    pub fn Set_environment_variable(&self, Name: &str, Value: &str) -> Result<()> {
+    pub fn Set_environment_variable(&self, Name: &str, Value: &str) -> Result_type<()> {
         self.Manager
             .Set_environment_variable(self.Identifier, Name, Value)
     }
 
-    pub fn Remove_environment_variable(&self, Name: &str) -> Result<()> {
+    pub fn Remove_environment_variable(&self, Name: &str) -> Result_type<()> {
         self.Manager
             .Remove_environment_variable(self.Identifier, Name)
     }

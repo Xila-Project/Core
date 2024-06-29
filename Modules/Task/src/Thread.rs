@@ -25,7 +25,7 @@ impl Thread_wrapper_type {
         Name: &str,
         Stack_size: Option<usize>,
         Function: F,
-    ) -> Result<Join_handle_type<T>>
+    ) -> Result_type<Join_handle_type<T>>
     where
         T: Send + 'static,
         F: FnOnce() -> T + Send + 'static,

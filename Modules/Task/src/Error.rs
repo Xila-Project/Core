@@ -1,6 +1,6 @@
 use std::{num::NonZeroU32, sync::PoisonError};
 
-pub type Result<T> = std::result::Result<T, Error_type>;
+pub type Result_type<T> = std::result::Result<T, Error_type>;
 
 #[derive(Debug, Clone)]
 #[repr(C)]

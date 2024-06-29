@@ -51,7 +51,7 @@ impl Manager_type {
             .map(|Identifier| Identifier.into())
     }
 
-    pub fn Get_task_name(&self, Task_identifier: Task_identifier_type) -> Result<String> {
+    pub fn Get_task_name(&self, Task_identifier: Task_identifier_type) -> Result_type<String> {
         match self.Tasks.read().unwrap().get(&Task_identifier) {
             Some(Task) => match Task.Thread.Get_name() {
                 Some(Name) => Ok(Name.to_string()),
@@ -75,7 +75,7 @@ impl Manager_type {
         Name: &str,
         Stack_size: Option<usize>,
         Function: F,
-    ) -> Result<(Task_identifier_type, Join_handle_type<T>)>
+    ) -> Result_type<(Task_identifier_type, Join_handle_type<T>)>
     where
         T: Send + 'static,
         F: FnOnce() -> T + Send + 'static,
@@ -146,7 +146,10 @@ impl Manager_type {
         Ok((Child_task_identifier, Join_handle))
     }
 
-    pub fn Get_owner(&self, Task_identifier: Task_identifier_type) -> Result<User_identifier_type> {
+    pub fn Get_owner(
+        &self,
+        Task_identifier: Task_identifier_type,
+    ) -> Result_type<User_identifier_type> {
         let Tasks = self.Tasks.read().unwrap();
 
         Ok(Tasks
@@ -155,7 +158,7 @@ impl Manager_type {
             .Owner)
     }
 
-    fn Delete_task(&self, Task_identifier: Task_identifier_type) -> Result<()> {
+    fn Delete_task(&self, Task_identifier: Task_identifier_type) -> Result_type<()> {
         // - Wait for all children to terminate
         while !self
             .Tasks
@@ -176,7 +179,7 @@ impl Manager_type {
         Ok(())
     }
 
-    pub fn Get_current_task_identifier(&self) -> Result<Task_identifier_type> {
+    pub fn Get_current_task_identifier(&self) -> Result_type<Task_identifier_type> {
         let Tasks = self.Tasks.read().unwrap(); // Acquire lock
 
         for (Task_identifier, Task) in Tasks.iter() {
@@ -188,7 +191,7 @@ impl Manager_type {
         Err(Error_type::No_thread_for_task)
     }
 
-    pub fn Get_current_task(&self) -> Result<Task_type> {
+    pub fn Get_current_task(&self) -> Result_type<Task_type> {
         Ok(Task_type::New(
             self.Get_current_task_identifier()?,
             self.clone(),
@@ -199,7 +202,7 @@ impl Manager_type {
         &self,
         Task_identifier: Task_identifier_type,
         Name: &str,
-    ) -> Result<Cow<'static, str>> {
+    ) -> Result_type<Cow<'static, str>> {
         let Tasks = self.Tasks.read().unwrap(); // Acquire lock
 
         Ok(Tasks
@@ -214,7 +217,7 @@ impl Manager_type {
     pub fn Get_environment_variables(
         &self,
         Task_identifier: Task_identifier_type,
-    ) -> Result<HashMap<Cow<'static, str>, Cow<'static, str>>> {
+    ) -> Result_type<HashMap<Cow<'static, str>, Cow<'static, str>>> {
         let Tasks = self.Tasks.read().unwrap(); // Acquire lock
 
         Ok(Tasks
@@ -229,7 +232,7 @@ impl Manager_type {
         Task_identifier: Task_identifier_type,
         Name: &str,
         Value: &str,
-    ) -> Result<()> {
+    ) -> Result_type<()> {
         let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
 
         Tasks
@@ -245,7 +248,7 @@ impl Manager_type {
         &self,
         Task_identifier: Task_identifier_type,
         Name: &str,
-    ) -> Result<()> {
+    ) -> Result_type<()> {
         let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
 
         Tasks
