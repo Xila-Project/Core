@@ -2,7 +2,6 @@ use std::mem::MaybeUninit;
 
 use Binding_tool::Bind_function_native;
 use File_system::Prelude::*;
-use Shared::{Discriminant_trait, From_result_to_u32};
 use Virtual_machine::{Function_descriptor_type, Function_descriptors, Registrable_trait};
 pub struct File_system_bindings {}
 
@@ -13,199 +12,153 @@ impl Registrable_trait for File_system_bindings {
 }
 
 impl File_system_bindings {
-    pub fn New(File_system: &impl File_system_traits) -> Self {
+    pub fn New(File_system: Virtual_file_system_type) -> Self {
         unsafe {
-            Root_file_system.write(File_system);
+            Virtual_file_system.write(File_system);
         }
 
         Self {}
     }
 }
 
-const File_system_bindings_functions: [Function_descriptor_type; 4] = Function_descriptors!(
-    Open_file_binding,
+fn Get_virtual_file_system() -> &'static Virtual_file_system_type {
+    unsafe { Virtual_file_system.assume_init_ref() }
+}
+
+const File_system_bindings_functions: [Function_descriptor_type; 8] = Function_descriptors!(
+    Open_binding,
     Close_file_binding,
-    Read_file_binding,
-    Write_file_binding
+    Read_binding,
+    Write_binding,
+    Create_file_binding,
+    Exists_binding,
+    Set_position_binding,
+    Delete_binding
 );
 
-// static Root_file_system = MaybeUninit::uninit();
+static mut Virtual_file_system: MaybeUninit<Virtual_file_system_type> = MaybeUninit::uninit();
 
-#[Bind_function_native(Prefix = "File_system")]
-fn Open_file(Path: &str, Mode: u32, File_identifier: &mut u16) -> u32 {
-    println!("Open_file {:?}", Path);
-    println!("Mode {:?}", Mode);
-    println!("File_identifier {:?}", File_identifier);
-
-    let File_system = Environment.Get_user_data().Get_file_system();
-
-    let Path: Path_type = Path.into();
-
-    let Result = File_system.Open_file(&Path, Mode.into());
-
-    if let Ok(File) = &Result {
-        *File_identifier = File.Get_identifier();
-    } else if let Err(Error) = &Result {
-        println!("Error {:?}", Error);
-    }
-    From_result_to_u32(&Result)
+fn New_path(Path: &str) -> Result<&Path_type> {
+    Path_type::New(Path).ok_or(Error_type::Invalid_path)
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Close_file(File_identifier: u16) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
+fn Open(
+    Path: &str,
+    Flags: Flags_type,
+    File_identifier: &mut Unique_file_identifier_type,
+) -> Result<()> {
+    let Path = New_path(Path)?;
 
-    let Result = File_system.Close_file(File_identifier);
+    *File_identifier = Get_virtual_file_system().Open(Path, Flags)?;
 
-    From_result_to_u32(&Result)
+    Ok(())
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Read_file(File_identifier: u16, Buffer: &mut [u8], Read_size: &mut u32) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
-
-    let Result = File_system.Read_file(File_identifier, Buffer);
-
-    if let Ok(Size) = &Result {
-        *Read_size = *Size as u32;
-    }
-
-    From_result_to_u32(&Result)
+fn Close_file(File_identifier: Unique_file_identifier_type) -> Result<()> {
+    Get_virtual_file_system().Close(File_identifier)
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Write_file(File_identifier: u16, Buffer: &[u8], Write_size: &mut u32) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
+fn Read(
+    File_identifier: Unique_file_identifier_type,
+    Buffer: &mut [u8],
+    Read_size: &mut Size_type,
+) -> Result<()> {
+    *Read_size = Get_virtual_file_system().Read(File_identifier, Buffer)?;
 
-    let Result = File_system.Write_file(File_identifier, Buffer);
-
-    if let Ok(Size) = &Result {
-        *Write_size = *Size as u32;
-    }
-
-    From_result_to_u32(&Result)
+    Ok(())
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Flush_file(File_identifier: u16) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
+fn Write(
+    File_identifier: Unique_file_identifier_type,
+    Buffer: &[u8],
+    Write_size: &mut Size_type,
+) -> Result<()> {
+    *Write_size = Get_virtual_file_system().Write(File_identifier, Buffer)?;
 
-    let Result = File_system.Flush_file(File_identifier);
-
-    From_result_to_u32(&Result)
+    Ok(())
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Get_file_type(File_identifier: u16, Type_reference: &mut u32) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
-
-    let Result = File_system.Get_file_type(File_identifier);
-
-    if let Ok(Type) = &Result {
-        *Type_reference = Type.Get_discriminant();
-    }
-
-    From_result_to_u32(&Result)
+fn Flush(File_identifier: Unique_file_identifier_type) -> Result<()> {
+    Get_virtual_file_system().Flush(File_identifier)
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Get_file_size(File_identifier: u16, Size_reference: &mut u64) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
+fn Get_file_type(Path: &str, Type: &mut u32) -> Result<()> {
+    let Path = New_path(Path)?;
 
-    let Result = File_system.Get_file_size(File_identifier);
+    *Type = Get_virtual_file_system().Get_type(Path)? as u32;
 
-    if let Ok(Size) = &Result {
-        *Size_reference = Size.0;
-    }
-
-    From_result_to_u32(&Result)
+    Ok(())
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Get_file_position(File_identifier: u16, Position_reference: &mut u64) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
+fn Get_file_size(Path: &str, Size: &mut Size_type) -> Result<()> {
+    let Path = New_path(Path)?;
 
-    let Result = File_system.Get_file_position(File_identifier);
+    *Size = Get_virtual_file_system().Get_size(Path)?;
 
-    if let Ok(Position) = &Result {
-        *Position_reference = Position.0;
-    }
-
-    From_result_to_u32(&Result)
+    Ok(())
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Set_file_position(File_identifier: u16, Mode: u32, Value: u64) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
+fn Set_position(
+    File_identifier: Unique_file_identifier_type,
+    Position: &Position_type,
+    Result_value: &mut Size_type,
+) -> Result<()> {
+    *Result_value = Get_virtual_file_system().Set_position(File_identifier, Position)?;
 
-    let Result = File_system.Set_file_position(File_identifier, &Position_type::From(Mode, Value));
-
-    From_result_to_u32(&Result)
+    Ok(())
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Delete_file(Path: &str) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
+fn Delete_file(Path: &str, Recursive: bool) -> Result<()> {
+    let Path = New_path(Path)?;
 
-    let Path: Path_type = Path.into();
+    Get_virtual_file_system().Delete(Path, Recursive)?;
 
-    let Result = File_system.Delete_file(&Path);
-
-    From_result_to_u32(&Result)
+    Ok(())
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Create_directory(Path: &str) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
+fn Create_file(Path: &str) -> Result<()> {
+    let Path = New_path(Path)?;
 
-    let Path: Path_type = Path.into();
+    Get_virtual_file_system()
+        .Create_file(Path)
+        .expect("Failed to create file");
 
-    let Result = File_system.Create_directory(&Path);
-
-    From_result_to_u32(&Result)
+    Ok(())
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Create_directory_recursive(Path: &str) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
+fn Create_directory(Path: &str, Recursive: bool) -> Result<()> {
+    let Path = New_path(Path)?;
 
-    let Path: Path_type = Path.into();
+    Get_virtual_file_system().Create_directory(Path, Recursive)?;
 
-    let Result = File_system.Create_directory_recursive(&Path);
-
-    From_result_to_u32(&Result)
+    Ok(())
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Delete_directory(Path: &str) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
+fn Delete(Path: &str, Recursive: bool) -> Result<()> {
+    let Path = New_path(Path)?;
 
-    let Path: Path_type = Path.into();
+    Get_virtual_file_system().Delete(Path, Recursive)?;
 
-    let Result = File_system.Delete_directory(&Path);
-
-    From_result_to_u32(&Result)
+    Ok(())
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Delete_directory_recursive(Path: &str) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
+fn Exists(Path: &str, Exists: &mut bool) -> Result<()> {
+    let Path = New_path(Path)?;
 
-    let Path: Path_type = Path.into();
+    *Exists = Get_virtual_file_system().Exists(Path)?;
 
-    let Result = File_system.Delete_directory_recursive(&Path);
-
-    From_result_to_u32(&Result)
-}
-
-#[Bind_function_native(Prefix = "File_system")]
-fn Move(Path: &str, Destination: &str) -> u32 {
-    let File_system = Environment.Get_user_data().Get_file_system();
-
-    let Path: Path_type = Path.into();
-    let Destination: Path_type = Destination.into();
-
-    let Result = File_system.Move(&Path, &Destination);
-
-    From_result_to_u32(&Result)
+    Ok(())
 }
