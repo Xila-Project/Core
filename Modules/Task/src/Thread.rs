@@ -56,4 +56,8 @@ impl Thread_wrapper_type {
     pub fn Get_identifier(&self) -> ThreadId {
         self.0.id()
     }
+
+    pub fn Get_current() -> Thread_wrapper_type {
+        Thread_wrapper_type(thread::current())
+    }
 }
