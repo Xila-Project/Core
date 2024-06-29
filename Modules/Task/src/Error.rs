@@ -1,4 +1,4 @@
-use std::sync::PoisonError;
+use std::{num::NonZeroU32, sync::PoisonError};
 
 pub type Result<T> = std::result::Result<T, Error_type>;
 
@@ -17,5 +17,11 @@ pub enum Error_type {
 impl<T> From<PoisonError<T>> for Error_type {
     fn from(_: PoisonError<T>) -> Self {
         Error_type::Poisoned_lock
+    }
+}
+
+impl From<Error_type> for NonZeroU32 {
+    fn from(Error: Error_type) -> Self {
+        unsafe { NonZeroU32::new_unchecked(Error as u32) }
     }
 }
