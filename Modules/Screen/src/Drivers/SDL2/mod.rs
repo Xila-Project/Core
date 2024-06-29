@@ -192,7 +192,6 @@ mod tests {
     fn Test_touchscreen() {
         const Horizontal_resolution: u32 = 800;
         const Vertical_resolution: u32 = 480;
-        const Buffer_size: usize = (Horizontal_resolution * Vertical_resolution / 2) as usize;
 
         let Touchscreen = New_touchscreen(Generics::Point_type::New(
             Horizontal_resolution as i16,
@@ -201,7 +200,7 @@ mod tests {
 
         assert!(Touchscreen.is_ok());
 
-        let (mut Screen, mut Pointer) = Touchscreen.unwrap();
+        let (_, _) = Touchscreen.unwrap();
 
         unsafe {
             sdl2::sys::SDL_Quit(); // Force SDL2 to quit to avoid conflicts with other tests.
