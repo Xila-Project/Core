@@ -11,15 +11,15 @@ Task = { path = "../Task" }
 lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", default-features = false, features = [
     "embedded-graphics",
     "unsafe_no_autoinit",
-] }
-#lvgl-sys = { version = "0.6.2" }
+], rev = "9829aef" }
 embedded-graphics = "0.8.1"
 Screen = { path = "../Screen" }
 Shared = { path = "../Shared" }
 
 
 [target.'cfg( target_arch = "x86_64" )'.dependencies]
-lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", features = [] }
+lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", features = [
+], rev = "9829aef" }
 embedded-graphics = "0.8.1"
 Screen = { path = "../Screen" }
 Shared = { path = "../Shared" }
