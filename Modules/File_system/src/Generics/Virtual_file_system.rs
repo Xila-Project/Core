@@ -7,10 +7,10 @@ use Task::Task_identifier_type;
 use Users::{Group_identifier_type, Manager_type, User_identifier_type};
 
 use super::{
-    Error_type, File_identifier_type, File_system_identifier_type, File_system_traits, File_type,
-    Flags_type, Mode_type, Path_owned_type, Path_type, Permissions_type,
+    Error_type, File_system_identifier_type, File_system_traits, Flags_type, Mode_type,
+    Path_owned_type, Path_type, Permissions_type,
     Pipe::{Named_pipe_identifier_type, Pipes_file_system_type},
-    Position_type, Result, Size_type, Status_type, Type_type,
+    Position_type, Result, Size_type, Status_type, Type_type, Unique_file_identifier_type,
 };
 
 struct Internal_file_system_type {
@@ -121,7 +121,11 @@ impl Virtual_file_system_type {
         Result.ok_or(Error_type::Invalid_path)
     }
 
-    pub fn Open(&self, Path: impl AsRef<Path_type>, Flags: Flags_type) -> Result<File_type> {
+    pub fn Open(
+        &self,
+        Path: impl AsRef<Path_type>,
+        Flags: Flags_type,
+    ) -> Result<Unique_file_identifier_type> {
         let File_systems = self.File_systems.read()?; // Get the file systems
 
         let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
@@ -146,10 +150,9 @@ impl Virtual_file_system_type {
             .Inner
             .Open(Task_identifier, &Relative_path, Flags)
         {
-            Ok(File_identifier) => Ok(File_type::New(
-                File_identifier,
+            Ok(File_identifier) => Ok(Unique_file_identifier_type::New(
                 File_system_identifier,
-                self.clone(),
+                File_identifier,
             )),
             Err(Error_type::Invalid_path) => {
                 if let Some(Self::Named_pipe_extension) = Relative_path.Get_extension() {
@@ -201,7 +204,7 @@ impl Virtual_file_system_type {
         &self,
         Relative_path: impl AsRef<Path_type>,
         Flags: Flags_type,
-    ) -> Result<File_type> {
+    ) -> Result<Unique_file_identifier_type> {
         let Path = Relative_path
             .as_ref()
             .Set_extension(Self::Named_pipe_extension)
@@ -211,13 +214,13 @@ impl Virtual_file_system_type {
 
         let mut Pipe_identifier = [0; 4];
 
-        let Bytes_read = File.Read(&mut Pipe_identifier)?;
+        let Bytes_read = self.Read(File, &mut Pipe_identifier)?;
 
         if Bytes_read != Pipe_identifier.len() {
             return Err(Error_type::Invalid_path);
         }
 
-        let Pipe_identifier = Named_pipe_identifier_type::from_le_bytes(Pipe_identifier);
+        let Pipe_identifier = Named_pipe_identifier_type::from(Pipe_identifier);
 
         let File_identifier = self.Pipes_file_system.write()?.Open(
             self.Task_manager.Get_current_task_identifier()?,
@@ -225,18 +228,15 @@ impl Virtual_file_system_type {
             Flags,
         )?;
 
-        Ok(File_type::New(
-            File_identifier,
+        Ok(Unique_file_identifier_type::New(
             Self::Pipe_file_system_identifier,
-            self.clone(),
+            File_identifier,
         ))
     }
 
-    pub(crate) fn Close(
-        &self,
-        File_system_identifier: File_system_identifier_type,
-        File_identifier: File_identifier_type,
-    ) -> Result<()> {
+    pub fn Close(&self, File: Unique_file_identifier_type) -> Result<()> {
+        let (File_system_identifier, File_identifier) = File.Split();
+
         if File_system_identifier == Self::Pipe_file_system_identifier {
             return self.Pipes_file_system.write()?.Close(
                 self.Task_manager.Get_current_task_identifier()?,
@@ -256,12 +256,13 @@ impl Virtual_file_system_type {
         File_system.Inner.Close(Task_identifier, File_identifier)
     }
 
-    pub(crate) fn Read(
+    pub fn Read(
         &self,
-        File_system_identifier: File_system_identifier_type,
-        File_identifier: File_identifier_type,
+        File_identifier: Unique_file_identifier_type,
         Buffer: &mut [u8],
     ) -> Result<Size_type> {
+        let (File_system_identifier, File_identifier) = File_identifier.Split();
+
         if File_system_identifier == Self::Pipe_file_system_identifier {
             return self.Pipes_file_system.write()?.Read(
                 self.Task_manager.Get_current_task_identifier()?,
@@ -284,12 +285,9 @@ impl Virtual_file_system_type {
             .Read(Task_identifier, File_identifier, Buffer)
     }
 
-    pub(crate) fn Write(
-        &self,
-        File_system_identifier: File_system_identifier_type,
-        File_identifier: File_identifier_type,
-        Buffer: &[u8],
-    ) -> Result<Size_type> {
+    pub fn Write(&self, File: Unique_file_identifier_type, Buffer: &[u8]) -> Result<Size_type> {
+        let (File_system_identifier, File_identifier) = File.Split();
+
         if File_system_identifier == Self::Pipe_file_system_identifier {
             return self.Pipes_file_system.write()?.Write(
                 self.Task_manager.Get_current_task_identifier()?,
@@ -313,15 +311,16 @@ impl Virtual_file_system_type {
             .Write(Task_identifier, File_identifier, Buffer)
     }
 
-    pub(crate) fn Set_position(
+    pub fn Set_position(
         &self,
-        File_system_identifier: File_system_identifier_type,
-        File_identifier: File_identifier_type,
+        File_identifier: Unique_file_identifier_type,
         Position: &Position_type,
     ) -> Result<Size_type> {
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
+
+        let (File_system_identifier, File_identifier) = File_identifier.Split();
 
         let mut File_system = File_systems
             .get(&File_system_identifier)
@@ -519,7 +518,9 @@ impl Virtual_file_system_type {
 
         let Pipe_identifier = self.Pipes_file_system.write()?.Create_named_pipe(Size)?; // Create the named pipe
 
-        File.Write(&Pipe_identifier.to_le_bytes())?; // Write the pipe identifier
+        let Pipe_identifier: [u8; 4] = Pipe_identifier.into();
+
+        self.Write(File, &Pipe_identifier)?; // Write the pipe identifier
 
         Ok(())
     }
@@ -528,24 +529,22 @@ impl Virtual_file_system_type {
         &self,
         Size: usize,
         Status: Status_type,
-    ) -> Result<(File_type, File_type)> {
+    ) -> Result<(Unique_file_identifier_type, Unique_file_identifier_type)> {
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let (File_identifier_read, File_identifier_write) = self
             .Pipes_file_system
             .write()?
-            .Create_unnamed_pipe(Task_identifier, Status, Size)?; // Create the unamed pipe
+            .Create_unnamed_pipe(Task_identifier, Status, Size)?; // Create the unnamed pipe
 
         Ok((
-            File_type::New(
+            Unique_file_identifier_type::New(
+                Self::Pipe_file_system_identifier,
                 File_identifier_read,
-                Self::Pipe_file_system_identifier,
-                self.clone(),
             ),
-            File_type::New(
-                File_identifier_write,
+            Unique_file_identifier_type::New(
                 Self::Pipe_file_system_identifier,
-                self.clone(),
+                File_identifier_write,
             ),
         ))
     }
@@ -628,46 +627,53 @@ impl Virtual_file_system_type {
 
     pub fn Transfert_file(
         &self,
-        File: File_type,
+        File: Unique_file_identifier_type,
         New_task: Task_identifier_type,
-    ) -> Result<File_type> {
+    ) -> Result<Unique_file_identifier_type> {
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let New_file_identfier = if File.Get_file_system_identifier()
-            == Self::Pipe_file_system_identifier
-        {
+        let (File_system_identifier, File_identifier) = File.Split();
+
+        let New_file_identifier = if File_system_identifier == Self::Pipe_file_system_identifier {
             self.Pipes_file_system.write()?.Transfert_file_identifier(
                 Task_identifier,
                 New_task,
-                File.Get_file_identifier(),
+                File_identifier,
             )?
         } else {
             File_systems
-                .get(&File.Get_file_system_identifier())
+                .get(&File_system_identifier)
                 .ok_or(Error_type::Invalid_identifier)?
                 .write()?
                 .Inner
-                .Transfert_file_identifier(Task_identifier, New_task, File.Get_file_identifier())?
+                .Transfert_file_identifier(Task_identifier, New_task, File_identifier)?
         };
 
-        Ok(File_type::New(
-            New_file_identfier,
-            File.Get_file_system_identifier(),
-            self.clone(),
+        Ok(Unique_file_identifier_type::New(
+            File_system_identifier,
+            New_file_identifier,
         ))
     }
-}
 
-#[cfg(test)]
-mod Tests {
-    use super::*;
+    pub fn Flush(&self, File: Unique_file_identifier_type) -> Result<()> {
+        let (File_system_identifier, File_identifier) = File.Split();
 
-    fn New_virtual_file_system() -> Virtual_file_system_type {
-        Virtual_file_system_type::New(Task::Manager_type::New(), Users::Manager_type::New())
+        if File_system_identifier == Self::Pipe_file_system_identifier {
+            return Ok(()); // No need to flush a pipe.
+                           // ? : Maybe we should return an error.
+        }
+
+        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
+
+        let File_systems = self.File_systems.read()?; // Get the file systems
+
+        let mut File_system = File_systems
+            .get(&File_system_identifier)
+            .ok_or(Error_type::Invalid_identifier)?
+            .write()?; // Get the file system
+
+        File_system.Inner.Flush(Task_identifier, File_identifier)
     }
-
-    #[test]
-    fn Test_get_virtual_file_system() {}
 }

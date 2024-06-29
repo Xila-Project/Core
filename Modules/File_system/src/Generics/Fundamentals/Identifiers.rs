@@ -55,3 +55,22 @@ impl From<File_system_identifier_type> for u8 {
         Internal_file_system_identifier.0
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct Unique_file_identifier_type(u32);
+
+impl Unique_file_identifier_type {
+    pub fn New(
+        File_system_identifier: File_system_identifier_type,
+        File_identifier: File_identifier_type,
+    ) -> Self {
+        Self((File_system_identifier.0 as u32) << 16 | File_identifier.0 as u32)
+    }
+
+    pub fn Split(self) -> (File_system_identifier_type, File_identifier_type) {
+        let File_system_identifier = File_system_identifier_type::New_from((self.0 >> 16) as u8);
+        let File_identifier = File_identifier_type((self.0 & 0xFFFF) as u16);
+        (File_system_identifier, File_identifier)
+    }
+}

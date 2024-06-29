@@ -1,8 +1,6 @@
-use Shared::Discriminant_trait;
-
 use super::{
-    File_identifier_type, File_system_identifier_type, Position_type, Result, Size_type,
-    Virtual_file_system::Virtual_file_system_type,
+    Flags_type, Path_type, Position_type, Result, Size_type, Status_type,
+    Unique_file_identifier_type, Virtual_file_system::Virtual_file_system_type,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -17,57 +15,68 @@ pub enum Type_type {
 }
 
 pub struct File_type {
-    File_identifier: File_identifier_type,
-    File_system_identifier: File_system_identifier_type,
+    File_identifier: Unique_file_identifier_type,
     File_system: Virtual_file_system_type,
 }
 
 impl File_type {
-    pub fn New(
-        File_identifier: File_identifier_type,
-        File_system_identifier: File_system_identifier_type,
-        File_system: Virtual_file_system_type,
-    ) -> Self {
-        Self {
+    pub fn Open(
+        File_system: &Virtual_file_system_type,
+        Path: impl AsRef<Path_type>,
+        Flags: Flags_type,
+    ) -> Result<Self> {
+        let File_identifier = File_system.Open(Path, Flags)?;
+
+        Ok(File_type {
             File_identifier,
-            File_system_identifier,
-            File_system,
-        }
+            File_system: File_system.clone(),
+        })
     }
-    // - Getters
-    pub fn Get_file_identifier(&self) -> File_identifier_type {
-        self.File_identifier
+
+    pub fn Create_unamed_pipe(
+        File_system: &Virtual_file_system_type,
+        Size: usize,
+        Status: Status_type,
+    ) -> Result<(Self, Self)> {
+        let (File_identifier_read, File_identifier_write) =
+            File_system.Create_unnamed_pipe(Size, Status)?;
+
+        Ok((
+            File_type {
+                File_identifier: File_identifier_read,
+                File_system: File_system.clone(),
+            },
+            File_type {
+                File_identifier: File_identifier_write,
+                File_system: File_system.clone(),
+            },
+        ))
     }
-    pub fn Get_file_system_identifier(&self) -> File_system_identifier_type {
-        self.File_system_identifier
-    }
+
     // - Setters
     pub fn Set_position(&self, Position: &Position_type) -> Result<Size_type> {
-        self.File_system.Set_position(
-            self.Get_file_system_identifier(),
-            self.Get_file_identifier(),
-            Position,
-        )
+        self.File_system
+            .Set_position(self.Get_file_identifier(), Position)
     }
+
+    // - Getters
+    pub const fn Get_file_identifier(&self) -> Unique_file_identifier_type {
+        self.File_identifier
+    }
+
     // - Operations
 
     pub fn Write(&self, Buffer: &[u8]) -> Result<Size_type> {
-        self.File_system.Write(
-            self.Get_file_system_identifier(),
-            self.Get_file_identifier(),
-            Buffer,
-        )
+        self.File_system.Write(self.Get_file_identifier(), Buffer)
     }
+
     pub fn Write_line(&self, Buffer: &[u8]) -> Result<Size_type> {
         let Size = self.Write(Buffer)? + self.Write(b"\n")?;
         Ok(Size)
     }
+
     pub fn Read(&self, Buffer: &mut [u8]) -> Result<Size_type> {
-        self.File_system.Read(
-            self.Get_file_system_identifier(),
-            self.Get_file_identifier(),
-            Buffer,
-        )
+        self.File_system.Read(self.Get_file_identifier(), Buffer)
     }
     pub fn Read_line(&self, Buffer: &mut [u8]) -> Result<()> {
         let mut Index = 0;
@@ -87,9 +96,6 @@ impl File_type {
 
 impl Drop for File_type {
     fn drop(&mut self) {
-        let _ = self.File_system.Close(
-            self.Get_file_system_identifier(),
-            self.Get_file_identifier(),
-        );
+        let _ = self.File_system.Close(self.Get_file_identifier());
     }
 }
