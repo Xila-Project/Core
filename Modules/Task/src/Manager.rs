@@ -40,12 +40,15 @@ impl Manager_type {
     }
 
     fn Get_new_task_identifier(&self) -> Option<Task_identifier_type> {
-        if self.Tasks.read().unwrap().len() == 0 {
-            return Some(Self::Root_task_identifier);
-        }
-
-        (0..Task_identifier_type::MAX)
-            .find(|Identifier| !self.Tasks.read().unwrap().contains_key(Identifier))
+        (0..Task_identifier_type::Maximum)
+            .find(|Identifier| {
+                !self
+                    .Tasks
+                    .read()
+                    .unwrap()
+                    .contains_key(&(*Identifier).into())
+            })
+            .map(|Identifier| Identifier.into())
     }
 
     pub fn Get_task_name(&self, Task_identifier: Task_identifier_type) -> Result<String> {

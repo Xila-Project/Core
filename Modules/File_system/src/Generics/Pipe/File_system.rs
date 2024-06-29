@@ -302,7 +302,7 @@ mod tests {
 
     #[test]
     fn Test_get_local_file_identifier() {
-        let Task_identifier = 1;
+        let Task_identifier = Task_identifier_type::from(1);
         let File_identifier = File_identifier_type::from(0);
         let local_file_id =
             Pipes_file_system_type::Get_local_file_identifier(Task_identifier, File_identifier);
@@ -312,7 +312,7 @@ mod tests {
     #[test]
     fn Test_new_unnamed_pipe() {
         let mut File_system = Pipes_file_system_type::New();
-        let Task_identifier = 1;
+        let Task_identifier = Task_identifier_type::from(1);
         let Size = 1024;
         let (Read_identifier, Write_identifier) = File_system
             .Create_unnamed_pipe(
@@ -333,7 +333,7 @@ mod tests {
     #[test]
     fn Test_close_all() {
         let mut File_system = Pipes_file_system_type::New();
-        let Task_identifier = 1;
+        let Task_identifier = Task_identifier_type::from(1);
         let Size = 1024;
         File_system
             .Create_unnamed_pipe(
@@ -375,7 +375,7 @@ mod tests {
     #[test]
     fn Test_read_write_unnamed_pipe() {
         let mut File_system = Pipes_file_system_type::New();
-        let Task_identifier = 1;
+        let Task_identifier = Task_identifier_type::from(1);
         let Size = 1024;
         let (Read_identifier, Write_identifier) = File_system
             .Create_unnamed_pipe(

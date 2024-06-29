@@ -214,7 +214,8 @@ pub trait File_system_traits: Send + Sync {
         Self: Sized, // ? : Makes the compiler happy
     {
         let File_identifier: u16 = File_identifier.into();
-        (Task_identifier as u32) << 16 | File_identifier as u32
+        let Task_identifier: u32 = Task_identifier.into();
+        (Task_identifier) << 16 | File_identifier as u32
     }
 
     // - Tests
@@ -246,7 +247,7 @@ pub trait File_system_traits: Send + Sync {
     /// - Ensure `not_exists` doesn't exists in the `Test_path` directory
     /// - Ensure `read_only`, `write_only` and `read_write` are closed
     fn Test_open_close_file(&mut self) {
-        let Task_identifier = 1;
+        let Task_identifier = Task_identifier_type::from(1);
 
         let Read_only = self
             .Open(
@@ -294,7 +295,7 @@ pub trait File_system_traits: Send + Sync {
     /// - Ensure `already_exists` exists in the `Test_path` directory
     fn Test_create_directory_exists(&mut self) {
         let New_path = Get_test_path().Append("test_dir").unwrap();
-        let Task_identifier = 1;
+        let Task_identifier = Task_identifier_type::from(1);
 
         assert_eq!(self.Exists(&New_path), Ok(false));
         self.Create_directory(Task_identifier, &New_path).unwrap();
@@ -308,7 +309,7 @@ pub trait File_system_traits: Send + Sync {
     /// - Create file `read` in the `Test_path` directory containing `0123456789\n` (10 bytes)
     /// - Create file `empty_read` in the `Test_path` directory
     fn Test_file_read(&mut self) {
-        let Task_identifier = 1;
+        let Task_identifier = Task_identifier_type::from(1);
 
         let Read_file = Get_test_path().Append("read").unwrap();
         let Read_file_identifier = self
@@ -341,7 +342,7 @@ pub trait File_system_traits: Send + Sync {
     ///
     /// - Create file `write` in the `Test_path` directory
     fn Test_file_write(&mut self) {
-        let Task_identifier = 1;
+        let Task_identifier = Task_identifier_type::from(1);
 
         let File = Get_test_path().Append("write").unwrap();
         let File_identifier = self
@@ -360,7 +361,8 @@ pub trait File_system_traits: Send + Sync {
         let _ = self.Delete(&Get_test_path());
         assert_eq!(self.Exists(&Get_test_path()), Ok(false));
 
-        self.Create_directory(1, &Get_test_path()).unwrap();
+        self.Create_directory(Task_identifier_type::from(1), &Get_test_path())
+            .unwrap();
         assert_eq!(self.Exists(&Get_test_path()), Ok(true));
     }
 }

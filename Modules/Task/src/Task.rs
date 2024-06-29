@@ -4,7 +4,25 @@ use Users::User_identifier_type;
 
 use crate::{Join_handle_type, Manager_type, Result, Thread_wrapper_type};
 
-pub type Task_identifier_type = u16;
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[repr(transparent)]
+pub struct Task_identifier_type(u32);
+
+impl Task_identifier_type {
+    pub const Maximum: u32 = u32::MAX;
+}
+
+impl From<u32> for Task_identifier_type {
+    fn from(Value: u32) -> Self {
+        Self(Value)
+    }
+}
+
+impl From<Task_identifier_type> for u32 {
+    fn from(Value: Task_identifier_type) -> Self {
+        Value.0
+    }
+}
 
 /// A wrapper for individual tasks that are managed by [Manager_type].
 pub struct Task_type {
