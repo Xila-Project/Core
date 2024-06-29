@@ -6,6 +6,7 @@ use super::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
 pub enum Type_type {
     File = 1,
     Directory,
@@ -13,16 +14,6 @@ pub enum Type_type {
     Character_device,
     Named_pipe,
     Symbolic_link,
-}
-
-impl Discriminant_trait for Type_type {
-    fn Get_discriminant(&self) -> u32 {
-        *self as u32
-    }
-
-    fn From_discriminant(Discriminant: u32) -> Self {
-        unsafe { std::mem::transmute(Discriminant as u8) }
-    }
 }
 
 pub struct File_type {
