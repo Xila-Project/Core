@@ -1,16 +1,23 @@
+#![allow(non_camel_case_types)]
+
 use std::{
+    ffi::CStr,
     marker::PhantomData,
     mem::size_of,
     os::raw::c_void,
     ptr::{null_mut, NonNull},
 };
 
-use wamr_rust_sdk::sys::{
-    wasm_exec_env_t, wasm_module_inst_t, wasm_runtime_addr_app_to_native,
-    wasm_runtime_addr_native_to_app, wasm_runtime_get_exec_env_singleton,
-    wasm_runtime_get_module_inst, wasm_runtime_get_user_data, wasm_runtime_module_free,
-    wasm_runtime_module_malloc, wasm_runtime_set_user_data, wasm_runtime_validate_app_addr,
-    wasm_runtime_validate_native_addr,
+use wamr_rust_sdk::{
+    sys::{
+        wasm_exec_env_t, wasm_module_inst_t, wasm_runtime_addr_app_to_native,
+        wasm_runtime_addr_native_to_app, wasm_runtime_call_indirect, wasm_runtime_create_exec_env,
+        wasm_runtime_get_exception, wasm_runtime_get_exec_env_singleton,
+        wasm_runtime_get_module_inst, wasm_runtime_get_user_data, wasm_runtime_module_free,
+        wasm_runtime_module_malloc, wasm_runtime_set_user_data, wasm_runtime_validate_app_addr,
+        wasm_runtime_validate_native_addr,
+    },
+    value::WasmValue,
 };
 use Shared::Mutable_string_type;
 
@@ -237,6 +244,58 @@ impl<'a> Environment_type<'a> {
         unsafe {
             wasm_runtime_module_free(self.Get_instance_pointer(), Pointer as u64);
         }
+    }
+
+    /// Make an indirect function call (call a function by its index which is not exported).
+    /// For exported functions use `Call_export_function`.
+    pub fn Call_indirect_function(
+        &self,
+        Function_index: u32,
+        Parameters: &Vec<WasmValue>,
+    ) -> Result_type<()> {
+        let mut Arguments = Vec::new();
+
+        for Parameter in Parameters {
+            Arguments.append(&mut Parameter.encode());
+        }
+
+        if Arguments.is_empty() {
+            Arguments.append(&mut WasmValue::I32(0).encode());
+        }
+
+        if !unsafe {
+            wasm_runtime_call_indirect(
+                self.0,
+                Function_index,
+                Arguments.len() as u32,
+                Arguments.as_mut_ptr(),
+            )
+        } {
+            let Exception_message =
+                unsafe { wasm_runtime_get_exception(self.Get_instance_pointer()) };
+            let Exception_message = unsafe { CStr::from_ptr(Exception_message) };
+            let Exception_message =
+                String::from_utf8_lossy(Exception_message.to_bytes()).to_string();
+
+            return Err(Error_type::Execution_error(Exception_message));
+        }
+
+        Ok(())
+    }
+
+    /// Create a new execution environment.
+    /// This environment should be initialized with `Initialize_thread_environment` and deinitialized with `Deinitialize_thread_environment`.
+    pub fn Create_environment(&self, Stack_size: usize) -> Result_type<Self> {
+        let Execution_environment =
+            unsafe { wasm_runtime_create_exec_env(self.Get_instance_pointer(), Stack_size as u32) };
+
+        if Execution_environment.is_null() {
+            return Err(Error_type::Execution_error(
+                "Execution environment creation failed".to_string(),
+            ));
+        }
+
+        Ok(Self(Execution_environment, PhantomData))
     }
 
     fn Get_instance_pointer(&self) -> wasm_module_inst_t {
