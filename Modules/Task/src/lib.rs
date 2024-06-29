@@ -12,6 +12,6 @@ mod Task;
 pub use Task::*;
 
 mod Thread;
-pub use Thread::*;
+use Thread::*;
 
 pub mod Prelude;
