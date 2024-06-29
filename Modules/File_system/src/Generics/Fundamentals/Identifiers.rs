@@ -1,6 +1,7 @@
 use std::ops::{Add, AddAssign};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
 pub struct File_identifier_type(u16);
 
 impl From<u16> for File_identifier_type {
