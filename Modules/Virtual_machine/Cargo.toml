@@ -8,7 +8,6 @@ build = "Build.rs"
 [dependencies]
 wamr-rust-sdk = { git = "https://github.com/AlixANNERAUD/wamr-rust-sdk.git" }
 Shared = { version = "0.1.0", path = "../Shared" }
-File_system = { path = "../File_system" }
 
 [[test]]
 name = "Virtual_machine_test"

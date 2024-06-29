@@ -4,7 +4,6 @@
 
 use wamr_rust_sdk::value::WasmValue;
 
-use File_system::Drivers::Native::File_system_type;
 use Virtual_machine::{
     Data_type, Environment_pointer_type, Environment_type, Function_descriptor_type,
     Function_descriptors, Instantiate_test_environment, Registrable_trait, WASM_pointer,
@@ -101,9 +100,7 @@ fn Integration_test() {
         Test_string
     };
 
-    let File_system = File_system_type::New();
-
-    let User_data = Data_type::New(&File_system);
+    let User_data = Data_type::New();
 
     let (_Runtime, _Module, Instance) =
         Instantiate_test_environment(Binary_buffer, Registrable {}, &User_data);
