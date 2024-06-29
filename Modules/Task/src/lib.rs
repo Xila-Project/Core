@@ -2,6 +2,9 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
+mod Error;
+pub use Error::*;
+
 mod Manager;
 pub use Manager::*;
 
@@ -9,8 +12,6 @@ mod Task;
 pub use Task::*;
 
 mod Thread;
-pub use Thread::*;
-
-mod Pipe;
+use Thread::*;
 
 pub mod Prelude;

@@ -4,4 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+Task = { path = "../Task" }
+Users = { path = "../Users" }
 Shared = { path = "../Shared" }
+
+[features]
+std = []
+default = ["std"]
+
+[[test]]
+name = "Virtual_file_system"
+path = "Tests/Virtual_file_system.rs"

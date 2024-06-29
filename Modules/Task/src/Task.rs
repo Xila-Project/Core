@@ -1,18 +1,40 @@
-use super::*;
+use std::borrow::Cow;
 
-pub type Task_identifier_type = usize;
+use Users::User_identifier_type;
+
+use crate::{Join_handle_type, Manager_type, Result_type, Thread_wrapper_type};
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[repr(transparent)]
+pub struct Task_identifier_type(u32);
+
+impl Task_identifier_type {
+    pub const Maximum: u32 = u32::MAX;
+}
+
+impl From<u32> for Task_identifier_type {
+    fn from(Value: u32) -> Self {
+        Self(Value)
+    }
+}
+
+impl From<Task_identifier_type> for u32 {
+    fn from(Value: Task_identifier_type) -> Self {
+        Value.0
+    }
+}
 
 /// A wrapper for individual tasks that are managed by [Manager_type].
-pub struct Task_type<'a> {
+pub struct Task_type {
     /// The identifier of the task.
     Identifier: Task_identifier_type,
     /// A reference to the [Manager_type] that manages the task.
-    Manager: &'a Manager_type,
+    Manager: Manager_type,
 }
 
-impl<'a> Task_type<'a> {
+impl Task_type {
     /// Internal method to create a new task.
-    fn New(Identifier: Task_identifier_type, Manager: &'a Manager_type) -> Self {
+    pub(crate) fn New(Identifier: Task_identifier_type, Manager: Manager_type) -> Self {
         Self {
             Identifier,
             Manager,
@@ -20,25 +42,28 @@ impl<'a> Task_type<'a> {
     }
 
     /// Create a new child task.
-    pub fn New_child_task<F>(
+    pub fn New_child_task<T, F>(
         &self,
         Name: &str,
+        Owner: Option<User_identifier_type>,
         Stack_size: Option<usize>,
         Function: F,
-    ) -> Result<Task_type, ()>
+    ) -> Result_type<(Task_type, Join_handle_type<T>)>
     where
-        F: FnOnce() + Send + 'static,
+        T: Send + 'static,
+        F: FnOnce() -> T + Send + 'static,
     {
-        match self
-            .Manager
-            .New_task(self.Identifier, Name, Stack_size, Function)
-        {
-            Ok(Child_task_identifier) => Ok(Self::New(Child_task_identifier, self.Manager)),
-            Err(()) => Err(()),
-        }
+        let (Task_identifier, Join_handle) =
+            self.Manager
+                .New_task(Some(self.Identifier), Owner, Name, Stack_size, Function)?;
+
+        Ok((
+            Task_type::New(Task_identifier, self.Manager.clone()),
+            Join_handle,
+        ))
     }
 
-    pub fn Get_name(&self) -> Result<String, ()> {
+    pub fn Get_name(&self) -> Result_type<String> {
         self.Manager.Get_task_name(self.Identifier)
     }
 
@@ -46,38 +71,25 @@ impl<'a> Task_type<'a> {
         self.Identifier
     }
 
-    pub fn Get_manager(&self) -> &'a Manager_type {
-        self.Manager
-    }
-
-    pub fn Get_current_task(Manager: &'a Manager_type) -> Result<Self, ()> {
-        let Current_task_identifier = Manager.Get_current_task_identifier()?;
-        Ok(Self::New(Current_task_identifier, Manager))
+    pub fn Get_owner(&self) -> Result_type<User_identifier_type> {
+        self.Manager.Get_owner(self.Identifier)
     }
 
     pub fn Sleep(Duration: std::time::Duration) {
         Thread_wrapper_type::Sleep(Duration)
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+    pub fn Get_environment_variable(&self, Name: &str) -> Result_type<Cow<'static, str>> {
+        self.Manager.Get_environment_variable(self.Identifier, Name)
+    }
 
-    #[test]
-    fn Test() {
-        let Manager = Manager_type::New();
+    pub fn Set_environment_variable(&self, Name: &str, Value: &str) -> Result_type<()> {
+        self.Manager
+            .Set_environment_variable(self.Identifier, Name, Value)
+    }
 
-        let Manager_copy = Manager.clone();
-
-        let _ = Manager.New_root_task(None, move || {
-            let Task = Task_type::Get_current_task(&Manager_copy).unwrap();
-
-            let _ = Task
-                .New_child_task("Child task", None, || {
-                    Task_type::Sleep(std::time::Duration::from_millis(100));
-                })
-                .unwrap();
-        });
+    pub fn Remove_environment_variable(&self, Name: &str) -> Result_type<()> {
+        self.Manager
+            .Remove_environment_variable(self.Identifier, Name)
     }
 }

@@ -1,46 +1,64 @@
-use std::{ops, u64};
+use std::ops;
 
-pub mod Path;
+mod Flags;
+mod Identifiers;
+mod Path;
+mod Permission;
+
+pub use Flags::*;
+pub use Identifiers::*;
 pub use Path::*;
-use Shared::Discriminant_trait;
+pub use Permission::*;
 
 #[derive(Default, PartialOrd, PartialEq, Eq, Ord, Clone, Copy, Debug)]
 #[repr(transparent)]
-pub struct Size_type(pub u64);
-pub type Signed_size_type = i64;
+pub struct Size_type(u64);
 
+impl PartialEq<usize> for Size_type {
+    fn eq(&self, other: &usize) -> bool {
+        self.0 == *other as u64
+    }
+}
+
+impl From<usize> for Size_type {
+    fn from(item: usize) -> Self {
+        Size_type(item as u64)
+    }
+}
+
+impl From<u64> for Size_type {
+    fn from(item: u64) -> Self {
+        Size_type(item)
+    }
+}
+
+impl From<Size_type> for usize {
+    fn from(item: Size_type) -> Self {
+        item.0 as usize
+    }
+}
+
+impl From<Size_type> for u64 {
+    fn from(item: Size_type) -> Self {
+        item.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
 pub enum Position_type {
-    Start(Size_type),
-    Current(Signed_size_type),
-    End(Signed_size_type),
+    Start(u64),
+    Current(i64),
+    End(i64),
 }
 
-impl Position_type {
-    pub fn From(Discriminant: u32, Value: u64) -> Self {
-        match Discriminant {
-            0 => Position_type::Start(Size_type(Value)),
-            1 => Position_type::Current(Value as i64),
-            2 => Position_type::End(Value as i64),
-            _ => panic!("Invalid discriminant"),
-        }
-    }
-}
-
-impl Discriminant_trait for Position_type {
-    fn Get_discriminant(&self) -> u32 {
-        match self {
-            Position_type::Start(_) => 0,
-            Position_type::Current(_) => 1,
-            Position_type::End(_) => 2,
-        }
-    }
-
-    fn From_discriminant(Discriminant: u32) -> Self {
-        match Discriminant {
-            0 => Position_type::Start(Size_type::default()),
-            1 => Position_type::Current(0),
-            2 => Position_type::End(0),
-            _ => panic!("Invalid discriminant"),
+#[cfg(feature = "std")]
+impl From<Position_type> for std::io::SeekFrom {
+    fn from(Position: Position_type) -> Self {
+        match Position {
+            Position_type::Start(Item) => std::io::SeekFrom::Start(Item),
+            Position_type::Current(Item) => std::io::SeekFrom::Current(Item),
+            Position_type::End(Item) => std::io::SeekFrom::End(Item),
         }
     }
 }
@@ -59,17 +77,5 @@ impl ops::Add<Size_type> for Size_type {
 
     fn add(self, rhs: Size_type) -> Self::Output {
         Size_type(self.0 + rhs.0)
-    }
-}
-
-impl From<u64> for Size_type {
-    fn from(item: u64) -> Self {
-        Size_type(item)
-    }
-}
-
-impl From<usize> for Size_type {
-    fn from(item: usize) -> Self {
-        Size_type(item as u64)
     }
 }

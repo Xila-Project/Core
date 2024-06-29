@@ -1,13 +1,14 @@
-use std::num::NonZeroU32;
+use std::{num::NonZeroU32, sync::PoisonError};
 
-use Shared::Error_discriminant_trait;
+pub type Result<T> = std::result::Result<T, Error_type>;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
+#[repr(C)]
 pub enum Error_type {
     Failed_to_initialize_file_system = 1,
     Permission_denied,
     Not_found,
-    File_already_exists,
+    Already_exists,
     Directory_already_exists,
     File_system_full,
     File_system_error,
@@ -16,15 +17,32 @@ pub enum Error_type {
     Invalid_directory,
     Invalid_symbolic_link,
     Unknown,
-    Invalid_file_identifier,
+    Invalid_identifier,
+    Failed_to_get_task_informations,
+    Too_many_mounted_file_systems,
+    Poisoned_lock,
+    Too_many_open_files,
+    Internal_error,
+    Invalid_mode,
+    Unsupported_operation,
+    Ressource_busy,
+    Other,
 }
 
-impl Error_discriminant_trait for Error_type {
-    fn Get_discriminant(&self) -> NonZeroU32 {
-        NonZeroU32::new(*self as u32).unwrap()
+impl From<Task::Error_type> for Error_type {
+    fn from(_: Task::Error_type) -> Self {
+        Error_type::Failed_to_get_task_informations
     }
+}
 
-    fn From_discriminant(Discriminant: NonZeroU32) -> Self {
-        unsafe { std::mem::transmute(Discriminant.get() as u8) }
+impl<T> From<PoisonError<T>> for Error_type {
+    fn from(_: PoisonError<T>) -> Self {
+        Error_type::Poisoned_lock
+    }
+}
+
+impl From<Error_type> for NonZeroU32 {
+    fn from(Error: Error_type) -> Self {
+        unsafe { NonZeroU32::new_unchecked(Error as u32) }
     }
 }

@@ -1,9 +1,9 @@
 use wamr_rust_sdk::{
     runtime::{Runtime, RuntimeBuilder},
-    RuntimeError,
+    sys::{wasm_runtime_destroy_thread_env, wasm_runtime_init_thread_env},
 };
 
-use crate::Registrable_trait;
+use crate::{Registrable_trait, Result_type};
 
 pub struct Runtime_builder_type(RuntimeBuilder);
 
@@ -31,7 +31,7 @@ impl Runtime_builder_type {
         self
     }
 
-    pub fn Build(self) -> Result<Runtime_type, RuntimeError> {
+    pub fn Build(self) -> Result_type<Runtime_type> {
         Ok(Runtime_type(self.0.build()?))
     }
 }
@@ -45,5 +45,17 @@ impl Runtime_type {
 
     pub(crate) fn Get_inner_reference(&self) -> &Runtime {
         &self.0
+    }
+
+    pub fn Initialize_thread_environment() -> Option<()> {
+        if unsafe { wasm_runtime_init_thread_env() } {
+            Some(())
+        } else {
+            None
+        }
+    }
+
+    pub fn Deinitialize_thread_environment() {
+        unsafe { wasm_runtime_destroy_thread_env() }
     }
 }
