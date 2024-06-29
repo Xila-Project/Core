@@ -6,5 +6,4 @@ rustflags = [
   "-C", "link-arg=--export=__heap_base",
   "-C", "link-arg=--export=__data_end",
   "-C", "link-arg=--strip-all",
-  "-C", "lto=yes",
 ]
