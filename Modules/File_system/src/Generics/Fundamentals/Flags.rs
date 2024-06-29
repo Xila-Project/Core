@@ -1,7 +1,7 @@
 use super::Permission_type;
 
 #[inline]
-fn Set_bit(Data: &mut u8, Position: u8, Value: bool) {
+fn Set_bit(Data: &mut u32, Position: u8, Value: bool) {
     if Value {
         *Data |= 1 << Position;
     } else {
@@ -10,13 +10,13 @@ fn Set_bit(Data: &mut u8, Position: u8, Value: bool) {
 }
 
 #[inline]
-fn Get_bit(Data: &u8, Bit: u8) -> bool {
+fn Get_bit(Data: &u32, Bit: u8) -> bool {
     (Data & (1 << Bit)) != 0
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
-pub struct Mode_type(u8);
+pub struct Mode_type(u32);
 
 impl Mode_type {
     const Read_bit: u8 = 0;
@@ -45,7 +45,7 @@ impl Mode_type {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
-pub struct Status_type(u8);
+pub struct Status_type(u32);
 
 impl Default for Status_type {
     fn default() -> Self {
@@ -78,7 +78,7 @@ impl Status_type {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
-pub struct Flags_type(u8);
+pub struct Flags_type(u32);
 
 impl Flags_type {
     pub fn New(Mode: Mode_type, Status: Option<Status_type>) -> Self {
@@ -109,5 +109,11 @@ impl Flags_type {
 impl From<Mode_type> for Flags_type {
     fn from(Mode: Mode_type) -> Self {
         Self::New(Mode, None)
+    }
+}
+
+impl From<Flags_type> for u32 {
+    fn from(Flags: Flags_type) -> Self {
+        Flags.0 as u32
     }
 }
