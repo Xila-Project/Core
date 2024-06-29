@@ -10,8 +10,6 @@ pub use Identifiers::*;
 pub use Path::*;
 pub use Permission::*;
 
-use Shared::Discriminant_trait;
-
 #[derive(Default, PartialOrd, PartialEq, Eq, Ord, Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct Size_type(u64);
@@ -61,36 +59,6 @@ impl Into<std::io::SeekFrom> for Position_type {
             Position_type::Start(Item) => std::io::SeekFrom::Start(Item),
             Position_type::Current(Item) => std::io::SeekFrom::Current(Item),
             Position_type::End(Item) => std::io::SeekFrom::End(Item),
-        }
-    }
-}
-
-impl Position_type {
-    pub fn From(Discriminant: u32, Value: u64) -> Self {
-        match Discriminant {
-            0 => Position_type::Start(Value),
-            1 => Position_type::Current(Value as i64),
-            2 => Position_type::End(Value as i64),
-            _ => panic!("Invalid discriminant"),
-        }
-    }
-}
-
-impl Discriminant_trait for Position_type {
-    fn Get_discriminant(&self) -> u32 {
-        match self {
-            Position_type::Start(_) => 0,
-            Position_type::Current(_) => 1,
-            Position_type::End(_) => 2,
-        }
-    }
-
-    fn From_discriminant(Discriminant: u32) -> Self {
-        match Discriminant {
-            0 => Position_type::Start(0),
-            1 => Position_type::Current(0),
-            2 => Position_type::End(0),
-            _ => panic!("Invalid discriminant"),
         }
     }
 }
