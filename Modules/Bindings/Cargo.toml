@@ -15,3 +15,7 @@ Task = { path = "../Task" }
 [[test]]
 name = "File_system_bindings_tests"
 path = "Tests/File_system.rs"
+
+[[test]]
+name = "Task_tests"
+path = "Tests/Task.rs"
