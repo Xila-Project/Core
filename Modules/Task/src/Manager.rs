@@ -30,12 +30,21 @@ pub struct Manager_type {
 }
 
 impl Manager_type {
-    /// The identifier of the root task (the task that is created when the manager is created).
-    const Root_task_identifier: Task_identifier_type = 0;
-
     pub fn New() -> Self {
+        // Add current thread to tasks as root task
+        let Task_internal = Task_internal_type {
+            Thread: Thread_wrapper_type::Get_current(),
+            Children: Vec::new(),
+            Owner: Root_user_identifier,
+            Environment_variables: HashMap::new(),
+        };
+
+        let mut Tasks_map = HashMap::new();
+
+        Tasks_map.insert(Task_identifier_type::from(0), Task_internal);
+
         Manager_type {
-            Tasks: Arc::new(RwLock::new(HashMap::new())),
+            Tasks: Arc::new(RwLock::new(Tasks_map)),
         }
     }
 
@@ -84,42 +93,26 @@ impl Manager_type {
             .Get_new_task_identifier()
             .ok_or(Error_type::Too_many_tasks)?;
 
-        // - Create the root task if it's the first task
-        let (Owner, Environment_variables) = if self.Tasks.read()?.is_empty() {
-            let Owner = match User_identifier {
-                Some(Identifier) => Identifier,
-                None => Root_user_identifier,
-            };
-            let Environment_variable = HashMap::new();
-            (Owner, Environment_variable)
-        }
-        // - Create a child task
-        else {
-            let Parent_task_identifier =
-                if let Some(Parent_task_identifier) = Parent_task_identifier {
-                    Parent_task_identifier
-                } else {
-                    self.Get_current_task_identifier()
-                        .unwrap_or(Self::Root_task_identifier)
-                };
-
-            let mut Tasks = self.Tasks.write()?;
-
-            let Parent_task = Tasks
-                .get_mut(&Parent_task_identifier)
-                .ok_or(Error_type::Invalid_task_identifier)?;
-
-            Parent_task.Children.push(Child_task_identifier);
-
-            let Owner = match User_identifier {
-                Some(Identifier) => Identifier,
-                None => self.Get_owner(Parent_task_identifier).unwrap(),
-            };
-
-            let Environment_variable = Parent_task.Environment_variables.clone();
-
-            (Owner, Environment_variable)
+        let Parent_task_identifier = if let Some(Parent_task_identifier) = Parent_task_identifier {
+            Parent_task_identifier
+        } else {
+            self.Get_current_task_identifier()?
         };
+
+        let Owner = match User_identifier {
+            Some(Identifier) => Identifier,
+            None => self.Get_owner(Parent_task_identifier)?,
+        };
+
+        let mut Tasks = self.Tasks.write()?;
+
+        let Parent_task = Tasks
+            .get_mut(&Parent_task_identifier)
+            .ok_or(Error_type::Invalid_task_identifier)?;
+
+        Parent_task.Children.push(Child_task_identifier);
+
+        let Environment_variables = Parent_task.Environment_variables.clone();
 
         let Manager = self.clone();
 
@@ -133,7 +126,7 @@ impl Manager_type {
 
         let Thread = Join_handle.Get_thread_wrapper();
 
-        self.Tasks.write()?.insert(
+        Tasks.insert(
             Child_task_identifier,
             Task_internal_type {
                 Thread,
