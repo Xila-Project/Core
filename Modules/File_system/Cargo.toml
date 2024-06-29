@@ -5,3 +5,7 @@ edition = "2021"
 
 [dependencies]
 Shared = { path = "../Shared" }
+
+[features]
+std = []
+default = ["std"]
