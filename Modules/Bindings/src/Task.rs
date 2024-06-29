@@ -43,9 +43,6 @@ fn Sleep(Duration: u64) {
 
 #[Bind_function_native(Prefix = "Task")]
 fn New_task(Name: &str, Stack_size: u32, Function: u32) -> Result_type<()> {
-    println!("New task: {}", Name);
-    println!("Function: {}", Function);
-
     let New_environment = Environment
         .Create_environment(Stack_size as usize)
         .map_err(|_| Error_type::Failed_to_spawn_thread)
