@@ -3,7 +3,7 @@ use wamr_rust_sdk::{
     RuntimeError,
 };
 
-use crate::Registrable_trait;
+use crate::{Registrable_trait, Result_type};
 
 pub struct Runtime_builder_type(RuntimeBuilder);
 
