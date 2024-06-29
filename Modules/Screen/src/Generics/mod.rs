@@ -1,3 +1,6 @@
+mod Error;
+pub use Error::*;
+
 #[derive(Clone, Copy)]
 pub struct Point_type {
     pub X: i16,
@@ -35,7 +38,7 @@ pub struct Refresh_area_type<const Buffer_size: usize> {
 
 pub trait Screen_traits<const Buffer_size: usize> {
     fn Update(&mut self, Refresh_area: &Refresh_area_type<Buffer_size>);
-    fn Get_resolution(&self) -> Result<Point_type, ()>;
+    fn Get_resolution(&self) -> Result_type<Point_type>;
 }
 
 #[derive(Clone, Copy)]

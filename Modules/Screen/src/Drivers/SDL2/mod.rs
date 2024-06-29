@@ -1,20 +1,50 @@
-use crate::Generics;
+use crate::{
+    Generics,
+    Prelude::{Error_type, Result_type},
+};
 
-use sdl2::{event, mouse, pixels, render::Canvas, video, EventPump};
+use sdl2::{
+    event, mouse, pixels,
+    render::Canvas,
+    video::{self, WindowBuildError},
+    EventPump, IntegerOrSdlError,
+};
 
 use std::{
     cell::RefCell,
     process::exit,
     sync::{Arc, RwLock},
 };
+
+impl From<String> for Error_type {
+    fn from(Value: String) -> Self {
+        Self::Unknown(Value)
+    }
+}
+
+impl From<WindowBuildError> for Error_type {
+    fn from(Error: WindowBuildError) -> Self {
+        match Error {
+            WindowBuildError::SdlError(Error) => Error.into(),
+            WindowBuildError::HeightOverflows(_) | WindowBuildError::WidthOverflows(_) => {
+                Error_type::Invalid_dimension
+            }
+            WindowBuildError::InvalidTitle(_) => Error_type::Unknown("Invalid title.".to_string()),
+        }
+    }
+}
+
+impl From<IntegerOrSdlError> for Error_type {
+    fn from(Error: IntegerOrSdlError) -> Self {
+        Error_type::Unknown(Error.to_string())
+    }
+}
+
 pub struct Screen_type(Canvas<video::Window>);
 
 impl Screen_type {
-    pub fn New(Window: video::Window) -> Result<Self, ()> {
-        let mut Canvas = match Window.into_canvas().build() {
-            Ok(Canvas) => Canvas,
-            Err(_) => return Err(()),
-        };
+    pub fn New(Window: video::Window) -> Result_type<Self> {
+        let mut Canvas = Window.into_canvas().build()?;
 
         Canvas.clear();
         Canvas.present();
@@ -42,11 +72,11 @@ impl<const Buffer_size: usize> Generics::Screen_traits<Buffer_size> for Screen_t
         self.0.present();
     }
 
-    fn Get_resolution(&self) -> Result<Generics::Point_type, ()> {
-        match self.0.output_size() {
-            Ok((Width, Height)) => Ok(Generics::Point_type::New(Width as i16, Height as i16)),
-            Err(_) => Err(()),
-        }
+    fn Get_resolution(&self) -> Result_type<Generics::Point_type> {
+        Ok(self
+            .0
+            .output_size()
+            .map(|(Width, Height)| Generics::Point_type::New(Width as i16, Height as i16))?)
     }
 }
 
@@ -135,37 +165,21 @@ impl Generics::Input_traits for Pointer_type {
     }
 }
 
-pub fn New_touchscreen(Size: Generics::Point_type) -> Result<(Screen_type, Pointer_type), ()> {
-    let Context = match sdl2::init() {
-        Ok(Context) => Context,
-        Err(_) => return Err(()),
-    };
+pub fn New_touchscreen(Size: Generics::Point_type) -> Result_type<(Screen_type, Pointer_type)> {
+    let Context = sdl2::init()?;
 
-    let Video_subsystem = match Context.video() {
-        Ok(Video_subsystem) => Video_subsystem,
-        Err(_) => return Err(()),
-    };
+    let Video_subsystem = Context.video()?;
 
-    let Window = match Video_subsystem
+    let Window = Video_subsystem
         .window("Xila", Size.X as u32, Size.Y as u32)
         .position_centered()
-        .build()
-    {
-        Ok(Window) => Window,
-        Err(_) => return Err(()),
-    };
+        .build()?;
 
-    let Event_pump = match Context.event_pump() {
-        Ok(Event_pump) => Event_pump,
-        Err(_) => return Err(()),
-    };
+    let Event_pump = Context.event_pump()?;
 
     let Pointer = Pointer_type::New(Window.id(), Event_pump);
 
-    let Screen = match Screen_type::New(Window) {
-        Ok(Canvas) => Canvas,
-        Err(_) => return Err(()),
-    };
+    let Screen = Screen_type::New(Window)?;
 
     Ok((Screen, Pointer))
 }
@@ -178,7 +192,6 @@ mod tests {
     fn Test_touchscreen() {
         const Horizontal_resolution: u32 = 800;
         const Vertical_resolution: u32 = 480;
-        const Buffer_size: usize = (Horizontal_resolution * Vertical_resolution / 2) as usize;
 
         let Touchscreen = New_touchscreen(Generics::Point_type::New(
             Horizontal_resolution as i16,
@@ -187,7 +200,7 @@ mod tests {
 
         assert!(Touchscreen.is_ok());
 
-        let (mut Screen, mut Pointer) = Touchscreen.unwrap();
+        let (_, _) = Touchscreen.unwrap();
 
         unsafe {
             sdl2::sys::SDL_Quit(); // Force SDL2 to quit to avoid conflicts with other tests.
