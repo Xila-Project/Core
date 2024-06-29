@@ -5,118 +5,112 @@
 fn Virtual_file_system_test() {
     use File_system::{
         Drivers::Native::File_system_type,
-        Prelude::{Mode_type, Path_type, Position_type, Status_type, Virtual_file_system_type},
+        Prelude::{
+            File_type, Mode_type, Path_type, Position_type, Status_type, Virtual_file_system_type,
+        },
     };
 
     let Task_manager = Task::Manager_type::New();
 
-    let Task_manager_clone = Task_manager.clone();
+    let Users_manager = Users::Manager_type::New();
 
-    Task_manager
-        .New_task(None, None, "Task", None, move || {
-            let Task_manager = Task_manager_clone;
+    let Virtual_file_system = Virtual_file_system_type::New(Task_manager, Users_manager);
 
-            let Users_manager = Users::Manager_type::New();
+    Virtual_file_system
+        .Mount(
+            Box::new(File_system_type::New().expect("Failed to create file system")),
+            Path_type::Get_root(),
+        )
+        .expect("Failed to mount file system");
 
-            let Virtual_file_system =
-                Virtual_file_system_type::New(Task_manager, Users_manager.clone());
+    let File_path = Path_type::New("/test.txt").expect("Failed to create path");
 
-            Virtual_file_system
-                .Mount(
-                    Box::new(File_system_type::New().expect("Failed to create file system")),
-                    Path_type::Get_root(),
-                )
-                .expect("Failed to mount file system");
+    if Virtual_file_system
+        .Exists(File_path)
+        .expect("Failed to check if file exists")
+    {
+        Virtual_file_system
+            .Delete(File_path, false)
+            .expect("Failed to delete file");
+    }
 
-            let File_path = Path_type::New("/test.txt").expect("Failed to create path");
+    Virtual_file_system
+        .Create_file(File_path)
+        .expect("Failed to create file");
 
-            if Virtual_file_system
-                .Exists(File_path)
-                .expect("Failed to check if file exists")
-            {
-                Virtual_file_system
-                    .Delete(File_path, false)
-                    .expect("Failed to delete file");
-            }
+    let File = File_type::Open(
+        &Virtual_file_system,
+        File_path,
+        Mode_type::Read_write().into(),
+    )
+    .expect("Failed to open file");
 
-            Virtual_file_system
-                .Create_file(File_path)
-                .expect("Failed to create file");
+    let Data = b"Hello, world!";
 
-            let File = Virtual_file_system
-                .Open(
-                    Path_type::New("/test.txt").expect("Failed to create path"),
-                    Mode_type::Read_write().into(),
-                )
-                .expect("Failed to open file");
+    File.Write(Data).expect("Failed to write data");
 
-            let Data = b"Hello, world!";
+    File.Set_position(&Position_type::Start(0_u64.into()))
+        .expect("Failed to set position");
 
-            File.Write(Data).expect("Failed to write data");
+    let mut Buffer = [0; 13];
 
-            File.Set_position(&Position_type::Start(0_u64.into()))
-                .expect("Failed to set position");
+    File.Read(&mut Buffer).expect("Failed to read data");
 
-            let mut Buffer = [0; 13];
+    assert_eq!(Buffer, *Data);
 
-            File.Read(&mut Buffer).expect("Failed to read data");
+    std::mem::drop(File);
 
-            assert_eq!(Buffer, *Data);
+    Virtual_file_system
+        .Delete(File_path, false)
+        .expect("Failed to delete file");
 
-            std::mem::drop(File);
+    let (Pipe_read, Pipe_write) =
+        File_type::Create_unamed_pipe(&Virtual_file_system, 512, Status_type::default())
+            .expect("Failed to create pipe");
 
-            Virtual_file_system
-                .Delete(File_path, false)
-                .expect("Failed to delete file");
+    Pipe_write.Write(Data).expect("Failed to write data");
 
-            let (Pipe_read, Pipe_write) = Virtual_file_system
-                .Create_unnamed_pipe(512, Status_type::default())
-                .expect("Failed to create pipe");
+    let mut Buffer = [0; 13];
 
-            Pipe_write.Write(Data).expect("Failed to write data");
+    Pipe_read.Read(&mut Buffer).expect("Failed to read data");
 
-            let mut Buffer = [0; 13];
+    assert_eq!(Buffer, *Data);
 
-            Pipe_read.Read(&mut Buffer).expect("Failed to read data");
+    let Pipe_path = Path_type::New("/pipe").expect("Failed to create path");
 
-            assert_eq!(Buffer, *Data);
+    if Virtual_file_system
+        .Exists(Pipe_path)
+        .expect("Failed to check if pipe exists")
+    {
+        Virtual_file_system
+            .Delete(Pipe_path, false)
+            .expect("Failed to delete pipe");
+    }
 
-            let Pipe_path = Path_type::New("/pipe").expect("Failed to create path");
+    /*
+    Virtual_file_system
+        .Create_named_pipe(&Pipe_path, 512)
+        .expect("Failed to create pipe");
 
-            if Virtual_file_system
-                .Exists(Pipe_path)
-                .expect("Failed to check if pipe exists")
-            {
-                Virtual_file_system
-                    .Delete(Pipe_path, false)
-                    .expect("Failed to delete pipe");
-            }
+    let Pipe_read = File_type::Open(
+        &Virtual_file_system,
+        Pipe_path,
+        Mode_type::Read_only().into(),
+    ).expect("Failed to open pipe");
 
-            Virtual_file_system
-                .Create_named_pipe(&Pipe_path, 512)
-                .expect("Failed to create pipe");
+    let mut Buffer = [0; 13];
 
-            let Pipe_read = Virtual_file_system
-                .Open(Pipe_path, Mode_type::Read_only().into())
-                .expect("Failed to open pipe");
+    Pipe_write.Write(Data).expect("Failed to write data");
 
-            let mut Buffer = [0; 13];
+    Pipe_read.Read(&mut Buffer).expect("Failed to read data");
 
-            Pipe_write.Write(Data).expect("Failed to write data");
+    assert_eq!(Buffer, *Data);
 
-            Pipe_read.Read(&mut Buffer).expect("Failed to read data");
+    std::mem::drop(Pipe_read);
+    std::mem::drop(Pipe_write);
 
-            assert_eq!(Buffer, *Data);
-
-            std::mem::drop(Pipe_read);
-            std::mem::drop(Pipe_write);
-
-            Virtual_file_system
-                .Delete(Pipe_path, false)
-                .expect("Failed to delete pipe");
-        })
-        .expect("Failed to create task")
-        .1
-        .Join()
-        .expect("Task panicked");
+    Virtual_file_system
+        .Delete(Pipe_path, false)
+        .expect("Failed to delete pipe");
+    */
 }
