@@ -5,6 +5,7 @@ use wamr_rust_sdk::RuntimeError;
 pub type Result_type<T> = std::result::Result<T, Error_type>;
 
 #[derive(Debug)]
+#[repr(C)]
 pub enum Error_type {
     Invalid_pointer,
     Invalid_UTF8_string,
