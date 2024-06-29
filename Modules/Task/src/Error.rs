@@ -3,6 +3,7 @@ use std::sync::PoisonError;
 pub type Result<T> = std::result::Result<T, Error_type>;
 
 #[derive(Debug, Clone)]
+#[repr(C)]
 pub enum Error_type {
     Invalid_task_identifier,
     Failed_to_create_thread,
