@@ -72,7 +72,7 @@ impl Manager_type {
 
     /// Create a new child task, returns the identifier of the child task.
     /// # Arguments
-    /// * `Parent_task_identifier` - The identifier of the parent task.
+    /// * `Parent_task_identifier` - The identifier of the parent task, if None, the current task is used.
     /// * `Name` - The human readable name of the task.
     /// * `Stack_size` - The size of the stack of the task.
     /// * `Function` - The function that the task will execute.
