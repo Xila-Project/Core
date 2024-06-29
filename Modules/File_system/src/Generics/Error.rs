@@ -1,7 +1,5 @@
 use std::{num::NonZeroU32, sync::PoisonError};
 
-use Shared::Error_discriminant_trait;
-
 pub type Result<T> = std::result::Result<T, Error_type>;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -42,12 +40,9 @@ impl<T> From<PoisonError<T>> for Error_type {
         Error_type::Poisoned_lock
     }
 }
-impl Error_discriminant_trait for Error_type {
-    fn Get_discriminant(&self) -> NonZeroU32 {
-        NonZeroU32::new(*self as u32).unwrap()
-    }
 
-    fn From_discriminant(Discriminant: NonZeroU32) -> Self {
-        unsafe { std::mem::transmute(Discriminant.get()) }
+impl From<Error_type> for NonZeroU32 {
+    fn from(Error: Error_type) -> Self {
+        unsafe { NonZeroU32::new_unchecked(Error as u32) }
     }
 }
