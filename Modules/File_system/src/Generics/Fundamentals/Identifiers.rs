@@ -16,6 +16,7 @@ impl From<File_identifier_type> for u16 {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
 pub struct File_system_identifier_type(u8);
 
 impl File_system_identifier_type {
