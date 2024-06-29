@@ -7,4 +7,3 @@ edition = "2021"
 
 [dependencies]
 Binding_tool = { path = "../../../../../Binding_tool", features = ["WASM"] }
-wee_alloc = "0.4.5"
