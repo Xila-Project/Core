@@ -31,7 +31,7 @@ impl Runtime_builder_type {
         self
     }
 
-    pub fn Build(self) -> Result<Runtime_type, RuntimeError> {
+    pub fn Build(self) -> Result_type<Runtime_type> {
         Ok(Runtime_type(self.0.build()?))
     }
 }
