@@ -1,4 +1,8 @@
+#![allow(non_camel_case_types)]
+
 use wamr_rust_sdk::RuntimeError;
+
+pub type Result_type<T> = std::result::Result<T, Error_type>;
 
 #[derive(Debug)]
 pub enum Error_type {

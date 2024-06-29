@@ -14,14 +14,14 @@ use wamr_rust_sdk::sys::{
 };
 use Shared::Mutable_string_type;
 
-use crate::{Data::Data_type, Error_type, Instance_type, WASM_pointer, WASM_usize};
+use crate::{Data::Data_type, Error_type, Instance_type, Result_type, WASM_pointer, WASM_usize};
 
 pub type Environment_pointer_type = wasm_exec_env_t;
 
 pub struct Environment_type<'a>(Environment_pointer_type, PhantomData<&'a ()>);
 
 impl<'a> Environment_type<'a> {
-    pub fn From_raw_pointer(Raw_pointer: Environment_pointer_type) -> Result<Self, Error_type> {
+    pub fn From_raw_pointer(Raw_pointer: Environment_pointer_type) -> Result_type<Self> {
         if Raw_pointer.is_null() {
             return Err(Error_type::Invalid_pointer);
         }
@@ -29,7 +29,7 @@ impl<'a> Environment_type<'a> {
         Ok(Self(Raw_pointer as Environment_pointer_type, PhantomData))
     }
 
-    pub fn From_instance(Instance: &Instance_type) -> Result<Self, Error_type> {
+    pub fn From_instance(Instance: &Instance_type) -> Result_type<Self> {
         let Instance_pointer = Instance.Get_inner_reference().get_inner_instance();
 
         if Instance_pointer.is_null() {
@@ -105,7 +105,7 @@ impl<'a> Environment_type<'a> {
         &self,
         Address: WASM_pointer,
         Size: WASM_usize,
-    ) -> Result<&str, Error_type> {
+    ) -> Result_type<&str> {
         if !self.Validate_WASM_pointer(Address, Size) {
             return Err(Error_type::Invalid_pointer);
         }
@@ -127,7 +127,7 @@ impl<'a> Environment_type<'a> {
         String: WASM_pointer,
         Length: WASM_pointer,
         Size: WASM_usize,
-    ) -> Result<Mutable_string_type<'a>, Error_type> {
+    ) -> Result_type<Mutable_string_type<'a>> {
         if !self.Validate_WASM_pointer(String, Size) {
             return Err(Error_type::Invalid_pointer);
         }
@@ -149,7 +149,7 @@ impl<'a> Environment_type<'a> {
         &self,
         Address: WASM_pointer,
         Length: WASM_usize,
-    ) -> Result<&[T], Error_type> {
+    ) -> Result_type<&[T]> {
         if !self.Validate_WASM_pointer(Address, Length) {
             return Err(Error_type::Invalid_pointer);
         }
@@ -165,7 +165,7 @@ impl<'a> Environment_type<'a> {
         &self,
         Slice: WASM_pointer,
         Size: WASM_usize,
-    ) -> Result<&'a mut [T], Error_type> {
+    ) -> Result_type<&'a mut [T]> {
         if !self.Validate_WASM_pointer(Slice, Size) {
             return Err(Error_type::Invalid_pointer);
         }
@@ -178,10 +178,7 @@ impl<'a> Environment_type<'a> {
         Ok(Slice)
     }
 
-    pub fn Convert_to_native_reference<T>(
-        &self,
-        Address: WASM_pointer,
-    ) -> Result<&'a T, Error_type> {
+    pub fn Convert_to_native_reference<T>(&self, Address: WASM_pointer) -> Result_type<&'a T> {
         if !self.Validate_WASM_pointer(Address, size_of::<T>() as WASM_usize) {
             return Err(Error_type::Invalid_pointer);
         }
@@ -196,7 +193,7 @@ impl<'a> Environment_type<'a> {
     pub fn Convert_to_native_mutable_reference<T>(
         &self,
         Address: WASM_pointer,
-    ) -> Result<&'a mut T, Error_type> {
+    ) -> Result_type<&'a mut T> {
         if !self.Validate_WASM_pointer(Address, size_of::<T>() as WASM_usize) {
             return Err(Error_type::Invalid_pointer);
         }
@@ -208,7 +205,7 @@ impl<'a> Environment_type<'a> {
         Ok(Reference)
     }
 
-    pub fn Allocate<T>(&self, Size: WASM_usize) -> Result<&mut [T], Error_type> {
+    pub fn Allocate<T>(&self, Size: WASM_usize) -> Result_type<&mut [T]> {
         let mut Pointer: *mut c_void = null_mut();
 
         unsafe {
