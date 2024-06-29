@@ -53,9 +53,9 @@ pub enum Position_type {
 }
 
 #[cfg(feature = "std")]
-impl Into<std::io::SeekFrom> for Position_type {
-    fn into(self) -> std::io::SeekFrom {
-        match self {
+impl From<Position_type> for std::io::SeekFrom {
+    fn from(Position: Position_type) -> Self {
+        match Position {
             Position_type::Start(Item) => std::io::SeekFrom::Start(Item),
             Position_type::Current(Item) => std::io::SeekFrom::Current(Item),
             Position_type::End(Item) => std::io::SeekFrom::End(Item),
