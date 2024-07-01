@@ -77,8 +77,7 @@ impl Virtual_file_system_type {
             return Err(Error_type::Invalid_path);
         }
 
-        let mut File_systems = self.File_systems.write()?;
-        File_systems.insert(
+        self.File_systems.write()?.insert(
             File_system_identifier,
             Internal_file_system_type {
                 Mount_point: Mount_point.as_ref().to_owned(),
@@ -90,8 +89,8 @@ impl Virtual_file_system_type {
     }
 
     pub fn Unmount(&self, File_system_identifier: File_system_identifier_type) -> Result<()> {
-        let mut File_systems = self.File_systems.write()?;
-        File_systems
+        self.File_systems
+            .write()?
             .remove(&File_system_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
 
@@ -127,8 +126,6 @@ impl Virtual_file_system_type {
 
         let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
-        let File_systems = self.File_systems.read()?; // Get the file systems
-
         let File_system = File_systems
             .get(&File_system_identifier)
             .ok_or(Error_type::Invalid_path)?;
@@ -137,7 +134,7 @@ impl Virtual_file_system_type {
 
         // - Check permissions
 
-        self.Check_permissions(&File_system, Task_identifier, Relative_path, Flags)?;
+        self.Check_permissions(File_system, Task_identifier, Relative_path, Flags)?;
 
         // - Open file
 
@@ -595,7 +592,7 @@ impl Virtual_file_system_type {
 
         // Check if the user has the right to delete the file (write permission on the parent directory)
         self.Check_permissions(
-            &File_system,
+            File_system,
             Task_identifier,
             Relative_path.Go_parent().ok_or(Error_type::Invalid_path)?,
             Mode_type::Write_only().into(),
