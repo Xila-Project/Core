@@ -5,6 +5,7 @@ fn main() -> Result<(), ()> {
     println!("cargo:rerun-if-changed=Tests/WASM_test/src/main.rs");
     println!("cargo:rerun-if-changed=Tests/WASM_test/src/File_system.rs");
     println!("cargo:rerun-if-changed=Tests/WASM_test/src/Task.rs");
+    println!("cargo:rerun-if-changed=Tests/WASM_test/src/Graphics.rs");
     println!("cargo:rerun-if-changed=Tests/WASM_test/Cargo.toml");
 
     // TODO : Add a check for test mode
