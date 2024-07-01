@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, RwLock, RwLockWriteGuard},
+    sync::{Arc, RwLock},
 };
 
 use Task::Task_identifier_type;
@@ -25,8 +25,7 @@ pub struct Virtual_file_system_type {
     /// User manager.
     User_manager: Users::Manager_type,
     /// Mounted file systems.
-    File_systems:
-        Arc<RwLock<HashMap<File_system_identifier_type, RwLock<Internal_file_system_type>>>>,
+    File_systems: Arc<RwLock<HashMap<File_system_identifier_type, Internal_file_system_type>>>,
     /// Pipe file system
     Pipes_file_system: Arc<RwLock<Pipes_file_system_type>>,
 }
@@ -81,10 +80,10 @@ impl Virtual_file_system_type {
         let mut File_systems = self.File_systems.write()?;
         File_systems.insert(
             File_system_identifier,
-            RwLock::new(Internal_file_system_type {
+            Internal_file_system_type {
                 Mount_point: Mount_point.as_ref().to_owned(),
                 Inner: File_system,
-            }),
+            },
         );
 
         Ok(File_system_identifier)
@@ -100,15 +99,13 @@ impl Virtual_file_system_type {
     }
 
     fn Get_file_system<'b>(
-        File_systems: &'b HashMap<File_system_identifier_type, RwLock<Internal_file_system_type>>,
+        File_systems: &'b HashMap<File_system_identifier_type, Internal_file_system_type>,
         Path: &'b dyn AsRef<Path_type>,
     ) -> Result<(File_system_identifier_type, &'b Path_type)> {
         let mut Result_score = 0;
         let mut Result: Option<(File_system_identifier_type, &'b Path_type)> = None;
 
         for (File_system_identifier, File_system) in File_systems.iter() {
-            let File_system = File_system.read()?;
-
             if let Some(Relative_path) = Path.as_ref().Strip_prefix(&File_system.Mount_point) {
                 let Score = Relative_path.Get_length();
                 if Score > Result_score {
@@ -138,8 +135,6 @@ impl Virtual_file_system_type {
 
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
-        let mut File_system = File_system.write()?; // Get the file system
-
         // - Check permissions
 
         self.Check_permissions(&File_system, Task_identifier, Relative_path, Flags)?;
@@ -168,7 +163,7 @@ impl Virtual_file_system_type {
 
     fn Check_permissions(
         &self,
-        File_system: &RwLockWriteGuard<Internal_file_system_type>,
+        File_system: &Internal_file_system_type,
         Task_identifier: Task_identifier_type,
         Relative_path: impl AsRef<Path_type>,
         Flags: Flags_type,
@@ -246,10 +241,9 @@ impl Virtual_file_system_type {
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let mut File_system = File_systems
+        let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_identifier)?
-            .write()?; // Get the file system
+            .ok_or(Error_type::Invalid_identifier)?; // Get the file system
 
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
@@ -275,10 +269,9 @@ impl Virtual_file_system_type {
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let mut File_system = File_systems
+        let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_identifier)?
-            .write()?; // Get the file system
+            .ok_or(Error_type::Invalid_identifier)?; // Get the file system
 
         File_system
             .Inner
@@ -304,8 +297,6 @@ impl Virtual_file_system_type {
             .get(&File_system_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        let mut File_system = File_system.write()?; // Get the file system
-
         File_system
             .Inner
             .Write(Task_identifier, File_identifier, Buffer)
@@ -322,10 +313,9 @@ impl Virtual_file_system_type {
 
         let (File_system_identifier, File_identifier) = File_identifier.Split();
 
-        let mut File_system = File_systems
+        let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_identifier)?
-            .write()?; // Get the file system
+            .ok_or(Error_type::Invalid_identifier)?; // Get the file system
 
         File_system
             .Inner
@@ -343,8 +333,7 @@ impl Virtual_file_system_type {
 
         let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?
-            .read()?; // Get the file system
+            .ok_or(Error_type::Invalid_path)?; // Get the file system
 
         File_system.Inner.Exists(&Relative_path)
     }
@@ -356,8 +345,7 @@ impl Virtual_file_system_type {
 
         let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?
-            .read()?; // Get the file system
+            .ok_or(Error_type::Invalid_path)?; // Get the file system
 
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
@@ -371,8 +359,7 @@ impl Virtual_file_system_type {
 
         let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?
-            .read()?; // Get the file system
+            .ok_or(Error_type::Invalid_path)?;
 
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
@@ -390,8 +377,7 @@ impl Virtual_file_system_type {
 
         let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?
-            .read()?; // Get the file system
+            .ok_or(Error_type::Invalid_path)?;
 
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
@@ -410,8 +396,7 @@ impl Virtual_file_system_type {
 
         let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?
-            .read()?; // Get the file system
+            .ok_or(Error_type::Invalid_path)?;
 
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
@@ -438,10 +423,9 @@ impl Virtual_file_system_type {
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let mut File_system = File_systems
+        let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?
-            .write()?;
+            .ok_or(Error_type::Invalid_path)?;
 
         File_system
             .Inner
@@ -466,8 +450,6 @@ impl Virtual_file_system_type {
         let File_system = File_systems
             .get(&File_system_identifier)
             .ok_or(Error_type::Invalid_path)?;
-
-        let mut File_system = File_system.write()?; // Get the file system
 
         // - Check permissions
 
@@ -498,7 +480,7 @@ impl Virtual_file_system_type {
         let File_systems = self.File_systems.read()?; // Get the file systems
 
         for File_system in File_systems.values() {
-            File_system.write()?.Inner.Close_all(Task_identifier)?;
+            File_system.Inner.Close_all(Task_identifier)?;
         }
 
         self.Pipes_file_system.write()?.Close_all(Task_identifier)?;
@@ -556,10 +538,9 @@ impl Virtual_file_system_type {
 
         let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
-        let mut File_system = File_systems
+        let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?
-            .write()?; // Get the file system
+            .ok_or(Error_type::Invalid_path)?;
 
         File_system
             .Inner
@@ -587,10 +568,9 @@ impl Virtual_file_system_type {
 
         let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
-        let mut File_system = File_systems
+        let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?
-            .write()?; // Get the file system
+            .ok_or(Error_type::Invalid_path)?;
 
         File_system
             .Inner
@@ -609,10 +589,9 @@ impl Virtual_file_system_type {
 
         let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
-        let mut File_system = File_systems
+        let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?
-            .write()?; // Get the file system
+            .ok_or(Error_type::Invalid_path)?;
 
         // Check if the user has the right to delete the file (write permission on the parent directory)
         self.Check_permissions(
@@ -646,7 +625,6 @@ impl Virtual_file_system_type {
             File_systems
                 .get(&File_system_identifier)
                 .ok_or(Error_type::Invalid_identifier)?
-                .write()?
                 .Inner
                 .Transfert_file_identifier(Task_identifier, New_task, File_identifier)?
         };
@@ -669,10 +647,9 @@ impl Virtual_file_system_type {
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let mut File_system = File_systems
+        let File_system = File_systems
             .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_identifier)?
-            .write()?; // Get the file system
+            .ok_or(Error_type::Invalid_identifier)?; // Get the file system
 
         File_system.Inner.Flush(Task_identifier, File_identifier)
     }

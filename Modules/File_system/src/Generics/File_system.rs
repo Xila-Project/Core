@@ -8,6 +8,10 @@ use super::{
 use Task::Task_identifier_type;
 use Users::{Group_identifier_type, User_identifier_type};
 
+/// File system trait.
+///
+/// The management of concurrent access to the file system is delegated to the implementation.
+/// Thus, implementation should use a `RwLock` or `Mutex` to manage concurrency.
 pub trait File_system_traits: Send + Sync {
     // - Status
     fn Exists(&self, Path: &dyn AsRef<Path_type>) -> Result<bool>;
@@ -20,11 +24,7 @@ pub trait File_system_traits: Send + Sync {
     /// # Errors
     /// Returns an error if the file already exists.
     /// Returns an error if the user / group doesn't have the permission to create the file (no write permission on parent directory).
-    fn Create_file(
-        &mut self,
-        Task: Task_identifier_type,
-        Path: &dyn AsRef<Path_type>,
-    ) -> Result<()>;
+    fn Create_file(&self, Task: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<()>;
 
     /// Open a file.
     ///     
@@ -32,7 +32,7 @@ pub trait File_system_traits: Send + Sync {
     /// Returns an error if the file doesn't exists.
     /// Returns an error if the user / group doesn't have the permission to open the file (mode is not compatible with the file permissions).
     fn Open(
-        &mut self,
+        &self,
         Task: Task_identifier_type,
         Path: &dyn AsRef<Path_type>,
         Mode: Flags_type,
@@ -43,14 +43,14 @@ pub trait File_system_traits: Send + Sync {
     /// # Errors
     /// Returns an error if the file is not opened by the task (invalid file identifier).
     /// Returns an error if the task identifier is invalid.
-    fn Close(&mut self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()>;
+    fn Close(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()>;
 
     /// Close all files opened by the task.
-    fn Close_all(&mut self, Task: Task_identifier_type) -> Result<()>;
+    fn Close_all(&self, Task: Task_identifier_type) -> Result<()>;
 
     /// Transfer a file identifier from a task to another.
     fn Transfert_file_identifier(
-        &mut self,
+        &self,
         Old_task: Task_identifier_type,
         New_task: Task_identifier_type,
         File: File_identifier_type,
@@ -61,7 +61,7 @@ pub trait File_system_traits: Send + Sync {
     /// # Errors
     /// Returns an error if the file doesn't exists.
     /// Returns an error if the user / group doesn't have the permission to delete the file (no write permission on parent directory).
-    fn Delete(&mut self, Path: &dyn AsRef<Path_type>) -> Result<()>;
+    fn Delete(&self, Path: &dyn AsRef<Path_type>) -> Result<()>;
     // - - File operations
 
     /// Read a file.
@@ -70,7 +70,7 @@ pub trait File_system_traits: Send + Sync {
     /// - If the file is not opened.
     /// - If the file is not opened in read mode.
     fn Read(
-        &mut self,
+        &self,
         Task: Task_identifier_type,
         File: File_identifier_type,
         Buffer: &mut [u8],
@@ -82,14 +82,14 @@ pub trait File_system_traits: Send + Sync {
     /// - If the file is not opened (invalid file identifier).
     /// - If the file is not opened in write mode (invalid mode).
     fn Write(
-        &mut self,
+        &self,
         Task: Task_identifier_type,
         File: File_identifier_type,
         Buffer: &[u8],
     ) -> Result<Size_type>;
 
     fn Move(
-        &mut self,
+        &self,
         Task: Task_identifier_type,
         Source: &dyn AsRef<Path_type>,
         Destination: &dyn AsRef<Path_type>,
@@ -100,12 +100,12 @@ pub trait File_system_traits: Send + Sync {
     /// # Errors
     /// - If the file is not opened (invalid file identifier).
     fn Set_position(
-        &mut self,
+        &self,
         Task: Task_identifier_type,
         File: File_identifier_type,
         Position: &Position_type,
     ) -> Result<Size_type>;
-    fn Flush(&mut self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()>;
+    fn Flush(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()>;
 
     // - Metadata
     // - - Size
@@ -142,7 +142,7 @@ pub trait File_system_traits: Send + Sync {
     /// Returns an error if the file doesn't exists.
     /// Returns an error if the user / group doesn't have the permission to change the owner (not the current owner or not the root user).
     fn Set_owner(
-        &mut self,
+        &self,
         _: Task_identifier_type,
         _: &dyn AsRef<Path_type>,
         _: Option<User_identifier_type>,
@@ -170,7 +170,7 @@ pub trait File_system_traits: Send + Sync {
     /// Returns an error if the file doesn't exists.
     /// Returns an error if the user / group doesn't have the permission to set the permissions (no execute permission on parent directory).
     fn Set_permissions(
-        &mut self,
+        &self,
         _: Task_identifier_type,
         _: &Permissions_type,
         _: &dyn AsRef<Path_type>,
@@ -200,7 +200,7 @@ pub trait File_system_traits: Send + Sync {
     /// Returns an error if the directory / file already exists.
     /// Returns an error if the user / group doesn't have the permission to create the directory (no write permission on parent directory).
     fn Create_directory(
-        &mut self,
+        &self,
         Task: Task_identifier_type,
         Path: &dyn AsRef<Path_type>,
     ) -> Result<()>;
@@ -246,7 +246,7 @@ pub trait File_system_traits: Send + Sync {
     /// - Create file `read_only`, `write_only` and `read_write` in the directory
     /// - Ensure `not_exists` doesn't exists in the `Test_path` directory
     /// - Ensure `read_only`, `write_only` and `read_write` are closed
-    fn Test_open_close_file(&mut self) {
+    fn Test_open_close_file(&self) {
         let Task_identifier = Task_identifier_type::from(1);
 
         let Read_only = self
@@ -293,7 +293,7 @@ pub trait File_system_traits: Send + Sync {
     ///
     /// - Ensure `test_dir` doesn't exists in the `Test_path` directory
     /// - Ensure `already_exists` exists in the `Test_path` directory
-    fn Test_create_directory_exists(&mut self) {
+    fn Test_create_directory_exists(&self) {
         let New_path = Get_test_path().Append("test_dir").unwrap();
         let Task_identifier = Task_identifier_type::from(1);
 
@@ -308,7 +308,7 @@ pub trait File_system_traits: Send + Sync {
     ///
     /// - Create file `read` in the `Test_path` directory containing `0123456789\n` (10 bytes)
     /// - Create file `empty_read` in the `Test_path` directory
-    fn Test_file_read(&mut self) {
+    fn Test_file_read(&self) {
         let Task_identifier = Task_identifier_type::from(1);
 
         let Read_file = Get_test_path().Append("read").unwrap();
@@ -341,7 +341,7 @@ pub trait File_system_traits: Send + Sync {
     /// # Before running the tests
     ///
     /// - Create file `write` in the `Test_path` directory
-    fn Test_file_write(&mut self) {
+    fn Test_file_write(&self) {
         let Task_identifier = Task_identifier_type::from(1);
 
         let File = Get_test_path().Append("write").unwrap();
@@ -357,7 +357,7 @@ pub trait File_system_traits: Send + Sync {
     }
 
     /// Run before the tests.
-    fn Reset_test_directory(&mut self) {
+    fn Reset_test_directory(&self) {
         let _ = self.Delete(&Get_test_path());
         assert_eq!(self.Exists(&Get_test_path()), Ok(false));
 

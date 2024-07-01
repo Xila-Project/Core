@@ -9,6 +9,7 @@ use std::fs::*;
 use std::io::{ErrorKind, Read, Seek, Write};
 
 use std::path::PathBuf;
+use std::sync::RwLock;
 
 use Task::Task_identifier_type;
 
@@ -69,14 +70,14 @@ impl From<&Permissions_type> for std::fs::Permissions {
 
 pub struct File_system_type {
     Virtual_root_path: Path_owned_type,
-    Open_files: HashMap<u32, File>,
+    Open_files: RwLock<HashMap<u32, RwLock<File>>>,
 }
 
 impl File_system_type {
     pub fn New() -> Result<Self> {
         Ok(File_system_type {
             Virtual_root_path: Self::Get_root_path().ok_or(Error_type::Unknown)?,
-            Open_files: HashMap::new(),
+            Open_files: RwLock::new(HashMap::new()),
         })
     }
 
@@ -108,18 +109,18 @@ impl File_system_type {
     fn Get_new_file_identifier(
         &self,
         Task_identifier: Task_identifier_type,
-    ) -> Option<File_identifier_type> {
+    ) -> Result<File_identifier_type> {
         let Start = Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0));
         let End =
             Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0xFFFF));
 
         for i in Start..End {
-            if !self.Open_files.contains_key(&i) {
-                return Some(File_identifier_type::from(i as u16));
+            if !self.Open_files.read()?.contains_key(&i) {
+                return Ok(File_identifier_type::from(i as u16));
             }
         }
 
-        None
+        Err(Error_type::Too_many_open_files)
     }
 
     pub fn Get_full_path(&self, Path: &dyn AsRef<Path_type>) -> Result<Path_owned_type> {
@@ -141,7 +142,7 @@ impl File_system_traits for File_system_type {
     }
 
     fn Open(
-        &mut self,
+        &self,
         Task_identifier: Task_identifier_type,
         Path: &dyn AsRef<Path_type>,
         Flags: Flags_type,
@@ -156,16 +157,15 @@ impl File_system_traits for File_system_type {
             .open(Full_path.as_ref() as &Path_type)
             .map_err(|Error| Error.kind())?;
 
-        let File_identifier = self
-            .Get_new_file_identifier(Task_identifier)
-            .ok_or(Error_type::Too_many_open_files)?;
+        let File_identifier = self.Get_new_file_identifier(Task_identifier)?;
 
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
 
         if self
             .Open_files
-            .insert(Local_file_identifier, File)
+            .write()?
+            .insert(Local_file_identifier, RwLock::new(File))
             .is_some()
         {
             return Err(Error_type::Internal_error);
@@ -175,7 +175,7 @@ impl File_system_traits for File_system_type {
     }
 
     fn Read(
-        &mut self,
+        &self,
         Task_identifier: Task_identifier_type,
         File_identifier: File_identifier_type,
         Buffer: &mut [u8],
@@ -183,16 +183,18 @@ impl File_system_traits for File_system_type {
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
 
-        let File = self
+        Ok(self
             .Open_files
-            .get_mut(&Local_file_identifier)
-            .ok_or(Error_type::Invalid_identifier)?;
-
-        Ok(File.read(Buffer)?.into())
+            .read()?
+            .get(&Local_file_identifier)
+            .ok_or(Error_type::Invalid_identifier)?
+            .write()?
+            .read(Buffer)?
+            .into())
     }
 
     fn Write(
-        &mut self,
+        &self,
         Task_identifier: Task_identifier_type,
         File_identifier: File_identifier_type,
         Buffer: &[u8],
@@ -200,26 +202,31 @@ impl File_system_traits for File_system_type {
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
 
-        let File = self
+        Ok(self
             .Open_files
+            .write()?
             .get_mut(&Local_file_identifier)
-            .ok_or(Error_type::Invalid_identifier)?;
-
-        Ok(File.write(Buffer)?.into())
+            .ok_or(Error_type::Invalid_identifier)?
+            .write()?
+            .write(Buffer)?
+            .into())
     }
 
-    fn Flush(&mut self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()> {
-        let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
-        let File = self
-            .Open_files
-            .get_mut(&Local_file_identifier)
-            .ok_or(Error_type::Invalid_identifier)?;
-        File.flush().map_err(|Error| Error.kind().into())
-    }
-
-    fn Close(&mut self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()> {
+    fn Flush(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()> {
         let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
         self.Open_files
+            .write()?
+            .get_mut(&Local_file_identifier)
+            .ok_or(Error_type::Invalid_identifier)?
+            .write()?
+            .flush()?;
+        Ok(())
+    }
+
+    fn Close(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()> {
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
+        self.Open_files
+            .write()?
             .remove(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
         Ok(())
@@ -227,98 +234,90 @@ impl File_system_traits for File_system_type {
 
     fn Get_type(&self, _: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<Type_type> {
         let Full_path = self.Get_full_path(&Path)?;
-        let Metadata = metadata(Full_path.as_ref() as &Path_type).map_err(|Error| Error.kind())?;
+        let Metadata = metadata(Full_path.as_ref() as &Path_type)?;
         Ok(Metadata.file_type().into())
     }
 
     fn Get_size(&self, _: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<Size_type> {
         let Full_path = self.Get_full_path(&Path)?;
-        let Metadata = metadata(Full_path.as_ref() as &Path_type).map_err(|Error| Error.kind())?;
+        let Metadata = metadata(Full_path.as_ref() as &Path_type)?;
         Ok(Metadata.len().into())
     }
 
     fn Set_position(
-        &mut self,
+        &self,
         Task_identifier: Task_identifier_type,
         File_identifier: File_identifier_type,
         Position_type: &Position_type,
     ) -> Result<Size_type> {
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
-        let File = match self.Open_files.get_mut(&Local_file_identifier) {
-            Some(File) => File,
-            None => return Err(Error_type::Invalid_identifier),
-        };
 
-        Ok(File
+        Ok(self
+            .Open_files
+            .write()?
+            .get_mut(&Local_file_identifier)
+            .ok_or(Error_type::Invalid_identifier)?
+            .write()?
             .seek((*Position_type).into())
-            .map_err(|Error| Error_type::from(Error.kind()))?
+            .map_err(|Error| Error.kind())?
             .into())
     }
 
-    fn Delete(&mut self, Path: &dyn AsRef<Path_type>) -> Result<()> {
+    fn Delete(&self, Path: &dyn AsRef<Path_type>) -> Result<()> {
         let Full_path = self.Get_full_path(&Path)?;
 
         remove_file(Full_path.as_ref() as &Path_type).map_err(|Error| Error.kind().into())
     }
 
-    fn Create_directory(
-        &mut self,
-        _: Task_identifier_type,
-        Path: &dyn AsRef<Path_type>,
-    ) -> Result<()> {
+    fn Create_directory(&self, _: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<()> {
         let Full_path = self.Get_full_path(&Path)?;
 
         create_dir(Full_path.as_ref() as &Path_type).map_err(|Error| Error.kind().into())
     }
 
-    fn Create_file(&mut self, _: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<()> {
+    fn Create_file(&self, _: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<()> {
         let Full_path = self.Get_full_path(&Path)?;
 
         OpenOptions::new()
             .write(true)
             .create_new(true)
-            .open(Full_path.as_ref() as &Path_type)
-            .map_err(|Error| Error.kind())?;
+            .open(Full_path.as_ref() as &Path_type)?;
 
         Ok(())
     }
 
-    fn Close_all(&mut self, Task_identifier: Task_identifier_type) -> Result<()> {
+    fn Close_all(&self, Task_identifier: Task_identifier_type) -> Result<()> {
         let Start = Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0));
         let End =
             Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0xFFFF));
 
         self.Open_files
+            .write()?
             .retain(|File_identifier, _| *File_identifier < Start || *File_identifier > End);
 
         Ok(())
     }
 
     fn Transfert_file_identifier(
-        &mut self,
+        &self,
         Old_task: Task_identifier_type,
         New_task: Task_identifier_type,
         Old_file_identifier: File_identifier_type,
     ) -> Result<File_identifier_type> {
         let Old_local_file_identifier =
             Self::Get_local_file_identifier(Old_task, Old_file_identifier);
-        let New_file_identifier = self
-            .Get_new_file_identifier(New_task)
-            .ok_or(Error_type::Too_many_open_files)?;
+        let New_file_identifier = self.Get_new_file_identifier(New_task)?;
         let New_local_file_identifier =
             Self::Get_local_file_identifier(New_task, New_file_identifier);
 
-        let File = self
-            .Open_files
+        let mut Open_files = self.Open_files.write()?;
+
+        let File = Open_files
             .remove(&Old_local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        if self
-            .Open_files
-            .insert(New_local_file_identifier, File)
-            .is_some()
-        {
+        if Open_files.insert(New_local_file_identifier, File).is_some() {
             return Err(Error_type::Internal_error);
         }
 
@@ -326,7 +325,7 @@ impl File_system_traits for File_system_type {
     }
 
     fn Move(
-        &mut self,
+        &self,
         _: Task_identifier_type,
         Source: &dyn AsRef<Path_type>,
         Destination: &dyn AsRef<Path_type>,
