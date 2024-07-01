@@ -4,7 +4,7 @@ Hooks_dir=".git/hooks"
 Pre_commit_file=$Hooks_dir/pre-commit
 Pre_commit_hook="\
 #!/bin/sh\n\
-if ! cargo fmt -- --check; then\n\
+if ! cargo fmt -- --check > /dev/null 2>&1; then\n\
     echo \"Please run 'cargo fmt' to format your code before making a commit.\"\n\
     exit 1\n\
 fi\n\
