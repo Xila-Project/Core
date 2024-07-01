@@ -4,11 +4,14 @@ Hooks_dir=".git/hooks"
 Pre_commit_file=$Hooks_dir/pre-commit
 Pre_commit_hook="\
 #!/bin/sh\n\
-cargo fmt -- --check\
+if ! cargo fmt -- --check; then\n\
+    echo \"Please run 'cargo fmt' to format your code before making a commit.\"\n\
+    exit 1\n\
+fi\n\
 "
 
 if [ ! -d "$Hooks_dir" ]; then
-    echo "The \".git/hooks\" directory does not exist. Are you in the root of a git repository?"
+    echo "The '.git/hooks' directory does not exist. Are you in the root of a git repository?"
     exit 1
 fi
 
