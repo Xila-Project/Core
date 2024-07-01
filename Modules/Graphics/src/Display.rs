@@ -1,11 +1,13 @@
 use Screen::Prelude::{Area_type, Color_type, Point_type, Refresh_area_type, Screen_traits};
 
+use crate::Draw_buffer_type;
+
 pub struct Display_type(lvgl::Display);
 
 impl Display_type {
     pub fn New<Screen_type: Screen_traits<Buffer_size>, const Buffer_size: usize>(
         Screen: &mut Screen_type,
-        Draw_buffer: lvgl::DrawBuffer<Buffer_size>,
+        Draw_buffer: Draw_buffer_type<Buffer_size>,
     ) -> Result<Self, ()> {
         let Resolution = match Screen.Get_resolution() {
             Ok(Resolution) => Resolution,
@@ -41,7 +43,7 @@ impl Display_type {
         };
 
         let LVGL_display = match lvgl::Display::register(
-            Draw_buffer,
+            Draw_buffer.into(),
             Resolution.X as u32,
             Resolution.Y as u32,
             Binding_function,

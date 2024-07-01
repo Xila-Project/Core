@@ -20,11 +20,7 @@ impl Input_type {
                 Touch_type::Released => Input_data.released(),
             };
 
-            //    if Changed {
             Input_data.once()
-            //    } else {
-            //       Input_data.and_continued()
-            //   }
         };
 
         match pointer::Pointer::register(Binding_function, Display.Get_lvgl_display()) {
@@ -36,6 +32,8 @@ impl Input_type {
 
 #[cfg(test)]
 mod tests {
+    use crate::Draw_buffer_type;
+
     use super::*;
     use lvgl::Widget;
     use std::{
@@ -58,7 +56,7 @@ mod tests {
         assert!(Touchscreen.is_ok());
         let (mut Screen, mut Pointer) = Touchscreen.unwrap();
 
-        let Buffer = lvgl::DrawBuffer::<Buffer_size>::default();
+        let Buffer = Draw_buffer_type::<Buffer_size>::default();
 
         let Display = Display_type::New(&mut Screen, Buffer);
         assert!(Display.is_ok());

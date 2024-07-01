@@ -2,9 +2,8 @@ use cstr_core::CString;
 use lvgl::{
     style::{FlexFlow, Style},
     widgets::Label,
-    LvError, NativeObject, Obj, Widget,
+    LvError, NativeObject, Obj,
 };
-use Task::Task_identifier_type;
 
 pub type Windows_indentifier_type = u16;
 
@@ -13,10 +12,8 @@ struct Window_type<'a> {
 }
 
 impl<'a> Window_type<'a> {
-    pub fn New<'b>(Parent: &'a mut impl NativeObject, Title_string: &str) -> Result<Self, LvError> {
+    pub fn New(Parent: &'a mut impl NativeObject, Title_string: &str) -> Result<Self, LvError> {
         let mut Window = Obj::create(Parent)?;
-
-        let Style = Style::default().set_flex_flow(FlexFlow::COLUMN);
 
         let mut Header = Obj::create(&mut Window)?;
 
@@ -28,7 +25,7 @@ impl<'a> Window_type<'a> {
 
         // TODO : Wait for lv_binding_rust to implement correct drop and lifetime management
 
-        let mut Window = Self { Window };
+        let Window = Self { Window };
 
         Ok(Window)
     }
