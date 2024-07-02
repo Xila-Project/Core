@@ -40,12 +40,12 @@ impl From<Named_pipe_identifier_type> for [u8; 4] {
 
 use super::Pipe_type;
 
-pub struct Pipes_file_system_type {
+pub struct Manager_type {
     Named_pipes: HashMap<Named_pipe_identifier_type, Pipe_type>,
     Opened_pipes: HashMap<u32, (Pipe_type, Flags_type)>,
 }
 
-impl Pipes_file_system_type {
+impl Manager_type {
     pub fn New() -> Self {
         Self {
             Named_pipes: HashMap::new(),
@@ -294,7 +294,7 @@ mod tests {
 
     #[test]
     fn Test_new() {
-        let File_system = Pipes_file_system_type::New();
+        let File_system = Manager_type::New();
         assert!(File_system.Named_pipes.is_empty());
         assert!(File_system.Opened_pipes.is_empty());
     }
@@ -304,13 +304,13 @@ mod tests {
         let Task_identifier = Task_identifier_type::from(1);
         let File_identifier = File_identifier_type::from(0);
         let local_file_id =
-            Pipes_file_system_type::Get_local_file_identifier(Task_identifier, File_identifier);
+            Manager_type::Get_local_file_identifier(Task_identifier, File_identifier);
         assert_eq!(local_file_id, 65536); // 1 << 16 | 0
     }
 
     #[test]
     fn Test_new_unnamed_pipe() {
-        let mut File_system = Pipes_file_system_type::New();
+        let mut File_system = Manager_type::New();
         let Task_identifier = Task_identifier_type::from(1);
         let Size = 1024;
         let (Read_identifier, Write_identifier) = File_system
@@ -321,17 +321,23 @@ mod tests {
             )
             .unwrap();
         assert_ne!(Read_identifier, Write_identifier);
-        assert!(File_system.Opened_pipes.contains_key(
-            &Pipes_file_system_type::Get_local_file_identifier(Task_identifier, Read_identifier)
-        ));
-        assert!(File_system.Opened_pipes.contains_key(
-            &Pipes_file_system_type::Get_local_file_identifier(Task_identifier, Write_identifier)
-        ));
+        assert!(File_system
+            .Opened_pipes
+            .contains_key(&Manager_type::Get_local_file_identifier(
+                Task_identifier,
+                Read_identifier
+            )));
+        assert!(File_system
+            .Opened_pipes
+            .contains_key(&Manager_type::Get_local_file_identifier(
+                Task_identifier,
+                Write_identifier
+            )));
     }
 
     #[test]
     fn Test_close_all() {
-        let mut File_system = Pipes_file_system_type::New();
+        let mut File_system = Manager_type::New();
         let Task_identifier = Task_identifier_type::from(1);
         let Size = 1024;
         File_system
@@ -361,7 +367,7 @@ mod tests {
 
     #[test]
     fn Test_delete_named_pipe() {
-        let mut File_system = Pipes_file_system_type::New();
+        let mut File_system = Manager_type::New();
 
         let Size = 1024;
 
@@ -373,7 +379,7 @@ mod tests {
 
     #[test]
     fn Test_read_write_unnamed_pipe() {
-        let mut File_system = Pipes_file_system_type::New();
+        let mut File_system = Manager_type::New();
         let Task_identifier = Task_identifier_type::from(1);
         let Size = 1024;
         let (Read_identifier, Write_identifier) = File_system
