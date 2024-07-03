@@ -9,7 +9,7 @@ use Users::{Group_identifier_type, Manager_type, User_identifier_type};
 use super::{
     Error_type, File_system_identifier_type, File_system_traits, Flags_type, Mode_type,
     Path_owned_type, Path_type, Permissions_type,
-    Pipe::{Named_pipe_identifier_type, Pipes_file_system_type},
+    Pipe::{self, Named_pipe_identifier_type},
     Position_type, Result, Size_type, Status_type, Type_type, Unique_file_identifier_type,
 };
 
@@ -27,7 +27,7 @@ pub struct Virtual_file_system_type {
     /// Mounted file systems.
     File_systems: Arc<RwLock<HashMap<File_system_identifier_type, Internal_file_system_type>>>,
     /// Pipe file system
-    Pipes_file_system: Arc<RwLock<Pipes_file_system_type>>,
+    Pipes_file_system: Arc<RwLock<Pipe::Manager_type>>,
 }
 
 impl Virtual_file_system_type {
@@ -41,7 +41,7 @@ impl Virtual_file_system_type {
             Task_manager,
             User_manager,
             File_systems: Arc::new(RwLock::new(HashMap::new())),
-            Pipes_file_system: Arc::new(RwLock::new(Pipes_file_system_type::New())),
+            Pipes_file_system: Arc::new(RwLock::new(Pipe::Manager_type::New())),
         }
     }
 
