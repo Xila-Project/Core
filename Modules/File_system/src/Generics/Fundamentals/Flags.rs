@@ -114,6 +114,6 @@ impl From<Mode_type> for Flags_type {
 
 impl From<Flags_type> for u32 {
     fn from(Flags: Flags_type) -> Self {
-        Flags.0 as u32
+        Flags.0
     }
 }

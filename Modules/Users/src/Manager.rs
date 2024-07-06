@@ -1,6 +1,6 @@
 use super::*;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet},
     sync::{Arc, RwLock},
     vec::Vec,
 };
@@ -11,12 +11,12 @@ struct Internal_user_type {
 
 struct Internal_group_type {
     pub Name: String,
-    pub Users: HashSet<User_identifier_type>,
+    pub Users: BTreeSet<User_identifier_type>,
 }
 
 struct Internal_manager_type {
-    pub Users: HashMap<User_identifier_type, Internal_user_type>,
-    pub Groups: HashMap<Group_identifier_type, Internal_group_type>,
+    pub Users: BTreeMap<User_identifier_type, Internal_user_type>,
+    pub Groups: BTreeMap<Group_identifier_type, Internal_group_type>,
 }
 
 #[derive(Clone)]
@@ -25,8 +25,8 @@ pub struct Manager_type(Arc<RwLock<Internal_manager_type>>);
 impl Manager_type {
     pub fn New() -> Self {
         Self(Arc::new(RwLock::new(Internal_manager_type {
-            Users: HashMap::new(),
-            Groups: HashMap::new(),
+            Users: BTreeMap::new(),
+            Groups: BTreeMap::new(),
         })))
     }
 
@@ -78,7 +78,7 @@ impl Manager_type {
 
         let Group = Internal_group_type {
             Name: Name.to_string(),
-            Users: HashSet::new(),
+            Users: BTreeSet::new(),
         };
 
         if self.Exists_group(Identifier)? {

@@ -1,68 +1,60 @@
-use Screen::Prelude::{Area_type, Color_type, Point_type, Refresh_area_type, Screen_traits};
+use std::mem::transmute;
 
-use crate::Draw_buffer_type;
+use Screen::Prelude::{Area_type, Color_type, Point_type, Screen_traits};
 
-pub struct Display_type(lvgl::Display);
+use crate::{Draw_buffer::Draw_buffer_type, Result_type};
+
+pub struct Display_type {
+    Display: lvgl::Display,
+    #[allow(dead_code)]
+    Screen: Box<dyn Screen_traits>,
+}
+
+unsafe impl Send for Display_type {}
+
+unsafe impl Sync for Display_type {}
 
 impl Display_type {
-    pub fn New<Screen_type: Screen_traits<Buffer_size>, const Buffer_size: usize>(
-        Screen: &mut Screen_type,
-        Draw_buffer: Draw_buffer_type<Buffer_size>,
-    ) -> Result<Self, ()> {
-        let Resolution = match Screen.Get_resolution() {
-            Ok(Resolution) => Resolution,
-            Err(_) => return Err(()),
-        };
-
+    pub fn New<const Buffer_size: usize>(
+        mut Screen: Box<dyn Screen_traits>,
+        Resolution: Point_type,
+    ) -> Result_type<Self> {
         let Binding_function = |Refresh: &lvgl::DisplayRefresh<Buffer_size>| {
             let Area = Area_type::New(
                 Point_type::New(Refresh.area.x1, Refresh.area.y1),
-                Point_type::New(
-                    Refresh.area.x2 - Refresh.area.x1,
-                    Refresh.area.y2 - Refresh.area.y1,
-                ),
+                Point_type::New(Refresh.area.x2, Refresh.area.y2),
             );
 
-            let mut Buffer = [Color_type {
-                Red: 0,
-                Green: 0,
-                Blue: 0,
-            }; Buffer_size];
+            let Buffer: &[Color_type; Buffer_size] = unsafe {
+                transmute(
+                    // Avoid copying the buffer, but the colors must be in the same format
+                    &Refresh.colors,
+                )
+            };
 
-            for (Destination, Source) in Buffer.iter_mut().zip(Refresh.colors.iter()) {
-                *Destination = Color_type {
-                    Red: Source.r() << 3,
-                    Green: Source.g() << 2,
-                    Blue: Source.b() << 3,
-                };
-            }
-
-            let Refresh_area = Refresh_area_type::<Buffer_size> { Area, Buffer };
-
-            Screen.Update(&Refresh_area);
+            let _ = Screen.Update(Area, Buffer);
         };
 
-        let LVGL_display = match lvgl::Display::register(
+        let Draw_buffer = Draw_buffer_type::<Buffer_size>::default();
+
+        let LVGL_display = lvgl::Display::register(
             Draw_buffer.into(),
-            Resolution.X as u32,
-            Resolution.Y as u32,
+            Resolution.Get_x() as u32,
+            Resolution.Get_y() as u32,
             Binding_function,
-        ) {
-            Ok(Display) => Display,
-            Err(_) => return Err(()),
-        };
+        )?;
 
-        Ok(Display_type(LVGL_display))
+        Ok(Self {
+            Display: LVGL_display,
+            Screen,
+        })
     }
 
     pub fn Get_lvgl_display(&self) -> &lvgl::Display {
-        &self.0
+        &self.Display
     }
 
-    pub fn Get_object(&self) -> Result<lvgl::Screen, ()> {
-        match self.0.get_scr_act() {
-            Ok(Object) => Ok(Object),
-            Err(_) => Err(()),
-        }
+    pub fn Get_object(&self) -> Result_type<lvgl::Screen> {
+        Ok(self.Display.get_scr_act()?)
     }
 }

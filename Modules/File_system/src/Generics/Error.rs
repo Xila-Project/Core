@@ -1,6 +1,6 @@
 use std::{num::NonZeroU32, sync::PoisonError};
 
-pub type Result<T> = std::result::Result<T, Error_type>;
+pub type Result_type<T> = std::result::Result<T, Error_type>;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[repr(C)]
@@ -26,6 +26,8 @@ pub enum Error_type {
     Invalid_mode,
     Unsupported_operation,
     Ressource_busy,
+    Already_initialized,
+    Not_initialized,
     Other,
 }
 

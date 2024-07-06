@@ -1,49 +1,49 @@
-use std::sync::{Arc, RwLock};
+use std::{
+    collections::VecDeque,
+    sync::{Arc, RwLock},
+};
 
-use Shared::Ring_buffer_type;
-
-use crate::Prelude::{Error_type, Result, Size_type};
+use crate::Prelude::{Error_type, Result_type, Size_type};
 
 /// A pipe is a FIFO (ring) buffer that can be used to communicate between tasks.
-#[derive(Clone)]
-pub struct Pipe_type(Arc<RwLock<Ring_buffer_type<u8>>>);
+#[derive(Clone, Debug)]
+pub struct Pipe_type(Arc<RwLock<VecDeque<u8>>>);
 
 impl Pipe_type {
     /// Create a new pipe with a buffer of the specified size.
     pub fn New(Buffer_size: usize) -> Self {
-        Self(Arc::new(RwLock::new(Ring_buffer_type::New(Buffer_size))))
+        Self(Arc::new(RwLock::new(VecDeque::with_capacity(Buffer_size))))
     }
 
-    pub fn Write(&self, Data: &[u8]) -> Result<()> {
+    pub fn Write(&self, Data: &[u8]) -> Result_type<()> {
         let mut Inner = self.0.write()?;
 
-        if Data.len() > Inner.Get_free_space() {
-            return Err(Error_type::File_system_full);
+        if Data.len() > Inner.capacity() - Inner.len() {
+            return Err(Error_type::Ressource_busy);
         }
 
         for Byte in Data {
-            if !Inner.Push(*Byte) {
-                return Err(Error_type::File_system_full);
-            }
+            Inner.push_back(*Byte);
         }
+
         Ok(())
     }
 
-    pub fn Read(&self, Data: &mut [u8]) -> Result<()> {
+    pub fn Read(&self, Data: &mut [u8]) -> Result_type<()> {
         let mut Inner = self.0.write()?;
-        let Length = Data.len();
 
-        if Length > Inner.Get_used_space() {
-            return Err(Error_type::File_system_full);
+        if Data.len() > Inner.len() {
+            return Err(Error_type::Ressource_busy);
         }
 
         for Byte in Data {
-            *Byte = Inner.Pop().unwrap();
+            *Byte = Inner.pop_front().unwrap();
         }
+
         Ok(())
     }
 
-    pub fn Get_size(&self) -> Result<Size_type> {
-        Ok(self.0.read()?.Get_capacity().into())
+    pub fn Get_size(&self) -> Result_type<Size_type> {
+        Ok(self.0.read()?.len().into())
     }
 }

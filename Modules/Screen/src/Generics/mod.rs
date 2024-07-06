@@ -1,52 +1,38 @@
+mod Area;
+mod Color;
 mod Error;
+mod Point;
+
+pub use Area::*;
+pub use Color::*;
 pub use Error::*;
+pub use Point::*;
 
-#[derive(Clone, Copy)]
-pub struct Point_type {
-    pub X: i16,
-    pub Y: i16,
-}
-
-impl Point_type {
-    pub fn New(X: i16, Y: i16) -> Self {
-        Self { X, Y }
-    }
-}
-
-pub struct Area_type {
-    pub Position: Point_type,
-    pub Size: Point_type,
-}
-
-impl Area_type {
-    pub fn New(Position: Point_type, Size: Point_type) -> Self {
-        Self { Position, Size }
-    }
+pub trait Screen_traits {
+    fn Update(&mut self, Area: Area_type, Buffer: &[Color_type]) -> Result_type<()>;
 }
 
 #[derive(Clone, Copy)]
-pub struct Color_type {
-    pub Red: u8,
-    pub Green: u8,
-    pub Blue: u8,
-}
-
-pub struct Refresh_area_type<const Buffer_size: usize> {
-    pub Area: Area_type,
-    pub Buffer: [Color_type; Buffer_size],
-}
-
-pub trait Screen_traits<const Buffer_size: usize> {
-    fn Update(&mut self, Refresh_area: &Refresh_area_type<Buffer_size>);
-    fn Get_resolution(&self) -> Result_type<Point_type>;
-}
-
-#[derive(Clone, Copy)]
+#[repr(C)]
 pub enum Touch_type {
     Pressed,
     Released,
 }
 
-pub trait Input_traits {
-    fn Get_latest_input(&self) -> (Point_type, Touch_type);
+impl From<Touch_type> for u8 {
+    fn from(Value: Touch_type) -> u8 {
+        Value as u8
+    }
+}
+
+impl TryFrom<u8> for Touch_type {
+    type Error = ();
+
+    fn try_from(Value: u8) -> Result<Self, Self::Error> {
+        match Value {
+            0 => Ok(Self::Pressed),
+            1 => Ok(Self::Released),
+            _ => Err(()),
+        }
+    }
 }

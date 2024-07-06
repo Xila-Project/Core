@@ -5,7 +5,7 @@ use super::*;
 // - - - Standard library
 use std::{
     borrow::Cow,
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     sync::{Arc, RwLock},
 };
 use Users::{Root_user_identifier, User_identifier_type};
@@ -26,7 +26,7 @@ struct Task_internal_type {
 #[derive(Clone)]
 pub struct Manager_type {
     /// A map of all tasks managed by the manager.
-    Tasks: Arc<RwLock<HashMap<Task_identifier_type, Task_internal_type>>>,
+    Tasks: Arc<RwLock<BTreeMap<Task_identifier_type, Task_internal_type>>>,
 }
 
 impl Manager_type {
@@ -39,7 +39,7 @@ impl Manager_type {
             Environment_variables: HashMap::new(),
         };
 
-        let mut Tasks_map = HashMap::new();
+        let mut Tasks_map = BTreeMap::new();
 
         Tasks_map.insert(Task_identifier_type::from(0), Task_internal);
 
@@ -61,7 +61,7 @@ impl Manager_type {
     }
 
     pub fn Get_task_name(&self, Task_identifier: Task_identifier_type) -> Result_type<String> {
-        match self.Tasks.read().unwrap().get(&Task_identifier) {
+        match self.Tasks.read()?.get(&Task_identifier) {
             Some(Task) => match Task.Thread.Get_name() {
                 Some(Name) => Ok(Name.to_string()),
                 None => Err(Error_type::Invalid_task_identifier),
@@ -143,7 +143,7 @@ impl Manager_type {
         &self,
         Task_identifier: Task_identifier_type,
     ) -> Result_type<User_identifier_type> {
-        let Tasks = self.Tasks.read().unwrap();
+        let Tasks = self.Tasks.read()?;
 
         Ok(Tasks
             .get(&Task_identifier)
@@ -173,7 +173,7 @@ impl Manager_type {
     }
 
     pub fn Get_current_task_identifier(&self) -> Result_type<Task_identifier_type> {
-        let Tasks = self.Tasks.read().unwrap(); // Acquire lock
+        let Tasks = self.Tasks.read()?;
 
         for (Task_identifier, Task) in Tasks.iter() {
             if Task.Thread.Get_identifier() == std::thread::current().id() {
@@ -196,7 +196,7 @@ impl Manager_type {
         Task_identifier: Task_identifier_type,
         Name: &str,
     ) -> Result_type<Cow<'static, str>> {
-        let Tasks = self.Tasks.read().unwrap(); // Acquire lock
+        let Tasks = self.Tasks.read()?; // Acquire lock
 
         Ok(Tasks
             .get(&Task_identifier)
@@ -211,7 +211,7 @@ impl Manager_type {
         &self,
         Task_identifier: Task_identifier_type,
     ) -> Result_type<HashMap<Cow<'static, str>, Cow<'static, str>>> {
-        let Tasks = self.Tasks.read().unwrap(); // Acquire lock
+        let Tasks = self.Tasks.read()?; // Acquire lock
 
         Ok(Tasks
             .get(&Task_identifier)
@@ -226,7 +226,7 @@ impl Manager_type {
         Name: &str,
         Value: &str,
     ) -> Result_type<()> {
-        let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
+        let mut Tasks = self.Tasks.write()?; // Acquire lock
 
         Tasks
             .get_mut(&Task_identifier)
@@ -242,7 +242,7 @@ impl Manager_type {
         Task_identifier: Task_identifier_type,
         Name: &str,
     ) -> Result_type<()> {
-        let mut Tasks = self.Tasks.write().unwrap(); // Acquire lock
+        let mut Tasks = self.Tasks.write()?; // Acquire lock
 
         Tasks
             .get_mut(&Task_identifier)

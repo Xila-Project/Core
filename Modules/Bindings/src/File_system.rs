@@ -1,28 +1,19 @@
-use std::mem::MaybeUninit;
-
 use Binding_tool::Bind_function_native;
 use File_system::Prelude::*;
 use Virtual_machine::{Function_descriptor_type, Function_descriptors, Registrable_trait};
-pub struct File_system_bindings {}
+
+pub struct File_system_bindings;
+
+impl File_system_bindings {
+    pub fn New() -> Self {
+        Self {}
+    }
+}
 
 impl Registrable_trait for File_system_bindings {
     fn Get_functions(&self) -> &[Function_descriptor_type] {
         &File_system_bindings_functions
     }
-}
-
-impl File_system_bindings {
-    pub fn New(File_system: Virtual_file_system_type) -> Self {
-        unsafe {
-            Virtual_file_system.write(File_system);
-        }
-
-        Self {}
-    }
-}
-
-fn Get_virtual_file_system() -> &'static Virtual_file_system_type {
-    unsafe { Virtual_file_system.assume_init_ref() }
 }
 
 const File_system_bindings_functions: [Function_descriptor_type; 8] = Function_descriptors!(
@@ -36,10 +27,12 @@ const File_system_bindings_functions: [Function_descriptor_type; 8] = Function_d
     Delete_binding
 );
 
-static mut Virtual_file_system: MaybeUninit<Virtual_file_system_type> = MaybeUninit::uninit();
-
-fn New_path(Path: &str) -> Result<&Path_type> {
+fn New_path(Path: &str) -> Result_type<&Path_type> {
     Path_type::New(Path).ok_or(Error_type::Invalid_path)
+}
+
+fn Get_virtual_file_system() -> &'static Virtual_file_system_type {
+    File_system::Get_instance().expect("File system not initialized")
 }
 
 #[Bind_function_native(Prefix = "File_system")]
@@ -47,7 +40,7 @@ fn Open(
     Path: &str,
     Flags: Flags_type,
     File_identifier: &mut Unique_file_identifier_type,
-) -> Result<()> {
+) -> Result_type<()> {
     let Path = New_path(Path)?;
 
     *File_identifier = Get_virtual_file_system().Open(Path, Flags)?;
@@ -56,7 +49,7 @@ fn Open(
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Close_file(File_identifier: Unique_file_identifier_type) -> Result<()> {
+fn Close_file(File_identifier: Unique_file_identifier_type) -> Result_type<()> {
     Get_virtual_file_system().Close(File_identifier)
 }
 
@@ -65,7 +58,7 @@ fn Read(
     File_identifier: Unique_file_identifier_type,
     Buffer: &mut [u8],
     Read_size: &mut Size_type,
-) -> Result<()> {
+) -> Result_type<()> {
     *Read_size = Get_virtual_file_system().Read(File_identifier, Buffer)?;
 
     Ok(())
@@ -76,19 +69,19 @@ fn Write(
     File_identifier: Unique_file_identifier_type,
     Buffer: &[u8],
     Write_size: &mut Size_type,
-) -> Result<()> {
+) -> Result_type<()> {
     *Write_size = Get_virtual_file_system().Write(File_identifier, Buffer)?;
 
     Ok(())
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Flush(File_identifier: Unique_file_identifier_type) -> Result<()> {
+fn Flush(File_identifier: Unique_file_identifier_type) -> Result_type<()> {
     Get_virtual_file_system().Flush(File_identifier)
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Get_file_type(Path: &str, Type: &mut u32) -> Result<()> {
+fn Get_file_type(Path: &str, Type: &mut u32) -> Result_type<()> {
     let Path = New_path(Path)?;
 
     *Type = Get_virtual_file_system().Get_type(Path)? as u32;
@@ -97,7 +90,7 @@ fn Get_file_type(Path: &str, Type: &mut u32) -> Result<()> {
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Get_file_size(Path: &str, Size: &mut Size_type) -> Result<()> {
+fn Get_file_size(Path: &str, Size: &mut Size_type) -> Result_type<()> {
     let Path = New_path(Path)?;
 
     *Size = Get_virtual_file_system().Get_size(Path)?;
@@ -110,14 +103,14 @@ fn Set_position(
     File_identifier: Unique_file_identifier_type,
     Position: &Position_type,
     Result_value: &mut Size_type,
-) -> Result<()> {
+) -> Result_type<()> {
     *Result_value = Get_virtual_file_system().Set_position(File_identifier, Position)?;
 
     Ok(())
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Delete_file(Path: &str, Recursive: bool) -> Result<()> {
+fn Delete_file(Path: &str, Recursive: bool) -> Result_type<()> {
     let Path = New_path(Path)?;
 
     Get_virtual_file_system().Delete(Path, Recursive)?;
@@ -126,7 +119,7 @@ fn Delete_file(Path: &str, Recursive: bool) -> Result<()> {
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Create_file(Path: &str) -> Result<()> {
+fn Create_file(Path: &str) -> Result_type<()> {
     let Path = New_path(Path)?;
 
     Get_virtual_file_system()
@@ -137,7 +130,7 @@ fn Create_file(Path: &str) -> Result<()> {
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Create_directory(Path: &str, Recursive: bool) -> Result<()> {
+fn Create_directory(Path: &str, Recursive: bool) -> Result_type<()> {
     let Path = New_path(Path)?;
 
     Get_virtual_file_system().Create_directory(Path, Recursive)?;
@@ -146,7 +139,7 @@ fn Create_directory(Path: &str, Recursive: bool) -> Result<()> {
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Delete(Path: &str, Recursive: bool) -> Result<()> {
+fn Delete(Path: &str, Recursive: bool) -> Result_type<()> {
     let Path = New_path(Path)?;
 
     Get_virtual_file_system().Delete(Path, Recursive)?;
@@ -155,7 +148,7 @@ fn Delete(Path: &str, Recursive: bool) -> Result<()> {
 }
 
 #[Bind_function_native(Prefix = "File_system")]
-fn Exists(Path: &str, Exists: &mut bool) -> Result<()> {
+fn Exists(Path: &str, Exists: &mut bool) -> Result_type<()> {
     let Path = New_path(Path)?;
 
     *Exists = Get_virtual_file_system().Exists(Path)?;

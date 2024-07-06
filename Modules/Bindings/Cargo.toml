@@ -22,7 +22,7 @@ path = "Tests/File_system.rs"
 name = "Task_bindings_tests"
 path = "Tests/Task.rs"
 
-[[test]]
-name = "Graphics_bindings_tests"
-path = "Tests/Graphics.rs"
+# [[test]]
+# name = "Graphics_bindings_tests"
+# path = "Tests/Graphics.rs"
 

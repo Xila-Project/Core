@@ -23,6 +23,7 @@ opt-level = "s" # Optimize binary size
 [profile.dev]
 debug = true    # Symbols are nice and they don't increase the size on Flash.
 opt-level = "z" # Optimize binary size and turn off loop vectorization.
+# opt-level = 0 # Disable optimizations to speed up compilation and in case of bugs.
 
 [features]
 ESP32 = ["Xtensa"]

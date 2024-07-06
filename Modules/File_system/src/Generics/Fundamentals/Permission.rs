@@ -1,4 +1,5 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct Permissions_type(u16);
 
 impl Permissions_type {
@@ -100,7 +101,8 @@ impl Permissions_type {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct Permission_type(u8);
 
 impl Permission_type {
@@ -122,6 +124,14 @@ impl Permission_type {
     /// Creates a new permission with execute access (equivalent to Unix permission 1).
     pub fn New_execute() -> Self {
         Self::New(false, false, true)
+    }
+
+    pub fn New_write_execute() -> Self {
+        Self::New(false, true, true)
+    }
+
+    pub fn New_read_execute() -> Self {
+        Self::New(true, false, true)
     }
 
     /// Creates a new permission with full access (equivalent to Unix permission 7).
@@ -175,6 +185,10 @@ impl Permission_type {
     /// Converts the permission to a Unix permission.
     pub fn To_unix(&self) -> u8 {
         self.0
+    }
+
+    pub fn Include(&self, Other: Self) -> bool {
+        (self.0 & Other.0) == Other.0
     }
 
     /// Creates a permission from a Unix permission.
@@ -255,5 +269,89 @@ mod Tests {
         let Others = Permission_type::New(false, true, true); // Write and execute
         let Permissions = Permissions_type::New(&User, &Group, &Others);
         assert_eq!(Permissions.To_unix(), 0b101_110_011);
+    }
+
+    #[test]
+    fn Test_permission_type_include() {
+        let Read = Permission_type::New_read();
+        let Write = Permission_type::New_write();
+        let Read_write = Permission_type::New_read_write();
+        let Read_execute = Permission_type::New_read_execute();
+        let Write_execute = Permission_type::New_write_execute();
+        let Execute = Permission_type::New_execute();
+        let Full = Permission_type::New_full();
+        let No = Permission_type::New_none();
+
+        assert!(Full.Include(Read));
+        assert!(Full.Include(Write));
+        assert!(Full.Include(Execute));
+        assert!(Full.Include(Read_write));
+        assert!(Full.Include(Read_execute));
+        assert!(Full.Include(Write_execute));
+        assert!(Full.Include(Full));
+        assert!(Full.Include(No));
+
+        assert!(Read.Include(Read));
+        assert!(!Read.Include(Write));
+        assert!(!Read.Include(Execute));
+        assert!(!Read.Include(Read_write));
+        assert!(!Read.Include(Read_execute));
+        assert!(!Read.Include(Write_execute));
+        assert!(!Read.Include(Full));
+        assert!(Read.Include(No));
+
+        assert!(!Write.Include(Read));
+        assert!(Write.Include(Write));
+        assert!(!Write.Include(Execute));
+        assert!(!Write.Include(Read_write));
+        assert!(!Write.Include(Read_execute));
+        assert!(!Write.Include(Write_execute));
+        assert!(!Write.Include(Full));
+        assert!(Write.Include(No));
+
+        assert!(!Execute.Include(Read));
+        assert!(!Execute.Include(Write));
+        assert!(Execute.Include(Execute));
+        assert!(!Execute.Include(Read_write));
+        assert!(!Execute.Include(Read_execute));
+        assert!(!Execute.Include(Write_execute));
+        assert!(!Execute.Include(Full));
+        assert!(Execute.Include(No));
+
+        assert!(Read_write.Include(Read));
+        assert!(Read_write.Include(Write));
+        assert!(!Read_write.Include(Execute));
+        assert!(Read_write.Include(Read_write));
+        assert!(!Read_write.Include(Read_execute));
+        assert!(!Read_write.Include(Write_execute));
+        assert!(!Read_write.Include(Full));
+        assert!(Read_write.Include(No));
+
+        assert!(Read_execute.Include(Read));
+        assert!(!Read_execute.Include(Write));
+        assert!(Read_execute.Include(Execute));
+        assert!(!Read_execute.Include(Read_write));
+        assert!(Read_execute.Include(Read_execute));
+        assert!(!Read_execute.Include(Write_execute));
+        assert!(!Read_execute.Include(Full));
+        assert!(Read_execute.Include(No));
+
+        assert!(!Write_execute.Include(Read));
+        assert!(Write_execute.Include(Write));
+        assert!(Write_execute.Include(Execute));
+        assert!(!Write_execute.Include(Read_write));
+        assert!(!Write_execute.Include(Read_execute));
+        assert!(Write_execute.Include(Write_execute));
+        assert!(!Write_execute.Include(Full));
+        assert!(Write_execute.Include(No));
+
+        assert!(!No.Include(Read));
+        assert!(!No.Include(Write));
+        assert!(!No.Include(Execute));
+        assert!(!No.Include(Read_write));
+        assert!(!No.Include(Read_execute));
+        assert!(!No.Include(Write_execute));
+        assert!(!No.Include(Full));
+        assert!(No.Include(No));
     }
 }
