@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
 pub struct File_identifier_type(u16);
 
@@ -16,7 +16,7 @@ impl From<File_identifier_type> for u16 {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
 pub struct File_system_identifier_type(u16);
 
@@ -52,7 +52,7 @@ impl From<File_system_identifier_type> for u16 {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
 pub struct Unique_file_identifier_type(u32);
 
