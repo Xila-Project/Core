@@ -44,7 +44,7 @@ struct Internal_manager_type {
 pub struct Manager_type(RwLock<Internal_manager_type>);
 
 impl Manager_type {
-    pub fn New() -> Self {
+    fn New() -> Self {
         Self(RwLock::new(Internal_manager_type {
             Users: BTreeMap::new(),
             Groups: BTreeMap::new(),
