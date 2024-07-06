@@ -1,19 +1,38 @@
 use lvgl::input_device::{pointer, InputDriver};
-use Screen::Prelude::{Input_traits, Touch_type};
+use File_system::Prelude::File_type;
+use Screen::Prelude::Touch_type;
 
-use crate::Display::Display_type;
+use crate::{Display::Display_type, Result_type};
 
-pub struct Input_type(pointer::Pointer);
+pub struct Input_type {
+    #[allow(dead_code)]
+    Pointer: pointer::Pointer,
+}
+
+unsafe impl Send for Input_type {}
+
+unsafe impl Sync for Input_type {}
 
 impl Input_type {
-    pub fn New<Pointer_type: Input_traits>(
-        Pointer: &Pointer_type,
-        Display: &Display_type,
-    ) -> Result<Self, ()> {
-        let Binding_function = || {
-            let (Position, Touch) = Pointer.Get_latest_input();
-            let Input_data =
-                pointer::PointerInputData::Touch((Position.X as i32, Position.Y as i32).into());
+    pub fn New(File: File_type, Display: &Display_type) -> Result_type<Self> {
+        let Binding_closure = move || {
+            let mut Buffer = [0u8; 5];
+
+            let Size = File
+                .Read(&mut Buffer)
+                .expect("Error reading from input device");
+
+            if Size != Buffer.len() {
+                panic!("Invalid input data received from input device");
+            }
+
+            let X = u16::from_le_bytes([Buffer[0], Buffer[1]]);
+            let Y = u16::from_le_bytes([Buffer[2], Buffer[3]]);
+
+            let Touch = Touch_type::try_from(Buffer[4])
+                .expect("Invalid touch type received from input device");
+
+            let Input_data = pointer::PointerInputData::Touch((X as i32, Y as i32).into());
 
             let Input_data = match Touch {
                 Touch_type::Pressed => Input_data.pressed(),
@@ -23,71 +42,11 @@ impl Input_type {
             Input_data.once()
         };
 
-        match pointer::Pointer::register(Binding_function, Display.Get_lvgl_display()) {
-            Ok(Input) => Ok(Input_type(Input)),
-            Err(_) => Err(()),
-        }
-    }
-}
+        Binding_closure();
 
-#[cfg(test)]
-mod tests {
-    use crate::Draw_buffer_type;
-
-    use super::*;
-    use lvgl::Widget;
-    use std::{
-        thread::sleep,
-        time::{Duration, Instant},
-    };
-    use Screen::{Drivers::SDL2::New_touchscreen, Prelude::Point_type};
-
-    #[test]
-    #[ignore]
-    fn Test_SDL2() {
-        const Horizontal_resolution: u32 = 800;
-        const Vertical_resolution: u32 = 480;
-        const Buffer_size: usize = (Horizontal_resolution * Vertical_resolution / 2) as usize;
-
-        let Touchscreen = New_touchscreen(Point_type::New(
-            Horizontal_resolution as i16,
-            Vertical_resolution as i16,
-        ));
-        assert!(Touchscreen.is_ok());
-        let (mut Screen, mut Pointer) = Touchscreen.unwrap();
-
-        let Buffer = Draw_buffer_type::<Buffer_size>::default();
-
-        let Display = Display_type::New(&mut Screen, Buffer);
-        assert!(Display.is_ok());
-        let Display = Display.unwrap();
-
-        let _Input = Input_type::New(&Pointer, &Display);
-        assert!(_Input.is_ok());
-        let mut _Input = _Input.unwrap();
-
-        let Display_object = Display.Get_object();
-        assert!(Display_object.is_ok());
-        let mut Display_object = Display_object.unwrap();
-
-        let _ = lvgl::widgets::Slider::create(&mut Display_object);
-
-        let Calendar = lvgl::widgets::Calendar::create(&mut Display_object);
-        assert!(Calendar.is_ok());
-        let mut Calendar = Calendar.unwrap();
-
-        let mut Style = lvgl::style::Style::default();
-        Style.set_bg_color(lvgl::Color::from_rgb((255, 0, 0)));
-
-        let _ = Calendar.add_style(lvgl::obj::Part::Any, &mut Style);
-        let _ = Calendar.set_align(lvgl::Align::Center, 0, 0);
-
-        loop {
-            let Start = Instant::now();
-            lvgl::task_handler();
-            sleep(Duration::from_millis(5));
-            lvgl::tick_inc(Instant::now().duration_since(Start));
-            Pointer.Update();
-        }
+        Ok(Self {
+            Pointer: pointer::Pointer::register(Binding_closure, Display.Get_lvgl_display())?,
+            // File: File,
+        })
     }
 }

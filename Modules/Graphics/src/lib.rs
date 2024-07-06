@@ -3,29 +3,18 @@
 #![allow(non_upper_case_globals)]
 
 mod Display;
+mod Draw_buffer;
+mod Error;
 mod Input;
+mod Manager;
 //mod Window;
 
 pub use Display::*;
+pub use Draw_buffer::*;
+pub use Error::*;
 pub use Input::*;
+pub use Manager::*;
 //pub use Window::*;
 
 pub use lvgl;
 pub use lvgl::sys;
-
-#[repr(transparent)]
-pub struct Draw_buffer_type<const Buffer_size: usize>(lvgl::DrawBuffer<Buffer_size>);
-
-impl<const Buffer_size: usize> Default for Draw_buffer_type<Buffer_size> {
-    fn default() -> Self {
-        Draw_buffer_type(lvgl::DrawBuffer::<Buffer_size>::default())
-    }
-}
-
-impl<const Buffer_size: usize> From<Draw_buffer_type<Buffer_size>>
-    for lvgl::DrawBuffer<Buffer_size>
-{
-    fn from(Draw_buffer: Draw_buffer_type<Buffer_size>) -> Self {
-        Draw_buffer.0
-    }
-}

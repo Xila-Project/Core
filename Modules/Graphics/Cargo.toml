@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 cstr_core = "0.2.6"
 Task = { path = "../Task" }
+File_system = { version = "0.1.0", path = "../File_system" }
 
 [target.'cfg( target_os = "espidf" )'.dependencies]
 lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", default-features = false, features = [
@@ -23,3 +24,16 @@ lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", features = [
 embedded-graphics = "0.8.1"
 Screen = { path = "../Screen" }
 Shared = { path = "../Shared" }
+
+[dev-dependencies]
+Users = { path = "../Users" }
+Task = { path = "../Task" }
+
+[features]
+default = ["RGB565"]
+RGB565 = ["Screen/RGB565"]
+ARGB8888 = ["Screen/ARGB8888"]
+
+[[test]]
+name = "Graphics"
+path = "Tests/Graphics.rs"
