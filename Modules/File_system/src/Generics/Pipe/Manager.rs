@@ -1,205 +1,214 @@
-use std::{collections::HashMap, time::Duration};
-
-use Task::{Task_identifier_type, Task_type};
-
-use crate::Prelude::{
-    Error_type, File_identifier_type, Flags_type, Mode_type, Result, Size_type, Status_type,
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::RwLock,
+    time::Duration,
 };
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy)]
-#[repr(transparent)]
-pub struct Named_pipe_identifier_type(u32);
+use Task::{Task_identifier_type, Task_type};
+use Users::{
+    Group_identifier_type, Root_group_identifier, Root_user_identifier, User_identifier_type,
+};
 
-impl Named_pipe_identifier_type {
-    pub const MAX: u32 = 0xFFFF_FFFF;
-}
-
-impl From<u32> for Named_pipe_identifier_type {
-    fn from(Identifier: u32) -> Self {
-        Named_pipe_identifier_type(Identifier)
-    }
-}
-
-impl From<Named_pipe_identifier_type> for u32 {
-    fn from(Identifier: Named_pipe_identifier_type) -> Self {
-        Identifier.0
-    }
-}
-
-impl From<[u8; 4]> for Named_pipe_identifier_type {
-    fn from(Identifier: [u8; 4]) -> Self {
-        Named_pipe_identifier_type(u32::from_ne_bytes(Identifier))
-    }
-}
-
-impl From<Named_pipe_identifier_type> for [u8; 4] {
-    fn from(Identifier: Named_pipe_identifier_type) -> Self {
-        Identifier.0.to_ne_bytes()
-    }
-}
+use crate::Prelude::{
+    Error_type, File_identifier_type, File_system_traits, Flags_type, Mode_type, Path_owned_type,
+    Path_type, Permissions_type, Result_type, Size_type, Status_type, Type_type,
+};
 
 use super::Pipe_type;
 
-pub struct Manager_type {
-    Named_pipes: HashMap<Named_pipe_identifier_type, Pipe_type>,
-    Opened_pipes: HashMap<u32, (Pipe_type, Flags_type)>,
+struct Named_pipe_type {
+    Pipe: Pipe_type,
+    User: User_identifier_type,
+    Group: User_identifier_type,
+    Permissions: Permissions_type,
 }
 
-impl Manager_type {
+struct Inner_type {
+    pub Named_pipes: HashMap<Path_owned_type, Named_pipe_type>,
+    pub Opened_pipes: BTreeMap<u32, (Pipe_type, Flags_type)>,
+}
+
+pub struct File_system_type(RwLock<Inner_type>);
+
+impl File_system_type {
     pub fn New() -> Self {
-        Self {
+        Self(RwLock::new(Inner_type {
             Named_pipes: HashMap::new(),
-            Opened_pipes: HashMap::new(),
-        }
+            Opened_pipes: BTreeMap::new(),
+        }))
     }
 
-    fn Get_named_pipe_identifier(&self) -> Option<Named_pipe_identifier_type> {
-        (0..=Named_pipe_identifier_type::MAX)
-            .find(|&Identifier| !self.Named_pipes.contains_key(&Identifier.into()))
-            .map(|Identifier| Identifier.into())
-    }
-
-    fn Get_local_file_identifier(
-        Task_identifier: Task_identifier_type,
-        File_identifier: File_identifier_type,
-    ) -> u32 {
-        let File_identifier: u16 = File_identifier.into();
-        let Task_identifier: u32 = Task_identifier.into();
-        Task_identifier << 16 | File_identifier as u32
-    }
-
+    /// Get the local file identifier from the task identifier and the file identifier.
+    ///
+    /// Since the file identifier must remain valid, this method is static, and the lock
+    /// has to be acquired in the calling method.
     fn Get_new_file_identifier(
-        &self,
-        Task_identifier: Task_identifier_type,
-    ) -> Option<File_identifier_type> {
-        let Start = Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0));
-        let End =
-            Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0xFFFF));
+        Task: Task_identifier_type,
+        Opened_pipes: &BTreeMap<u32, (Pipe_type, Flags_type)>,
+    ) -> Result_type<File_identifier_type> {
+        let Start = Self::Get_local_file_identifier(Task, File_identifier_type::from(0));
+        let End = Self::Get_local_file_identifier(Task, File_identifier_type::from(0xFFFF));
 
         for File_identifier in Start..=End {
-            if !self.Opened_pipes.contains_key(&File_identifier) {
-                return Some(File_identifier_type::from(File_identifier as u16));
+            if !Opened_pipes.contains_key(&File_identifier) {
+                return Ok(File_identifier_type::from(File_identifier as u16));
                 // Remove the task identifier and keep the file identifier.
             }
         }
 
-        None
+        Err(Error_type::Too_many_open_files)
+    }
+}
+
+impl File_system_traits for File_system_type {
+    fn Create_named_pipe(&self, Path: &dyn AsRef<Path_type>, Size: Size_type) -> Result_type<()> {
+        let mut Inner = self.0.write()?;
+
+        Inner.Named_pipes.insert(
+            Path.as_ref().to_owned(),
+            Named_pipe_type {
+                Pipe: Pipe_type::New(Size.into()),
+                User: Root_user_identifier,
+                Group: Root_group_identifier,
+                Permissions: Permissions_type::New_standard_file(),
+            },
+        );
+
+        Ok(())
     }
 
-    pub fn Create_named_pipe(&mut self, Size: usize) -> Result<Named_pipe_identifier_type> {
-        let Identifier = self
-            .Get_named_pipe_identifier()
-            .ok_or(Error_type::Too_many_open_files)?;
-
-        self.Named_pipes.insert(Identifier, Pipe_type::New(Size));
-
-        Ok(Identifier)
-    }
-
-    pub fn Create_unnamed_pipe(
-        &mut self,
+    fn Create_unnamed_pipe(
+        &self,
         Task_identifier: Task_identifier_type,
+        Size: Size_type,
         Status: Status_type,
-        Size: usize,
-    ) -> Result<(File_identifier_type, File_identifier_type)> {
-        let Pipe = Pipe_type::New(Size);
+    ) -> Result_type<(File_identifier_type, File_identifier_type)> {
+        let Pipe = Pipe_type::New(Size.into());
 
-        let New_file_identifier_read = self
-            .Get_new_file_identifier(Task_identifier)
-            .ok_or(Error_type::Too_many_open_files)?;
+        let mut Inner = self.0.write()?;
 
-        self.Opened_pipes.insert(
-            Self::Get_local_file_identifier(Task_identifier, New_file_identifier_read),
+        let File_identifier_read =
+            Self::Get_new_file_identifier(Task_identifier, &Inner.Opened_pipes)?;
+
+        Inner.Opened_pipes.insert(
+            Self::Get_local_file_identifier(Task_identifier, File_identifier_read),
             (
                 Pipe.clone(),
                 Flags_type::New(Mode_type::Read_only(), Some(Status)),
             ),
         );
 
-        let New_file_identifier_write = self
-            .Get_new_file_identifier(Task_identifier)
-            .ok_or(Error_type::Too_many_open_files)?;
+        let File_identifier_write =
+            Self::Get_new_file_identifier(Task_identifier, &Inner.Opened_pipes)?;
 
-        self.Opened_pipes.insert(
-            Self::Get_local_file_identifier(Task_identifier, New_file_identifier_write),
+        Inner.Opened_pipes.insert(
+            Self::Get_local_file_identifier(Task_identifier, File_identifier_write),
             (Pipe, Flags_type::New(Mode_type::Write_only(), Some(Status))),
         );
 
-        Ok((New_file_identifier_read, New_file_identifier_write))
+        Ok((File_identifier_read, File_identifier_write))
     }
 
-    pub fn Open(
-        &mut self,
-        Task_identifier: Task_identifier_type,
-        Identifier: Named_pipe_identifier_type,
+    fn Exists(&self, Path: &dyn AsRef<Path_type>) -> Result_type<bool> {
+        Ok(self.0.read()?.Named_pipes.contains_key(Path.as_ref()))
+    }
+
+    fn Create_file(&self, _: &dyn AsRef<Path_type>) -> Result_type<()> {
+        Result_type::Err(Error_type::Unsupported_operation)
+    }
+
+    fn Open(
+        &self,
+        Task: Task_identifier_type,
+        Path: &dyn AsRef<Path_type>,
         Flags: Flags_type,
-    ) -> Result<File_identifier_type> {
-        let Named_pipe = self
+    ) -> Result_type<File_identifier_type> {
+        let mut Inner = self.0.write()?;
+
+        let Named_pipe = Inner
             .Named_pipes
-            .get(&Identifier)
-            .ok_or(Error_type::Not_found)?;
+            .get(Path.as_ref())
+            .ok_or(Error_type::Not_found)?
+            .Pipe
+            .clone();
 
-        let File_identifier = self
-            .Get_new_file_identifier(Task_identifier)
-            .ok_or(Error_type::Too_many_open_files)?;
+        let File_identifier = Self::Get_new_file_identifier(Task, &Inner.Opened_pipes)?;
 
-        let Local_file_identifier =
-            Self::Get_local_file_identifier(Task_identifier, File_identifier);
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, File_identifier);
 
-        self.Opened_pipes
-            .insert(Local_file_identifier, (Named_pipe.clone(), Flags));
+        Inner
+            .Opened_pipes
+            .insert(Local_file_identifier, (Named_pipe, Flags));
 
         Ok(File_identifier)
     }
 
-    pub fn Close(
-        &mut self,
-        Task: Task::Task_identifier_type,
-        File: File_identifier_type,
-    ) -> Result<()> {
-        let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
-
-        self.Opened_pipes
-            .remove(&Local_file_identifier)
+    fn Close(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()> {
+        self.0
+            .write()?
+            .Opened_pipes
+            .remove(&Self::Get_local_file_identifier(Task, File))
             .ok_or(Error_type::Invalid_identifier)?;
 
         Ok(())
     }
 
-    pub fn Close_all(&mut self, Task: Task::Task_identifier_type) -> Result<()> {
-        let Start = Self::Get_local_file_identifier(Task, File_identifier_type::from(0));
-        let End = Self::Get_local_file_identifier(Task, File_identifier_type::from(0xFFFF));
-
-        self.Opened_pipes.retain(|Key, _| {
-            if *Key >= Start && *Key <= End {
-                return false;
-            }
-            true
-        });
+    fn Close_all(&self, Task: Task_identifier_type) -> Result_type<()> {
+        self.0
+            .write()?
+            .Opened_pipes
+            .retain(|Key, _| Self::Decompose_local_file_identifier(*Key).0 != Task);
 
         Ok(())
     }
 
-    pub fn Delete(&mut self, Identifier: Named_pipe_identifier_type) -> Result<()> {
-        self.Named_pipes
-            .remove(&Identifier)
+    fn Transfert_file_identifier(
+        &self,
+        Old_task: Task_identifier_type,
+        New_task: Task_identifier_type,
+        File: File_identifier_type,
+    ) -> Result_type<File_identifier_type> {
+        let Local_file_identifier = Self::Get_local_file_identifier(Old_task, File);
+
+        let mut Inner = self.0.write()?;
+
+        let New_file_identifier = Self::Get_new_file_identifier(New_task, &Inner.Opened_pipes)?;
+
+        let (Pipe, Mode) = Inner
+            .Opened_pipes
+            .remove(&Local_file_identifier)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        let Local_file_identifier = Self::Get_local_file_identifier(New_task, New_file_identifier);
+
+        Inner
+            .Opened_pipes
+            .insert(Local_file_identifier, (Pipe, Mode));
+
+        Ok(New_file_identifier)
+    }
+
+    fn Delete(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()> {
+        self.0
+            .write()?
+            .Named_pipes
+            .remove(Path.as_ref())
             .ok_or(Error_type::Not_found)?;
 
-        // The pipe is still opened by some tasks until they close it.
-        // The pipe will be deleted when the last task closes it.
-
         Ok(())
     }
 
-    pub fn Read(
-        &mut self,
-        Task: Task::Task_identifier_type,
+    fn Read(
+        &self,
+        Task: Task_identifier_type,
         File: File_identifier_type,
         Buffer: &mut [u8],
-    ) -> Result<Size_type> {
+    ) -> Result_type<Size_type> {
         let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
 
-        let (Pipe, Flags) = self
+        let Inner = self.0.read()?;
+
+        let (Pipe, Flags) = Inner
             .Opened_pipes
             .get(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
@@ -209,7 +218,7 @@ impl Manager_type {
         }
 
         while let Err(Error) = Pipe.Read(Buffer) {
-            if let Error_type::File_system_full = Error {
+            if let Error_type::Ressource_busy = Error {
                 if Flags.Get_status().Get_non_blocking() {
                     return Err(Error_type::Ressource_busy);
                 } else {
@@ -223,15 +232,17 @@ impl Manager_type {
         Ok(Buffer.len().into())
     }
 
-    pub fn Write(
-        &mut self,
-        Task: Task::Task_identifier_type,
+    fn Write(
+        &self,
+        Task: Task_identifier_type,
         File: File_identifier_type,
         Buffer: &[u8],
-    ) -> Result<Size_type> {
+    ) -> Result_type<Size_type> {
         let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
 
-        let (Pipe, Mode) = self
+        let Inner = self.0.read()?;
+
+        let (Pipe, Mode) = Inner
             .Opened_pipes
             .get(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
@@ -241,7 +252,7 @@ impl Manager_type {
         }
 
         while let Err(Error) = Pipe.Write(Buffer) {
-            if let Error_type::File_system_full = Error {
+            if let Error_type::Ressource_busy = Error {
                 if Mode.Get_status().Get_non_blocking() {
                     return Err(Error_type::Ressource_busy);
                 } else {
@@ -255,36 +266,115 @@ impl Manager_type {
         Ok(Buffer.len().into())
     }
 
-    pub fn Get_size(&self, Identifier: Named_pipe_identifier_type) -> Result<Size_type> {
-        self.Named_pipes
-            .get(&Identifier)
+    fn Move(
+        &self,
+        Source: &dyn AsRef<Path_type>,
+        Destination: &dyn AsRef<Path_type>,
+    ) -> Result_type<()> {
+        let mut Inner = self.0.write()?;
+
+        let Pipe = Inner
+            .Named_pipes
+            .remove(Source.as_ref())
+            .ok_or(Error_type::Not_found)?;
+
+        Inner
+            .Named_pipes
+            .insert(Destination.as_ref().to_owned(), Pipe);
+
+        Ok(())
+    }
+
+    fn Set_position(
+        &self,
+        _: Task_identifier_type,
+        _: File_identifier_type,
+        _: &crate::Prelude::Position_type,
+    ) -> Result_type<Size_type> {
+        Err(Error_type::Unsupported_operation)
+    }
+
+    fn Flush(&self, _: Task_identifier_type, _: File_identifier_type) -> Result_type<()> {
+        Ok(())
+    }
+
+    fn Get_type(&self, _: &dyn AsRef<Path_type>) -> Result_type<crate::Prelude::Type_type> {
+        Ok(Type_type::Named_pipe)
+    }
+
+    fn Get_size(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Size_type> {
+        self.0
+            .read()?
+            .Named_pipes
+            .get(Path.as_ref())
             .ok_or(Error_type::Not_found)?
+            .Pipe
             .Get_size()
     }
 
-    pub fn Transfert_file_identifier(
-        &mut self,
-        Old_task: Task_identifier_type,
-        New_task: Task_identifier_type,
-        File: File_identifier_type,
-    ) -> Result<File_identifier_type> {
-        let Local_file_identifier = Self::Get_local_file_identifier(Old_task, File);
+    fn Create_directory(&self, _: &dyn AsRef<Path_type>) -> Result_type<()> {
+        Err(Error_type::Unsupported_operation)
+    }
 
-        let (Pipe, Mode) = self
-            .Opened_pipes
-            .remove(&Local_file_identifier)
-            .ok_or(Error_type::Invalid_identifier)?;
+    fn Set_permissions(
+        &self,
+        Path: &dyn AsRef<Path_type>,
+        Permissions_type: Permissions_type,
+    ) -> Result_type<()> {
+        self.0
+            .write()?
+            .Named_pipes
+            .get_mut(Path.as_ref())
+            .ok_or(Error_type::Not_found)?
+            .Permissions = Permissions_type;
 
-        let New_file_identifier = self
-            .Get_new_file_identifier(New_task)
-            .ok_or(Error_type::Too_many_open_files)?;
+        Ok(())
+    }
 
-        let Local_file_identifier = Self::Get_local_file_identifier(New_task, New_file_identifier);
+    fn Get_permissions(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Permissions_type> {
+        Ok(self
+            .0
+            .read()?
+            .Named_pipes
+            .get(Path.as_ref())
+            .ok_or(Error_type::Not_found)?
+            .Permissions)
+    }
 
-        self.Opened_pipes
-            .insert(Local_file_identifier, (Pipe, Mode));
+    fn Get_owner(
+        &self,
+        Path: &dyn AsRef<Path_type>,
+    ) -> Result_type<(User_identifier_type, Group_identifier_type)> {
+        self.0
+            .read()?
+            .Named_pipes
+            .get(Path.as_ref())
+            .ok_or(Error_type::Not_found)
+            .map(|Named_pipe| (Named_pipe.User, Named_pipe.Group))
+    }
 
-        Ok(New_file_identifier)
+    fn Set_owner(
+        &self,
+        Path: &dyn AsRef<Path_type>,
+        User: Option<User_identifier_type>,
+        Group: Option<Group_identifier_type>,
+    ) -> Result_type<()> {
+        let mut Inner = self.0.write()?;
+
+        let Named_pipe = Inner
+            .Named_pipes
+            .get_mut(Path.as_ref())
+            .ok_or(Error_type::Not_found)?;
+
+        if let Some(User) = User {
+            Named_pipe.User = User;
+        }
+
+        if let Some(Group) = Group {
+            Named_pipe.Group = Group;
+        }
+
+        Ok(())
     }
 }
 
@@ -294,9 +384,9 @@ mod tests {
 
     #[test]
     fn Test_new() {
-        let File_system = Manager_type::New();
-        assert!(File_system.Named_pipes.is_empty());
-        assert!(File_system.Opened_pipes.is_empty());
+        let File_system = File_system_type::New();
+        assert!(File_system.0.read().unwrap().Named_pipes.is_empty());
+        assert!(File_system.0.read().unwrap().Opened_pipes.is_empty());
     }
 
     #[test]
@@ -304,89 +394,84 @@ mod tests {
         let Task_identifier = Task_identifier_type::from(1);
         let File_identifier = File_identifier_type::from(0);
         let local_file_id =
-            Manager_type::Get_local_file_identifier(Task_identifier, File_identifier);
+            File_system_type::Get_local_file_identifier(Task_identifier, File_identifier);
         assert_eq!(local_file_id, 65536); // 1 << 16 | 0
     }
 
     #[test]
     fn Test_new_unnamed_pipe() {
-        let mut File_system = Manager_type::New();
+        let File_system = File_system_type::New();
         let Task_identifier = Task_identifier_type::from(1);
-        let Size = 1024;
+        let Size = 1024_usize;
         let (Read_identifier, Write_identifier) = File_system
             .Create_unnamed_pipe(
                 Task_identifier,
+                Size.into(),
                 Status_type::default().Set_non_blocking(true),
-                Size,
             )
             .unwrap();
         assert_ne!(Read_identifier, Write_identifier);
-        assert!(File_system
-            .Opened_pipes
-            .contains_key(&Manager_type::Get_local_file_identifier(
-                Task_identifier,
-                Read_identifier
-            )));
-        assert!(File_system
-            .Opened_pipes
-            .contains_key(&Manager_type::Get_local_file_identifier(
-                Task_identifier,
-                Write_identifier
-            )));
+        assert!(File_system.0.read().unwrap().Opened_pipes.contains_key(
+            &File_system_type::Get_local_file_identifier(Task_identifier, Read_identifier)
+        ));
+        assert!(File_system.0.read().unwrap().Opened_pipes.contains_key(
+            &File_system_type::Get_local_file_identifier(Task_identifier, Write_identifier)
+        ));
     }
 
     #[test]
     fn Test_close_all() {
-        let mut File_system = Manager_type::New();
+        let File_system = File_system_type::New();
         let Task_identifier = Task_identifier_type::from(1);
-        let Size = 1024;
+        let Size = 1024_usize;
         File_system
             .Create_unnamed_pipe(
                 Task_identifier,
+                Size.into(),
                 Status_type::default().Set_non_blocking(true),
-                Size,
             )
             .unwrap();
         File_system
             .Create_unnamed_pipe(
                 Task_identifier,
+                Size.into(),
                 Status_type::default().Set_non_blocking(true),
-                Size,
             )
             .unwrap();
         File_system
             .Create_unnamed_pipe(
                 Task_identifier,
+                Size.into(),
                 Status_type::default().Set_non_blocking(true),
-                Size,
             )
             .unwrap();
         File_system.Close_all(Task_identifier).unwrap();
-        assert!(File_system.Opened_pipes.is_empty());
+        assert!(File_system.0.read().unwrap().Opened_pipes.is_empty());
     }
 
     #[test]
     fn Test_delete_named_pipe() {
-        let mut File_system = Manager_type::New();
+        let File_system = File_system_type::New();
 
-        let Size = 1024;
+        let Size = 1024_usize;
+        let Path = Path_type::New("/named_pipe").unwrap();
 
-        let Identifier = File_system.Create_named_pipe(Size).unwrap();
-        assert!(File_system.Delete(Identifier).is_ok());
-        assert!(File_system.Named_pipes.is_empty());
-        assert!(File_system.Delete(Identifier).is_err());
+        File_system.Create_named_pipe(&Path, Size.into()).unwrap();
+        assert!(File_system.Delete(&Path).is_ok());
+        assert!(File_system.0.read().unwrap().Named_pipes.is_empty());
+        assert!(File_system.Delete(&Path).is_err());
     }
 
     #[test]
     fn Test_read_write_unnamed_pipe() {
-        let mut File_system = Manager_type::New();
+        let File_system = File_system_type::New();
         let Task_identifier = Task_identifier_type::from(1);
-        let Size = 1024;
+        let Size = 1024_usize;
         let (Read_identifier, Write_identifier) = File_system
             .Create_unnamed_pipe(
                 Task_identifier,
+                Size.into(),
                 Status_type::default().Set_non_blocking(true),
-                Size,
             )
             .unwrap();
 
