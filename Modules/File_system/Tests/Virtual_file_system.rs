@@ -11,12 +11,11 @@ fn Test_virtual_file_system_file() {
         Prelude::{Device_trait, File_type, Mode_type, Path_type, Position_type, Status_type},
     };
 
-    let Task_manager = Task::Manager_type::New();
+    Task::Initialize().expect("Failed to initialize task manager");
 
     Users::Initialize().expect("Failed to initialize users manager");
 
-    let Virtual_file_system =
-        File_system::Initialize(Task_manager).expect("Failed to initialize file system");
+    let Virtual_file_system = File_system::Initialize().expect("Failed to initialize file system");
 
     Virtual_file_system
         .Mount(

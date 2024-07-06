@@ -14,6 +14,8 @@ pub enum Error_type {
     Poisoned_lock,
     Invalid_environment_variable,
     Too_many_tasks,
+    Already_initialized,
+    Not_initialized,
 }
 
 impl<T> From<PoisonError<T>> for Error_type {

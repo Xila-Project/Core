@@ -29,6 +29,7 @@ pub enum Error_type {
     Already_initialized,
     Not_initialized,
     Failed_to_get_users_manager_instance,
+    Failed_to_get_task_manager_instance,
     Other,
 }
 

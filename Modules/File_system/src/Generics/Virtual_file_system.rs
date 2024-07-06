@@ -22,13 +22,14 @@ struct Internal_file_system_type {
 /// It is a pragmatic choice for efficiency in embedded systems contexts (avoid using Arc).
 static mut Virtual_file_system_instance: Option<Virtual_file_system_type> = None;
 
-pub fn Initialize(
-    Task_manager: Task::Manager_type,
-) -> Result_type<&'static Virtual_file_system_type> {
+pub fn Initialize() -> Result_type<&'static Virtual_file_system_type> {
     unsafe {
         if Is_initialized() {
             return Err(Error_type::Already_initialized);
         }
+
+        let Task_manager =
+            Task::Get_instance().map_err(|_| Error_type::Failed_to_get_task_informations)?;
 
         let User_manager =
             Users::Get_instance().map_err(|_| Error_type::Failed_to_get_users_manager_instance)?; // Get the user manager (it must be initialized before the file system
@@ -57,7 +58,7 @@ pub fn Get_instance() -> Result_type<&'static Virtual_file_system_type> {
 /// It is a singleton.
 pub struct Virtual_file_system_type {
     /// A reference to the task manager.
-    Task_manager: Task::Manager_type,
+    Task_manager: &'static Task::Manager_type,
     /// User manager.
     User_manager: &'static Users::Manager_type,
     /// Mounted file systems.
@@ -71,7 +72,7 @@ impl Virtual_file_system_type {
         File_system_identifier_type::New(1);
 
     fn New(
-        Task_manager: Task::Manager_type,
+        Task_manager: &'static Task::Manager_type,
         User_manager: &'static Users::Manager_type,
     ) -> Result_type<Self> {
         let mut File_systems = BTreeMap::new();

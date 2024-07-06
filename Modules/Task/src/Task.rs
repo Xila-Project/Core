@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use Users::User_identifier_type;
 
-use crate::{Join_handle_type, Manager_type, Result_type, Thread_wrapper_type};
+use crate::{Get_instance, Join_handle_type, Result_type, Thread_wrapper_type};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
@@ -28,17 +28,12 @@ impl From<Task_identifier_type> for u32 {
 pub struct Task_type {
     /// The identifier of the task.
     Identifier: Task_identifier_type,
-    /// A reference to the [Manager_type] that manages the task.
-    Manager: Manager_type,
 }
 
 impl Task_type {
     /// Internal method to create a new task.
-    pub(crate) fn New(Identifier: Task_identifier_type, Manager: Manager_type) -> Self {
-        Self {
-            Identifier,
-            Manager,
-        }
+    pub(crate) fn New(Identifier: Task_identifier_type) -> Self {
+        Self { Identifier }
     }
 
     /// Create a new child task.
@@ -54,17 +49,13 @@ impl Task_type {
         F: FnOnce() -> T + Send + 'static,
     {
         let (Task_identifier, Join_handle) =
-            self.Manager
-                .New_task(Some(self.Identifier), Owner, Name, Stack_size, Function)?;
+            Get_instance()?.New_task(Some(self.Identifier), Owner, Name, Stack_size, Function)?;
 
-        Ok((
-            Task_type::New(Task_identifier, self.Manager.clone()),
-            Join_handle,
-        ))
+        Ok((Task_type::New(Task_identifier), Join_handle))
     }
 
     pub fn Get_name(&self) -> Result_type<String> {
-        self.Manager.Get_task_name(self.Identifier)
+        Get_instance()?.Get_task_name(self.Identifier)
     }
 
     pub fn Get_identifier(&self) -> Task_identifier_type {
@@ -72,7 +63,7 @@ impl Task_type {
     }
 
     pub fn Get_owner(&self) -> Result_type<User_identifier_type> {
-        self.Manager.Get_owner(self.Identifier)
+        Get_instance()?.Get_owner(self.Identifier)
     }
 
     pub fn Sleep(Duration: std::time::Duration) {
@@ -80,16 +71,14 @@ impl Task_type {
     }
 
     pub fn Get_environment_variable(&self, Name: &str) -> Result_type<Cow<'static, str>> {
-        self.Manager.Get_environment_variable(self.Identifier, Name)
+        Get_instance()?.Get_environment_variable(self.Identifier, Name)
     }
 
     pub fn Set_environment_variable(&self, Name: &str, Value: &str) -> Result_type<()> {
-        self.Manager
-            .Set_environment_variable(self.Identifier, Name, Value)
+        Get_instance()?.Set_environment_variable(self.Identifier, Name, Value)
     }
 
     pub fn Remove_environment_variable(&self, Name: &str) -> Result_type<()> {
-        self.Manager
-            .Remove_environment_variable(self.Identifier, Name)
+        Get_instance()?.Remove_environment_variable(self.Identifier, Name)
     }
 }
