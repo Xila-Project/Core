@@ -1,9 +1,31 @@
 use super::*;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    sync::{Arc, RwLock},
+    sync::RwLock,
     vec::Vec,
 };
+
+static mut Manager_instance: Option<Manager_type> = None;
+
+pub fn Initialize() -> Result_type<&'static Manager_type> {
+    if Is_initialized() {
+        return Err(Error_type::Already_initialized);
+    }
+
+    unsafe {
+        Manager_instance = Some(Manager_type::New());
+    }
+
+    Get_instance()
+}
+
+pub fn Get_instance() -> Result_type<&'static Manager_type> {
+    unsafe { Manager_instance.as_ref().ok_or(Error_type::Not_initialized) }
+}
+
+pub fn Is_initialized() -> bool {
+    unsafe { Manager_instance.is_some() }
+}
 
 struct Internal_user_type {
     pub Name: String,
@@ -19,15 +41,14 @@ struct Internal_manager_type {
     pub Groups: BTreeMap<Group_identifier_type, Internal_group_type>,
 }
 
-#[derive(Clone)]
-pub struct Manager_type(Arc<RwLock<Internal_manager_type>>);
+pub struct Manager_type(RwLock<Internal_manager_type>);
 
 impl Manager_type {
-    pub fn New() -> Self {
-        Self(Arc::new(RwLock::new(Internal_manager_type {
+    fn New() -> Self {
+        Self(RwLock::new(Internal_manager_type {
             Users: BTreeMap::new(),
             Groups: BTreeMap::new(),
-        })))
+        }))
     }
 
     fn Get_new_group_identifier(&self) -> Option<Group_identifier_type> {
@@ -42,7 +63,7 @@ impl Manager_type {
         (0..User_identifier_type::MAX).find(|Identifier| !Inner.Users.contains_key(Identifier))
     }
 
-    pub fn Create_user(&self, Name: &str) -> Result<User_identifier_type> {
+    pub fn Create_user(&self, Name: &str) -> Result_type<User_identifier_type> {
         let Identifier = match self.Get_new_user_identifier() {
             Some(Identifier) => Identifier,
             None => return Err(Error_type::Too_many_users),
@@ -68,7 +89,7 @@ impl Manager_type {
         &self,
         Name: &str,
         Identifier: Option<Group_identifier_type>,
-    ) -> Result<Group_identifier_type> {
+    ) -> Result_type<Group_identifier_type> {
         let Identifier = match Identifier {
             Some(Identifier) => Identifier,
             None => self
@@ -126,11 +147,11 @@ impl Manager_type {
         )
     }
 
-    pub fn Exists_group(&self, Identifier: Group_identifier_type) -> Result<bool> {
+    pub fn Exists_group(&self, Identifier: Group_identifier_type) -> Result_type<bool> {
         Ok(self.0.read()?.Groups.contains_key(&Identifier))
     }
 
-    pub fn Exists_user(&self, Identifier: User_identifier_type) -> Result<bool> {
+    pub fn Exists_user(&self, Identifier: User_identifier_type) -> Result_type<bool> {
         Ok(self.0.read()?.Users.contains_key(&Identifier))
     }
 
@@ -138,7 +159,7 @@ impl Manager_type {
         &self,
         User_identifier: User_identifier_type,
         Group_identifier: Group_identifier_type,
-    ) -> Result<()> {
+    ) -> Result_type<()> {
         if !self.Exists_group(Group_identifier)? {
             return Err(Error_type::Invalid_group_identifier);
         }
@@ -155,14 +176,14 @@ impl Manager_type {
         Ok(())
     }
 
-    pub fn Get_group_name(&self, Identifier: Group_identifier_type) -> Result<String> {
+    pub fn Get_group_name(&self, Identifier: Group_identifier_type) -> Result_type<String> {
         Ok(self.0.read()?.Groups.get(&Identifier).unwrap().Name.clone())
     }
 
     pub fn Get_group_users(
         &self,
         Identifier: Group_identifier_type,
-    ) -> Result<Vec<User_identifier_type>> {
+    ) -> Result_type<Vec<User_identifier_type>> {
         Ok(self
             .0
             .read()?
@@ -175,7 +196,7 @@ impl Manager_type {
             .collect())
     }
 
-    pub fn Get_user_name(&self, Identifier: User_identifier_type) -> Result<String> {
+    pub fn Get_user_name(&self, Identifier: User_identifier_type) -> Result_type<String> {
         Ok(self
             .0
             .read()?

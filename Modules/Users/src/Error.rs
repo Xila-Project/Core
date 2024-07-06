@@ -1,6 +1,6 @@
 use std::sync::PoisonError;
 
-pub type Result<T> = std::result::Result<T, Error_type>;
+pub type Result_type<T> = std::result::Result<T, Error_type>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
@@ -12,6 +12,8 @@ pub enum Error_type {
     Too_many_groups,
     Too_many_users,
     Poisoned_lock,
+    Not_initialized,
+    Already_initialized,
 }
 
 impl<T> From<PoisonError<T>> for Error_type {

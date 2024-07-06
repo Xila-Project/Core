@@ -24,12 +24,14 @@ static mut Virtual_file_system_instance: Option<Virtual_file_system_type> = None
 
 pub fn Initialize(
     Task_manager: Task::Manager_type,
-    User_manager: Users::Manager_type,
 ) -> Result_type<&'static Virtual_file_system_type> {
     unsafe {
         if Is_initialized() {
             return Err(Error_type::Already_initialized);
         }
+
+        let User_manager =
+            Users::Get_instance().map_err(|_| Error_type::Failed_to_get_users_manager_instance)?; // Get the user manager (it must be initialized before the file system
 
         Virtual_file_system_instance
             .replace(Virtual_file_system_type::New(Task_manager, User_manager)?);
@@ -57,7 +59,7 @@ pub struct Virtual_file_system_type {
     /// A reference to the task manager.
     Task_manager: Task::Manager_type,
     /// User manager.
-    User_manager: Users::Manager_type,
+    User_manager: &'static Users::Manager_type,
     /// Mounted file systems.
     File_systems: RwLock<BTreeMap<File_system_identifier_type, Internal_file_system_type>>,
 }
@@ -70,7 +72,7 @@ impl Virtual_file_system_type {
 
     fn New(
         Task_manager: Task::Manager_type,
-        User_manager: Users::Manager_type,
+        User_manager: &'static Users::Manager_type,
     ) -> Result_type<Self> {
         let mut File_systems = BTreeMap::new();
 

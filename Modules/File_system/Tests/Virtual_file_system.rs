@@ -13,10 +13,10 @@ fn Test_virtual_file_system_file() {
 
     let Task_manager = Task::Manager_type::New();
 
-    let Users_manager = Users::Manager_type::New();
+    Users::Initialize().expect("Failed to initialize users manager");
 
-    let Virtual_file_system = File_system::Initialize(Task_manager, Users_manager)
-        .expect("Failed to initialize file system");
+    let Virtual_file_system =
+        File_system::Initialize(Task_manager).expect("Failed to initialize file system");
 
     Virtual_file_system
         .Mount(
