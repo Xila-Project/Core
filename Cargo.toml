@@ -26,11 +26,6 @@ opt-level = "z" # Optimize binary size and turn off loop vectorization.
 # opt-level = 0 # Disable optimizations to speed up compilation and in case of bugs.
 
 [features]
-ESP32 = ["Xtensa"]
-ESP32_S3 = ["Xtensa"]
-
-Xtensa = ["std", "embassy", "esp-idf-svc/native"]
-
 pio = ["esp-idf-svc/pio"]
 std = ["alloc", "esp-idf-svc/binstart", "esp-idf-svc/std"]
 alloc = ["esp-idf-svc/alloc"]
