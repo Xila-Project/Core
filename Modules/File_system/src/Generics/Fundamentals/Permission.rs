@@ -126,6 +126,14 @@ impl Permission_type {
         Self::New(false, false, true)
     }
 
+    pub fn New_write_execute() -> Self {
+        Self::New(false, true, true)
+    }
+
+    pub fn New_read_execute() -> Self {
+        Self::New(true, false, true)
+    }
+
     /// Creates a new permission with full access (equivalent to Unix permission 7).
     pub fn New_full() -> Self {
         Self::New(true, true, true)
