@@ -46,6 +46,14 @@ impl Path_type {
         &self.0 == "/"
     }
 
+    pub fn Is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn Is_canonical(&self) -> bool {
+        self.0.chars().all(|c| c != '.')
+    }
+
     pub fn Go_parent(&self) -> Option<&Path_type> {
         let Characters_to_remove = match self.0.rfind(Separator) {
             Some(index) => index,
