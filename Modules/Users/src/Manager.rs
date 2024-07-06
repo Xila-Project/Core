@@ -12,6 +12,10 @@ pub fn Initialize() -> Result_type<&'static Manager_type> {
         return Err(Error_type::Already_initialized);
     }
 
+    unsafe {
+        Manager_instance = Some(Manager_type::New());
+    }
+
     Get_instance()
 }
 
