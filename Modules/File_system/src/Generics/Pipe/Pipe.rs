@@ -19,7 +19,7 @@ impl Pipe_type {
         let mut Inner = self.0.write()?;
 
         if Data.len() > Inner.capacity() - Inner.len() {
-            return Err(Error_type::File_system_full);
+            return Err(Error_type::Ressource_busy);
         }
 
         for Byte in Data {
@@ -33,7 +33,7 @@ impl Pipe_type {
         let mut Inner = self.0.write()?;
 
         if Data.len() > Inner.len() {
-            return Err(Error_type::File_system_full);
+            return Err(Error_type::Ressource_busy);
         }
 
         for Byte in Data {
