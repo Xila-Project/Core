@@ -4,7 +4,7 @@ use Users::User_identifier_type;
 
 use crate::{Join_handle_type, Manager_type, Result_type, Thread_wrapper_type};
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Task_identifier_type(u32);
 

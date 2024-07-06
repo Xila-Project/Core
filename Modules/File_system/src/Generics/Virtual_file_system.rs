@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-};
+use std::{collections::BTreeMap, sync::RwLock};
 
 use Task::Task_identifier_type;
 use Users::{Group_identifier_type, Manager_type, User_identifier_type};
@@ -25,9 +22,7 @@ pub struct Virtual_file_system_type {
     /// User manager.
     User_manager: Users::Manager_type,
     /// Mounted file systems.
-    File_systems: Arc<RwLock<HashMap<File_system_identifier_type, Internal_file_system_type>>>,
-    /// Pipe file system
-    Pipes_file_system: Arc<RwLock<Pipe::Manager_type>>,
+    File_systems: RwLock<BTreeMap<File_system_identifier_type, Internal_file_system_type>>,
 }
 
 impl Virtual_file_system_type {

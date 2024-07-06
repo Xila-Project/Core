@@ -3,7 +3,7 @@ use crate::Prelude::{
     Permissions_type, Position_type, Result, Size_type, Type_type,
 };
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::env::{current_dir, var};
 use std::fs::*;
 use std::io::{ErrorKind, Read, Seek, Write};
@@ -70,14 +70,14 @@ impl From<&Permissions_type> for std::fs::Permissions {
 
 pub struct File_system_type {
     Virtual_root_path: Path_owned_type,
-    Open_files: RwLock<HashMap<u32, RwLock<File>>>,
+    Open_files: RwLock<BTreeMap<u32, RwLock<File>>>,
 }
 
 impl File_system_type {
     pub fn New() -> Result<Self> {
         Ok(File_system_type {
             Virtual_root_path: Self::Get_root_path().ok_or(Error_type::Unknown)?,
-            Open_files: RwLock::new(HashMap::new()),
+            Open_files: RwLock::new(BTreeMap::new()),
         })
     }
 
@@ -109,7 +109,7 @@ impl File_system_type {
     fn Get_new_file_identifier(
         &self,
         Task_identifier: Task_identifier_type,
-    ) -> Result<File_identifier_type> {
+        Open_files: &BTreeMap<u32, RwLock<File>>,
         let Start = Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0));
         let End =
             Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0xFFFF));
