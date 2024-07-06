@@ -5,7 +5,8 @@ use std::{
 
 use super::{Extension_separator, Path_type, Separator};
 
-#[derive(Clone, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+#[repr(transparent)]
 pub struct Path_owned_type(String);
 
 impl Path_owned_type {
