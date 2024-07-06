@@ -39,6 +39,10 @@ impl Path_owned_type {
             return None;
         }
 
+        if Path.as_ref().Is_empty() {
+            return Some(self);
+        }
+
         if !self.0.ends_with(Separator) {
             self.0.push(Separator);
         }
@@ -125,11 +129,6 @@ impl Path_owned_type {
 pub fn Is_valid_string(String: &str) -> bool {
     let Invalid = ['\0', ':', '*', '?', '"', '<', '>', '|', ' '];
 
-    if String.is_empty() {
-        // Empty string is not valid.
-        return false;
-    }
-
     for Character in String.chars() {
         // Check if the string contains invalid characters.
         if Invalid.contains(&Character) {
@@ -181,12 +180,6 @@ impl AsRef<str> for Path_owned_type {
     }
 }
 
-impl PartialEq for Path_owned_type {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
 impl Deref for Path_owned_type {
     type Target = Path_type;
 
@@ -230,7 +223,7 @@ mod tests {
         assert!(!Is_valid_string("Hello/World.txt|"));
         assert!(!Is_valid_string("Hello/World.txt "));
         assert!(!Is_valid_string("Hello/World.txt\0"));
-        assert!(!Is_valid_string(""));
+        assert!(Is_valid_string(""));
         assert!(!Is_valid_string("Hello/Wo rld.txt/"));
     }
 
