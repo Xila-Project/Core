@@ -10,5 +10,5 @@ File_system = { path = "../File_system" }
 embedded-graphics = "0.8"
 
 [target.'cfg( target_arch = "x86_64" )'.dependencies]
-sdl2 = { version = "0.36", features = [] }
+sdl2 = { version = "0.37.0", features = [] }
 embedded-graphics = "0.8"
