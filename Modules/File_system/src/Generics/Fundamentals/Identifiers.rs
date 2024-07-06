@@ -18,39 +18,35 @@ impl From<File_identifier_type> for u16 {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub struct File_system_identifier_type(u8);
+pub struct File_system_identifier_type(u16);
 
 impl File_system_identifier_type {
-    pub fn New() -> Self {
-        Self(0)
-    }
-
-    pub const fn New_from(Identifier: u8) -> Self {
+    pub const fn New(Identifier: u16) -> Self {
         Self(Identifier)
     }
 }
 
-impl AddAssign<u8> for File_system_identifier_type {
-    fn add_assign(&mut self, rhs: u8) {
+impl AddAssign<u16> for File_system_identifier_type {
+    fn add_assign(&mut self, rhs: u16) {
         self.0 += rhs;
     }
 }
 
-impl Add<u8> for File_system_identifier_type {
+impl Add<u16> for File_system_identifier_type {
     type Output = Self;
 
-    fn add(self, rhs: u8) -> Self::Output {
+    fn add(self, rhs: u16) -> Self::Output {
         Self(self.0 + rhs)
     }
 }
 
-impl From<u8> for File_system_identifier_type {
-    fn from(Internal_file_system_identifier: u8) -> Self {
+impl From<u16> for File_system_identifier_type {
+    fn from(Internal_file_system_identifier: u16) -> Self {
         File_system_identifier_type(Internal_file_system_identifier)
     }
 }
 
-impl From<File_system_identifier_type> for u8 {
+impl From<File_system_identifier_type> for u16 {
     fn from(Internal_file_system_identifier: File_system_identifier_type) -> Self {
         Internal_file_system_identifier.0
     }
@@ -69,7 +65,7 @@ impl Unique_file_identifier_type {
     }
 
     pub fn Split(self) -> (File_system_identifier_type, File_identifier_type) {
-        let File_system_identifier = File_system_identifier_type::New_from((self.0 >> 16) as u8);
+        let File_system_identifier = File_system_identifier_type::New((self.0 >> 16) as u16);
         let File_identifier = File_identifier_type((self.0 & 0xFFFF) as u16);
         (File_system_identifier, File_identifier)
     }
