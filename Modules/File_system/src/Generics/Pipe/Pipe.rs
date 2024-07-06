@@ -6,7 +6,7 @@ use std::{
 use crate::Prelude::{Error_type, Result, Size_type};
 
 /// A pipe is a FIFO (ring) buffer that can be used to communicate between tasks.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Pipe_type(Arc<RwLock<VecDeque<u8>>>);
 
 impl Pipe_type {
