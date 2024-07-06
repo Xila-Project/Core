@@ -1,9 +1,27 @@
 use super::*;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    sync::{Arc, RwLock},
+    sync::RwLock,
     vec::Vec,
 };
+
+static mut Manager_instance: Option<Manager_type> = None;
+
+pub fn Initialize() -> Result_type<&'static Manager_type> {
+    if Is_initialized() {
+        return Err(Error_type::Already_initialized);
+    }
+
+    Get_instance()
+}
+
+pub fn Get_instance() -> Result_type<&'static Manager_type> {
+    unsafe { Manager_instance.as_ref().ok_or(Error_type::Not_initialized) }
+}
+
+pub fn Is_initialized() -> bool {
+    unsafe { Manager_instance.is_some() }
+}
 
 struct Internal_user_type {
     pub Name: String,
@@ -19,15 +37,14 @@ struct Internal_manager_type {
     pub Groups: BTreeMap<Group_identifier_type, Internal_group_type>,
 }
 
-#[derive(Clone)]
-pub struct Manager_type(Arc<RwLock<Internal_manager_type>>);
+pub struct Manager_type(RwLock<Internal_manager_type>);
 
 impl Manager_type {
     pub fn New() -> Self {
-        Self(Arc::new(RwLock::new(Internal_manager_type {
+        Self(RwLock::new(Internal_manager_type {
             Users: BTreeMap::new(),
             Groups: BTreeMap::new(),
-        })))
+        }))
     }
 
     fn Get_new_group_identifier(&self) -> Option<Group_identifier_type> {
