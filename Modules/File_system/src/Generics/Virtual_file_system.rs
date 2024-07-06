@@ -1,17 +1,16 @@
 use std::{collections::BTreeMap, sync::RwLock};
 
 use Task::Task_identifier_type;
-use Users::{Group_identifier_type, Manager_type, User_identifier_type};
+use Users::{Group_identifier_type, User_identifier_type};
 
 use super::{
-    Error_type, File_system_identifier_type, File_system_traits, Flags_type, Mode_type,
-    Path_owned_type, Path_type, Permissions_type,
-    Pipe::{self, Named_pipe_identifier_type},
-    Position_type, Result, Size_type, Status_type, Type_type, Unique_file_identifier_type,
+    Device, Device_trait, Error_type, File_system_identifier_type, File_system_traits, Flags_type,
+    Path_owned_type, Path_type, Permission_type, Permissions_type, Pipe, Position_type,
+    Result_type, Size_type, Status_type, Type_type, Unique_file_identifier_type,
 };
 
 struct Internal_file_system_type {
-    pub Mount_point: Path_owned_type,
+    pub Mount_point: Option<Path_owned_type>,
     pub Inner: Box<dyn File_system_traits>,
 }
 
@@ -27,31 +26,117 @@ pub struct Virtual_file_system_type {
 
 impl Virtual_file_system_type {
     const Pipe_file_system_identifier: File_system_identifier_type =
-        File_system_identifier_type::New_from(0xFF);
+        File_system_identifier_type::New(0);
+    const Device_file_system_identifier: File_system_identifier_type =
+        File_system_identifier_type::New(1);
 
-    const Named_pipe_extension: &'static str = ".Xila_pipe";
+    fn New(
+        Task_manager: Task::Manager_type,
+        User_manager: Users::Manager_type,
+    ) -> Result_type<Self> {
+        let mut File_systems = BTreeMap::new();
 
-    pub fn New(Task_manager: Task::Manager_type, User_manager: Users::Manager_type) -> Self {
-        Virtual_file_system_type {
+        let Pipe_file_system = Pipe::File_system_type::New();
+
+        File_systems.insert(
+            Self::Pipe_file_system_identifier,
+            Internal_file_system_type {
+                Mount_point: None,
+                Inner: Box::new(Pipe_file_system),
+            },
+        );
+
+        let Device_file_system = Device::File_system_type::New();
+
+        File_systems.insert(
+            Self::Device_file_system_identifier,
+            Internal_file_system_type {
+                Mount_point: None,
+                Inner: Box::new(Device_file_system),
+            },
+        );
+
+        Ok(Self {
             Task_manager,
             User_manager,
-            File_systems: Arc::new(RwLock::new(HashMap::new())),
-            Pipes_file_system: Arc::new(RwLock::new(Pipe::Manager_type::New())),
-        }
+            File_systems: RwLock::new(File_systems),
+        })
     }
 
-    fn Get_new_file_system_identifier(&self) -> Option<File_system_identifier_type> {
-        let File_systems = self.File_systems.read().ok()?;
+    fn Get_new_file_system_identifier(
+        File_systems: &BTreeMap<File_system_identifier_type, Internal_file_system_type>,
+    ) -> Option<File_system_identifier_type> {
+        let mut File_system_identifier = File_system_identifier_type::New(0);
 
-        let mut File_system_identifier = File_system_identifier_type::New();
-
-        while File_systems.contains_key(&File_system_identifier)
-            || File_system_identifier == Self::Pipe_file_system_identifier
-        {
+        while File_systems.contains_key(&File_system_identifier) {
             File_system_identifier += 1;
         }
 
         Some(File_system_identifier)
+    }
+
+    /// Try to execute a closure on the concerned file systems on an **existing** file.
+    fn Try_on_concerned_file_systems<F, T>(
+        &self,
+        Path: impl AsRef<Path_type>,
+        Closure: F,
+    ) -> Result_type<T>
+    where
+        F: Fn(
+            File_system_identifier_type,
+            &Internal_file_system_type,
+            &Path_type,
+        ) -> Result_type<T>,
+    {
+        let mut Result_score = 0;
+        let mut Result: Option<(File_system_identifier_type, &Internal_file_system_type)> = None;
+
+        let File_systems = self.File_systems.read()?;
+
+        // Try with mounted file systems.
+        for (File_system_identifier, File_system) in File_systems.iter() {
+            if let Some(Mount_point) = &File_system.Mount_point {
+                let Mount_point: &Path_type = Mount_point.as_ref();
+                if let Some(Relative_path) = Path.as_ref().Strip_prefix_absolute(Mount_point) {
+                    let Score = Relative_path.Get_length();
+                    if Score > Result_score {
+                        Result_score = Score;
+                        Result = Some((*File_system_identifier, File_system));
+                    }
+                }
+            }
+        }
+
+        // If a file system is found and the file exists, return the result of the closure.
+        if let Some((File_system_identifier, File_system)) = Result {
+            match Closure(File_system_identifier, File_system, Path.as_ref()) {
+                Ok(Result) => return Ok(Result),
+                Err(Error_type::Not_found) => (), // Continue when the file is not found.
+                Err(Error) => return Err(Error),
+            }
+        }
+
+        // Try with special file systems.
+        for (File_system_identifier, File_system) in File_systems.iter() {
+            if File_system.Mount_point.is_none() {
+                match Closure(*File_system_identifier, File_system, Path.as_ref()) {
+                    Ok(Result) => return Ok(Result),
+                    Err(Error_type::Not_found) => (), // Continue when the file is not found.
+                    Err(Error) => return Err(Error),
+                }
+            }
+        }
+
+        Err(Error_type::Not_found)
+    }
+
+    fn Get_file_system_from_identifier(
+        File_systems: &BTreeMap<File_system_identifier_type, Internal_file_system_type>,
+        File_system_identifier: File_system_identifier_type,
+    ) -> Result_type<&Internal_file_system_type> {
+        File_systems
+            .get(&File_system_identifier)
+            .ok_or(Error_type::Invalid_identifier)
     }
 
     /// Mount a file system at a given mount point.
@@ -60,21 +145,25 @@ impl Virtual_file_system_type {
         File_system: Box<dyn File_system_traits>,
         Mount_point: impl AsRef<Path_type>,
     ) -> Result_type<File_system_identifier_type> {
-            return Err(Error_type::Already_exists);
-        }
+        let Mount_point = Mount_point.as_ref();
 
-        let File_system_identifier = self
-            .Get_new_file_system_identifier()
-            .ok_or(Error_type::Too_many_mounted_file_systems)?;
-
-        if !Mount_point.as_ref().Is_absolute() {
+        if !Mount_point.Is_absolute() {
             return Err(Error_type::Invalid_path);
         }
 
-        self.File_systems.write()?.insert(
+        if self.Exists(Mount_point)? {
+            return Err(Error_type::Already_exists);
+        }
+
+        let mut File_systems = self.File_systems.write()?;
+
+        let File_system_identifier = Self::Get_new_file_system_identifier(&File_systems)
+            .ok_or(Error_type::Too_many_mounted_file_systems)?;
+
+        File_systems.insert(
             File_system_identifier,
             Internal_file_system_type {
-                Mount_point: Mount_point.as_ref().to_owned(),
+                Mount_point: Some(Mount_point.to_owned()),
                 Inner: File_system,
             },
         );
@@ -82,27 +171,47 @@ impl Virtual_file_system_type {
         Ok(File_system_identifier)
     }
 
+    /// Unmount a file system and return the file system.
+    pub fn Unmount(
+        &self,
+        File_system_identifier: File_system_identifier_type,
     ) -> Result_type<Box<dyn File_system_traits>> {
+        let Internal_file_system = self
+            .File_systems
             .write()?
             .remove(&File_system_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        Ok(())
+        Ok(Internal_file_system.Inner)
     }
 
-    fn Get_file_system<'b>(
-        File_systems: &'b HashMap<File_system_identifier_type, Internal_file_system_type>,
+    fn Get_file_system_from_mount_point<'b>(
+        File_systems: &'b BTreeMap<File_system_identifier_type, Internal_file_system_type>,
         Path: &'b dyn AsRef<Path_type>,
-    ) -> Result<(File_system_identifier_type, &'b Path_type)> {
+    ) -> Result_type<(
+        File_system_identifier_type,
+        &'b dyn File_system_traits,
+        &'b Path_type,
+    )> {
         let mut Result_score = 0;
-        let mut Result: Option<(File_system_identifier_type, &'b Path_type)> = None;
+        let mut Result: Option<(
+            File_system_identifier_type,
+            &'b dyn File_system_traits,
+            &'b Path_type,
+        )> = None;
 
         for (File_system_identifier, File_system) in File_systems.iter() {
-            if let Some(Relative_path) = Path.as_ref().Strip_prefix(&File_system.Mount_point) {
-                let Score = Relative_path.Get_length();
-                if Score > Result_score {
-                    Result_score = Score;
-                    Result = Some((*File_system_identifier, Relative_path));
+            if let Some(Mount_point) = &File_system.Mount_point {
+                if let Some(Relative_path) = Path.as_ref().Strip_prefix_absolute(Mount_point) {
+                    let Score = Relative_path.Get_length();
+                    if Score > Result_score {
+                        Result_score = Score;
+                        Result = Some((
+                            *File_system_identifier,
+                            File_system.Inner.as_ref(),
+                            Relative_path,
+                        ));
+                    }
                 }
             }
         }
@@ -114,71 +223,56 @@ impl Virtual_file_system_type {
         &self,
         Path: impl AsRef<Path_type>,
         Flags: Flags_type,
-    ) -> Result<Unique_file_identifier_type> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
-
-        let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
-
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?;
-
+    ) -> Result_type<Unique_file_identifier_type> {
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
-        // - Check permissions
-
-        self.Check_permissions(File_system, Task_identifier, Relative_path, Flags)?;
-
         // - Open file
-
-        match File_system
-            .Inner
-            .Open(Task_identifier, &Relative_path, Flags)
-        {
-            Ok(File_identifier) => Ok(Unique_file_identifier_type::New(
-                File_system_identifier,
-                File_identifier,
-            )),
-            Err(Error_type::Invalid_path) => {
-                if let Some(Self::Named_pipe_extension) = Relative_path.Get_extension() {
-                    return Err(Error_type::Invalid_path);
-                }
-
-                self.Open_named_pipe(Relative_path, Flags)
-            }
-
-            Err(e) => Err(e),
-        }
+        self.Try_on_concerned_file_systems(
+            Path,
+            |File_system_identifier, File_system, Relative_path| {
+                File_system
+                    .Inner
+                    .Open(Task_identifier, &Relative_path, Flags)
+                    .map(|File_identifier| {
+                        Unique_file_identifier_type::New(File_system_identifier, File_identifier)
+                    })
+            },
+        )
     }
 
-    fn Check_permissions(
+    fn Get_permission(
         &self,
-        File_system: &Internal_file_system_type,
+        File_system: &dyn File_system_traits,
         Task_identifier: Task_identifier_type,
         Relative_path: impl AsRef<Path_type>,
-        Flags: Flags_type,
-    ) -> Result<()> {
-        // - Check permissions
-
-        let Permissions = File_system
-            .Inner
-            .Get_permissions(Task_identifier, &Relative_path)?;
-
-        let (Owner_user, Owner_group) = File_system
-            .Inner
-            .Get_owner(Task_identifier, &Relative_path)?;
+    ) -> Result_type<Permission_type> {
+        let (File_user, File_group) = File_system.Get_owner(&Relative_path)?;
 
         let Task_user = self.Task_manager.Get_owner(Task_identifier)?;
 
-        let Permission = if Task_user == Owner_user {
-            Permissions.Get_user()
-        } else if self.User_manager.Is_in_group(Task_user, Owner_group) {
-            Permissions.Get_group()
+        let File_permissions = File_system.Get_permissions(&Relative_path)?;
+
+        let File_permission = if Task_user == File_user {
+            File_permissions.Get_user()
+        } else if self.User_manager.Is_in_group(Task_user, File_group) {
+            File_permissions.Get_group()
         } else {
-            Permissions.Get_others()
+            File_permissions.Get_others()
         };
 
-        if !Flags.Is_permission_granted(&Permission) {
+        Ok(File_permission)
+    }
+
+    fn Check_permission(
+        &self,
+        File_system: &dyn File_system_traits,
+        Task_identifier: Task_identifier_type,
+        Relative_path: impl AsRef<Path_type>,
+        Permission: Permission_type,
+    ) -> Result_type<()> {
+        let File_permission = self.Get_permission(File_system, Task_identifier, Relative_path)?;
+
+        if !File_permission.Include(Permission) {
             return Err(Error_type::Permission_denied);
         }
 
@@ -188,22 +282,13 @@ impl Virtual_file_system_type {
     pub fn Close(&self, File: Unique_file_identifier_type) -> Result_type<()> {
         let (File_system_identifier, File_identifier) = File.Split();
 
-        if File_system_identifier == Self::Pipe_file_system_identifier {
-            return self.Pipes_file_system.write()?.Close(
-                self.Task_manager.Get_current_task_identifier()?,
-                File_identifier,
-            );
-        }
+        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_identifier)?; // Get the file system
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
-        File_system.Inner.Close(Task_identifier, File_identifier)
+        Self::Get_file_system_from_identifier(&File_systems, File_system_identifier)?
+            .Inner
+            .Close(Task_identifier, File_identifier)
     }
 
     pub fn Read(
@@ -213,23 +298,11 @@ impl Virtual_file_system_type {
     ) -> Result_type<Size_type> {
         let (File_system_identifier, File_identifier) = File_identifier.Split();
 
-        if File_system_identifier == Self::Pipe_file_system_identifier {
-            return self.Pipes_file_system.write()?.Read(
-                self.Task_manager.Get_current_task_identifier()?,
-                File_identifier,
-                Buffer,
-            );
-        }
-
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_identifier)?; // Get the file system
-
-        File_system
+        Self::Get_file_system_from_identifier(&File_systems, File_system_identifier)?
             .Inner
             .Read(Task_identifier, File_identifier, Buffer)
     }
@@ -241,23 +314,11 @@ impl Virtual_file_system_type {
     ) -> Result_type<Size_type> {
         let (File_system_identifier, File_identifier) = File.Split();
 
-        if File_system_identifier == Self::Pipe_file_system_identifier {
-            return self.Pipes_file_system.write()?.Write(
-                self.Task_manager.Get_current_task_identifier()?,
-                File_identifier,
-                Buffer,
-            );
-        }
-
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_identifier)?;
-
-        File_system
+        Self::Get_file_system_from_identifier(&File_systems, File_system_identifier)?
             .Inner
             .Write(Task_identifier, File_identifier, Buffer)
     }
@@ -273,96 +334,46 @@ impl Virtual_file_system_type {
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let (File_system_identifier, File_identifier) = File_identifier.Split();
-
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_identifier)?; // Get the file system
-
-        File_system
+        Self::Get_file_system_from_identifier(&File_systems, File_system_identifier)?
             .Inner
             .Set_position(Task_identifier, File_identifier, Position)
     }
 
-    pub fn Exists(&self, Path: impl AsRef<Path_type>) -> Result<bool> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
-
-        if File_systems.is_empty() {
-            return Ok(false);
+    pub fn Exists(&self, Path: impl AsRef<Path_type>) -> Result_type<bool> {
+        match self.Try_on_concerned_file_systems(Path, |_, File_system, Relative_path| {
+            File_system.Inner.Exists(&Relative_path)
+        }) {
+            Ok(Exists) => Ok(Exists),
+            Err(Error_type::Not_found) => Ok(false),
+            Err(Error) => Err(Error),
         }
-
-        let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
-
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?; // Get the file system
-
-        File_system.Inner.Exists(&Relative_path)
     }
 
-    pub fn Get_size(&self, Path: impl AsRef<Path_type>) -> Result<Size_type> {
-        let File_systems = self.File_systems.read()?; // Get the file system
-
-        let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
-
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?; // Get the file system
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
-        File_system.Inner.Get_size(Task_identifier, &Relative_path)
+    pub fn Get_size(&self, Path: impl AsRef<Path_type>) -> Result_type<Size_type> {
+        self.Try_on_concerned_file_systems(Path, |_, File_system, Relative_path| {
+            File_system.Inner.Get_size(&Relative_path)
+        })
     }
 
-    pub fn Get_type(&self, Path: impl AsRef<Path_type>) -> Result<Type_type> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
-
-        let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
-
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?;
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
-        File_system.Inner.Get_type(Task_identifier, &Relative_path)
+    pub fn Get_type(&self, Path: impl AsRef<Path_type>) -> Result_type<Type_type> {
+        self.Try_on_concerned_file_systems(Path, |_, File_system, Relative_path| {
+            File_system.Inner.Get_type(&Relative_path)
+        })
     }
 
-    pub fn Get_permissions(&self, Path: impl AsRef<Path_type>) -> Result<Permissions_type> {
-        if Path.as_ref().Is_root() {
-            return Ok(Permissions_type::New_all_full());
-        }
-
-        let File_systems = self.File_systems.read()?; // Get the file systems
-
-        let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
-
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?;
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
-        File_system
-            .Inner
-            .Get_permissions(Task_identifier, &Relative_path)
+    pub fn Get_permissions(&self, Path: impl AsRef<Path_type>) -> Result_type<Permissions_type> {
+        self.Try_on_concerned_file_systems(Path, |_, File_system, Relative_path| {
+            File_system.Inner.Get_permissions(&Relative_path)
+        })
     }
 
     pub fn Get_owner(
         &self,
         Path: impl AsRef<Path_type>,
-    ) -> Result<(User_identifier_type, Group_identifier_type)> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
-
-        let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
-
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?;
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
-        File_system.Inner.Get_owner(Task_identifier, &Relative_path)
+    ) -> Result_type<(User_identifier_type, Group_identifier_type)> {
+        self.Try_on_concerned_file_systems(Path, |_, File_system, Relative_path| {
+            File_system.Inner.Get_owner(&Relative_path)
+        })
     }
 
     pub fn Set_owner(
@@ -370,146 +381,122 @@ impl Virtual_file_system_type {
         Path: impl AsRef<Path_type>,
         User: Option<User_identifier_type>,
         Group: Option<Group_identifier_type>,
-    ) -> Result<()> {
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
-        let Task_user = self.Task_manager.Get_owner(Task_identifier)?;
-
-        if !Manager_type::Is_root(Task_user) {
-            return Err(Error_type::Permission_denied);
-        }
-
-        let File_systems = self.File_systems.read()?;
-
-        let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
-
-        let File_systems = self.File_systems.read()?; // Get the file systems
-
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?;
-
-        File_system
-            .Inner
-            .Set_owner(Task_identifier, &Relative_path, User, Group)
+    ) -> Result_type<()> {
+        self.Try_on_concerned_file_systems(Path, |_, File_system, Relative_path| {
+            File_system.Inner.Set_owner(&Relative_path, User, Group)
+        })
     }
 
     pub fn Set_permissions(
         &self,
         Path: impl AsRef<Path_type>,
-        Permissions: &Permissions_type,
-    ) -> Result<()> {
-        if Path.as_ref().Is_root() {
-            return Err(Error_type::Permission_denied);
-        }
-
-        let File_systems = self.File_systems.read()?;
-
-        let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
-
-        let File_systems = self.File_systems.read()?; // Get the file systems
-
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?;
-
-        // - Check permissions
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
-        let Task_user = self.Task_manager.Get_owner(Task_identifier)?;
-
-        let Owner = if Manager_type::Is_root(Task_user) {
-            true
-        } else {
-            let (Owner_user, _) = File_system
+        Permissions: Permissions_type,
+    ) -> Result_type<()> {
+        self.Try_on_concerned_file_systems(Path, |_, File_system, Relative_path| {
+            File_system
                 .Inner
-                .Get_owner(Task_identifier, &Relative_path)?;
-
-            Task_user == Owner_user
-        };
-
-        if !Owner {
-            return Err(Error_type::Permission_denied);
-        }
-
-        File_system
-            .Inner
-            .Set_permissions(Task_identifier, Permissions, &Relative_path)
+                .Set_permissions(&Relative_path, Permissions)
+        })
     }
 
-    pub fn Close_all(&self, Task_identifier: Task_identifier_type) -> Result<()> {
+    pub fn Close_all(&self, Task_identifier: Task_identifier_type) -> Result_type<()> {
         let File_systems = self.File_systems.read()?; // Get the file systems
 
         for File_system in File_systems.values() {
             File_system.Inner.Close_all(Task_identifier)?;
         }
 
-        self.Pipes_file_system.write()?.Close_all(Task_identifier)?;
-
         Ok(())
     }
 
-    pub fn Create_named_pipe(&self, Path: &impl AsRef<Path_type>, Size: usize) -> Result<()> {
-        let Path = Path
-            .as_ref()
-            .Set_extension(Self::Named_pipe_extension)
-            .ok_or(Error_type::Invalid_path)?; // Append the pipe extension
+    pub fn Add_device(
+        &self,
+        Path: impl AsRef<Path_type>,
+        Device: Box<dyn Device_trait>,
+    ) -> Result_type<()> {
+        let File_systems = self.File_systems.read()?; // Get the file systems
 
-        self.Create_file(&Path)?; // Create the special file
+        let File_system = Self::Get_file_system_from_identifier(
+            &File_systems,
+            Self::Device_file_system_identifier,
+        )?;
 
-        let File = self.Open(&Path, Mode_type::Write_only().into())?; // Open the file
+        File_system.Inner.Add_device(&Path, Device)
+    }
 
-        let Pipe_identifier = self.Pipes_file_system.write()?.Create_named_pipe(Size)?; // Create the named pipe
+    pub fn Create_named_pipe(
+        &self,
+        Path: &impl AsRef<Path_type>,
+        Size: Size_type,
+    ) -> Result_type<()> {
+        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
-        let Pipe_identifier: [u8; 4] = Pipe_identifier.into();
+        let mut File_systems = self.File_systems.write()?; // Get the file systems
 
-        self.Write(File, &Pipe_identifier)?; // Write the pipe identifier
+        let Parent_path = Path.as_ref().Go_parent().ok_or(Error_type::Invalid_path)?;
 
-        Ok(())
+        let (_, File_system, Relative_path) =
+            Self::Get_file_system_from_mount_point(&File_systems, &Parent_path)?; // Get the file system identifier and the relative path
+
+        self.Check_permission(
+            File_system,
+            Task_identifier,
+            Relative_path,
+            Permission_type::New_write(),
+        )?;
+
+        File_systems
+            .get_mut(&Self::Pipe_file_system_identifier)
+            .ok_or(Error_type::Invalid_path)?
+            .Inner
+            .Create_named_pipe(Path, Size)
     }
 
     pub fn Create_unnamed_pipe(
         &self,
-        Size: usize,
+        Size: Size_type,
         Status: Status_type,
-    ) -> Result<(Unique_file_identifier_type, Unique_file_identifier_type)> {
+    ) -> Result_type<(Unique_file_identifier_type, Unique_file_identifier_type)> {
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
-        let (File_identifier_read, File_identifier_write) = self
-            .Pipes_file_system
+        let (Read, Write) = self
+            .File_systems
             .write()?
-            .Create_unnamed_pipe(Task_identifier, Status, Size)?; // Create the unnamed pipe
+            .get_mut(&Self::Pipe_file_system_identifier)
+            .ok_or(Error_type::Invalid_path)?
+            .Inner
+            .Create_unnamed_pipe(Task_identifier, Size, Status)?;
 
         Ok((
-            Unique_file_identifier_type::New(
-                Self::Pipe_file_system_identifier,
-                File_identifier_read,
-            ),
-            Unique_file_identifier_type::New(
-                Self::Pipe_file_system_identifier,
-                File_identifier_write,
-            ),
+            Unique_file_identifier_type::New(Self::Pipe_file_system_identifier, Read),
+            Unique_file_identifier_type::New(Self::Pipe_file_system_identifier, Write),
         ))
     }
 
-    pub fn Create_file(&self, Path: impl AsRef<Path_type>) -> Result<()> {
+    pub fn Create_file(&self, Path: impl AsRef<Path_type>) -> Result_type<()> {
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
+        let (_, File_system, Relative_path) =
+            Self::Get_file_system_from_mount_point(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?;
+        // Check if the user has the right to create the file (write permission on the parent directory)
+        self.Check_permission(
+            File_system,
+            Task_identifier,
+            Relative_path.Go_parent().unwrap_or(Path_type::Get_root()),
+            Permission_type::New_write(),
+        )?;
 
-        File_system
-            .Inner
-            .Create_file(Task_identifier, &Relative_path)
+        File_system.Create_file(&Relative_path)
     }
 
-    pub fn Create_directory(&self, Path: impl AsRef<Path_type>, Recursive: bool) -> Result<()> {
+    pub fn Create_directory(
+        &self,
+        Path: impl AsRef<Path_type>,
+        Recursive: bool,
+    ) -> Result_type<()> {
         if Recursive {
             // If the directory already exists, return Ok(()) (only if recursive is true).
             if self.Exists(Path.as_ref())? {
@@ -524,19 +511,22 @@ impl Virtual_file_system_type {
         }
 
         // Create current directory.
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
+        let (_, File_system, Relative_path) =
+            Self::Get_file_system_from_mount_point(&File_systems, &Path)?;
 
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?;
+        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
-        File_system
-            .Inner
-            .Create_directory(Task_identifier, &Relative_path)
+        // Check if the user has the right to create the directory (write permission and execute permission on the parent directory)
+        self.Check_permission(
+            File_system,
+            Task_identifier,
+            Relative_path,
+            Permission_type::New_write_execute(),
+        )?;
+
+        File_system.Create_directory(&Relative_path)
     }
 
     pub fn Delete(&self, Path: impl AsRef<Path_type>, Recursive: bool) -> Result_type<()> {
@@ -544,26 +534,23 @@ impl Virtual_file_system_type {
             todo!()
         }
 
-        // Delete current directory.
+        // Delete current directory / file.
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
-        let File_systems = self.File_systems.read()?; // Get the file systems
+        self.Try_on_concerned_file_systems(Path.as_ref(), |_, File_system, Relative_path| {
+            // Check if the user has the right to delete the file (write permission on the parent directory)
+            self.Check_permission(
+                &*File_system.Inner,
+                Task_identifier,
+                Relative_path.Go_parent().ok_or(Error_type::Invalid_path)?,
+                Permission_type::New_write(),
+            )
+        })?;
 
-        let (File_system_identifier, Relative_path) = Self::Get_file_system(&File_systems, &Path)?; // Get the file system identifier and the relative path
-
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_path)?;
-
-        // Check if the user has the right to delete the file (write permission on the parent directory)
-        self.Check_permissions(
-            File_system,
-            Task_identifier,
-            Relative_path.Go_parent().ok_or(Error_type::Invalid_path)?,
-            Mode_type::Write_only().into(),
-        )?;
-
-        File_system.Inner.Delete(&Relative_path)
+        self.Try_on_concerned_file_systems(Path, |_, File_system, Relative_path| {
+            // Delete the file
+            File_system.Inner.Delete(&Relative_path)
+        })
     }
 
     pub fn Transfert_file(
@@ -571,25 +558,16 @@ impl Virtual_file_system_type {
         File: Unique_file_identifier_type,
         New_task: Task_identifier_type,
     ) -> Result_type<Unique_file_identifier_type> {
+        let (File_system_identifier, File_identifier) = File.Split();
+
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let (File_system_identifier, File_identifier) = File.Split();
-
-        let New_file_identifier = if File_system_identifier == Self::Pipe_file_system_identifier {
-            self.Pipes_file_system.write()?.Transfert_file_identifier(
-                Task_identifier,
-                New_task,
-                File_identifier,
-            )?
-        } else {
-            File_systems
-                .get(&File_system_identifier)
-                .ok_or(Error_type::Invalid_identifier)?
+        let New_file_identifier =
+            Self::Get_file_system_from_identifier(&File_systems, File_system_identifier)?
                 .Inner
-                .Transfert_file_identifier(Task_identifier, New_task, File_identifier)?
-        };
+                .Transfert_file_identifier(Task_identifier, New_task, File_identifier)?;
 
         Ok(Unique_file_identifier_type::New(
             File_system_identifier,
@@ -600,19 +578,12 @@ impl Virtual_file_system_type {
     pub fn Flush(&self, File: Unique_file_identifier_type) -> Result_type<()> {
         let (File_system_identifier, File_identifier) = File.Split();
 
-        if File_system_identifier == Self::Pipe_file_system_identifier {
-            return Ok(()); // No need to flush a pipe.
-                           // ? : Maybe we should return an error.
-        }
-
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let File_system = File_systems
-            .get(&File_system_identifier)
-            .ok_or(Error_type::Invalid_identifier)?; // Get the file system
-
-        File_system.Inner.Flush(Task_identifier, File_identifier)
+        Self::Get_file_system_from_identifier(&File_systems, File_system_identifier)?
+            .Inner
+            .Flush(Task_identifier, File_identifier)
     }
 }
