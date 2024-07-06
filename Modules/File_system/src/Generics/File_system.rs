@@ -1,8 +1,8 @@
 use crate::Prelude::Mode_type;
 
 use super::{
-    File_identifier_type, Flags_type, Path_owned_type, Path_type, Permissions_type, Position_type,
-    Result, Size_type, Type_type,
+    Device::Device_trait, Error_type, File_identifier_type, Flags_type, Path_owned_type, Path_type,
+    Permissions_type, Position_type, Result_type, Size_type, Status_type, Type_type,
 };
 
 use Task::Task_identifier_type;
@@ -10,6 +10,8 @@ use Users::{Group_identifier_type, User_identifier_type};
 
 /// File system trait.
 ///
+/// This allows to abstract the file system implementation.
+/// The file system implementation should be registered in `Virtual_file_system_type`.
 /// The management of concurrent access to the file system is delegated to the implementation.
 /// Thus, implementation should use a `RwLock` or `Mutex` to manage concurrency.
 pub trait File_system_traits: Send + Sync {
@@ -35,7 +37,7 @@ pub trait File_system_traits: Send + Sync {
         &self,
         Task: Task_identifier_type,
         Path: &dyn AsRef<Path_type>,
-        Mode: Flags_type,
+        Flags: Flags_type,
     ) -> Result_type<File_identifier_type>;
 
     /// Close a file.
@@ -90,7 +92,6 @@ pub trait File_system_traits: Send + Sync {
 
     fn Move(
         &self,
-        Task: Task_identifier_type,
         Source: &dyn AsRef<Path_type>,
         Destination: &dyn AsRef<Path_type>,
     ) -> Result_type<()>;
@@ -105,7 +106,7 @@ pub trait File_system_traits: Send + Sync {
         File: File_identifier_type,
         Position: &Position_type,
     ) -> Result_type<Size_type>;
-    
+
     fn Flush(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()>;
 
     // - Metadata
@@ -136,7 +137,6 @@ pub trait File_system_traits: Send + Sync {
     /// Returns an error if the user / group doesn't have the permission to change the owner (not the current owner or not the root user).
     fn Set_owner(
         &self,
-        _: Task_identifier_type,
         _: &dyn AsRef<Path_type>,
         _: Option<User_identifier_type>,
         _: Option<Group_identifier_type>,
@@ -151,7 +151,6 @@ pub trait File_system_traits: Send + Sync {
     /// Returns an error if the user / group doesn't have the permission to get the owner (no execute permission on parent directory).
     fn Get_owner(
         &self,
-        _: Task_identifier_type,
         _: &dyn AsRef<Path_type>,
     ) -> Result_type<(User_identifier_type, Group_identifier_type)> {
         Ok((0, 0)) // TODO : Implement with permission file
@@ -184,10 +183,23 @@ pub trait File_system_traits: Send + Sync {
     /// Returns an error if the directory / file already exists.
     /// Returns an error if the user / group doesn't have the permission to create the directory (no write permission on parent directory).
     fn Create_directory(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()>;
+
+    fn Create_named_pipe(&self, _: &dyn AsRef<Path_type>, _: Size_type) -> Result_type<()> {
+        Err(Error_type::Unsupported_operation)
+    }
+
+    fn Add_device(&self, _: &dyn AsRef<Path_type>, _: Box<dyn Device_trait>) -> Result_type<()> {
+        Err(Error_type::Unsupported_operation)
+    }
+
+    fn Create_unnamed_pipe(
         &self,
-        Task: Task_identifier_type,
-        Path: &dyn AsRef<Path_type>,
-    ) -> Result<()>;
+        _: Task_identifier_type,
+        _: Size_type,
+        _: Status_type,
+    ) -> Result_type<(File_identifier_type, File_identifier_type)> {
+        Err(Error_type::Unsupported_operation)
+    }
 
     /// Combine task identifier and file identifier to get a unique file identifier.
     fn Get_local_file_identifier(
@@ -200,6 +212,17 @@ pub trait File_system_traits: Send + Sync {
         let File_identifier: u16 = File_identifier.into();
         let Task_identifier: u32 = Task_identifier.into();
         (Task_identifier) << 16 | File_identifier as u32
+    }
+
+    fn Decompose_local_file_identifier(
+        Local_file_identifier: u32,
+    ) -> (Task_identifier_type, File_identifier_type)
+    where
+        Self: Sized, // ? : Makes the compiler happy
+    {
+        let Task_identifier = Task_identifier_type::from(Local_file_identifier >> 16);
+        let File_identifier = File_identifier_type::from((Local_file_identifier & 0xFFFF) as u16);
+        (Task_identifier, File_identifier)
     }
 
     // - Tests
@@ -279,10 +302,9 @@ pub trait File_system_traits: Send + Sync {
     /// - Ensure `already_exists` exists in the `Test_path` directory
     fn Test_create_directory_exists(&self) {
         let New_path = Get_test_path().Append("test_dir").unwrap();
-        let Task_identifier = Task_identifier_type::from(1);
 
         assert_eq!(self.Exists(&New_path), Ok(false));
-        self.Create_directory(Task_identifier, &New_path).unwrap();
+        self.Create_directory(&New_path).unwrap();
         assert_eq!(self.Exists(&New_path), Ok(true));
     }
 
@@ -305,7 +327,7 @@ pub trait File_system_traits: Send + Sync {
             .unwrap();
         assert_eq!(Size, 11);
         assert_eq!(&Buffer, b"0123456789\n");
-        assert_eq!(self.Get_size(Task_identifier, &Read_file).unwrap(), 11);
+        assert_eq!(self.Get_size(&Read_file).unwrap(), 11);
 
         let Empty_file = Get_test_path().Append("empty_read").unwrap();
         let Empty_file_identifier = self
@@ -317,7 +339,7 @@ pub trait File_system_traits: Send + Sync {
             .Read(Task_identifier, Empty_file_identifier, &mut Buffer)
             .unwrap();
         assert_eq!(Size, 0);
-        assert_eq!(self.Get_size(Task_identifier, &Empty_file).unwrap(), 0);
+        assert_eq!(self.Get_size(&Empty_file).unwrap(), 0);
     }
 
     /// Test write file operation.
@@ -337,7 +359,7 @@ pub trait File_system_traits: Send + Sync {
             .Write(Task_identifier, File_identifier, Buffer)
             .unwrap();
         assert_eq!(Size, 11);
-        assert_eq!(self.Get_size(Task_identifier, &File).unwrap(), 11);
+        assert_eq!(self.Get_size(&File).unwrap(), 11);
     }
 
     /// Run before the tests.
@@ -345,8 +367,7 @@ pub trait File_system_traits: Send + Sync {
         let _ = self.Delete(&Get_test_path());
         assert_eq!(self.Exists(&Get_test_path()), Ok(false));
 
-        self.Create_directory(Task_identifier_type::from(1), &Get_test_path())
-            .unwrap();
+        self.Create_directory(&Get_test_path()).unwrap();
         assert_eq!(self.Exists(&Get_test_path()), Ok(true));
     }
 }
