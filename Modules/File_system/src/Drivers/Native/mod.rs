@@ -126,7 +126,11 @@ impl File_system_type {
     pub fn Get_full_path(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Path_owned_type> {
         self.Virtual_root_path
             .clone()
-            .Join(Path)
+            .Join(
+                Path.as_ref()
+                    .Strip_prefix(Path_type::Get_root())
+                    .ok_or(Error_type::Invalid_path)?,
+            )
             .ok_or(Error_type::Invalid_path)
     }
 }
@@ -157,14 +161,14 @@ impl File_system_traits for File_system_type {
             .open(Full_path.as_ref() as &Path_type)
             .map_err(|Error| Error.kind())?;
 
-        let File_identifier = self.Get_new_file_identifier(Task_identifier)?;
+        let mut Open_files = self.Open_files.write()?;
+
+        let File_identifier = Self::Get_new_file_identifier(Task_identifier, &Open_files)?;
 
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
 
-        if self
-            .Open_files
-            .write()?
+        if Open_files
             .insert(Local_file_identifier, RwLock::new(File))
             .is_some()
         {
@@ -307,11 +311,12 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<File_identifier_type> {
         let Old_local_file_identifier =
             Self::Get_local_file_identifier(Old_task, Old_file_identifier);
-        let New_file_identifier = self.Get_new_file_identifier(New_task)?;
-        let New_local_file_identifier =
-            Self::Get_local_file_identifier(New_task, New_file_identifier);
 
         let mut Open_files = self.Open_files.write()?;
+
+        let New_file_identifier = Self::Get_new_file_identifier(New_task, &Open_files)?;
+        let New_local_file_identifier =
+            Self::Get_local_file_identifier(New_task, New_file_identifier);
 
         let File = Open_files
             .remove(&Old_local_file_identifier)
