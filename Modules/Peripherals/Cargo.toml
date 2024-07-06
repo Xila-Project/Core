@@ -1,0 +1,10 @@
+[package]
+name = "Peripherals"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+File_system = { path = "../File_system" }
+
+[target.'cfg( target_os = "espidf" )'.dependencies]
+esp-idf-svc = { version = "0.48.1" }
