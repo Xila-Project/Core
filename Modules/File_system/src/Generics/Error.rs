@@ -28,6 +28,7 @@ pub enum Error_type {
     Ressource_busy,
     Already_initialized,
     Not_initialized,
+    Failed_to_get_users_manager_instance,
     Other,
 }
 

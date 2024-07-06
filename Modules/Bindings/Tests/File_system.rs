@@ -12,9 +12,10 @@ fn Integration_test() {
         "../../../target/wasm32-unknown-unknown/release/File_system_bindings_WASM_test.wasm"
     );
 
-    let Virtual_file_system =
-        File_system::Initialize(Task::Manager_type::New(), Users::Manager_type::New())
-            .expect("Failed to initialize file system");
+    Users::Initialize().expect("Failed to initialize users manager");
+
+    let Virtual_file_system = File_system::Initialize(Task::Manager_type::New())
+        .expect("Failed to initialize file system");
 
     let Native_file_system = File_system_type::New().expect("Failed to create file system");
 
