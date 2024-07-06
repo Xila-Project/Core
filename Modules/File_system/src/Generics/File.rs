@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use super::{
     Flags_type, Path_type, Position_type, Result_type, Size_type, Status_type,
     Unique_file_identifier_type, Virtual_file_system::Virtual_file_system_type,
@@ -16,7 +18,17 @@ pub enum Type_type {
 
 pub struct File_type {
     File_identifier: Unique_file_identifier_type,
-    File_system: Virtual_file_system_type,
+    File_system: &'static Virtual_file_system_type,
+}
+
+impl Debug for File_type {
+    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Formatter
+            .debug_struct("File_type")
+            .field("File_identifier", &self.File_identifier)
+            .field("File_system", &(self.File_system as *const _))
+            .finish()
+    }
 }
 
 impl File_type {
