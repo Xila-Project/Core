@@ -33,7 +33,7 @@ impl Debug for File_type {
 
 impl File_type {
     pub fn Open(
-        File_system: &Virtual_file_system_type,
+        File_system: &'static Virtual_file_system_type,
         Path: impl AsRef<Path_type>,
         Flags: Flags_type,
     ) -> Result_type<Self> {
@@ -41,13 +41,13 @@ impl File_type {
 
         Ok(File_type {
             File_identifier,
-            File_system: File_system.clone(),
+            File_system,
         })
     }
 
-    pub fn Create_unamed_pipe(
-        File_system: &Virtual_file_system_type,
-        Size: usize,
+    pub fn Create_unnamed_pipe(
+        File_system: &'static Virtual_file_system_type,
+        Size: Size_type,
         Status: Status_type,
     ) -> Result_type<(Self, Self)> {
         let (File_identifier_read, File_identifier_write) =
@@ -56,11 +56,11 @@ impl File_type {
         Ok((
             File_type {
                 File_identifier: File_identifier_read,
-                File_system: File_system.clone(),
+                File_system,
             },
             File_type {
                 File_identifier: File_identifier_write,
-                File_system: File_system.clone(),
+                File_system,
             },
         ))
     }

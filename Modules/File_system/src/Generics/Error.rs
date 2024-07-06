@@ -26,6 +26,8 @@ pub enum Error_type {
     Invalid_mode,
     Unsupported_operation,
     Ressource_busy,
+    Already_initialized,
+    Not_initialized,
     Other,
 }
 

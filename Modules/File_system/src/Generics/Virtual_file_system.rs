@@ -14,7 +14,45 @@ struct Internal_file_system_type {
     pub Inner: Box<dyn File_system_traits>,
 }
 
-#[derive(Clone)]
+/// Instance of the virtual file system.
+///
+/// # Safety
+/// I know, it is not safe to use mutable static variables.
+/// It is thread safe (after initialization) because it is only read after initialization.
+/// It is a pragmatic choice for efficiency in embedded systems contexts (avoid using Arc).
+static mut Virtual_file_system_instance: Option<Virtual_file_system_type> = None;
+
+pub fn Initialize(
+    Task_manager: Task::Manager_type,
+    User_manager: Users::Manager_type,
+) -> Result_type<&'static Virtual_file_system_type> {
+    unsafe {
+        if Is_initialized() {
+            return Err(Error_type::Already_initialized);
+        }
+
+        Virtual_file_system_instance
+            .replace(Virtual_file_system_type::New(Task_manager, User_manager)?);
+
+        Get_instance()
+    }
+}
+
+pub fn Is_initialized() -> bool {
+    unsafe { Virtual_file_system_instance.is_some() }
+}
+
+pub fn Get_instance() -> Result_type<&'static Virtual_file_system_type> {
+    unsafe {
+        Virtual_file_system_instance
+            .as_ref()
+            .ok_or(Error_type::Not_initialized)
+    }
+}
+
+/// The virtual file system.
+///
+/// It is a singleton.
 pub struct Virtual_file_system_type {
     /// A reference to the task manager.
     Task_manager: Task::Manager_type,
