@@ -2,11 +2,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
-use Bindings::{File_system_bindings, Task_bindings};
-use File_system::{
-    Drivers::Native::File_system_type,
-    Prelude::{Path_type, Virtual_file_system_type},
-};
+use Bindings::Task_bindings;
 use Virtual_machine::{Data_type, Instantiate_test_environment, WasmValue};
 
 #[test]
