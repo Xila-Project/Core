@@ -55,10 +55,7 @@ esp-idf-sys = { version = "0.34.1", features = ["binstart"] }
 esp-idf-hal = "0.43.1"
 log = { version = "0.4", default-features = false }
 esp-idf-svc = { version = "0.48.1" }
-embedded-sdmmc = "0.7.0"
 embedded-hal = "1.0.0"
-fatfs = { version = "0.3.6" }
-byteorder = "1.5.0"
 
 [build-dependencies]
 embuild = { version = "0.31.4", features = ["espidf"] }
