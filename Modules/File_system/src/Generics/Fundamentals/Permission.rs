@@ -1,4 +1,5 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct Permissions_type(u16);
 
 impl Permissions_type {
@@ -100,7 +101,8 @@ impl Permissions_type {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct Permission_type(u8);
 
 impl Permission_type {
