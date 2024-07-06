@@ -14,8 +14,9 @@ fn Integration_test() {
 
     Users::Initialize().expect("Failed to initialize users manager");
 
-    let Virtual_file_system = File_system::Initialize(Task::Manager_type::New())
-        .expect("Failed to initialize file system");
+    Task::Initialize().expect("Failed to initialize task manager");
+
+    let Virtual_file_system = File_system::Initialize().expect("Failed to initialize file system");
 
     let Native_file_system = File_system_type::New().expect("Failed to create file system");
 

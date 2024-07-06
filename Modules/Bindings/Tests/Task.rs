@@ -11,13 +11,10 @@ fn Integration_test() {
         "../../../target/wasm32-unknown-unknown/release/File_system_bindings_WASM_test.wasm"
     );
 
-    let Task_manager = Task::Manager_type::New();
+    Task::Initialize().expect("Failed to initialize task manager");
 
-    let (_Runtime, _Module, Instance) = Instantiate_test_environment(
-        Binary_buffer,
-        Task_bindings::New(Task_manager.clone()),
-        &Data_type::New(),
-    );
+    let (_Runtime, _Module, Instance) =
+        Instantiate_test_environment(Binary_buffer, Task_bindings::New(), &Data_type::New());
 
     assert_eq!(
         Instance.Call_export_function("Test_task", &vec![]).unwrap(),

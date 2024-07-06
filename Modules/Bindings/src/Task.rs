@@ -1,5 +1,3 @@
-use std::mem::MaybeUninit;
-
 use Binding_tool::Bind_function_native;
 use Task::{Error_type, Result_type, Task_identifier_type, Task_type};
 use Virtual_machine::{Function_descriptors, Registrable_trait, Runtime_type};
@@ -12,20 +10,20 @@ impl Registrable_trait for Task_bindings {
     }
 }
 
-impl Task_bindings {
-    pub fn New(Manager: Task::Manager_type) -> Self {
-        unsafe {
-            Task_manager.write(Manager);
-        }
+impl Default for Task_bindings {
+    fn default() -> Self {
+        Self::New()
+    }
+}
 
+impl Task_bindings {
+    pub fn New() -> Self {
         Self {}
     }
 }
 
-static mut Task_manager: MaybeUninit<Task::Manager_type> = MaybeUninit::uninit();
-
 fn Get_task_manager() -> &'static Task::Manager_type {
-    unsafe { Task_manager.assume_init_ref() }
+    Task::Get_instance().expect("Task manager not initialized")
 }
 
 const Task_bindings_functions: [Virtual_machine::Function_descriptor_type; 5] = Function_descriptors!(
