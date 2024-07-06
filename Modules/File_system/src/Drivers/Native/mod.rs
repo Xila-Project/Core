@@ -1,6 +1,6 @@
 use crate::Prelude::{
     Error_type, File_identifier_type, File_system_traits, Flags_type, Path_owned_type, Path_type,
-    Permissions_type, Position_type, Result, Size_type, Type_type,
+    Permissions_type, Position_type, Result_type, Size_type, Type_type,
 };
 
 use std::collections::BTreeMap;
@@ -74,7 +74,7 @@ pub struct File_system_type {
 }
 
 impl File_system_type {
-    pub fn New() -> Result<Self> {
+    pub fn New() -> Result_type<Self> {
         Ok(File_system_type {
             Virtual_root_path: Self::Get_root_path().ok_or(Error_type::Unknown)?,
             Open_files: RwLock::new(BTreeMap::new()),
@@ -107,15 +107,15 @@ impl File_system_type {
     }
 
     fn Get_new_file_identifier(
-        &self,
         Task_identifier: Task_identifier_type,
         Open_files: &BTreeMap<u32, RwLock<File>>,
+    ) -> Result_type<File_identifier_type> {
         let Start = Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0));
         let End =
             Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0xFFFF));
 
         for i in Start..End {
-            if !self.Open_files.read()?.contains_key(&i) {
+            if !Open_files.contains_key(&i) {
                 return Ok(File_identifier_type::from(i as u16));
             }
         }
@@ -123,7 +123,7 @@ impl File_system_type {
         Err(Error_type::Too_many_open_files)
     }
 
-    pub fn Get_full_path(&self, Path: &dyn AsRef<Path_type>) -> Result<Path_owned_type> {
+    pub fn Get_full_path(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Path_owned_type> {
         self.Virtual_root_path
             .clone()
             .Join(Path)
@@ -132,7 +132,7 @@ impl File_system_type {
 }
 
 impl File_system_traits for File_system_type {
-    fn Exists(&self, Path: &dyn AsRef<Path_type>) -> Result<bool> {
+    fn Exists(&self, Path: &dyn AsRef<Path_type>) -> Result_type<bool> {
         metadata(self.Get_full_path(&Path)?.as_ref() as &Path_type)
             .map(|_| true)
             .or_else(|Error| match Error.kind() {
@@ -146,7 +146,7 @@ impl File_system_traits for File_system_type {
         Task_identifier: Task_identifier_type,
         Path: &dyn AsRef<Path_type>,
         Flags: Flags_type,
-    ) -> Result<File_identifier_type> {
+    ) -> Result_type<File_identifier_type> {
         let Full_path = self.Get_full_path(&Path)?;
 
         let mut Open_options = OpenOptions::new();
@@ -179,7 +179,7 @@ impl File_system_traits for File_system_type {
         Task_identifier: Task_identifier_type,
         File_identifier: File_identifier_type,
         Buffer: &mut [u8],
-    ) -> Result<Size_type> {
+    ) -> Result_type<Size_type> {
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
 
@@ -198,7 +198,7 @@ impl File_system_traits for File_system_type {
         Task_identifier: Task_identifier_type,
         File_identifier: File_identifier_type,
         Buffer: &[u8],
-    ) -> Result<Size_type> {
+    ) -> Result_type<Size_type> {
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
 
@@ -212,7 +212,7 @@ impl File_system_traits for File_system_type {
             .into())
     }
 
-    fn Flush(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()> {
+    fn Flush(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()> {
         let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
         self.Open_files
             .write()?
@@ -223,7 +223,7 @@ impl File_system_traits for File_system_type {
         Ok(())
     }
 
-    fn Close(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()> {
+    fn Close(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()> {
         let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
         self.Open_files
             .write()?
@@ -232,13 +232,13 @@ impl File_system_traits for File_system_type {
         Ok(())
     }
 
-    fn Get_type(&self, _: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<Type_type> {
+    fn Get_type(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Type_type> {
         let Full_path = self.Get_full_path(&Path)?;
         let Metadata = metadata(Full_path.as_ref() as &Path_type)?;
         Ok(Metadata.file_type().into())
     }
 
-    fn Get_size(&self, _: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<Size_type> {
+    fn Get_size(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Size_type> {
         let Full_path = self.Get_full_path(&Path)?;
         let Metadata = metadata(Full_path.as_ref() as &Path_type)?;
         Ok(Metadata.len().into())
@@ -249,7 +249,7 @@ impl File_system_traits for File_system_type {
         Task_identifier: Task_identifier_type,
         File_identifier: File_identifier_type,
         Position_type: &Position_type,
-    ) -> Result<Size_type> {
+    ) -> Result_type<Size_type> {
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
 
@@ -264,19 +264,19 @@ impl File_system_traits for File_system_type {
             .into())
     }
 
-    fn Delete(&self, Path: &dyn AsRef<Path_type>) -> Result<()> {
+    fn Delete(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()> {
         let Full_path = self.Get_full_path(&Path)?;
 
         remove_file(Full_path.as_ref() as &Path_type).map_err(|Error| Error.kind().into())
     }
 
-    fn Create_directory(&self, _: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<()> {
+    fn Create_directory(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()> {
         let Full_path = self.Get_full_path(&Path)?;
 
         create_dir(Full_path.as_ref() as &Path_type).map_err(|Error| Error.kind().into())
     }
 
-    fn Create_file(&self, _: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<()> {
+    fn Create_file(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()> {
         let Full_path = self.Get_full_path(&Path)?;
 
         OpenOptions::new()
@@ -287,7 +287,7 @@ impl File_system_traits for File_system_type {
         Ok(())
     }
 
-    fn Close_all(&self, Task_identifier: Task_identifier_type) -> Result<()> {
+    fn Close_all(&self, Task_identifier: Task_identifier_type) -> Result_type<()> {
         let Start = Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0));
         let End =
             Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0xFFFF));
@@ -304,7 +304,7 @@ impl File_system_traits for File_system_type {
         Old_task: Task_identifier_type,
         New_task: Task_identifier_type,
         Old_file_identifier: File_identifier_type,
-    ) -> Result<File_identifier_type> {
+    ) -> Result_type<File_identifier_type> {
         let Old_local_file_identifier =
             Self::Get_local_file_identifier(Old_task, Old_file_identifier);
         let New_file_identifier = self.Get_new_file_identifier(New_task)?;
@@ -326,10 +326,9 @@ impl File_system_traits for File_system_type {
 
     fn Move(
         &self,
-        _: Task_identifier_type,
         Source: &dyn AsRef<Path_type>,
         Destination: &dyn AsRef<Path_type>,
-    ) -> Result<()> {
+    ) -> Result_type<()> {
         let Source = self.Get_full_path(Source)?;
         let Destination = self.Get_full_path(Destination)?;
 

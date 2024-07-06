@@ -14,7 +14,7 @@ use Users::{Group_identifier_type, User_identifier_type};
 /// Thus, implementation should use a `RwLock` or `Mutex` to manage concurrency.
 pub trait File_system_traits: Send + Sync {
     // - Status
-    fn Exists(&self, Path: &dyn AsRef<Path_type>) -> Result<bool>;
+    fn Exists(&self, Path: &dyn AsRef<Path_type>) -> Result_type<bool>;
 
     // - Manipulation
     // - - Open/close/delete
@@ -24,7 +24,7 @@ pub trait File_system_traits: Send + Sync {
     /// # Errors
     /// Returns an error if the file already exists.
     /// Returns an error if the user / group doesn't have the permission to create the file (no write permission on parent directory).
-    fn Create_file(&self, Task: Task_identifier_type, Path: &dyn AsRef<Path_type>) -> Result<()>;
+    fn Create_file(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()>;
 
     /// Open a file.
     ///     
@@ -36,17 +36,17 @@ pub trait File_system_traits: Send + Sync {
         Task: Task_identifier_type,
         Path: &dyn AsRef<Path_type>,
         Mode: Flags_type,
-    ) -> Result<File_identifier_type>;
+    ) -> Result_type<File_identifier_type>;
 
     /// Close a file.
     ///
     /// # Errors
     /// Returns an error if the file is not opened by the task (invalid file identifier).
     /// Returns an error if the task identifier is invalid.
-    fn Close(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()>;
+    fn Close(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()>;
 
     /// Close all files opened by the task.
-    fn Close_all(&self, Task: Task_identifier_type) -> Result<()>;
+    fn Close_all(&self, Task: Task_identifier_type) -> Result_type<()>;
 
     /// Transfer a file identifier from a task to another.
     fn Transfert_file_identifier(
@@ -54,14 +54,14 @@ pub trait File_system_traits: Send + Sync {
         Old_task: Task_identifier_type,
         New_task: Task_identifier_type,
         File: File_identifier_type,
-    ) -> Result<File_identifier_type>;
+    ) -> Result_type<File_identifier_type>;
 
     /// Delete a file.
     ///
     /// # Errors
     /// Returns an error if the file doesn't exists.
     /// Returns an error if the user / group doesn't have the permission to delete the file (no write permission on parent directory).
-    fn Delete(&self, Path: &dyn AsRef<Path_type>) -> Result<()>;
+    fn Delete(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()>;
     // - - File operations
 
     /// Read a file.
@@ -74,7 +74,7 @@ pub trait File_system_traits: Send + Sync {
         Task: Task_identifier_type,
         File: File_identifier_type,
         Buffer: &mut [u8],
-    ) -> Result<Size_type>;
+    ) -> Result_type<Size_type>;
 
     /// Write a file.
     ///
@@ -86,14 +86,14 @@ pub trait File_system_traits: Send + Sync {
         Task: Task_identifier_type,
         File: File_identifier_type,
         Buffer: &[u8],
-    ) -> Result<Size_type>;
+    ) -> Result_type<Size_type>;
 
     fn Move(
         &self,
         Task: Task_identifier_type,
         Source: &dyn AsRef<Path_type>,
         Destination: &dyn AsRef<Path_type>,
-    ) -> Result<()>;
+    ) -> Result_type<()>;
 
     /// Set the position of the file.
     ///
@@ -104,8 +104,9 @@ pub trait File_system_traits: Send + Sync {
         Task: Task_identifier_type,
         File: File_identifier_type,
         Position: &Position_type,
-    ) -> Result<Size_type>;
-    fn Flush(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result<()>;
+    ) -> Result_type<Size_type>;
+    
+    fn Flush(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()>;
 
     // - Metadata
     // - - Size
@@ -114,22 +115,14 @@ pub trait File_system_traits: Send + Sync {
     ///
     /// # Errors
     /// - If the file doesn't exists.
-    fn Get_type(
-        &self,
-        Task: Task_identifier_type,
-        Path_type: &dyn AsRef<Path_type>,
-    ) -> Result<Type_type>;
+    fn Get_type(&self, Path_type: &dyn AsRef<Path_type>) -> Result_type<Type_type>;
 
     /// Get the size of the file.
     ///
     /// # Errors
     /// - If the file doesn't exists.
     /// - If the user / group doesn't have the permission to get the size (no execute permission on parent directory).
-    fn Get_size(
-        &self,
-        Task: Task_identifier_type,
-        Path: &dyn AsRef<Path_type>,
-    ) -> Result<Size_type>;
+    fn Get_size(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Size_type>;
 
     // - - Security
 
@@ -147,7 +140,7 @@ pub trait File_system_traits: Send + Sync {
         _: &dyn AsRef<Path_type>,
         _: Option<User_identifier_type>,
         _: Option<Group_identifier_type>,
-    ) -> Result<()> {
+    ) -> Result_type<()> {
         Ok(()) // TODO : Implement with permission file
     }
 
@@ -160,7 +153,7 @@ pub trait File_system_traits: Send + Sync {
         &self,
         _: Task_identifier_type,
         _: &dyn AsRef<Path_type>,
-    ) -> Result<(User_identifier_type, Group_identifier_type)> {
+    ) -> Result_type<(User_identifier_type, Group_identifier_type)> {
         Ok((0, 0)) // TODO : Implement with permission file
     }
 
@@ -169,12 +162,7 @@ pub trait File_system_traits: Send + Sync {
     /// # Errors
     /// Returns an error if the file doesn't exists.
     /// Returns an error if the user / group doesn't have the permission to set the permissions (no execute permission on parent directory).
-    fn Set_permissions(
-        &self,
-        _: Task_identifier_type,
-        _: &Permissions_type,
-        _: &dyn AsRef<Path_type>,
-    ) -> Result<()> {
+    fn Set_permissions(&self, _: &dyn AsRef<Path_type>, _: Permissions_type) -> Result_type<()> {
         Ok(()) // TODO : Implement with permission file
     }
 
@@ -183,11 +171,7 @@ pub trait File_system_traits: Send + Sync {
     /// # Errors
     /// Returns an error if the file doesn't exists.
     /// Returns an error if the user / group doesn't have the permission to get the permissions (no execute permission on parent directory).
-    fn Get_permissions(
-        &self,
-        _: Task_identifier_type,
-        _: &dyn AsRef<Path_type>,
-    ) -> Result<Permissions_type> {
+    fn Get_permissions(&self, _: &dyn AsRef<Path_type>) -> Result_type<Permissions_type> {
         Ok(Permissions_type::New_all_full()) // TODO : Implement with permission file
     }
 
@@ -199,7 +183,7 @@ pub trait File_system_traits: Send + Sync {
     ///
     /// Returns an error if the directory / file already exists.
     /// Returns an error if the user / group doesn't have the permission to create the directory (no write permission on parent directory).
-    fn Create_directory(
+    fn Create_directory(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()>;
         &self,
         Task: Task_identifier_type,
         Path: &dyn AsRef<Path_type>,

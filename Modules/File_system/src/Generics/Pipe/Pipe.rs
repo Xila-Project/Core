@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use crate::Prelude::{Error_type, Result, Size_type};
+use crate::Prelude::{Error_type, Result_type, Size_type};
 
 /// A pipe is a FIFO (ring) buffer that can be used to communicate between tasks.
 #[derive(Clone, Debug)]
@@ -15,7 +15,7 @@ impl Pipe_type {
         Self(Arc::new(RwLock::new(VecDeque::with_capacity(Buffer_size))))
     }
 
-    pub fn Write(&self, Data: &[u8]) -> Result<()> {
+    pub fn Write(&self, Data: &[u8]) -> Result_type<()> {
         let mut Inner = self.0.write()?;
 
         if Data.len() > Inner.capacity() - Inner.len() {
@@ -29,7 +29,7 @@ impl Pipe_type {
         Ok(())
     }
 
-    pub fn Read(&self, Data: &mut [u8]) -> Result<()> {
+    pub fn Read(&self, Data: &mut [u8]) -> Result_type<()> {
         let mut Inner = self.0.write()?;
 
         if Data.len() > Inner.len() {
@@ -43,7 +43,7 @@ impl Pipe_type {
         Ok(())
     }
 
-    pub fn Get_size(&self) -> Result<Size_type> {
+    pub fn Get_size(&self) -> Result_type<Size_type> {
         Ok(self.0.read()?.len().into())
     }
 }

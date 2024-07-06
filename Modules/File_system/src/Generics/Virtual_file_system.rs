@@ -59,8 +59,7 @@ impl Virtual_file_system_type {
         &self,
         File_system: Box<dyn File_system_traits>,
         Mount_point: impl AsRef<Path_type>,
-    ) -> Result<File_system_identifier_type> {
-        if self.Exists(Mount_point.as_ref())? {
+    ) -> Result_type<File_system_identifier_type> {
             return Err(Error_type::Already_exists);
         }
 
@@ -83,8 +82,7 @@ impl Virtual_file_system_type {
         Ok(File_system_identifier)
     }
 
-    pub fn Unmount(&self, File_system_identifier: File_system_identifier_type) -> Result<()> {
-        self.File_systems
+    ) -> Result_type<Box<dyn File_system_traits>> {
             .write()?
             .remove(&File_system_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
@@ -187,41 +185,7 @@ impl Virtual_file_system_type {
         Ok(())
     }
 
-    fn Open_named_pipe(
-        &self,
-        Relative_path: impl AsRef<Path_type>,
-        Flags: Flags_type,
-    ) -> Result<Unique_file_identifier_type> {
-        let Path = Relative_path
-            .as_ref()
-            .Set_extension(Self::Named_pipe_extension)
-            .ok_or(Error_type::Invalid_path)?; // Append the pipe extension
-
-        let File = self.Open(Path, Mode_type::Read_only().into())?; // Open the file
-
-        let mut Pipe_identifier = [0; 4];
-
-        let Bytes_read = self.Read(File, &mut Pipe_identifier)?;
-
-        if Bytes_read != Pipe_identifier.len() {
-            return Err(Error_type::Invalid_path);
-        }
-
-        let Pipe_identifier = Named_pipe_identifier_type::from(Pipe_identifier);
-
-        let File_identifier = self.Pipes_file_system.write()?.Open(
-            self.Task_manager.Get_current_task_identifier()?,
-            Pipe_identifier,
-            Flags,
-        )?;
-
-        Ok(Unique_file_identifier_type::New(
-            Self::Pipe_file_system_identifier,
-            File_identifier,
-        ))
-    }
-
-    pub fn Close(&self, File: Unique_file_identifier_type) -> Result<()> {
+    pub fn Close(&self, File: Unique_file_identifier_type) -> Result_type<()> {
         let (File_system_identifier, File_identifier) = File.Split();
 
         if File_system_identifier == Self::Pipe_file_system_identifier {
@@ -246,7 +210,7 @@ impl Virtual_file_system_type {
         &self,
         File_identifier: Unique_file_identifier_type,
         Buffer: &mut [u8],
-    ) -> Result<Size_type> {
+    ) -> Result_type<Size_type> {
         let (File_system_identifier, File_identifier) = File_identifier.Split();
 
         if File_system_identifier == Self::Pipe_file_system_identifier {
@@ -270,7 +234,11 @@ impl Virtual_file_system_type {
             .Read(Task_identifier, File_identifier, Buffer)
     }
 
-    pub fn Write(&self, File: Unique_file_identifier_type, Buffer: &[u8]) -> Result<Size_type> {
+    pub fn Write(
+        &self,
+        File: Unique_file_identifier_type,
+        Buffer: &[u8],
+    ) -> Result_type<Size_type> {
         let (File_system_identifier, File_identifier) = File.Split();
 
         if File_system_identifier == Self::Pipe_file_system_identifier {
@@ -298,7 +266,9 @@ impl Virtual_file_system_type {
         &self,
         File_identifier: Unique_file_identifier_type,
         Position: &Position_type,
-    ) -> Result<Size_type> {
+    ) -> Result_type<Size_type> {
+        let (File_system_identifier, File_identifier) = File_identifier.Split();
+
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
@@ -569,7 +539,7 @@ impl Virtual_file_system_type {
             .Create_directory(Task_identifier, &Relative_path)
     }
 
-    pub fn Delete(&self, Path: impl AsRef<Path_type>, Recursive: bool) -> Result<()> {
+    pub fn Delete(&self, Path: impl AsRef<Path_type>, Recursive: bool) -> Result_type<()> {
         if Recursive {
             todo!()
         }
@@ -600,7 +570,7 @@ impl Virtual_file_system_type {
         &self,
         File: Unique_file_identifier_type,
         New_task: Task_identifier_type,
-    ) -> Result<Unique_file_identifier_type> {
+    ) -> Result_type<Unique_file_identifier_type> {
         let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
@@ -627,7 +597,7 @@ impl Virtual_file_system_type {
         ))
     }
 
-    pub fn Flush(&self, File: Unique_file_identifier_type) -> Result<()> {
+    pub fn Flush(&self, File: Unique_file_identifier_type) -> Result_type<()> {
         let (File_system_identifier, File_identifier) = File.Split();
 
         if File_system_identifier == Self::Pipe_file_system_identifier {
