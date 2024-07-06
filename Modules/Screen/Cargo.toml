@@ -12,3 +12,8 @@ embedded-graphics = "0.8"
 [target.'cfg( target_arch = "x86_64" )'.dependencies]
 sdl2 = { version = "0.37.0", features = [] }
 embedded-graphics = "0.8"
+
+[features]
+default = ["RGB565"]
+RGB565 = []
+ARGB8888 = []
