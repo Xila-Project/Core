@@ -42,7 +42,7 @@ impl Manager_type {
         (0..User_identifier_type::MAX).find(|Identifier| !Inner.Users.contains_key(Identifier))
     }
 
-    pub fn Create_user(&self, Name: &str) -> Result<User_identifier_type> {
+    pub fn Create_user(&self, Name: &str) -> Result_type<User_identifier_type> {
         let Identifier = match self.Get_new_user_identifier() {
             Some(Identifier) => Identifier,
             None => return Err(Error_type::Too_many_users),
@@ -68,7 +68,7 @@ impl Manager_type {
         &self,
         Name: &str,
         Identifier: Option<Group_identifier_type>,
-    ) -> Result<Group_identifier_type> {
+    ) -> Result_type<Group_identifier_type> {
         let Identifier = match Identifier {
             Some(Identifier) => Identifier,
             None => self
@@ -126,11 +126,11 @@ impl Manager_type {
         )
     }
 
-    pub fn Exists_group(&self, Identifier: Group_identifier_type) -> Result<bool> {
+    pub fn Exists_group(&self, Identifier: Group_identifier_type) -> Result_type<bool> {
         Ok(self.0.read()?.Groups.contains_key(&Identifier))
     }
 
-    pub fn Exists_user(&self, Identifier: User_identifier_type) -> Result<bool> {
+    pub fn Exists_user(&self, Identifier: User_identifier_type) -> Result_type<bool> {
         Ok(self.0.read()?.Users.contains_key(&Identifier))
     }
 
@@ -138,7 +138,7 @@ impl Manager_type {
         &self,
         User_identifier: User_identifier_type,
         Group_identifier: Group_identifier_type,
-    ) -> Result<()> {
+    ) -> Result_type<()> {
         if !self.Exists_group(Group_identifier)? {
             return Err(Error_type::Invalid_group_identifier);
         }
@@ -155,14 +155,14 @@ impl Manager_type {
         Ok(())
     }
 
-    pub fn Get_group_name(&self, Identifier: Group_identifier_type) -> Result<String> {
+    pub fn Get_group_name(&self, Identifier: Group_identifier_type) -> Result_type<String> {
         Ok(self.0.read()?.Groups.get(&Identifier).unwrap().Name.clone())
     }
 
     pub fn Get_group_users(
         &self,
         Identifier: Group_identifier_type,
-    ) -> Result<Vec<User_identifier_type>> {
+    ) -> Result_type<Vec<User_identifier_type>> {
         Ok(self
             .0
             .read()?
@@ -175,7 +175,7 @@ impl Manager_type {
             .collect())
     }
 
-    pub fn Get_user_name(&self, Identifier: User_identifier_type) -> Result<String> {
+    pub fn Get_user_name(&self, Identifier: User_identifier_type) -> Result_type<String> {
         Ok(self
             .0
             .read()?
