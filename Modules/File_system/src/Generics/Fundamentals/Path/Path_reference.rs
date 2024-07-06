@@ -128,8 +128,18 @@ impl Path_type {
         let mut Stripped_prefix = self.0.strip_prefix(&Path_prefix.0)?;
 
         if Stripped_prefix.starts_with(Separator) {
-            Stripped_prefix = &Stripped_prefix[1..];
+            Stripped_prefix = &Stripped_prefix[1..]
         }
+
+        Self::New(Stripped_prefix)
+    }
+
+    pub fn Strip_prefix_absolute<'b>(&'b self, Path_prefix: &Path_type) -> Option<&'b Path_type> {
+        if Path_prefix.Is_root() {
+            return Some(self);
+        }
+
+        let Stripped_prefix = self.0.strip_prefix(&Path_prefix.0)?;
 
         Self::New(Stripped_prefix)
     }
@@ -206,8 +216,35 @@ mod Tests {
         let Prefix = Path_type::New("/home/user").unwrap();
         assert_eq!(Path.Strip_prefix(Prefix).unwrap().As_str(), "file.txt");
 
+        let Path = Path_type::New("/home/user/file.txt").unwrap();
+        let Prefix = Path_type::New("/").unwrap();
+        assert_eq!(
+            Path.Strip_prefix(Prefix).unwrap().As_str(),
+            "home/user/file.txt"
+        );
+
         let Invalid_prefix = Path_type::New("/home/invalid/").unwrap();
         assert_eq!(Path.Strip_prefix(Invalid_prefix), None);
+    }
+
+    #[test]
+    fn Test_strip_prefix_absolute() {
+        let Path = Path_type::New("/home/user/file.txt").unwrap();
+        let Prefix = Path_type::New("/home/user").unwrap();
+        assert_eq!(
+            Path.Strip_prefix_absolute(Prefix).unwrap().As_str(),
+            "/file.txt"
+        );
+
+        let Path = Path_type::New("/home/user/file.txt").unwrap();
+        let Prefix = Path_type::New("/").unwrap();
+        assert_eq!(
+            Path.Strip_prefix_absolute(Prefix).unwrap().As_str(),
+            "/home/user/file.txt"
+        );
+
+        let Invalid_prefix = Path_type::New("/home/invalid/").unwrap();
+        assert_eq!(Path.Strip_prefix_absolute(Invalid_prefix), None);
     }
 
     #[test]
