@@ -452,7 +452,7 @@ impl Virtual_file_system_type {
 
     pub fn Add_device(
         &self,
-        Path: impl AsRef<Path_type>,
+        Path: &'static dyn AsRef<Path_type>,
         Device: Box<dyn Device_trait>,
     ) -> Result_type<()> {
         let File_systems = self.File_systems.read()?; // Get the file systems
@@ -462,7 +462,7 @@ impl Virtual_file_system_type {
             Self::Device_file_system_identifier,
         )?;
 
-        File_system.Inner.Add_device(&Path, Device)
+        File_system.Inner.Add_device(Path, Device)
     }
 
     pub fn Create_named_pipe(

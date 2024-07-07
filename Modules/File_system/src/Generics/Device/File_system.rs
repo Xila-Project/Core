@@ -23,7 +23,7 @@ struct Internal_device_type {
 }
 
 struct Inner_type {
-    Devices: HashMap<Path_owned_type, Internal_device_type>,
+    Devices: HashMap<&'static Path_type, Internal_device_type>,
     Opened_devices: BTreeMap<u32, (Arc<Box<dyn Device_trait>>, Flags_type)>,
 }
 
@@ -176,24 +176,8 @@ impl File_system_traits for File_system_type {
             .map(|Size| Size.into())
     }
 
-    fn Move(
-        &self,
-        Source: &dyn AsRef<Path_type>,
-        Destination: &dyn AsRef<Path_type>,
-    ) -> Result_type<()> {
-        let Removed = self
-            .0
-            .write()?
-            .Devices
-            .remove(Source.as_ref())
-            .ok_or(Error_type::Not_found)?;
-
-        self.0
-            .write()?
-            .Devices
-            .insert(Destination.as_ref().to_owned(), Removed);
-
-        Ok(())
+    fn Move(&self, _: &dyn AsRef<Path_type>, _: &dyn AsRef<Path_type>) -> Result_type<()> {
+        Err(Error_type::Unsupported_operation)
     }
 
     fn Set_position(
@@ -243,7 +227,7 @@ impl File_system_traits for File_system_type {
 
     fn Add_device(
         &self,
-        Path: &dyn AsRef<Path_type>,
+        Path: &'static dyn AsRef<Path_type>,
         Device: Box<dyn Device_trait>,
     ) -> Result_type<()> {
         let Inner = &mut self.0.write()?;
@@ -253,7 +237,7 @@ impl File_system_traits for File_system_type {
         }
 
         Inner.Devices.insert(
-            Path.as_ref().to_owned(),
+            Path.as_ref(),
             Internal_device_type {
                 Device: Arc::new(Device),
                 User: Root_user_identifier,

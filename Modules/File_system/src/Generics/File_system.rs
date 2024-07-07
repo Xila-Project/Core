@@ -188,7 +188,11 @@ pub trait File_system_traits: Send + Sync {
         Err(Error_type::Unsupported_operation)
     }
 
-    fn Add_device(&self, _: &dyn AsRef<Path_type>, _: Box<dyn Device_trait>) -> Result_type<()> {
+    fn Add_device(
+        &self,
+        _: &'static dyn AsRef<Path_type>,
+        _: Box<dyn Device_trait>,
+    ) -> Result_type<()> {
         Err(Error_type::Unsupported_operation)
     }
 
