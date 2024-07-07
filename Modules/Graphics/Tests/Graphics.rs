@@ -10,6 +10,9 @@ use std::{
 use File_system::Prelude::{File_type, Mode_type, Path_type, Virtual_file_system_type};
 use Screen::{Drivers::SDL2::New_touchscreen, Prelude::Point_type};
 
+const Pointer_device_path: &Path_type =
+    unsafe { Path_type::New_unchecked_constant("/Device/Pointer") };
+
 #[cfg(target_os = "linux")]
 #[test]
 #[ignore]
@@ -28,17 +31,14 @@ fn main() {
 
     let S = Box::new(S);
 
-    let Users_manager = Users::Manager_type::New();
+    Users::Initialize().expect("Error initializing users manager");
 
-    let Task_manager = Task::Manager_type::New();
+    Task::Initialize().expect("Error initializing task manager");
 
-    let Virtual_file_system = File_system::Initialize(Task_manager, Users_manager)
-        .expect("Error initializing file system");
-
-    let Pointer_device_path = Path_type::New("/Device/Pointer").expect("Error creating path");
+    let Virtual_file_system = File_system::Initialize().expect("Error initializing file system");
 
     Virtual_file_system
-        .Add_device(Pointer_device_path, Box::new(Pointer))
+        .Add_device(&Pointer_device_path, Box::new(Pointer))
         .expect("Error adding pointer device");
 
     let Pointer_file = File_type::Open(
