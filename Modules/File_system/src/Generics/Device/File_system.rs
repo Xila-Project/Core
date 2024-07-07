@@ -9,8 +9,8 @@ use Users::{
 };
 
 use crate::Prelude::{
-    Error_type, File_identifier_type, File_system_traits, Flags_type, Path_owned_type, Path_type,
-    Permissions_type, Position_type, Result_type, Size_type, Type_type,
+    Error_type, File_identifier_type, File_system_traits, Flags_type, Path_type, Permissions_type,
+    Position_type, Result_type, Size_type, Type_type,
 };
 
 use super::Device_trait;
