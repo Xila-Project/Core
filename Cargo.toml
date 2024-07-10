@@ -10,7 +10,7 @@ members = [
     "Modules/Screen",
     "Modules/Task",
     "Modules/Users",
-    "Modules/Peripherals",
+    "Modules/Drivers",
 ]
 exclude = ["Build_tool"]
 

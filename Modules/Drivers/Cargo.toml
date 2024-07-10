@@ -1,0 +1,43 @@
+[package]
+name = "Drivers"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+File_system = { path = "../File_system" }
+paste = "1.0.15"
+quote = "1.0.36"
+
+[features]
+default = ["std", "binstart"]
+std = ["alloc", "esp-idf-sys/std"]
+alloc = []
+nightly = []
+wake-from-isr = [] # Only enable if you plan to use the `edge-executor` crate
+embassy-sync = [
+] # For now, the dependecy on the `embassy-sync` crate is non-optional, but this might change in future
+# Temporary, until (https://github.com/espressif/esp-idf/issues/13938) is addressed
+# - When enabled, the code for the legacy ADC oneshot driver will be compiled;
+# - When not enabled (default) the code for the new ADC oneshot driver will be compiled;
+# - Since we don't wrap the legacy _continuous_ ADC driver, the new _continuous_ ADC driver is always compiled.
+adc-oneshot-legacy = []
+# Propagated esp-idf-sys features
+native = ["esp-idf-sys/native"]
+pio = ["esp-idf-sys/pio"]
+alloc_handler = ["esp-idf-sys/alloc_handler"]
+panic_handler = ["esp-idf-sys/panic_handler"]
+binstart = ["esp-idf-sys/binstart"]
+libstart = ["esp-idf-sys/libstart"]
+
+[target.'cfg( target_os = "espidf" )'.dependencies]
+esp-idf-sys = { version = "0.34.1" }
+
+[build-dependencies]
+embuild = { version = "0.32", features = ["espidf"] }
+
+[dev-dependencies]
+anyhow = "1"
+esp-idf-sys = { version = "0.34.1", features = ["binstart"] }
+mipidsi = "0.5.0"
+display-interface-spi = "0.4.1"
+embedded-graphics = "0.7.1"
