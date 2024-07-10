@@ -44,7 +44,7 @@ impl Target_type {
         }
     }
 
-    pub fn Get_target_arguments(&self) -> Vec<String> {
+    pub fn Get_arguments(&self) -> Vec<String> {
         match self {
             Target_type::ESP32 => vec![
                 "--target".to_string(),

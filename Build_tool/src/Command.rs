@@ -8,6 +8,7 @@ pub enum Command_type {
     Doc,
     Clippy,
     Check,
+    Expand,
 }
 
 impl TryFrom<&str> for Command_type {
@@ -23,6 +24,7 @@ impl TryFrom<&str> for Command_type {
             "doc" => Ok(Command_type::Doc),
             "clippy" => Ok(Command_type::Clippy),
             "check" => Ok(Command_type::Check),
+            "expand" => Ok(Command_type::Expand),
             _ => Err(format!("Unknown command : {}", s)),
         }
     }
@@ -39,6 +41,7 @@ impl Command_type {
             Command_type::Doc => "doc".to_string(),
             Command_type::Clippy => "clippy".to_string(),
             Command_type::Check => "check".to_string(),
+            Command_type::Expand => "expand".to_string(),
         }
     }
 
@@ -49,7 +52,8 @@ impl Command_type {
             | Command_type::Run
             | Command_type::Test
             | Command_type::Clippy
-            | Command_type::Check => true,
+            | Command_type::Check
+            | Command_type::Expand => true,
         }
     }
 }
