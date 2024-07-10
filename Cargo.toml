@@ -12,6 +12,7 @@ members = [
     "Modules/Users",
     "Modules/Peripherals",
 ]
+exclude = ["Build_tool"]
 
 [package]
 name = "Xila"
