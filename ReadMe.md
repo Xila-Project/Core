@@ -37,13 +37,16 @@ source Export.sh
 4. Build for the corresponding target:
 
 ```bash
-build_<target>
+xila build <target>
 ```
 
 Currently supported targets are:
 - `linux`
+- `windows`
 - `esp32`
-- `esp32_s3`
+- `esp32s3`
+
+There are also other commands available, you can see them by running `xila help`.
 
 ## ℹ️ About
 

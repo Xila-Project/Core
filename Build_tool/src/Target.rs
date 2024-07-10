@@ -1,16 +1,11 @@
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum Target_type {
     Linux,
     Windows,
     ESP32,
     ESP32_S3,
+    #[default]
     Native,
-}
-
-impl Default for Target_type {
-    fn default() -> Self {
-        Target_type::Native
-    }
 }
 
 impl TryFrom<&str> for Target_type {
