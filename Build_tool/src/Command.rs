@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Command_type {
     Build,
     Clean,
@@ -9,6 +9,7 @@ pub enum Command_type {
     Clippy,
     Check,
     Expand,
+    Help,
 }
 
 impl TryFrom<&str> for Command_type {
@@ -25,14 +26,15 @@ impl TryFrom<&str> for Command_type {
             "clippy" => Ok(Command_type::Clippy),
             "check" => Ok(Command_type::Check),
             "expand" => Ok(Command_type::Expand),
+            "help" => Ok(Command_type::Help),
             _ => Err(format!("Unknown command : {}", s)),
         }
     }
 }
 
 impl Command_type {
-    pub fn Get_cargo_command(&self) -> String {
-        match self {
+    pub fn Get_cargo_command(&self) -> Option<String> {
+        Some(match self {
             Command_type::Build => "build".to_string(),
             Command_type::Clean => "clean".to_string(),
             Command_type::Run => "run".to_string(),
@@ -42,12 +44,15 @@ impl Command_type {
             Command_type::Clippy => "clippy".to_string(),
             Command_type::Check => "check".to_string(),
             Command_type::Expand => "expand".to_string(),
-        }
+            _ => return None,
+        })
     }
 
     pub fn Is_target_needed(&self) -> bool {
         match self {
-            Command_type::Clean | Command_type::Format | Command_type::Doc => false,
+            Command_type::Clean | Command_type::Format | Command_type::Doc | Command_type::Help => {
+                false
+            }
             Command_type::Build
             | Command_type::Run
             | Command_type::Test

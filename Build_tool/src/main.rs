@@ -94,7 +94,7 @@ fn Get_cargo_arguments(
     }
 
     // Add the cargo command like build, clean, run, test, fmt, doc
-    Cargo_arguments.push(Command.Get_cargo_command());
+    Cargo_arguments.push(Command.Get_cargo_command().expect("Unknown command"));
 
     // Add the target arguments like --target, -Z build-std=std,panic_abort
     if let Some(Target) = Target {
@@ -119,6 +119,11 @@ fn main() -> Result<(), ()> {
             return Err(());
         }
     };
+
+    if Command == Command_type::Help {
+        println!("{}", Get_usage());
+        return Ok(());
+    }
 
     // Create a new process::Command
     let mut Shell_command = process::Command::new("cargo");
