@@ -62,11 +62,27 @@ impl From<String> for Family_type {
     }
 }
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Vendor_type {
+    Espressif,
+    Unknown,
+}
+
+impl From<String> for Vendor_type {
+    fn from(s: String) -> Self {
+        match s.as_str() {
+            "espressif" => Vendor_type::Espressif,
+            _ => Vendor_type::Unknown,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Target_type {
     Architecture: Architecture_type,
     Operating_system: Operating_system_type,
     Family: Family_type,
+    Vendor: Vendor_type,
 }
 
 impl Target_type {
@@ -89,6 +105,7 @@ impl Target_type {
                 std::env::var("CARGO_CFG_TARGET_OS").unwrap(),
             ),
             Family: Family_type::from(std::env::var("CARGO_CFG_TARGET_FAMILY").unwrap()),
+            Vendor: Vendor_type::from(std::env::var("CARGO_CFG_TARGET_VENDOR").unwrap()),
         }
     }
 }

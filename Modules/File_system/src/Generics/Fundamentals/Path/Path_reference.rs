@@ -20,6 +20,12 @@ impl Path_type {
 
     /// # Safety
     /// The caller must ensure that the string is a valid path string.
+    pub const unsafe fn New_unchecked_constant(Path: &'static str) -> &'static Path_type {
+        &*(Path as *const str as *const Path_type)
+    }
+
+    /// # Safety
+    /// The caller must ensure that the string is a valid path string.
     pub unsafe fn New_unchecked<S: AsRef<str> + ?Sized>(Path: &S) -> &Path_type {
         unsafe { &*(Path.as_ref() as *const str as *const Path_type) }
     }

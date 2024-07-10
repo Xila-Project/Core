@@ -1,5 +1,10 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
+#![allow(non_upper_case_globals)]
+
+use File_system::Path_type;
+
+const Device_path: &Path_type = unsafe { Path_type::New_unchecked_constant("/Device") };
 
 #[cfg(target_os = "linux")]
 #[test]
@@ -157,10 +162,8 @@ fn Test_virtual_file_system_file() {
 
     let Device = Dummy_device_type(RwLock::new(0));
 
-    let Device_path = Path_type::New("/Device").expect("Failed to create path");
-
     Virtual_file_system
-        .Add_device(Device_path, Box::new(Device))
+        .Add_device(&Device_path, Box::new(Device))
         .expect("Failed to add device");
 
     let Device_file = File_type::Open(
