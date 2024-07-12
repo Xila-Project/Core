@@ -19,19 +19,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        action:
-          - command: format
-            args: --all -- --check --color always
-
-          - command: clippy
-            args: --all-targets --all-features --workspace -- -D warnings
-
-          - command: build
-            args: --release
-
-          - command: test
-            args: --all -- --include-ignored
-
         target:
           - linux
           - esp32
@@ -61,5 +48,11 @@ jobs:
       - name: Build and enable build tool
         run: source Export.sh
 
-      - name: Run command
-        run: Build_tool/target/release/Build_tool ${{ matrix.action.command }} ${{ matrix.target }} ${{ matrix.action.args }}
+      - name: Check formatting
+        run: Build_tool/target/release/Build_tool format --all -- --check --color always
+
+      - name: Check clippy
+        run: Build_tool/target/release/Build_tool clippy ${{ matrix.target }} --all-features --workspace -- -D warnings
+
+      - name: Run tests
+        run: Build_tool/target/release/Build_tool test ${{ matrix.target }} --all -- --include-ignored
