@@ -25,38 +25,39 @@ jobs:
           - esp32s3
 
     steps:
-      - name: Checkout repository
+      - name: Setup | Checkout repository
         uses: actions/checkout@v4
 
-      - name: Enable caching
+      - name: Setup | Enable cache
         uses: Swatinem/rust-cache@v2
         with:
           key: "${{ matrix.target }}"
 
-      - name: Setup stable rust toolchain
+      - name: Setup | Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
           target: wasm32-unknown-unknown
 
-      - name: Setup ESP rust toolchain
+      - name: Setup | Rust esp xtensa toolchain
+        if: matrix.target == 'esp32' || matrix.target == 'esp32s3'
         uses: esp-rs/xtensa-toolchain@v1.5
         with:
           default: true
           buildtargets: esp32,esp32s3
           ldproxy: true
         
-      - name: Install necessary dependencies
-        run: sudo apt-get install -y libsdl2-dev
+      - name: Setup | Install necessary dependencies
+        run: sudo apt-get install -y libsdl2-dev gcc-multilib
 
-      - name: Build and enable build tool
+      - name: Setup | Build and source build tool
         run: source Export.sh
 
-      - name: Check formatting
+      - name: Check | Formatting
         run: Build_tool/target/release/Build_tool format --all -- --check --color always
 
-      - name: Check clippy
+      - name: Check | Clippy
         run: Build_tool/target/release/Build_tool clippy ${{ matrix.target }} --all-features --workspace -- -D warnings
 
-      - name: Run tests
+      - name: Run | Tests
         run: Build_tool/target/release/Build_tool test ${{ matrix.target }} --all -- --include-ignored
