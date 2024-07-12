@@ -10,4 +10,4 @@ opt-level = 's'
 strip = true
 
 [dependencies]
-Binding_tool = { path = "../../../../../Binding_tool", features = ["WASM"] }
+Binding_tool = { git = "https://github.com/Xila-Project/Binding_tool.git", features = ["WASM"] }
