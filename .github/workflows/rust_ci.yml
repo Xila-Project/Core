@@ -46,7 +46,7 @@ jobs:
           buildtargets: esp32,esp32s3
           ldproxy: true
         
-      -name: Install necessary dependencies
+      - name: Install necessary dependencies
         run: sudo apt-get install -y libsdl2-dev
 
       - name: Build and enable build tool
