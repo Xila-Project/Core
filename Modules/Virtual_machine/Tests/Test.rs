@@ -82,7 +82,7 @@ extern "C" fn Test_string(
 #[test]
 fn Integration_test() {
     let Binary_buffer = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/Virtual_machine_WASM_test.wasm"
+        "../Tests/WASM_test/target/wasm32-unknown-unknown/release/Virtual_machine_WASM_test.wasm"
     );
 
     pub struct Registrable {}

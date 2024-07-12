@@ -1,3 +1,5 @@
+[workspace]
+
 [package]
 name = "File_system_bindings_WASM_test"
 version = "0.1.0"

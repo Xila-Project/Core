@@ -4,15 +4,17 @@ members = [
     "Modules/Bindings",
     "Modules/Shared",
     "Modules/Virtual_machine",
-    "Modules/Virtual_machine/Tests/WASM_test",
-    "Modules/Bindings/Tests/WASM_test",
     "Modules/Graphics",
     "Modules/Screen",
     "Modules/Task",
     "Modules/Users",
     "Modules/Drivers",
 ]
-exclude = ["Build_tool"]
+exclude = [
+    "Build_tool",
+    "Modules/Virtual_machine/Tests/WASM_test",
+    "Modules/Bindings/Tests/WASM_test",
+]
 
 [package]
 name = "Xila"
