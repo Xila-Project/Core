@@ -37,6 +37,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+          target: wasm32-unknown-unknown
 
       - name: Setup ESP rust toolchain
         uses: esp-rs/xtensa-toolchain@v1.5
