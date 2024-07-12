@@ -8,7 +8,7 @@ use Users::{
     Group_identifier_type, Root_group_identifier, Root_user_identifier, User_identifier_type,
 };
 
-use crate::Prelude::{
+use crate::{
     Error_type, File_identifier_type, File_system_traits, Flags_type, Path_type, Permissions_type,
     Position_type, Result_type, Size_type, Type_type,
 };
@@ -68,7 +68,7 @@ impl File_system_traits for File_system_type {
         &self,
         Task: Task_identifier_type,
         Path: &dyn AsRef<Path_type>,
-        Flags: crate::Prelude::Flags_type,
+        Flags: crate::Flags_type,
     ) -> Result_type<File_identifier_type> {
         let Opened_device = self
             .0

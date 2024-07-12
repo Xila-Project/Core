@@ -1,4 +1,4 @@
-use crate::Prelude::Mode_type;
+use crate::Mode_type;
 
 use super::{
     Device::Device_trait, Error_type, File_identifier_type, Flags_type, Path_owned_type, Path_type,

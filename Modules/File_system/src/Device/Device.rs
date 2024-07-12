@@ -1,4 +1,4 @@
-use crate::Prelude::{Position_type, Result_type};
+use crate::{Position_type, Result_type};
 
 pub trait Device_trait: Send + Sync {
     fn Read(&self, Buffer: &mut [u8]) -> Result_type<usize>;

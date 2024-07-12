@@ -5,6 +5,8 @@ edition = "2021"
 
 [dependencies]
 File_system = { path = "../File_system" }
+Task = { version = "0.1.0", path = "../Task" }
+Users = { version = "0.1.0", path = "../Users" }
 paste = "1.0.15"
 quote = "1.0.36"
 
@@ -35,9 +37,13 @@ esp-idf-sys = { version = "0.34.1" }
 [build-dependencies]
 embuild = { version = "0.32", features = ["espidf"] }
 
-[dev-dependencies]
+[target.'cfg( target_os = "espidf" )'.dev-dependencies]
 anyhow = "1"
 esp-idf-sys = { version = "0.34.1", features = ["binstart"] }
 mipidsi = "0.5.0"
 display-interface-spi = "0.4.1"
 embedded-graphics = "0.7.1"
+
+[[test]]
+name = "Native"
+path = "Tests/Native/Main.rs"

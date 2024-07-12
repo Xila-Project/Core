@@ -34,6 +34,29 @@ pub enum Error_type {
     Other,
 }
 
+#[cfg(feature = "std")]
+impl From<std::io::ErrorKind> for Error_type {
+    fn from(Error: std::io::ErrorKind) -> Self {
+        use std::io::ErrorKind;
+
+        match Error {
+            ErrorKind::PermissionDenied => Error_type::Permission_denied,
+            ErrorKind::NotFound => Error_type::Not_found,
+            ErrorKind::AlreadyExists => Error_type::Already_exists,
+            ErrorKind::InvalidInput => Error_type::Invalid_path,
+            ErrorKind::InvalidData => Error_type::Invalid_file,
+            _ => Error_type::Unknown,
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<std::io::Error> for Error_type {
+    fn from(Error: std::io::Error) -> Self {
+        Error.kind().into()
+    }
+}
+
 impl From<Task::Error_type> for Error_type {
     fn from(_: Task::Error_type) -> Self {
         Error_type::Failed_to_get_task_informations

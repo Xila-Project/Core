@@ -1,6 +1,6 @@
-use crate::Prelude::{
+use File_system::{
     Error_type, File_identifier_type, File_system_traits, Flags_type, Path_owned_type, Path_type,
-    Permissions_type, Position_type, Result_type, Size_type, Type_type,
+    Position_type, Result_type, Size_type, Type_type,
 };
 
 use std::collections::BTreeMap;
@@ -8,64 +8,23 @@ use std::env::{current_dir, var};
 use std::fs::*;
 use std::io::{ErrorKind, Read, Seek, Write};
 
-use std::path::PathBuf;
 use std::sync::RwLock;
 
 use Task::Task_identifier_type;
 
-impl From<FileType> for Type_type {
-    fn from(value: FileType) -> Self {
-        if value.is_dir() {
-            return Type_type::Directory;
-        } else if value.is_symlink() {
-            return Type_type::Symbolic_link;
-        }
-        Type_type::File
+fn From_file_type(value: FileType) -> Type_type {
+    if value.is_dir() {
+        return Type_type::Directory;
+    } else if value.is_symlink() {
+        return Type_type::Symbolic_link;
     }
+    Type_type::File
 }
 
-impl From<std::io::ErrorKind> for Error_type {
-    fn from(Error: std::io::ErrorKind) -> Self {
-        use std::io::ErrorKind;
-
-        match Error {
-            ErrorKind::PermissionDenied => Error_type::Permission_denied,
-            ErrorKind::NotFound => Error_type::Not_found,
-            ErrorKind::AlreadyExists => Error_type::Already_exists,
-            ErrorKind::InvalidInput => Error_type::Invalid_path,
-            ErrorKind::InvalidData => Error_type::Invalid_file,
-            _ => Error_type::Unknown,
-        }
-    }
-}
-
-impl From<std::io::Error> for Error_type {
-    fn from(Error: std::io::Error) -> Self {
-        Error.kind().into()
-    }
-}
-
-impl Flags_type {
-    fn Into_open_options(self, Open_options: &mut OpenOptions) {
-        Open_options
-            .read(self.Get_mode().Get_read())
-            .write(self.Get_mode().Get_write() || self.Get_status().Get_append());
-    }
-}
-
-impl From<&PathBuf> for Path_owned_type {
-    fn from(item: &PathBuf) -> Self {
-        Path_owned_type::New(item.to_str().unwrap().to_string()).unwrap()
-    }
-}
-
-#[cfg(target_family = "unix")]
-impl From<&Permissions_type> for std::fs::Permissions {
-    fn from(Permissions: &Permissions_type) -> Self {
-        use std::os::unix::fs::PermissionsExt;
-
-        std::fs::Permissions::from_mode(Permissions.To_unix() as u32)
-    }
+fn Apply_flags_to_open_options(Flags: Flags_type, Open_options: &mut OpenOptions) {
+    Open_options
+        .read(Flags.Get_mode().Get_read())
+        .write(Flags.Get_mode().Get_write() || Flags.Get_status().Get_append());
 }
 
 pub struct File_system_type {
@@ -155,7 +114,7 @@ impl File_system_traits for File_system_type {
 
         let mut Open_options = OpenOptions::new();
 
-        Flags.Into_open_options(&mut Open_options);
+        Apply_flags_to_open_options(Flags, &mut Open_options);
 
         let File = Open_options
             .open(Full_path.as_ref() as &Path_type)
@@ -239,7 +198,7 @@ impl File_system_traits for File_system_type {
     fn Get_type(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Type_type> {
         let Full_path = self.Get_full_path(&Path)?;
         let Metadata = metadata(Full_path.as_ref() as &Path_type)?;
-        Ok(Metadata.file_type().into())
+        Ok(From_file_type(Metadata.file_type()))
     }
 
     fn Get_size(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Size_type> {

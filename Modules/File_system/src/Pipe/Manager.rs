@@ -9,7 +9,7 @@ use Users::{
     Group_identifier_type, Root_group_identifier, Root_user_identifier, User_identifier_type,
 };
 
-use crate::Prelude::{
+use crate::{
     Error_type, File_identifier_type, File_system_traits, Flags_type, Mode_type, Path_owned_type,
     Path_type, Permissions_type, Result_type, Size_type, Status_type, Type_type,
 };
@@ -289,7 +289,7 @@ impl File_system_traits for File_system_type {
         &self,
         _: Task_identifier_type,
         _: File_identifier_type,
-        _: &crate::Prelude::Position_type,
+        _: &crate::Position_type,
     ) -> Result_type<Size_type> {
         Err(Error_type::Unsupported_operation)
     }
@@ -298,7 +298,7 @@ impl File_system_traits for File_system_type {
         Ok(())
     }
 
-    fn Get_type(&self, _: &dyn AsRef<Path_type>) -> Result_type<crate::Prelude::Type_type> {
+    fn Get_type(&self, _: &dyn AsRef<Path_type>) -> Result_type<crate::Type_type> {
         Ok(Type_type::Named_pipe)
     }
 

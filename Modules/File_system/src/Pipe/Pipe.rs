@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use crate::Prelude::{Error_type, Result_type, Size_type};
+use crate::{Error_type, Result_type, Size_type};
 
 /// A pipe is a FIFO (ring) buffer that can be used to communicate between tasks.
 #[derive(Clone, Debug)]
