@@ -18,3 +18,9 @@ pub use Manager::*;
 
 pub use lvgl;
 pub use lvgl::sys;
+
+#[cfg(feature = "ARGB8888")]
+type Color_type = Screen::Color_ARGB8888_type;
+
+#[cfg(feature = "RGB565")]
+type Color_type = Screen::Color_RGB565_type;

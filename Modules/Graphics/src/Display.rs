@@ -1,13 +1,13 @@
 use std::mem::transmute;
 
-use Screen::Prelude::{Area_type, Color_type, Point_type, Screen_traits};
+use Screen::{Area_type, Point_type, Screen_traits};
 
-use crate::{Draw_buffer::Draw_buffer_type, Result_type};
+use crate::{Color_type, Draw_buffer::Draw_buffer_type, Result_type};
 
 pub struct Display_type {
     Display: lvgl::Display,
     #[allow(dead_code)]
-    Screen: Box<dyn Screen_traits>,
+    Screen: Box<dyn Screen_traits<Color_type>>,
 }
 
 unsafe impl Send for Display_type {}
@@ -16,7 +16,7 @@ unsafe impl Sync for Display_type {}
 
 impl Display_type {
     pub fn New<const Buffer_size: usize>(
-        mut Screen: Box<dyn Screen_traits>,
+        mut Screen: Box<dyn Screen_traits<Color_type>>,
         Resolution: Point_type,
     ) -> Result_type<Self> {
         let Binding_function = |Refresh: &lvgl::DisplayRefresh<Buffer_size>| {

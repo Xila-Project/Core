@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 File_system = { path = "../File_system" }
+Screen = { version = "0.1.0", path = "../Screen" }
 Task = { version = "0.1.0", path = "../Task" }
 Users = { version = "0.1.0", path = "../Users" }
 paste = "1.0.15"
@@ -44,6 +45,20 @@ mipidsi = "0.5.0"
 display-interface-spi = "0.4.1"
 embedded-graphics = "0.7.1"
 
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
+Graphics = { path = "../Graphics", features = ["RGB565"] }
+
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
+sdl2 = "0.37.0"
+
 [[test]]
-name = "Native"
-path = "Tests/Native/Main.rs"
+name = "Native_file_system"
+path = "Tests/Native/File_system.rs"
+
+[[test]]
+name = "Native_touch_screen"
+path = "Tests/Native/Touch_screen.rs"
+
+[[test]]
+name = "Native_graphics"
+path = "Tests/Native/Graphics.rs"

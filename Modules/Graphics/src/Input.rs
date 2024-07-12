@@ -1,6 +1,6 @@
 use lvgl::input_device::{pointer, InputDriver};
 use File_system::File_type;
-use Screen::Prelude::Touch_type;
+use Screen::Touch_type;
 
 use crate::{Display::Display_type, Result_type};
 

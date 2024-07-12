@@ -31,8 +31,8 @@ Task = { path = "../Task" }
 
 [features]
 default = ["RGB565"]
-RGB565 = ["Screen/RGB565"]
-ARGB8888 = ["Screen/ARGB8888"]
+RGB565 = []
+ARGB8888 = []
 
 [[test]]
 name = "Graphics"

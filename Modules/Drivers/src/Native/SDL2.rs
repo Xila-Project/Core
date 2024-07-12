@@ -1,6 +1,6 @@
-use crate::{
-    Generics,
-    Prelude::{Area_type, Color_ARGB8888_type, Error_type, Result_type},
+use Screen::{
+    Area_type, Color_ARGB8888_type, Color_RGB565_type, Error_type, Point_type, Result_type,
+    Screen_traits, Touch_type,
 };
 
 use sdl2::{
@@ -13,35 +13,32 @@ use File_system::Device_trait;
 
 use std::{mem::size_of, process::exit, sync::RwLock};
 
-impl From<String> for Error_type {
-    fn from(Value: String) -> Self {
-        Self::Unknown(Value)
-    }
+fn From_string_error(Value: String) -> Error_type {
+    Error_type::Unknown(Value)
 }
 
-impl From<WindowBuildError> for Error_type {
-    fn from(Error: WindowBuildError) -> Self {
-        match Error {
-            WindowBuildError::SdlError(Error) => Error.into(),
-            WindowBuildError::HeightOverflows(_) | WindowBuildError::WidthOverflows(_) => {
-                Error_type::Invalid_dimension
-            }
-            WindowBuildError::InvalidTitle(_) => Error_type::Unknown("Invalid title.".to_string()),
+fn From_window_build_error(Error: WindowBuildError) -> Error_type {
+    match Error {
+        WindowBuildError::SdlError(Error) => From_string_error(Error),
+        WindowBuildError::HeightOverflows(_) | WindowBuildError::WidthOverflows(_) => {
+            Error_type::Invalid_dimension
         }
+        WindowBuildError::InvalidTitle(_) => Error_type::Unknown("Invalid title.".to_string()),
     }
 }
 
-impl From<IntegerOrSdlError> for Error_type {
-    fn from(Error: IntegerOrSdlError) -> Self {
-        Error_type::Unknown(Error.to_string())
-    }
+fn From_integer_or_sdl_error(Error: IntegerOrSdlError) -> Error_type {
+    Error_type::Unknown(Error.to_string())
 }
 
 pub struct Screen_type(Canvas<video::Window>);
 
 impl Screen_type {
     pub fn New(Window: video::Window) -> Result_type<Self> {
-        let mut Canvas = Window.into_canvas().build()?;
+        let mut Canvas = Window
+            .into_canvas()
+            .build()
+            .map_err(From_integer_or_sdl_error)?;
 
         Canvas.clear();
         Canvas.present();
@@ -49,16 +46,16 @@ impl Screen_type {
         Ok(Self(Canvas))
     }
 
-    pub fn Get_resolution(&self) -> Result_type<Generics::Point_type> {
-        Ok(self
-            .0
+    pub fn Get_resolution(&self) -> Result_type<Point_type> {
+        self.0
             .output_size()
-            .map(|(Width, Height)| Generics::Point_type::New(Width as i16, Height as i16))?)
+            .map(|(Width, Height)| Point_type::New(Width as i16, Height as i16))
+            .map_err(From_string_error)
     }
 }
 
-impl Generics::Screen_traits for Screen_type {
-    fn Update(&mut self, Area: Area_type, Buffer: &[Generics::Color_type]) -> Result_type<()> {
+impl Screen_traits<Color_RGB565_type> for Screen_type {
+    fn Update(&mut self, Area: Area_type, Buffer: &[Color_RGB565_type]) -> Result_type<()> {
         let mut Buffer_iterator = Buffer.iter();
 
         let Point_1 = Area.Get_point_1();
@@ -70,8 +67,35 @@ impl Generics::Screen_traits for Screen_type {
                     .next()
                     .ok_or(Error_type::Invalid_dimension)?;
 
-                #[cfg(not(feature = "ARGB8888"))]
                 let Color: Color_ARGB8888_type = (*Color).into();
+
+                self.0.set_draw_color(pixels::Color::RGB(
+                    Color.Get_red(),
+                    Color.Get_green(),
+                    Color.Get_blue(),
+                ));
+
+                let _ = self.0.draw_point(sdl2::rect::Point::new(X, Y));
+            }
+        }
+        self.0.present();
+
+        Ok(())
+    }
+}
+
+impl Screen_traits<Color_ARGB8888_type> for Screen_type {
+    fn Update(&mut self, Area: Area_type, Buffer: &[Color_ARGB8888_type]) -> Result_type<()> {
+        let mut Buffer_iterator = Buffer.iter();
+
+        let Point_1 = Area.Get_point_1();
+        let Point_2 = Area.Get_point_2();
+
+        for Y in Point_1.Get_y() as i32..=Point_2.Get_y() as i32 {
+            for X in Point_1.Get_x() as i32..=Point_2.Get_x() as i32 {
+                let Color = Buffer_iterator
+                    .next()
+                    .ok_or(Error_type::Invalid_dimension)?;
 
                 self.0.set_draw_color(pixels::Color::RGB(
                     Color.Get_red(),
@@ -91,7 +115,7 @@ impl Generics::Screen_traits for Screen_type {
 pub struct Pointer_device_type {
     Window_identifier: u32,
     Event_pump: RwLock<EventPump>,
-    Last_input: RwLock<(Generics::Point_type, Generics::Touch_type)>,
+    Last_input: RwLock<(Point_type, Touch_type)>,
 }
 
 unsafe impl Send for Pointer_device_type {}
@@ -103,10 +127,7 @@ impl Pointer_device_type {
         Self {
             Window_identifier,
             Event_pump: RwLock::new(Event_pump),
-            Last_input: RwLock::new((
-                Generics::Point_type::New(0, 0),
-                Generics::Touch_type::Released,
-            )),
+            Last_input: RwLock::new((Point_type::New(0, 0), Touch_type::Released)),
         }
     }
 
@@ -131,7 +152,7 @@ impl Pointer_device_type {
                         Last_input.0 = Last_input.0.Set(x as i16, y as i16);
                         Last_input.0 = Last_input.0.Set(x as i16, y as i16);
 
-                        Last_input.1 = Generics::Touch_type::Pressed;
+                        Last_input.1 = Touch_type::Pressed;
                     }
                 }
                 event::Event::MouseButtonUp {
@@ -145,7 +166,7 @@ impl Pointer_device_type {
                     if (window_id == self.Window_identifier)
                         && (mouse_btn == mouse::MouseButton::Left)
                     {
-                        Last_input.1 = Generics::Touch_type::Released;
+                        Last_input.1 = Touch_type::Released;
                     }
                 }
                 event::Event::MouseMotion {
@@ -201,80 +222,22 @@ impl Device_trait for Pointer_device_type {
     }
 }
 
-pub fn New_touchscreen(
-    Size: Generics::Point_type,
-) -> Result_type<(Screen_type, Pointer_device_type)> {
-    let Context = sdl2::init()?;
+pub fn New_touchscreen(Size: Point_type) -> Result_type<(Screen_type, Pointer_device_type)> {
+    let Context = sdl2::init().map_err(From_string_error)?;
 
-    let Video_subsystem = Context.video()?;
+    let Video_subsystem = Context.video().map_err(From_string_error)?;
 
     let Window = Video_subsystem
         .window("Xila", Size.Get_x() as u32, Size.Get_y() as u32)
         .position_centered()
-        .build()?;
+        .build()
+        .map_err(From_window_build_error)?;
 
-    let Event_pump = Context.event_pump()?;
+    let Event_pump = Context.event_pump().map_err(From_string_error)?;
 
     let Pointer = Pointer_device_type::New(Window.id(), Event_pump);
 
     let Screen = Screen_type::New(Window)?;
 
     Ok((Screen, Pointer))
-}
-
-#[cfg(test)]
-mod tests {
-    use Generics::Screen_traits;
-
-    use super::*;
-
-    #[test]
-    fn Test_touchscreen() {
-        const Horizontal_resolution: u32 = 800;
-        const Vertical_resolution: u32 = 480;
-
-        let Touchscreen = New_touchscreen(Generics::Point_type::New(
-            Horizontal_resolution as i16,
-            Vertical_resolution as i16,
-        ));
-
-        assert!(Touchscreen.is_ok());
-
-        let (mut Screen, Pointer_device_type) =
-            Touchscreen.expect("Touchscreen initialization failed.");
-
-        let mut Buffer = [0; 5];
-
-        assert_eq!(Pointer_device_type.Read(&mut Buffer), Ok(5));
-
-        Screen
-            .Update(
-                Area_type::New(
-                    Generics::Point_type::New(0, 0),
-                    Generics::Point_type::New(9, 9),
-                ),
-                &[Generics::Color_type::New(255, 255, 255); 100],
-            )
-            .expect("Screen update failed.");
-
-        assert_eq!(
-            Screen.Update(
-                Area_type::New(
-                    Generics::Point_type::New(0, 0),
-                    Generics::Point_type::New(10, 9),
-                ),
-                &[Generics::Color_type::New(255, 255, 255); 100],
-            ),
-            Err(Error_type::Invalid_dimension)
-        );
-
-        assert_eq!(
-            Screen.Get_resolution().unwrap(),
-            Generics::Point_type::New(800, 480)
-        );
-
-        unsafe {
-            sdl2::sys::SDL_Quit(); // Force SDL2 to quit to avoid conflicts with other tests.
-        }
-    }
 }

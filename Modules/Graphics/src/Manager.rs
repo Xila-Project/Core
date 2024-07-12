@@ -1,9 +1,9 @@
 use std::sync::Mutex;
 
 use File_system::File_type;
-use Screen::Prelude::{Point_type, Screen_traits};
+use Screen::{Point_type, Screen_traits};
 
-use crate::{Display_type, Error_type, Input_type, Result_type};
+use crate::{Color_type, Display_type, Error_type, Input_type, Result_type};
 
 /// Avoid using Arc, because the manager is a singleton.
 static mut Manager_instance: Option<Manager_type> = None;
@@ -13,6 +13,8 @@ pub fn Initialize() -> Result_type<&'static Manager_type> {
         if Is_initialized() {
             return Err(Error_type::Already_initialized);
         }
+
+        lvgl::init();
 
         Manager_instance.replace(Manager_type::New());
     }
@@ -38,7 +40,7 @@ impl Manager_type {
 
     pub fn Create_display<const Buffer_size: usize>(
         &self,
-        Screen: Box<dyn Screen_traits>,
+        Screen: Box<dyn Screen_traits<Color_type>>,
         Resolution: Point_type,
         Input_path: File_type,
     ) -> Result_type<Display_type> {

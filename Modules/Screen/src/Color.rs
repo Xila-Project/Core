@@ -1,8 +1,3 @@
-#[cfg(feature = "RGB565")]
-pub type Color_type = Color_RGB565_type;
-#[cfg(feature = "ARGB8888")]
-pub type Color_type = Color_ARGB8888_type;
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Color_RGB565_type(u16);
