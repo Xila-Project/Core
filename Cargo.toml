@@ -48,16 +48,6 @@ embassy = [
 [dependencies]
 Virtual_machine = { path = "Modules/Virtual_machine" }
 
-[profile.release.package.File_system_bindings_WASM_test]
-# lto = true
-opt-level = 's'
-strip = true
-
-[profile.release.package.Virtual_machine_WASM_test]
-# lto = true
-opt-level = 's'
-strip = true
-
 [target.'cfg( target_os = "espidf" )'.dependencies]
 esp-idf-sys = { version = "0.34.1", features = ["binstart"] }
 esp-idf-hal = "0.43.1"
