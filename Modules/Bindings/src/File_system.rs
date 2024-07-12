@@ -1,5 +1,8 @@
 use Binding_tool::Bind_function_native;
-use File_system::Prelude::*;
+use File_system::{
+    Error_type, Flags_type, Path_type, Position_type, Result_type, Size_type,
+    Unique_file_identifier_type, Virtual_file_system_type,
+};
 use Virtual_machine::{Function_descriptor_type, Function_descriptors, Registrable_trait};
 
 pub struct File_system_bindings;

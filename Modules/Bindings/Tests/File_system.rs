@@ -3,7 +3,7 @@
 #![allow(non_upper_case_globals)]
 
 use Bindings::File_system_bindings;
-use File_system::{Drivers::Native::File_system_type, Prelude::Path_type};
+use File_system::Path_type;
 use Virtual_machine::{Data_type, Instantiate_test_environment, WasmValue};
 
 #[test]
@@ -18,7 +18,8 @@ fn Integration_test() {
 
     let Virtual_file_system = File_system::Initialize().expect("Failed to initialize file system");
 
-    let Native_file_system = File_system_type::New().expect("Failed to create file system");
+    let Native_file_system =
+        Drivers::Native::File_system_type::New().expect("Failed to create file system");
 
     let _ = Virtual_file_system.Mount(Box::new(Native_file_system), Path_type::Get_root());
 
