@@ -1,6 +1,6 @@
 use std::sync::Mutex;
 
-use File_system::Prelude::File_type;
+use File_system::File_type;
 use Screen::Prelude::{Point_type, Screen_traits};
 
 use crate::{Display_type, Error_type, Input_type, Result_type};
