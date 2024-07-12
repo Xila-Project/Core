@@ -9,7 +9,7 @@ use sdl2::{
     video::{self, WindowBuildError},
     EventPump, IntegerOrSdlError,
 };
-use File_system::Prelude::Device_trait;
+use File_system::Device_trait;
 
 use std::{mem::size_of, process::exit, sync::RwLock};
 
@@ -170,9 +170,9 @@ impl Pointer_device_type {
 }
 
 impl Device_trait for Pointer_device_type {
-    fn Read(&self, Buffer: &mut [u8]) -> File_system::Prelude::Result_type<usize> {
+    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<usize> {
         if self.Update().is_err() {
-            return Err(File_system::Prelude::Error_type::Internal_error);
+            return Err(File_system::Error_type::Internal_error);
         }
 
         let Last_input = self.Last_input.read()?;
@@ -184,22 +184,19 @@ impl Device_trait for Pointer_device_type {
         Ok(5)
     }
 
-    fn Write(&self, _: &[u8]) -> File_system::Prelude::Result_type<usize> {
-        Err(File_system::Prelude::Error_type::Unsupported_operation)
+    fn Write(&self, _: &[u8]) -> File_system::Result_type<usize> {
+        Err(File_system::Error_type::Unsupported_operation)
     }
 
-    fn Get_size(&self) -> File_system::Prelude::Result_type<usize> {
+    fn Get_size(&self) -> File_system::Result_type<usize> {
         Ok(size_of::<Self>())
     }
 
-    fn Set_position(
-        &self,
-        _: &File_system::Prelude::Position_type,
-    ) -> File_system::Prelude::Result_type<usize> {
-        Err(File_system::Prelude::Error_type::Unsupported_operation)
+    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<usize> {
+        Err(File_system::Error_type::Unsupported_operation)
     }
 
-    fn Flush(&self) -> File_system::Prelude::Result_type<()> {
+    fn Flush(&self) -> File_system::Result_type<()> {
         Ok(())
     }
 }
