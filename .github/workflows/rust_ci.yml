@@ -11,6 +11,7 @@ env:
   CARGO_TERM_COLOR: always
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+
 jobs:
   rust-checks:
     name: Rust checks
@@ -29,8 +30,8 @@ jobs:
             args: --release
 
           - command: test
-            args: -- --include-ignored
-            
+            args: --all -- --include-ignored
+
         target:
           - linux
           - esp32
@@ -61,4 +62,4 @@ jobs:
         run: source Export.sh
 
       - name: Run command
-        run: xila ${{ matrix.action.command }} ${{ matrix.target }} ${{ matrix.action.args }}
+        run: Build_tool/target/release/Build_tool ${{ matrix.action.command }} ${{ matrix.target }} ${{ matrix.action.args }}
