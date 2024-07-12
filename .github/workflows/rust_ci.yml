@@ -45,6 +45,9 @@ jobs:
           default: true
           buildtargets: esp32,esp32s3
           ldproxy: true
+        
+      -name: Install necessary dependencies
+        run: sudo apt-get install -y libsdl2-dev
 
       - name: Build and enable build tool
         run: source Export.sh
