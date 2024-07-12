@@ -11,7 +11,3 @@ Shared = { path = "../Shared" }
 [features]
 std = []
 default = ["std"]
-
-[[test]]
-name = "Virtual_file_system"
-path = "Tests/Virtual_file_system.rs"

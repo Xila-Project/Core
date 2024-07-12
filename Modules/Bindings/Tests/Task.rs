@@ -8,7 +8,7 @@ use Virtual_machine::{Data_type, Instantiate_test_environment, WasmValue};
 #[test]
 fn Integration_test() {
     let Binary_buffer = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/File_system_bindings_WASM_test.wasm"
+        "../Tests/WASM_test/target/wasm32-unknown-unknown/release/File_system_bindings_WASM_test.wasm"
     );
 
     Task::Initialize().expect("Failed to initialize task manager");

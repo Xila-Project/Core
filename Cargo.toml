@@ -4,15 +4,17 @@ members = [
     "Modules/Bindings",
     "Modules/Shared",
     "Modules/Virtual_machine",
-    "Modules/Virtual_machine/Tests/WASM_test",
-    "Modules/Bindings/Tests/WASM_test",
     "Modules/Graphics",
     "Modules/Screen",
     "Modules/Task",
     "Modules/Users",
     "Modules/Drivers",
 ]
-exclude = ["Build_tool"]
+exclude = [
+    "Build_tool",
+    "Modules/Virtual_machine/Tests/WASM_test",
+    "Modules/Bindings/Tests/WASM_test",
+]
 
 [package]
 name = "Xila"
@@ -45,16 +47,6 @@ embassy = [
 
 [dependencies]
 Virtual_machine = { path = "Modules/Virtual_machine" }
-
-[profile.release.package.File_system_bindings_WASM_test]
-# lto = true
-opt-level = 's'
-strip = true
-
-[profile.release.package.Virtual_machine_WASM_test]
-# lto = true
-opt-level = 's'
-strip = true
 
 [target.'cfg( target_os = "espidf" )'.dependencies]
 esp-idf-sys = { version = "0.34.1", features = ["binstart"] }

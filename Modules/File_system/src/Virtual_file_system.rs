@@ -159,6 +159,7 @@ impl Virtual_file_system_type {
 
         // Try with special file systems.
         for (File_system_identifier, File_system) in File_systems.iter() {
+            println!("Special file system: {:?}", File_system_identifier);
             if File_system.Mount_point.is_none() {
                 match Closure(*File_system_identifier, File_system, Path.as_ref()) {
                     Ok(Result) => return Ok(Result),

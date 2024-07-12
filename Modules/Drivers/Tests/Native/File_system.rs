@@ -8,25 +8,24 @@ const Device_path: &Path_type = unsafe { Path_type::New_unchecked_constant("/Dev
 
 #[cfg(target_os = "linux")]
 #[test]
-fn Test_virtual_file_system_file() {
+fn Test_file_system() {
     use std::sync::RwLock;
 
     use File_system::{
-        Drivers::Native::File_system_type,
-        Prelude::{Device_trait, File_type, Mode_type, Path_type, Position_type, Status_type},
+        Device_trait, File_type, Mode_type, Path_type, Position_type, Result_type, Status_type,
     };
 
     Task::Initialize().expect("Failed to initialize task manager");
 
     Users::Initialize().expect("Failed to initialize users manager");
 
+    let File_system =
+        Drivers::Native::File_system_type::New().expect("Failed to create file system");
+
     let Virtual_file_system = File_system::Initialize().expect("Failed to initialize file system");
 
     Virtual_file_system
-        .Mount(
-            Box::new(File_system_type::New().expect("Failed to create file system")),
-            Path_type::Get_root(),
-        )
+        .Mount(Box::new(File_system), Path_type::Get_root())
         .expect("Failed to mount file system");
 
     let File_path = Path_type::New("/test.txt").expect("Failed to create path");
@@ -132,30 +131,27 @@ fn Test_virtual_file_system_file() {
     struct Dummy_device_type(RwLock<u64>);
 
     impl Device_trait for Dummy_device_type {
-        fn Read(&self, Buffer: &mut [u8]) -> File_system::Prelude::Result_type<usize> {
+        fn Read(&self, Buffer: &mut [u8]) -> Result_type<usize> {
             Buffer.copy_from_slice(&self.0.read()?.to_le_bytes());
 
             Ok(std::mem::size_of::<u64>())
         }
 
-        fn Write(&self, Buffer: &[u8]) -> File_system::Prelude::Result_type<usize> {
+        fn Write(&self, Buffer: &[u8]) -> Result_type<usize> {
             *self.0.write()? = u64::from_le_bytes(Buffer.try_into().unwrap());
 
             Ok(std::mem::size_of::<u64>())
         }
 
-        fn Get_size(&self) -> File_system::Prelude::Result_type<usize> {
+        fn Get_size(&self) -> Result_type<usize> {
             Ok(std::mem::size_of::<u64>())
         }
 
-        fn Set_position(
-            &self,
-            _: &File_system::Prelude::Position_type,
-        ) -> File_system::Prelude::Result_type<usize> {
+        fn Set_position(&self, _: &Position_type) -> Result_type<usize> {
             Ok(0)
         }
 
-        fn Flush(&self) -> File_system::Prelude::Result_type<()> {
+        fn Flush(&self) -> Result_type<()> {
             Ok(())
         }
     }
