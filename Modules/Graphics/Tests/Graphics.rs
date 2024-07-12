@@ -7,7 +7,7 @@ use std::{
     thread::sleep,
     time::{Duration, Instant},
 };
-use File_system::Prelude::{File_type, Mode_type, Path_type, Virtual_file_system_type};
+use File_system::{File_type, Mode_type, Path_type};
 use Screen::{Drivers::SDL2::New_touchscreen, Prelude::Point_type};
 
 const Pointer_device_path: &Path_type =
@@ -69,8 +69,8 @@ fn main() {
     let mut Style = lvgl::style::Style::default();
     Style.set_bg_color(lvgl::Color::from_rgb((255, 0, 0)));
 
-    let _ = Calendar.add_style(lvgl::obj::Part::Any, &mut Style);
-    let _ = Calendar.set_align(lvgl::Align::Center, 0, 0);
+    Calendar.add_style(lvgl::obj::Part::Any, &mut Style);
+    Calendar.set_align(lvgl::Align::Center, 0, 0);
 
     loop {
         let Start = Instant::now();
