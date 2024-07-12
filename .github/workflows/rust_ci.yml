@@ -21,28 +21,44 @@ jobs:
         action:
           - command: format
             args: --all -- --check --color always
+
           - command: clippy
             args: --all-targets --all-features --workspace -- -D warnings
+
           - command: build
             args: --release
+
           - command: test
             args: -- --include-ignored
+            
         target:
           - linux
           - esp32
           - esp32s3
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
-      - name: Setup Rust
+        with:
+          key: "${{ matrix.target }}"
+
+      - name: Setup stable rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Setup ESP rust toolchain
         uses: esp-rs/xtensa-toolchain@v1.5
         with:
           default: true
-          buildtargets: ${{ matrix.target }}
+          buildtargets: esp32,esp32s3
           ldproxy: true
+
       - name: Build and enable build tool
         run: source Export.sh
+
       - name: Run command
         run: xila ${{ matrix.action.command }} ${{ matrix.target }} ${{ matrix.action.args }}
