@@ -1,8 +1,7 @@
 use lvgl::input_device::{pointer, InputDriver};
 use File_system::File_type;
-use Screen::Touch_type;
 
-use crate::{Display::Display_type, Result_type};
+use crate::{Display::Display_type, Pointer_data_type, Result_type};
 
 pub struct Input_type {
     #[allow(dead_code)]
@@ -16,30 +15,12 @@ unsafe impl Sync for Input_type {}
 impl Input_type {
     pub fn New(File: File_type, Display: &Display_type) -> Result_type<Self> {
         let Binding_closure = move || {
-            let mut Buffer = [0u8; 5];
+            let mut Pointer_data = Pointer_data_type::default();
 
-            let Size = File
-                .Read(&mut Buffer)
+            File.Read(Pointer_data.as_mut())
                 .expect("Error reading from input device");
 
-            if Size != Buffer.len() {
-                panic!("Invalid input data received from input device");
-            }
-
-            let X = u16::from_le_bytes([Buffer[0], Buffer[1]]);
-            let Y = u16::from_le_bytes([Buffer[2], Buffer[3]]);
-
-            let Touch = Touch_type::try_from(Buffer[4])
-                .expect("Invalid touch type received from input device");
-
-            let Input_data = pointer::PointerInputData::Touch((X as i32, Y as i32).into());
-
-            let Input_data = match Touch {
-                Touch_type::Pressed => Input_data.pressed(),
-                Touch_type::Released => Input_data.released(),
-            };
-
-            Input_data.once()
+            Pointer_data.into()
         };
 
         Binding_closure();

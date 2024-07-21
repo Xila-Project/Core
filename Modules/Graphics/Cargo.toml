@@ -14,7 +14,6 @@ lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", default-features =
     "unsafe_no_autoinit",
 ], rev = "9829aef" }
 embedded-graphics = "0.8.1"
-Screen = { path = "../Screen" }
 Shared = { path = "../Shared" }
 
 
@@ -22,7 +21,6 @@ Shared = { path = "../Shared" }
 lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", features = [
 ], rev = "9829aef" }
 embedded-graphics = "0.8.1"
-Screen = { path = "../Screen" }
 Shared = { path = "../Shared" }
 
 [dev-dependencies]
