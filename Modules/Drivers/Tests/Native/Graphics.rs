@@ -11,30 +11,29 @@ use File_system::{File_type, Mode_type, Path_type};
 const Pointer_device_path: &Path_type =
     unsafe { Path_type::New_unchecked_constant("/Device/Pointer") };
 
+const Screen_device_path: &Path_type =
+    unsafe { Path_type::New_unchecked_constant("/Device/Screen") };
+
 #[cfg(target_os = "linux")]
 #[test]
 #[ignore]
 fn main() {
     use Drivers::Native::New_touchscreen;
-    use Screen::Point_type;
+    use Graphics::{
+        lvgl::{self, Widget},
+        Get_recommended_buffer_size, Point_type,
+    };
 
-    use Graphics::lvgl::{self, Widget};
+    const Resolution: Point_type = Point_type::New(800, 480);
 
-    const Horizontal_resolution: u32 = 800;
-    const Vertical_resolution: u32 = 480;
-    const Buffer_size: usize = (Horizontal_resolution * Vertical_resolution / 2) as usize;
+    const Buffer_size: usize = Get_recommended_buffer_size(&Resolution);
 
-    let (S, Pointer) = New_touchscreen(Point_type::New(
-        Horizontal_resolution as i16,
-        Vertical_resolution as i16,
-    ))
-    .expect("Error creating touchscreen");
-
-    let S = Box::new(S);
+    let (S, Pointer) =
+        New_touchscreen::<Buffer_size>(Resolution).expect("Error creating touchscreen");
 
     Users::Initialize().expect("Error initializing users manager");
 
-    Task::Initialize().expect("Error initializing task manager");
+    let Task_instance = Task::Initialize().expect("Error initializing task manager");
 
     let Virtual_file_system = File_system::Initialize().expect("Error initializing file system");
 
@@ -42,21 +41,36 @@ fn main() {
         .Add_device(&Pointer_device_path, Box::new(Pointer))
         .expect("Error adding pointer device");
 
+    Virtual_file_system
+        .Add_device(&Screen_device_path, Box::new(S))
+        .expect("Error adding screen device");
+
+    let Task = Task_instance
+        .Get_current_task_identifier()
+        .expect("Error getting task identifier");
+
     let Pointer_file = File_type::Open(
         Virtual_file_system,
         Pointer_device_path,
         Mode_type::Read_only().into(),
+        Task,
     )
     .expect("Error opening pointer file");
+
+    let Screen_file = File_type::Open(
+        Virtual_file_system,
+        Screen_device_path,
+        Mode_type::Read_write().into(),
+        Task,
+    )
+    .expect("Error opening screen file");
 
     Graphics::Initialize().expect("Error initializing manager");
 
     let Graphics_manager = Graphics::Get_instance().expect("Error getting manager");
 
-    let Resolution = S.Get_resolution().expect("Error getting resolution");
-
     let Display = Graphics_manager
-        .Create_display::<Buffer_size>(S, Resolution, Pointer_file)
+        .Create_display::<Buffer_size>(Screen_file, Pointer_file)
         .expect("Error adding screen");
 
     let mut S = Display.Get_object().expect("Error getting screen");

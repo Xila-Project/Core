@@ -15,7 +15,7 @@ fn Test_file_system() {
         Device_trait, File_type, Mode_type, Path_type, Position_type, Result_type, Status_type,
     };
 
-    Task::Initialize().expect("Failed to initialize task manager");
+    let Task_instance = Task::Initialize().expect("Failed to initialize task manager");
 
     Users::Initialize().expect("Failed to initialize users manager");
 
@@ -28,6 +28,10 @@ fn Test_file_system() {
         .Mount(Box::new(File_system), Path_type::Get_root())
         .expect("Failed to mount file system");
 
+    let Task = Task_instance
+        .Get_current_task_identifier()
+        .expect("Failed to get task identifier");
+
     let File_path = Path_type::New("/test.txt").expect("Failed to create path");
 
     if Virtual_file_system
@@ -35,18 +39,19 @@ fn Test_file_system() {
         .expect("Failed to check if file exists")
     {
         Virtual_file_system
-            .Delete(File_path, false)
+            .Delete(File_path, false, Task)
             .expect("Failed to delete file");
     }
 
     Virtual_file_system
-        .Create_file(File_path)
+        .Create_file(File_path, Task)
         .expect("Failed to create file");
 
     let File = File_type::Open(
         Virtual_file_system,
         File_path,
         Mode_type::Read_write().into(),
+        Task,
     )
     .expect("Failed to open file");
 
@@ -66,13 +71,14 @@ fn Test_file_system() {
     std::mem::drop(File);
 
     Virtual_file_system
-        .Delete(File_path, false)
+        .Delete(File_path, false, Task)
         .expect("Failed to delete file");
 
     let (Pipe_read, Pipe_write) = File_type::Create_unnamed_pipe(
         Virtual_file_system,
         512_usize.into(),
         Status_type::default(),
+        Task,
     )
     .expect("Failed to create pipe");
 
@@ -91,18 +97,19 @@ fn Test_file_system() {
         .expect("Failed to check if pipe exists")
     {
         Virtual_file_system
-            .Delete(Pipe_path, false)
+            .Delete(Pipe_path, false, Task)
             .expect("Failed to delete pipe");
     }
 
     Virtual_file_system
-        .Create_named_pipe(&Pipe_path, 512_usize.into())
+        .Create_named_pipe(&Pipe_path, 512_usize.into(), Task)
         .expect("Failed to create pipe");
 
     let Pipe_read = File_type::Open(
         Virtual_file_system,
         Pipe_path,
         Mode_type::Read_only().into(),
+        Task,
     )
     .expect("Failed to open pipe");
 
@@ -110,6 +117,7 @@ fn Test_file_system() {
         Virtual_file_system,
         Pipe_path,
         Mode_type::Write_only().into(),
+        Task,
     )
     .expect("Failed to open pipe");
 
@@ -125,7 +133,7 @@ fn Test_file_system() {
     std::mem::drop(Pipe_write);
 
     Virtual_file_system
-        .Delete(Pipe_path, false)
+        .Delete(Pipe_path, false, Task)
         .expect("Failed to delete pipe");
 
     struct Dummy_device_type(RwLock<u64>);
@@ -166,6 +174,7 @@ fn Test_file_system() {
         Virtual_file_system,
         Device_path,
         Mode_type::Read_write().into(),
+        Task,
     )
     .expect("Failed to open device");
 
@@ -188,6 +197,6 @@ fn Test_file_system() {
     std::mem::drop(Device_file);
 
     Virtual_file_system
-        .Delete(Device_path, false)
+        .Delete(Device_path, false, Task)
         .expect("Failed to delete device");
 }
