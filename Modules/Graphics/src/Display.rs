@@ -1,13 +1,9 @@
-use std::mem::transmute;
+use File_system::File_type;
 
-use Screen::Prelude::{Area_type, Color_type, Point_type, Screen_traits};
-
-use crate::{Draw_buffer::Draw_buffer_type, Result_type};
+use crate::{Draw_buffer::Draw_buffer_type, Point_type, Result_type, Screen_write_data_type};
 
 pub struct Display_type {
     Display: lvgl::Display,
-    #[allow(dead_code)]
-    Screen: Box<dyn Screen_traits>,
 }
 
 unsafe impl Send for Display_type {}
@@ -16,23 +12,14 @@ unsafe impl Sync for Display_type {}
 
 impl Display_type {
     pub fn New<const Buffer_size: usize>(
-        mut Screen: Box<dyn Screen_traits>,
+        File: File_type,
         Resolution: Point_type,
     ) -> Result_type<Self> {
-        let Binding_function = |Refresh: &lvgl::DisplayRefresh<Buffer_size>| {
-            let Area = Area_type::New(
-                Point_type::New(Refresh.area.x1, Refresh.area.y1),
-                Point_type::New(Refresh.area.x2, Refresh.area.y2),
-            );
+        let Binding_function = move |Refresh: &lvgl::DisplayRefresh<Buffer_size>| {
+            let Buffer: &Screen_write_data_type<Buffer_size> = Refresh.as_ref();
 
-            let Buffer: &[Color_type; Buffer_size] = unsafe {
-                transmute(
-                    // Avoid copying the buffer, but the colors must be in the same format
-                    &Refresh.colors,
-                )
-            };
-
-            let _ = Screen.Update(Area, Buffer);
+            File.Write(Buffer.as_ref())
+                .expect("Error writing to display");
         };
 
         let Draw_buffer = Draw_buffer_type::<Buffer_size>::default();
@@ -46,7 +33,6 @@ impl Display_type {
 
         Ok(Self {
             Display: LVGL_display,
-            Screen,
         })
     }
 

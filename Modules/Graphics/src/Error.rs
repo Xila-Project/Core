@@ -14,6 +14,7 @@ pub enum Error_type {
     Already_in_use,
     Poisoned_lock,
     Failed_to_register,
+    Failed_to_get_resolution,
     Not_registered,
     Not_available,
 }

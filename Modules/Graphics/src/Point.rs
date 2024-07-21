@@ -1,3 +1,5 @@
+use embedded_graphics::geometry::Point;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Point_type {
     X: i16,
@@ -37,5 +39,17 @@ impl Point_type {
         let X = (self.X - Other.X) as f32;
         let Y = (self.Y - Other.Y) as f32;
         (X * X + Y * Y).sqrt()
+    }
+}
+
+impl From<&Point> for Point_type {
+    fn from(Point: &Point) -> Self {
+        Self::New(Point.x as i16, Point.y as i16)
+    }
+}
+
+impl From<&Point_type> for Point {
+    fn from(Point: &Point_type) -> Self {
+        Self::new(Point.X as i32, Point.Y as i32)
     }
 }

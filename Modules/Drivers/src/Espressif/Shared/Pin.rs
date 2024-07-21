@@ -2,6 +2,8 @@ use std::sync::RwLock;
 
 use esp_idf_sys::{self, gpio_reset_pin};
 use File_system::Device_trait;
+use Graphics::lvgl::input_device::Data;
+use Peripherals::{Direction_type, Pin_data_type, Pull_type};
 
 use super::{Error_type, Result_type};
 
@@ -51,51 +53,84 @@ impl Pin_device_type {
 
 impl Device_trait for Pin_device_type {
     fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<usize> {
-        if Buffer.len() != 2 {
-            return Err(File_system::Error_type::Invalid_input);
-        }
+        let Data: &mut Pin_data_type = Buffer
+            .try_into()
+            .map_err(|_| File_system::Error_type::Invalid_input)?;
 
-        let Inner = self.0.read()?;
+        Data.Set_level(
+            Level_type::try_from(unsafe {
+                esp_idf_sys::gpio_get_level(self.0.read()?.Pin as i32) as u8
+            })
+            .map_err(|_| File_system::Error_type::Invalid_input)?,
+        );
 
-        match Buffer[0] {
-            1 => {
-                Buffer[1] = unsafe { esp_idf_sys::gpio_get_level(Inner.Pin as i32) as u8 };
-            }
-            _ => {
-                return Err(File_system::Error_type::Invalid_input);
-            }
-        }
-
-        Ok(2)
+        Ok(size_of::<Pin_data_type>())
     }
 
     fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<usize> {
-        if Buffer.len() != 2 {
-            return Err(File_system::Error_type::Invalid_input);
-        }
+        let Data: &mut Pin_data_type = Buffer
+            .try_into()
+            .map_err(|_| File_system::Error_type::Invalid_input)?;
 
-        let Inner = self.0.write()?;
+        let Pin = self.0.read()? as i32;
 
-        match Buffer[0] {
-            0 => unsafe {
-                esp_idf_sys::gpio_set_direction(Inner.Pin as i32, Buffer[1] as u32);
-            },
-            1 => unsafe {
-                esp_idf_sys::gpio_set_level(Inner.Pin as i32, Buffer[1] as u32);
-            },
-            2 => unsafe {
-                esp_idf_sys::gpio_set_pull_mode(Inner.Pin as i32, Buffer[1] as u32);
-            },
-            _ => {
-                return Err(File_system::Error_type::Invalid_input);
+        if let Some(Pin) = Data.Get_direction() {
+            match Pin {
+                Direction_type::Input => unsafe {
+                    esp_idf_sys::gpio_set_direction(
+                        Pin,
+                        esp_idf_sys::gpio_mode_t_GPIO_MODE_INPUT as u32,
+                    );
+                },
+                Direction_type::Output => unsafe {
+                    esp_idf_sys::gpio_set_direction(
+                        Pin,
+                        esp_idf_sys::gpio_mode_t_GPIO_MODE_OUTPUT as u32,
+                    );
+                },
             }
         }
 
-        Ok(2)
+        if let Some(Level) = Data.Get_level() {
+            unsafe {
+                esp_idf_sys::gpio_set_level(Pin, Level.into() as u32);
+            }
+        }
+
+        if let Some(Pull) = Data.Get_pull() {
+            match Pull {
+                Pull_type::None => unsafe {
+                    esp_idf_sys::gpio_set_pull_mode(
+                        Pin,
+                        esp_idf_sys::gpio_pull_mode_t_GPIO_FLOATING as u32,
+                    );
+                },
+                Pull_type::Up => unsafe {
+                    esp_idf_sys::gpio_set_pull_mode(
+                        Pin,
+                        esp_idf_sys::gpio_pull_mode_t_GPIO_PULLUP_ONLY as u32,
+                    );
+                },
+                Pull_type::Down => unsafe {
+                    esp_idf_sys::gpio_set_pull_mode(
+                        Pin,
+                        esp_idf_sys::gpio_pull_mode_t_GPIO_PULLDOWN_ONLY as u32,
+                    );
+                },
+                Pull_type::Up_down => unsafe {
+                    esp_idf_sys::gpio_set_pull_mode(
+                        Pin,
+                        esp_idf_sys::gpio_pull_mode_t_GPIO_PULLUP_PULLDOWN as u32,
+                    );
+                },
+            }
+        }
+
+        Ok(size_of::<Pin_data_type>())
     }
 
     fn Get_size(&self) -> File_system::Result_type<usize> {
-        Ok(2)
+        Ok(size_of::<Pin_data_type>())
     }
 
     fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<usize> {

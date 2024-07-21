@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use Task::Task_identifier_type;
+
 use super::{
     Flags_type, Path_type, Position_type, Result_type, Size_type, Status_type,
     Unique_file_identifier_type, Virtual_file_system::Virtual_file_system_type,
@@ -19,6 +21,7 @@ pub enum Type_type {
 pub struct File_type {
     File_identifier: Unique_file_identifier_type,
     File_system: &'static Virtual_file_system_type,
+    Task: Task_identifier_type,
 }
 
 impl Debug for File_type {
@@ -36,12 +39,14 @@ impl File_type {
         File_system: &'static Virtual_file_system_type,
         Path: impl AsRef<Path_type>,
         Flags: Flags_type,
+        Task: Task_identifier_type,
     ) -> Result_type<Self> {
-        let File_identifier = File_system.Open(Path, Flags)?;
+        let File_identifier = File_system.Open(Path, Flags, Task)?;
 
         Ok(File_type {
             File_identifier,
             File_system,
+            Task,
         })
     }
 
@@ -49,18 +54,21 @@ impl File_type {
         File_system: &'static Virtual_file_system_type,
         Size: Size_type,
         Status: Status_type,
+        Task: Task_identifier_type,
     ) -> Result_type<(Self, Self)> {
         let (File_identifier_read, File_identifier_write) =
-            File_system.Create_unnamed_pipe(Size, Status)?;
+            File_system.Create_unnamed_pipe(Size, Status, Task)?;
 
         Ok((
             File_type {
                 File_identifier: File_identifier_read,
                 File_system,
+                Task,
             },
             File_type {
                 File_identifier: File_identifier_write,
                 File_system,
+                Task,
             },
         ))
     }
@@ -68,7 +76,7 @@ impl File_type {
     // - Setters
     pub fn Set_position(&self, Position: &Position_type) -> Result_type<Size_type> {
         self.File_system
-            .Set_position(self.Get_file_identifier(), Position)
+            .Set_position(self.Get_file_identifier(), Position, self.Task)
     }
 
     // - Getters
@@ -79,7 +87,8 @@ impl File_type {
     // - Operations
 
     pub fn Write(&self, Buffer: &[u8]) -> Result_type<Size_type> {
-        self.File_system.Write(self.Get_file_identifier(), Buffer)
+        self.File_system
+            .Write(self.Get_file_identifier(), Buffer, self.Task)
     }
 
     pub fn Write_line(&self, Buffer: &[u8]) -> Result_type<Size_type> {
@@ -88,7 +97,8 @@ impl File_type {
     }
 
     pub fn Read(&self, Buffer: &mut [u8]) -> Result_type<Size_type> {
-        self.File_system.Read(self.Get_file_identifier(), Buffer)
+        self.File_system
+            .Read(self.Get_file_identifier(), Buffer, self.Task)
     }
     pub fn Read_line(&self, Buffer: &mut [u8]) -> Result_type<()> {
         let mut Index = 0;
@@ -108,6 +118,8 @@ impl File_type {
 
 impl Drop for File_type {
     fn drop(&mut self) {
-        let _ = self.File_system.Close(self.Get_file_identifier());
+        let _ = self
+            .File_system
+            .Close(self.Get_file_identifier(), self.Task);
     }
 }

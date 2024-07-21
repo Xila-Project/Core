@@ -198,8 +198,6 @@ impl Manager_type {
 
         for (Task_identifier, Task) in Tasks.iter() {
             if Task.Thread.Get_identifier() == std::thread::current().id() {
-                println!("Task identifier: {:?}", Task_identifier);
-
                 return Ok(*Task_identifier);
             }
         }

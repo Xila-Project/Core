@@ -159,7 +159,6 @@ impl Virtual_file_system_type {
 
         // Try with special file systems.
         for (File_system_identifier, File_system) in File_systems.iter() {
-            println!("Special file system: {:?}", File_system_identifier);
             if File_system.Mount_point.is_none() {
                 match Closure(*File_system_identifier, File_system, Path.as_ref()) {
                     Ok(Result) => return Ok(Result),
@@ -265,9 +264,8 @@ impl Virtual_file_system_type {
         &self,
         Path: impl AsRef<Path_type>,
         Flags: Flags_type,
+        Task_identifier: Task_identifier_type,
     ) -> Result_type<Unique_file_identifier_type> {
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
         // - Open file
         self.Try_on_concerned_file_systems(
             Path,
@@ -321,10 +319,12 @@ impl Virtual_file_system_type {
         Ok(())
     }
 
-    pub fn Close(&self, File: Unique_file_identifier_type) -> Result_type<()> {
+    pub fn Close(
+        &self,
+        File: Unique_file_identifier_type,
+        Task_identifier: Task_identifier_type,
+    ) -> Result_type<()> {
         let (File_system_identifier, File_identifier) = File.Split();
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
@@ -337,10 +337,9 @@ impl Virtual_file_system_type {
         &self,
         File_identifier: Unique_file_identifier_type,
         Buffer: &mut [u8],
+        Task_identifier: Task_identifier_type,
     ) -> Result_type<Size_type> {
         let (File_system_identifier, File_identifier) = File_identifier.Split();
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
@@ -353,10 +352,9 @@ impl Virtual_file_system_type {
         &self,
         File: Unique_file_identifier_type,
         Buffer: &[u8],
+        Task_identifier: Task_identifier_type,
     ) -> Result_type<Size_type> {
         let (File_system_identifier, File_identifier) = File.Split();
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
@@ -369,10 +367,9 @@ impl Virtual_file_system_type {
         &self,
         File_identifier: Unique_file_identifier_type,
         Position: &Position_type,
+        Task_identifier: Task_identifier_type,
     ) -> Result_type<Size_type> {
         let (File_system_identifier, File_identifier) = File_identifier.Split();
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
@@ -470,9 +467,8 @@ impl Virtual_file_system_type {
         &self,
         Path: &impl AsRef<Path_type>,
         Size: Size_type,
+        Task_identifier: Task_identifier_type,
     ) -> Result_type<()> {
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
         let mut File_systems = self.File_systems.write()?; // Get the file systems
 
         let Parent_path = Path.as_ref().Go_parent().ok_or(Error_type::Invalid_path)?;
@@ -498,9 +494,8 @@ impl Virtual_file_system_type {
         &self,
         Size: Size_type,
         Status: Status_type,
+        Task_identifier: Task_identifier_type,
     ) -> Result_type<(Unique_file_identifier_type, Unique_file_identifier_type)> {
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
         let (Read, Write) = self
             .File_systems
             .write()?
@@ -515,9 +510,11 @@ impl Virtual_file_system_type {
         ))
     }
 
-    pub fn Create_file(&self, Path: impl AsRef<Path_type>) -> Result_type<()> {
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
+    pub fn Create_file(
+        &self,
+        Path: impl AsRef<Path_type>,
+        Task_identifier: Task_identifier_type,
+    ) -> Result_type<()> {
         let File_systems = self.File_systems.read()?; // Get the file systems
 
         let (_, File_system, Relative_path) =
@@ -538,6 +535,7 @@ impl Virtual_file_system_type {
         &self,
         Path: impl AsRef<Path_type>,
         Recursive: bool,
+        Task_identifier: Task_identifier_type,
     ) -> Result_type<()> {
         if Recursive {
             // If the directory already exists, return Ok(()) (only if recursive is true).
@@ -549,6 +547,7 @@ impl Virtual_file_system_type {
             self.Create_directory(
                 Path.as_ref().Go_parent().ok_or(Error_type::Invalid_path)?,
                 true,
+                Task_identifier,
             )?
         }
 
@@ -557,8 +556,6 @@ impl Virtual_file_system_type {
 
         let (_, File_system, Relative_path) =
             Self::Get_file_system_from_mount_point(&File_systems, &Path)?;
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         // Check if the user has the right to create the directory (write permission and execute permission on the parent directory)
         self.Check_permission(
@@ -571,14 +568,17 @@ impl Virtual_file_system_type {
         File_system.Create_directory(&Relative_path)
     }
 
-    pub fn Delete(&self, Path: impl AsRef<Path_type>, Recursive: bool) -> Result_type<()> {
+    pub fn Delete(
+        &self,
+        Path: impl AsRef<Path_type>,
+        Recursive: bool,
+        Task_identifier: Task_identifier_type,
+    ) -> Result_type<()> {
         if Recursive {
             todo!()
         }
 
         // Delete current directory / file.
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
-
         self.Try_on_concerned_file_systems(Path.as_ref(), |_, File_system, Relative_path| {
             // Check if the user has the right to delete the file (write permission on the parent directory)
             self.Check_permission(
@@ -598,18 +598,17 @@ impl Virtual_file_system_type {
     pub fn Transfert_file(
         &self,
         File: Unique_file_identifier_type,
+        Current_task: Task_identifier_type,
         New_task: Task_identifier_type,
     ) -> Result_type<Unique_file_identifier_type> {
         let (File_system_identifier, File_identifier) = File.Split();
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
         let New_file_identifier =
             Self::Get_file_system_from_identifier(&File_systems, File_system_identifier)?
                 .Inner
-                .Transfert_file_identifier(Task_identifier, New_task, File_identifier)?;
+                .Transfert_file_identifier(Current_task, New_task, File_identifier)?;
 
         Ok(Unique_file_identifier_type::New(
             File_system_identifier,
@@ -617,10 +616,12 @@ impl Virtual_file_system_type {
         ))
     }
 
-    pub fn Flush(&self, File: Unique_file_identifier_type) -> Result_type<()> {
+    pub fn Flush(
+        &self,
+        File: Unique_file_identifier_type,
+        Task_identifier: Task_identifier_type,
+    ) -> Result_type<()> {
         let (File_system_identifier, File_identifier) = File.Split();
-
-        let Task_identifier = self.Task_manager.Get_current_task_identifier()?;
 
         let File_systems = self.File_systems.read()?; // Get the file systems
 
