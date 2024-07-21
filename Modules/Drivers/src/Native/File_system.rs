@@ -1,6 +1,6 @@
 use File_system::{
     Error_type, File_identifier_type, File_system_traits, Flags_type, Path_owned_type, Path_type,
-    Position_type, Result_type, Size_type, Type_type,
+    Position_type, Result_type, Size_type, Type_type, Virtual_file_system_type,
 };
 
 use std::collections::BTreeMap;
@@ -11,6 +11,16 @@ use std::io::{ErrorKind, Read, Seek, Write};
 use std::sync::RwLock;
 
 use Task::Task_identifier_type;
+
+pub fn Mount_file_systems(Virtual_file_system: &Virtual_file_system_type) -> Result<(), String> {
+    let File_system = File_system_type::New().map_err(|Error| format!("{:?}", Error))?;
+
+    Virtual_file_system
+        .Mount(Box::new(File_system), Path_type::Get_root())
+        .map_err(|Error| format!("{:?}", Error))?;
+
+    Ok(())
+}
 
 fn From_file_type(value: FileType) -> Type_type {
     if value.is_dir() {
