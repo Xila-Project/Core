@@ -5,11 +5,12 @@ edition = "2021"
 
 [dependencies]
 File_system = { path = "../File_system" }
-Screen = { version = "0.1.0", path = "../Screen" }
 Task = { version = "0.1.0", path = "../Task" }
 Users = { version = "0.1.0", path = "../Users" }
+Graphics = { path = "../Graphics" }
 paste = "1.0.15"
 quote = "1.0.36"
+Peripherals = { version = "0.1.0", path = "../Peripherals" }
 
 [features]
 default = ["std", "binstart"]
@@ -54,10 +55,6 @@ sdl2 = "0.37.0"
 [[test]]
 name = "Native_file_system"
 path = "Tests/Native/File_system.rs"
-
-[[test]]
-name = "Native_touch_screen"
-path = "Tests/Native/Touch_screen.rs"
 
 [[test]]
 name = "Native_graphics"
