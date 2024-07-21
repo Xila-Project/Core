@@ -1,5 +1,5 @@
+mod Devices;
 mod File_system;
-mod SDL2;
 
+pub use Devices::*;
 pub use File_system::*;
-pub use SDL2::*;
