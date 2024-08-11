@@ -46,10 +46,25 @@ pub struct Manager_type(RwLock<Internal_manager_type>);
 
 impl Manager_type {
     fn New() -> Self {
-        Self(RwLock::new(Internal_manager_type {
-            Users: BTreeMap::new(),
-            Groups: BTreeMap::new(),
-        }))
+        let mut Groups = BTreeMap::new();
+        Groups.insert(
+            Root_group_identifier,
+            Internal_group_type {
+                Name: "root".to_string(),
+                Users: BTreeSet::new(),
+            },
+        );
+
+        let mut Users = BTreeMap::new();
+        Users.insert(
+            crate::Root_user_identifier,
+            Internal_user_type {
+                Name: "root".to_string(),
+                Primary_group: Root_group_identifier,
+            },
+        );
+
+        Self(RwLock::new(Internal_manager_type { Users, Groups }))
     }
 
     fn Get_new_group_identifier(&self) -> Option<Group_identifier_type> {
