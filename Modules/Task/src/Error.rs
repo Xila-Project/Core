@@ -8,6 +8,7 @@ pub type Result_type<T> = std::result::Result<T, Error_type>;
 #[repr(C)]
 pub enum Error_type {
     Invalid_task_identifier,
+    Thread_not_registered,
     Failed_to_create_thread,
     No_thread_for_task,
     Failed_to_spawn_thread,
