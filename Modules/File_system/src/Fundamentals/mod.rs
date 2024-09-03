@@ -4,11 +4,13 @@ mod Flags;
 mod Identifiers;
 mod Path;
 mod Permission;
+mod Statistics;
 
 pub use Flags::*;
 pub use Identifiers::*;
 pub use Path::*;
 pub use Permission::*;
+pub use Statistics::*;
 
 #[derive(Default, PartialOrd, PartialEq, Eq, Ord, Clone, Copy, Debug)]
 #[repr(transparent)]
