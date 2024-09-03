@@ -1,52 +1,68 @@
-use std::ops::{Add, AddAssign};
+use core::ops::{Add, AddAssign};
+
+#[cfg(target_pointer_width = "32")]
+pub type File_identifier_inner_type = u16;
+#[cfg(target_pointer_width = "64")]
+pub type File_identifier_inner_type = u32;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
-pub struct File_identifier_type(u16);
+pub struct File_identifier_type(File_identifier_inner_type);
 
-impl From<u16> for File_identifier_type {
-    fn from(Internal_file_identifier: u16) -> Self {
+impl File_identifier_type {
+    pub const fn New(Identifier: File_identifier_inner_type) -> Self {
+        Self(Identifier)
+    }
+}
+
+impl From<File_identifier_inner_type> for File_identifier_type {
+    fn from(Internal_file_identifier: File_identifier_inner_type) -> Self {
         File_identifier_type(Internal_file_identifier)
     }
 }
 
-impl From<File_identifier_type> for u16 {
+impl From<File_identifier_type> for File_identifier_inner_type {
     fn from(Internal_file_identifier: File_identifier_type) -> Self {
         Internal_file_identifier.0
     }
 }
 
+#[cfg(target_pointer_width = "32")]
+pub type File_system_identifier_inner_type = u16;
+#[cfg(target_pointer_width = "64")]
+pub type File_system_identifier_inner_type = u32;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
-pub struct File_system_identifier_type(u16);
+pub struct File_system_identifier_type(File_system_identifier_inner_type);
 
 impl File_system_identifier_type {
-    pub const fn New(Identifier: u16) -> Self {
+    pub const fn New(Identifier: File_system_identifier_inner_type) -> Self {
         Self(Identifier)
     }
 }
 
-impl AddAssign<u16> for File_system_identifier_type {
-    fn add_assign(&mut self, rhs: u16) {
+impl AddAssign<File_system_identifier_inner_type> for File_system_identifier_type {
+    fn add_assign(&mut self, rhs: File_system_identifier_inner_type) {
         self.0 += rhs;
     }
 }
 
-impl Add<u16> for File_system_identifier_type {
+impl Add<File_system_identifier_inner_type> for File_system_identifier_type {
     type Output = Self;
 
-    fn add(self, rhs: u16) -> Self::Output {
+    fn add(self, rhs: File_system_identifier_inner_type) -> Self::Output {
         Self(self.0 + rhs)
     }
 }
 
-impl From<u16> for File_system_identifier_type {
-    fn from(Internal_file_system_identifier: u16) -> Self {
+impl From<File_system_identifier_inner_type> for File_system_identifier_type {
+    fn from(Internal_file_system_identifier: File_system_identifier_inner_type) -> Self {
         File_system_identifier_type(Internal_file_system_identifier)
     }
 }
 
-impl From<File_system_identifier_type> for u16 {
+impl From<File_system_identifier_type> for File_system_identifier_inner_type {
     fn from(Internal_file_system_identifier: File_system_identifier_type) -> Self {
         Internal_file_system_identifier.0
     }
@@ -54,19 +70,67 @@ impl From<File_system_identifier_type> for u16 {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
-pub struct Unique_file_identifier_type(u32);
+pub struct Unique_file_identifier_type(usize);
 
 impl Unique_file_identifier_type {
     pub fn New(
         File_system_identifier: File_system_identifier_type,
         File_identifier: File_identifier_type,
     ) -> Self {
-        Self((File_system_identifier.0 as u32) << 16 | File_identifier.0 as u32)
+        Self(
+            (File_system_identifier.0 as usize) << File_identifier_inner_type::BITS
+                | File_identifier.0 as usize,
+        )
     }
 
     pub fn Split(self) -> (File_system_identifier_type, File_identifier_type) {
-        let File_system_identifier = File_system_identifier_type::New((self.0 >> 16) as u16);
-        let File_identifier = File_identifier_type((self.0 & 0xFFFF) as u16);
-        (File_system_identifier, File_identifier)
+        let File_system = self.0 >> File_identifier_inner_type::BITS;
+        let File_system =
+            File_system_identifier_type::from(File_system as File_system_identifier_inner_type);
+
+        let File = self.0 as File_identifier_inner_type;
+        let File = File_identifier_type::from(File);
+
+        (File_system, File)
+    }
+}
+
+impl From<Unique_file_identifier_type> for usize {
+    fn from(Identifier: Unique_file_identifier_type) -> Self {
+        Identifier.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn Test_file_identifier() {
+        let Identifier = File_identifier_type::from(0x1234);
+        assert_eq!(Identifier, File_identifier_type::New(0x1234));
+        assert_eq!(File_identifier_inner_type::from(Identifier), 0x1234);
+    }
+
+    #[test]
+    fn Test_file_system_identifier() {
+        let Identifier = File_system_identifier_type::from(0x1234);
+        assert_eq!(Identifier, File_system_identifier_type::New(0x1234));
+        assert_eq!(File_system_identifier_inner_type::from(Identifier), 0x1234);
+    }
+
+    #[test]
+    fn Test_unique_file_identifier() {
+        let Identifier = Unique_file_identifier_type::New(
+            File_system_identifier_type::from(0x1234),
+            File_identifier_type::from(0x5678),
+        );
+        assert_eq!(
+            Identifier.Split(),
+            (
+                File_system_identifier_type::New(0x1234),
+                File_identifier_type::New(0x5678)
+            )
+        );
     }
 }
