@@ -3,6 +3,7 @@
 #![allow(non_upper_case_globals)]
 
 mod Error;
+pub mod Raw_mutex;
 pub use Error::*;
 
 mod Manager;
