@@ -10,11 +10,12 @@ use super::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Type_type {
-    File = 1,
+    File,
     Directory,
     Block_device,
     Character_device,
-    Named_pipe,
+    Pipe,
+    Socket,
     Symbolic_link,
 }
 
