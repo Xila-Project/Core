@@ -4,12 +4,6 @@ use File_system::Path_type;
 use Graphics::{Get_recommended_buffer_size, Point_type};
 pub use SDL2::*;
 
-const Pointer_device_path: &Path_type =
-    unsafe { Path_type::New_unchecked_constant("/Devices/Pointer") };
-
-const Screen_device_path: &Path_type =
-    unsafe { Path_type::New_unchecked_constant("/Devices/Screen") };
-
 pub fn Mount_devices(
     Virtual_file_systems: &File_system::Virtual_file_system_type,
 ) -> Result<(), String> {
@@ -21,11 +15,11 @@ pub fn Mount_devices(
         New_touchscreen::<Buffer_size>(Resolution).expect("Error creating touchscreen");
 
     Virtual_file_systems
-        .Add_device(&Pointer_device_path, Box::new(Pointer_device))
+        .Add_device(&"/Devices/Pointer", Box::new(Pointer_device))
         .expect("Error adding pointer device");
 
     Virtual_file_systems
-        .Add_device(&Screen_device_path, Box::new(Screen_device))
+        .Add_device(&"/Devices/Screen", Box::new(Screen_device))
         .expect("Error adding screen device");
 
     Ok(())

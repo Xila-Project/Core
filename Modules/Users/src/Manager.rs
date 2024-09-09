@@ -29,6 +29,7 @@ pub fn Is_initialized() -> bool {
 
 struct Internal_user_type {
     pub Name: String,
+    pub Primary_group: Group_identifier_type,
 }
 
 struct Internal_group_type {
@@ -45,10 +46,25 @@ pub struct Manager_type(RwLock<Internal_manager_type>);
 
 impl Manager_type {
     fn New() -> Self {
-        Self(RwLock::new(Internal_manager_type {
-            Users: BTreeMap::new(),
-            Groups: BTreeMap::new(),
-        }))
+        let mut Groups = BTreeMap::new();
+        Groups.insert(
+            Root_group_identifier,
+            Internal_group_type {
+                Name: "root".to_string(),
+                Users: BTreeSet::new(),
+            },
+        );
+
+        let mut Users = BTreeMap::new();
+        Users.insert(
+            crate::Root_user_identifier,
+            Internal_user_type {
+                Name: "root".to_string(),
+                Primary_group: Root_group_identifier,
+            },
+        );
+
+        Self(RwLock::new(Internal_manager_type { Users, Groups }))
     }
 
     fn Get_new_group_identifier(&self) -> Option<Group_identifier_type> {
@@ -63,7 +79,11 @@ impl Manager_type {
         (0..User_identifier_type::MAX).find(|Identifier| !Inner.Users.contains_key(Identifier))
     }
 
-    pub fn Create_user(&self, Name: &str) -> Result_type<User_identifier_type> {
+    pub fn Create_user(
+        &self,
+        Name: &str,
+        Primary_group: Group_identifier_type,
+    ) -> Result_type<User_identifier_type> {
         let Identifier = match self.Get_new_user_identifier() {
             Some(Identifier) => Identifier,
             None => return Err(Error_type::Too_many_users),
@@ -71,6 +91,7 @@ impl Manager_type {
 
         let User = Internal_user_type {
             Name: Name.to_string(),
+            Primary_group,
         };
 
         if self.Exists_user(Identifier)? {
@@ -82,6 +103,9 @@ impl Manager_type {
         if Inner.Users.insert(Identifier, User).is_some() {
             return Err(Error_type::Duplicate_user_identifier); // Shouldn't happen
         }
+
+        self.Add_to_group(Identifier, Primary_group)?;
+
         Ok(Identifier)
     }
 
@@ -137,14 +161,28 @@ impl Manager_type {
         Identifier: User_identifier_type,
     ) -> Option<Vec<Group_identifier_type>> {
         let Inner = self.0.read().unwrap();
-        Some(
+
+        let mut Size = 1;
+
+        Size += Inner
+            .Groups
+            .iter()
+            .filter(|(_, Group)| Group.Users.contains(&Identifier))
+            .count();
+
+        let mut User_groups: Vec<Group_identifier_type> = Vec::with_capacity(Size);
+
+        User_groups.push(Inner.Users.get(&Identifier).unwrap().Primary_group);
+
+        User_groups.extend(
             Inner
                 .Groups
                 .iter()
                 .filter(|(_, Group)| Group.Users.contains(&Identifier))
-                .map(|(Identifier, _)| *Identifier)
-                .collect(),
-        )
+                .map(|(Identifier, _)| *Identifier),
+        );
+
+        Some(User_groups)
     }
 
     pub fn Exists_group(&self, Identifier: Group_identifier_type) -> Result_type<bool> {
@@ -207,6 +245,19 @@ impl Manager_type {
             .clone())
     }
 
+    pub fn Get_user_primary_group(
+        &self,
+        Identifier: User_identifier_type,
+    ) -> Result_type<Group_identifier_type> {
+        Ok(self
+            .0
+            .read()?
+            .Users
+            .get(&Identifier)
+            .ok_or(Error_type::Invalid_user_identifier)?
+            .Primary_group)
+    }
+
     pub fn Check_credentials(&self, _User_name: &str, _Password: &str) -> bool {
         true
     }
@@ -226,7 +277,7 @@ mod Tests {
     fn Create_user() {
         let Manager = Manager_type::New();
         let User_name = "Alice";
-        let Result = Manager.Create_user(User_name);
+        let Result = Manager.Create_user(User_name, Root_group_identifier);
         assert!(Result.is_ok());
         let User_id = Result.unwrap();
         assert!(Manager.Exists_user(User_id).unwrap());
@@ -252,7 +303,9 @@ mod Tests {
     fn Is_in_group() {
         let Manager = Manager_type::New();
         let User_name = "Bob";
-        let User_id = Manager.Create_user(User_name).unwrap();
+        let User_id = Manager
+            .Create_user(User_name, Root_group_identifier)
+            .unwrap();
         let Group_name = "Admins";
         let Group_id = Manager.Create_group(Group_name, None).unwrap();
         Manager.Add_to_group(User_id, Group_id).unwrap();
@@ -264,7 +317,9 @@ mod Tests {
         let Manager = Manager_type::New();
 
         let User_name = "Charlie";
-        let User_id = Manager.Create_user(User_name).unwrap();
+        let User_id = Manager
+            .Create_user(User_name, Root_group_identifier)
+            .unwrap();
         let Group_name1 = "TeamA";
         let Group_id1 = Manager.Create_group(Group_name1, None).unwrap();
         let Group_name2 = "TeamB";
@@ -289,7 +344,9 @@ mod Tests {
     fn Get_group_users() {
         let Manager = Manager_type::New();
         let User_name = "Dave";
-        let User_id = Manager.Create_user(User_name).unwrap();
+        let User_id = Manager
+            .Create_user(User_name, Root_group_identifier)
+            .unwrap();
         let Group_name = "Engineers";
         let Group_id = Manager.Create_group(Group_name, None).unwrap();
         Manager.Add_to_group(User_id, Group_id).unwrap();
@@ -302,7 +359,9 @@ mod Tests {
     fn Get_user_name() {
         let Manager = Manager_type::New();
         let User_name = "Eve";
-        let User_id = Manager.Create_user(User_name).unwrap();
+        let User_id = Manager
+            .Create_user(User_name, Root_group_identifier)
+            .unwrap();
         let Retrieved_name = Manager.Get_user_name(User_id).unwrap();
         assert_eq!(User_name, Retrieved_name);
     }

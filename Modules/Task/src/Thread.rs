@@ -1,7 +1,8 @@
 use super::*;
 use std::{
     any::Any,
-    thread::{self, ThreadId},
+    mem::transmute,
+    thread::{self},
 };
 
 pub struct Join_handle_type<T>(thread::JoinHandle<T>);
@@ -16,12 +17,36 @@ impl<T> Join_handle_type<T> {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
+pub struct Thread_identifier_type(usize);
+
+impl From<usize> for Thread_identifier_type {
+    fn from(Identifier: usize) -> Self {
+        Thread_identifier_type(Identifier)
+    }
+}
+
+impl From<Thread_identifier_type> for usize {
+    fn from(Identifier: Thread_identifier_type) -> Self {
+        Identifier.0
+    }
+}
+
+impl From<thread::ThreadId> for Thread_identifier_type {
+    fn from(Identifier: thread::ThreadId) -> Self {
+        let Identifier: u64 = unsafe { transmute(Identifier) };
+
+        Thread_identifier_type(Identifier as usize)
+    }
+}
+
 /// A wrapper around [std::thread::Thread].
 pub struct Thread_wrapper_type(thread::Thread);
 
 impl Thread_wrapper_type {
     /// Creates a new thread with a given name, stack size and function.
-    pub fn New<F, T>(
+    pub fn Spawn<F, T>(
         Name: &str,
         Stack_size: Option<usize>,
         Function: F,
@@ -53,8 +78,8 @@ impl Thread_wrapper_type {
         std::thread::sleep(Duration);
     }
 
-    pub fn Get_identifier(&self) -> ThreadId {
-        self.0.id()
+    pub fn Get_identifier(&self) -> Thread_identifier_type {
+        Thread_identifier_type::from(self.0.id())
     }
 
     pub fn Get_current() -> Thread_wrapper_type {

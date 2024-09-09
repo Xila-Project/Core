@@ -19,6 +19,7 @@ pub enum Error_type {
     Unknown,
     Invalid_identifier,
     Failed_to_get_task_informations,
+    Failed_to_get_users_informations,
     Too_many_mounted_file_systems,
     Poisoned_lock,
     Too_many_open_files,

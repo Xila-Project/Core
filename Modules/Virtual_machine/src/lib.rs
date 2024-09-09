@@ -10,10 +10,17 @@ mod Module;
 mod Registrable;
 mod Runtime;
 
+// For
+#[allow(unused_imports)]
+use Memory::ABI::*;
+
+use std::io::{stderr, stdin, stdout, Read, Write};
+
 pub use wamr_rust_sdk::value::WasmValue;
 pub use Data::*;
 pub use Environment::*;
 pub use Error::*;
+use File_system::{Device_trait, Virtual_file_system_type};
 pub use Instance::*;
 pub use Module::*;
 pub use Registrable::*;
@@ -22,10 +29,91 @@ pub use Runtime::*;
 pub type WASM_pointer = u32;
 pub type WASM_usize = u32;
 
+struct Standard_in_device_type;
+
+impl Device_trait for Standard_in_device_type {
+    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<usize> {
+        println!("Reading stdin buffer:");
+
+        #[allow(clippy::unused_io_amount)]
+        stdin().read(Buffer).unwrap();
+
+        Ok(Buffer.len())
+    }
+
+    fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<usize> {
+        println!("Writing stdin buffer: {:?}", Buffer);
+
+        Err(File_system::Error_type::Unsupported_operation)
+    }
+
+    fn Get_size(&self) -> File_system::Result_type<usize> {
+        Ok(0)
+    }
+
+    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<usize> {
+        Err(File_system::Error_type::Unsupported_operation)
+    }
+
+    fn Flush(&self) -> File_system::Result_type<()> {
+        Ok(())
+    }
+}
+
+struct Standard_out_device_type;
+
+impl Device_trait for Standard_out_device_type {
+    fn Read(&self, _: &mut [u8]) -> File_system::Result_type<usize> {
+        Err(File_system::Error_type::Unsupported_operation)
+    }
+
+    fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<usize> {
+        Ok(stdout().write(Buffer)?)
+    }
+
+    fn Get_size(&self) -> File_system::Result_type<usize> {
+        Ok(0)
+    }
+
+    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<usize> {
+        Err(File_system::Error_type::Unsupported_operation)
+    }
+
+    fn Flush(&self) -> File_system::Result_type<()> {
+        Ok(stdout().flush()?)
+    }
+}
+
+struct Standard_error_device_type;
+
+impl Device_trait for Standard_error_device_type {
+    fn Read(&self, _: &mut [u8]) -> File_system::Result_type<usize> {
+        Err(File_system::Error_type::Unsupported_operation)
+    }
+
+    fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<usize> {
+        Ok(stderr().write(Buffer)?)
+    }
+
+    fn Get_size(&self) -> File_system::Result_type<usize> {
+        Ok(0)
+    }
+
+    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<usize> {
+        Err(File_system::Error_type::Unsupported_operation)
+    }
+
+    fn Flush(&self) -> File_system::Result_type<()> {
+        Ok(stderr().flush()?)
+    }
+}
+
 pub fn Instantiate_test_environment(
     Binary_buffer: &[u8],
     Registrable: impl Registrable_trait,
     User_data: &Data_type,
+    Task_manager: &Task::Manager_type,
+    Virtual_file_system: &Virtual_file_system_type,
 ) -> (Runtime_type, Module_type, Instance_type) {
     let Runtime = Runtime_type::Builder()
         .Register(Registrable)
@@ -34,7 +122,54 @@ pub fn Instantiate_test_environment(
 
     let Module = Module_type::From_buffer(&Runtime, Binary_buffer, "main").unwrap();
 
-    let Instance = Instance_type::New(&Runtime, &Module, 1024 * 4, User_data).unwrap();
+    Virtual_file_system
+        .Add_device(&"stdin", Box::new(Standard_in_device_type))
+        .expect("Failed to add stdin device");
+    Virtual_file_system
+        .Add_device(&"stdout", Box::new(Standard_out_device_type))
+        .expect("Failed to add stdout device");
+    Virtual_file_system
+        .Add_device(&"stderr", Box::new(Standard_error_device_type))
+        .expect("Failed to add stderr device");
+
+    let Task_identifier = Task_manager.Get_current_task_identifier().unwrap();
+
+    let Stdin = Virtual_file_system
+        .Open(
+            "stdin",
+            File_system::Mode_type::Read_only().into(),
+            Task_identifier,
+        )
+        .expect("Failed to open stdin");
+
+    let Stdout = Virtual_file_system
+        .Open(
+            "stdout",
+            File_system::Mode_type::Write_only().into(),
+            Task_identifier,
+        )
+        .expect("Failed to open stdout");
+
+    let Stderr = Virtual_file_system
+        .Open(
+            "stderr",
+            File_system::Mode_type::Write_only().into(),
+            Task_identifier,
+        )
+        .expect("Failed to open stderr");
+
+    println!("Stdin: {:?}", Stdin);
+
+    let Instance = Instance_type::New(
+        &Runtime,
+        &Module,
+        1024 * 4,
+        User_data,
+        Stdin,
+        Stdout,
+        Stderr,
+    )
+    .expect("Failed to instantiate module");
 
     (Runtime, Module, Instance)
 }

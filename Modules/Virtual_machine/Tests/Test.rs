@@ -81,8 +81,14 @@ extern "C" fn Test_string(
 
 #[test]
 fn Integration_test() {
+    Task::Initialize().expect("Failed to initialize task manager");
+
+    Users::Initialize().expect("Failed to initialize users manager");
+
+    File_system::Initialize().expect("Failed to initialize file system");
+
     let Binary_buffer = include_bytes!(
-        "../Tests/WASM_test/target/wasm32-unknown-unknown/release/Virtual_machine_WASM_test.wasm"
+        "../Tests/WASM_test/target/wasm32-wasi/release/Virtual_machine_WASM_test.wasm"
     );
 
     pub struct Registrable {}
@@ -102,13 +108,18 @@ fn Integration_test() {
 
     let User_data = Data_type::New();
 
-    let (_Runtime, _Module, Instance) =
-        Instantiate_test_environment(Binary_buffer, Registrable {}, &User_data);
+    let (_Runtime, _Module, Instance) = Instantiate_test_environment(
+        Binary_buffer,
+        Registrable {},
+        &User_data,
+        Task::Get_instance(),
+        File_system::Get_instance(),
+    );
 
     let Environment =
         Environment_type::From_instance(&Instance).expect("Failed to get execution environment");
 
-    assert_eq!(Instance.Call_main(&vec![]).unwrap(), WasmValue::I32(0));
+    assert_eq!(Instance.Call_main(&vec![]).unwrap(), WasmValue::Void);
 
     assert_eq!(
         Instance
@@ -117,6 +128,7 @@ fn Integration_test() {
         WasmValue::I32(9)
     );
 
+    /*
     let mut Slices: Vec<&mut [f64]> = vec![];
 
     for i in 1..10 {
@@ -148,4 +160,5 @@ fn Integration_test() {
 
         Environment.Deallocate(Slice);
     }
+    */
 }

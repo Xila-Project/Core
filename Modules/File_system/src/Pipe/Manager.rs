@@ -4,28 +4,20 @@ use std::{
     time::Duration,
 };
 
-use Task::{Task_identifier_type, Task_type};
-use Users::{
-    Group_identifier_type, Root_group_identifier, Root_user_identifier, User_identifier_type,
-};
+use Task::Task_identifier_type;
+use Users::{Group_identifier_type, User_identifier_type};
 
 use crate::{
-    Error_type, File_identifier_type, File_system_traits, Flags_type, Mode_type, Path_owned_type,
-    Path_type, Permissions_type, Result_type, Size_type, Status_type, Type_type,
+    Error_type, File_identifier_inner_type, File_identifier_type, File_system_identifier_type,
+    File_system_traits, Flags_type, Mode_type, Path_owned_type, Path_type, Permissions_type,
+    Result_type, Size_type, Statistics_type, Status_type,
 };
 
 use super::Pipe_type;
 
-struct Named_pipe_type {
-    Pipe: Pipe_type,
-    User: User_identifier_type,
-    Group: User_identifier_type,
-    Permissions: Permissions_type,
-}
-
 struct Inner_type {
-    pub Named_pipes: HashMap<Path_owned_type, Named_pipe_type>,
-    pub Opened_pipes: BTreeMap<u32, (Pipe_type, Flags_type)>,
+    pub Named_pipes: HashMap<Path_owned_type, Pipe_type>,
+    pub Opened_pipes: BTreeMap<usize, (Pipe_type, Flags_type)>,
 }
 
 pub struct File_system_type(RwLock<Inner_type>);
@@ -42,16 +34,18 @@ impl File_system_type {
     ///
     /// Since the file identifier must remain valid, this method is static, and the lock
     /// has to be acquired in the calling method.
-    fn Get_new_file_identifier(
+    fn Get_new_file_identifier<T>(
         Task: Task_identifier_type,
-        Opened_pipes: &BTreeMap<u32, (Pipe_type, Flags_type)>,
+        Opened_pipes: &BTreeMap<usize, T>,
     ) -> Result_type<File_identifier_type> {
         let Start = Self::Get_local_file_identifier(Task, File_identifier_type::from(0));
         let End = Self::Get_local_file_identifier(Task, File_identifier_type::from(0xFFFF));
 
         for File_identifier in Start..=End {
             if !Opened_pipes.contains_key(&File_identifier) {
-                return Ok(File_identifier_type::from(File_identifier as u16));
+                return Ok(File_identifier_type::from(
+                    File_identifier as File_identifier_inner_type,
+                ));
                 // Remove the task identifier and keep the file identifier.
             }
         }
@@ -61,17 +55,19 @@ impl File_system_type {
 }
 
 impl File_system_traits for File_system_type {
-    fn Create_named_pipe(&self, Path: &dyn AsRef<Path_type>, Size: Size_type) -> Result_type<()> {
+    fn Create_named_pipe(
+        &self,
+        Path: &dyn AsRef<Path_type>,
+        Size: Size_type,
+        User: User_identifier_type,
+        Group: Group_identifier_type,
+        Permissions: Permissions_type,
+    ) -> Result_type<()> {
         let mut Inner = self.0.write()?;
 
         Inner.Named_pipes.insert(
             Path.as_ref().to_owned(),
-            Named_pipe_type {
-                Pipe: Pipe_type::New(Size.into()),
-                User: Root_user_identifier,
-                Group: Root_group_identifier,
-                Permissions: Permissions_type::New_standard_file(),
-            },
+            Pipe_type::New(Size.into(), User, Group, Permissions),
         );
 
         Ok(())
@@ -82,8 +78,11 @@ impl File_system_traits for File_system_type {
         Task_identifier: Task_identifier_type,
         Size: Size_type,
         Status: Status_type,
+        User: User_identifier_type,
+        Group: Group_identifier_type,
+        Permissions: Permissions_type,
     ) -> Result_type<(File_identifier_type, File_identifier_type)> {
-        let Pipe = Pipe_type::New(Size.into());
+        let Pipe = Pipe_type::New(Size.into(), User, Group, Permissions);
 
         let mut Inner = self.0.write()?;
 
@@ -129,7 +128,6 @@ impl File_system_traits for File_system_type {
             .Named_pipes
             .get(Path.as_ref())
             .ok_or(Error_type::Not_found)?
-            .Pipe
             .clone();
 
         let File_identifier = Self::Get_new_file_identifier(Task, &Inner.Opened_pipes)?;
@@ -167,23 +165,38 @@ impl File_system_traits for File_system_type {
         Old_task: Task_identifier_type,
         New_task: Task_identifier_type,
         File: File_identifier_type,
+        New_file_identifier: Option<File_identifier_type>,
     ) -> Result_type<File_identifier_type> {
-        let Local_file_identifier = Self::Get_local_file_identifier(Old_task, File);
+        let Old_local_file_identifier = Self::Get_local_file_identifier(Old_task, File);
 
         let mut Inner = self.0.write()?;
 
-        let New_file_identifier = Self::Get_new_file_identifier(New_task, &Inner.Opened_pipes)?;
+        let New_file_identifier = if let Some(New_file_identifier) = New_file_identifier {
+            New_file_identifier
+        } else {
+            Self::Get_new_file_identifier(New_task, &Inner.Opened_pipes)?
+        };
+
+        let New_local_file_identifier =
+            Self::Get_local_file_identifier(New_task, New_file_identifier);
+
+        if Inner.Opened_pipes.contains_key(&New_local_file_identifier) {
+            return Err(Error_type::Invalid_identifier);
+        }
 
         let (Pipe, Mode) = Inner
             .Opened_pipes
-            .remove(&Local_file_identifier)
+            .remove(&Old_local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        let Local_file_identifier = Self::Get_local_file_identifier(New_task, New_file_identifier);
-
-        Inner
+        if Inner
             .Opened_pipes
-            .insert(Local_file_identifier, (Pipe, Mode));
+            .insert(New_local_file_identifier, (Pipe, Mode))
+            .is_some()
+        {
+            // Should never happen.
+            return Err(Error_type::Invalid_identifier);
+        }
 
         Ok(New_file_identifier)
     }
@@ -222,7 +235,7 @@ impl File_system_traits for File_system_type {
                 if Flags.Get_status().Get_non_blocking() {
                     return Err(Error_type::Ressource_busy);
                 } else {
-                    Task_type::Sleep(Duration::from_millis(5));
+                    Task::Manager_type::Sleep(Duration::from_millis(5));
                 }
             } else {
                 return Err(Error);
@@ -256,7 +269,7 @@ impl File_system_traits for File_system_type {
                 if Mode.Get_status().Get_non_blocking() {
                     return Err(Error_type::Ressource_busy);
                 } else {
-                    Task_type::Sleep(Duration::from_millis(5));
+                    Task::Manager_type::Sleep(Duration::from_millis(5));
                 }
             } else {
                 return Err(Error);
@@ -298,20 +311,6 @@ impl File_system_traits for File_system_type {
         Ok(())
     }
 
-    fn Get_type(&self, _: &dyn AsRef<Path_type>) -> Result_type<crate::Type_type> {
-        Ok(Type_type::Named_pipe)
-    }
-
-    fn Get_size(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Size_type> {
-        self.0
-            .read()?
-            .Named_pipes
-            .get(Path.as_ref())
-            .ok_or(Error_type::Not_found)?
-            .Pipe
-            .Get_size()
-    }
-
     fn Create_directory(&self, _: &dyn AsRef<Path_type>) -> Result_type<()> {
         Err(Error_type::Unsupported_operation)
     }
@@ -326,31 +325,9 @@ impl File_system_traits for File_system_type {
             .Named_pipes
             .get_mut(Path.as_ref())
             .ok_or(Error_type::Not_found)?
-            .Permissions = Permissions_type;
+            .Set_permissions(Permissions_type)?;
 
         Ok(())
-    }
-
-    fn Get_permissions(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Permissions_type> {
-        Ok(self
-            .0
-            .read()?
-            .Named_pipes
-            .get(Path.as_ref())
-            .ok_or(Error_type::Not_found)?
-            .Permissions)
-    }
-
-    fn Get_owner(
-        &self,
-        Path: &dyn AsRef<Path_type>,
-    ) -> Result_type<(User_identifier_type, Group_identifier_type)> {
-        self.0
-            .read()?
-            .Named_pipes
-            .get(Path.as_ref())
-            .ok_or(Error_type::Not_found)
-            .map(|Named_pipe| (Named_pipe.User, Named_pipe.Group))
     }
 
     fn Set_owner(
@@ -359,28 +336,91 @@ impl File_system_traits for File_system_type {
         User: Option<User_identifier_type>,
         Group: Option<Group_identifier_type>,
     ) -> Result_type<()> {
-        let mut Inner = self.0.write()?;
-
-        let Named_pipe = Inner
+        self.0
+            .write()?
             .Named_pipes
             .get_mut(Path.as_ref())
-            .ok_or(Error_type::Not_found)?;
+            .ok_or(Error_type::Not_found)?
+            .Set_owner(User, Group)
+    }
 
-        if let Some(User) = User {
-            Named_pipe.User = User;
+    fn Get_statistics(
+        &self,
+        Task: Task_identifier_type,
+        File: File_identifier_type,
+        File_system: File_system_identifier_type,
+    ) -> Result_type<Statistics_type> {
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
+
+        let Inner = self.0.read()?;
+
+        let (Pipe, _) = Inner
+            .Opened_pipes
+            .get(&Local_file_identifier)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Pipe.Get_statistics(File_system, Local_file_identifier as u64)
+    }
+
+    fn Get_mode(
+        &self,
+        Task: Task_identifier_type,
+        File: File_identifier_type,
+    ) -> Result_type<Mode_type> {
+        Ok(self
+            .0
+            .read()?
+            .Opened_pipes
+            .get(&Self::Get_local_file_identifier(Task, File))
+            .ok_or(Error_type::Invalid_identifier)?
+            .1
+            .Get_mode())
+    }
+
+    fn Duplicate_file_identifier(
+        &self,
+        Task: Task_identifier_type,
+        File: File_identifier_type,
+    ) -> Result_type<File_identifier_type> {
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
+
+        let (Pipe, Mode) = self
+            .0
+            .write()?
+            .Opened_pipes
+            .get(&Local_file_identifier)
+            .ok_or(Error_type::Invalid_identifier)?
+            .clone();
+
+        let mut Inner = self.0.write()?;
+
+        let New_file_identifier = Self::Get_new_file_identifier(Task, &Inner.Opened_pipes)?;
+
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, New_file_identifier);
+
+        if Inner
+            .Opened_pipes
+            .insert(Local_file_identifier, (Pipe, Mode))
+            .is_some()
+        {
+            // Should never happen.
+            return Err(Error_type::Internal_error);
         }
 
-        if let Some(Group) = Group {
-            Named_pipe.Group = Group;
-        }
-
-        Ok(())
+        Ok(New_file_identifier)
     }
 }
 
 #[cfg(test)]
 mod tests {
+
+    use Users::{Root_group_identifier, Root_user_identifier};
+
+    use crate::Type_type;
+
     use super::*;
+
+    const Permissions: Permissions_type = Permissions_type::New_default(Type_type::File);
 
     #[test]
     fn Test_new() {
@@ -395,7 +435,8 @@ mod tests {
         let File_identifier = File_identifier_type::from(0);
         let local_file_id =
             File_system_type::Get_local_file_identifier(Task_identifier, File_identifier);
-        assert_eq!(local_file_id, 65536); // 1 << 16 | 0
+
+        assert_eq!(local_file_id, 1 << (File_identifier_inner_type::BITS));
     }
 
     #[test]
@@ -408,6 +449,9 @@ mod tests {
                 Task_identifier,
                 Size.into(),
                 Status_type::default().Set_non_blocking(true),
+                Root_user_identifier,
+                Root_group_identifier,
+                Permissions,
             )
             .unwrap();
         assert_ne!(Read_identifier, Write_identifier);
@@ -429,6 +473,9 @@ mod tests {
                 Task_identifier,
                 Size.into(),
                 Status_type::default().Set_non_blocking(true),
+                Root_user_identifier,
+                Root_group_identifier,
+                Permissions,
             )
             .unwrap();
         File_system
@@ -436,6 +483,9 @@ mod tests {
                 Task_identifier,
                 Size.into(),
                 Status_type::default().Set_non_blocking(true),
+                Root_user_identifier,
+                Root_group_identifier,
+                Permissions,
             )
             .unwrap();
         File_system
@@ -443,6 +493,9 @@ mod tests {
                 Task_identifier,
                 Size.into(),
                 Status_type::default().Set_non_blocking(true),
+                Root_user_identifier,
+                Root_group_identifier,
+                Permissions,
             )
             .unwrap();
         File_system.Close_all(Task_identifier).unwrap();
@@ -456,7 +509,16 @@ mod tests {
         let Size = 1024_usize;
         let Path = Path_type::New("/named_pipe").unwrap();
 
-        File_system.Create_named_pipe(&Path, Size.into()).unwrap();
+        File_system
+            .Create_named_pipe(
+                &Path,
+                Size.into(),
+                Root_user_identifier,
+                Root_group_identifier,
+                Permissions,
+            )
+            .unwrap();
+
         assert!(File_system.Delete(&Path).is_ok());
         assert!(File_system.0.read().unwrap().Named_pipes.is_empty());
         assert!(File_system.Delete(&Path).is_err());
@@ -472,6 +534,9 @@ mod tests {
                 Task_identifier,
                 Size.into(),
                 Status_type::default().Set_non_blocking(true),
+                Root_user_identifier,
+                Root_group_identifier,
+                Permissions,
             )
             .unwrap();
 

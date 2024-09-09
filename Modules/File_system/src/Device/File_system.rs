@@ -1,30 +1,22 @@
 use std::{
     collections::{BTreeMap, HashMap},
-    sync::{Arc, RwLock},
+    sync::RwLock,
 };
 
 use Task::Task_identifier_type;
-use Users::{
-    Group_identifier_type, Root_group_identifier, Root_user_identifier, User_identifier_type,
-};
+use Users::{Root_group_identifier, Root_user_identifier, User_identifier_type};
 
 use crate::{
-    Error_type, File_identifier_type, File_system_traits, Flags_type, Path_type, Permissions_type,
-    Position_type, Result_type, Size_type, Type_type,
+    Error_type, File_identifier_inner_type, File_identifier_type, File_system_identifier_type,
+    File_system_traits, Flags_type, Mode_type, Path_type, Permissions_type, Position_type,
+    Result_type, Size_type, Statistics_type, Type_type,
 };
 
-use super::Device_trait;
-
-struct Internal_device_type {
-    pub Device: Arc<Box<dyn Device_trait>>,
-    pub User: User_identifier_type,
-    pub Group: User_identifier_type,
-    pub Permissions: Permissions_type,
-}
+use super::{Device_trait, Device_type};
 
 struct Inner_type {
-    Devices: HashMap<&'static Path_type, Internal_device_type>,
-    Opened_devices: BTreeMap<u32, (Arc<Box<dyn Device_trait>>, Flags_type)>,
+    Devices: HashMap<&'static Path_type, Device_type>,
+    Opened_devices: BTreeMap<usize, (Device_type, Flags_type)>,
 }
 
 pub struct File_system_type(RwLock<Inner_type>);
@@ -37,16 +29,19 @@ impl File_system_type {
         }))
     }
 
-    fn Get_new_file_identifier(
+    fn Get_new_file_identifier<T>(
         &self,
         Task: Task_identifier_type,
+        Opened_devices: &BTreeMap<usize, T>,
     ) -> Result_type<File_identifier_type> {
         let Start = Self::Get_local_file_identifier(Task, File_identifier_type::from(0));
         let End = Self::Get_local_file_identifier(Task, File_identifier_type::from(0xFFFF));
 
         for File_identifier in Start..=End {
-            if !self.0.read()?.Opened_devices.contains_key(&File_identifier) {
-                return Ok(File_identifier_type::from(File_identifier as u16));
+            if !Opened_devices.contains_key(&File_identifier) {
+                return Ok(File_identifier_type::from(
+                    File_identifier as File_identifier_inner_type,
+                ));
                 // Remove the task identifier and keep the file identifier.
             }
         }
@@ -70,19 +65,17 @@ impl File_system_traits for File_system_type {
         Path: &dyn AsRef<Path_type>,
         Flags: crate::Flags_type,
     ) -> Result_type<File_identifier_type> {
-        let Opened_device = self
-            .0
-            .read()
-            .unwrap()
+        let mut Inner = self.0.write()?;
+
+        let Opened_device = Inner
             .Devices
             .get(Path.as_ref())
             .ok_or(Error_type::Not_found)?
-            .Device
             .clone();
 
-        let File_identifier = self.Get_new_file_identifier(Task)?;
+        let File_identifier = self.Get_new_file_identifier(Task, &Inner.Opened_devices)?;
 
-        self.0.write()?.Opened_devices.insert(
+        Inner.Opened_devices.insert(
             Self::Get_local_file_identifier(Task, File_identifier),
             (Opened_device, Flags),
         );
@@ -114,22 +107,28 @@ impl File_system_traits for File_system_type {
         Old_task: Task_identifier_type,
         New_task: Task_identifier_type,
         File: File_identifier_type,
+        New_file_identifier: Option<File_identifier_type>,
     ) -> Result_type<File_identifier_type> {
         let File_identifier = Self::Get_local_file_identifier(Old_task, File);
 
-        let (Device, Flags) = self
-            .0
-            .write()?
+        let mut Inner = self.0.write()?;
+
+        let New_file_identifier = if let Some(New_file_identifier) = New_file_identifier {
+            New_file_identifier
+        } else {
+            self.Get_new_file_identifier(New_task, &Inner.Opened_devices)?
+        };
+
+        let (Device, Flags) = Inner
             .Opened_devices
             .remove(&File_identifier)
             .ok_or(Error_type::Not_found)?;
 
-        let New_file_identifier = self.Get_new_file_identifier(New_task)?;
+        let Local_file_identifier = Self::Get_local_file_identifier(New_task, New_file_identifier);
 
-        self.0.write()?.Opened_devices.insert(
-            Self::Get_local_file_identifier(New_task, New_file_identifier),
-            (Device, Flags),
-        );
+        Inner
+            .Opened_devices
+            .insert(Local_file_identifier, (Device, Flags));
 
         Ok(New_file_identifier)
     }
@@ -206,21 +205,6 @@ impl File_system_traits for File_system_type {
             .Flush()
     }
 
-    fn Get_type(&self, _: &dyn AsRef<Path_type>) -> Result_type<Type_type> {
-        Ok(Type_type::Character_device)
-    }
-
-    fn Get_size(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Size_type> {
-        self.0
-            .read()?
-            .Devices
-            .get(Path.as_ref())
-            .ok_or(Error_type::Not_found)?
-            .Device
-            .Get_size()
-            .map(|Size| Size.into())
-    }
-
     fn Create_directory(&self, _: &dyn AsRef<Path_type>) -> Result_type<()> {
         Err(Error_type::Unsupported_operation)
     }
@@ -238,12 +222,12 @@ impl File_system_traits for File_system_type {
 
         Inner.Devices.insert(
             Path.as_ref(),
-            Internal_device_type {
-                Device: Arc::new(Device),
-                User: Root_user_identifier,
-                Group: Root_group_identifier,
-                Permissions: Permissions_type::New_standard_file(),
-            },
+            Device_type::New(
+                Device,
+                Root_user_identifier,
+                Root_group_identifier,
+                Permissions_type::New_default(Type_type::Character_device),
+            ),
         );
 
         Ok(())
@@ -259,19 +243,7 @@ impl File_system_traits for File_system_type {
             .Devices
             .get_mut(Path.as_ref())
             .ok_or(Error_type::Not_found)?
-            .Permissions = Permissions;
-
-        Ok(())
-    }
-
-    fn Get_permissions(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Permissions_type> {
-        Ok(self
-            .0
-            .read()?
-            .Devices
-            .get(Path.as_ref())
-            .ok_or(Error_type::Not_found)?
-            .Permissions)
+            .Set_permissions(Permissions)
     }
 
     fn Set_owner(
@@ -280,33 +252,69 @@ impl File_system_traits for File_system_type {
         User: Option<User_identifier_type>,
         Group: Option<Users::Group_identifier_type>,
     ) -> Result_type<()> {
-        let mut Inner = self.0.write()?;
-
-        let Device = Inner
+        self.0
+            .write()?
             .Devices
             .get_mut(Path.as_ref())
-            .ok_or(Error_type::Not_found)?;
-
-        if let Some(User) = User {
-            Device.User = User;
-        }
-
-        if let Some(Group) = Group {
-            Device.Group = Group;
-        }
-
-        Ok(())
+            .ok_or(Error_type::Not_found)?
+            .Set_owner(User, Group)
     }
 
-    fn Get_owner(
+    fn Get_statistics(
         &self,
-        Path: &dyn AsRef<Path_type>,
-    ) -> Result_type<(User_identifier_type, Group_identifier_type)> {
+        Task: Task_identifier_type,
+        File: File_identifier_type,
+        File_system: File_system_identifier_type,
+    ) -> Result_type<Statistics_type> {
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
+
         self.0
             .read()?
-            .Devices
-            .get(Path.as_ref())
-            .map(|Device| (Device.User, Device.Group))
-            .ok_or(Error_type::Not_found)
+            .Opened_devices
+            .get(&Local_file_identifier)
+            .ok_or(Error_type::Not_found)?
+            .0
+            .Get_statistics(File_system, Local_file_identifier as u64)
+    }
+
+    fn Get_mode(
+        &self,
+        Task: Task_identifier_type,
+        File: File_identifier_type,
+    ) -> Result_type<Mode_type> {
+        Ok(self
+            .0
+            .read()?
+            .Opened_devices
+            .get(&Self::Get_local_file_identifier(Task, File))
+            .ok_or(Error_type::Not_found)?
+            .1
+            .Get_mode())
+    }
+
+    fn Duplicate_file_identifier(
+        &self,
+        Task: Task_identifier_type,
+        File: File_identifier_type,
+    ) -> Result_type<File_identifier_type> {
+        let mut Inner = self.0.write()?;
+
+        let File_identifier = Self::Get_local_file_identifier(Task, File);
+
+        let (Device, Flags) = Inner
+            .Opened_devices
+            .get(&File_identifier)
+            .ok_or(Error_type::Not_found)?
+            .clone();
+
+        let New_file_identifier = self.Get_new_file_identifier(Task, &Inner.Opened_devices)?;
+
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, New_file_identifier);
+
+        Inner
+            .Opened_devices
+            .insert(Local_file_identifier, (Device, Flags));
+
+        Ok(New_file_identifier)
     }
 }

@@ -8,16 +8,21 @@ use super::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(C)]
+#[repr(u8)]
 pub enum Type_type {
-    File = 1,
+    File,
     Directory,
     Block_device,
     Character_device,
-    Named_pipe,
+    Pipe,
+    Socket,
     Symbolic_link,
 }
 
+/// File structure.
+///
+/// This structure is used to represent a file in the virtual file system.
+/// This is a wrapper around the virtual file system.
 pub struct File_type {
     File_identifier: Unique_file_identifier_type,
     File_system: &'static Virtual_file_system_type,

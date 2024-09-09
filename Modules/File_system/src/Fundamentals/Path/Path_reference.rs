@@ -44,6 +44,10 @@ impl Path_type {
         }
     }
 
+    pub fn Is_valid(&self) -> bool {
+        Is_valid_string(&self.0)
+    }
+
     pub fn Is_absolute(&self) -> bool {
         self.0.starts_with('/')
     }
@@ -197,6 +201,12 @@ impl ToOwned for Path_type {
 impl Borrow<Path_type> for Path_owned_type {
     fn borrow(&self) -> &Path_type {
         unsafe { Path_type::New_unchecked(&self.0) }
+    }
+}
+
+impl AsRef<Path_type> for str {
+    fn as_ref(&self) -> &Path_type {
+        Path_type::New(self).unwrap()
     }
 }
 
