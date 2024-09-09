@@ -97,6 +97,15 @@ pub static Xila_memory_flag_fixed: u8 = Flags_type::Fixed_bit;
 #[no_mangle]
 pub static Xila_memory_flag_private: u8 = Flags_type::Private_bit;
 
+/// This function is used to allocate a memory region.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors
+///
+/// This function may return an error if the memory allocator fails to allocate the memory region.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_memory_allocate_custom(
     Hint_address: *mut c_void,
@@ -128,6 +137,15 @@ pub unsafe extern "C" fn Xila_memory_allocate_custom(
     }
 }
 
+/// This function is used to deallocate a memory region.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors
+///
+/// This function may return an error if the memory allocator fails to deallocate the memory region.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_memory_deallocate_custom(
     Pointer: *mut c_void,
@@ -141,6 +159,15 @@ pub unsafe extern "C" fn Xila_memory_deallocate_custom(
     Allocator.Deallocate_custom(Pointer, Length)
 }
 
+/// This function is used to set the protection of a memory region.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors
+///
+/// This function may return an error if the memory allocator fails to set the protection of the memory region.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_memory_protect(
     Pointer: *mut c_void,
@@ -155,11 +182,7 @@ pub unsafe extern "C" fn Xila_memory_protect(
     let Pointer =
         NonNull::new(Pointer as *mut u8).expect("Failed to protect memory, pointer is null");
 
-    let r = Allocator.Protect(Pointer, Length, Protection);
-
-    println!("Protected memory : {}", r);
-
-    r
+    Allocator.Protect(Pointer, Length, Protection)
 }
 
 #[no_mangle]
