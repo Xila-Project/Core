@@ -8,6 +8,7 @@ File_system = { path = "../File_system" }
 Task = { version = "0.1.0", path = "../Task" }
 Users = { version = "0.1.0", path = "../Users" }
 Graphics = { path = "../Graphics" }
+Shared = { path = "../Shared" }
 paste = "1.0.15"
 quote = "1.0.36"
 Peripherals = { version = "0.1.0", path = "../Peripherals" }
@@ -34,14 +35,14 @@ binstart = ["esp-idf-sys/binstart"]
 libstart = ["esp-idf-sys/libstart"]
 
 [target.'cfg( target_os = "espidf" )'.dependencies]
-esp-idf-sys = { version = "0.34.1" }
+esp-idf-sys = { version = "0.35.0" }
 
 [build-dependencies]
 embuild = { version = "0.32", features = ["espidf"] }
 
 [target.'cfg( target_os = "espidf" )'.dev-dependencies]
 anyhow = "1"
-esp-idf-sys = { version = "0.34.1", features = ["binstart"] }
+esp-idf-sys = { version = "0.35.0", features = ["binstart"] }
 mipidsi = "0.5.0"
 display-interface-spi = "0.4.1"
 embedded-graphics = "0.7.1"
