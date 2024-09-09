@@ -4,6 +4,7 @@
 
 mod Error;
 pub mod Raw_mutex;
+pub mod Raw_rwlock;
 pub use Error::*;
 
 mod Manager;
