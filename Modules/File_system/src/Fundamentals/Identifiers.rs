@@ -1,4 +1,5 @@
 use core::ops::{Add, AddAssign};
+use std::fmt::Debug;
 
 #[cfg(target_pointer_width = "32")]
 pub type File_identifier_inner_type = u16;
@@ -68,9 +69,21 @@ impl From<File_system_identifier_type> for File_system_identifier_inner_type {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
 pub struct Unique_file_identifier_type(usize);
+
+impl Debug for Unique_file_identifier_type {
+    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (File_system_identifier, File_identifier) = self.Split();
+
+        Formatter
+            .debug_struct("Unique_file_identifier_type")
+            .field("", &File_system_identifier)
+            .field("", &File_identifier)
+            .finish()
+    }
+}
 
 impl Unique_file_identifier_type {
     pub fn New(
