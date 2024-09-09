@@ -100,7 +100,7 @@ impl Unique_file_identifier_type {
         )
     }
 
-    pub fn Split(self) -> (File_system_identifier_type, File_identifier_type) {
+    pub fn Split(&self) -> (File_system_identifier_type, File_identifier_type) {
         let File_system = self.0 >> File_identifier_inner_type::BITS;
         let File_system =
             File_system_identifier_type::from(File_system as File_system_identifier_inner_type);
