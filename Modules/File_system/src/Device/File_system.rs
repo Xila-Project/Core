@@ -276,9 +276,45 @@ impl File_system_traits for File_system_type {
             .0
             .Get_statistics(File_system, Local_file_identifier as u64)
     }
-            .Devices
-            .get(Path.as_ref())
-            .map(|Device| (Device.User, Device.Group))
-            .ok_or(Error_type::Not_found)
+
+    fn Get_mode(
+        &self,
+        Task: Task_identifier_type,
+        File: File_identifier_type,
+    ) -> Result_type<Mode_type> {
+        Ok(self
+            .0
+            .read()?
+            .Opened_devices
+            .get(&Self::Get_local_file_identifier(Task, File))
+            .ok_or(Error_type::Not_found)?
+            .1
+            .Get_mode())
+    }
+
+    fn Duplicate_file_identifier(
+        &self,
+        Task: Task_identifier_type,
+        File: File_identifier_type,
+    ) -> Result_type<File_identifier_type> {
+        let mut Inner = self.0.write()?;
+
+        let File_identifier = Self::Get_local_file_identifier(Task, File);
+
+        let (Device, Flags) = Inner
+            .Opened_devices
+            .get(&File_identifier)
+            .ok_or(Error_type::Not_found)?
+            .clone();
+
+        let New_file_identifier = self.Get_new_file_identifier(Task, &Inner.Opened_devices)?;
+
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, New_file_identifier);
+
+        Inner
+            .Opened_devices
+            .insert(Local_file_identifier, (Device, Flags));
+
+        Ok(New_file_identifier)
     }
 }
