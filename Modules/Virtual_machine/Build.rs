@@ -4,6 +4,7 @@ use std::{env, process::Command};
 fn main() -> Result<(), ()> {
     println!("cargo:rerun-if-changed=Tests/WASM_test/src/main.rs");
     println!("cargo:rerun-if-changed=Tests/WASM_test/Cargo.toml");
+    println!("cargo:rerun-if-changed=Tests/WASM_test/.cargo/config.toml");
 
     // TODO : Add a check for test mode
 
