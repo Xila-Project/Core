@@ -11,6 +11,10 @@ pub type File_identifier_inner_type = u32;
 pub struct File_identifier_type(File_identifier_inner_type);
 
 impl File_identifier_type {
+    pub const Stdin: File_identifier_type = File_identifier_type::New(0);
+    pub const Stdout: File_identifier_type = File_identifier_type::New(1);
+    pub const Stderr: File_identifier_type = File_identifier_type::New(2);
+
     pub const fn New(Identifier: File_identifier_inner_type) -> Self {
         Self(Identifier)
     }
