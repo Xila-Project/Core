@@ -3,6 +3,7 @@
 #![allow(non_upper_case_globals)]
 
 mod Error;
+pub mod ABI;
 pub mod Raw_mutex;
 pub mod Raw_rwlock;
 pub use Error::*;
