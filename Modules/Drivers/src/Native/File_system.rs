@@ -1,14 +1,16 @@
 use File_system::{
-    Error_type, File_identifier_type, File_system_traits, Flags_type, Path_owned_type, Path_type,
-    Position_type, Result_type, Size_type, Type_type, Virtual_file_system_type,
+    Error_type, File_identifier_inner_type, File_identifier_type, File_system_traits, Flags_type,
+    Path_owned_type, Path_type, Position_type, Result_type, Size_type, Statistics_type, Type_type,
+    Virtual_file_system_type,
 };
+use Shared::Time_type;
 
 use std::collections::BTreeMap;
 use std::env::{current_dir, var};
 use std::fs::*;
 use std::io::{ErrorKind, Read, Seek, Write};
 
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use Task::Task_identifier_type;
 
@@ -39,7 +41,7 @@ fn Apply_flags_to_open_options(Flags: Flags_type, Open_options: &mut OpenOptions
 
 pub struct File_system_type {
     Virtual_root_path: Path_owned_type,
-    Open_files: RwLock<BTreeMap<u32, RwLock<File>>>,
+    Open_files: RwLock<BTreeMap<usize, Arc<RwLock<(File, Flags_type)>>>>,
 }
 
 impl File_system_type {
@@ -75,9 +77,9 @@ impl File_system_type {
         Some(Root_path)
     }
 
-    fn Get_new_file_identifier(
+    fn Get_new_file_identifier<T>(
         Task_identifier: Task_identifier_type,
-        Open_files: &BTreeMap<u32, RwLock<File>>,
+        Open_files: &BTreeMap<usize, T>,
     ) -> Result_type<File_identifier_type> {
         let Start = Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0));
         let End =
@@ -85,7 +87,7 @@ impl File_system_type {
 
         for i in Start..End {
             if !Open_files.contains_key(&i) {
-                return Ok(File_identifier_type::from(i as u16));
+                return Ok(File_identifier_type::from(i as File_identifier_inner_type));
             }
         }
 
@@ -132,13 +134,13 @@ impl File_system_traits for File_system_type {
 
         let mut Open_files = self.Open_files.write()?;
 
-        let File_identifier = Self::Get_new_file_identifier(Task_identifier, &Open_files)?;
+        let File_identifier = Self::Get_new_file_identifier(Task_identifier, &*Open_files)?;
 
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
 
         if Open_files
-            .insert(Local_file_identifier, RwLock::new(File))
+            .insert(Local_file_identifier, Arc::new(RwLock::new((File, Flags))))
             .is_some()
         {
             return Err(Error_type::Internal_error);
@@ -162,6 +164,7 @@ impl File_system_traits for File_system_type {
             .get(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?
             .write()?
+            .0
             .read(Buffer)?
             .into())
     }
@@ -181,6 +184,7 @@ impl File_system_traits for File_system_type {
             .get_mut(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?
             .write()?
+            .0
             .write(Buffer)?
             .into())
     }
@@ -192,6 +196,7 @@ impl File_system_traits for File_system_type {
             .get_mut(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?
             .write()?
+            .0
             .flush()?;
         Ok(())
     }
@@ -203,18 +208,6 @@ impl File_system_traits for File_system_type {
             .remove(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
         Ok(())
-    }
-
-    fn Get_type(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Type_type> {
-        let Full_path = self.Get_full_path(&Path)?;
-        let Metadata = metadata(Full_path.as_ref() as &Path_type)?;
-        Ok(From_file_type(Metadata.file_type()))
-    }
-
-    fn Get_size(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Size_type> {
-        let Full_path = self.Get_full_path(&Path)?;
-        let Metadata = metadata(Full_path.as_ref() as &Path_type)?;
-        Ok(Metadata.len().into())
     }
 
     fn Set_position(
@@ -232,6 +225,7 @@ impl File_system_traits for File_system_type {
             .get_mut(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?
             .write()?
+            .0
             .seek((*Position_type).into())
             .map_err(|Error| Error.kind())?
             .into())
@@ -277,25 +271,36 @@ impl File_system_traits for File_system_type {
         Old_task: Task_identifier_type,
         New_task: Task_identifier_type,
         Old_file_identifier: File_identifier_type,
+        New_file_identifier: Option<File_identifier_type>,
     ) -> Result_type<File_identifier_type> {
         let Old_local_file_identifier =
             Self::Get_local_file_identifier(Old_task, Old_file_identifier);
 
         let mut Open_files = self.Open_files.write()?;
 
-        let New_file_identifier = Self::Get_new_file_identifier(New_task, &Open_files)?;
+        let New_file_identifier = if let Some(New_file_identifier) = New_file_identifier {
+            New_file_identifier
+        } else {
+            Self::Get_new_file_identifier(New_task, &Open_files)?
+        };
+
         let New_local_file_identifier =
             Self::Get_local_file_identifier(New_task, New_file_identifier);
+
+        if Open_files.contains_key(&New_local_file_identifier) {
+            return Err(Error_type::Invalid_identifier);
+        }
 
         let File = Open_files
             .remove(&Old_local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
 
         if Open_files.insert(New_local_file_identifier, File).is_some() {
+            // Should never happen.
             return Err(Error_type::Internal_error);
         }
 
-        Ok(File_identifier_type::from(New_local_file_identifier as u16))
+        Ok(New_file_identifier)
     }
 
     fn Move(
@@ -311,6 +316,82 @@ impl File_system_traits for File_system_type {
             Destination.as_ref() as &Path_type,
         )?;
         Ok(())
+    }
+
+    fn Get_statistics(
+        &self,
+        Task: Task_identifier_type,
+        File: File_identifier_type,
+        File_system: File_system::File_system_identifier_type,
+    ) -> Result_type<File_system::Statistics_type> {
+        use std::os::unix::fs::MetadataExt;
+
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
+
+        let Open_files = self.Open_files.read()?;
+
+        let Metadata = Open_files
+            .get(&Local_file_identifier)
+            .ok_or(Error_type::Invalid_identifier)?
+            .read()?
+            .0
+            .metadata()?;
+
+        Ok(Statistics_type::New(
+            File_system,
+            Metadata.ino(),
+            Metadata.nlink(),
+            Metadata.len().into(),
+            Time_type::New(Metadata.atime() as u64),
+            Time_type::New(Metadata.mtime() as u64),
+            Time_type::New(Metadata.ctime() as u64),
+            From_file_type(Metadata.file_type()),
+        ))
+    }
+
+    fn Duplicate_file_identifier(
+        &self,
+        Task: Task_identifier_type,
+        File: File_identifier_type,
+    ) -> Result_type<File_identifier_type> {
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
+
+        let File = self
+            .Open_files
+            .read()?
+            .get(&Local_file_identifier)
+            .ok_or(Error_type::Not_found)?
+            .clone();
+
+        let mut Open_files = self.Open_files.write()?;
+
+        let New_file_identifier = Self::Get_new_file_identifier(Task, &*Open_files)?;
+
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, New_file_identifier);
+
+        if Open_files.insert(Local_file_identifier, File).is_some() {
+            // Should never happen.
+            return Err(Error_type::Internal_error);
+        }
+
+        Ok(New_file_identifier)
+    }
+
+    fn Get_mode(
+        &self,
+        Task: Task_identifier_type,
+        File: File_identifier_type,
+    ) -> Result_type<File_system::Mode_type> {
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
+
+        Ok(self
+            .Open_files
+            .read()?
+            .get(&Local_file_identifier)
+            .ok_or(Error_type::Not_found)?
+            .read()?
+            .1
+            .Get_mode())
     }
 }
 
