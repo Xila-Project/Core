@@ -8,7 +8,7 @@ use super::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(C)]
+#[repr(u8)]
 pub enum Type_type {
     File = 1,
     Directory,
