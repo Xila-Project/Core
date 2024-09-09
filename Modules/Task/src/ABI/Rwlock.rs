@@ -1,5 +1,14 @@
 use crate::Raw_rwlock::Raw_rwlock_type;
 
+/// This function is used to initialize a rwlock.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors
+///
+/// This function may return an error if the rwlock is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_initialize_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
     println!("Initializing rwlock : {:p}", Rwlock);
@@ -19,6 +28,15 @@ pub unsafe extern "C" fn Xila_initialize_rwlock(Rwlock: *mut Raw_rwlock_type) ->
     true
 }
 
+/// This function is used to read a rwlock.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors
+///
+/// This function may return an error if the rwlock is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_read_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
     let Rwlock = match Raw_rwlock_type::From_mutable_pointer(Rwlock) {
@@ -29,6 +47,15 @@ pub unsafe extern "C" fn Xila_read_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool 
     Rwlock.Read()
 }
 
+/// This function is used to write a rwlock.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors
+///
+/// This function may return an error if the rwlock is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_write_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
     let Rwlock = match Raw_rwlock_type::From_mutable_pointer(Rwlock) {
@@ -39,6 +66,15 @@ pub unsafe extern "C" fn Xila_write_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool
     Rwlock.Write()
 }
 
+/// This function is used to unlock a rwlock.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors
+///
+/// This function may return an error if the rwlock is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_unlock_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
     let Rwlock = match Raw_rwlock_type::From_mutable_pointer(Rwlock) {
@@ -49,6 +85,15 @@ pub unsafe extern "C" fn Xila_unlock_rwlock(Rwlock: *mut Raw_rwlock_type) -> boo
     Rwlock.Unlock()
 }
 
+/// This function is used to destroy a rwlock.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors
+///
+/// This function may return an error if the rwlock is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_destroy_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
     println!(

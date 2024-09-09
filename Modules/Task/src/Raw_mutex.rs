@@ -37,6 +37,15 @@ impl<'a> Raw_mutex_type<'a> {
         true
     }
 
+    /// Transforms a pointer to a reference.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences a raw pointer.
+    ///
+    /// # Errors
+    ///
+    /// This function may return an error if the pointer is null or not aligned.
     pub unsafe fn From_pointer(Pointer: *const Raw_mutex_type<'a>) -> Option<&'a Self> {
         if Self::Is_valid_pointer(Pointer) {
             return None;
@@ -45,6 +54,15 @@ impl<'a> Raw_mutex_type<'a> {
         Some(&*Pointer)
     }
 
+    /// Transforms a mutable pointer to a mutable reference.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences a raw pointer.
+    ///
+    /// # Errors
+    ///
+    /// This function may return an error if the pointer is null or not aligned.
     pub unsafe fn From_mutable_pointer(Pointer: *mut Raw_mutex_type<'a>) -> Option<&'a mut Self> {
         if Self::Is_valid_pointer(Pointer) {
             return None;
@@ -53,6 +71,15 @@ impl<'a> Raw_mutex_type<'a> {
         Some(&mut *Pointer)
     }
 
+    /// Transforms a mutable pointer to a box.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences a raw pointer.
+    ///
+    /// # Errors
+    ///
+    /// This function may return an error if the pointer is null or not aligned.
     pub unsafe fn From_mutable_pointer_to_box(
         Pointer: *mut Raw_mutex_type<'a>,
     ) -> Option<Box<Self>> {

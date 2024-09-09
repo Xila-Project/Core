@@ -3,6 +3,15 @@ use crate::Raw_mutex::Raw_mutex_type;
 #[no_mangle]
 pub static Raw_mutex_size: usize = size_of::<Raw_mutex_type>();
 
+/// This function is used to initialize a mutex.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors
+///
+/// This function may return an error if the mutex is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_initialize_mutex(Mutex: *mut Raw_mutex_type) -> bool {
     println!("Initializing mutex : {:p}", Mutex);
@@ -43,6 +52,15 @@ pub unsafe extern "C" fn Xila_initialize_recursive_mutex(Mutex: *mut Raw_mutex_t
     true
 }
 
+/// This function is used to lock a mutex.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors
+///
+/// This function may return an error if the mutex is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_lock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
     println!(
@@ -59,6 +77,15 @@ pub unsafe extern "C" fn Xila_lock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
     Mutex.Lock()
 }
 
+/// This function is used to unlock a mutex.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors
+///
+/// This function may return an error if the mutex is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_unlock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
     println!(
@@ -75,6 +102,15 @@ pub unsafe extern "C" fn Xila_unlock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
     Mutex.Unlock()
 }
 
+/// This function is used to destroy a mutex.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors    
+///
+/// This function may return an error if the mutex is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_destroy_mutex(Mutex: *mut Raw_mutex_type) -> bool {
     println!(
