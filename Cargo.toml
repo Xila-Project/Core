@@ -2,13 +2,11 @@
 members = [
     "Modules/File_system",
     "Modules/Bindings",
-    "Modules/Shared",
     "Modules/Virtual_machine",
     "Modules/Graphics",
-    "Modules/Screen",
     "Modules/Task",
     "Modules/Users",
-    "Modules/Drivers",
+    "Modules/Drivers", "Modules/Peripherals", "Modules/Memory", "Modules/Time",
 ]
 exclude = [
     "Build_tool",
@@ -30,8 +28,8 @@ opt-level = "s" # Optimize binary size
 
 [profile.dev]
 debug = true    # Symbols are nice and they don't increase the size on Flash.
-opt-level = "z" # Optimize binary size and turn off loop vectorization.
-# opt-level = 0 # Disable optimizations to speed up compilation and in case of bugs.
+#opt-level = "z" # Optimize binary size and turn off loop vectorization.
+opt-level = 0 # Disable optimizations to speed up compilation and in case of bugs.
 
 [features]
 pio = ["esp-idf-svc/pio"]
@@ -49,14 +47,14 @@ embassy = [
 Virtual_machine = { path = "Modules/Virtual_machine" }
 
 [target.'cfg( target_os = "espidf" )'.dependencies]
-esp-idf-sys = { version = "0.34.1", features = ["binstart"] }
-esp-idf-hal = "0.43.1"
+esp-idf-sys = { version = "0.35.0", features = ["binstart"] }
+esp-idf-hal = "0.44.1"
 log = { version = "0.4", default-features = false }
-esp-idf-svc = { version = "0.48.1" }
+esp-idf-svc = { version = "0.49.1" }
 embedded-hal = "1.0.0"
 
 [build-dependencies]
-embuild = { version = "0.31.4", features = ["espidf"] }
+embuild = { version = "0.32.0", features = ["espidf"] }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 byteorder = "1.5.0"
