@@ -18,8 +18,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      MDBOOK_VERSION: 0.4.40
     steps:
       - name: Setup | Checkout repository
         uses: actions/checkout@v4
