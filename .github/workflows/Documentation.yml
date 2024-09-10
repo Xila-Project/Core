@@ -2,7 +2,7 @@ name: Build and deploy rust documentation to Github Pages
 
 on:
   push:
-    branches: ["main", "Continuous_integration"]
+    branches: ["main"]
 
   workflow_dispatch:
 
