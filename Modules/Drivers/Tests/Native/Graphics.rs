@@ -45,7 +45,9 @@ fn main() {
         .Add_device(&Screen_device_path, Box::new(S))
         .expect("Error adding screen device");
 
-    let Task = Task_instance.Get_current_task_identifier();
+    let Task = Task_instance
+        .Get_current_task_identifier()
+        .expect("Failed to get current task identifier");
 
     let Pointer_file = File_type::Open(
         Virtual_file_system,
