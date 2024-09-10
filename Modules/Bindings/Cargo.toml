@@ -14,7 +14,6 @@ Shared = { path = "../Shared" }
 Users = { path = "../Users" }
 Task = { path = "../Task" }
 Graphics = { path = "../Graphics" }
-Screen = { path = "../Screen" }
 
 [dev-dependencies]
 Drivers = { path = "../Drivers" }
