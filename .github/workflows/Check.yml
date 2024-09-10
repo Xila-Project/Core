@@ -1,4 +1,4 @@
-name: Continuous integration
+name: Check rust code
 
 on:
   push:
