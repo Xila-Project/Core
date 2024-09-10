@@ -29,6 +29,8 @@ jobs:
 
       - name: Setup | Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown, wasm32-wasip1
 
       - name: Build | Documentation
         run: |
