@@ -28,7 +28,9 @@ fn Test_file_system() {
         .Mount(Box::new(File_system), Path_type::Get_root())
         .expect("Failed to mount file system");
 
-    let Task = Task_instance.Get_current_task_identifier();
+    let Task = Task_instance
+        .Get_current_task_identifier()
+        .expect("Failed to get current task identifier");
 
     let File_path = Path_type::New("/test.txt").expect("Failed to create path");
 
