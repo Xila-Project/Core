@@ -6,7 +6,10 @@ members = [
     "Modules/Graphics",
     "Modules/Task",
     "Modules/Users",
-    "Modules/Drivers", "Modules/Peripherals", "Modules/Memory", "Modules/Time",
+    "Modules/Drivers",
+    "Modules/Peripherals",
+    "Modules/Memory",
+    "Modules/Time",
 ]
 exclude = [
     "Build_tool",
@@ -27,7 +30,7 @@ build = "Build/src/Main.rs"
 opt-level = "s" # Optimize binary size
 
 [profile.dev]
-debug = true    # Symbols are nice and they don't increase the size on Flash.
+debug = true # Symbols are nice and they don't increase the size on Flash.
 #opt-level = "z" # Optimize binary size and turn off loop vectorization.
 opt-level = 0 # Disable optimizations to speed up compilation and in case of bugs.
 
