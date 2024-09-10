@@ -37,7 +37,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-          target: wasm32-unknown-unknown
+          target: wasm32-wasip1, wasm32-unknown-unknown
 
       - name: Setup | Rust esp xtensa toolchain
         if: matrix.target == 'esp32' || matrix.target == 'esp32s3'
