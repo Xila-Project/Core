@@ -7,19 +7,14 @@ edition = "2021"
 cstr_core = "0.2.6"
 Task = { path = "../Task" }
 File_system = { version = "0.1.0", path = "../File_system" }
+lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git" }
 
 [target.'cfg( target_os = "espidf" )'.dependencies]
-lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", default-features = false, features = [
-    "embedded-graphics",
-    "unsafe_no_autoinit",
-], rev = "9829aef" }
 embedded-graphics = "0.8.1"
 Shared = { path = "../Shared" }
 
 
 [target.'cfg( target_arch = "x86_64" )'.dependencies]
-lvgl = { git = "https://github.com/lvgl/lv_binding_rust.git", features = [
-], rev = "9829aef" }
 embedded-graphics = "0.8.1"
 Shared = { path = "../Shared" }
 
