@@ -28,5 +28,4 @@ pub use Screen::*;
 
 //pub use Window::*;
 
-pub use lvgl;
-pub use lvgl::sys;
+use lvgl_rust_sys as lvgl;

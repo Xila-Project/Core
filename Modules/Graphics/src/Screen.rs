@@ -6,32 +6,31 @@ use lvgl::DisplayRefresh;
 use crate::{Area_type, Color_type, Point_type};
 
 #[repr(transparent)]
-pub struct Screen_write_data_type<const Buffer_size: usize> {
-    Inner: DisplayRefresh<Buffer_size>,
+pub struct Screen_write_data_type {
+    Area: Area_type,
+    Buffer: &[Color_type],
 }
 
-impl<const Buffer_size: usize> AsRef<Screen_write_data_type<Buffer_size>>
-    for &DisplayRefresh<Buffer_size>
-{
-    fn as_ref(&self) -> &Screen_write_data_type<Buffer_size> {
-        unsafe { transmute(self) }
+impl Screen_write_data_type {
+    pub fn New(Area: Area_type, Buffer: &[Color_type]) -> Self {
+        Self { Area, Buffer }
     }
 }
 
-impl<const Buffer_size: usize> AsRef<[u8]> for Screen_write_data_type<Buffer_size> {
+impl AsRef<[u8]> for Screen_write_data_type {
     fn as_ref(&self) -> &[u8] {
         unsafe { std::slice::from_raw_parts(self as *const _ as *const u8, size_of::<Self>()) }
     }
 }
 
-impl<const Buffer_size: usize> TryFrom<&[u8]> for &Screen_write_data_type<Buffer_size> {
+impl TryFrom<&[u8]> for &Screen_write_data_type {
     type Error = ();
 
     fn try_from(Value: &[u8]) -> Result<Self, Self::Error> {
-        if Value.len() != size_of::<Screen_write_data_type<Buffer_size>>() {
+        if Value.len() != size_of::<Screen_write_data_type>() {
             return Err(());
         }
-        if Value.as_ptr() as usize % align_of::<Screen_write_data_type<Buffer_size>>() != 0 {
+        if Value.as_ptr() as usize % align_of::<Screen_write_data_type>() != 0 {
             return Err(());
         }
 
@@ -39,7 +38,7 @@ impl<const Buffer_size: usize> TryFrom<&[u8]> for &Screen_write_data_type<Buffer
     }
 }
 
-impl<const Buffer_size: usize> Screen_write_data_type<Buffer_size> {
+impl Screen_write_data_type {
     pub fn Get_area(&self) -> Area_type {
         Area_type::New(
             Point_type::New(self.Inner.area.x1, self.Inner.area.y1),

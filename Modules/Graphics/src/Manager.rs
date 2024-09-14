@@ -1,5 +1,7 @@
 use std::sync::Mutex;
 
+use super::lvgl;
+
 use super::Point_type;
 use File_system::File_type;
 
@@ -13,8 +15,6 @@ pub fn Initialize() -> Result_type<&'static Manager_type> {
         if Is_initialized() {
             return Err(Error_type::Already_initialized);
         }
-
-        lvgl::init();
 
         Manager_instance.replace(Manager_type::New());
     }
@@ -33,8 +33,16 @@ struct Inner(Option<Input_type>);
 
 pub struct Manager_type(Mutex<Inner>);
 
+impl Drop for Manager_type {
+    fn drop(&mut self) {
+        lvgl::deinit();
+    }
+}
+
 impl Manager_type {
     fn New() -> Self {
+        lvgl::init();
+
         Self(Mutex::new(Inner(None)))
     }
 

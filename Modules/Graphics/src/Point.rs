@@ -1,5 +1,7 @@
 use embedded_graphics::geometry::Point;
 
+use super::lvgl;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Point_type {
     X: i16,
@@ -17,6 +19,10 @@ impl Point_type {
 
     pub const fn Get_y(&self) -> i16 {
         self.Y
+    }
+
+    pub fn Split(self) -> (i16, i16) {
+        (self.X, self.Y)
     }
 
     pub fn Set_x(mut self, Value: i16) -> Self {
@@ -39,6 +45,15 @@ impl Point_type {
         let X = (self.X - Other.X) as f32;
         let Y = (self.Y - Other.Y) as f32;
         (X * X + Y * Y).sqrt()
+    }
+}
+
+impl From<Point_type> for lvgl::lv_point_t {
+    fn from(Point: Point_type) -> Self {
+        Self {
+            x: Point.X,
+            y: Point.Y,
+        }
     }
 }
 
