@@ -72,33 +72,17 @@ impl AsMut<[u8]> for Pointer_data_type {
 
 impl From<Pointer_data_type> for lvgl::lv_indev_data_t {
     fn from(Value: Pointer_data_type) -> lvgl::lv_indev_data_t {
-        let Input_device_data = lvgl::lv_indev_data_t::default();
+        let mut Input_device_data = lvgl::lv_indev_data_t::default();
 
         let State = Value.Get_touch();
 
         if *State == Touch_type::Pressed {
-            Input_device_data.point = Value.Get_point().into();
-            Input_device_data.state =
-                lvgl::lv_indev_state_t::lv_indev_state_t_LV_INDEV_STATE_PRESSED;
-        } else {
-            Input_device_data.state =
-                lvgl::lv_indev_state_t::lv_indev_state_t_LV_INDEV_STATE_RELEASED;
+            Input_device_data.point = (*Value.Get_point()).into();
         }
 
+        Input_device_data.state = (*State).into();
+
         Input_device_data
-    }
-}
-
-impl From<Pointer_data_type> for BufferStatus {
-    fn from(Value: Pointer_data_type) -> BufferStatus {
-        let Input_data = pointer::PointerInputData::Touch(Value.Get_point().into());
-
-        let Input_data = match Value.Get_touch() {
-            Touch_type::Pressed => Input_data.pressed(),
-            Touch_type::Released => Input_data.released(),
-        };
-
-        Input_data.once()
     }
 }
 
@@ -112,10 +96,8 @@ pub enum Touch_type {
 impl From<Touch_type> for lvgl::lv_indev_state_t {
     fn from(Value: Touch_type) -> lvgl::lv_indev_state_t {
         match Value {
-            Touch_type::Pressed => lvgl::lv_indev_state_t::lv_indev_state_t_LV_INDEV_STATE_PRESSED,
-            Touch_type::Released => {
-                lvgl::lv_indev_state_t::lv_indev_state_t_LV_INDEV_STATE_RELEASED
-            }
+            Touch_type::Pressed => lvgl::lv_indev_state_t_LV_INDEV_STATE_PRESSED,
+            Touch_type::Released => lvgl::lv_indev_state_t_LV_INDEV_STATE_RELEASED,
         }
     }
 }

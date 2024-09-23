@@ -1,5 +1,3 @@
-use embedded_graphics::geometry::Point;
-
 use super::lvgl;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -48,23 +46,23 @@ impl Point_type {
     }
 }
 
+impl From<(i16, i16)> for Point_type {
+    fn from((X, Y): (i16, i16)) -> Self {
+        Self::New(X, Y)
+    }
+}
+
+impl From<Point_type> for (i16, i16) {
+    fn from(Point: Point_type) -> Self {
+        Point.Split()
+    }
+}
+
 impl From<Point_type> for lvgl::lv_point_t {
     fn from(Point: Point_type) -> Self {
         Self {
-            x: Point.X,
-            y: Point.Y,
+            x: Point.X as i32,
+            y: Point.Y as i32,
         }
-    }
-}
-
-impl From<&Point> for Point_type {
-    fn from(Point: &Point) -> Self {
-        Self::New(Point.x as i16, Point.y as i16)
-    }
-}
-
-impl From<&Point_type> for Point {
-    fn from(Point: &Point_type) -> Self {
-        Self::new(Point.X as i32, Point.Y as i32)
     }
 }

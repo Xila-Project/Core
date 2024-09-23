@@ -17,11 +17,11 @@ impl Area_type {
     }
 
     pub fn Get_width(&self) -> u16 {
-        (self.1.Get_x() - self.0.Get_x()).abs() as u16
+        (self.1.Get_x() - self.0.Get_x()).unsigned_abs()
     }
 
     pub fn Get_height(&self) -> u16 {
-        (self.1.Get_y() - self.0.Get_y()).abs() as u16
+        (self.1.Get_y() - self.0.Get_y()).unsigned_abs()
     }
 
     pub fn Set_point_1(mut self, Value: Point_type) -> Self {

@@ -1,53 +1,63 @@
 use core::mem::{size_of, transmute};
 use std::mem::align_of;
 
-use lvgl::DisplayRefresh;
-
 use crate::{Area_type, Color_type, Point_type};
 
-#[repr(transparent)]
-pub struct Screen_write_data_type {
+pub struct Screen_write_data_type<'a> {
     Area: Area_type,
-    Buffer: &[Color_type],
+    Buffer: &'a [Color_type],
 }
 
-impl Screen_write_data_type {
-    pub fn New(Area: Area_type, Buffer: &[Color_type]) -> Self {
+impl<'a> Screen_write_data_type<'a> {
+    pub fn New(Area: Area_type, Buffer: &'a [Color_type]) -> Self {
         Self { Area, Buffer }
     }
 }
 
-impl AsRef<[u8]> for Screen_write_data_type {
+impl<'a> AsRef<[u8]> for Screen_write_data_type<'a> {
     fn as_ref(&self) -> &[u8] {
         unsafe { std::slice::from_raw_parts(self as *const _ as *const u8, size_of::<Self>()) }
     }
 }
 
-impl TryFrom<&[u8]> for &Screen_write_data_type {
+impl<'a> TryFrom<&[u8]> for &Screen_write_data_type<'a> {
     type Error = ();
 
+    /// This function is used to convert a buffer of bytes to a struct.
+    ///
+    /// # Arguments
+    ///
+    /// * `Value` - A buffer of bytes.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the size of the buffer is not the same as the size of the struct.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences a raw pointer.
+    ///
     fn try_from(Value: &[u8]) -> Result<Self, Self::Error> {
         if Value.len() != size_of::<Screen_write_data_type>() {
             return Err(());
         }
+
         if Value.as_ptr() as usize % align_of::<Screen_write_data_type>() != 0 {
             return Err(());
         }
 
-        Ok(unsafe { *(Value.as_ptr() as *const Self) })
+        #[allow(clippy::transmute_ptr_to_ref)]
+        Ok(unsafe { transmute::<*const u8, Self>(Value.as_ptr()) })
     }
 }
 
-impl Screen_write_data_type {
+impl<'a> Screen_write_data_type<'a> {
     pub fn Get_area(&self) -> Area_type {
-        Area_type::New(
-            Point_type::New(self.Inner.area.x1, self.Inner.area.y1),
-            Point_type::New(self.Inner.area.x2, self.Inner.area.y2),
-        )
+        self.Area
     }
 
-    pub fn Get_buffer(&self) -> &[Color_type; Buffer_size] {
-        unsafe { transmute(&self.Inner.colors) }
+    pub fn Get_buffer(&self) -> &[Color_type] {
+        self.Buffer
     }
 }
 
