@@ -2,13 +2,13 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
-pub mod ABI;
 #[cfg(target_os = "espidf")]
 mod Espressif;
 mod Flags;
 mod Layout;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 mod Native;
+
 mod Protection;
 mod Trait;
 

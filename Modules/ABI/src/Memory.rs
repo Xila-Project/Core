@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::ptr::NonNull;
 use std::sync::RwLock;
 
-use crate::{Allocator, Flags_type, Layout_type, Memory_allocator_trait, Protection_type};
+use Memory::{Allocator, Flags_type, Layout_type, Memory_allocator_trait, Protection_type};
 
 // - Memory
 

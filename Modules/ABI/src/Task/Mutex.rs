@@ -1,4 +1,4 @@
-use crate::Raw_mutex::Raw_mutex_type;
+use Task::Raw_mutex::Raw_mutex_type;
 
 #[no_mangle]
 pub static Raw_mutex_size: usize = size_of::<Raw_mutex_type>();
@@ -14,8 +14,6 @@ pub static Raw_mutex_size: usize = size_of::<Raw_mutex_type>();
 /// This function may return an error if the mutex is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_initialize_mutex(Mutex: *mut Raw_mutex_type) -> bool {
-    println!("Initializing mutex : {:p}", Mutex);
-
     if Mutex.is_null() {
         return false;
     }
@@ -26,8 +24,6 @@ pub unsafe extern "C" fn Xila_initialize_mutex(Mutex: *mut Raw_mutex_type) -> bo
 
     Mutex.write(Raw_mutex_type::New(false));
 
-    println!("Mutex initialized : {:?}", unsafe { Mutex.read() });
-
     true
 }
 
@@ -37,8 +33,6 @@ pub unsafe extern "C" fn Xila_initialize_mutex(Mutex: *mut Raw_mutex_type) -> bo
 ///
 #[no_mangle]
 pub unsafe extern "C" fn Xila_initialize_recursive_mutex(Mutex: *mut Raw_mutex_type) -> bool {
-    println!("Initializing recursive mutex");
-
     if Mutex.is_null() {
         return false;
     }
@@ -63,12 +57,6 @@ pub unsafe extern "C" fn Xila_initialize_recursive_mutex(Mutex: *mut Raw_mutex_t
 /// This function may return an error if the mutex is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_lock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
-    println!(
-        "Locking mutex : {:?} : {:p}",
-        unsafe { Mutex.read() },
-        Mutex
-    );
-
     let Mutex = match Raw_mutex_type::From_mutable_pointer(Mutex) {
         Some(Mutex) => Mutex,
         None => return false,
@@ -88,12 +76,6 @@ pub unsafe extern "C" fn Xila_lock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
 /// This function may return an error if the mutex is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_unlock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
-    println!(
-        "Unlocking mutex : {:?} : {:p}",
-        unsafe { Mutex.read() },
-        Mutex
-    );
-
     let Mutex = match Raw_mutex_type::From_mutable_pointer(Mutex) {
         Some(Mutex) => Mutex,
         None => return false,
@@ -113,12 +95,6 @@ pub unsafe extern "C" fn Xila_unlock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
 /// This function may return an error if the mutex is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_destroy_mutex(Mutex: *mut Raw_mutex_type) -> bool {
-    println!(
-        "Destroying mutex : {:?} : {:p}",
-        unsafe { Mutex.read() },
-        Mutex
-    );
-
     let _ = match Raw_mutex_type::From_mutable_pointer_to_box(Mutex) {
         Some(Mutex) => Mutex,
         None => return false,

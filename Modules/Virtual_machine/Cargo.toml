@@ -12,6 +12,7 @@ Memory = { version = "0.1.0", path = "../Memory" }
 File_system = { version = "0.1.0", path = "../File_system" }
 Task = { version = "0.1.0", path = "../Task" }
 Time = { version = "0.1.0", path = "../Time"}
+ABI = { version = "0.1.0", path = "../ABI" }
 
 [dev-dependencies]
 Users = { path = "../Users", version = "0.1.0" }

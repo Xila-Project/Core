@@ -10,6 +10,7 @@ members = [
     "Modules/Peripherals",
     "Modules/Memory",
     "Modules/Time",
+    "Modules/ABI",
 ]
 exclude = [
     "Build_tool",

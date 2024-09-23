@@ -12,7 +12,7 @@ mod Runtime;
 
 // For
 #[allow(unused_imports)]
-use Memory::ABI::*;
+use ABI::*;
 
 use std::io::{stderr, stdin, stdout, Read, Write};
 
