@@ -25,3 +25,6 @@ DEP_LV_CONFIG_PATH = { value = "Modules/Graphics/include", relative = true }
 WAMR_BUILD_PLATFORM="XILA"
 
 WAMR_SHARED_PLATFORM_CONFIG = { value = "Modules/Virtual_machine/WAMR/shared_platform.cmake", relative = true }
+
+[build]
+rustdocflags=["--default-theme=ayu"]

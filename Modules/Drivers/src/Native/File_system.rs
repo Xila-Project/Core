@@ -1,9 +1,8 @@
 use File_system::{
     Error_type, File_identifier_inner_type, File_identifier_type, File_system_traits, Flags_type,
-    Path_owned_type, Path_type, Position_type, Result_type, Size_type, Statistics_type, Type_type,
-    Virtual_file_system_type,
+    Path_owned_type, Path_type, Position_type, Result_type, Size_type, Statistics_type, Time_type,
+    Type_type, Virtual_file_system_type,
 };
-use Shared::Time_type;
 
 use std::collections::BTreeMap;
 use std::env::{current_dir, var};
@@ -11,6 +10,7 @@ use std::fs::*;
 use std::io::{ErrorKind, Read, Seek, Write};
 
 use std::sync::{Arc, RwLock};
+use std::time::SystemTime;
 
 use Task::Task_identifier_type;
 
@@ -39,9 +39,11 @@ fn Apply_flags_to_open_options(Flags: Flags_type, Open_options: &mut OpenOptions
         .write(Flags.Get_mode().Get_write() || Flags.Get_status().Get_append());
 }
 
+type Inner_file_type = Arc<RwLock<(File, Flags_type)>>;
+
 pub struct File_system_type {
     Virtual_root_path: Path_owned_type,
-    Open_files: RwLock<BTreeMap<usize, Arc<RwLock<(File, Flags_type)>>>>,
+    Open_files: RwLock<BTreeMap<usize, Inner_file_type>>,
 }
 
 impl File_system_type {
@@ -342,9 +344,24 @@ impl File_system_traits for File_system_type {
             Metadata.ino(),
             Metadata.nlink(),
             Metadata.len().into(),
-            Time_type::New(Metadata.atime() as u64),
-            Time_type::New(Metadata.mtime() as u64),
-            Time_type::New(Metadata.ctime() as u64),
+            Time_type::from(
+                Metadata
+                    .accessed()?
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap(),
+            ),
+            Time_type::from(
+                Metadata
+                    .modified()?
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap(),
+            ),
+            Time_type::from(
+                Metadata
+                    .created()?
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap(),
+            ),
             From_file_type(Metadata.file_type()),
         ))
     }

@@ -3,12 +3,11 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use Shared::Time_type;
 use Users::{Group_identifier_type, User_identifier_type};
 
 use crate::{
-    Error_type, File_system_identifier_type, Permissions_type, Result_type, Statistics_type,
-    Type_type,
+    Error_type, File_system_identifier_type, Get_now, Permissions_type, Result_type,
+    Statistics_type, Time_type, Type_type,
 };
 
 #[derive(Debug)]
@@ -39,9 +38,9 @@ impl Pipe_type {
             User,
             Group,
             Permissions,
-            Access_time: Time_type::Get_now(),
-            Modification_time: Time_type::Get_now(),
-            Status_change_time: Time_type::Get_now(),
+            Access_time: Get_now(),
+            Modification_time: Get_now(),
+            Status_change_time: Get_now(),
         })))
     }
 
@@ -58,7 +57,7 @@ impl Pipe_type {
             Buffer.push_back(*Byte);
         }
 
-        Inner.Modification_time = Time_type::Get_now();
+        Inner.Modification_time = Get_now();
 
         Ok(())
     }
@@ -76,7 +75,7 @@ impl Pipe_type {
             *Byte = Buffer.pop_front().unwrap();
         }
 
-        Inner.Access_time = Time_type::Get_now();
+        Inner.Access_time = Get_now();
 
         Ok(())
     }
@@ -84,7 +83,7 @@ impl Pipe_type {
     pub fn Set_permissions(&self, Permissions: Permissions_type) -> Result_type<()> {
         let mut Inner = self.0.write()?;
         Inner.Permissions = Permissions;
-        Inner.Status_change_time = Time_type::Get_now();
+        Inner.Status_change_time = Get_now();
         Ok(())
     }
 
@@ -100,7 +99,7 @@ impl Pipe_type {
         if let Some(Group) = Group {
             Inner.Group = Group;
         }
-        Inner.Status_change_time = Time_type::Get_now();
+        Inner.Status_change_time = Get_now();
         Ok(())
     }
 

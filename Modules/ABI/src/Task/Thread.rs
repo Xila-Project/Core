@@ -1,6 +1,6 @@
 use std::ptr::null_mut;
 
-use crate::Get_instance as Get_task_manager_instance;
+use Task::Get_instance as Get_task_manager_instance;
 
 #[no_mangle]
 pub extern "C" fn Xila_get_thread_stack_boundary() -> *const u8 {

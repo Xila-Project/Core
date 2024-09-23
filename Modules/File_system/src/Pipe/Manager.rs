@@ -412,7 +412,7 @@ impl File_system_traits for File_system_type {
 }
 
 #[cfg(test)]
-mod tests {
+mod Tests {
 
     use Users::{Root_group_identifier, Root_user_identifier};
 
@@ -439,9 +439,19 @@ mod tests {
         assert_eq!(local_file_id, 1 << (File_identifier_inner_type::BITS));
     }
 
+    fn Initialize_file_system() -> File_system_type {
+        if !Time::Is_initialized() {
+            let Time_driver = Drivers::Native::Time_driver_type::New();
+
+            Time::Initialize(Box::new(Time_driver)).expect("Error initializing time manager");
+        }
+
+        File_system_type::New()
+    }
+
     #[test]
     fn Test_new_unnamed_pipe() {
-        let File_system = File_system_type::New();
+        let File_system = Initialize_file_system();
         let Task_identifier = Task_identifier_type::from(1);
         let Size = 1024_usize;
         let (Read_identifier, Write_identifier) = File_system
@@ -465,7 +475,7 @@ mod tests {
 
     #[test]
     fn Test_close_all() {
-        let File_system = File_system_type::New();
+        let File_system = Initialize_file_system();
         let Task_identifier = Task_identifier_type::from(1);
         let Size = 1024_usize;
         File_system
@@ -504,8 +514,7 @@ mod tests {
 
     #[test]
     fn Test_delete_named_pipe() {
-        let File_system = File_system_type::New();
-
+        let File_system = Initialize_file_system();
         let Size = 1024_usize;
         let Path = Path_type::New("/named_pipe").unwrap();
 
@@ -526,7 +535,7 @@ mod tests {
 
     #[test]
     fn Test_read_write_unnamed_pipe() {
-        let File_system = File_system_type::New();
+        let File_system = Initialize_file_system();
         let Task_identifier = Task_identifier_type::from(1);
         let Size = 1024_usize;
         let (Read_identifier, Write_identifier) = File_system

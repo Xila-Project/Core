@@ -1,33 +1,82 @@
-use lvgl::input_device::{pointer, InputDriver};
+use std::{ffi::c_void, pin::Pin};
+
+//use lvgl::input_device::{pointer, InputDriver};
 use File_system::File_type;
 
 use crate::{Display::Display_type, Pointer_data_type, Result_type};
 
+use super::lvgl;
+
+struct User_data_type {
+    pub File: File_type,
+}
+
 pub struct Input_type {
     #[allow(dead_code)]
-    Pointer: pointer::Pointer,
+    Input_device: *mut lvgl_rust_sys::lv_indev_t,
+}
+
+impl Drop for Input_type {
+    fn drop(&mut self) {
+        unsafe {
+            let _ = Box::from_raw(
+                lvgl::lv_indev_get_user_data(self.Input_device) as *mut User_data_type
+            );
+
+            lvgl::lv_indev_delete(self.Input_device);
+
+            // User_data will be dropped here.
+        }
+    }
 }
 
 unsafe impl Send for Input_type {}
 
 unsafe impl Sync for Input_type {}
 
+/// This function is called by LVGL when it needs to read input data.
+///
+/// # Safety
+///
+/// This function may dereference a raw pointer.
+unsafe extern "C" fn Binding_callback_function(
+    Input_device: *mut lvgl::lv_indev_t,
+    Data: *mut lvgl::lv_indev_data_t,
+) {
+    let User_data = unsafe { lvgl::lv_indev_get_user_data(Input_device) as *mut User_data_type };
+
+    let File = &(*User_data).File;
+
+    let mut Pointer_data = Pointer_data_type::default();
+
+    File.Read(Pointer_data.as_mut())
+        .expect("Error reading from input device");
+
+    unsafe {
+        *Data = Pointer_data.into();
+    }
+}
+
 impl Input_type {
-    pub fn New(File: File_type, Display: &Display_type) -> Result_type<Self> {
-        let Binding_closure = move || {
-            let mut Pointer_data = Pointer_data_type::default();
+    pub fn New<const Buffer_size: usize>(
+        File: File_type,
+        _: &Display_type<Buffer_size>,
+    ) -> Result_type<Self> {
+        // User_data is a pinned box, so it's ownership can be transferred to LVGL and will not move or dropper until the Input_device is dropped.
+        let User_data = Box::pin(User_data_type { File });
 
-            File.Read(Pointer_data.as_mut())
-                .expect("Error reading from input device");
+        let Input_device = unsafe {
+            let Input_device = lvgl::lv_indev_create();
+            lvgl::lv_indev_set_type(Input_device, lvgl::lv_indev_type_t_LV_INDEV_TYPE_POINTER);
+            lvgl::lv_indev_set_read_cb(Input_device, Some(Binding_callback_function));
+            lvgl::lv_indev_set_user_data(
+                Input_device,
+                Box::into_raw(Pin::into_inner_unchecked(User_data)) as *mut c_void,
+            );
 
-            Pointer_data.into()
+            Input_device
         };
 
-        Binding_closure();
-
-        Ok(Self {
-            Pointer: pointer::Pointer::register(Binding_closure, Display.Get_lvgl_display())?,
-            // File: File,
-        })
+        Ok(Self { Input_device })
     }
 }

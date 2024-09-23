@@ -16,8 +16,6 @@ pub struct Raw_mutex_type<'a> {
 
 impl<'a> Raw_mutex_type<'a> {
     pub fn New(Recursive: bool) -> Self {
-        println!("Creating Raw_mutex");
-
         Self {
             Mutex: Mutex::new(()),
             Metadata: None,

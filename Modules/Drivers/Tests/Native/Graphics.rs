@@ -2,10 +2,6 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
-use std::{
-    thread::sleep,
-    time::{Duration, Instant},
-};
 use File_system::{File_type, Mode_type, Path_type};
 
 const Pointer_device_path: &Path_type =
@@ -19,21 +15,21 @@ const Screen_device_path: &Path_type =
 #[ignore]
 fn main() {
     use Drivers::Native::New_touchscreen;
-    use Graphics::{
-        lvgl::{self, Widget},
-        Get_recommended_buffer_size, Point_type,
-    };
+    use Graphics::{lvgl, Get_recommended_buffer_size, Point_type};
+    use Time::Duration_type;
+
+    Users::Initialize().expect("Error initializing users manager");
+
+    let Task_instance = Task::Initialize().expect("Error initializing task manager");
+
+    Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()))
+        .expect("Error initializing time manager");
 
     const Resolution: Point_type = Point_type::New(800, 480);
 
     const Buffer_size: usize = Get_recommended_buffer_size(&Resolution);
 
-    let (S, Pointer) =
-        New_touchscreen::<Buffer_size>(Resolution).expect("Error creating touchscreen");
-
-    Users::Initialize().expect("Error initializing users manager");
-
-    let Task_instance = Task::Initialize().expect("Error initializing task manager");
+    let (S, Pointer) = New_touchscreen(Resolution).expect("Error creating touchscreen");
 
     let Virtual_file_system = File_system::Initialize().expect("Error initializing file system");
 
@@ -70,27 +66,16 @@ fn main() {
     let Graphics_manager = Graphics::Get_instance().expect("Error getting manager");
 
     let Display = Graphics_manager
-        .Create_display::<Buffer_size>(Screen_file, Pointer_file)
+        .Create_display::<Buffer_size>(Screen_file, Pointer_file, false)
         .expect("Error adding screen");
 
-    let mut S = Display.Get_object().expect("Error getting screen");
+    let Screen_object = Display.Get_object();
 
-    let _ = lvgl::widgets::Slider::create(&mut S);
-
-    let Calendar = lvgl::widgets::Calendar::create(&mut S);
-    assert!(Calendar.is_ok());
-    let mut Calendar = Calendar.unwrap();
-
-    let mut Style = lvgl::style::Style::default();
-    Style.set_bg_color(lvgl::Color::from_rgb((255, 0, 0)));
-
-    Calendar.add_style(lvgl::obj::Part::Any, &mut Style);
-    Calendar.set_align(lvgl::Align::Center, 0, 0);
+    let _Calendar = unsafe { lvgl::lv_calendar_create(Screen_object) };
 
     loop {
-        let Start = Instant::now();
-        lvgl::task_handler();
-        sleep(Duration::from_millis(5));
-        lvgl::tick_inc(Instant::now().duration_since(Start));
+        Graphics::Manager_type::Loop();
+
+        Task::Manager_type::Sleep(Duration_type::from_millis(1000));
     }
 }

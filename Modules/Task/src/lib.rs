@@ -7,7 +7,6 @@ mod Manager;
 mod Task;
 mod Thread;
 
-pub mod ABI;
 pub mod Raw_mutex;
 pub mod Raw_rwlock;
 

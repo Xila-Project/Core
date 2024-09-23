@@ -1,0 +1,10 @@
+[package]
+name = "ABI"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+File_system = { path = "../File_system" }
+Task = { path = "../Task" }
+Time = { path = "../Time" }
+Memory = { path = "../Memory" }

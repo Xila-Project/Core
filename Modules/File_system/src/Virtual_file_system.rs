@@ -29,14 +29,14 @@ pub fn Initialize() -> Result_type<&'static Virtual_file_system_type> {
         if Is_initialized() {
             return Err(Error_type::Already_initialized);
         }
-
-        let Task_manager = Task::Get_instance();
-
         let User_manager =
             Users::Get_instance().map_err(|_| Error_type::Failed_to_get_users_manager_instance)?; // Get the user manager (it must be initialized before the file system
 
-        Virtual_file_system_instance
-            .replace(Virtual_file_system_type::New(Task_manager, User_manager)?);
+        Virtual_file_system_instance.replace(Virtual_file_system_type::New(
+            Task::Get_instance(),
+            User_manager,
+            Time::Get_instance(),
+        )?);
 
         Ok(Get_instance())
     }
@@ -79,6 +79,7 @@ impl Virtual_file_system_type {
     fn New(
         Task_manager: &'static Task::Manager_type,
         User_manager: &'static Users::Manager_type,
+        _: &'static Time::Manager_type,
     ) -> Result_type<Self> {
         let mut File_systems = BTreeMap::new();
 

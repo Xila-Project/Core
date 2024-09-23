@@ -12,7 +12,7 @@ mod Runtime;
 
 // For
 #[allow(unused_imports)]
-use Memory::ABI::*;
+use ABI::*;
 
 use std::io::{stderr, stdin, stdout, Read, Write};
 
@@ -33,17 +33,13 @@ struct Standard_in_device_type;
 
 impl Device_trait for Standard_in_device_type {
     fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<usize> {
-        println!("Reading stdin buffer:");
-
         #[allow(clippy::unused_io_amount)]
         stdin().read(Buffer).unwrap();
 
         Ok(Buffer.len())
     }
 
-    fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<usize> {
-        println!("Writing stdin buffer: {:?}", Buffer);
-
+    fn Write(&self, _: &[u8]) -> File_system::Result_type<usize> {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
@@ -157,8 +153,6 @@ pub fn Instantiate_test_environment(
             Task_identifier,
         )
         .expect("Failed to open stderr");
-
-    println!("Stdin: {:?}", Stdin);
 
     let Instance = Instance_type::New(
         &Runtime,

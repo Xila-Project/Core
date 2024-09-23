@@ -7,6 +7,10 @@ edition = "2021"
 Task = { path = "../Task" }
 Users = { path = "../Users" }
 Shared = { path = "../Shared" }
+Time = { path = "../Time" }
+
+[dev-dependencies]
+Drivers = { path = "../Drivers" }
 
 [features]
 std = []

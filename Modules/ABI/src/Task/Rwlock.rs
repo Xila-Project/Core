@@ -1,4 +1,4 @@
-use crate::Raw_rwlock::Raw_rwlock_type;
+use Task::Raw_rwlock::Raw_rwlock_type;
 
 /// This function is used to initialize a rwlock.
 ///
@@ -11,8 +11,6 @@ use crate::Raw_rwlock::Raw_rwlock_type;
 /// This function may return an error if the rwlock is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_initialize_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
-    println!("Initializing rwlock : {:p}", Rwlock);
-
     if Rwlock.is_null() {
         return false;
     }
@@ -96,12 +94,6 @@ pub unsafe extern "C" fn Xila_unlock_rwlock(Rwlock: *mut Raw_rwlock_type) -> boo
 /// This function may return an error if the rwlock is not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_destroy_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
-    println!(
-        "Destroying rwlock : {:?} : {:p}",
-        unsafe { Rwlock.read() },
-        Rwlock
-    );
-
     let _ = match Raw_rwlock_type::From_mutable_pointer_to_box(Rwlock) {
         Some(RwLock) => RwLock,
         None => return false,

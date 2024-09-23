@@ -10,6 +10,7 @@ members = [
     "Modules/Peripherals",
     "Modules/Memory",
     "Modules/Time",
+    "Modules/ABI",
 ]
 exclude = [
     "Build_tool",
@@ -63,6 +64,3 @@ embuild = { version = "0.32.0", features = ["espidf"] }
 byteorder = "1.5.0"
 log = { version = "0.4" }
 env_logger = { version = "0.11" }
-
-[build]
-rustdocflags=["--default-theme=ayu"]

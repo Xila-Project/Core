@@ -19,6 +19,9 @@ fn Test_file_system() {
 
     Users::Initialize().expect("Failed to initialize users manager");
 
+    Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()))
+        .expect("Failed to initialize time manager");
+
     let File_system =
         Drivers::Native::File_system_type::New().expect("Failed to create file system");
 

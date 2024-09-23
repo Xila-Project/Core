@@ -1,7 +1,7 @@
 /// This module implements the POSIX like file system C ABI.
 use std::num::NonZeroU32;
 
-use crate::{
+use File_system::{
     Error_type, File_identifier_type, Get_instance as Get_file_system_instance, Mode_type,
     Result_type, Statistics_type, Unique_file_identifier_type,
 };
@@ -47,8 +47,6 @@ pub unsafe extern "C" fn Xila_get_file_statistics(
     File: Unique_file_identifier_type,
     Statistics: *mut Statistics_type,
 ) -> u32 {
-    println!("Getting file statistics : {:?}", File);
-
     Into_u32(move || {
         let Task_identifier = Get_task_manager_instance()
             .Get_current_task_identifier()
@@ -84,8 +82,6 @@ pub unsafe extern "C" fn Xila_file_system_get_access_mode(
     File: Unique_file_identifier_type,
     Mode: *mut Mode_type,
 ) -> u32 {
-    println!("Getting file access mode : {:?}", File);
-
     Into_u32(move || {
         let Task_identifier = Get_task_manager_instance()
             .Get_current_task_identifier()
@@ -96,8 +92,6 @@ pub unsafe extern "C" fn Xila_file_system_get_access_mode(
         }
 
         Mode.write(Get_file_system_instance().Get_mode(File, Task_identifier)?);
-
-        println!("Mode : {:?}", *Mode);
 
         Ok(())
     })
@@ -111,8 +105,6 @@ pub unsafe extern "C" fn Xila_file_system_get_access_mode(
 ///
 #[no_mangle]
 pub extern "C" fn Xila_file_system_close(File: Unique_file_identifier_type) -> u32 {
-    println!("Closing file : {:?}", File);
-
     Into_u32(move || {
         let Task_identifier = Get_task_manager_instance()
             .Get_current_task_identifier()
@@ -188,8 +180,6 @@ pub unsafe extern "C" fn Xila_file_system_read_vectored(
     Buffer_count: usize,
     Read: *mut usize,
 ) -> u32 {
-    println!("Reading file : {:?}", File);
-
     Into_u32(move || {
         let Task_identifier = Get_task_manager_instance()
             .Get_current_task_identifier()
