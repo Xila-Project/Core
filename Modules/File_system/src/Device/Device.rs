@@ -1,11 +1,10 @@
 use std::sync::{Arc, RwLock};
 
-use Shared::Time_type;
 use Users::{Group_identifier_type, User_identifier_type};
 
 use crate::{
-    File_system_identifier_type, Permissions_type, Position_type, Result_type, Statistics_type,
-    Type_type,
+    File_system_identifier_type, Get_now, Permissions_type, Position_type, Result_type,
+    Statistics_type, Time_type, Type_type,
 };
 
 pub trait Device_trait: Send + Sync {
@@ -45,41 +44,41 @@ impl Device_type {
             User,
             Group,
             Permissions,
-            Access_time: Time_type::Get_now(),
-            Modification_time: Time_type::Get_now(),
-            Status_change_time: Time_type::Get_now(),
+            Access_time: Get_now(),
+            Modification_time: Get_now(),
+            Status_change_time: Get_now(),
         })))
     }
 
     pub fn Read(&self, Buffer: &mut [u8]) -> Result_type<usize> {
         let mut Inner = self.0.write()?;
-        Inner.Access_time = Time_type::Get_now();
+        Inner.Access_time = Get_now();
         Inner.Device.Read(Buffer)
     }
 
     pub fn Write(&self, Buffer: &[u8]) -> Result_type<usize> {
         let mut Inner = self.0.write()?;
-        Inner.Access_time = Time_type::Get_now();
-        Inner.Modification_time = Time_type::Get_now();
+        Inner.Access_time = Get_now();
+        Inner.Modification_time = Get_now();
         Inner.Device.Write(Buffer)
     }
 
     pub fn Set_position(&self, Position: &Position_type) -> Result_type<usize> {
         let mut Inner = self.0.write()?;
-        Inner.Access_time = Time_type::Get_now();
+        Inner.Access_time = Get_now();
         Inner.Device.Set_position(Position)
     }
 
     pub fn Flush(&self) -> Result_type<()> {
         let mut Inner = self.0.write()?;
-        Inner.Access_time = Time_type::Get_now();
+        Inner.Access_time = Get_now();
         Inner.Device.Flush()
     }
 
     pub fn Set_permissions(&self, Permissions: Permissions_type) -> Result_type<()> {
         let mut Inner = self.0.write()?;
         Inner.Permissions = Permissions;
-        Inner.Status_change_time = Time_type::Get_now();
+        Inner.Status_change_time = Get_now();
         Ok(())
     }
 
@@ -96,7 +95,7 @@ impl Device_type {
             Inner.Group = Group;
         }
 
-        Inner.Status_change_time = Time_type::Get_now();
+        Inner.Status_change_time = Get_now();
         Ok(())
     }
 
