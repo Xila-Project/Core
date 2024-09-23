@@ -412,7 +412,7 @@ impl File_system_traits for File_system_type {
 }
 
 #[cfg(test)]
-mod tests {
+mod Tests {
 
     use Users::{Root_group_identifier, Root_user_identifier};
 

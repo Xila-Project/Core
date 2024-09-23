@@ -119,7 +119,7 @@ impl From<Unique_file_identifier_type> for usize {
 }
 
 #[cfg(test)]
-mod tests {
+mod Tests {
     use super::*;
 
     #[test]

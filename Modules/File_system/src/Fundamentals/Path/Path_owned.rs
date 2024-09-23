@@ -195,7 +195,7 @@ impl AsRef<Path_type> for Path_owned_type {
 }
 
 #[cfg(test)]
-mod tests {
+mod Tests {
     use super::*;
 
     #[test]
