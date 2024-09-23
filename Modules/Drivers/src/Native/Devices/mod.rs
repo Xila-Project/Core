@@ -1,7 +1,6 @@
 mod SDL2;
 
-use File_system::Path_type;
-use Graphics::{Get_recommended_buffer_size, Point_type};
+use Graphics::Point_type;
 pub use SDL2::*;
 
 pub fn Mount_devices(
@@ -9,10 +8,8 @@ pub fn Mount_devices(
 ) -> Result<(), String> {
     const Resolution: Point_type = Point_type::New(800, 600);
 
-    const Buffer_size: usize = Get_recommended_buffer_size(&Resolution);
-
     let (Screen_device, Pointer_device) =
-        New_touchscreen::<Buffer_size>(Resolution).expect("Error creating touchscreen");
+        New_touchscreen(Resolution).expect("Error creating touchscreen");
 
     Virtual_file_systems
         .Add_device(&"/Devices/Pointer", Box::new(Pointer_device))

@@ -4,56 +4,75 @@ use Graphics::{
 };
 
 use sdl2::{
-    event, mouse, pixels,
+    event, mouse,
+    pixels::{self, Color},
     render::Canvas,
-    video::{self},
-    EventPump,
+    video::Window,
+    EventPump, Sdl, VideoSubsystem,
 };
 use File_system::{Device_trait, Result_type};
 
 use std::{marker::PhantomData, mem::size_of, process::exit, sync::RwLock};
 
-pub struct Screen_device_type<const Buffer_size: usize>(
-    RwLock<Canvas<video::Window>>,
-    PhantomData<[u8; Buffer_size]>,
-);
+pub struct Inner_type {
+    _Context: Sdl,
+    _Video_subsystem: VideoSubsystem,
+    Canvas: Canvas<Window>,
+}
 
-unsafe impl<const Buffer_size: usize> Send for Screen_device_type<Buffer_size> {}
+pub struct Screen_device_type(RwLock<Inner_type>, PhantomData<[u8]>);
 
-unsafe impl<const Buffer_size: usize> Sync for Screen_device_type<Buffer_size> {}
+unsafe impl Send for Screen_device_type {}
 
-impl<const Buffer_size: usize> Screen_device_type<Buffer_size> {
-    pub fn New(Window: video::Window) -> Result<Self, String> {
+unsafe impl Sync for Screen_device_type {}
+
+impl Screen_device_type {
+    pub fn New(
+        Context: Sdl,
+        Video_subsystem: VideoSubsystem,
+        Window: Window,
+    ) -> Result<Self, String> {
         let mut Canvas = Window
             .into_canvas()
             .build()
             .map_err(|Error| format!("Error building canvas: {:?}", Error))?;
 
+        Canvas.set_draw_color(Color::RGB(255, 255, 255));
         Canvas.clear();
         Canvas.present();
 
-        Ok(Self(RwLock::new(Canvas), PhantomData))
+        Ok(Self(
+            RwLock::new(Inner_type {
+                _Context: Context,
+                _Video_subsystem: Video_subsystem,
+                Canvas,
+            }),
+            PhantomData,
+        ))
     }
 
     fn Get_resolution(&self) -> Result<Point_type, String> {
         self.0
             .read()
             .map_err(|Error| format!("Poisoned RwLock: {:?}", Error))?
+            .Canvas
             .output_size()
             .map(|(Width, Height)| Point_type::New(Width as i16, Height as i16))
             .map_err(|Error| format!("Error getting resolution: {:?}", Error))
     }
 
-    fn Update(&self, Data: &Screen_write_data_type<Buffer_size>) -> Result<(), String> {
+    fn Update(&self, Data: &Screen_write_data_type) -> Result<(), String> {
         let mut Buffer_iterator = Data.Get_buffer().iter();
 
         let Point_1 = Data.Get_area().Get_point_1();
         let Point_2 = Data.Get_area().Get_point_2();
 
-        let mut Canvas = self
+        let mut Inner = self
             .0
             .write()
             .map_err(|Error| format!("Poisoned RwLock: {:?}", Error))?;
+
+        let Canvas = &mut Inner.Canvas;
 
         for Y in Point_1.Get_y() as i32..=Point_2.Get_y() as i32 {
             for X in Point_1.Get_x() as i32..=Point_2.Get_x() as i32 {
@@ -69,16 +88,21 @@ impl<const Buffer_size: usize> Screen_device_type<Buffer_size> {
                     Color.Get_blue(),
                 ));
 
-                let _ = Canvas.draw_point(sdl2::rect::Point::new(X, Y));
+                Canvas
+                    .draw_point(sdl2::rect::Point::new(X, Y))
+                    .expect("Error drawing point.");
             }
         }
+
         Canvas.present();
+
+        ::std::thread::sleep(std::time::Duration::new(0, 1_000_000_000u32 / 60));
 
         Ok(())
     }
 }
 
-impl<const Buffer_size: usize> Device_trait for Screen_device_type<Buffer_size> {
+impl Device_trait for Screen_device_type {
     fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<usize> {
         let Data: &mut Screen_read_data_type = Buffer
             .try_into()
@@ -93,13 +117,13 @@ impl<const Buffer_size: usize> Device_trait for Screen_device_type<Buffer_size> 
     }
 
     fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<usize> {
-        let Data: &Screen_write_data_type<Buffer_size> = Buffer
+        let Data: &Screen_write_data_type = Buffer
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_input)?;
 
         self.Update(Data).expect("Error updating screen.");
 
-        Ok(Buffer_size)
+        Ok(size_of::<Screen_write_data_type>())
     }
 
     fn Get_size(&self) -> File_system::Result_type<usize> {
@@ -225,9 +249,9 @@ impl Device_trait for Pointer_device_type {
     }
 }
 
-pub fn New_touchscreen<const Buffer_size: usize>(
+pub fn New_touchscreen(
     Size: Point_type,
-) -> Result<(Screen_device_type<Buffer_size>, Pointer_device_type), String> {
+) -> Result<(Screen_device_type, Pointer_device_type), String> {
     let Context = sdl2::init().map_err(|Error| format!("Error initializing SDL2: {:?}", Error))?;
 
     let Video_subsystem = Context
@@ -246,7 +270,7 @@ pub fn New_touchscreen<const Buffer_size: usize>(
 
     let Pointer = Pointer_device_type::New(Window.id(), Event_pump);
 
-    let Screen = Screen_device_type::New(Window)?;
+    let Screen = Screen_device_type::New(Context, Video_subsystem, Window)?;
 
     Ok((Screen, Pointer))
 }
