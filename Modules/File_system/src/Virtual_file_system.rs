@@ -79,6 +79,7 @@ impl Virtual_file_system_type {
     fn New(
         Task_manager: &'static Task::Manager_type,
         User_manager: &'static Users::Manager_type,
+        _: &'static Time::Manager_type,
     ) -> Result_type<Self> {
         let mut File_systems = BTreeMap::new();
 
