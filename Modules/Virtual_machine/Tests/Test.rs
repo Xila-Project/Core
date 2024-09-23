@@ -85,11 +85,13 @@ fn Integration_test() {
 
     Users::Initialize().expect("Failed to initialize users manager");
 
+    Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()))
+        .expect("Failed to initialize time manager");
+
     File_system::Initialize().expect("Failed to initialize file system");
 
-    let Binary_buffer = include_bytes!(
-        "../Tests/WASM_test/target/wasm32-wasi/release/Virtual_machine_WASM_test.wasm"
-    );
+    let Binary_buffer =
+        include_bytes!("./WASM_test/target/wasm32-wasip1/release/Virtual_machine_WASM_test.wasm");
 
     pub struct Registrable {}
 
@@ -116,7 +118,7 @@ fn Integration_test() {
         File_system::Get_instance(),
     );
 
-    let Environment =
+    let _ =
         Environment_type::From_instance(&Instance).expect("Failed to get execution environment");
 
     assert_eq!(Instance.Call_main(&vec![]).unwrap(), WasmValue::Void);

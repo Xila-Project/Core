@@ -16,6 +16,7 @@ ABI = { version = "0.1.0", path = "../ABI" }
 
 [dev-dependencies]
 Users = { path = "../Users", version = "0.1.0" }
+Drivers = { path = "../Drivers", version = "0.1.0" }
 
 [[test]]
 name = "Virtual_machine_test"
