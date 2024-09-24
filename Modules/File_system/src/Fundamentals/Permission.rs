@@ -5,6 +5,32 @@ use crate::Type_type;
 pub struct Permissions_type(u16);
 
 impl Permissions_type {
+    pub const None: Self = Self::New(
+        Permission_type::None,
+        Permission_type::None,
+        Permission_type::None,
+    );
+    pub const All_full: Self = Self::New(
+        Permission_type::Full,
+        Permission_type::Full,
+        Permission_type::Full,
+    );
+    pub const All_read_write: Self = Self::New(
+        Permission_type::Read_write,
+        Permission_type::Read_write,
+        Permission_type::Read_write,
+    );
+    pub const User_full: Self = Self::New(
+        Permission_type::Full,
+        Permission_type::None,
+        Permission_type::None,
+    );
+    pub const User_read_write: Self = Self::New(
+        Permission_type::Read_write,
+        Permission_type::None,
+        Permission_type::None,
+    );
+
     /// Creates a new permission.
     pub const fn New(
         User: Permission_type,
@@ -14,71 +40,36 @@ impl Permissions_type {
         Self((User.To_unix() as u16) << 6 | (Group.To_unix() as u16) << 3 | Others.To_unix() as u16)
     }
 
-    /// Creates a new permission with full access (read, write, execute) for all (user, group, others).
-    pub const fn New_all_full() -> Self {
-        Self::New(
-            Permission_type::New_full(),
-            Permission_type::New_full(),
-            Permission_type::New_full(),
-        )
-    }
-
-    /// Creates a new permission with full access (read, write, execute) for user. No access for group and others.
-    pub const fn New_user_full() -> Self {
-        Self::New(
-            Permission_type::New_full(),
-            Permission_type::New_none(),
-            Permission_type::New_none(),
-        )
-    }
-
-    /// Creates a new permission with read write access for user. No access for group and others.
-    pub const fn New_user_read_write() -> Self {
-        Self::New(
-            Permission_type::New_read_write(),
-            Permission_type::New_none(),
-            Permission_type::New_none(),
-        )
-    }
-
-    pub const fn New_all_read_write() -> Self {
-        Self::New(
-            Permission_type::New_read_write(),
-            Permission_type::New_read_write(),
-            Permission_type::New_read_write(),
-        )
-    }
-
     /// Creates a new permission with read access for user. No access for group and others.
     pub const fn New_default(Type: Type_type) -> Self {
         match Type {
             Type_type::Directory => Self::New(
-                Permission_type::New_full(),
-                Permission_type::New_read_execute(),
-                Permission_type::New_read_execute(),
+                Permission_type::Full,
+                Permission_type::Read_execute,
+                Permission_type::Read_execute,
             ),
             Type_type::File => Self::New(
-                Permission_type::New_read_write(),
-                Permission_type::New_read(),
-                Permission_type::New_read(),
+                Permission_type::Read_write,
+                Permission_type::Read_only,
+                Permission_type::Read_only,
             ),
             Type_type::Pipe => Self::New(
-                Permission_type::New_read_write(),
-                Permission_type::New_none(),
-                Permission_type::New_none(),
+                Permission_type::Read_write,
+                Permission_type::None,
+                Permission_type::None,
             ),
             Type_type::Block_device => Self::New(
-                Permission_type::New_full(),
-                Permission_type::New_read_write(),
-                Permission_type::New_read_write(),
+                Permission_type::Full,
+                Permission_type::Read_write,
+                Permission_type::Read_write,
             ),
             Type_type::Character_device => Self::New(
-                Permission_type::New_read_write(),
-                Permission_type::New_read_write(),
-                Permission_type::New_none(),
+                Permission_type::Read_write,
+                Permission_type::Read_write,
+                Permission_type::None,
             ),
-            Type_type::Socket => Self::New_all_read_write(),
-            Type_type::Symbolic_link => Self::New_all_full(),
+            Type_type::Socket => Self::All_read_write,
+            Type_type::Symbolic_link => Self::All_full,
         }
     }
 
@@ -135,47 +126,20 @@ impl Permissions_type {
 pub struct Permission_type(u8);
 
 impl Permission_type {
+    pub const Read_only: Self = Self::New(true, false, false);
+    pub const Write_only: Self = Self::New(false, true, false);
+    pub const Execute_only: Self = Self::New(false, false, true);
+
+    pub const Read_write: Self = Self::New(true, true, false);
+    pub const Write_execute: Self = Self::New(false, true, true);
+    pub const Read_execute: Self = Self::New(true, false, true);
+
+    pub const None: Self = Self::New(false, false, false);
+    pub const Full: Self = Self::New(true, true, true);
+
     /// Creates a new permission.
     pub const fn New(Read: bool, Write: bool, Execute: bool) -> Self {
         Self((Read as u8) << 2 | (Write as u8) << 1 | Execute as u8)
-    }
-
-    /// Creates a new permission with read access (equivalent to Unix permission 4).
-    pub const fn New_read() -> Self {
-        Self::New(true, false, false)
-    }
-
-    /// Creates a new permission with write access (equivalent to Unix permission 2).
-    pub const fn New_write() -> Self {
-        Self::New(false, true, false)
-    }
-
-    /// Creates a new permission with execute access (equivalent to Unix permission 1).
-    pub const fn New_execute() -> Self {
-        Self::New(false, false, true)
-    }
-
-    pub const fn New_write_execute() -> Self {
-        Self::New(false, true, true)
-    }
-
-    pub const fn New_read_execute() -> Self {
-        Self::New(true, false, true)
-    }
-
-    /// Creates a new permission with full access (equivalent to Unix permission 7).
-    pub const fn New_full() -> Self {
-        Self::New(true, true, true)
-    }
-
-    /// Creates a new permission with no access (equivalent to Unix permission 0).
-    pub const fn New_read_write() -> Self {
-        Self::New(true, true, false)
-    }
-
-    /// Creates a new permission with no access (equivalent to Unix permission 0).
-    pub const fn New_none() -> Self {
-        Self::New(false, false, false)
     }
 
     /// Sets the read permission.
@@ -245,27 +209,27 @@ mod Tests {
 
     #[test]
     fn Test_new_permission() {
-        let permissions = Permissions_type::New_all_full();
-        assert_eq!(permissions.0, 0b111_111_111);
-
-        let permissions = Permissions_type::New_user_full();
-        assert_eq!(permissions.0, 0b111_000_000);
-
-        let permissions = Permissions_type::New_user_read_write();
-        assert_eq!(permissions.0, 0b110_000_000);
+        assert_eq!(Permission_type::Read_only.0, 0b100);
+        assert_eq!(Permission_type::Write_only.0, 0b010);
+        assert_eq!(Permission_type::Execute_only.0, 0b001);
+        assert_eq!(Permission_type::Read_write.0, 0b110);
+        assert_eq!(Permission_type::Write_execute.0, 0b011);
+        assert_eq!(Permission_type::Read_execute.0, 0b101);
+        assert_eq!(Permission_type::None.0, 0b000);
+        assert_eq!(Permission_type::Full.0, 0b111);
     }
 
     #[test]
     fn Test_permission_type_to_unix() {
-        let read = Permission_type::New_read();
+        let read = Permission_type::Read_only;
         assert_eq!(read.To_unix(), 4);
-        let write = Permission_type::New_write();
+        let write = Permission_type::Write_only;
         assert_eq!(write.To_unix(), 2);
-        let execute = Permission_type::New_execute();
+        let execute = Permission_type::Execute_only;
         assert_eq!(execute.To_unix(), 1);
-        let full = Permission_type::New_full();
+        let full = Permission_type::Full;
         assert_eq!(full.To_unix(), 7);
-        let none = Permission_type::New_none();
+        let none = Permission_type::None;
         assert_eq!(none.To_unix(), 0);
     }
 
@@ -302,14 +266,14 @@ mod Tests {
 
     #[test]
     fn Test_permission_type_include() {
-        let Read = Permission_type::New_read();
-        let Write = Permission_type::New_write();
-        let Read_write = Permission_type::New_read_write();
-        let Read_execute = Permission_type::New_read_execute();
-        let Write_execute = Permission_type::New_write_execute();
-        let Execute = Permission_type::New_execute();
-        let Full = Permission_type::New_full();
-        let No = Permission_type::New_none();
+        let Read = Permission_type::Read_only;
+        let Write = Permission_type::Write_only;
+        let Read_write = Permission_type::Read_write;
+        let Read_execute = Permission_type::Read_execute;
+        let Write_execute = Permission_type::Write_execute;
+        let Execute = Permission_type::Execute_only;
+        let Full = Permission_type::Full;
+        let No = Permission_type::None;
 
         assert!(Full.Include(Read));
         assert!(Full.Include(Write));
