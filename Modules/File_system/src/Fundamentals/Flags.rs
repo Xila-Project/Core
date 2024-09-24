@@ -16,28 +16,89 @@ impl Debug for Mode_type {
     }
 }
 
-impl Mode_type {
-    pub const Read_bit: u8 = 1 << 0;
-    pub const Write_bit: u8 = 1 << 1;
+#[derive(PartialEq, Eq, Clone, Copy)]
+#[repr(transparent)]
+pub struct Open_type(u8);
 
-    pub fn Read_only() -> Self {
-        Self(Self::Read_bit)
+impl Open_type {
+    pub const Create: u8 = 1 << 0;
+    pub const Create_only: u8 = 1 << 1;
+    pub const Truncate: u8 = 1 << 2;
+    pub const Directory: u8 = 1 << 3;
+
+    pub const Size: u8 = 4;
+
+    pub const None: Self = Self::New(false, false, false, false);
+
+    pub const fn New(Create: bool, Create_only: bool, Truncate: bool, Directory: bool) -> Self {
+        Self(0)
+            .Set_create(Create)
+            .Set_create_only(Create_only)
+            .Set_truncate(Truncate)
+            .Set_directory(Directory)
     }
 
-    pub fn Write_only() -> Self {
-        Self(Self::Write_bit)
+    pub const fn Get_bit(&self, Mask: u8) -> bool {
+        self.0 & Mask != 0
     }
 
-    pub fn Read_write() -> Self {
-        Self(Self::Read_bit | Self::Write_bit)
+    pub const fn Set_bit(mut self, Mask: u8, Value: bool) -> Self {
+        if Value {
+            self.0 |= Mask;
+        } else {
+            self.0 &= !Mask;
+        }
+        self
     }
 
-    pub fn Get_read(&self) -> bool {
-        self.0 & Self::Read_bit != 0
+    pub const fn Get_create(&self) -> bool {
+        self.Get_bit(Self::Create)
     }
 
-    pub fn Get_write(&self) -> bool {
-        self.0 & Self::Write_bit != 0
+    pub const fn Set_create(self, Value: bool) -> Self {
+        self.Set_bit(Self::Create, Value)
+    }
+
+    pub const fn Get_create_only(&self) -> bool {
+        self.Get_bit(Self::Create_only)
+    }
+
+    pub const fn Set_create_only(self, Value: bool) -> Self {
+        self.Set_bit(Self::Create_only, Value)
+    }
+
+    pub const fn Get_truncate(&self) -> bool {
+        self.Get_bit(Self::Truncate)
+    }
+
+    pub const fn Set_truncate(self, Value: bool) -> Self {
+        self.Set_bit(Self::Truncate, Value)
+    }
+
+    pub const fn Get_directory(&self) -> bool {
+        self.Get_bit(Self::Directory)
+    }
+
+    pub const fn Set_directory(self, Value: bool) -> Self {
+        self.Set_bit(Self::Directory, Value)
+    }
+}
+
+impl Default for Open_type {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+impl Debug for Open_type {
+    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Formatter
+            .debug_struct("Open_type")
+            .field("Create", &self.Get_create())
+            .field("Create_only", &self.Get_create_only())
+            .field("Truncate", &self.Get_truncate())
+            .field("Directory", &self.Get_directory())
+            .finish()
     }
 }
 
