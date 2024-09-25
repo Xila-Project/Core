@@ -36,7 +36,11 @@ fn From_file_type(value: FileType) -> Type_type {
 fn Apply_flags_to_open_options(Flags: Flags_type, Open_options: &mut OpenOptions) {
     Open_options
         .read(Flags.Get_mode().Get_read())
-        .write(Flags.Get_mode().Get_write() || Flags.Get_status().Get_append());
+        .write(Flags.Get_mode().Get_write())
+        .append(Flags.Get_status().Get_append())
+        .create(Flags.Get_open().Get_create())
+        .create_new(Flags.Get_open().Get_create_only())
+        .truncate(Flags.Get_open().Get_truncate());
 }
 
 type Inner_file_type = Arc<RwLock<(File, Flags_type)>>;
