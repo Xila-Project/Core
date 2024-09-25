@@ -279,14 +279,14 @@ pub trait File_system_traits: Send + Sync {
             .Open(
                 Task_identifier,
                 &Get_test_path().Append("read_only").unwrap(),
-                Mode_type::Read_only().into(),
+                Mode_type::Read_only.into(),
             )
             .unwrap();
         assert!(self
             .Open(
                 Task_identifier,
                 &Get_test_path().Append("read_only").unwrap(),
-                Mode_type::Read_only().into(),
+                Mode_type::Read_only.into(),
             )
             .is_err());
 
@@ -294,7 +294,7 @@ pub trait File_system_traits: Send + Sync {
             .Open(
                 Task_identifier,
                 &Get_test_path().Append("write_only").unwrap(),
-                Mode_type::Write_only().into(),
+                Mode_type::Write_only.into(),
             )
             .unwrap();
 
@@ -302,7 +302,7 @@ pub trait File_system_traits: Send + Sync {
             .Open(
                 Task_identifier,
                 &Get_test_path().Append("read_write").unwrap(),
-                Mode_type::Read_write().into(),
+                Mode_type::Read_write.into(),
             )
             .unwrap();
 
@@ -338,7 +338,7 @@ pub trait File_system_traits: Send + Sync {
 
         let Read_file = Get_test_path().Append("read").unwrap();
         let Read_file_identifier = self
-            .Open(Task_identifier, &Read_file, Mode_type::Read_only().into())
+            .Open(Task_identifier, &Read_file, Mode_type::Read_only.into())
             .unwrap();
         let mut Buffer = [0; 11];
         let Size = self
@@ -349,7 +349,7 @@ pub trait File_system_traits: Send + Sync {
 
         let Empty_file = Get_test_path().Append("empty_read").unwrap();
         let Empty_file_identifier = self
-            .Open(Task_identifier, &Empty_file, Mode_type::Read_only().into())
+            .Open(Task_identifier, &Empty_file, Mode_type::Read_only.into())
             .unwrap();
 
         let mut Buffer = [0; 1];
@@ -369,7 +369,7 @@ pub trait File_system_traits: Send + Sync {
 
         let File = Get_test_path().Append("write").unwrap();
         let File_identifier = self
-            .Open(Task_identifier, &File, Mode_type::Write_only().into())
+            .Open(Task_identifier, &File, Mode_type::Write_only.into())
             .unwrap();
         let Buffer = b"0123456789\n";
         let Size = self

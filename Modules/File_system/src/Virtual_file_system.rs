@@ -452,7 +452,7 @@ impl Virtual_file_system_type {
             File_system,
             Task_identifier,
             Relative_path,
-            Permission_type::New_write(),
+            Permission_type::Write_only,
         )?;
 
         let User = self.Task_manager.Get_owner(Task_identifier)?;
@@ -515,7 +515,7 @@ impl Virtual_file_system_type {
             File_system,
             Task_identifier,
             Relative_path.Go_parent().unwrap_or(Path_type::Get_root()),
-            Permission_type::New_write(),
+            Permission_type::Write_only,
         )?;
 
         File_system.Create_file(&Relative_path)
@@ -552,7 +552,7 @@ impl Virtual_file_system_type {
             File_system,
             Task_identifier,
             Relative_path,
-            Permission_type::New_write_execute(),
+            Permission_type::Write_execute,
         )?;
 
         File_system.Create_directory(&Relative_path)
@@ -575,7 +575,7 @@ impl Virtual_file_system_type {
                 &*File_system.Inner,
                 Task_identifier,
                 Relative_path.Go_parent().ok_or(Error_type::Invalid_path)?,
-                Permission_type::New_write(),
+                Permission_type::Write_only,
             )
         })?;
 

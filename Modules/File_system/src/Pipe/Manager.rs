@@ -93,7 +93,7 @@ impl File_system_traits for File_system_type {
             Self::Get_local_file_identifier(Task_identifier, File_identifier_read),
             (
                 Pipe.clone(),
-                Flags_type::New(Mode_type::Read_only(), Some(Status)),
+                Flags_type::New(Mode_type::Read_only, None, Some(Status)),
             ),
         );
 
@@ -102,7 +102,10 @@ impl File_system_traits for File_system_type {
 
         Inner.Opened_pipes.insert(
             Self::Get_local_file_identifier(Task_identifier, File_identifier_write),
-            (Pipe, Flags_type::New(Mode_type::Write_only(), Some(Status))),
+            (
+                Pipe,
+                Flags_type::New(Mode_type::Write_only, None, Some(Status)),
+            ),
         );
 
         Ok((File_identifier_read, File_identifier_write))
