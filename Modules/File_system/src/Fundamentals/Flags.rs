@@ -334,85 +334,85 @@ mod Tests {
     #[test]
     fn Test_mode_type_new() {
         let Read_only = Mode_type::New(true, false);
-        assert_eq!(Read_only.Get_read(), true);
-        assert_eq!(Read_only.Get_write(), false);
+        assert!(Read_only.Get_read());
+        assert!(!Read_only.Get_write());
 
         let Write_only = Mode_type::New(false, true);
-        assert_eq!(Write_only.Get_read(), false);
-        assert_eq!(Write_only.Get_write(), true);
+        assert!(!Write_only.Get_read());
+        assert!(Write_only.Get_write());
 
         let Read_write = Mode_type::New(true, true);
-        assert_eq!(Read_write.Get_read(), true);
-        assert_eq!(Read_write.Get_write(), true);
+        assert!(Read_write.Get_read());
+        assert!(Read_write.Get_write());
     }
 
     #[test]
     fn Test_mode_type_set_get() {
         let mut Mode = Mode_type(0);
         Mode = Mode.Set_read(true);
-        assert_eq!(Mode.Get_read(), true);
-        assert_eq!(Mode.Get_write(), false);
+        assert!(Mode.Get_read());
+        assert!(!Mode.Get_write());
 
         Mode = Mode.Set_write(true);
-        assert_eq!(Mode.Get_read(), true);
-        assert_eq!(Mode.Get_write(), true);
+        assert!(Mode.Get_read());
+        assert!(Mode.Get_write());
 
         Mode = Mode.Set_read(false);
-        assert_eq!(Mode.Get_read(), false);
-        assert_eq!(Mode.Get_write(), true);
+        assert!(!Mode.Get_read());
+        assert!(Mode.Get_write());
     }
 
     #[test]
     fn Test_open_type_new() {
         let Open = Open_type::New(true, false, true, false);
-        assert_eq!(Open.Get_create(), true);
-        assert_eq!(Open.Get_create_only(), false);
-        assert_eq!(Open.Get_truncate(), true);
-        assert_eq!(Open.Get_directory(), false);
+        assert!(Open.Get_create());
+        assert!(!Open.Get_create_only());
+        assert!(Open.Get_truncate());
+        assert!(!Open.Get_directory());
     }
 
     #[test]
     fn Test_open_type_set_get() {
         let mut Open = Open_type(0);
         Open = Open.Set_create(true);
-        assert_eq!(Open.Get_create(), true);
-        assert_eq!(Open.Get_create_only(), false);
+        assert!(Open.Get_create());
+        assert!(!Open.Get_create_only());
 
         Open = Open.Set_create_only(true);
-        assert_eq!(Open.Get_create(), true);
-        assert_eq!(Open.Get_create_only(), true);
+        assert!(Open.Get_create());
+        assert!(Open.Get_create_only());
 
         Open = Open.Set_truncate(true);
-        assert_eq!(Open.Get_truncate(), true);
+        assert!(Open.Get_truncate());
 
         Open = Open.Set_directory(true);
-        assert_eq!(Open.Get_directory(), true);
+        assert!(Open.Get_directory());
     }
 
     #[test]
     fn Test_status_type_new() {
         let Status = Status_type::New(true, false, true, false);
-        assert_eq!(Status.Get_append(), true);
-        assert_eq!(Status.Get_non_blocking(), false);
-        assert_eq!(Status.Get_synchronous(), true);
-        assert_eq!(Status.Get_synchronous_data_only(), false);
+        assert!(Status.Get_append());
+        assert!(!Status.Get_non_blocking());
+        assert!(Status.Get_synchronous());
+        assert!(!Status.Get_synchronous_data_only());
     }
 
     #[test]
     fn Test_status_type_set_get() {
         let mut Status = Status_type(0);
         Status = Status.Set_append(true);
-        assert_eq!(Status.Get_append(), true);
-        assert_eq!(Status.Get_non_blocking(), false);
+        assert!(Status.Get_append());
+        assert!(!Status.Get_non_blocking());
 
         Status = Status.Set_non_blocking(true);
-        assert_eq!(Status.Get_non_blocking(), true);
+        assert!(Status.Get_non_blocking());
 
         Status = Status.Set_synchronous(true);
-        assert_eq!(Status.Get_synchronous(), true);
+        assert!(Status.Get_synchronous());
 
         Status = Status.Set_synchronous_data_only(true);
-        assert_eq!(Status.Get_synchronous_data_only(), true);
+        assert!(Status.Get_synchronous_data_only());
     }
 
     #[test]
@@ -450,18 +450,9 @@ mod Tests {
         let Status = Status_type::New(true, false, false, false);
         let Flags = Flags_type::New(Mode, None, Some(Status));
 
-        assert_eq!(
-            Flags.Is_permission_granted(&Permission_type::Read_only),
-            true
-        );
-        assert_eq!(
-            Flags.Is_permission_granted(&Permission_type::Write_only),
-            true
-        );
-        assert_eq!(
-            Flags.Is_permission_granted(&Permission_type::Read_write),
-            true
-        );
+        assert!(Flags.Is_permission_granted(&Permission_type::Read_only));
+        assert!(Flags.Is_permission_granted(&Permission_type::Write_only));
+        assert!(Flags.Is_permission_granted(&Permission_type::Read_write));
     }
 
     #[test]
