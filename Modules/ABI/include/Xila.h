@@ -75,9 +75,23 @@ typedef struct
 } Xila_file_system_statistics_type;
 
 typedef uint8_t Xila_file_system_mode_type;
+typedef uint8_t Xila_file_system_open_type;
+typedef uint8_t Xila_file_system_status_type;
 
-extern const Xila_file_system_mode_type Xila_file_system_mode_read_bit;
-extern const Xila_file_system_mode_type Xila_file_system_mode_write_bit;
+extern const Xila_file_system_mode_type Xila_file_system_mode_read_mask;
+extern const Xila_file_system_mode_type Xila_file_system_mode_write_mask;
+
+extern const Xila_file_system_open_type Xila_file_system_open_create_mask;
+extern const Xila_file_system_open_type Xila_file_system_open_create_only_mask;
+extern const Xila_file_system_open_type Xila_file_system_open_truncate_mask;
+extern const Xila_file_system_open_type Xila_file_system_open_directory_mask;
+
+extern const Xila_file_system_status_type Xila_file_system_status_append_mask;
+extern const Xila_file_system_status_type Xila_file_system_status_non_blocking_mask;
+extern const Xila_file_system_status_type Xila_file_system_status_synchronous_mask;
+extern const Xila_file_system_status_type Xila_file_system_status_synchronous_data_only_mask;
+
+typedef uint64_t Xile_file_system_file_identifier_type;
 
 __wasi_errno_t
 Into_Wasi_Error(File_system_result_type Error);

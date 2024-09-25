@@ -8,6 +8,30 @@ use File_system::{
 
 use Task::Get_instance as Get_task_manager_instance;
 
+#[no_mangle]
+pub static Xila_file_system_mode_read_mask: u8 = Mode_type::Read_bit;
+#[no_mangle]
+pub static Xila_file_system_mode_write_mask: u8 = Mode_type::Write_bit;
+
+#[no_mangle]
+pub static Xila_file_system_open_create_mask: u8 = Open_type::Create;
+#[no_mangle]
+pub static Xila_file_system_open_create_only_mask: u8 = Open_type::Create_only;
+#[no_mangle]
+pub static Xila_file_system_open_truncate_mask: u8 = Open_type::Truncate;
+#[no_mangle]
+pub static Xila_file_system_open_directory_mask: u8 = Open_type::Directory;
+
+#[no_mangle]
+pub static Xila_file_system_status_append_mask: u8 = Status_type::Append_bit;
+#[no_mangle]
+pub static Xila_file_system_status_non_blocking_mask: u8 = Status_type::Non_blocking_bit;
+#[no_mangle]
+pub static Xila_file_system_status_synchronous_mask: u8 = Status_type::Synchronous_bit;
+#[no_mangle]
+pub static Xila_file_system_status_synchronous_data_only_mask: u8 =
+    Status_type::Synchronous_data_only_bit;
+
 /// This function is used to convert a function returning a Result into a u32.
 fn Into_u32<F>(Function: F) -> u32
 where
@@ -62,11 +86,6 @@ pub unsafe extern "C" fn Xila_get_file_statistics(
         Ok(())
     })
 }
-
-#[no_mangle]
-pub static Xila_file_system_mode_read_bit: u8 = Mode_type::Read_bit;
-#[no_mangle]
-pub static Xila_file_system_mode_write_bit: u8 = Mode_type::Write_bit;
 
 /// This function is used to get the access mode of a file.
 ///
