@@ -1393,7 +1393,9 @@ os_fsync(os_file_handle handle)
 __wasi_errno_t
 os_open_preopendir(const char *path, os_file_handle *out)
 {
-    return Into_Wasi_Error(Xila_pre_open_directory(path, out));
+    File_system_error_type Result = Xila_file_system_open(path, Xila_file_system_mode_read_mask, Xila_file_system_open_directory_mask, 0, out);
+
+    return Into_Wasi_Error(Result);
 }
 
 /**
@@ -1414,8 +1416,11 @@ os_openat(os_file_handle handle, const char *path, __wasi_oflags_t oflags,
           __wasi_fdflags_t fd_flags, __wasi_lookupflags_t lookup_flags,
           wasi_libc_file_access_mode access_mode, os_file_handle *out)
 {
-    return Xila_open_at(handle, path, oflags, fd_flags, lookup_flags,
-                        access_mode, out);
+    Xila_file_system_mode_type Mode = Into_Xila_mode(access_mode);
+    Xila_file_system_open_type Open = Into_Xila_open(oflags);
+    Xila_file_system_status_type Status = Into_Xila_status(fd_flags);
+
+    return Xila_file_system_open_at(handle, path, Mode, Open, Status, out);
 }
 
 /**
@@ -1892,7 +1897,18 @@ bool os_is_handle_valid(os_file_handle *handle)
  */
 char *os_realpath(const char *path, char *resolved_path)
 {
-    return Xila_resolve_path(path, resolved_path);
+    printf("RP : %s\n", path);
+
+    File_system_result_type Result = Xila_file_system_resolve_path(path, resolved_path, PATH_MAX);
+
+    printf("Result : %u\n", Result);
+    if (Result == 0)
+    {
+        printf("Resolving path : %s\n", resolved_path);
+        return resolved_path;
+    }
+    else
+        return NULL;
 }
 
 /****************************************************

@@ -56,9 +56,9 @@ void Into_WASI_file_statistics(const Xila_file_system_statistics_type *Statistic
 wasi_libc_file_access_mode Into_WASI_access_mode(Xila_file_system_mode_type Mode)
 {
 
-    if (Mode & Xila_file_system_mode_write_bit)
+    if (Mode & Xila_file_system_mode_write_mask)
     {
-        if (Mode & Xila_file_system_mode_read_bit)
+        if (Mode & Xila_file_system_mode_read_mask)
         {
             return WASI_LIBC_ACCESS_MODE_READ_WRITE;
         }
@@ -67,4 +67,58 @@ wasi_libc_file_access_mode Into_WASI_access_mode(Xila_file_system_mode_type Mode
     }
 
     return WASI_LIBC_ACCESS_MODE_READ_ONLY;
+}
+
+Xila_file_system_mode_type Into_Xila_mode(wasi_libc_file_access_mode Mode)
+{
+    switch (Mode)
+    {
+    case WASI_LIBC_ACCESS_MODE_READ_ONLY:
+        return Xila_file_system_mode_read_mask;
+
+    case WASI_LIBC_ACCESS_MODE_WRITE_ONLY:
+        return Xila_file_system_mode_write_mask;
+    case WASI_LIBC_ACCESS_MODE_READ_WRITE:
+        return Xila_file_system_mode_read_mask | Xila_file_system_mode_write_mask;
+    default:
+        return 0;
+    }
+}
+
+Xila_file_system_open_type Into_Xila_open(__wasi_oflags_t WASI_open)
+{
+    Xila_file_system_open_type Open = 0;
+
+    if (WASI_open & __WASI_O_CREAT)
+        Open |= Xila_file_system_open_create_mask;
+
+    if (WASI_open & __WASI_O_EXCL)
+        Open |= Xila_file_system_open_create_only_mask;
+
+    if (WASI_open & __WASI_O_DIRECTORY)
+        Open |= Xila_file_system_open_directory_mask;
+
+    if (WASI_open & __WASI_O_TRUNC)
+        Open |= Xila_file_system_open_truncate_mask;
+
+    return Open;
+}
+
+Xila_file_system_status_type Into_Xila_status(__wasi_fdflags_t WASI_status)
+{
+    Xila_file_system_status_type Status = 0;
+
+    if (WASI_status & __WASI_FDFLAG_APPEND)
+        Status |= Xila_file_system_status_append_mask;
+
+    if (WASI_status & __WASI_FDFLAG_SYNC)
+        Status |= Xila_file_system_status_synchronous_mask;
+
+    if (WASI_status & __WASI_FDFLAG_DSYNC)
+        Status |= Xila_file_system_status_synchronous_data_only_mask;
+
+    if (WASI_status & __WASI_FDFLAG_NONBLOCK)
+        Status |= Xila_file_system_status_non_blocking_mask;
+
+    return Status;
 }
