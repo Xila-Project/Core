@@ -48,7 +48,7 @@ fn main() {
     let Pointer_file = File_type::Open(
         Virtual_file_system,
         Pointer_device_path,
-        Mode_type::Read_only().into(),
+        Mode_type::Read_only.into(),
         Task,
     )
     .expect("Error opening pointer file");
@@ -56,7 +56,7 @@ fn main() {
     let Screen_file = File_type::Open(
         Virtual_file_system,
         Screen_device_path,
-        Mode_type::Read_write().into(),
+        Mode_type::Read_write.into(),
         Task,
     )
     .expect("Error opening screen file");

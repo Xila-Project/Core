@@ -53,7 +53,7 @@ fn Test_file_system() {
     let File = File_type::Open(
         Virtual_file_system,
         File_path,
-        Mode_type::Read_write().into(),
+        Mode_type::Read_write.into(),
         Task,
     )
     .expect("Failed to open file");
@@ -111,7 +111,7 @@ fn Test_file_system() {
     let Pipe_read = File_type::Open(
         Virtual_file_system,
         Pipe_path,
-        Mode_type::Read_only().into(),
+        Mode_type::Read_only.into(),
         Task,
     )
     .expect("Failed to open pipe");
@@ -119,7 +119,7 @@ fn Test_file_system() {
     let Pipe_write = File_type::Open(
         Virtual_file_system,
         Pipe_path,
-        Mode_type::Write_only().into(),
+        Mode_type::Write_only.into(),
         Task,
     )
     .expect("Failed to open pipe");
@@ -176,7 +176,7 @@ fn Test_file_system() {
     let Device_file = File_type::Open(
         Virtual_file_system,
         Device_path,
-        Mode_type::Read_write().into(),
+        Mode_type::Read_write.into(),
         Task,
     )
     .expect("Failed to open device");
