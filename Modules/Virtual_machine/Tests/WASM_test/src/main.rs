@@ -95,6 +95,12 @@ fn Test_stdio() -> Result<(), ()> {
     Ok(())
 }
 
+fn Test_file() -> Result<(), ()> {
+    let File = std::fs::File::open("/test.txt").unwrap();
+
+    Ok(())
+}
+
 fn main() -> Result<(), ()> {
     Test_passing_mutable_slice()?;
 
@@ -105,6 +111,8 @@ fn main() -> Result<(), ()> {
     Test_passing_string()?;
 
     Test_stdio()?;
+
+    Test_file()?;
 
     Ok(())
 }
