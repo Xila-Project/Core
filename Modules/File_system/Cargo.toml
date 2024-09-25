@@ -15,3 +15,7 @@ Drivers = { path = "../Drivers" }
 [features]
 std = []
 default = ["std"]
+
+[[test]]
+name = "Integration"
+path = "Tests/Integration.rs"

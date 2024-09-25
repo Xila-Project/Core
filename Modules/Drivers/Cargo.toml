@@ -54,9 +54,6 @@ Graphics = { path = "../Graphics", features = ["RGB565"] }
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
 sdl2 = "0.37.0"
 
-[[test]]
-name = "Native_file_system"
-path = "Tests/Native/File_system.rs"
 
 [[test]]
 name = "Native_graphics"
