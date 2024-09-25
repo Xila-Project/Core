@@ -34,6 +34,8 @@ extern "C"
 #define BH_PLATFORM_XILA
 #endif
 
+    #define PATH_MAX 256
+
     typedef uint32_t korp_tid;
 
     struct Raw_mutex_type
