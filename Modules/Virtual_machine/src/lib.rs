@@ -133,7 +133,7 @@ pub fn Instantiate_test_environment(
     let Stdin = Virtual_file_system
         .Open(
             "stdin",
-            File_system::Mode_type::Read_only().into(),
+            File_system::Mode_type::Read_only.into(),
             Task_identifier,
         )
         .expect("Failed to open stdin");
@@ -141,7 +141,7 @@ pub fn Instantiate_test_environment(
     let Stdout = Virtual_file_system
         .Open(
             "stdout",
-            File_system::Mode_type::Write_only().into(),
+            File_system::Mode_type::Write_only.into(),
             Task_identifier,
         )
         .expect("Failed to open stdout");
@@ -149,7 +149,7 @@ pub fn Instantiate_test_environment(
     let Stderr = Virtual_file_system
         .Open(
             "stderr",
-            File_system::Mode_type::Write_only().into(),
+            File_system::Mode_type::Write_only.into(),
             Task_identifier,
         )
         .expect("Failed to open stderr");
