@@ -1,9 +1,9 @@
 /// This module implements the POSIX like file system C ABI.
-use std::num::NonZeroU32;
+use std::{cmp::min, ffi::CString, num::NonZeroU32, ptr::copy_nonoverlapping};
 
 use File_system::{
-    Error_type, File_identifier_type, Get_instance as Get_file_system_instance, Mode_type,
-    Result_type, Statistics_type, Unique_file_identifier_type,
+    Error_type, File_identifier_type, Flags_type, Get_instance as Get_file_system_instance,
+    Mode_type, Open_type, Result_type, Statistics_type, Status_type, Unique_file_identifier_type,
 };
 
 use Task::Get_instance as Get_task_manager_instance;
@@ -283,4 +283,100 @@ pub extern "C" fn Xila_file_system_is_stdout(File: Unique_file_identifier_type) 
     );
 
     File == File_identifier_type::Stdout
+}
+
+/// This function is used to open a file.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+#[no_mangle]
+pub unsafe extern "C" fn Xila_file_system_open_at(
+    Current_file: Unique_file_identifier_type,
+    Path: *const i8,
+    Mode: Mode_type,
+    Open: Open_type,
+    Status: Status_type,
+    File: *mut Unique_file_identifier_type,
+) -> u32 {
+    Into_u32(move || {
+        let Path = std::ffi::CStr::from_ptr(Path)
+            .to_str()
+            .map_err(|_| Error_type::Invalid_input)?;
+
+        println!("Opening file : {:?}", Path);
+        println!("Current file : {:?}", Current_file);
+        println!("Mode : {:?}", Mode);
+        println!("Open : {:?}", Open);
+        println!("Status : {:?}", Status);
+
+        Ok(())
+    })
+}
+
+/// This function is used to convert a path to a resolved path (i.e. a path without symbolic links or relative paths).
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+#[no_mangle]
+pub unsafe extern "C" fn Xila_file_system_resolve_path(
+    Path: *const i8,
+    Resolved_path: *mut u8,
+    Resolved_path_size: usize,
+) -> u32 {
+    Into_u32(move || {
+        let Path = std::ffi::CStr::from_ptr(Path)
+            .to_str()
+            .map_err(|_| Error_type::Invalid_input)?;
+
+        println!("Resolving path : {:?}", Path);
+
+        // Copy path to resolved path.
+        copy_nonoverlapping(
+            Path.as_ptr(),
+            Resolved_path,
+            min(Resolved_path_size, Path.len()),
+        );
+
+        Ok(())
+    })
+}
+
+/// This function is used to open a file.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Errors
+///
+/// This function may return an error if the file system fails to open the file.
+#[no_mangle]
+pub unsafe extern "C" fn Xila_file_system_open(
+    Path: *const u8,
+    Mode: Mode_type,
+    Open: Open_type,
+    Status: Status_type,
+    File: *mut Unique_file_identifier_type,
+) -> u32 {
+    Into_u32(move || {
+        let Path = std::ffi::CStr::from_ptr(Path as *const i8)
+            .to_str()
+            .map_err(|_| Error_type::Invalid_input)?;
+
+        let Task_identifier = Get_task_manager_instance()
+            .Get_current_task_identifier()
+            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+
+        *File = Get_file_system_instance()
+            .Open(
+                Path,
+                Flags_type::New(Mode, Some(Open), Some(Status)),
+                Task_identifier,
+            )
+            .expect("Failed to open file.");
+
+        Ok(())
+    })
 }
