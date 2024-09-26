@@ -12,7 +12,8 @@ fn Test_file_system() {
     use std::sync::RwLock;
 
     use File_system::{
-        Device_trait, File_type, Mode_type, Path_type, Position_type, Result_type, Status_type,
+        File_type, Flags_type, Mode_type, Open_type, Path_type, Position_type, Result_type,
+        Status_type,
     };
 
     let Task_instance = Task::Initialize().expect("Failed to initialize task manager");
@@ -46,14 +47,14 @@ fn Test_file_system() {
             .expect("Failed to delete file");
     }
 
-    Virtual_file_system
-        .Create_file(File_path, Task)
-        .expect("Failed to create file");
-
     let File = File_type::Open(
         Virtual_file_system,
         File_path,
-        Mode_type::Read_write.into(),
+        Flags_type::New(
+            Mode_type::Read_write,
+            Some(Open_type::None.Set_create_only(true)),
+            None,
+        ),
         Task,
     )
     .expect("Failed to open file");
@@ -141,37 +142,37 @@ fn Test_file_system() {
 
     struct Dummy_device_type(RwLock<u64>);
 
-    impl Device_trait for Dummy_device_type {
-        fn Read(&self, Buffer: &mut [u8]) -> Result_type<usize> {
-            Buffer.copy_from_slice(&self.0.read()?.to_le_bytes());
+    //    impl Device_trait for Dummy_device_type {
+    //        fn Read(&self, Buffer: &mut [u8]) -> Result_type<usize> {
+    //            Buffer.copy_from_slice(&self.0.read()?.to_le_bytes());
+    //
+    //            Ok(std::mem::size_of::<u64>())
+    //        }
+    //
+    //        fn Write(&self, Buffer: &[u8]) -> Result_type<usize> {
+    //            *self.0.write()? = u64::from_le_bytes(Buffer.try_into().unwrap());
+    //
+    //            Ok(std::mem::size_of::<u64>())
+    //        }
+    //
+    //        fn Get_size(&self) -> Result_type<usize> {
+    //            Ok(std::mem::size_of::<u64>())
+    //        }
+    //
+    //        fn Set_position(&self, _: &Position_type) -> Result_type<usize> {
+    //            Ok(0)
+    //        }
+    //
+    //        fn Flush(&self) -> Result_type<()> {
+    //            Ok(())
+    //        }
+    //    }
 
-            Ok(std::mem::size_of::<u64>())
-        }
+    //    let Device = Dummy_device_type(RwLock::new(0));
 
-        fn Write(&self, Buffer: &[u8]) -> Result_type<usize> {
-            *self.0.write()? = u64::from_le_bytes(Buffer.try_into().unwrap());
-
-            Ok(std::mem::size_of::<u64>())
-        }
-
-        fn Get_size(&self) -> Result_type<usize> {
-            Ok(std::mem::size_of::<u64>())
-        }
-
-        fn Set_position(&self, _: &Position_type) -> Result_type<usize> {
-            Ok(0)
-        }
-
-        fn Flush(&self) -> Result_type<()> {
-            Ok(())
-        }
-    }
-
-    let Device = Dummy_device_type(RwLock::new(0));
-
-    Virtual_file_system
-        .Add_device(&Device_path, Box::new(Device))
-        .expect("Failed to add device");
+    //    Virtual_file_system
+    //        .Add_device(&Device_path, Box::new(Device))
+    //        .expect("Failed to add device");
 
     let Device_file = File_type::Open(
         Virtual_file_system,

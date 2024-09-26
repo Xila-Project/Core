@@ -6,9 +6,9 @@ use Users::{Group_identifier_type, User_identifier_type};
 use crate::{File_identifier_type, Mode_type, Statistics_type};
 
 use super::{
-    Device, Device_trait, Error_type, File_system_identifier_type, File_system_traits, Flags_type,
-    Path_owned_type, Path_type, Permission_type, Permissions_type, Pipe, Position_type,
-    Result_type, Size_type, Status_type, Type_type, Unique_file_identifier_type,
+    Error_type, File_system_identifier_type, File_system_traits, Flags_type, Path_owned_type,
+    Path_type, Permission_type, Permissions_type, Position_type, Result_type, Size_type,
+    Status_type, Type_type, Unique_file_identifier_type,
 };
 
 struct Internal_file_system_type {
@@ -81,27 +81,27 @@ impl Virtual_file_system_type {
         User_manager: &'static Users::Manager_type,
         _: &'static Time::Manager_type,
     ) -> Result_type<Self> {
-        let mut File_systems = BTreeMap::new();
+        let File_systems = BTreeMap::new();
 
-        let Pipe_file_system = Pipe::File_system_type::New();
-
-        File_systems.insert(
-            Self::Pipe_file_system_identifier,
-            Internal_file_system_type {
-                Mount_point: None,
-                Inner: Box::new(Pipe_file_system),
-            },
-        );
-
-        let Device_file_system = Device::File_system_type::New();
-
-        File_systems.insert(
-            Self::Device_file_system_identifier,
-            Internal_file_system_type {
-                Mount_point: None,
-                Inner: Box::new(Device_file_system),
-            },
-        );
+        //        let Pipe_file_system = Pipe::File_system_type::New();
+        //
+        //        File_systems.insert(
+        //            Self::Pipe_file_system_identifier,
+        //            Internal_file_system_type {
+        //                Mount_point: None,
+        //                Inner: Box::new(Pipe_file_system),
+        //            },
+        //        );
+        //
+        //        let Device_file_system = Device::File_system_type::New();
+        //
+        //        File_systems.insert(
+        //            Self::Device_file_system_identifier,
+        //            Internal_file_system_type {
+        //                Mount_point: None,
+        //                Inner: Box::new(Device_file_system),
+        //            },
+        //        );
 
         Ok(Self {
             Task_manager,
@@ -412,24 +412,24 @@ impl Virtual_file_system_type {
         Ok(())
     }
 
-    pub fn Add_device(
-        &self,
-        Path: &'static dyn AsRef<Path_type>,
-        Device: Box<dyn Device_trait>,
-    ) -> Result_type<()> {
-        if !Path.as_ref().Is_valid() {
-            return Err(Error_type::Invalid_path);
-        }
-
-        let File_systems = self.File_systems.read()?; // Get the file systems
-
-        let File_system = Self::Get_file_system_from_identifier(
-            &File_systems,
-            Self::Device_file_system_identifier,
-        )?;
-
-        File_system.Inner.Add_device(Path, Device)
-    }
+    //    pub fn Add_device(
+    //        &self,
+    //        Path: &'static dyn AsRef<Path_type>,
+    //        Device: Box<dyn Device_trait>,
+    //    ) -> Result_type<()> {
+    //        if !Path.as_ref().Is_valid() {
+    //            return Err(Error_type::Invalid_path);
+    //        }
+    //
+    //        let File_systems = self.File_systems.read()?; // Get the file systems
+    //
+    //        let File_system = Self::Get_file_system_from_identifier(
+    //            &File_systems,
+    //            Self::Device_file_system_identifier,
+    //        )?;
+    //
+    //        File_system.Inner.Add_device(Path, Device)
+    //    }
 
     pub fn Create_named_pipe(
         &self,
@@ -498,64 +498,6 @@ impl Virtual_file_system_type {
             Unique_file_identifier_type::New(Self::Pipe_file_system_identifier, Read),
             Unique_file_identifier_type::New(Self::Pipe_file_system_identifier, Write),
         ))
-    }
-
-    pub fn Create_file(
-        &self,
-        Path: impl AsRef<Path_type>,
-        Task_identifier: Task_identifier_type,
-    ) -> Result_type<()> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
-
-        let (_, File_system, Relative_path) =
-            Self::Get_file_system_from_mount_point(&File_systems, &Path)?; // Get the file system identifier and the relative path
-
-        // Check if the user has the right to create the file (write permission on the parent directory)
-        self.Check_permission(
-            File_system,
-            Task_identifier,
-            Relative_path.Go_parent().unwrap_or(Path_type::Get_root()),
-            Permission_type::Write_only,
-        )?;
-
-        File_system.Create_file(&Relative_path)
-    }
-
-    pub fn Create_directory(
-        &self,
-        Path: impl AsRef<Path_type>,
-        Recursive: bool,
-        Task_identifier: Task_identifier_type,
-    ) -> Result_type<()> {
-        if Recursive {
-            // If the directory already exists, return Ok(()) (only if recursive is true).
-            if self.Exists(Path.as_ref())? {
-                return Ok(());
-            }
-
-            // Create the parent directory recursively.
-            self.Create_directory(
-                Path.as_ref().Go_parent().ok_or(Error_type::Invalid_path)?,
-                true,
-                Task_identifier,
-            )?
-        }
-
-        // Create current directory.
-        let File_systems = self.File_systems.read()?; // Get the file systems
-
-        let (_, File_system, Relative_path) =
-            Self::Get_file_system_from_mount_point(&File_systems, &Path)?;
-
-        // Check if the user has the right to create the directory (write permission and execute permission on the parent directory)
-        self.Check_permission(
-            File_system,
-            Task_identifier,
-            Relative_path,
-            Permission_type::Write_execute,
-        )?;
-
-        File_system.Create_directory(&Relative_path)
     }
 
     pub fn Delete(

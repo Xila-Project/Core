@@ -6,7 +6,7 @@ use std::{
 use Users::{Group_identifier_type, User_identifier_type};
 
 use crate::{
-    Error_type, File_system_identifier_type, Get_now, Permissions_type, Result_type,
+    Error_type, File_system_identifier_type, Get_now, Inode_type, Permissions_type, Result_type,
     Statistics_type, Time_type, Type_type,
 };
 
@@ -111,7 +111,7 @@ impl Pipe_type {
         let Inner = self.0.read()?;
         Ok(Statistics_type::New(
             File_system,
-            File,
+            Inode_type::New(File),
             1,
             Inner.Buffer.len().into(),
             Inner.Access_time,

@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 use Users::{Group_identifier_type, User_identifier_type};
 
 use crate::{
-    File_system_identifier_type, Get_now, Permissions_type, Position_type, Result_type,
+    File_system_identifier_type, Get_now, Inode_type, Permissions_type, Position_type, Result_type,
     Statistics_type, Time_type, Type_type,
 };
 
@@ -18,6 +18,7 @@ pub trait Device_trait: Send + Sync {
 
     fn Flush(&self) -> Result_type<()>;
 }
+
 
 struct Inner_type {
     Device: Box<dyn Device_trait>,
@@ -107,7 +108,7 @@ impl Device_type {
         let Inner = self.0.read()?;
         Ok(Statistics_type::New(
             File_system,
-            File,
+            Inode_type::New(File),
             1,
             Inner.Device.Get_size()?.into(),
             Inner.Access_time,

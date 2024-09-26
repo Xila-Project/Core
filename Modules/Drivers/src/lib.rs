@@ -23,8 +23,8 @@ pub fn Mount_devices(
     #[cfg(target_vendor = "espressif")]
     Espressif::Mount_devices(Virtual_file_systems)?;
 
-    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-    Native::Mount_devices(Virtual_file_systems)?;
+    //#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    //Native::Mount_devices(Virtual_file_systems)?;
 
     Ok(())
 }

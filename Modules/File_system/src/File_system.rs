@@ -3,8 +3,8 @@ use std::mem::size_of;
 use crate::{File_identifier_inner_type, File_system_identifier_type, Mode_type, Statistics_type};
 
 use super::{
-    Device::Device_trait, Error_type, File_identifier_type, Flags_type, Path_owned_type, Path_type,
-    Permissions_type, Position_type, Result_type, Size_type, Status_type,
+    Error_type, File_identifier_type, Flags_type, Path_owned_type, Path_type, Permissions_type,
+    Position_type, Result_type, Size_type, Status_type,
 };
 
 use Task::{Task_identifier_inner_type, Task_identifier_type};
@@ -18,17 +18,8 @@ use Users::{Group_identifier_type, User_identifier_type};
 /// Thus, implementation should use a `RwLock` or `Mutex` to manage concurrency.
 pub trait File_system_traits: Send + Sync {
     // - Status
-    fn Exists(&self, Path: &dyn AsRef<Path_type>) -> Result_type<bool>;
-
     // - Manipulation
     // - - Open/close/delete
-
-    /// Create a file.
-    ///
-    /// # Errors
-    /// Returns an error if the file already exists.
-    /// Returns an error if the user / group doesn't have the permission to create the file (no write permission on parent directory).
-    fn Create_file(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()>;
 
     /// Open a file.
     ///     
@@ -161,14 +152,6 @@ pub trait File_system_traits: Send + Sync {
 
     // - Directory
 
-    /// Create a directory.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the directory / file already exists.
-    /// Returns an error if the user / group doesn't have the permission to create the directory (no write permission on parent directory).
-    fn Create_directory(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()>;
-
     fn Create_named_pipe(
         &self,
         _: &dyn AsRef<Path_type>,
@@ -180,13 +163,13 @@ pub trait File_system_traits: Send + Sync {
         Err(Error_type::Unsupported_operation)
     }
 
-    fn Add_device(
-        &self,
-        _: &'static dyn AsRef<Path_type>,
-        _: Box<dyn Device_trait>,
-    ) -> Result_type<()> {
-        Err(Error_type::Unsupported_operation)
-    }
+    //    fn Add_device(
+    //        &self,
+    //        _: &'static dyn AsRef<Path_type>,
+    //        _: Box<dyn Device_trait>,
+    //    ) -> Result_type<()> {
+    //        Err(Error_type::Unsupported_operation)
+    //    }
 
     fn Create_unnamed_pipe(
         &self,
@@ -246,25 +229,6 @@ pub trait File_system_traits: Send + Sync {
 
     // - Tests
 
-    /// Test the existence of a file.
-    ///
-    /// # Before running the tests
-    ///
-    /// - `Test_path` should be an existing directory
-    /// - Create file `exists` in the `Test_path` directory
-    /// - Ensure `not_exists` doesn't exists in the `Test_path` directory
-    fn Test_existence(&self) {
-        assert_eq!(self.Exists(&Get_test_path()), Ok(true));
-        assert_eq!(
-            self.Exists(&Get_test_path().Append("exists").unwrap()),
-            Ok(true)
-        );
-        assert_eq!(
-            self.Exists(&Get_test_path().Append("not_exists").unwrap()),
-            Ok(false)
-        );
-    }
-
     /// Test opening and closing a file.
     ///
     /// # Before running the tests
@@ -311,20 +275,6 @@ pub trait File_system_traits: Send + Sync {
         self.Close(Task_identifier, Write_only).unwrap();
 
         self.Close(Task_identifier, Read_write).unwrap();
-    }
-
-    /// Test creating a directory and verifying its existence.
-    ///
-    /// # Before running the tests
-    ///
-    /// - Ensure `test_dir` doesn't exists in the `Test_path` directory
-    /// - Ensure `already_exists` exists in the `Test_path` directory
-    fn Test_create_directory_exists(&self) {
-        let New_path = Get_test_path().Append("test_dir").unwrap();
-
-        assert_eq!(self.Exists(&New_path), Ok(false));
-        self.Create_directory(&New_path).unwrap();
-        assert_eq!(self.Exists(&New_path), Ok(true));
     }
 
     /// Test read file operation.
@@ -376,15 +326,6 @@ pub trait File_system_traits: Send + Sync {
             .Write(Task_identifier, File_identifier, Buffer)
             .unwrap();
         assert_eq!(Size, 11);
-    }
-
-    /// Run before the tests.
-    fn Reset_test_directory(&self) {
-        let _ = self.Delete(&Get_test_path());
-        assert_eq!(self.Exists(&Get_test_path()), Ok(false));
-
-        self.Create_directory(&Get_test_path()).unwrap();
-        assert_eq!(self.Exists(&Get_test_path()), Ok(true));
     }
 }
 

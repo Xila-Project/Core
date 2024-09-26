@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, HashMap},
-    sync::RwLock,
+    sync::{atomic::{AtomicUsize, Ordering}, RwLock},
 };
 
 use Task::Task_identifier_type;
@@ -14,9 +14,24 @@ use crate::{
 
 use super::{Device_trait, Device_type};
 
+enum Inner_item_type {
+    Device(Device_type),
+    Directory(AtomicUsize),
+}
+
+impl Clone for Inner_item_type {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Device(Device) => Self::Device(Device.clone()),
+            Self::Directory(Count) => Self::Directory(AtomicUsize::new(Count.load(Ordering::Acquire))),
+        }
+    }
+    
+}
+
 struct Inner_type {
     Devices: HashMap<&'static Path_type, Device_type>,
-    Opened_devices: BTreeMap<usize, (Device_type, Flags_type)>,
+    Opened_devices: BTreeMap<usize, (Inner_item_type, Flags_type)>,
 }
 
 pub struct File_system_type(RwLock<Inner_type>);
@@ -55,10 +70,6 @@ impl File_system_traits for File_system_type {
         Ok(self.0.read()?.Devices.contains_key(Path.as_ref()))
     }
 
-    fn Create_file(&self, _: &dyn AsRef<Path_type>) -> Result_type<()> {
-        Err(Error_type::Unsupported_operation)
-    }
-
     fn Open(
         &self,
         Task: Task_identifier_type,
@@ -75,12 +86,32 @@ impl File_system_traits for File_system_type {
 
         let File_identifier = self.Get_new_file_identifier(Task, &Inner.Opened_devices)?;
 
-        Inner.Opened_devices.insert(
-            Self::Get_local_file_identifier(Task, File_identifier),
-            (Opened_device, Flags),
-        );
+        let Local_file_identifier = Self::Get_local_file_identifier(Task, File_identifier);
 
-        Ok(File_identifier)
+        // - If the file is a directory
+        if Flags.Get_open().Get_directory() {
+            for (Device, _) in Inner.Opened_devices.values_mut() {
+                if let Inner_item_type::Directory(Count) = Device {
+                    Count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                }
+            }
+
+            Inner.Opened_devices.insert(
+                Local_file_identifier,
+                (Inner_item_type::Directory(AtomicUsize::new(0)), Flags),
+            );
+
+            Ok(File_identifier)
+        }
+        // - If the file is a device
+        else {
+            Inner.Opened_devices.insert(
+                Local_file_identifier,
+                (Inner_item_type::Device(Opened_device), Flags),
+            );
+
+            Ok(File_identifier)
+        }
     }
 
     fn Close(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()> {
@@ -149,14 +180,17 @@ impl File_system_traits for File_system_type {
         File: File_identifier_type,
         Buffer: &mut [u8],
     ) -> Result_type<Size_type> {
-        self.0
+        match &self
+            .0
             .read()?
             .Opened_devices
             .get(&Self::Get_local_file_identifier(Task, File))
             .ok_or(Error_type::Not_found)?
             .0
-            .Read(Buffer)
-            .map(|Size| Size.into())
+        {
+            Inner_item_type::Device(Device) => Device.Read(Buffer).map(|Size| Size.into()),
+            Inner_item_type::Directory(_) => Err(Error_type::Invalid_file),
+        }
     }
 
     fn Write(
@@ -165,14 +199,17 @@ impl File_system_traits for File_system_type {
         File: File_identifier_type,
         Buffer: &[u8],
     ) -> Result_type<Size_type> {
-        self.0
+        match &self
+            .0
             .read()?
             .Opened_devices
             .get(&Self::Get_local_file_identifier(Task, File))
             .ok_or(Error_type::Not_found)?
             .0
-            .Write(Buffer)
-            .map(|Size| Size.into())
+        {
+            Inner_item_type::Device(Device) => Device.Write(Buffer).map(|Size| Size.into()),
+            Inner_item_type::Directory(_) => Err(Error_type::Invalid_file),
+        }
     }
 
     fn Move(&self, _: &dyn AsRef<Path_type>, _: &dyn AsRef<Path_type>) -> Result_type<()> {
@@ -185,28 +222,33 @@ impl File_system_traits for File_system_type {
         File: File_identifier_type,
         Position: &Position_type,
     ) -> Result_type<Size_type> {
-        self.0
+        match &self
+            .0
             .read()?
             .Opened_devices
             .get(&Self::Get_local_file_identifier(Task, File))
             .ok_or(Error_type::Not_found)?
             .0
-            .Set_position(Position)
-            .map(|Size| Size.into())
+        {
+            Inner_item_type::Device(Device) => {
+                Device.Set_position(Position).map(|Size| Size.into())
+            }
+            Inner_item_type::Directory(_) => Err(Error_type::Unsupported_operation),
+        }
     }
 
     fn Flush(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()> {
-        self.0
+        match &self
+            .0
             .read()?
             .Opened_devices
             .get(&Self::Get_local_file_identifier(Task, File))
             .ok_or(Error_type::Not_found)?
             .0
-            .Flush()
-    }
-
-    fn Create_directory(&self, _: &dyn AsRef<Path_type>) -> Result_type<()> {
-        Err(Error_type::Unsupported_operation)
+        {
+            Inner_item_type::Device(Device) => Device.Flush(),
+            Inner_item_type::Directory(_) => Err(Error_type::Unsupported_operation),
+        }
     }
 
     fn Add_device(
@@ -268,13 +310,19 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<Statistics_type> {
         let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
 
-        self.0
+        match &self
+            .0
             .read()?
             .Opened_devices
             .get(&Local_file_identifier)
             .ok_or(Error_type::Not_found)?
             .0
-            .Get_statistics(File_system, Local_file_identifier as u64)
+        {
+            Inner_item_type::Device(Device) => {
+                Device.Get_statistics(File_system, Local_file_identifier as u64)
+            }
+            Inner_item_type::Directory(_) => Err(Error_type::Unsupported_operation),
+        }
     }
 
     fn Get_mode(

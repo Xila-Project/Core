@@ -1,10 +1,12 @@
 use crate::{File_system_identifier_type, Size_type, Time_type, Type_type};
 
+use super::Inode_type;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct Statistics_type {
     File_system: File_system_identifier_type,
-    Inode: u64,
+    Inode: Inode_type,
     Links: u64,
     Size: Size_type,
     Last_access: Time_type,
@@ -17,7 +19,7 @@ impl Statistics_type {
     #[allow(clippy::too_many_arguments)]
     pub fn New(
         File_system: File_system_identifier_type,
-        Inode: u64,
+        Inode: Inode_type,
         Links: u64,
         Size: Size_type,
         Last_access: Time_type,
@@ -41,7 +43,7 @@ impl Statistics_type {
         self.File_system
     }
 
-    pub const fn Get_inode(&self) -> u64 {
+    pub const fn Get_inode(&self) -> Inode_type {
         self.Inode
     }
 
@@ -70,7 +72,7 @@ impl Statistics_type {
         self
     }
 
-    pub fn Set_inode(&mut self, Inode: u64) -> &mut Self {
+    pub fn Set_inode(&mut self, Inode: Inode_type) -> &mut Self {
         self.Inode = Inode;
         self
     }

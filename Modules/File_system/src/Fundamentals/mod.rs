@@ -1,16 +1,40 @@
 use std::ops;
 
+mod Directory;
 mod Flags;
 mod Identifiers;
 mod Path;
 mod Permission;
 mod Statistics;
 
+pub use Directory::*;
 pub use Flags::*;
 pub use Identifiers::*;
 pub use Path::*;
 pub use Permission::*;
 pub use Statistics::*;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)]
+pub struct Inode_type(u64);
+
+impl Inode_type {
+    pub const fn New(Item: u64) -> Self {
+        Inode_type(Item)
+    }
+}
+
+impl From<u64> for Inode_type {
+    fn from(item: u64) -> Self {
+        Inode_type(item)
+    }
+}
+
+impl From<Inode_type> for u64 {
+    fn from(item: Inode_type) -> Self {
+        item.0
+    }
+}
 
 #[derive(Default, PartialOrd, PartialEq, Eq, Ord, Clone, Copy, Debug)]
 #[repr(transparent)]

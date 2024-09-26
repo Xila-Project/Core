@@ -1,7 +1,7 @@
 use File_system::{
-    Error_type, File_identifier_inner_type, File_identifier_type, File_system_traits, Flags_type,
-    Path_owned_type, Path_type, Position_type, Result_type, Size_type, Statistics_type, Time_type,
-    Type_type, Virtual_file_system_type,
+    Entry_type, Error_type, File_identifier_inner_type, File_identifier_type, File_system_traits,
+    Flags_type, Path_owned_type, Path_type, Position_type, Result_type, Size_type, Statistics_type,
+    Time_type, Type_type, Virtual_file_system_type,
 };
 
 use std::collections::BTreeMap;
@@ -9,6 +9,7 @@ use std::env::{current_dir, var};
 use std::fs::*;
 use std::io::{ErrorKind, Read, Seek, Write};
 
+use std::os::unix::fs::DirEntryExt;
 use std::sync::{Arc, RwLock};
 use std::time::SystemTime;
 
@@ -43,7 +44,12 @@ fn Apply_flags_to_open_options(Flags: Flags_type, Open_options: &mut OpenOptions
         .truncate(Flags.Get_open().Get_truncate());
 }
 
-type Inner_file_type = Arc<RwLock<(File, Flags_type)>>;
+enum Inner_item_type {
+    File(File),
+    Directory(ReadDir),
+}
+
+type Inner_file_type = Arc<RwLock<(Inner_item_type, Flags_type)>>;
 
 pub struct File_system_type {
     Virtual_root_path: Path_owned_type,
@@ -87,10 +93,10 @@ impl File_system_type {
         Task_identifier: Task_identifier_type,
         Open_files: &BTreeMap<usize, T>,
     ) -> Result_type<File_identifier_type> {
-        let Start = Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0));
-        let End =
-            Self::Get_local_file_identifier(Task_identifier, File_identifier_type::from(0xFFFF));
+        let Start = Self::Get_local_file_identifier(Task_identifier, File_identifier_type::Minimum);
+        let End = Self::Get_local_file_identifier(Task_identifier, File_identifier_type::Maximum);
 
+        // Iterate over the range of file identifiers.
         for i in Start..End {
             if !Open_files.contains_key(&i) {
                 return Ok(File_identifier_type::from(i as File_identifier_inner_type));
@@ -130,14 +136,6 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<File_identifier_type> {
         let Full_path = self.Get_full_path(&Path)?;
 
-        let mut Open_options = OpenOptions::new();
-
-        Apply_flags_to_open_options(Flags, &mut Open_options);
-
-        let File = Open_options
-            .open(Full_path.as_ref() as &Path_type)
-            .map_err(|Error| Error.kind())?;
-
         let mut Open_files = self.Open_files.write()?;
 
         let File_identifier = Self::Get_new_file_identifier(Task_identifier, &*Open_files)?;
@@ -145,14 +143,57 @@ impl File_system_traits for File_system_type {
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
 
-        if Open_files
-            .insert(Local_file_identifier, Arc::new(RwLock::new((File, Flags))))
-            .is_some()
-        {
-            return Err(Error_type::Internal_error);
-        }
+        if Flags.Get_open().Get_directory() {
+            if Flags.Get_open().Get_create() {
+                let Result = create_dir(Full_path.as_ref() as &Path_type);
 
-        Ok(File_identifier)
+                if let Err(Error) = Result {
+                    if Error.kind() == ErrorKind::AlreadyExists {
+                        if Flags.Get_open().Get_create_only() {
+                            return Err(Error_type::Already_exists);
+                        }
+                    } else {
+                        return Err(Error.into());
+                    }
+                }
+            }
+            let Directory_stream = read_dir(Full_path.as_ref() as &Path_type)?;
+
+            if Open_files
+                .insert(
+                    Local_file_identifier,
+                    Arc::new(RwLock::new((
+                        Inner_item_type::Directory(Directory_stream),
+                        Flags,
+                    ))),
+                )
+                .is_some()
+            {
+                return Err(Error_type::Internal_error);
+            }
+
+            Ok(File_identifier)
+        } else {
+            let mut Open_options = OpenOptions::new();
+
+            Apply_flags_to_open_options(Flags, &mut Open_options);
+
+            let File = Open_options
+                .open(Full_path.as_ref() as &Path_type)
+                .map_err(|Error| Error.kind())?;
+
+            if Open_files
+                .insert(
+                    Local_file_identifier,
+                    Arc::new(RwLock::new((Inner_item_type::File(File), Flags))),
+                )
+                .is_some()
+            {
+                return Err(Error_type::Internal_error);
+            }
+
+            Ok(File_identifier)
+        }
     }
 
     fn Read(
@@ -164,15 +205,35 @@ impl File_system_traits for File_system_type {
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
 
-        Ok(self
+        match &mut self
             .Open_files
             .read()?
             .get(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?
             .write()?
             .0
-            .read(Buffer)?
-            .into())
+        {
+            Inner_item_type::File(File) => Ok(File.read(Buffer)?.into()),
+
+            Inner_item_type::Directory(Directory_stream) => {
+                let Directory_entry: &mut Entry_type =
+                    Buffer.try_into().map_err(|_| Error_type::Invalid_input)?;
+
+                match Directory_stream.next() {
+                    Some(Ok(Entry)) => {
+                        Directory_entry.Set_inode(Entry.ino().into());
+                        Directory_entry.Set_name(Entry.file_name().to_string_lossy().to_string());
+                        Directory_entry.Set_type(From_file_type(Entry.file_type()?));
+
+                        Ok(size_of::<Entry_type>().into())
+                    }
+
+                    Some(Err(Error)) => Err(Error.kind().into()),
+
+                    None => Ok(0_usize.into()),
+                }
+            }
+        }
     }
 
     fn Write(
@@ -184,26 +245,34 @@ impl File_system_traits for File_system_type {
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
 
-        Ok(self
+        match &mut self
             .Open_files
-            .write()?
-            .get_mut(&Local_file_identifier)
+            .read()?
+            .get(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?
             .write()?
             .0
-            .write(Buffer)?
-            .into())
+        {
+            Inner_item_type::File(File) => Ok(File.write(Buffer)?.into()),
+            _ => Err(Error_type::Unsupported_operation),
+        }
     }
 
     fn Flush(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()> {
         let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
-        self.Open_files
-            .write()?
-            .get_mut(&Local_file_identifier)
+
+        match &mut self
+            .Open_files
+            .read()?
+            .get(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?
             .write()?
             .0
-            .flush()?;
+        {
+            Inner_item_type::File(File) => File.flush()?,
+            _ => return Err(Error_type::Unsupported_operation),
+        }
+
         Ok(())
     }
 
@@ -225,39 +294,23 @@ impl File_system_traits for File_system_type {
         let Local_file_identifier =
             Self::Get_local_file_identifier(Task_identifier, File_identifier);
 
-        Ok(self
+        match &mut self
             .Open_files
-            .write()?
-            .get_mut(&Local_file_identifier)
+            .read()?
+            .get(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?
             .write()?
             .0
-            .seek((*Position_type).into())
-            .map_err(|Error| Error.kind())?
-            .into())
+        {
+            Inner_item_type::File(File) => Ok(File.seek((*Position_type).into())?.into()),
+            _ => Err(Error_type::Unsupported_operation),
+        }
     }
 
     fn Delete(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()> {
         let Full_path = self.Get_full_path(&Path)?;
 
         remove_file(Full_path.as_ref() as &Path_type).map_err(|Error| Error.kind().into())
-    }
-
-    fn Create_directory(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()> {
-        let Full_path = self.Get_full_path(&Path)?;
-
-        create_dir(Full_path.as_ref() as &Path_type).map_err(|Error| Error.kind().into())
-    }
-
-    fn Create_file(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()> {
-        let Full_path = self.Get_full_path(&Path)?;
-
-        OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(Full_path.as_ref() as &Path_type)?;
-
-        Ok(())
     }
 
     fn Close_all(&self, Task_identifier: Task_identifier_type) -> Result_type<()> {
@@ -336,16 +389,19 @@ impl File_system_traits for File_system_type {
 
         let Open_files = self.Open_files.read()?;
 
-        let Metadata = Open_files
+        let Metadata = match &Open_files
             .get(&Local_file_identifier)
             .ok_or(Error_type::Invalid_identifier)?
             .read()?
             .0
-            .metadata()?;
+        {
+            Inner_item_type::File(File) => File.metadata()?,
+            Inner_item_type::Directory(_) => return Err(Error_type::Unsupported_operation),
+        };
 
         Ok(Statistics_type::New(
             File_system,
-            Metadata.ino(),
+            Metadata.ino().into(),
             Metadata.nlink(),
             Metadata.len().into(),
             Time_type::from(

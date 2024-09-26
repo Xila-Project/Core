@@ -1,5 +1,5 @@
 /// This module implements the POSIX like file system C ABI.
-use std::{cmp::min, ffi::CString, num::NonZeroU32, ptr::copy_nonoverlapping};
+use std::{cmp::min, num::NonZeroU32, ptr::copy_nonoverlapping};
 
 use File_system::{
     Error_type, File_identifier_type, Flags_type, Get_instance as Get_file_system_instance,

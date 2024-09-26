@@ -32,6 +32,14 @@ pub enum Error_type {
     Failed_to_get_users_manager_instance,
     Failed_to_get_task_manager_instance,
     Invalid_input,
+    Invalid_flags,
+    Not_directory,
+    Is_directory,
+    Input_output,
+    Directory_not_empty,
+    File_too_large,
+    No_attribute,
+    Name_too_long,
     Other,
 }
 

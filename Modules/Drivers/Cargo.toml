@@ -15,7 +15,14 @@ quote = "1.0.36"
 Peripherals = { path = "../Peripherals" }
 
 [features]
-default = ["std", "binstart"]
+File_system = []
+Graphics = []
+Time = []
+
+
+All = ["File_system", "Graphics", "Time"]
+
+default = ["std", "binstart", "All"]
 std = ["alloc", "esp-idf-sys/std"]
 alloc = []
 nightly = []
@@ -53,6 +60,7 @@ Graphics = { path = "../Graphics", features = ["RGB565"] }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
 sdl2 = "0.37.0"
+
 
 
 [[test]]

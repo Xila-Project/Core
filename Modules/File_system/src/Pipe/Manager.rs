@@ -1,6 +1,9 @@
 use std::{
     collections::{BTreeMap, HashMap},
-    sync::RwLock,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        RwLock,
+    },
     time::Duration,
 };
 
@@ -15,9 +18,25 @@ use crate::{
 
 use super::Pipe_type;
 
+enum Inner_item_type {
+    Pipe(Pipe_type),
+    Directory(AtomicUsize),
+}
+
+impl Clone for Inner_item_type {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Pipe(Pipe) => Self::Pipe(Pipe.clone()),
+            Self::Directory(Counter) => {
+                Self::Directory(AtomicUsize::new(Counter.load(Ordering::Acquire)))
+            }
+        }
+    }
+}
+
 struct Inner_type {
     pub Named_pipes: HashMap<Path_owned_type, Pipe_type>,
-    pub Opened_pipes: BTreeMap<usize, (Pipe_type, Flags_type)>,
+    pub Opened_pipes: BTreeMap<usize, (Inner_item_type, Flags_type)>,
 }
 
 pub struct File_system_type(RwLock<Inner_type>);
@@ -92,7 +111,7 @@ impl File_system_traits for File_system_type {
         Inner.Opened_pipes.insert(
             Self::Get_local_file_identifier(Task_identifier, File_identifier_read),
             (
-                Pipe.clone(),
+                Inner_item_type::Pipe(Pipe.clone()),
                 Flags_type::New(Mode_type::Read_only, None, Some(Status)),
             ),
         );
@@ -103,7 +122,7 @@ impl File_system_traits for File_system_type {
         Inner.Opened_pipes.insert(
             Self::Get_local_file_identifier(Task_identifier, File_identifier_write),
             (
-                Pipe,
+                Inner_item_type::Pipe(Pipe),
                 Flags_type::New(Mode_type::Write_only, None, Some(Status)),
             ),
         );
@@ -115,16 +134,16 @@ impl File_system_traits for File_system_type {
         Ok(self.0.read()?.Named_pipes.contains_key(Path.as_ref()))
     }
 
-    fn Create_file(&self, _: &dyn AsRef<Path_type>) -> Result_type<()> {
-        Result_type::Err(Error_type::Unsupported_operation)
-    }
-
     fn Open(
         &self,
         Task: Task_identifier_type,
         Path: &dyn AsRef<Path_type>,
         Flags: Flags_type,
     ) -> Result_type<File_identifier_type> {
+        if Flags.Get_open().Get_create() || Flags.Get_open().Get_create_only() {
+            return Err(Error_type::Invalid_flags);
+        }
+
         let mut Inner = self.0.write()?;
 
         let Named_pipe = Inner
@@ -137,9 +156,32 @@ impl File_system_traits for File_system_type {
 
         let Local_file_identifier = Self::Get_local_file_identifier(Task, File_identifier);
 
-        Inner
-            .Opened_pipes
-            .insert(Local_file_identifier, (Named_pipe, Flags));
+        // - Open a directory.
+        if Flags.Get_open().Get_directory() {
+            let mut Found = false;
+            for (Path, _) in Inner.Named_pipes.iter() {
+                if Path.Go_parent().ok_or(Error_type::Internal_error)? == Path.as_ref() {
+                    Found = true;
+                    break;
+                }
+            }
+
+            if !Found {
+                return Err(Error_type::Not_found);
+            }
+
+            Inner.Opened_pipes.insert(
+                Local_file_identifier,
+                (Inner_item_type::Directory(AtomicUsize::new(0)), Flags),
+            );
+        }
+        // - Open a file.
+        else {
+            Inner.Opened_pipes.insert(
+                Local_file_identifier,
+                (Inner_item_type::Pipe(Named_pipe), Flags),
+            );
+        }
 
         Ok(File_identifier)
     }
@@ -312,10 +354,6 @@ impl File_system_traits for File_system_type {
 
     fn Flush(&self, _: Task_identifier_type, _: File_identifier_type) -> Result_type<()> {
         Ok(())
-    }
-
-    fn Create_directory(&self, _: &dyn AsRef<Path_type>) -> Result_type<()> {
-        Err(Error_type::Unsupported_operation)
     }
 
     fn Set_permissions(
