@@ -1,9 +1,15 @@
 use std::time::Duration;
 
-#[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct Time_type {
     Seconds: u64,
+}
+
+impl Time_type {
+    pub fn Get_now() -> Self {
+        Time::Get_instance().Get_current_time().into()
+    }
 }
 
 impl From<Duration> for Time_type {
@@ -18,8 +24,4 @@ impl From<Time_type> for Duration {
     fn from(Time: Time_type) -> Self {
         Self::from_secs(Time.Seconds)
     }
-}
-
-pub fn Get_now() -> Time_type {
-    Time::Get_instance().Get_current_time().into()
 }
