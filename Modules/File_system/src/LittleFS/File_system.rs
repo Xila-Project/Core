@@ -1,14 +1,12 @@
 use core::{mem::MaybeUninit, pin::Pin};
-use std::{collections::BTreeMap, ffi::CString, mem::transmute, sync::RwLock};
+use std::{collections::BTreeMap, ffi::CString, sync::RwLock};
 
 use crate::{
-    File_identifier_inner_type, File_identifier_type, File_system_traits,
-    Local_file_identifier_type, Path_type, Size_type, Unique_file_identifier_type,
+    File_system_traits, Local_file_identifier_type, Mode_type, Path_type, Size_type,
+    Statistics_type, Unique_file_identifier_type,
 };
 
-use super::{
-    littlefs, Callbacks, Configuration_type, Convert_error, Error_type, File_type, Result_type,
-};
+use super::{littlefs, Configuration_type, Convert_result, Error_type, File_type, Result_type};
 
 struct Inner_type<const Cache_size: usize> {
     Configuration: littlefs::lfs_config,
@@ -75,7 +73,7 @@ impl<const Cache_size: usize> File_system_type<Cache_size> {
 
         let mut File_system = unsafe { MaybeUninit::<littlefs::lfs_t>::uninit().assume_init() };
 
-        Convert_error(unsafe {
+        Convert_result(unsafe {
             littlefs::lfs_mount(&mut File_system as *mut _, Configuration_pointer)
         })?;
 
@@ -119,7 +117,7 @@ impl<const Cache_size: usize> File_system_type<Cache_size> {
 
         let mut File_system = unsafe { MaybeUninit::<littlefs::lfs_t>::uninit().assume_init() };
 
-        Convert_error(unsafe {
+        Convert_result(unsafe {
             littlefs::lfs_format(&mut File_system as *mut _, Configuration_pointer)
         })?;
 
@@ -140,6 +138,15 @@ impl<const Cache_size: usize> File_system_type<Cache_size> {
 
         Err(Error_type::Too_many_open_files)
     }
+
+    fn Borrow_mutable_inner_2_splited<'a>(
+        Inner_2: &'a mut Inner_2_type,
+    ) -> (
+        &'a mut littlefs::lfs_t,
+        &'a mut BTreeMap<Local_file_identifier_type, File_type>,
+    ) {
+        (&mut Inner_2.File_system, &mut Inner_2.Open_files)
+    }
 }
 
 unsafe impl<const Buffer_size: usize> Send for File_system_type<Buffer_size> {}
@@ -155,7 +162,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
     ) -> crate::Result_type<Local_file_identifier_type> {
         let mut Inner = self.Inner_2.write()?;
 
-        let File = File_type::Open(&mut Inner.File_system, Path, Flags)?;
+        let File = File_type::Open(&mut Inner.File_system, Task, Path, Flags)?;
 
         let File_identifier = Self::Get_new_file_identifier(Task, &Inner.Open_files)?;
 
@@ -251,7 +258,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
 
         let mut Inner = self.Inner_2.write()?;
 
-        Convert_error(unsafe {
+        Convert_result(unsafe {
             littlefs::lfs_remove(&mut Inner.File_system as *mut _, Path.as_ptr())
         })?;
 
@@ -265,10 +272,9 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
     ) -> crate::Result_type<Size_type> {
         let mut Inner = self.Inner_2.write()?;
 
-        let mut File_system = &mut Inner.File_system;
+        let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
-        let File = Inner
-            .Open_files
+        let File = Open_files
             .get_mut(&File)
             .ok_or(Error_type::Invalid_identifier)?;
 
@@ -280,7 +286,15 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
         File: Local_file_identifier_type,
         Buffer: &[u8],
     ) -> crate::Result_type<Size_type> {
-        todo!()
+        let mut Inner = self.Inner_2.write()?;
+
+        let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+
+        let File = Open_files
+            .get_mut(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Ok(File.Write(File_system, Buffer)?)
     }
 
     fn Move(
@@ -288,7 +302,23 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
         Source: &dyn AsRef<Path_type>,
         Destination: &dyn AsRef<Path_type>,
     ) -> crate::Result_type<()> {
-        todo!()
+        let Source =
+            CString::new(Source.as_ref().As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+
+        let Destination = CString::new(Destination.as_ref().As_str())
+            .map_err(|_| Error_type::Invalid_parameter)?;
+
+        let mut Inner = self.Inner_2.write()?;
+
+        Convert_result(unsafe {
+            littlefs::lfs_rename(
+                &mut Inner.File_system as *mut _,
+                Source.as_ptr(),
+                Destination.as_ptr(),
+            )
+        })?;
+
+        Ok(())
     }
 
     fn Set_position(
@@ -296,22 +326,51 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
         File: Local_file_identifier_type,
         Position: &crate::Position_type,
     ) -> crate::Result_type<Size_type> {
-        todo!()
+        let mut Inner = self.Inner_2.write()?;
+
+        let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+
+        let File = Open_files
+            .get_mut(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Ok(File.Set_position(File_system, Position)?)
     }
 
     fn Flush(&self, File: Local_file_identifier_type) -> crate::Result_type<()> {
-        todo!()
+        let mut Inner = self.Inner_2.write()?;
+
+        let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+
+        let File = Open_files
+            .get_mut(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Ok(File.Flush(File_system)?)
     }
 
     fn Get_statistics(
         &self,
         File: Local_file_identifier_type,
-        File_system: crate::File_system_identifier_type,
-    ) -> crate::Result_type<crate::Statistics_type> {
-        todo!()
+    ) -> crate::Result_type<Statistics_type> {
+        let mut Inner = self.Inner_2.write()?;
+
+        let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+
+        let File = Open_files
+            .get_mut(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Ok(File.Get_statistics(File_system)?)
     }
 
-    fn Get_mode(&self, File: Local_file_identifier_type) -> crate::Result_type<crate::Mode_type> {
-        todo!()
+    fn Get_mode(&self, File: Local_file_identifier_type) -> crate::Result_type<Mode_type> {
+        Ok(self
+            .Inner_2
+            .read()?
+            .Open_files
+            .get(&File)
+            .ok_or(Error_type::Invalid_identifier)?
+            .Get_mode())
     }
 }

@@ -28,9 +28,8 @@ pub enum Error_type {
 
 pub type Result_type<T> = core::result::Result<T, Error_type>;
 
-pub(crate) const fn Convert_error(Error: i32) -> Result_type<i32> {
+pub(crate) fn Convert_result<>(Error: i32) -> Result_type<u32> {
     match Error {
-        littlefs::lfs_error_LFS_ERR_OK => Ok(0),
         littlefs::lfs_error_LFS_ERR_IO => Err(Error_type::Input_output),
         littlefs::lfs_error_LFS_ERR_CORRUPT => Err(Error_type::Corrupted),
         littlefs::lfs_error_LFS_ERR_NOENT => Err(Error_type::No_Entry),
@@ -45,7 +44,13 @@ pub(crate) const fn Convert_error(Error: i32) -> Result_type<i32> {
         littlefs::lfs_error_LFS_ERR_NOMEM => Err(Error_type::No_memory),
         littlefs::lfs_error_LFS_ERR_NOATTR => Err(Error_type::No_attribute),
         littlefs::lfs_error_LFS_ERR_NAMETOOLONG => Err(Error_type::Name_too_long),
-        _ => panic!("Unknown error code"),
+        _ => {
+            if Error >= littlefs::lfs_error_LFS_ERR_OK {
+                Ok(Error as u32)
+            } else {
+                Err(Error_type::Internal_error)
+            }
+        }
     }
 }
 
