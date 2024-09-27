@@ -175,109 +175,190 @@ pub trait File_system_traits: Send + Sync {
     fn Get_statistics(&self, File: Local_file_identifier_type) -> Result_type<Statistics_type>;
 
     fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type>;
-
-    // - Tests
-
-    /// Test opening and closing a file.
-    ///
-    /// # Before running the tests
-    ///
-    /// - Create file `read_only`, `write_only` and `read_write` in the directory
-    /// - Ensure `not_exists` doesn't exists in the `Test_path` directory
-    /// - Ensure `read_only`, `write_only` and `read_write` are closed
-    fn Test_open_close_file(&self) {
-        let Task_identifier = Task_identifier_type::from(1);
-
-        let Read_only = self
-            .Open(
-                Task_identifier,
-                &Get_test_path().Append("read_only").unwrap(),
-                Mode_type::Read_only.into(),
-            )
-            .unwrap();
-        assert!(self
-            .Open(
-                Task_identifier,
-                &Get_test_path().Append("read_only").unwrap(),
-                Mode_type::Read_only.into(),
-            )
-            .is_err());
-
-        let Write_only = self
-            .Open(
-                Task_identifier,
-                &Get_test_path().Append("write_only").unwrap(),
-                Mode_type::Write_only.into(),
-            )
-            .unwrap();
-
-        let Read_write = self
-            .Open(
-                Task_identifier,
-                &Get_test_path().Append("read_write").unwrap(),
-                Mode_type::Read_write.into(),
-            )
-            .unwrap();
-
-        self.Close(Task_identifier, Read_only).unwrap();
-
-        self.Close(Task_identifier, Write_only).unwrap();
-
-        self.Close(Task_identifier, Read_write).unwrap();
-    }
-
-    /// Test read file operation.
-    ///
-    /// # Before running the tests
-    ///
-    /// - Create file `read` in the `Test_path` directory containing `0123456789\n` (10 bytes)
-    /// - Create file `empty_read` in the `Test_path` directory
-    fn Test_file_read(&self) {
-        let Task_identifier = Task_identifier_type::from(1);
-
-        let Read_file = Get_test_path().Append("read").unwrap();
-        let Read_file_identifier = self
-            .Open(Task_identifier, &Read_file, Mode_type::Read_only.into())
-            .unwrap();
-        let mut Buffer = [0; 11];
-        let Size = self
-            .Read(Task_identifier, Read_file_identifier, &mut Buffer)
-            .unwrap();
-        assert_eq!(Size, 11);
-        assert_eq!(&Buffer, b"0123456789\n");
-
-        let Empty_file = Get_test_path().Append("empty_read").unwrap();
-        let Empty_file_identifier = self
-            .Open(Task_identifier, &Empty_file, Mode_type::Read_only.into())
-            .unwrap();
-
-        let mut Buffer = [0; 1];
-        let Size = self
-            .Read(Task_identifier, Empty_file_identifier, &mut Buffer)
-            .unwrap();
-        assert_eq!(Size, 0);
-    }
-
-    /// Test write file operation.
-    ///
-    /// # Before running the tests
-    ///
-    /// - Create file `write` in the `Test_path` directory
-    fn Test_file_write(&self) {
-        let Task_identifier = Task_identifier_type::from(1);
-
-        let File = Get_test_path().Append("write").unwrap();
-        let File_identifier = self
-            .Open(Task_identifier, &File, Mode_type::Write_only.into())
-            .unwrap();
-        let Buffer = b"0123456789\n";
-        let Size = self
-            .Write(Task_identifier, File_identifier, Buffer)
-            .unwrap();
-        assert_eq!(Size, 11);
-    }
 }
 
-pub fn Get_test_path() -> Path_owned_type {
-    Path_type::Get_root().Append("test").unwrap()
+#[cfg(test)]
+pub mod Tests {
+    use Users::Root_user_identifier;
+
+    use crate::Open_type;
+
+    use super::*;
+
+    pub fn Get_test_path() -> Path_owned_type {
+        Path_type::Get_root().Append("test").unwrap()
+    }
+
+    pub fn Test_open_close_delete(
+        File_system: impl File_system_traits,
+        Task: Task_identifier_type,
+    ) {
+        let Path = Get_test_path().Append("Test_open_close_delete").unwrap();
+
+        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+
+        // - Open
+        let File = File_system.Open(Task, &Path, Flags).unwrap();
+
+        // - Close
+        File_system.Close(File).unwrap();
+
+        // - Delete
+        File_system.Delete(&Path).unwrap();
+    }
+
+    pub fn Test_read_write(File_system: impl File_system_traits, Task: Task_identifier_type) {
+        let Path = Get_test_path().Append("Test_read_write").unwrap();
+
+        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+
+        // - Open
+        let File = File_system.Open(Task, &Path, Flags).unwrap();
+
+        // - Write
+        let Buffer = [0x01, 0x02, 0x03];
+        let Size = File_system.Write(File, &Buffer).unwrap();
+        assert_eq!(Size, Buffer.len().into());
+
+        // - Read
+        let mut Buffer_read = [0; 3];
+        let Size = File_system.Read(File, &mut Buffer_read).unwrap();
+        assert_eq!(Size, Buffer.len().into());
+        assert_eq!(Buffer, Buffer_read);
+
+        // - Close
+        File_system.Close(File).unwrap();
+
+        // - Delete
+        File_system.Delete(&Path).unwrap();
+    }
+
+    pub fn Test_move(File_system: impl File_system_traits, Task: Task_identifier_type) {
+        let Path = Get_test_path().Append("Test_move").unwrap();
+        let Path_destination = Get_test_path().Append("Test_move_destination").unwrap();
+
+        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+
+        // - Open
+        let File = File_system.Open(Task, &Path, Flags).unwrap();
+
+        // - Write
+        let Buffer = [0x01, 0x02, 0x03];
+        let Size = File_system.Write(File, &Buffer).unwrap();
+        assert_eq!(Size, Buffer.len().into());
+
+        // - Move
+        File_system.Move(&Path, &Path_destination).unwrap();
+
+        // - Open
+        let File = File_system
+            .Open(Task, &Path_destination, Flags_type::New_read())
+            .unwrap();
+
+        // - Read
+        let mut Buffer_read = [0; 3];
+        let Size = File_system.Read(File, &mut Buffer_read).unwrap();
+        assert_eq!(Size, Buffer.len().into());
+        assert_eq!(Buffer, Buffer_read);
+
+        // - Close
+        File_system.Close(File).unwrap();
+
+        // - Delete
+        File_system.Delete(&Path_destination).unwrap();
+    }
+
+    pub fn Test_set_position(File_system: impl File_system_traits, Task: Task_identifier_type) {
+        let Path = Get_test_path().Append("Test_set_position").unwrap();
+
+        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+
+        // - Open
+        let File = File_system.Open(Task, &Path, Flags).unwrap();
+
+        // - Write
+        let Buffer = [0x01, 0x02, 0x03];
+        let Size = File_system.Write(File, &Buffer).unwrap();
+        assert_eq!(Size, Buffer.len().into());
+
+        // - Set position
+        let Position = Position_type::New(1);
+        let Size = File_system.Set_position(File, &Position).unwrap();
+        assert_eq!(Size, Position.Get_position());
+
+        // - Read
+        let mut Buffer_read = [0; 3];
+        let Size = File_system.Read(File, &mut Buffer_read).unwrap();
+        assert_eq!(Size, Buffer.len().into());
+        assert_eq!(Buffer[1..], Buffer_read);
+
+        // - Close
+        File_system.Close(File).unwrap();
+
+        // - Delete
+        File_system.Delete(&Path).unwrap();
+    }
+
+    pub fn Test_flush(File_system: impl File_system_traits, Task: Task_identifier_type) {
+        let Path = Get_test_path().Append("Test_flush").unwrap();
+
+        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+
+        // - Open
+        let File = File_system.Open(Task, &Path, Flags).unwrap();
+
+        // - Write
+        let Buffer = [0x01, 0x02, 0x03];
+        let Size = File_system.Write(File, &Buffer).unwrap();
+        assert_eq!(Size, Buffer.len().into());
+
+        // - Flush
+        File_system.Flush(File).unwrap();
+
+        // - Close
+        File_system.Close(File).unwrap();
+
+        // - Delete
+        File_system.Delete(&Path).unwrap();
+    }
+
+    pub fn Test_set_owner(File_system: impl File_system_traits, Task: Task_identifier_type) {
+        let Path = Get_test_path().Append("Test_set_owner").unwrap();
+
+        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+
+        // - Open
+        let File = File_system.Open(Task, &Path, Flags).unwrap();
+
+        // - Set owner
+        File_system
+            .Set_owner(&Path, Some(Root_user_identifier), None)
+            .unwrap();
+
+        // - Close
+        File_system.Close(File).unwrap();
+
+        // - Delete
+        File_system.Delete(&Path).unwrap();
+    }
+
+    pub fn Test_set_permissions(File_system: impl File_system_traits, Task: Task_identifier_type) {
+        let Path = Get_test_path().Append("Test_set_permissions").unwrap();
+
+        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+
+        // - Open
+        let File = File_system.Open(Task, &Path, Flags).unwrap();
+
+        // - Set permissions
+        File_system
+            .Set_permissions(&Path, Permissions_type::All_read_write())
+            .unwrap();
+
+        // - Close
+        File_system.Close(File).unwrap();
+
+        // - Delete
+        File_system.Delete(&Path).unwrap();
+    }
 }
