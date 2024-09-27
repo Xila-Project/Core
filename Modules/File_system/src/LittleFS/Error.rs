@@ -1,6 +1,10 @@
+use std::sync::PoisonError;
+
 use super::littlefs;
 
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Error_type {
+    // LittleFS errors
     Input_output,        // Error during device operation
     Corrupted,           // Corrupted
     No_Entry,            // No directory entry
@@ -15,6 +19,11 @@ pub enum Error_type {
     No_memory,           // No more memory available
     No_attribute,        // No data/attr available
     Name_too_long,       // File name too long
+    // Custom errors
+    Too_many_open_files, // No file identifier left
+    Internal_error,      // Internal error
+    Poisoned_lock,       // Poisoned lock
+    Invalid_identifier,  // Invalid file identifier
 }
 
 pub type Result_type<T> = core::result::Result<T, Error_type>;
@@ -57,6 +66,16 @@ impl From<Error_type> for crate::Error_type {
             Error_type::No_memory => Self::File_system_error,
             Error_type::No_attribute => Self::No_attribute,
             Error_type::Name_too_long => Self::Name_too_long,
+            Error_type::Too_many_open_files => Self::Too_many_open_files,
+            Error_type::Internal_error => Self::Internal_error,
+            Error_type::Poisoned_lock => Self::Internal_error,
+            Error_type::Invalid_identifier => Self::Invalid_identifier,
         }
+    }
+}
+
+impl<T> From<PoisonError<T>> for Error_type {
+    fn from(_: PoisonError<T>) -> Self {
+        Error_type::Poisoned_lock
     }
 }

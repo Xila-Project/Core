@@ -1,13 +1,16 @@
 use std::mem::size_of;
 
-use crate::{File_identifier_inner_type, File_system_identifier_type, Mode_type, Statistics_type};
-
-use super::{
-    Error_type, File_identifier_type, Flags_type, Path_owned_type, Path_type, Permissions_type,
-    Position_type, Result_type, Size_type, Status_type,
+use crate::{
+    File_identifier_inner_type, File_system_identifier_type, Local_file_identifier_type, Mode_type,
+    Statistics_type,
 };
 
-use Task::{Task_identifier_inner_type, Task_identifier_type};
+use super::{
+    Error_type, Flags_type, Path_owned_type, Path_type, Permissions_type, Position_type,
+    Result_type, Size_type, Status_type,
+};
+
+use Task::Task_identifier_type;
 use Users::{Group_identifier_type, User_identifier_type};
 
 /// File system trait.
@@ -40,14 +43,14 @@ pub trait File_system_traits: Send + Sync {
         Task: Task_identifier_type,
         Path: &dyn AsRef<Path_type>,
         Flags: Flags_type,
-    ) -> Result_type<File_identifier_type>;
+    ) -> Result_type<Local_file_identifier_type>;
 
     /// Close a file.
     ///
     /// # Errors
     /// Returns an error if the file is not opened by the task (invalid file identifier).
     /// Returns an error if the task identifier is invalid.
-    fn Close(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()>;
+    fn Close(&self, File: Local_file_identifier_type) -> Result_type<()>;
 
     /// Close all files opened by the task.
     fn Close_all(&self, Task: Task_identifier_type) -> Result_type<()>;
@@ -55,18 +58,15 @@ pub trait File_system_traits: Send + Sync {
     /// Duplicate a file identifier.
     fn Duplicate_file_identifier(
         &self,
-        Task: Task_identifier_type,
-        File: File_identifier_type,
-    ) -> Result_type<File_identifier_type>;
+        File: Local_file_identifier_type,
+    ) -> Result_type<Local_file_identifier_type>;
 
     /// Transfer a file identifier from a task to another.
     fn Transfert_file_identifier(
         &self,
-        Old_task: Task_identifier_type,
         New_task: Task_identifier_type,
-        File: File_identifier_type,
-        New_file_identifier: Option<File_identifier_type>,
-    ) -> Result_type<File_identifier_type>;
+        File: Local_file_identifier_type,
+    ) -> Result_type<Local_file_identifier_type>;
 
     /// Delete a file.
     ///
@@ -81,24 +81,14 @@ pub trait File_system_traits: Send + Sync {
     /// # Errors
     /// - If the file is not opened.
     /// - If the file is not opened in read mode.
-    fn Read(
-        &self,
-        Task: Task_identifier_type,
-        File: File_identifier_type,
-        Buffer: &mut [u8],
-    ) -> Result_type<Size_type>;
+    fn Read(&self, File: Local_file_identifier_type, Buffer: &mut [u8]) -> Result_type<Size_type>;
 
     /// Write a file.
     ///
     /// # Errors
     /// - If the file is not opened (invalid file identifier).
     /// - If the file is not opened in write mode (invalid mode).
-    fn Write(
-        &self,
-        Task: Task_identifier_type,
-        File: File_identifier_type,
-        Buffer: &[u8],
-    ) -> Result_type<Size_type>;
+    fn Write(&self, File: Local_file_identifier_type, Buffer: &[u8]) -> Result_type<Size_type>;
 
     fn Move(
         &self,
@@ -112,12 +102,11 @@ pub trait File_system_traits: Send + Sync {
     /// - If the file is not opened (invalid file identifier).
     fn Set_position(
         &self,
-        Task: Task_identifier_type,
-        File: File_identifier_type,
+        File: Local_file_identifier_type,
         Position: &Position_type,
     ) -> Result_type<Size_type>;
 
-    fn Flush(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()>;
+    fn Flush(&self, File: Local_file_identifier_type) -> Result_type<()>;
 
     // - Metadata
     // - - Size
@@ -138,7 +127,7 @@ pub trait File_system_traits: Send + Sync {
         _: Option<User_identifier_type>,
         _: Option<Group_identifier_type>,
     ) -> Result_type<()> {
-        Ok(()) // TODO : Implement with permission file
+        Ok(())
     }
 
     /// Set the permissions of the file.
@@ -147,7 +136,7 @@ pub trait File_system_traits: Send + Sync {
     /// Returns an error if the file doesn't exists.
     /// Returns an error if the user / group doesn't have the permission to set the permissions (no execute permission on parent directory).
     fn Set_permissions(&self, _: &dyn AsRef<Path_type>, _: Permissions_type) -> Result_type<()> {
-        Ok(()) // TODO : Implement with permission file
+        Ok(())
     }
 
     // - Directory
@@ -179,53 +168,17 @@ pub trait File_system_traits: Send + Sync {
         _: User_identifier_type,
         _: Group_identifier_type,
         _: Permissions_type,
-    ) -> Result_type<(File_identifier_type, File_identifier_type)> {
+    ) -> Result_type<(Local_file_identifier_type, Local_file_identifier_type)> {
         Err(Error_type::Unsupported_operation)
     }
 
     fn Get_statistics(
         &self,
-        Task: Task_identifier_type,
-        File: File_identifier_type,
+        File: Local_file_identifier_type,
         File_system: File_system_identifier_type,
     ) -> Result_type<Statistics_type>;
 
-    fn Get_mode(
-        &self,
-        Task: Task_identifier_type,
-        File: File_identifier_type,
-    ) -> Result_type<Mode_type>;
-
-    /// Combine task identifier and file identifier to get a unique file identifier.
-    fn Get_local_file_identifier(
-        Task_identifier: Task_identifier_type,
-        File_identifier: File_identifier_type,
-    ) -> usize
-    where
-        Self: Sized, // ? : Makes the compiler happy
-    {
-        let File_identifier: File_identifier_inner_type = File_identifier.into();
-        let Task_identifier: Task_identifier_inner_type = Task_identifier.into();
-
-        (Task_identifier as usize) << (size_of::<File_identifier_type>() * 8)
-            | (File_identifier as usize)
-    }
-
-    fn Decompose_local_file_identifier(
-        Local_file_identifier: usize,
-    ) -> (Task_identifier_type, File_identifier_type)
-    where
-        Self: Sized, // ? : Makes the compiler happy
-    {
-        let Task_identifier = Local_file_identifier >> File_identifier_inner_type::BITS;
-        let Task_identifier_type =
-            Task_identifier_type::from(Task_identifier as Task_identifier_inner_type);
-
-        let File_identifier =
-            File_identifier_type::from(Local_file_identifier as File_identifier_inner_type);
-
-        (Task_identifier_type, File_identifier)
-    }
+    fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type>;
 
     // - Tests
 

@@ -1,7 +1,10 @@
 use core::{mem::MaybeUninit, pin::Pin};
 use std::{collections::BTreeMap, ffi::CString, mem::transmute, sync::RwLock};
 
-use crate::{File_system_traits, Path_type, Size_type, Unique_file_identifier_type};
+use crate::{
+    File_identifier_inner_type, File_identifier_type, File_system_traits,
+    Local_file_identifier_type, Path_type, Size_type, Unique_file_identifier_type,
+};
 
 use super::{
     littlefs, Callbacks, Configuration_type, Convert_error, Error_type, File_type, Result_type,
@@ -14,10 +17,32 @@ struct Inner_type<const Cache_size: usize> {
     Lookahead_buffer: [u8; Cache_size],
 }
 
+struct Inner_2_type {
+    File_system: littlefs::lfs_t,
+    Open_files: BTreeMap<Local_file_identifier_type, File_type>,
+}
+
 pub struct File_system_type<const Cache_size: usize> {
     Inner: Pin<Box<Inner_type<Cache_size>>>,
-    File_system: littlefs::lfs_t,
-    Openned_files: RwLock<BTreeMap<usize, RwLock<littlefs::lfs_file_t>>>,
+    Inner_2: RwLock<Inner_2_type>,
+}
+
+impl<const Cache_size: usize> Drop for File_system_type<Cache_size> {
+    fn drop(&mut self) {
+        let mut Inner = self.Inner_2.write().unwrap();
+
+        let Keys = Inner.Open_files.keys().cloned().collect::<Vec<_>>();
+
+        for Key in Keys {
+            if let Some(File) = Inner.Open_files.remove(&Key) {
+                let _ = File.Close(&mut Inner.File_system);
+            }
+        }
+
+        unsafe {
+            littlefs::lfs_unmount(&mut Inner.File_system as *mut _);
+        }
+    }
 }
 
 impl<const Cache_size: usize> File_system_type<Cache_size> {
@@ -54,10 +79,14 @@ impl<const Cache_size: usize> File_system_type<Cache_size> {
             littlefs::lfs_mount(&mut File_system as *mut _, Configuration_pointer)
         })?;
 
+        let Inner_2 = Inner_2_type {
+            File_system,
+            Open_files: BTreeMap::new(),
+        };
+
         Ok(Self {
             Inner,
-            File_system,
-            Openned_files: RwLock::new(BTreeMap::new()),
+            Inner_2: RwLock::new(Inner_2),
         })
     }
 
@@ -97,8 +126,19 @@ impl<const Cache_size: usize> File_system_type<Cache_size> {
         Ok(())
     }
 
-    pub(crate) fn Get_pointer(&self) -> *mut littlefs::lfs_t {
-        &self.File_system as *const _ as *mut _
+    fn Get_new_file_identifier<T>(
+        Task_identifier: Task::Task_identifier_type,
+        Open_files: &BTreeMap<Local_file_identifier_type, T>,
+    ) -> Result_type<Local_file_identifier_type> {
+        let Iterator = Local_file_identifier_type::Get_minimum(Task_identifier);
+
+        for Identifier in Iterator {
+            if !Open_files.contains_key(&Identifier) {
+                return Ok(Identifier);
+            }
+        }
+
+        Err(Error_type::Too_many_open_files)
     }
 }
 
@@ -110,116 +150,168 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
     fn Open(
         &self,
         Task: Task::Task_identifier_type,
-        Path: &dyn AsRef<crate::Path_type>,
+        Path: &dyn AsRef<Path_type>,
         Flags: crate::Flags_type,
-    ) -> crate::Result_type<crate::File_identifier_type> {
-        let Path =
-            CString::new(Path.as_ref().As_str()).map_err(|_| crate::Error_type::Invalid_input)?;
+    ) -> crate::Result_type<Local_file_identifier_type> {
+        let mut Inner = self.Inner_2.write()?;
 
-        let File = File_type::New();
+        let File = File_type::Open(&mut Inner.File_system, Path, Flags)?;
 
-        let File = Convert_error(unsafe {
-            littlefs::lfs_file_open(
-                &self.File_system as *const _ as *mut _,
-                Path.as_ref().as_ptr(),
-                Flags.bits(),
-            )
-        })?;
+        let File_identifier = Self::Get_new_file_identifier(Task, &Inner.Open_files)?;
 
-        Ok(File)
+        if Inner.Open_files.insert(File_identifier, File).is_some() {
+            return Err(Error_type::Internal_error.into());
+        }
+
+        Ok(File_identifier)
     }
 
-    fn Close(
-        &self,
-        Task: Task::Task_identifier_type,
-        File: crate::File_identifier_type,
-    ) -> crate::Result_type<()> {
-        todo!()
+    fn Close(&self, File: Local_file_identifier_type) -> crate::Result_type<()> {
+        let mut Inner = self.Inner_2.write()?;
+
+        let File = Inner
+            .Open_files
+            .remove(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        File.Close(&mut Inner.File_system)?;
+
+        Ok(())
     }
 
     fn Close_all(&self, Task: Task::Task_identifier_type) -> crate::Result_type<()> {
-        todo!()
+        let mut Inner = self.Inner_2.write()?;
+
+        // Get all the keys of the open files that belong to the task
+        let Keys = Inner
+            .Open_files
+            .keys()
+            .filter(|Key| Key.Split().0 == Task)
+            .cloned()
+            .collect::<Vec<_>>();
+
+        // Close all the files
+        for Key in Keys {
+            if let Some(File) = Inner.Open_files.remove(&Key) {
+                File.Close(&mut Inner.File_system)?;
+            }
+        }
+
+        Ok(())
     }
 
     fn Duplicate_file_identifier(
         &self,
-        Task: Task::Task_identifier_type,
-        File: crate::File_identifier_type,
-    ) -> crate::Result_type<crate::File_identifier_type> {
-        todo!()
+        File: Local_file_identifier_type,
+    ) -> crate::Result_type<Local_file_identifier_type> {
+        let (Task, _) = File.Split();
+
+        let mut Inner = self.Inner_2.write()?;
+
+        let File = Inner
+            .Open_files
+            .get(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        let File = File.clone();
+
+        let File_identifier = Self::Get_new_file_identifier(Task, &Inner.Open_files)?;
+
+        if Inner.Open_files.insert(File_identifier, File).is_some() {
+            return Err(Error_type::Internal_error.into());
+        }
+
+        Ok(File_identifier)
     }
 
     fn Transfert_file_identifier(
         &self,
-        Old_task: Task::Task_identifier_type,
         New_task: Task::Task_identifier_type,
-        File: crate::File_identifier_type,
-        New_file_identifier: Option<crate::File_identifier_type>,
-    ) -> crate::Result_type<crate::File_identifier_type> {
-        todo!()
+        File: Local_file_identifier_type,
+    ) -> crate::Result_type<Local_file_identifier_type> {
+        let mut Inner = self.Inner_2.write()?;
+
+        let File = Inner
+            .Open_files
+            .remove(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        let File_identifier = Self::Get_new_file_identifier(New_task, &Inner.Open_files)?;
+
+        if Inner.Open_files.insert(File_identifier, File).is_some() {
+            return Err(Error_type::Internal_error.into());
+        }
+
+        Ok(File_identifier)
     }
 
-    fn Delete(&self, Path: &dyn AsRef<crate::Path_type>) -> crate::Result_type<()> {
-        todo!()
+    fn Delete(&self, Path: &dyn AsRef<Path_type>) -> crate::Result_type<()> {
+        let Path =
+            CString::new(Path.as_ref().As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+
+        let mut Inner = self.Inner_2.write()?;
+
+        Convert_error(unsafe {
+            littlefs::lfs_remove(&mut Inner.File_system as *mut _, Path.as_ptr())
+        })?;
+
+        Ok(())
     }
 
     fn Read(
         &self,
-        Task: Task::Task_identifier_type,
-        File: crate::File_identifier_type,
+        File: Local_file_identifier_type,
         Buffer: &mut [u8],
-    ) -> crate::Result_type<crate::Size_type> {
-        todo!()
+    ) -> crate::Result_type<Size_type> {
+        let mut Inner = self.Inner_2.write()?;
+
+        let mut File_system = &mut Inner.File_system;
+
+        let File = Inner
+            .Open_files
+            .get_mut(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Ok(File.Read(File_system, Buffer)?)
     }
 
     fn Write(
         &self,
-        Task: Task::Task_identifier_type,
-        File: crate::File_identifier_type,
+        File: Local_file_identifier_type,
         Buffer: &[u8],
-    ) -> crate::Result_type<crate::Size_type> {
+    ) -> crate::Result_type<Size_type> {
         todo!()
     }
 
     fn Move(
         &self,
-        Source: &dyn AsRef<crate::Path_type>,
-        Destination: &dyn AsRef<crate::Path_type>,
+        Source: &dyn AsRef<Path_type>,
+        Destination: &dyn AsRef<Path_type>,
     ) -> crate::Result_type<()> {
         todo!()
     }
 
     fn Set_position(
         &self,
-        Task: Task::Task_identifier_type,
-        File: crate::File_identifier_type,
+        File: Local_file_identifier_type,
         Position: &crate::Position_type,
-    ) -> crate::Result_type<crate::Size_type> {
+    ) -> crate::Result_type<Size_type> {
         todo!()
     }
 
-    fn Flush(
-        &self,
-        Task: Task::Task_identifier_type,
-        File: crate::File_identifier_type,
-    ) -> crate::Result_type<()> {
+    fn Flush(&self, File: Local_file_identifier_type) -> crate::Result_type<()> {
         todo!()
     }
 
     fn Get_statistics(
         &self,
-        Task: Task::Task_identifier_type,
-        File: crate::File_identifier_type,
+        File: Local_file_identifier_type,
         File_system: crate::File_system_identifier_type,
     ) -> crate::Result_type<crate::Statistics_type> {
         todo!()
     }
 
-    fn Get_mode(
-        &self,
-        Task: Task::Task_identifier_type,
-        File: crate::File_identifier_type,
-    ) -> crate::Result_type<crate::Mode_type> {
+    fn Get_mode(&self, File: Local_file_identifier_type) -> crate::Result_type<crate::Mode_type> {
         todo!()
     }
 }
