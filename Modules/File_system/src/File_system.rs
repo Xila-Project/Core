@@ -172,11 +172,7 @@ pub trait File_system_traits: Send + Sync {
         Err(Error_type::Unsupported_operation)
     }
 
-    fn Get_statistics(
-        &self,
-        File: Local_file_identifier_type,
-        File_system: File_system_identifier_type,
-    ) -> Result_type<Statistics_type>;
+    fn Get_statistics(&self, File: Local_file_identifier_type) -> Result_type<Statistics_type>;
 
     fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type>;
 
