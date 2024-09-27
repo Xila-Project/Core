@@ -16,11 +16,15 @@ pub fn Initialize() -> Result_type<&'static Manager_type> {
         Manager_instance = Some(Manager_type::New());
     }
 
-    Get_instance()
+    Ok(Get_instance())
 }
 
-pub fn Get_instance() -> Result_type<&'static Manager_type> {
-    unsafe { Manager_instance.as_ref().ok_or(Error_type::Not_initialized) }
+pub fn Get_instance() -> &'static Manager_type {
+    unsafe {
+        Manager_instance
+            .as_ref()
+            .expect("Users manager not initialized")
+    }
 }
 
 pub fn Is_initialized() -> bool {
