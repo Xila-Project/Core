@@ -1,5 +1,25 @@
 use crate::Type_type;
 
+/// Represents the permissions of a file or directory.
+///
+/// The permissions are divided into three groups: user, group, and others.
+/// Each group has three permissions: [`Permission_type::Read`], [`Permission_type::Write`], and [`Permission_type::Execute`].
+///
+/// # Examples
+///
+/// ```rust
+/// use File_system::{Permissions_type, Permission_type};
+///
+/// let user = Permission_type::New(true, false, false); // Read only
+/// let group = Permission_type::New(false, true, false); // Write only
+/// let others = Permission_type::New(false, false, true); // Execute only
+///
+/// let permissions = Permissions_type::New(user, group, others);
+///
+/// assert_eq!(permissions.Get_user(), user);
+/// assert_eq!(permissions.Get_group(), group);
+/// assert_eq!(permissions.Get_others(), others);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Permissions_type(u16);
@@ -121,6 +141,23 @@ impl Permissions_type {
     }
 }
 
+/// Represents a permission.
+///
+/// The permission can be read, write, and execute.
+///
+/// # Examples
+///
+/// ```rust
+/// use File_system::Permission_type;
+///
+/// let read = Permission_type::Read_only;
+/// let write = Permission_type::Write_only;
+/// let execute = Permission_type::Execute_only;
+///
+/// assert!(read.Get_read() && !read.Get_write() && !read.Get_execute());
+/// assert!(!write.Get_read() && write.Get_write() && !write.Get_execute());
+/// assert!(!execute.Get_read() && !execute.Get_write() && execute.Get_execute());
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Permission_type(u8);

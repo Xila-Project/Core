@@ -2,6 +2,20 @@ use crate::{File_system_identifier_type, Size_type, Time_type, Type_type};
 
 use super::Inode_type;
 
+/// Statistics of a file.
+/// 
+/// This type contains information about a file, such as its size, inode, etc.
+/// 
+/// # Fields
+/// 
+/// * `File_system`: The file system the file is on.
+/// * `Inode`: The inode of the file.
+/// * `Links`: The number of hard links to the file.
+/// * `Size`: The size of the file.
+/// * `Last_access`: The last time the file was accessed.
+/// * `Last_modification`: The last time the file was modified.
+/// * `Last_status_change`: The last time the file's status was changed.
+/// * `Type`: The type of the file.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct Statistics_type {

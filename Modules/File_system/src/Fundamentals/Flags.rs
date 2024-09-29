@@ -2,6 +2,34 @@ use std::fmt::Debug;
 
 use super::Permission_type;
 
+/// The mode of a file.
+/// 
+/// The mode is stored in a 8-bit integer, with the following layout:
+/// 
+/// | Read | Write |
+/// |------|-------|
+/// | 0    | 1     |
+/// 
+/// # Example
+/// 
+/// ```rust
+/// use File_system::Mode_type;
+/// 
+/// let Mode = Mode_type::New(true, false);
+/// 
+/// assert_eq!(Mode.Get_read(), true);
+/// assert_eq!(Mode.Get_write(), false);
+/// 
+/// let Mode = Mode_type::New(false, true);
+/// 
+/// assert_eq!(Mode.Get_read(), false);
+/// assert_eq!(Mode.Get_write(), true);
+/// 
+/// let Mode = Mode_type::New(true, true);
+/// 
+/// assert_eq!(Mode.Get_read(), true);
+/// assert_eq!(Mode.Get_write(), true);
+/// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
 pub struct Mode_type(u8);
@@ -60,24 +88,47 @@ impl Debug for Mode_type {
     }
 }
 
+/// The type of opening a file.
+/// 
+/// The type is stored in a 8-bit integer, with the following layout:
+/// 
+/// | Create | Create exclusive | Truncate | Directory |
+/// |--------|------------------|----------|-----------|
+/// | 0      | 1                | 2        | 3         |
+/// 
+/// # Example
+/// 
+/// ```rust
+/// use File_system::Open_type;
+/// 
+/// let Open = Open_type::New(true, true, false, false);
+/// 
+/// assert_eq!(Open.Get_create(), true);
+/// assert_eq!(Open.Get_create_exclusive(), true);
+/// assert_eq!(Open.Get_truncate(), false);
+/// assert_eq!(Open.Get_directory(), false);
+/// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
 pub struct Open_type(u8);
 
 impl Open_type {
-    pub const Create: u8 = 1 << 0;
-    pub const Create_only: u8 = 1 << 1;
-    pub const Truncate: u8 = 1 << 2;
-    pub const Directory: u8 = 1 << 3;
+    pub const Create_mask: u8 = 1 << 0;
+    pub const Create_exclusive_mask: u8 = 1 << 1;
+    pub const Truncate_mask: u8 = 1 << 2;
+    pub const Directory_mask: u8 = 1 << 3;
 
     pub const Size: u8 = 4;
 
     pub const None: Self = Self::New(false, false, false, false);
 
+    pub const Create_only : Self = Self::New(true, true, false, false);
+    
+
     pub const fn New(Create: bool, Create_only: bool, Truncate: bool, Directory: bool) -> Self {
         Self(0)
             .Set_create(Create)
-            .Set_create_only(Create_only)
+            .Set_create_exclusive(Create_only)
             .Set_truncate(Truncate)
             .Set_directory(Directory)
     }
@@ -96,35 +147,35 @@ impl Open_type {
     }
 
     pub const fn Get_create(&self) -> bool {
-        self.Get_bit(Self::Create)
+        self.Get_bit(Self::Create_mask)
     }
 
     pub const fn Set_create(self, Value: bool) -> Self {
-        self.Set_bit(Self::Create, Value)
+        self.Set_bit(Self::Create_mask, Value)
     }
 
-    pub const fn Get_create_only(&self) -> bool {
-        self.Get_bit(Self::Create_only)
+    pub const fn Get_create_exclusive(&self) -> bool {
+        self.Get_bit(Self::Create_exclusive_mask)
     }
 
-    pub const fn Set_create_only(self, Value: bool) -> Self {
-        self.Set_bit(Self::Create_only, Value)
+    pub const fn Set_create_exclusive(self, Value: bool) -> Self {
+        self.Set_bit(Self::Create_exclusive_mask, Value)
     }
 
     pub const fn Get_truncate(&self) -> bool {
-        self.Get_bit(Self::Truncate)
+        self.Get_bit(Self::Truncate_mask)
     }
 
     pub const fn Set_truncate(self, Value: bool) -> Self {
-        self.Set_bit(Self::Truncate, Value)
+        self.Set_bit(Self::Truncate_mask, Value)
     }
 
     pub const fn Get_directory(&self) -> bool {
-        self.Get_bit(Self::Directory)
+        self.Get_bit(Self::Directory_mask)
     }
 
     pub const fn Set_directory(self, Value: bool) -> Self {
-        self.Set_bit(Self::Directory, Value)
+        self.Set_bit(Self::Directory_mask, Value)
     }
 }
 
@@ -139,13 +190,33 @@ impl Debug for Open_type {
         Formatter
             .debug_struct("Open_type")
             .field("Create", &self.Get_create())
-            .field("Create_only", &self.Get_create_only())
+            .field("Create_only", &self.Get_create_exclusive())
             .field("Truncate", &self.Get_truncate())
             .field("Directory", &self.Get_directory())
             .finish()
     }
 }
 
+/// The status of a file.
+/// 
+/// The status is stored in a 8-bit integer, with the following layout:
+/// 
+/// | Append | Non-blocking | Synchronous | Synchronous data only |
+///  -------------------------------------------------------------
+/// | 0      | 1            | 2           | 3                     |
+/// 
+/// # Example
+/// 
+/// ```rust
+/// use File_system::Status_type;
+/// 
+/// let Status = Status_type::New(true, false, true, false);
+/// 
+/// assert_eq!(Status.Get_append(), true);
+/// assert_eq!(Status.Get_non_blocking(), false);
+/// assert_eq!(Status.Get_synchronous(), true);
+/// assert_eq!(Status.Get_synchronous_data_only(), false);
+/// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
 pub struct Status_type(u8);
@@ -158,9 +229,11 @@ impl Status_type {
 
     pub const Size: u8 = 4;
 
+    pub const Non_blocking: Self = Self::New(false, true, false, false);
+
     pub const None: Self = Self::New(false, false, false, false);
 
-    const fn New(
+    pub const fn New(
         Append: bool,
         Non_blocking: bool,
         Synchronous: bool,
@@ -240,6 +313,25 @@ impl Default for Status_type {
     }
 }
 
+/// All the flags that can be set for a file.
+/// 
+/// The flags are stored in a 16-bit integer, with the following layout:
+/// 
+/// | Mode | Open | Status |
+/// |------|------|--------|
+/// | 0-1  | 2-5  | 6-9    |
+/// 
+/// # Example
+/// 
+/// ```rust
+/// use File_system::{Flags_type, Mode_type, Open_type, Status_type};
+///     
+/// let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), Some(Status_type::Non_blocking));
+/// 
+/// assert_eq!(Flags.Get_mode(), Mode_type::Read_write);
+/// assert_eq!(Flags.Get_open(), Open_type::Create_only);
+/// assert_eq!(Flags.Get_status(), Status_type::Non_blocking);
+/// ``` 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
 pub struct Flags_type(u16);
@@ -366,7 +458,7 @@ mod Tests {
     fn Test_open_type_new() {
         let Open = Open_type::New(true, false, true, false);
         assert!(Open.Get_create());
-        assert!(!Open.Get_create_only());
+        assert!(!Open.Get_create_exclusive());
         assert!(Open.Get_truncate());
         assert!(!Open.Get_directory());
     }
@@ -376,11 +468,11 @@ mod Tests {
         let mut Open = Open_type(0);
         Open = Open.Set_create(true);
         assert!(Open.Get_create());
-        assert!(!Open.Get_create_only());
+        assert!(!Open.Get_create_exclusive());
 
-        Open = Open.Set_create_only(true);
+        Open = Open.Set_create_exclusive(true);
         assert!(Open.Get_create());
-        assert!(Open.Get_create_only());
+        assert!(Open.Get_create_exclusive());
 
         Open = Open.Set_truncate(true);
         assert!(Open.Get_truncate());
