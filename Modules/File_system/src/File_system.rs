@@ -1,13 +1,9 @@
-use std::mem::size_of;
+use std::collections::BTreeMap;
 
-use crate::{
-    File_identifier_inner_type, File_system_identifier_type, Local_file_identifier_type, Mode_type,
-    Statistics_type,
-};
+use crate::{Inode_type, Local_file_identifier_type, Mode_type, Statistics_type};
 
 use super::{
-    Error_type, Flags_type, Path_owned_type, Path_type, Permissions_type, Position_type,
-    Result_type, Size_type, Status_type,
+    Error_type, Flags_type, Path_type, Permissions_type, Position_type, Result_type, Size_type,
 };
 
 use Task::Task_identifier_type;
@@ -141,47 +137,41 @@ pub trait File_system_traits: Send + Sync {
 
     // - Directory
 
-    fn Create_named_pipe(
-        &self,
-        _: &dyn AsRef<Path_type>,
-        _: Size_type,
-        _: User_identifier_type,
-        _: Group_identifier_type,
-        _: Permissions_type,
-    ) -> Result_type<()> {
-        Err(Error_type::Unsupported_operation)
-    }
-
-    //    fn Add_device(
-    //        &self,
-    //        _: &'static dyn AsRef<Path_type>,
-    //        _: Box<dyn Device_trait>,
-    //    ) -> Result_type<()> {
-    //        Err(Error_type::Unsupported_operation)
-    //    }
-
-    fn Create_unnamed_pipe(
-        &self,
-        _: Task_identifier_type,
-        _: Size_type,
-        _: Status_type,
-        _: User_identifier_type,
-        _: Group_identifier_type,
-        _: Permissions_type,
-    ) -> Result_type<(Local_file_identifier_type, Local_file_identifier_type)> {
-        Err(Error_type::Unsupported_operation)
-    }
-
     fn Get_statistics(&self, File: Local_file_identifier_type) -> Result_type<Statistics_type>;
 
     fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type>;
+}
+
+pub fn Get_new_file_identifier<T>(
+    Task_identifier: Task::Task_identifier_type,
+    Map: &BTreeMap<Local_file_identifier_type, T>,
+) -> Result_type<Local_file_identifier_type> {
+    let Iterator = Local_file_identifier_type::Get_minimum(Task_identifier);
+
+    for Identifier in Iterator {
+        if !Map.contains_key(&Identifier) {
+            return Ok(Identifier);
+        }
+    }
+
+    Err(Error_type::Too_many_open_files)
+}
+
+pub fn Get_new_inode<T>(Map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type> {
+    let mut Inode = Inode_type::from(0);
+
+    while Map.contains_key(&Inode) {
+        Inode += 1;
+    }
+
+    Ok(Inode)
 }
 
 #[cfg(test)]
 pub mod Tests {
     use Users::Root_user_identifier;
 
-    use crate::Open_type;
+    use crate::{Open_type, Path_owned_type};
 
     use super::*;
 
@@ -189,10 +179,19 @@ pub mod Tests {
         Path_type::Get_root().Append("test").unwrap()
     }
 
-    pub fn Test_open_close_delete(
-        File_system: impl File_system_traits,
-        Task: Task_identifier_type,
-    ) {
+    pub fn Initialize() -> Task_identifier_type {
+        let _ = Users::Initialize();
+
+        let _ = Task::Initialize();
+
+        Task::Get_instance()
+            .Get_current_task_identifier()
+            .expect("Error getting current task identifier")
+    }
+
+    pub fn Test_open_close_delete(File_system: impl File_system_traits) {
+        let Task = Initialize();
+
         let Path = Get_test_path().Append("Test_open_close_delete").unwrap();
 
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
@@ -207,7 +206,9 @@ pub mod Tests {
         File_system.Delete(&Path).unwrap();
     }
 
-    pub fn Test_read_write(File_system: impl File_system_traits, Task: Task_identifier_type) {
+    pub fn Test_read_write(File_system: impl File_system_traits) {
+        let Task = Initialize();
+
         let Path = Get_test_path().Append("Test_read_write").unwrap();
 
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
@@ -218,12 +219,12 @@ pub mod Tests {
         // - Write
         let Buffer = [0x01, 0x02, 0x03];
         let Size = File_system.Write(File, &Buffer).unwrap();
-        assert_eq!(Size, Buffer.len().into());
+        assert_eq!(Size, Size_type::from(Buffer.len()));
 
         // - Read
         let mut Buffer_read = [0; 3];
         let Size = File_system.Read(File, &mut Buffer_read).unwrap();
-        assert_eq!(Size, Buffer.len().into());
+        assert_eq!(Size, Size_type::from(Buffer.len()));
         assert_eq!(Buffer, Buffer_read);
 
         // - Close
@@ -233,7 +234,9 @@ pub mod Tests {
         File_system.Delete(&Path).unwrap();
     }
 
-    pub fn Test_move(File_system: impl File_system_traits, Task: Task_identifier_type) {
+    pub fn Test_move(File_system: impl File_system_traits) {
+        let Task = Initialize();
+
         let Path = Get_test_path().Append("Test_move").unwrap();
         let Path_destination = Get_test_path().Append("Test_move_destination").unwrap();
 
@@ -245,20 +248,20 @@ pub mod Tests {
         // - Write
         let Buffer = [0x01, 0x02, 0x03];
         let Size = File_system.Write(File, &Buffer).unwrap();
-        assert_eq!(Size, Buffer.len().into());
+        assert_eq!(Size, Size_type::from(Buffer.len()));
 
         // - Move
         File_system.Move(&Path, &Path_destination).unwrap();
 
         // - Open
         let File = File_system
-            .Open(Task, &Path_destination, Flags_type::New_read())
+            .Open(Task, &Path_destination, Mode_type::Read_only.into())
             .unwrap();
 
         // - Read
         let mut Buffer_read = [0; 3];
         let Size = File_system.Read(File, &mut Buffer_read).unwrap();
-        assert_eq!(Size, Buffer.len().into());
+        assert_eq!(Size, Size_type::from(Buffer.len()));
         assert_eq!(Buffer, Buffer_read);
 
         // - Close
@@ -268,7 +271,9 @@ pub mod Tests {
         File_system.Delete(&Path_destination).unwrap();
     }
 
-    pub fn Test_set_position(File_system: impl File_system_traits, Task: Task_identifier_type) {
+    pub fn Test_set_position(File_system: impl File_system_traits) {
+        let Task = Initialize();
+
         let Path = Get_test_path().Append("Test_set_position").unwrap();
 
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
@@ -279,17 +284,22 @@ pub mod Tests {
         // - Write
         let Buffer = [0x01, 0x02, 0x03];
         let Size = File_system.Write(File, &Buffer).unwrap();
-        assert_eq!(Size, Buffer.len().into());
+        assert_eq!(Size, Size_type::from(Buffer.len()));
 
         // - Set position
-        let Position = Position_type::New(1);
+        let Position = Position_type::Start(1);
         let Size = File_system.Set_position(File, &Position).unwrap();
-        assert_eq!(Size, Position.Get_position());
+        assert_eq!(
+            Size,
+            File_system
+                .Set_position(File, &Position_type::Current(0))
+                .unwrap()
+        );
 
         // - Read
         let mut Buffer_read = [0; 3];
         let Size = File_system.Read(File, &mut Buffer_read).unwrap();
-        assert_eq!(Size, Buffer.len().into());
+        assert_eq!(Size, Size_type::from(Buffer.len()));
         assert_eq!(Buffer[1..], Buffer_read);
 
         // - Close
@@ -299,7 +309,9 @@ pub mod Tests {
         File_system.Delete(&Path).unwrap();
     }
 
-    pub fn Test_flush(File_system: impl File_system_traits, Task: Task_identifier_type) {
+    pub fn Test_flush(File_system: impl File_system_traits) {
+        let Task = Initialize();
+
         let Path = Get_test_path().Append("Test_flush").unwrap();
 
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
@@ -310,7 +322,7 @@ pub mod Tests {
         // - Write
         let Buffer = [0x01, 0x02, 0x03];
         let Size = File_system.Write(File, &Buffer).unwrap();
-        assert_eq!(Size, Buffer.len().into());
+        assert_eq!(Size, Size_type::from(Buffer.len()));
 
         // - Flush
         File_system.Flush(File).unwrap();
@@ -322,7 +334,9 @@ pub mod Tests {
         File_system.Delete(&Path).unwrap();
     }
 
-    pub fn Test_set_owner(File_system: impl File_system_traits, Task: Task_identifier_type) {
+    pub fn Test_set_owner(File_system: impl File_system_traits) {
+        let Task = Initialize();
+
         let Path = Get_test_path().Append("Test_set_owner").unwrap();
 
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
@@ -342,7 +356,9 @@ pub mod Tests {
         File_system.Delete(&Path).unwrap();
     }
 
-    pub fn Test_set_permissions(File_system: impl File_system_traits, Task: Task_identifier_type) {
+    pub fn Test_set_permissions(File_system: impl File_system_traits) {
+        let Task = Initialize();
+
         let Path = Get_test_path().Append("Test_set_permissions").unwrap();
 
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
@@ -352,7 +368,7 @@ pub mod Tests {
 
         // - Set permissions
         File_system
-            .Set_permissions(&Path, Permissions_type::All_read_write())
+            .Set_permissions(&Path, Permissions_type::All_read_write)
             .unwrap();
 
         // - Close
