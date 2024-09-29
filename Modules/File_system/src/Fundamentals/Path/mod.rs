@@ -1,7 +1,7 @@
 /// Path module of the File_system library.
-/// 
+///
 /// This module contains the different types that represent paths.
-/// 
+///
 /// A path is a string that represents the location of a file or directory in a file system.
 /// It is composed of components separated by a separator character.
 /// A file path should start with a [Separator] and not end with a [Separator].

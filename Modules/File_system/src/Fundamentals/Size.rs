@@ -1,16 +1,15 @@
 use std::ops::{Add, AddAssign};
 
-
 /// Size type
-/// 
+///
 /// This type is used to represent the size of data which can be hold by a file system.
 /// Since the size of a file system can be very large, this type is a 64-bit unsigned integer.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```rust
 /// use File_system::Size_type;
-/// 
+///
 /// let Size = Size_type::New(0);
 /// ```
 #[derive(Default, PartialOrd, PartialEq, Eq, Ord, Clone, Copy, Debug)]
@@ -116,5 +115,3 @@ impl AddAssign<Size_type> for usize {
         *self += rhs.0 as usize;
     }
 }
-
-

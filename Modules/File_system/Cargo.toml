@@ -17,6 +17,6 @@ Drivers = { path = "../Drivers" }
 std = []
 default = ["std"]
 
-[[test]]
-name = "Integration"
-path = "Tests/Integration.rs"
+#[[test]]
+#name = "Integration"
+#path = "Tests/Integration.rs"

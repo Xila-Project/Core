@@ -3,30 +3,30 @@ use std::fmt::Debug;
 use super::Permission_type;
 
 /// The mode of a file.
-/// 
+///
 /// The mode is stored in a 8-bit integer, with the following layout:
-/// 
+///
 /// | Read | Write |
 /// |------|-------|
 /// | 0    | 1     |
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// use File_system::Mode_type;
-/// 
+///
 /// let Mode = Mode_type::New(true, false);
-/// 
+///
 /// assert_eq!(Mode.Get_read(), true);
 /// assert_eq!(Mode.Get_write(), false);
-/// 
+///
 /// let Mode = Mode_type::New(false, true);
-/// 
+///
 /// assert_eq!(Mode.Get_read(), false);
 /// assert_eq!(Mode.Get_write(), true);
-/// 
+///
 /// let Mode = Mode_type::New(true, true);
-/// 
+///
 /// assert_eq!(Mode.Get_read(), true);
 /// assert_eq!(Mode.Get_write(), true);
 /// ```
@@ -89,20 +89,20 @@ impl Debug for Mode_type {
 }
 
 /// The type of opening a file.
-/// 
+///
 /// The type is stored in a 8-bit integer, with the following layout:
-/// 
+///
 /// | Create | Create exclusive | Truncate | Directory |
 /// |--------|------------------|----------|-----------|
 /// | 0      | 1                | 2        | 3         |
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// use File_system::Open_type;
-/// 
+///
 /// let Open = Open_type::New(true, true, false, false);
-/// 
+///
 /// assert_eq!(Open.Get_create(), true);
 /// assert_eq!(Open.Get_create_exclusive(), true);
 /// assert_eq!(Open.Get_truncate(), false);
@@ -122,8 +122,7 @@ impl Open_type {
 
     pub const None: Self = Self::New(false, false, false, false);
 
-    pub const Create_only : Self = Self::New(true, true, false, false);
-    
+    pub const Create_only: Self = Self::New(true, true, false, false);
 
     pub const fn New(Create: bool, Create_only: bool, Truncate: bool, Directory: bool) -> Self {
         Self(0)
@@ -198,20 +197,20 @@ impl Debug for Open_type {
 }
 
 /// The status of a file.
-/// 
+///
 /// The status is stored in a 8-bit integer, with the following layout:
-/// 
+///
 /// | Append | Non-blocking | Synchronous | Synchronous data only |
 ///  -------------------------------------------------------------
 /// | 0      | 1            | 2           | 3                     |
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// use File_system::Status_type;
-/// 
+///
 /// let Status = Status_type::New(true, false, true, false);
-/// 
+///
 /// assert_eq!(Status.Get_append(), true);
 /// assert_eq!(Status.Get_non_blocking(), false);
 /// assert_eq!(Status.Get_synchronous(), true);
@@ -314,24 +313,24 @@ impl Default for Status_type {
 }
 
 /// All the flags that can be set for a file.
-/// 
+///
 /// The flags are stored in a 16-bit integer, with the following layout:
-/// 
+///
 /// | Mode | Open | Status |
 /// |------|------|--------|
 /// | 0-1  | 2-5  | 6-9    |
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// use File_system::{Flags_type, Mode_type, Open_type, Status_type};
 ///     
 /// let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), Some(Status_type::Non_blocking));
-/// 
+///
 /// assert_eq!(Flags.Get_mode(), Mode_type::Read_write);
 /// assert_eq!(Flags.Get_open(), Open_type::Create_only);
 /// assert_eq!(Flags.Get_status(), Status_type::Non_blocking);
-/// ``` 
+/// ```
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
 pub struct Flags_type(u16);

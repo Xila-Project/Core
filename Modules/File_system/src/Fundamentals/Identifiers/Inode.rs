@@ -1,7 +1,7 @@
 use std::ops::{Add, AddAssign};
 
 /// Inode type
-/// 
+///
 /// This type is used to identify an inode (file, directory, named pipe, etc.) uniquely in a file system.
 /// It is a wrapper around a `u64`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

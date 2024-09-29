@@ -3,11 +3,11 @@ use crate::{File_system_identifier_type, Size_type, Time_type, Type_type};
 use super::Inode_type;
 
 /// Statistics of a file.
-/// 
+///
 /// This type contains information about a file, such as its size, inode, etc.
-/// 
+///
 /// # Fields
-/// 
+///
 /// * `File_system`: The file system the file is on.
 /// * `Inode`: The inode of the file.
 /// * `Links`: The number of hard links to the file.

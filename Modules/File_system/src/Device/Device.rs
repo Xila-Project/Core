@@ -7,7 +7,7 @@ use std::{
 use crate::{Error_type, Position_type, Result_type, Size_type};
 
 /// A device is a file-like object that can be read from and written to.
-/// 
+///
 /// This trait is used to abstract the underlying peripheral or file system.
 /// A device should be thread-safe, as it may be accessed by multiple tasks/threads concurrently.
 /// A device should never block and should return a [`Error_type::Ressource_busy`] error if the operation would block.

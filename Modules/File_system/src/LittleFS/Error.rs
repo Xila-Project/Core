@@ -28,7 +28,7 @@ pub enum Error_type {
 
 pub type Result_type<T> = core::result::Result<T, Error_type>;
 
-pub(crate) fn Convert_result<>(Error: i32) -> Result_type<u32> {
+pub(crate) fn Convert_result(Error: i32) -> Result_type<u32> {
     match Error {
         littlefs::lfs_error_LFS_ERR_IO => Err(Error_type::Input_output),
         littlefs::lfs_error_LFS_ERR_CORRUPT => Err(Error_type::Corrupted),

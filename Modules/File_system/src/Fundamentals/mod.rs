@@ -5,18 +5,18 @@ mod Flags;
 mod Identifiers;
 mod Path;
 mod Permission;
-mod Statistics;
-mod Size;
 mod Position;
+mod Size;
+mod Statistics;
 
 pub use Directory::*;
 pub use Flags::*;
 pub use Identifiers::*;
 pub use Path::*;
 pub use Permission::*;
-pub use Statistics::*;
-pub use Size::*;
 pub use Position::*;
+pub use Size::*;
+pub use Statistics::*;
 
 #[repr(transparent)]
 pub struct Block_type(pub [u8; 512]);
@@ -26,5 +26,3 @@ impl Default for Block_type {
         Block_type([0; 512])
     }
 }
-
-

@@ -466,7 +466,7 @@ mod Tests {
         }
     }
 
-    const Cache_size : usize = 512;
+    const Cache_size: usize = 512;
 
     fn Initialize() -> File_system_type<Cache_size> {
         let Mock_device = Mock_device_type::<204_800_000>::New();
@@ -514,6 +514,4 @@ mod Tests {
     fn Test_set_permissions() {
         crate::Tests::Test_set_permissions(Initialize());
     }
-
-    
 }

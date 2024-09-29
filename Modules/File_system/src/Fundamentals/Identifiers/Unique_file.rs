@@ -14,26 +14,26 @@ use super::{
 /// It is similar to a file descriptor in Unix-like systems.
 /// It is a wrapper around a tuple of [`File_system_identifier_type`] and [`File_identifier_type`].
 /// It is unique from the virtual file system point of view.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// use File_system::{Unique_file_identifier_type, File_identifier_type, File_system_identifier_type, Local_file_identifier_type};
-/// 
+///
 /// use Task::Task_identifier_type;
-/// 
+///
 /// let Identifier = Unique_file_identifier_type::New(
 ///     File_system_identifier_type::from(0x1234),
 ///     File_identifier_type::from(0x5678),
 /// );
-/// 
+///
 /// let (File_system, File) = Identifier.Split();
-/// 
+///
 /// assert_eq!(File_system, File_system_identifier_type::from(0x1234));
 /// assert_eq!(File, File_identifier_type::from(0x5678));
-/// 
+///
 /// let (File_system, Local_file) = Identifier.Into_local_file_identifier(Task_identifier_type::from(0x9ABC));
-/// 
+///
 /// assert_eq!(File_system, File_system_identifier_type::from(0x1234));
 /// assert_eq!(Local_file, Local_file_identifier_type::New(Task_identifier_type::from(0x9ABC), File_identifier_type::from(0x5678)));
 /// ```
