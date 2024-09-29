@@ -14,13 +14,16 @@ mod Runtime;
 #[allow(unused_imports)]
 use ABI::*;
 
-use std::io::{stderr, stdin, stdout, Read, Write};
+use std::{
+    io::{stderr, stdin, stdout, Read, Write},
+    sync::Arc,
+};
 
 pub use wamr_rust_sdk::value::WasmValue;
 pub use Data::*;
 pub use Environment::*;
 pub use Error::*;
-use File_system::{Device_trait, Virtual_file_system_type};
+use File_system::{Device_trait, Device_type, Size_type, Virtual_file_system_type};
 pub use Instance::*;
 pub use Module::*;
 pub use Registrable::*;
@@ -32,22 +35,22 @@ pub type WASM_usize = u32;
 struct Standard_in_device_type;
 
 impl Device_trait for Standard_in_device_type {
-    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<usize> {
+    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<Size_type> {
         #[allow(clippy::unused_io_amount)]
         stdin().read(Buffer).unwrap();
 
-        Ok(Buffer.len())
+        Ok(Size_type::New(Buffer.len() as u64).into())
     }
 
-    fn Write(&self, _: &[u8]) -> File_system::Result_type<usize> {
+    fn Write(&self, _: &[u8]) -> File_system::Result_type<Size_type> {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
-    fn Get_size(&self) -> File_system::Result_type<usize> {
-        Ok(0)
+    fn Get_size(&self) -> File_system::Result_type<Size_type> {
+        Ok(Size_type::New(0))
     }
 
-    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<usize> {
+    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<Size_type> {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
@@ -59,19 +62,19 @@ impl Device_trait for Standard_in_device_type {
 struct Standard_out_device_type;
 
 impl Device_trait for Standard_out_device_type {
-    fn Read(&self, _: &mut [u8]) -> File_system::Result_type<usize> {
+    fn Read(&self, _: &mut [u8]) -> File_system::Result_type<Size_type> {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
-    fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<usize> {
-        Ok(stdout().write(Buffer)?)
+    fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<Size_type> {
+        Ok(Size_type::New(stdout().write(Buffer)? as u64))
     }
 
-    fn Get_size(&self) -> File_system::Result_type<usize> {
-        Ok(0)
+    fn Get_size(&self) -> File_system::Result_type<Size_type> {
+        Ok(Size_type::New(0))
     }
 
-    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<usize> {
+    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<Size_type> {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
@@ -83,19 +86,19 @@ impl Device_trait for Standard_out_device_type {
 struct Standard_error_device_type;
 
 impl Device_trait for Standard_error_device_type {
-    fn Read(&self, _: &mut [u8]) -> File_system::Result_type<usize> {
+    fn Read(&self, _: &mut [u8]) -> File_system::Result_type<Size_type> {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
-    fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<usize> {
-        Ok(stderr().write(Buffer)?)
+    fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<Size_type> {
+        Ok(Size_type::New(stderr().write(Buffer)? as u64))
     }
 
-    fn Get_size(&self) -> File_system::Result_type<usize> {
-        Ok(0)
+    fn Get_size(&self) -> File_system::Result_type<Size_type> {
+        Ok(Size_type::New(0))
     }
 
-    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<usize> {
+    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<Size_type> {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
@@ -119,20 +122,29 @@ pub fn Instantiate_test_environment(
     let Module = Module_type::From_buffer(&Runtime, Binary_buffer, "main").unwrap();
 
     Virtual_file_system
-        .Add_device(&"stdin", Box::new(Standard_in_device_type))
+        .Add_device(
+            &"stdin",
+            Device_type::New(Arc::new(Standard_in_device_type)),
+        )
         .expect("Failed to add stdin device");
     Virtual_file_system
-        .Add_device(&"stdout", Box::new(Standard_out_device_type))
+        .Add_device(
+            &"stdout",
+            Device_type::New(Arc::new(Standard_in_device_type)),
+        )
         .expect("Failed to add stdout device");
     Virtual_file_system
-        .Add_device(&"stderr", Box::new(Standard_error_device_type))
+        .Add_device(
+            &"stderr",
+            Device_type::New(Arc::new(Standard_in_device_type)),
+        )
         .expect("Failed to add stderr device");
 
     let Task_identifier = Task_manager.Get_current_task_identifier().unwrap();
 
     let Stdin = Virtual_file_system
         .Open(
-            "stdin",
+            &"stdin",
             File_system::Mode_type::Read_only.into(),
             Task_identifier,
         )
@@ -140,7 +152,7 @@ pub fn Instantiate_test_environment(
 
     let Stdout = Virtual_file_system
         .Open(
-            "stdout",
+            &"stdout",
             File_system::Mode_type::Write_only.into(),
             Task_identifier,
         )
@@ -148,7 +160,7 @@ pub fn Instantiate_test_environment(
 
     let Stderr = Virtual_file_system
         .Open(
-            "stderr",
+            &"stderr",
             File_system::Mode_type::Write_only.into(),
             Task_identifier,
         )
