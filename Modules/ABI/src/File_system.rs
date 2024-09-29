@@ -14,13 +14,13 @@ pub static Xila_file_system_mode_read_mask: u8 = Mode_type::Read_bit;
 pub static Xila_file_system_mode_write_mask: u8 = Mode_type::Write_bit;
 
 #[no_mangle]
-pub static Xila_file_system_open_create_mask: u8 = Open_type::Create;
+pub static Xila_file_system_open_create_mask: u8 = Open_type::Create_mask;
 #[no_mangle]
-pub static Xila_file_system_open_create_only_mask: u8 = Open_type::Create_only;
+pub static Xila_file_system_open_create_only_mask: u8 = Open_type::Create_exclusive_mask;
 #[no_mangle]
-pub static Xila_file_system_open_truncate_mask: u8 = Open_type::Truncate;
+pub static Xila_file_system_open_truncate_mask: u8 = Open_type::Truncate_mask;
 #[no_mangle]
-pub static Xila_file_system_open_directory_mask: u8 = Open_type::Directory;
+pub static Xila_file_system_open_directory_mask: u8 = Open_type::Directory_mask;
 
 #[no_mangle]
 pub static Xila_file_system_status_append_mask: u8 = Status_type::Append_bit;
@@ -354,14 +354,14 @@ pub unsafe extern "C" fn Xila_file_system_resolve_path(
 /// This function may return an error if the file system fails to open the file.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_open(
-    Path: *const u8,
+    Path: *const i8,
     Mode: Mode_type,
     Open: Open_type,
     Status: Status_type,
     File: *mut Unique_file_identifier_type,
 ) -> u32 {
     Into_u32(move || {
-        let Path = std::ffi::CStr::from_ptr(Path as *const i8)
+        let Path = std::ffi::CStr::from_ptr(Path)
             .to_str()
             .map_err(|_| Error_type::Invalid_input)?;
 
@@ -371,7 +371,7 @@ pub unsafe extern "C" fn Xila_file_system_open(
 
         *File = Get_file_system_instance()
             .Open(
-                Path,
+                &Path,
                 Flags_type::New(Mode, Some(Open), Some(Status)),
                 Task_identifier,
             )
