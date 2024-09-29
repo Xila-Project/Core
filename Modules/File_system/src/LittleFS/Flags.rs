@@ -18,7 +18,7 @@ pub fn Convert_flags(Flags: Flags_type) -> i32 {
         Little_fs_flags |= littlefs::lfs_open_flags_LFS_O_CREAT as i32;
     }
 
-    if Flags.Get_open().Get_create_only() {
+    if Flags.Get_open().Get_create_exclusive() {
         Little_fs_flags |= littlefs::lfs_open_flags_LFS_O_EXCL as i32;
     }
 
