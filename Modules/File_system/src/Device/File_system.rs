@@ -1,37 +1,21 @@
 use std::{
-    collections::{BTreeMap, HashMap},
-    sync::{atomic::{AtomicUsize, Ordering}, RwLock},
+    collections::BTreeMap,
+    sync::{Arc, RwLock},
+    time::Duration,
 };
 
 use Task::Task_identifier_type;
-use Users::{Root_group_identifier, Root_user_identifier, User_identifier_type};
 
 use crate::{
-    Error_type, File_identifier_inner_type, File_identifier_type, File_system_identifier_type,
-    File_system_traits, Flags_type, Mode_type, Path_type, Permissions_type, Position_type,
-    Result_type, Size_type, Statistics_type, Type_type,
+    Error_type, Flags_type, Get_new_file_identifier, Get_new_inode, Inode_type,
+    Local_file_identifier_type, Mode_type, Result_type, Size_type,
 };
 
 use super::{Device_trait, Device_type};
 
-enum Inner_item_type {
-    Device(Device_type),
-    Directory(AtomicUsize),
-}
-
-impl Clone for Inner_item_type {
-    fn clone(&self) -> Self {
-        match self {
-            Self::Device(Device) => Self::Device(Device.clone()),
-            Self::Directory(Count) => Self::Directory(AtomicUsize::new(Count.load(Ordering::Acquire))),
-        }
-    }
-    
-}
-
 struct Inner_type {
-    Devices: HashMap<&'static Path_type, Device_type>,
-    Opened_devices: BTreeMap<usize, (Inner_item_type, Flags_type)>,
+    pub Devices: BTreeMap<Inode_type, Device_type>,
+    pub Open_devices: BTreeMap<Local_file_identifier_type, (Device_type, Flags_type)>,
 }
 
 pub struct File_system_type(RwLock<Inner_type>);
@@ -39,330 +23,463 @@ pub struct File_system_type(RwLock<Inner_type>);
 impl File_system_type {
     pub fn New() -> Self {
         Self(RwLock::new(Inner_type {
-            Devices: HashMap::new(),
-            Opened_devices: BTreeMap::new(),
+            Devices: BTreeMap::new(),
+            Open_devices: BTreeMap::new(),
         }))
     }
 
-    fn Get_new_file_identifier<T>(
-        &self,
-        Task: Task_identifier_type,
-        Opened_devices: &BTreeMap<usize, T>,
-    ) -> Result_type<File_identifier_type> {
-        let Start = Self::Get_local_file_identifier(Task, File_identifier_type::from(0));
-        let End = Self::Get_local_file_identifier(Task, File_identifier_type::from(0xFFFF));
-
-        for File_identifier in Start..=End {
-            if !Opened_devices.contains_key(&File_identifier) {
-                return Ok(File_identifier_type::from(
-                    File_identifier as File_identifier_inner_type,
-                ));
-                // Remove the task identifier and keep the file identifier.
-            }
-        }
-
-        Err(Error_type::Too_many_open_files)
-    }
-}
-
-impl File_system_traits for File_system_type {
-    fn Exists(&self, Path: &dyn AsRef<Path_type>) -> Result_type<bool> {
-        Ok(self.0.read()?.Devices.contains_key(Path.as_ref()))
+    fn Borrow_mutable_inner_2_splited(
+        Inner: &mut Inner_type,
+    ) -> (
+        &mut BTreeMap<Inode_type, Device_type>,
+        &mut BTreeMap<Local_file_identifier_type, (Device_type, Flags_type)>,
+    ) {
+        (&mut Inner.Devices, &mut Inner.Open_devices)
     }
 
-    fn Open(
-        &self,
-        Task: Task_identifier_type,
-        Path: &dyn AsRef<Path_type>,
-        Flags: crate::Flags_type,
-    ) -> Result_type<File_identifier_type> {
+    pub fn Mount_device(&self, Device: Arc<dyn Device_trait>) -> Result_type<Inode_type> {
         let mut Inner = self.0.write()?;
 
-        let Opened_device = Inner
-            .Devices
-            .get(Path.as_ref())
-            .ok_or(Error_type::Not_found)?
-            .clone();
+        let (Devices, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
-        let File_identifier = self.Get_new_file_identifier(Task, &Inner.Opened_devices)?;
+        let Inode = Get_new_inode(Devices)?;
 
-        let Local_file_identifier = Self::Get_local_file_identifier(Task, File_identifier);
+        Devices.insert(Inode, Device_type::New(Device));
 
-        // - If the file is a directory
-        if Flags.Get_open().Get_directory() {
-            for (Device, _) in Inner.Opened_devices.values_mut() {
-                if let Inner_item_type::Directory(Count) = Device {
-                    Count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                }
-            }
-
-            Inner.Opened_devices.insert(
-                Local_file_identifier,
-                (Inner_item_type::Directory(AtomicUsize::new(0)), Flags),
-            );
-
-            Ok(File_identifier)
-        }
-        // - If the file is a device
-        else {
-            Inner.Opened_devices.insert(
-                Local_file_identifier,
-                (Inner_item_type::Device(Opened_device), Flags),
-            );
-
-            Ok(File_identifier)
-        }
+        Ok(Inode)
     }
 
-    fn Close(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()> {
+    pub fn Open(
+        &self,
+        Inode: Inode_type,
+        Task: Task_identifier_type,
+        Flags: Flags_type,
+    ) -> Result_type<Local_file_identifier_type> {
+        let mut Inner = self.0.write()?;
+
+        let (Devices, Open_pipes) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+
+        let Device = Devices.get(&Inode).ok_or(Error_type::Invalid_identifier)?;
+
+        let Local_file_identifier = Get_new_file_identifier(Task, Open_pipes)?;
+
+        Open_pipes.insert(Local_file_identifier, (Device.clone(), Flags));
+
+        Ok(Local_file_identifier)
+    }
+
+    pub fn Close(&self, File: Local_file_identifier_type) -> Result_type<()> {
         self.0
             .write()?
-            .Opened_devices
-            .remove(&Self::Get_local_file_identifier(Task, File))
-            .ok_or(Error_type::Not_found)?;
+            .Open_devices
+            .remove(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
 
         Ok(())
     }
 
-    fn Close_all(&self, Task: Task_identifier_type) -> Result_type<()> {
-        self.0
-            .write()?
-            .Opened_devices
-            .retain(|Key, _| Self::Decompose_local_file_identifier(*Key).0 != Task);
+    pub fn Close_all(&self, Task: Task_identifier_type) -> Result_type<()> {
+        let mut Inner = self.0.write()?;
+
+        // Get all the keys of the open pipes that belong to the task
+        let Keys = Inner
+            .Open_devices
+            .keys()
+            .filter(|Key| Key.Split().0 == Task)
+            .cloned()
+            .collect::<Vec<_>>();
+
+        // Close all the pipes corresponding to the keys
+        for Key in Keys {
+            if let Some((Device, _)) = Inner.Open_devices.remove(&Key) {
+                drop(Device);
+            }
+        }
 
         Ok(())
     }
 
-    fn Transfert_file_identifier(
+    pub fn Duplicate_file_identifier(
         &self,
-        Old_task: Task_identifier_type,
-        New_task: Task_identifier_type,
-        File: File_identifier_type,
-        New_file_identifier: Option<File_identifier_type>,
-    ) -> Result_type<File_identifier_type> {
-        let File_identifier = Self::Get_local_file_identifier(Old_task, File);
-
+        File: Local_file_identifier_type,
+    ) -> Result_type<Local_file_identifier_type> {
         let mut Inner = self.0.write()?;
-
-        let New_file_identifier = if let Some(New_file_identifier) = New_file_identifier {
-            New_file_identifier
-        } else {
-            self.Get_new_file_identifier(New_task, &Inner.Opened_devices)?
-        };
 
         let (Device, Flags) = Inner
-            .Opened_devices
-            .remove(&File_identifier)
-            .ok_or(Error_type::Not_found)?;
+            .Open_devices
+            .get(&File)
+            .ok_or(Error_type::Invalid_identifier)?
+            .clone();
 
-        let Local_file_identifier = Self::Get_local_file_identifier(New_task, New_file_identifier);
+        let New_file = Get_new_file_identifier(File.Split().0, &Inner.Open_devices)?;
 
         Inner
-            .Opened_devices
-            .insert(Local_file_identifier, (Device, Flags));
+            .Open_devices
+            .insert(New_file, (Device.clone(), Flags.clone()));
 
-        Ok(New_file_identifier)
+        Ok(New_file)
     }
 
-    fn Delete(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()> {
+    pub fn Transfert_file_identifier(
+        &self,
+        New_task: Task_identifier_type,
+        File: Local_file_identifier_type,
+    ) -> Result_type<Local_file_identifier_type> {
+        let mut Inner = self.0.write()?;
+
+        let (Device, Flags) = Inner
+            .Open_devices
+            .remove(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        let New_file = Get_new_file_identifier(New_task, &Inner.Open_devices)?;
+
+        Inner.Open_devices.insert(New_file, (Device, Flags));
+
+        Ok(New_file)
+    }
+
+    pub fn Delete(&self, Inode: &Inode_type) -> Result_type<()> {
         self.0
             .write()?
             .Devices
-            .remove(Path.as_ref())
-            .ok_or(Error_type::Not_found)?;
+            .remove(Inode)
+            .ok_or(Error_type::Invalid_identifier)?;
 
         Ok(())
     }
 
-    fn Read(
+    pub fn Read(
         &self,
-        Task: Task_identifier_type,
-        File: File_identifier_type,
+        File: Local_file_identifier_type,
         Buffer: &mut [u8],
     ) -> Result_type<Size_type> {
-        match &self
-            .0
-            .read()?
-            .Opened_devices
-            .get(&Self::Get_local_file_identifier(Task, File))
-            .ok_or(Error_type::Not_found)?
-            .0
-        {
-            Inner_item_type::Device(Device) => Device.Read(Buffer).map(|Size| Size.into()),
-            Inner_item_type::Directory(_) => Err(Error_type::Invalid_file),
+        let Inner = self.0.read()?;
+
+        let (Device, Flags) = Inner
+            .Open_devices
+            .get(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        if !Flags.Get_mode().Get_read() {
+            return Err(Error_type::Invalid_mode);
         }
-    }
 
-    fn Write(
-        &self,
-        Task: Task_identifier_type,
-        File: File_identifier_type,
-        Buffer: &[u8],
-    ) -> Result_type<Size_type> {
-        match &self
-            .0
-            .read()?
-            .Opened_devices
-            .get(&Self::Get_local_file_identifier(Task, File))
-            .ok_or(Error_type::Not_found)?
-            .0
-        {
-            Inner_item_type::Device(Device) => Device.Write(Buffer).map(|Size| Size.into()),
-            Inner_item_type::Directory(_) => Err(Error_type::Invalid_file),
+        if Flags.Get_status().Get_non_blocking() {
+            return Device.Read(Buffer);
         }
-    }
 
-    fn Move(&self, _: &dyn AsRef<Path_type>, _: &dyn AsRef<Path_type>) -> Result_type<()> {
-        Err(Error_type::Unsupported_operation)
-    }
-
-    fn Set_position(
-        &self,
-        Task: Task_identifier_type,
-        File: File_identifier_type,
-        Position: &Position_type,
-    ) -> Result_type<Size_type> {
-        match &self
-            .0
-            .read()?
-            .Opened_devices
-            .get(&Self::Get_local_file_identifier(Task, File))
-            .ok_or(Error_type::Not_found)?
-            .0
-        {
-            Inner_item_type::Device(Device) => {
-                Device.Set_position(Position).map(|Size| Size.into())
+        loop {
+            // Wait for the pipe to be ready
+            if let Ok(Size) = Device.Read(Buffer) {
+                return Ok(Size);
             }
-            Inner_item_type::Directory(_) => Err(Error_type::Unsupported_operation),
+
+            Task::Manager_type::Sleep(Duration::from_millis(1));
         }
     }
 
-    fn Flush(&self, Task: Task_identifier_type, File: File_identifier_type) -> Result_type<()> {
-        match &self
-            .0
-            .read()?
-            .Opened_devices
-            .get(&Self::Get_local_file_identifier(Task, File))
-            .ok_or(Error_type::Not_found)?
-            .0
-        {
-            Inner_item_type::Device(Device) => Device.Flush(),
-            Inner_item_type::Directory(_) => Err(Error_type::Unsupported_operation),
-        }
-    }
+    pub fn Write(&self, File: Local_file_identifier_type, Buffer: &[u8]) -> Result_type<Size_type> {
+        let Inner = self.0.read()?;
 
-    fn Add_device(
-        &self,
-        Path: &'static dyn AsRef<Path_type>,
-        Device: Box<dyn Device_trait>,
-    ) -> Result_type<()> {
-        let Inner = &mut self.0.write()?;
+        let (Device, Flags) = Inner
+            .Open_devices
+            .get(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
 
-        if Inner.Devices.contains_key(Path.as_ref()) {
-            return Err(Error_type::Already_exists);
+        if !Flags.Get_mode().Get_write() {
+            return Err(Error_type::Invalid_mode);
         }
 
-        Inner.Devices.insert(
-            Path.as_ref(),
-            Device_type::New(
-                Device,
-                Root_user_identifier,
-                Root_group_identifier,
-                Permissions_type::New_default(Type_type::Character_device),
-            ),
-        );
+        if Flags.Get_status().Get_non_blocking() {
+            return Device.Write(Buffer);
+        }
 
-        Ok(())
-    }
-
-    fn Set_permissions(
-        &self,
-        Path: &dyn AsRef<Path_type>,
-        Permissions: Permissions_type,
-    ) -> Result_type<()> {
-        self.0
-            .write()?
-            .Devices
-            .get_mut(Path.as_ref())
-            .ok_or(Error_type::Not_found)?
-            .Set_permissions(Permissions)
-    }
-
-    fn Set_owner(
-        &self,
-        Path: &dyn AsRef<Path_type>,
-        User: Option<User_identifier_type>,
-        Group: Option<Users::Group_identifier_type>,
-    ) -> Result_type<()> {
-        self.0
-            .write()?
-            .Devices
-            .get_mut(Path.as_ref())
-            .ok_or(Error_type::Not_found)?
-            .Set_owner(User, Group)
-    }
-
-    fn Get_statistics(
-        &self,
-        Task: Task_identifier_type,
-        File: File_identifier_type,
-        File_system: File_system_identifier_type,
-    ) -> Result_type<Statistics_type> {
-        let Local_file_identifier = Self::Get_local_file_identifier(Task, File);
-
-        match &self
-            .0
-            .read()?
-            .Opened_devices
-            .get(&Local_file_identifier)
-            .ok_or(Error_type::Not_found)?
-            .0
-        {
-            Inner_item_type::Device(Device) => {
-                Device.Get_statistics(File_system, Local_file_identifier as u64)
+        loop {
+            // Wait for the device to be ready
+            if Device.Write(Buffer).is_ok() {
+                return Ok(Buffer.len().into());
             }
-            Inner_item_type::Directory(_) => Err(Error_type::Unsupported_operation),
+
+            Task::Manager_type::Sleep(Duration::from_millis(1));
         }
     }
 
-    fn Get_mode(
-        &self,
-        Task: Task_identifier_type,
-        File: File_identifier_type,
-    ) -> Result_type<Mode_type> {
+    pub fn Get_size(&self, File: Local_file_identifier_type) -> Result_type<Size_type> {
         Ok(self
             .0
             .read()?
-            .Opened_devices
-            .get(&Self::Get_local_file_identifier(Task, File))
-            .ok_or(Error_type::Not_found)?
+            .Open_devices
+            .get(&File)
+            .ok_or(Error_type::Invalid_identifier)?
+            .0
+            .Get_size()?)
+    }
+
+    pub fn Set_position(
+        &self,
+        File: Local_file_identifier_type,
+        Position: &crate::Position_type,
+    ) -> Result_type<Size_type> {
+        self.0
+            .read()?
+            .Open_devices
+            .get(&File)
+            .ok_or(Error_type::Invalid_identifier)?
+            .0
+            .Set_position(Position)
+    }
+
+    pub fn Flush(&self, File: Local_file_identifier_type) -> Result_type<()> {
+        self.0
+            .read()?
+            .Open_devices
+            .get(&File)
+            .ok_or(Error_type::Invalid_identifier)?
+            .0
+            .Flush()
+    }
+
+    pub fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
+        Ok(self
+            .0
+            .read()?
+            .Open_devices
+            .get(&File)
+            .ok_or(Error_type::Invalid_identifier)?
             .1
             .Get_mode())
     }
 
-    fn Duplicate_file_identifier(
-        &self,
-        Task: Task_identifier_type,
-        File: File_identifier_type,
-    ) -> Result_type<File_identifier_type> {
-        let mut Inner = self.0.write()?;
+    pub fn Get_raw_device(&self, Inode: Inode_type) -> Result_type<Device_type> {
+        Ok(self
+            .0
+            .read()?
+            .Devices
+            .get(&Inode)
+            .ok_or(Error_type::Invalid_identifier)?
+            .clone())
+    }
+}
 
-        let File_identifier = Self::Get_local_file_identifier(Task, File);
+#[cfg(test)]
+mod tests {
+    use crate::Position_type;
 
-        let (Device, Flags) = Inner
-            .Opened_devices
-            .get(&File_identifier)
-            .ok_or(Error_type::Not_found)?
-            .clone();
+    use super::*;
+    use std::collections::BTreeMap;
+    use std::sync::Arc;
+    use std::sync::RwLock;
 
-        let New_file_identifier = self.Get_new_file_identifier(Task, &Inner.Opened_devices)?;
+    struct Mock_device_type(RwLock<([u8; 100], usize)>);
 
-        let Local_file_identifier = Self::Get_local_file_identifier(Task, New_file_identifier);
+    impl Mock_device_type {
+        fn New() -> Self {
+            Self(RwLock::new(([0; 100], 0)))
+        }
+    }
 
-        Inner
-            .Opened_devices
-            .insert(Local_file_identifier, (Device, Flags));
+    impl Device_trait for Mock_device_type {
+        fn Read(&self, Buffer: &mut [u8]) -> Result_type<Size_type> {
+            let mut Inner = self.0.try_write().map_err(|_| Error_type::Ressource_busy)?;
+            let Size = Buffer.len().min(Inner.0.len() - Inner.1);
+            Buffer[..Size].copy_from_slice(&Inner.0[Inner.1..Inner.1 + Size]);
+            Inner.1 += Size;
+            Ok(Size.into())
+        }
 
-        Ok(New_file_identifier)
+        fn Write(&self, Buffer: &[u8]) -> Result_type<Size_type> {
+            let mut Inner = self.0.try_write().map_err(|_| Error_type::Ressource_busy)?;
+            let Position = Inner.1;
+            Inner.0[Position..Position + Buffer.len()].copy_from_slice(Buffer);
+            Inner.1 += Buffer.len();
+            Ok(Buffer.len().into())
+        }
+
+        fn Get_size(&self) -> Result_type<Size_type> {
+            Ok(100_u64.into())
+        }
+
+        fn Set_position(&self, Position: &Position_type) -> Result_type<Size_type> {
+            let mut Inner = self.0.try_write().map_err(|_| Error_type::Ressource_busy)?;
+
+            match Position {
+                Position_type::Start(Position) => Inner.1 = *Position as usize,
+                Position_type::Current(Position) => Inner.1 += *Position as usize,
+                Position_type::End(Position) => Inner.1 = Inner.0.len() - *Position as usize,
+            }
+
+            Ok(Inner.1.into())
+        }
+
+        fn Flush(&self) -> Result_type<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn Test_mount_device() {
+        let fs = File_system_type::New();
+        let device = Arc::new(Mock_device_type::New());
+
+        let Inode = fs.Mount_device(device).unwrap();
+        assert!(fs.Get_raw_device(Inode).is_ok());
+    }
+
+    #[test]
+    fn Test_open_close_device() {
+        let fs = File_system_type::New();
+        let device = Arc::new(Mock_device_type::New());
+
+        let Inode = fs.Mount_device(device).unwrap();
+        let file_id = fs
+            .Open(
+                Inode,
+                Task_identifier_type::New(0),
+                Mode_type::Read_only.into(),
+            )
+            .unwrap();
+        assert!(fs.Close(file_id).is_ok());
+    }
+
+    #[test]
+    fn Test_read_write_device() {
+        let fs = File_system_type::New();
+        let device = Arc::new(Mock_device_type::New());
+
+        let Inode = fs.Mount_device(device).unwrap();
+        let file_id = fs
+            .Open(
+                Inode,
+                Task_identifier_type::New(0),
+                Mode_type::Read_write.into(),
+            )
+            .unwrap();
+
+        let write_data = b"Hello, world!";
+        fs.Write(file_id, write_data).unwrap();
+
+        fs.Set_position(file_id, &Position_type::Start(0)).unwrap();
+
+        let mut read_data = vec![0; write_data.len()];
+        fs.Read(file_id, &mut read_data).unwrap();
+
+        assert_eq!(&read_data, write_data);
+    }
+
+    #[test]
+    fn Test_duplicate_file_identifier() {
+        let fs = File_system_type::New();
+        let device = Arc::new(Mock_device_type::New());
+
+        let Inode = fs.Mount_device(device).unwrap();
+        let file_id = fs
+            .Open(
+                Inode,
+                Task_identifier_type::New(0),
+                Mode_type::Read_only.into(),
+            )
+            .unwrap();
+        let new_file_id = fs.Duplicate_file_identifier(file_id).unwrap();
+
+        assert!(fs.Close(new_file_id).is_ok());
+    }
+
+    #[test]
+    fn Test_transfert_file_identifier() {
+        let fs = File_system_type::New();
+        let device = Arc::new(Mock_device_type::New());
+
+        let Inode = fs.Mount_device(device).unwrap();
+        let file_id = fs
+            .Open(
+                Inode,
+                Task_identifier_type::New(0),
+                Mode_type::Read_only.into(),
+            )
+            .unwrap();
+        let new_file_id = fs
+            .Transfert_file_identifier(Task_identifier_type::New(0), file_id)
+            .unwrap();
+
+        assert!(fs.Close(new_file_id).is_ok());
+    }
+
+    #[test]
+    fn Test_delete_device() {
+        let fs = File_system_type::New();
+        let device = Arc::new(Mock_device_type::New());
+
+        let Inode = fs.Mount_device(device).unwrap();
+        assert!(fs.Delete(&Inode).is_ok());
+    }
+
+    #[test]
+    fn Test_get_size() {
+        let fs = File_system_type::New();
+        let device = Arc::new(Mock_device_type::New());
+
+        let Inode = fs.Mount_device(device).unwrap();
+        let file_id = fs
+            .Open(
+                Inode,
+                Task_identifier_type::New(0),
+                Mode_type::Read_only.into(),
+            )
+            .unwrap();
+
+        assert_eq!(fs.Get_size(file_id).unwrap(), 100);
+    }
+
+    #[test]
+    fn Test_set_position() {
+        let fs = File_system_type::New();
+        let device = Arc::new(Mock_device_type::New());
+
+        let Inode = fs.Mount_device(device).unwrap();
+        let file_id = fs
+            .Open(
+                Inode,
+                Task_identifier_type::New(0),
+                Mode_type::Read_only.into(),
+            )
+            .unwrap();
+
+        fs.Set_position(file_id, &Position_type::Start(10)).unwrap();
+        assert_eq!(fs.Get_size(file_id).unwrap(), 100);
+    }
+
+    #[test]
+    fn Test_flush() {
+        let fs = File_system_type::New();
+        let device = Arc::new(Mock_device_type::New());
+
+        let Inode = fs.Mount_device(device).unwrap();
+        let file_id = fs
+            .Open(
+                Inode,
+                Task_identifier_type::New(0),
+                Mode_type::Read_only.into(),
+            )
+            .unwrap();
+
+        assert!(fs.Flush(file_id).is_ok());
+    }
+
+    #[test]
+    fn Test_get_mode() {
+        let fs = File_system_type::New();
+        let device = Arc::new(Mock_device_type::New());
+
+        let Inode = fs.Mount_device(device).unwrap();
+        let file_id = fs
+            .Open(
+                Inode,
+                Task_identifier_type::New(0),
+                Mode_type::Read_only.into(),
+            )
+            .unwrap();
+
+        assert!(fs.Get_mode(file_id).is_ok());
     }
 }
