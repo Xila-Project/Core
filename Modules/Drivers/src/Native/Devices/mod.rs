@@ -1,5 +1,10 @@
+mod Drive_file;
 mod SDL2;
 
+use std::sync::Arc;
+
+pub use Drive_file::*;
+use File_system::Device_type;
 use Graphics::Point_type;
 pub use SDL2::*;
 
@@ -12,11 +17,17 @@ pub fn Mount_devices(
         New_touchscreen(Resolution).expect("Error creating touchscreen");
 
     Virtual_file_systems
-        .Add_device(&"/Devices/Pointer", Box::new(Pointer_device))
+        .Add_device(
+            &"/Devices/Pointer",
+            Device_type::New(Arc::new(Pointer_device)),
+        )
         .expect("Error adding pointer device");
 
     Virtual_file_systems
-        .Add_device(&"/Devices/Screen", Box::new(Screen_device))
+        .Add_device(
+            &"/Devices/Screen",
+            Device_type::New(Arc::new(Screen_device)),
+        )
         .expect("Error adding screen device");
 
     Ok(())

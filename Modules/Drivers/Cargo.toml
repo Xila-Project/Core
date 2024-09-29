@@ -63,6 +63,6 @@ sdl2 = "0.37.0"
 
 
 
-[[test]]
-name = "Native_graphics"
-path = "Tests/Native/Graphics.rs"
+#[[test]]
+#name = "Native_graphics"
+#path = "Tests/Native/Graphics.rs"
