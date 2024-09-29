@@ -13,13 +13,41 @@ use super::{
 /// It is used for the file identification between the file system and the virtual file system.
 /// It is a wrapper around a tuple of [`Task_identifier_type`] and [`File_identifier_type`].
 /// It is unique from the file system point of view.
+/// 
+/// # Example
+/// 
+/// ```rust
+/// use File_system::{Local_file_identifier_type, File_identifier_type, File_system_identifier_type, Unique_file_identifier_type};
+/// 
+/// use Task::Task_identifier_type;
+/// 
+/// let Identifier = Local_file_identifier_type::New(
+///     Task_identifier_type::from(0x1234),
+///     File_identifier_type::from(0x5678),
+/// );
+/// 
+/// let (Task, File) = Identifier.Split();
+/// 
+/// assert_eq!(Task, Task_identifier_type::from(0x1234));
+/// assert_eq!(File, File_identifier_type::from(0x5678));
+/// 
+/// let Minimum = Local_file_identifier_type::Get_minimum(Task);
+/// assert_eq!(Minimum, Local_file_identifier_type::New(Task, File_identifier_type::Minimum));
+/// 
+/// let Maximum = Local_file_identifier_type::Get_maximum(Task);
+/// assert_eq!(Maximum, Local_file_identifier_type::New(Task, File_identifier_type::Maximum));
+/// 
+/// let (Task, Unique_file_identifier) = Identifier.Into_unique_file_identifier(File_system_identifier_type::from(0x9ABC));
+/// 
+/// assert_eq!(Task, Task_identifier_type::from(0x1234));
+/// assert_eq!(Unique_file_identifier, Unique_file_identifier_type::New(File_system_identifier_type::from(0x9ABC), File_identifier_type::from(0x5678)));
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
 pub struct Local_file_identifier_type(usize);
 
 impl Local_file_identifier_type {
-    const File_position: u8 = 0;
-    const Task_position: u8 = File_identifier_type::Size_bits as u8;
+    const Task_position: u8 = File_identifier_type::Size_bits;
 
     pub const fn New(Task: Task_identifier_type, File: File_identifier_type) -> Self {
         let Task = Task.Into_inner();
