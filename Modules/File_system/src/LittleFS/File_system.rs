@@ -366,3 +366,154 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
             .Get_mode())
     }
 }
+
+#[cfg(test)]
+mod Tests {
+
+    use std::sync::Arc;
+
+    use crate::{Device_trait, Position_type};
+
+    use super::*;
+
+    struct Mock_device_type<const Size: usize>(RwLock<(Box<[u8; Size]>, usize)>);
+
+    impl<const Size: usize> Mock_device_type<Size> {
+        const Block_size: usize = 512;
+
+        pub fn New() -> Self {
+            Self(RwLock::new((Box::new([0; Size]), 0)))
+        }
+
+        pub const fn Get_block_count(&self) -> usize {
+            Size / Self::Block_size
+        }
+    }
+
+    impl<const Size: usize> Device_trait for Mock_device_type<Size> {
+        fn Read(&self, Buffer: &mut [u8]) -> crate::Result_type<Size_type> {
+            let mut Inner = self
+                .0
+                .try_write()
+                .map_err(|_| crate::Error_type::Ressource_busy)?;
+            let (Data, Position) = &mut *Inner;
+
+            let Read_size = Buffer.len().min(Data.len().saturating_sub(*Position));
+            Buffer[..Read_size].copy_from_slice(&Data[*Position..*Position + Read_size]);
+            *Position += Read_size;
+            Ok(Read_size.into())
+        }
+
+        fn Write(&self, Buffer: &[u8]) -> crate::Result_type<Size_type> {
+            let mut Inner = self
+                .0
+                .write()
+                .map_err(|_| crate::Error_type::Ressource_busy)?;
+            let (Data, Position) = &mut *Inner;
+
+            Data[*Position..*Position + Buffer.len()].copy_from_slice(Buffer);
+            *Position += Buffer.len();
+            Ok(Buffer.len().into())
+        }
+
+        fn Get_size(&self) -> crate::Result_type<Size_type> {
+            let Inner = self
+                .0
+                .read()
+                .map_err(|_| crate::Error_type::Ressource_busy)?;
+            Ok(Size_type::New(Inner.0.len() as u64))
+        }
+
+        fn Set_position(&self, Position: &Position_type) -> crate::Result_type<Size_type> {
+            let mut Inner = self
+                .0
+                .write()
+                .map_err(|_| crate::Error_type::Ressource_busy)?;
+            let (Data, Device_position) = &mut *Inner;
+
+            match Position {
+                Position_type::Start(Position) => *Device_position = *Position as usize,
+                Position_type::Current(Position) => {
+                    *Device_position = (*Device_position as isize + *Position as isize) as usize
+                }
+                Position_type::End(Position) => {
+                    *Device_position = (Data.len() as isize - *Position as isize) as usize
+                }
+            }
+
+            Ok(Size_type::New(*Device_position as u64))
+        }
+
+        fn Erase(&self) -> crate::Result_type<()> {
+            let mut Inner = self
+                .0
+                .write()
+                .map_err(|_| crate::Error_type::Ressource_busy)?;
+
+            let (Data, Position) = &mut *Inner;
+
+            Data[*Position..*Position + Self::Block_size].fill(0);
+
+            Ok(())
+        }
+
+        fn Flush(&self) -> crate::Result_type<()> {
+            Ok(())
+        }
+
+        fn Get_block_size(&self) -> crate::Result_type<usize> {
+            Ok(Self::Block_size)
+        }
+    }
+
+    const Cache_size : usize = 512;
+
+    fn Initialize() -> File_system_type<Cache_size> {
+        let Mock_device = Mock_device_type::<204_800_000>::New();
+
+        let Configuration =
+            Configuration_type::default().Set_block_count(Mock_device.Get_block_count());
+
+        let Device = Device_type::New(Arc::new(Mock_device));
+
+        File_system_type::<Cache_size>::Format(Device.clone(), Configuration.clone());
+        File_system_type::<Cache_size>::New(Device, Configuration).unwrap()
+    }
+
+    #[test]
+    fn Test_open_close_delete() {
+        crate::Tests::Test_open_close_delete(Initialize());
+    }
+
+    #[test]
+    fn Test_read_write() {
+        crate::Tests::Test_read_write(Initialize());
+    }
+
+    #[test]
+    fn Test_move() {
+        crate::Tests::Test_move(Initialize());
+    }
+
+    #[test]
+    fn Test_set_position() {
+        crate::Tests::Test_set_position(Initialize());
+    }
+
+    #[test]
+    fn Test_flush() {
+        crate::Tests::Test_flush(Initialize());
+    }
+
+    #[test]
+    fn Test_set_owner() {
+        crate::Tests::Test_set_owner(Initialize());
+    }
+
+    #[test]
+    fn Test_set_permissions() {
+        crate::Tests::Test_set_permissions(Initialize());
+    }
+
+    
+}
