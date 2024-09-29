@@ -46,11 +46,11 @@ impl File_type {
         let Little_fs_flags = Convert_flags(Flags);
 
         let File = unsafe {
-            let mut File = MaybeUninit::<littlefs::lfs_file_t>::uninit().assume_init();
+            let mut File = MaybeUninit::<littlefs::lfs_file_t>::uninit();
 
             Convert_result(littlefs::lfs_file_open(
                 File_system as *mut _,
-                &mut File as *mut _,
+                File.as_mut_ptr(),
                 Path.as_ptr(),
                 Little_fs_flags,
             ))?;
@@ -63,7 +63,7 @@ impl File_type {
             Ok(Metadata) => Metadata,
             Err(Error_type::No_attribute) => {
                 // - Create the file metadata if it doesn't exist and the file should be created
-                if Flags.Get_open().Get_create() || Flags.Get_open().Get_create_only() {
+                if Flags.Get_open().Get_create() || Flags.Get_open().Get_create_exclusive() {
                     let Metadata = Metadata_type::Get(Task, Flags)?;
                     Self::Set_metadata(File_system, &Path, &Metadata)?;
                     Metadata
@@ -76,7 +76,7 @@ impl File_type {
 
         Ok(Self {
             Metadata,
-            Data: Rc::new(File),
+            Data: Rc::new(unsafe { File.assume_init() }),
             Flags,
         })
     }
@@ -199,9 +199,14 @@ impl File_type {
         File_system: &mut super::littlefs::lfs_t,
         Path: &CString,
     ) -> Result_type<Metadata_type> {
-        let mut Metadata = unsafe { MaybeUninit::<Metadata_type>::uninit().assume_init() };
+        let mut Metadata = unsafe { MaybeUninit::<Metadata_type>::uninit() };
 
-        let Metadata_slice = Metadata.as_mut();
+        let Metadata_slice = unsafe {
+            core::slice::from_raw_parts_mut(
+                Metadata.as_mut_ptr() as *mut u8,
+                core::mem::size_of::<Metadata_type>(),
+            )
+        };
 
         unsafe {
             Convert_result(littlefs::lfs_getattr(
@@ -213,7 +218,7 @@ impl File_type {
             ))?;
         }
 
-        Ok(Metadata)
+        Ok(unsafe { Metadata.assume_init() })
     }
 
     pub fn Get_mode(&self) -> Mode_type {
