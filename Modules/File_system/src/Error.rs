@@ -72,6 +72,12 @@ impl From<Task::Error_type> for Error_type {
     }
 }
 
+impl From<Users::Error_type> for Error_type {
+    fn from(_: Users::Error_type) -> Self {
+        Error_type::Failed_to_get_users_informations
+    }
+}
+
 impl<T> From<PoisonError<T>> for Error_type {
     fn from(_: PoisonError<T>) -> Self {
         Error_type::Poisoned_lock
