@@ -36,6 +36,16 @@ pub struct Metadata_type {
 impl Metadata_type {
     pub const Identifer: u8 = 0x01;
 
+    pub const Default : Self = Self {
+        Type: Type_type::File,
+        Creation_time: Time_type::New(0),
+        Modification_time: Time_type::New(0),
+        Access_time: Time_type::New(0),
+        Permissions: Permissions_type::None,
+        Owner: Users::Root_user_identifier,
+        Group: Users::Root_user_identifier,
+    };
+
     pub fn Get(Task: Task_identifier_type, Flags: Flags_type) -> Result_type<Self> {
         let Users_instance = Users::Get_instance();
         let Task_instance = Task::Get_instance();
