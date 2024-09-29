@@ -1,5 +1,5 @@
 use core::slice;
-use std::{ffi::c_void, pin::Pin, ptr::null_mut};
+use std::{ffi::c_void, ptr::null_mut};
 
 use File_system::File_type;
 
@@ -88,12 +88,12 @@ impl<const Buffer_size: usize> Display_type<Buffer_size> {
         }
 
         // Set the user data.
-        let User_data = Box::pin(User_data { File });
+        let User_data = Box::new(User_data { File });
 
         unsafe {
             lvgl::lv_display_set_user_data(
                 LVGL_display,
-                Box::into_raw(Pin::into_inner_unchecked(User_data)) as *mut c_void,
+                Box::into_raw(User_data) as *mut c_void,
             )
         };
 

@@ -1,10 +1,10 @@
-use std::{mem::MaybeUninit, pin::Pin};
+use std::mem::MaybeUninit;
 
 use crate::{Color_type, Point_type};
 
 #[repr(transparent)]
 pub struct Buffer_type<const Buffer_size: usize> {
-    Buffer: Pin<Box<[MaybeUninit<Color_type>; Buffer_size]>>,
+    Buffer: Box<[MaybeUninit<Color_type>; Buffer_size]>,
 }
 
 impl<const Buffer_size: usize> AsRef<[Color_type]> for Buffer_type<Buffer_size> {
@@ -19,7 +19,7 @@ impl<const Buffer_size: usize> AsRef<[Color_type]> for Buffer_type<Buffer_size> 
 impl<const Buffer_size: usize> Default for Buffer_type<Buffer_size> {
     fn default() -> Self {
         Self {
-            Buffer: Pin::new(Box::new([MaybeUninit::uninit(); Buffer_size])),
+            Buffer: Box::new([MaybeUninit::uninit(); Buffer_size]),
         }
     }
 }
