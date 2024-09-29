@@ -46,7 +46,7 @@ impl File_type {
         Flags: Flags_type,
         Task: Task_identifier_type,
     ) -> Result_type<Self> {
-        let File_identifier = File_system.Open(Path, Flags, Task)?;
+        let File_identifier = File_system.Open(&Path, Flags, Task)?;
 
         Ok(File_type {
             File_identifier,
