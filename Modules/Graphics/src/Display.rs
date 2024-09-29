@@ -91,10 +91,7 @@ impl<const Buffer_size: usize> Display_type<Buffer_size> {
         let User_data = Box::new(User_data { File });
 
         unsafe {
-            lvgl::lv_display_set_user_data(
-                LVGL_display,
-                Box::into_raw(User_data) as *mut c_void,
-            )
+            lvgl::lv_display_set_user_data(LVGL_display, Box::into_raw(User_data) as *mut c_void)
         };
 
         // Set the flush callback.
