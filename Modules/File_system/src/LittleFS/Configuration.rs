@@ -1,12 +1,12 @@
 use std::os::raw::c_void;
 
-use crate::Unique_file_identifier_type;
+use crate::Device::Device_type;
 
 use super::{littlefs, Callbacks};
 
 #[derive(Debug, Clone)]
 pub struct Configuration_type {
-    Context: Option<Unique_file_identifier_type>,
+    Context: Option<Device_type>,
     Read_size: usize,
     Program_size: usize,
     Block_size: usize,
@@ -22,6 +22,27 @@ pub struct Configuration_type {
 }
 
 impl Configuration_type {
+    pub const Default_raw: littlefs::lfs_config = littlefs::lfs_config {
+        context: 0 as *mut c_void,
+        read: None,
+        prog: None,
+        erase: None,
+        sync: None,
+        read_size: 0,
+        prog_size: 0,
+        block_size: 0,
+        block_count: 0,
+        block_cycles: 0,
+        cache_size: 0,
+        lookahead_size: 0,
+        read_buffer: 0 as *mut c_void,
+        prog_buffer: 0 as *mut c_void,
+        lookahead_buffer: 0 as *mut c_void,
+        name_max: 0,
+        file_max: 0,
+        attr_max: 0,
+    };
+
     pub const fn Set_read_size(mut self, Read_size: usize) -> Self {
         self.Read_size = Read_size;
         self
@@ -67,11 +88,10 @@ impl Configuration_type {
         self
     }
 
-    pub(crate) const fn Set_context(mut self, Context: Unique_file_identifier_type) -> Self {
-        self.Context = Some(Context);
+    pub(crate) fn Set_context(mut self, Device: Device_type) -> Self {
+        self.Context = Some(Device);
         self
     }
-
     pub(crate) fn Set_buffers(
         mut self,
         Read_buffer: *mut u8,
@@ -110,7 +130,7 @@ impl TryFrom<Configuration_type> for littlefs::lfs_config {
 
     fn try_from(Configuration: Configuration_type) -> Result<Self, Self::Error> {
         Ok(littlefs::lfs_config {
-            context: unsafe { core::mem::transmute(Configuration.Context.ok_or(())?) },
+            context: Box::into_raw(Box::new(Configuration.Context)) as *mut c_void,
             read: Some(Callbacks::Read_callback),
             prog: Some(Callbacks::Programm_callback),
             erase: Some(Callbacks::Erase_callback),
