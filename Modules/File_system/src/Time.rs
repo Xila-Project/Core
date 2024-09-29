@@ -7,6 +7,10 @@ pub struct Time_type {
 }
 
 impl Time_type {
+    pub const fn New(Seconds: u64) -> Self {
+        Self { Seconds }
+    }
+
     pub fn Get_now() -> Self {
         Time::Get_instance().Get_current_time().into()
     }
