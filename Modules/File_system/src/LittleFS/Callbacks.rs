@@ -1,17 +1,18 @@
 use core::ffi::c_int;
+use std::mem::forget;
 
 use crate::{Device::Device_type, Error_type, Position_type};
 
 use super::littlefs;
 
-pub extern "C" fn Read_callback(
+pub unsafe extern "C" fn Read_callback(
     Configuration: *const littlefs::lfs_config,
     Block: littlefs::lfs_block_t,
     Offset: littlefs::lfs_off_t,
     Buffer: *mut core::ffi::c_void,
     Size: littlefs::lfs_size_t,
 ) -> c_int {
-    let Device = unsafe { Box::from_raw((*Configuration).context as *mut Device_type) };
+    let Device = unsafe { Box::from_raw(Configuration.read().context as *mut Device_type) };
 
     let Buffer = unsafe { core::slice::from_raw_parts_mut(Buffer as *mut u8, Size as usize) };
 
@@ -35,17 +36,19 @@ pub extern "C" fn Read_callback(
         }
     }
 
+    forget(Device);
+
     0
 }
 
-pub extern "C" fn Programm_callback(
+pub unsafe extern "C" fn Programm_callback(
     Configuration: *const littlefs::lfs_config,
     Block: littlefs::lfs_block_t,
     Offset: littlefs::lfs_off_t,
     Buffer: *const core::ffi::c_void,
     Size: littlefs::lfs_size_t,
 ) -> c_int {
-    let Device = unsafe { Box::from_raw((*Configuration).context as *mut Device_type) };
+    let Device = unsafe { Box::from_raw(Configuration.read().context as *mut Device_type) };
 
     let Buffer = unsafe { core::slice::from_raw_parts(Buffer as *const u8, Size as usize) };
 
@@ -69,14 +72,16 @@ pub extern "C" fn Programm_callback(
         }
     }
 
+    forget(Device);
+
     0
 }
 
-pub extern "C" fn Erase_callback(
+pub unsafe extern "C" fn Erase_callback(
     Configuration: *const littlefs::lfs_config,
     Block: littlefs::lfs_block_t,
 ) -> c_int {
-    let Device = unsafe { Box::from_raw((*Configuration).context as *mut Device_type) };
+    let Device = unsafe { Box::from_raw(Configuration.read().context as *mut Device_type) };
 
     let Block_size = unsafe { Configuration.read().block_size };
 
@@ -98,11 +103,13 @@ pub extern "C" fn Erase_callback(
         }
     }
 
+    forget(Device);
+
     0
 }
 
-pub extern "C" fn Flush_callback(Configuration: *const littlefs::lfs_config) -> c_int {
-    let Device = unsafe { Box::from_raw((*Configuration).context as *mut Device_type) };
+pub unsafe extern "C" fn Flush_callback(Configuration: *const littlefs::lfs_config) -> c_int {
+    let Device = unsafe { Box::from_raw(Configuration.read().context as *mut Device_type) };
 
     loop {
         match Device.Flush() {
@@ -111,6 +118,8 @@ pub extern "C" fn Flush_callback(Configuration: *const littlefs::lfs_config) -> 
             Err(_) => return littlefs::lfs_error_LFS_ERR_IO,
         }
     }
+
+    forget(Device);
 
     0
 }
