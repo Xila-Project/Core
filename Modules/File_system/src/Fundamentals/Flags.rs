@@ -104,7 +104,7 @@ impl Debug for Mode_type {
 /// let Open = Open_type::New(true, true, false, false);
 ///
 /// assert_eq!(Open.Get_create(), true);
-/// assert_eq!(Open.Get_create_exclusive(), true);
+/// assert_eq!(Open.Get_exclusive(), true);
 /// assert_eq!(Open.Get_truncate(), false);
 /// assert_eq!(Open.Get_directory(), false);
 /// ```
@@ -114,7 +114,7 @@ pub struct Open_type(u8);
 
 impl Open_type {
     pub const Create_mask: u8 = 1 << 0;
-    pub const Create_exclusive_mask: u8 = 1 << 1;
+    pub const Exclusive_mask: u8 = 1 << 1;
     pub const Truncate_mask: u8 = 1 << 2;
     pub const Directory_mask: u8 = 1 << 3;
 
@@ -127,7 +127,7 @@ impl Open_type {
     pub const fn New(Create: bool, Create_only: bool, Truncate: bool, Directory: bool) -> Self {
         Self(0)
             .Set_create(Create)
-            .Set_create_exclusive(Create_only)
+            .Set_exclusive(Create_only)
             .Set_truncate(Truncate)
             .Set_directory(Directory)
     }
@@ -153,12 +153,12 @@ impl Open_type {
         self.Set_bit(Self::Create_mask, Value)
     }
 
-    pub const fn Get_create_exclusive(&self) -> bool {
-        self.Get_bit(Self::Create_exclusive_mask)
+    pub const fn Get_exclusive(&self) -> bool {
+        self.Get_bit(Self::Exclusive_mask)
     }
 
-    pub const fn Set_create_exclusive(self, Value: bool) -> Self {
-        self.Set_bit(Self::Create_exclusive_mask, Value)
+    pub const fn Set_exclusive(self, Value: bool) -> Self {
+        self.Set_bit(Self::Exclusive_mask, Value)
     }
 
     pub const fn Get_truncate(&self) -> bool {
@@ -189,7 +189,7 @@ impl Debug for Open_type {
         Formatter
             .debug_struct("Open_type")
             .field("Create", &self.Get_create())
-            .field("Create_only", &self.Get_create_exclusive())
+            .field("Create_only", &self.Get_exclusive())
             .field("Truncate", &self.Get_truncate())
             .field("Directory", &self.Get_directory())
             .finish()
@@ -457,7 +457,7 @@ mod Tests {
     fn Test_open_type_new() {
         let Open = Open_type::New(true, false, true, false);
         assert!(Open.Get_create());
-        assert!(!Open.Get_create_exclusive());
+        assert!(!Open.Get_exclusive());
         assert!(Open.Get_truncate());
         assert!(!Open.Get_directory());
     }
@@ -467,11 +467,11 @@ mod Tests {
         let mut Open = Open_type(0);
         Open = Open.Set_create(true);
         assert!(Open.Get_create());
-        assert!(!Open.Get_create_exclusive());
+        assert!(!Open.Get_exclusive());
 
-        Open = Open.Set_create_exclusive(true);
+        Open = Open.Set_exclusive(true);
         assert!(Open.Get_create());
-        assert!(Open.Get_create_exclusive());
+        assert!(Open.Get_exclusive());
 
         Open = Open.Set_truncate(true);
         assert!(Open.Get_truncate());

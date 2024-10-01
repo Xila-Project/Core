@@ -16,7 +16,7 @@ pub static Xila_file_system_mode_write_mask: u8 = Mode_type::Write_bit;
 #[no_mangle]
 pub static Xila_file_system_open_create_mask: u8 = Open_type::Create_mask;
 #[no_mangle]
-pub static Xila_file_system_open_create_only_mask: u8 = Open_type::Create_exclusive_mask;
+pub static Xila_file_system_open_create_only_mask: u8 = Open_type::Exclusive_mask;
 #[no_mangle]
 pub static Xila_file_system_open_truncate_mask: u8 = Open_type::Truncate_mask;
 #[no_mangle]
