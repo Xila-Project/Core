@@ -81,7 +81,7 @@ impl Manager_type {
             Environment_variables: HashMap::new(),
         };
 
-        Self::Register_task(Task_identifier, Task_internal, &mut Inner.Tasks)
+        Self::Register_task_internal(Task_identifier, Task_internal, &mut Inner.Tasks)
             .expect("Failed to register root task");
 
         drop(Inner); // Release write lock
@@ -93,6 +93,34 @@ impl Manager_type {
             .expect("Failed to register root thread");
 
         Manager
+    }
+
+    /// Register the current thread as a task.
+    ///
+    /// This function should ONLY be called for testing purposes.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it can lead to undefined behavior if the current thread is already registered.
+    pub unsafe fn Register_task(&self) -> Result_type<()> {
+        let mut Inner = self.0.write()?;
+
+        let Task_identifier = Self::Get_new_task_identifier(&Inner.Tasks)?;
+
+        // Create root task which is its own parent
+        let Task_internal = Task_internal_type {
+            Main_thread: Thread_wrapper_type::Get_current(),
+            Parent: Self::Root_task_identifier,
+            Owner: Root_user_identifier,
+            Environment_variables: HashMap::new(),
+        };
+
+        Inner.Threads.insert(
+            Thread_wrapper_type::Get_current().Get_identifier(),
+            Task_identifier,
+        );
+
+        Self::Register_task_internal(Task_identifier, Task_internal, &mut Inner.Tasks)
     }
 
     fn Get_new_task_identifier(
@@ -127,7 +155,7 @@ impl Manager_type {
     ///
     /// This function check if the task identifier is not already used,
     /// however it doesn't check if the parent task exists.
-    fn Register_task(
+    fn Register_task_internal(
         Task_identifier: Task_identifier_type,
         Task_internal: Task_internal_type,
         Tasks: &mut BTreeMap<Task_identifier_type, Task_internal_type>,
@@ -295,7 +323,7 @@ impl Manager_type {
         let Join_handle =
             Self::New_thread_internal(Child_task_identifier, Name, Stack_size, Function, true)?;
 
-        Self::Register_task(
+        Self::Register_task_internal(
             Child_task_identifier,
             Task_internal_type {
                 Main_thread: Join_handle.Get_thread_wrapper(),
