@@ -34,7 +34,7 @@ pub struct Metadata_type {
 }
 
 impl Metadata_type {
-    pub const Identifer: u8 = 0x01;
+    pub const Identifier: u8 = 0x01;
 
     pub const Default: Self = Self {
         Type: Type_type::File,
