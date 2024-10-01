@@ -226,7 +226,9 @@ pub mod Tests {
         let Buffer = [0x01, 0x02, 0x03];
         let Size = File_system.Write(File, &Buffer).unwrap();
         assert_eq!(Size, Size_type::from(Buffer.len()));
-        File_system.Set_position(File, &Position_type::Start(0)).unwrap();
+        File_system
+            .Set_position(File, &Position_type::Start(0))
+            .unwrap();
 
         // - Read
         let mut Buffer_read = [0; 3];
