@@ -40,6 +40,8 @@ pub enum Error_type {
     File_too_large,
     No_attribute,
     Name_too_long,
+    Corrupted,
+    No_memory,
     Other,
 }
 

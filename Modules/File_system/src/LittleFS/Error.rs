@@ -58,7 +58,7 @@ impl From<Error_type> for crate::Error_type {
     fn from(Error: Error_type) -> Self {
         match Error {
             Error_type::Input_output => Self::Input_output,
-            Error_type::Corrupted => Self::File_system_error,
+            Error_type::Corrupted => Self::Corrupted,
             Error_type::No_Entry => Self::Not_found,
             Error_type::Entry_exists => Self::Already_exists,
             Error_type::Not_directory => Self::Not_directory,
@@ -68,7 +68,7 @@ impl From<Error_type> for crate::Error_type {
             Error_type::File_too_large => Self::File_too_large,
             Error_type::Invalid_parameter => Self::Invalid_input,
             Error_type::No_space_left => Self::File_system_full,
-            Error_type::No_memory => Self::File_system_error,
+            Error_type::No_memory => Self::No_memory,
             Error_type::No_attribute => Self::No_attribute,
             Error_type::Name_too_long => Self::Name_too_long,
             Error_type::Too_many_open_files => Self::Too_many_open_files,

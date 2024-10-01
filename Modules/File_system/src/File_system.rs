@@ -176,13 +176,19 @@ pub mod Tests {
     use super::*;
 
     pub fn Get_test_path() -> Path_owned_type {
-        Path_type::Get_root().Append("test").unwrap()
+        Path_type::Get_root().to_owned()
     }
 
     pub fn Initialize() -> Task_identifier_type {
         let _ = Users::Initialize();
 
-        let _ = Task::Initialize();
+        if let Err(Error) = Task::Initialize() {
+            unsafe {
+                Task::Get_instance().Register_task();
+            }
+        }
+
+        let _ = Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()));
 
         Task::Get_instance()
             .Get_current_task_identifier()
@@ -220,12 +226,13 @@ pub mod Tests {
         let Buffer = [0x01, 0x02, 0x03];
         let Size = File_system.Write(File, &Buffer).unwrap();
         assert_eq!(Size, Size_type::from(Buffer.len()));
+        File_system.Set_position(File, &Position_type::Start(0)).unwrap();
 
         // - Read
         let mut Buffer_read = [0; 3];
         let Size = File_system.Read(File, &mut Buffer_read).unwrap();
-        assert_eq!(Size, Size_type::from(Buffer.len()));
         assert_eq!(Buffer, Buffer_read);
+        assert_eq!(Size, Size_type::from(Buffer.len()));
 
         // - Close
         File_system.Close(File).unwrap();
@@ -249,6 +256,8 @@ pub mod Tests {
         let Buffer = [0x01, 0x02, 0x03];
         let Size = File_system.Write(File, &Buffer).unwrap();
         assert_eq!(Size, Size_type::from(Buffer.len()));
+
+        File_system.Close(File).unwrap();
 
         // - Move
         File_system.Move(&Path, &Path_destination).unwrap();
@@ -284,10 +293,10 @@ pub mod Tests {
         // - Write
         let Buffer = [0x01, 0x02, 0x03];
         let Size = File_system.Write(File, &Buffer).unwrap();
-        assert_eq!(Size, Size_type::from(Buffer.len()));
+        assert_eq!(Buffer.len(), Size.into());
 
         // - Set position
-        let Position = Position_type::Start(1);
+        let Position = Position_type::Start(0);
         let Size = File_system.Set_position(File, &Position).unwrap();
         assert_eq!(
             Size,
@@ -299,8 +308,8 @@ pub mod Tests {
         // - Read
         let mut Buffer_read = [0; 3];
         let Size = File_system.Read(File, &mut Buffer_read).unwrap();
-        assert_eq!(Size, Size_type::from(Buffer.len()));
-        assert_eq!(Buffer[1..], Buffer_read);
+        assert_eq!(Buffer, Buffer_read);
+        assert_eq!(Buffer.len(), Size.into());
 
         // - Close
         File_system.Close(File).unwrap();
