@@ -8,27 +8,20 @@ use crate::{
 
 use super::{littlefs, Configuration_type, Convert_result, Error_type, File_type, Result_type};
 
-struct Inner_type<const Cache_size: usize> {
-    Configuration: littlefs::lfs_config,
-    Read_buffer: [u8; Cache_size],
-    Write_buffer: [u8; Cache_size],
-    Lookahead_buffer: [u8; Cache_size],
-}
-
-struct Inner_2_type {
+struct Inner_type {
     File_system: littlefs::lfs_t,
     Open_files: BTreeMap<Local_file_identifier_type, File_type>,
 }
 
-pub struct File_system_type<const Cache_size: usize> {
-    _Inner: Box<Inner_type<Cache_size>>,
-    Inner_2: RwLock<Inner_2_type>,
+pub struct File_system_type {
+    Inner: RwLock<Inner_type>,
+    Cache_size: usize,
 }
 
-impl<const Cache_size: usize> Drop for File_system_type<Cache_size> {
+impl Drop for File_system_type {
     fn drop(&mut self) {
         // - Close all the open files
-        let mut Inner = self.Inner_2.write().unwrap();
+        let mut Inner = self.Inner.write().unwrap();
 
         let Keys = Inner.Open_files.keys().cloned().collect::<Vec<_>>();
 
@@ -37,6 +30,31 @@ impl<const Cache_size: usize> Drop for File_system_type<Cache_size> {
                 let _ = File.Close(&mut Inner.File_system);
             }
         }
+
+        let Configuration =
+            unsafe { Box::from_raw(Inner.File_system.cfg as *mut littlefs::lfs_config) };
+
+        let _Read_buffer = unsafe {
+            Vec::from_raw_parts(
+                Configuration.read_buffer as *mut u8,
+                0,
+                Configuration.cache_size as usize,
+            )
+        };
+        let _Write_buffer = unsafe {
+            Vec::from_raw_parts(
+                Configuration.prog_buffer as *mut u8,
+                0,
+                Configuration.cache_size as usize,
+            )
+        };
+        let _Look_ahead_buffer = unsafe {
+            Vec::from_raw_parts(
+                Configuration.lookahead_buffer as *mut u8,
+                0,
+                Configuration.lookahead_size as usize,
+            )
+        };
 
         // Get the device
         let _Device =
@@ -47,92 +65,80 @@ impl<const Cache_size: usize> Drop for File_system_type<Cache_size> {
             littlefs::lfs_unmount(&mut Inner.File_system as *mut _);
         }
 
-        // Device is dropped here
+        // Configuration, Buffer sand Device are dropped here
     }
 }
 
-impl<const Cache_size: usize> File_system_type<Cache_size> {
-    pub fn New(Device: Device_type, Configuration: Configuration_type) -> Result_type<Self> {
-        let mut _Inner = Box::new(Inner_type {
-            Configuration: Configuration_type::Default_raw,
-            Read_buffer: [0; Cache_size],
-            Write_buffer: [0; Cache_size],
-            Lookahead_buffer: [0; Cache_size],
-        });
+impl File_system_type {
+    pub fn New(Device: Device_type, Cache_size: usize) -> Result_type<Self> {
+        let Block_size = Device
+            .Get_block_size()
+            .map_err(|_| Error_type::Input_output)?;
+        let Size = Device.Get_size().map_err(|_| Error_type::Input_output)?;
 
-        let Inner_reference = _Inner.as_mut();
+        let Configuration: littlefs::lfs_config = Configuration_type::New(
+            Device,
+            Block_size,
+            usize::from(Size),
+            Cache_size,
+            Cache_size,
+        )
+        .ok_or(Error_type::Invalid_parameter)?
+        .try_into()
+        .map_err(|_| Error_type::Invalid_parameter)?;
 
-        let Configuration: littlefs::lfs_config = Configuration
-            .Set_buffers(
-                Inner_reference.Read_buffer.as_mut_ptr(),
-                Inner_reference.Write_buffer.as_mut_ptr(),
-                Inner_reference.Lookahead_buffer.as_mut_ptr(),
-            )
-            .Set_block_size(
-                Device
-                    .Get_block_size()
-                    .map_err(|_| Error_type::Invalid_parameter)?,
-            )
-            .Set_context(Device)
-            .try_into()
-            .map_err(|_| Error_type::Invalid_parameter)?;
-
-        Inner_reference.Configuration = Configuration;
-
-        let Configuration_pointer = &Inner_reference.Configuration as *const _;
+        let Configuration = Box::new(Configuration);
 
         let mut File_system = MaybeUninit::<littlefs::lfs_t>::uninit();
 
         Convert_result(unsafe {
-            littlefs::lfs_mount(File_system.as_mut_ptr() as *mut _, Configuration_pointer)
+            littlefs::lfs_mount(
+                File_system.as_mut_ptr() as *mut _,
+                Box::into_raw(Configuration),
+            )
         })?;
 
-        let Inner_2 = Inner_2_type {
+        let Inner = Inner_type {
             File_system: unsafe { File_system.assume_init() },
             Open_files: BTreeMap::new(),
         };
 
         Ok(Self {
-            _Inner,
-            Inner_2: RwLock::new(Inner_2),
+            Inner: RwLock::new(Inner),
+            Cache_size,
         })
     }
 
-    pub fn Format(Device: Device_type, Configuration: Configuration_type) -> Result_type<()> {
-        let mut Inner = Box::pin(Inner_type {
-            Configuration: Configuration_type::Default_raw,
-            Read_buffer: [0; Cache_size],
-            Write_buffer: [0; Cache_size],
-            Lookahead_buffer: [0; Cache_size],
-        });
+    pub fn Format(Device: Device_type, Cache_size: usize) -> Result_type<()> {
+        let Block_size = Device
+            .Get_block_size()
+            .map_err(|_| Error_type::Input_output)?;
+        let Size = Device.Get_size().map_err(|_| Error_type::Input_output)?;
 
-        let mut Inner_reference = Inner.as_mut();
+        let Configuration: littlefs::lfs_config = Configuration_type::New(
+            Device,
+            Block_size,
+            usize::from(Size),
+            Cache_size,
+            Cache_size,
+        )
+        .ok_or(Error_type::Invalid_parameter)?
+        .try_into()
+        .map_err(|_| Error_type::Invalid_parameter)?;
 
-        let Configuration: littlefs::lfs_config = Configuration
-            .Set_buffers(
-                Inner_reference.Read_buffer.as_mut_ptr(),
-                Inner_reference.Write_buffer.as_mut_ptr(),
-                Inner_reference.Lookahead_buffer.as_mut_ptr(),
-            )
-            .Set_context(Device)
-            .try_into()
-            .map_err(|_| Error_type::Invalid_parameter)?;
-
-        Inner_reference.Configuration = Configuration;
-
-        let Configuration_pointer = &Inner_reference.Configuration as *const _;
+        let Configuration = Box::new(Configuration);
 
         let mut File_system = MaybeUninit::<littlefs::lfs_t>::uninit();
 
         Convert_result(unsafe {
-            littlefs::lfs_format(File_system.as_mut_ptr(), Configuration_pointer)
+            littlefs::lfs_format(File_system.as_mut_ptr(), Box::into_raw(Configuration))
         })?;
 
         Ok(())
     }
 
     fn Borrow_mutable_inner_2_splited(
-        Inner_2: &mut Inner_2_type,
+        Inner_2: &mut Inner_type,
     ) -> (
         &mut littlefs::lfs_t,
         &mut BTreeMap<Local_file_identifier_type, File_type>,
@@ -141,20 +147,20 @@ impl<const Cache_size: usize> File_system_type<Cache_size> {
     }
 }
 
-unsafe impl<const Buffer_size: usize> Send for File_system_type<Buffer_size> {}
+unsafe impl Send for File_system_type {}
 
-unsafe impl<const Buffer_size: usize> Sync for File_system_type<Buffer_size> {}
+unsafe impl Sync for File_system_type {}
 
-impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_size> {
+impl File_system_traits for File_system_type {
     fn Open(
         &self,
         Task: Task::Task_identifier_type,
         Path: &dyn AsRef<Path_type>,
         Flags: crate::Flags_type,
     ) -> crate::Result_type<Local_file_identifier_type> {
-        let mut Inner = self.Inner_2.write()?;
+        let mut Inner = self.Inner.write()?;
 
-        let File = File_type::Open(&mut Inner.File_system, Task, Path, Flags)?;
+        let File = File_type::Open(&mut Inner.File_system, Task, Path, Flags, self.Cache_size)?;
 
         let File_identifier = Get_new_file_identifier(Task, &Inner.Open_files)?;
 
@@ -166,7 +172,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
     }
 
     fn Close(&self, File: Local_file_identifier_type) -> crate::Result_type<()> {
-        let mut Inner = self.Inner_2.write()?;
+        let mut Inner = self.Inner.write()?;
 
         let File = Inner
             .Open_files
@@ -179,7 +185,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
     }
 
     fn Close_all(&self, Task: Task::Task_identifier_type) -> crate::Result_type<()> {
-        let mut Inner = self.Inner_2.write()?;
+        let mut Inner = self.Inner.write()?;
 
         // Get all the keys of the open files that belong to the task
         let Keys = Inner
@@ -205,7 +211,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
     ) -> crate::Result_type<Local_file_identifier_type> {
         let (Task, _) = File.Split();
 
-        let mut Inner = self.Inner_2.write()?;
+        let mut Inner = self.Inner.write()?;
 
         let File = Inner
             .Open_files
@@ -228,7 +234,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
         New_task: Task::Task_identifier_type,
         File: Local_file_identifier_type,
     ) -> crate::Result_type<Local_file_identifier_type> {
-        let mut Inner = self.Inner_2.write()?;
+        let mut Inner = self.Inner.write()?;
 
         let File = Inner
             .Open_files
@@ -248,7 +254,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
         let Path =
             CString::new(Path.as_ref().As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
-        let mut Inner = self.Inner_2.write()?;
+        let mut Inner = self.Inner.write()?;
 
         Convert_result(unsafe {
             littlefs::lfs_remove(&mut Inner.File_system as *mut _, Path.as_ptr())
@@ -262,7 +268,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
         File: Local_file_identifier_type,
         Buffer: &mut [u8],
     ) -> crate::Result_type<Size_type> {
-        let mut Inner = self.Inner_2.write()?;
+        let mut Inner = self.Inner.write()?;
 
         let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
@@ -278,7 +284,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
         File: Local_file_identifier_type,
         Buffer: &[u8],
     ) -> crate::Result_type<Size_type> {
-        let mut Inner = self.Inner_2.write()?;
+        let mut Inner = self.Inner.write()?;
 
         let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
@@ -300,7 +306,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
         let Destination = CString::new(Destination.as_ref().As_str())
             .map_err(|_| Error_type::Invalid_parameter)?;
 
-        let mut Inner = self.Inner_2.write()?;
+        let mut Inner = self.Inner.write()?;
 
         Convert_result(unsafe {
             littlefs::lfs_rename(
@@ -318,7 +324,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
         File: Local_file_identifier_type,
         Position: &crate::Position_type,
     ) -> crate::Result_type<Size_type> {
-        let mut Inner = self.Inner_2.write()?;
+        let mut Inner = self.Inner.write()?;
 
         let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
@@ -330,7 +336,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
     }
 
     fn Flush(&self, File: Local_file_identifier_type) -> crate::Result_type<()> {
-        let mut Inner = self.Inner_2.write()?;
+        let mut Inner = self.Inner.write()?;
 
         let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
@@ -345,7 +351,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
         &self,
         File: Local_file_identifier_type,
     ) -> crate::Result_type<Statistics_type> {
-        let mut Inner = self.Inner_2.write()?;
+        let mut Inner = self.Inner.write()?;
 
         let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
@@ -358,7 +364,7 @@ impl<const Buffer_size: usize> File_system_traits for File_system_type<Buffer_si
 
     fn Get_mode(&self, File: Local_file_identifier_type) -> crate::Result_type<Mode_type> {
         Ok(self
-            .Inner_2
+            .Inner
             .read()?
             .Open_files
             .get(&File)
@@ -376,21 +382,26 @@ mod Tests {
 
     use super::*;
 
-    struct Mock_device_type<const Size: usize>(RwLock<(Box<[u8; Size]>, usize)>);
+    struct Mock_device_type(RwLock<(Vec<u8>, usize)>);
 
-    impl<const Size: usize> Mock_device_type<Size> {
+    impl Mock_device_type {
         const Block_size: usize = 512;
 
-        pub fn New() -> Self {
-            Self(RwLock::new((Box::new([0; Size]), 0)))
+        pub fn New(Size: usize) -> Self {
+            assert!(Size % Self::Block_size == 0);
+
+            let mut Data: Vec<u8> = vec![];
+            Data.resize(Size, 0);
+
+            Self(RwLock::new((Data, 0)))
         }
 
-        pub const fn Get_block_count(&self) -> usize {
-            Size / Self::Block_size
+        pub fn Get_block_count(&self) -> usize {
+            self.0.read().unwrap().0.len() / Self::Block_size
         }
     }
 
-    impl<const Size: usize> Device_trait for Mock_device_type<Size> {
+    impl Device_trait for Mock_device_type {
         fn Read(&self, Buffer: &mut [u8]) -> crate::Result_type<Size_type> {
             let mut Inner = self
                 .0
@@ -466,18 +477,16 @@ mod Tests {
         }
     }
 
-    const Cache_size: usize = 512;
+    const Cache_size: usize = 256;
 
-    fn Initialize() -> File_system_type<Cache_size> {
-        let Mock_device = Mock_device_type::<204_800_000>::New();
-
-        let Configuration =
-            Configuration_type::default().Set_block_count(Mock_device.Get_block_count());
+    fn Initialize() -> File_system_type {
+        let Mock_device = Mock_device_type::New(2048 * 512);
 
         let Device = Device_type::New(Arc::new(Mock_device));
 
-        File_system_type::<Cache_size>::Format(Device.clone(), Configuration.clone());
-        File_system_type::<Cache_size>::New(Device, Configuration).unwrap()
+        File_system_type::Format(Device.clone(), Cache_size).unwrap();
+
+        File_system_type::New(Device, Cache_size).unwrap()
     }
 
     #[test]
