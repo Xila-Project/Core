@@ -1,16 +1,23 @@
 use crate::Type_type;
 
-use super::Inode_type;
+use super::{Inode_type, Size_type};
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Entry_type {
     Inode: Inode_type,
     Name: String,
     Type: Type_type,
+    Size: Size_type,
 }
 
 impl Entry_type {
-    pub fn New(Inode: Inode_type, Name: String, Type: Type_type) -> Self {
-        Self { Inode, Name, Type }
+    pub fn New(Inode: Inode_type, Name: String, Type: Type_type, Size: Size_type) -> Self {
+        Self {
+            Inode,
+            Name,
+            Type,
+            Size,
+        }
     }
 
     pub fn Get_inode(&self) -> Inode_type {
