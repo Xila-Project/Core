@@ -76,6 +76,6 @@ impl Device_trait for File_drive_device_type {
     }
 
     fn Erase(&self) -> File_system::Result_type<()> {
-        self.0.write()?.set_len(0).map_err(|Error| Error.into())
+        Ok(())
     }
 }
