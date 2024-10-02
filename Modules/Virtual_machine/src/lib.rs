@@ -122,19 +122,19 @@ pub fn Instantiate_test_environment(
     let Module = Module_type::From_buffer(&Runtime, Binary_buffer, "main").unwrap();
 
     Virtual_file_system
-        .Add_device(
+        .Mount_device(
             &"stdin",
             Device_type::New(Arc::new(Standard_in_device_type)),
         )
         .expect("Failed to add stdin device");
     Virtual_file_system
-        .Add_device(
+        .Mount_device(
             &"stdout",
             Device_type::New(Arc::new(Standard_in_device_type)),
         )
         .expect("Failed to add stdout device");
     Virtual_file_system
-        .Add_device(
+        .Mount_device(
             &"stderr",
             Device_type::New(Arc::new(Standard_in_device_type)),
         )

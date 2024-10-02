@@ -17,14 +17,14 @@ pub fn Mount_devices(
         New_touchscreen(Resolution).expect("Error creating touchscreen");
 
     Virtual_file_systems
-        .Add_device(
+        .Mount_device(
             &"/Devices/Pointer",
             Device_type::New(Arc::new(Pointer_device)),
         )
         .expect("Error adding pointer device");
 
     Virtual_file_systems
-        .Add_device(
+        .Mount_device(
             &"/Devices/Screen",
             Device_type::New(Arc::new(Screen_device)),
         )
