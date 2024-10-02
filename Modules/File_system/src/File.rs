@@ -57,12 +57,12 @@ impl File_type {
 
     pub fn Create_unnamed_pipe(
         File_system: &'static Virtual_file_system_type,
-        Size: Size_type,
+        Size: usize,
         Status: Status_type,
         Task: Task_identifier_type,
     ) -> Result_type<(Self, Self)> {
         let (File_identifier_read, File_identifier_write) =
-            File_system.Create_unnamed_pipe(Size, Status, Task)?;
+            File_system.Create_unnamed_pipe(Task, Status, Size)?;
 
         Ok((
             File_type {
