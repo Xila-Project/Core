@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 
-use crate::{Inode_type, Local_file_identifier_type, Mode_type, Statistics_type};
+use crate::{
+    Entry_type, Inode_type, Local_file_identifier_type, Metadata_type, Mode_type, Statistics_type,
+};
 
 use super::{
     Error_type, Flags_type, Path_type, Permissions_type, Position_type, Result_type, Size_type,
@@ -64,12 +66,12 @@ pub trait File_system_traits: Send + Sync {
         File: Local_file_identifier_type,
     ) -> Result_type<Local_file_identifier_type>;
 
-    /// Delete a file.
+    /// Remove a file or a directory.
     ///
     /// # Errors
     /// Returns an error if the file doesn't exists.
     /// Returns an error if the user / group doesn't have the permission to delete the file (no write permission on parent directory).
-    fn Delete(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()>;
+    fn Remove(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()>;
     // - - File operations
 
     /// Read a file.
@@ -104,38 +106,43 @@ pub trait File_system_traits: Send + Sync {
 
     fn Flush(&self, File: Local_file_identifier_type) -> Result_type<()>;
 
-    // - Metadata
-    // - - Size
-
-    // - - Security
-
-    /// Set the owner of the file.
-    /// If `User` is `None`, the owner is not changed.
-    /// If `Group` is `None`, the group is not changed.
-    /// If both are `None`, the owner and group are not changed.
-    ///
-    /// # Errors
-    /// Returns an error if the file doesn't exists.
-    /// Returns an error if the user / group doesn't have the permission to change the owner (not the current owner or not the root user).
-    fn Set_owner(
-        &self,
-        _: &dyn AsRef<Path_type>,
-        _: Option<User_identifier_type>,
-        _: Option<Group_identifier_type>,
-    ) -> Result_type<()> {
-        Ok(())
-    }
-
-    /// Set the permissions of the file.
-    ///
-    /// # Errors
-    /// Returns an error if the file doesn't exists.
-    /// Returns an error if the user / group doesn't have the permission to set the permissions (no execute permission on parent directory).
-    fn Set_permissions(&self, _: &dyn AsRef<Path_type>, _: Permissions_type) -> Result_type<()> {
-        Ok(())
-    }
-
     // - Directory
+
+    fn Create_directory(
+        &self,
+        Path: &dyn AsRef<Path_type>,
+        Task: Task_identifier_type,
+    ) -> Result_type<()>;
+
+    fn Open_directory(
+        &self,
+        Path: &dyn AsRef<Path_type>,
+        Task: Task_identifier_type,
+    ) -> Result_type<Local_file_identifier_type>;
+
+    fn Read_directory(&self, File: Local_file_identifier_type) -> Result_type<Entry_type>;
+
+    fn Set_position_directory(
+        &self,
+        File: Local_file_identifier_type,
+        Position: Size_type,
+    ) -> Result_type<()>;
+
+    fn Get_position_directory(&self, File: Local_file_identifier_type) -> Result_type<Size_type>;
+
+    fn Rewind_directory(&self, File: Local_file_identifier_type) -> Result_type<()>;
+
+    fn Close_directory(&self, File: Local_file_identifier_type) -> Result_type<()>;
+
+    // - Metadata
+
+    fn Set_metadata(
+        &self,
+        Path: &dyn AsRef<Path_type>,
+        Metadata: &Metadata_type,
+    ) -> Result_type<()>;
+
+    fn Get_metadata(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Metadata_type>;
 
     fn Get_statistics(&self, File: Local_file_identifier_type) -> Result_type<Statistics_type>;
 
@@ -169,9 +176,11 @@ pub fn Get_new_inode<T>(Map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type
 
 #[cfg(test)]
 pub mod Tests {
+    use std::mem::MaybeUninit;
+
     use Users::Root_user_identifier;
 
-    use crate::{Open_type, Path_owned_type};
+    use crate::{Entry_type, Open_type, Path_owned_type, Type_type};
 
     use super::*;
 
@@ -209,7 +218,7 @@ pub mod Tests {
         File_system.Close(File).unwrap();
 
         // - Delete
-        File_system.Delete(&Path).unwrap();
+        File_system.Remove(&Path).unwrap();
     }
 
     pub fn Test_read_write(File_system: impl File_system_traits) {
@@ -240,7 +249,7 @@ pub mod Tests {
         File_system.Close(File).unwrap();
 
         // - Delete
-        File_system.Delete(&Path).unwrap();
+        File_system.Remove(&Path).unwrap();
     }
 
     pub fn Test_move(File_system: impl File_system_traits) {
@@ -279,7 +288,7 @@ pub mod Tests {
         File_system.Close(File).unwrap();
 
         // - Delete
-        File_system.Delete(&Path_destination).unwrap();
+        File_system.Remove(&Path_destination).unwrap();
     }
 
     pub fn Test_set_position(File_system: impl File_system_traits) {
@@ -317,7 +326,7 @@ pub mod Tests {
         File_system.Close(File).unwrap();
 
         // - Delete
-        File_system.Delete(&Path).unwrap();
+        File_system.Remove(&Path).unwrap();
     }
 
     pub fn Test_flush(File_system: impl File_system_traits) {
@@ -327,65 +336,205 @@ pub mod Tests {
 
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
 
-        // - Open
         let File = File_system.Open(Task, &Path, Flags).unwrap();
 
-        // - Write
         let Buffer = [0x01, 0x02, 0x03];
         let Size = File_system.Write(File, &Buffer).unwrap();
         assert_eq!(Size, Size_type::from(Buffer.len()));
 
-        // - Flush
         File_system.Flush(File).unwrap();
 
-        // - Close
         File_system.Close(File).unwrap();
 
-        // - Delete
-        File_system.Delete(&Path).unwrap();
+        File_system.Remove(&Path).unwrap();
     }
 
-    pub fn Test_set_owner(File_system: impl File_system_traits) {
+    pub fn Test_set_get_metadata(File_system: impl File_system_traits) {
         let Task = Initialize();
 
         let Path = Get_test_path().Append("Test_set_owner").unwrap();
 
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
 
-        // - Open
         let File = File_system.Open(Task, &Path, Flags).unwrap();
 
-        // - Set owner
-        File_system
-            .Set_owner(&Path, Some(Root_user_identifier), None)
-            .unwrap();
+        let Metadata = Metadata_type::Get_default(Task, Flags).unwrap();
 
-        // - Close
+        File_system.Set_metadata(&Path, &Metadata).unwrap();
+
+        let Metadata_read = File_system.Get_metadata(&Path).unwrap();
+
+        assert_eq!(Metadata, Metadata_read);
+
         File_system.Close(File).unwrap();
 
-        // - Delete
-        File_system.Delete(&Path).unwrap();
+        File_system.Remove(&Path).unwrap();
     }
 
-    pub fn Test_set_permissions(File_system: impl File_system_traits) {
+    pub fn Test_read_directory(File_system: impl File_system_traits) {
         let Task = Initialize();
 
-        let Path = Get_test_path().Append("Test_set_permissions").unwrap();
+        // Create multiple files
+        for i in 0..10 {
+            let Flags = Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None);
+            let File = File_system
+                .Open(Task, &format!("/Test{}", i).as_str(), Flags)
+                .unwrap();
+            File_system.Close(File);
+        }
 
-        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+        let Path = Path_type::New("/").unwrap();
+        let Directory = File_system.Open_directory(&Path, Task).unwrap();
 
-        // - Open
-        let File = File_system.Open(Task, &Path, Flags).unwrap();
+        let Current_directory = File_system.Read_directory(Directory).unwrap();
+        assert_eq!(*Current_directory.Get_name(), ".");
+        assert_eq!(Current_directory.Get_type(), Type_type::Directory);
 
-        // - Set permissions
+        let Parent_directory = File_system.Read_directory(Directory).unwrap();
+        assert_eq!(*Parent_directory.Get_name(), "..");
+        assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
+
+        for i in 0..10 {
+            let Entry = File_system.Read_directory(Directory).unwrap();
+
+            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(Entry.Get_type(), Type_type::File);
+        }
+
+        File_system.Close_directory(Directory).unwrap();
+    }
+
+    pub fn Test_set_position_directory(File_system: impl File_system_traits) {
+        let Task = Initialize();
+
+        // Create multiple files
+        for i in 0..10 {
+            let Flags = Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None);
+            let File = File_system
+                .Open(Task, &format!("/Test{}", i).as_str(), Flags)
+                .unwrap();
+            File_system.Close(File);
+        }
+
+        let Directory = File_system.Open_directory(&"/", Task).unwrap();
+
+        let Current_directory = File_system.Read_directory(Directory).unwrap();
+        assert_eq!(*Current_directory.Get_name(), ".");
+        assert_eq!(Current_directory.Get_type(), Type_type::Directory);
+
+        let Parent_directory = File_system.Read_directory(Directory).unwrap();
+        assert_eq!(*Parent_directory.Get_name(), "..");
+        assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
+
+        let Position = File_system.Get_position_directory(Directory).unwrap();
+
+        for i in 0..10 {
+            let Entry = File_system.Read_directory(Directory).unwrap();
+
+            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(Entry.Get_type(), Type_type::File);
+        }
+
         File_system
-            .Set_permissions(&Path, Permissions_type::All_read_write)
+            .Set_position_directory(Directory, Position)
             .unwrap();
 
-        // - Close
-        File_system.Close(File).unwrap();
+        for i in 0..10 {
+            let Entry = File_system.Read_directory(Directory).unwrap();
 
-        // - Delete
-        File_system.Delete(&Path).unwrap();
+            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(Entry.Get_type(), Type_type::File);
+        }
+    }
+
+    pub fn Test_rewind_directory(File_system: impl File_system_traits) {
+        let Task = Initialize();
+
+        // Create multiple files
+        for i in 0..10 {
+            let Flags = Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None);
+            let File = File_system
+                .Open(Task, &format!("/Test{}", i).as_str(), Flags)
+                .unwrap();
+            File_system.Close(File);
+        }
+
+        let Directory = File_system.Open_directory(&"/", Task).unwrap();
+
+        let Current_directory = File_system.Read_directory(Directory).unwrap();
+        assert_eq!(*Current_directory.Get_name(), ".");
+        assert_eq!(Current_directory.Get_type(), Type_type::Directory);
+
+        let Parent_directory = File_system.Read_directory(Directory).unwrap();
+        assert_eq!(*Parent_directory.Get_name(), "..");
+        assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
+
+        for i in 0..10 {
+            let Entry = File_system.Read_directory(Directory).unwrap();
+
+            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(Entry.Get_type(), Type_type::File);
+        }
+
+        File_system.Rewind_directory(Directory).unwrap();
+
+        let Current_directory = File_system.Read_directory(Directory).unwrap();
+        assert_eq!(*Current_directory.Get_name(), ".");
+        assert_eq!(Current_directory.Get_type(), Type_type::Directory);
+
+        let Parent_directory = File_system.Read_directory(Directory).unwrap();
+        assert_eq!(*Parent_directory.Get_name(), "..");
+        assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
+
+        for i in 0..10 {
+            let Entry = File_system.Read_directory(Directory).unwrap();
+
+            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(Entry.Get_type(), Type_type::File);
+        }
+
+        File_system.Close_directory(Directory).unwrap();
+    }
+
+    pub fn Test_create_remove_directory(File_system: impl File_system_traits) {
+        let Task = Initialize();
+
+        let Path = Get_test_path().Append("Test_create_directory").unwrap();
+
+        File_system.Create_directory(&Path, Task).unwrap();
+
+        {
+            let Root_directory = File_system.Open_directory(&"/", Task).unwrap();
+
+            let Current_directory = File_system.Read_directory(Root_directory).unwrap();
+            assert_eq!(*Current_directory.Get_name(), ".");
+            assert_eq!(Current_directory.Get_type(), Type_type::Directory);
+
+            let Parent_directory = File_system.Read_directory(Root_directory).unwrap();
+            assert_eq!(*Parent_directory.Get_name(), "..");
+            assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
+
+            let Directory = File_system.Read_directory(Root_directory).unwrap();
+            assert_eq!(*Directory.Get_name(), "Test_create_directory");
+            assert_eq!(Directory.Get_type(), Type_type::Directory);
+
+            File_system.Close_directory(Root_directory).unwrap();
+        }
+
+        {
+            let Directory = File_system.Open_directory(&Path, Task).unwrap();
+
+            let Current_directory = File_system.Read_directory(Directory).unwrap();
+
+            assert_eq!(*Current_directory.Get_name(), ".");
+            assert_eq!(Current_directory.Get_type(), Type_type::Directory);
+
+            let Parent_directory = File_system.Read_directory(Directory).unwrap();
+            assert_eq!(*Parent_directory.Get_name(), "..");
+            assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
+
+            File_system.Close_directory(Directory).unwrap();
+        }
+        File_system.Remove(&Path).unwrap();
     }
 }
