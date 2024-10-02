@@ -24,7 +24,7 @@ impl File_system_type {
         }))
     }
 
-    fn Create_unnamed_pipe(
+    pub fn Create_unnamed_pipe(
         &self,
         Task: Task_identifier_type,
         Status: Status_type,
@@ -87,7 +87,7 @@ impl File_system_type {
         Ok(Inode)
     }
 
-    fn Open(
+    pub fn Open(
         &self,
         Inode: Inode_type,
         Task: Task_identifier_type,
@@ -108,7 +108,7 @@ impl File_system_type {
         Ok(Local_file_identifier)
     }
 
-    fn Close(&self, File: Local_file_identifier_type) -> Result_type<()> {
+    pub fn Close(&self, File: Local_file_identifier_type) -> Result_type<()> {
         self.0
             .write()?
             .Open_pipes
@@ -118,7 +118,7 @@ impl File_system_type {
         Ok(())
     }
 
-    fn Close_all(&self, Task: Task_identifier_type) -> Result_type<()> {
+    pub fn Close_all(&self, Task: Task_identifier_type) -> Result_type<()> {
         let mut Inner = self.0.write()?;
 
         // Get all the keys of the open pipes that belong to the task
@@ -139,7 +139,7 @@ impl File_system_type {
         Ok(())
     }
 
-    fn Duplicate_file_identifier(
+    pub fn Duplicate_file_identifier(
         &self,
         File: Local_file_identifier_type,
     ) -> Result_type<Local_file_identifier_type> {
@@ -160,7 +160,7 @@ impl File_system_type {
         Ok(New_file)
     }
 
-    fn Transfert_file_identifier(
+    pub fn Transfert_file_identifier(
         &self,
         New_task: Task_identifier_type,
         File: Local_file_identifier_type,
@@ -179,7 +179,7 @@ impl File_system_type {
         Ok(New_file)
     }
 
-    fn Delete(&self, Inode: Inode_type) -> Result_type<()> {
+    pub fn Remove(&self, Inode: Inode_type) -> Result_type<()> {
         self.0
             .write()?
             .Named_pipes
@@ -189,7 +189,11 @@ impl File_system_type {
         Ok(())
     }
 
-    fn Read(&self, File: Local_file_identifier_type, Buffer: &mut [u8]) -> Result_type<Size_type> {
+    pub fn Read(
+        &self,
+        File: Local_file_identifier_type,
+        Buffer: &mut [u8],
+    ) -> Result_type<Size_type> {
         let Inner = self.0.read()?;
 
         let (Pipe, Flags) = Inner
@@ -215,7 +219,7 @@ impl File_system_type {
         }
     }
 
-    fn Write(&self, File: Local_file_identifier_type, Buffer: &[u8]) -> Result_type<Size_type> {
+    pub fn Write(&self, File: Local_file_identifier_type, Buffer: &[u8]) -> Result_type<Size_type> {
         let Inner = self.0.read()?;
 
         let (Pipe, Flags) = Inner
@@ -241,19 +245,7 @@ impl File_system_type {
         }
     }
 
-    fn Set_position(
-        &self,
-        _: Local_file_identifier_type,
-        _: &crate::Position_type,
-    ) -> Result_type<Size_type> {
-        Err(Error_type::Unsupported_operation)
-    }
-
-    fn Flush(&self, _: Local_file_identifier_type) -> Result_type<()> {
-        Ok(())
-    }
-
-    fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
+    pub fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
         Ok(self
             .0
             .read()?
@@ -261,8 +253,7 @@ impl File_system_type {
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
             .1
-            .Get_mode()
-            .clone())
+            .Get_mode())
     }
 }
 
@@ -355,7 +346,7 @@ mod Tests {
         let buffer_size = 1024;
 
         let inode = fs.Create_named_pipe(buffer_size).unwrap();
-        fs.Delete(inode).unwrap();
+        fs.Remove(inode).unwrap();
 
         assert!(!fs.0.read().unwrap().Named_pipes.contains_key(&inode));
     }
