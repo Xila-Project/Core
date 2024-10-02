@@ -116,12 +116,12 @@ impl Open_type {
     pub const Create_mask: u8 = 1 << 0;
     pub const Exclusive_mask: u8 = 1 << 1;
     pub const Truncate_mask: u8 = 1 << 2;
-    pub const Directory_mask: u8 = 1 << 3;
 
-    pub const Size: u8 = 4;
+    pub const Size: u8 = 3;
 
     pub const None: Self = Self::New(false, false, false, false);
 
+    pub const Create: Self = Self::New(true, false, false, false);
     pub const Create_only: Self = Self::New(true, true, false, false);
 
     pub const fn New(Create: bool, Create_only: bool, Truncate: bool, Directory: bool) -> Self {
@@ -167,14 +167,6 @@ impl Open_type {
 
     pub const fn Set_truncate(self, Value: bool) -> Self {
         self.Set_bit(Self::Truncate_mask, Value)
-    }
-
-    pub const fn Get_directory(&self) -> bool {
-        self.Get_bit(Self::Directory_mask)
-    }
-
-    pub const fn Set_directory(self, Value: bool) -> Self {
-        self.Set_bit(Self::Directory_mask, Value)
     }
 }
 
