@@ -380,37 +380,6 @@ mod Tests {
     }
 
     #[test]
-    fn Test_set_position_unsupported() {
-        let fs = File_system_type::New();
-        let task_id = Task_identifier_type::New(0);
-        let status = Status_type::default();
-        let buffer_size = 1024;
-
-        let (read_file, _) = fs
-            .Create_unnamed_pipe(task_id, status, buffer_size)
-            .unwrap();
-
-        let result = fs.Set_position(read_file, &crate::Position_type::Start(0));
-        assert_eq!(result, Err(Error_type::Unsupported_operation));
-    }
-
-    #[test]
-    fn Test_flush() {
-        let fs = File_system_type::New();
-        let task_id = Task_identifier_type::New(0);
-        let status = Status_type::default();
-
-        let buffer_size = 1024;
-
-        let (read_file, _) = fs
-            .Create_unnamed_pipe(task_id, status, buffer_size)
-            .unwrap();
-
-        let result = fs.Flush(read_file);
-        assert!(result.is_ok());
-    }
-
-    #[test]
     fn Test_get_mode() {
         let fs = File_system_type::New();
         let task_id = Task_identifier_type::New(0);

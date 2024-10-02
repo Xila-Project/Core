@@ -121,49 +121,40 @@ pub fn Instantiate_test_environment(
 
     let Module = Module_type::From_buffer(&Runtime, Binary_buffer, "main").unwrap();
 
+    let Task = Task_manager.Get_current_task_identifier().unwrap();
+
     Virtual_file_system
         .Mount_device(
-            &"stdin",
+            Task,
+            "stdin",
             Device_type::New(Arc::new(Standard_in_device_type)),
         )
         .expect("Failed to add stdin device");
     Virtual_file_system
         .Mount_device(
-            &"stdout",
+            Task,
+            "stdout",
             Device_type::New(Arc::new(Standard_in_device_type)),
         )
         .expect("Failed to add stdout device");
     Virtual_file_system
         .Mount_device(
-            &"stderr",
+            Task,
+            "stderr",
             Device_type::New(Arc::new(Standard_in_device_type)),
         )
         .expect("Failed to add stderr device");
 
-    let Task_identifier = Task_manager.Get_current_task_identifier().unwrap();
-
     let Stdin = Virtual_file_system
-        .Open(
-            &"stdin",
-            File_system::Mode_type::Read_only.into(),
-            Task_identifier,
-        )
+        .Open(&"stdin", File_system::Mode_type::Read_only.into(), Task)
         .expect("Failed to open stdin");
 
     let Stdout = Virtual_file_system
-        .Open(
-            &"stdout",
-            File_system::Mode_type::Write_only.into(),
-            Task_identifier,
-        )
+        .Open(&"stdout", File_system::Mode_type::Write_only.into(), Task)
         .expect("Failed to open stdout");
 
     let Stderr = Virtual_file_system
-        .Open(
-            &"stderr",
-            File_system::Mode_type::Write_only.into(),
-            Task_identifier,
-        )
+        .Open(&"stderr", File_system::Mode_type::Write_only.into(), Task)
         .expect("Failed to open stderr");
 
     let Instance = Instance_type::New(

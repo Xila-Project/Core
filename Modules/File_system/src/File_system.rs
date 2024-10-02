@@ -4,12 +4,17 @@ use crate::{
     Entry_type, Inode_type, Local_file_identifier_type, Metadata_type, Mode_type, Statistics_type,
 };
 
-use super::{
-    Error_type, Flags_type, Path_type, Permissions_type, Position_type, Result_type, Size_type,
-};
+use super::{Error_type, Flags_type, Path_type, Position_type, Result_type, Size_type};
 
 use Task::Task_identifier_type;
-use Users::{Group_identifier_type, User_identifier_type};
+
+#[macro_export]
+macro_rules! Create_file_system {
+    ($file_system:expr) => {
+        std::boxed::Box::new($file_system)
+    };
+    () => {};
+}
 
 /// File system trait.
 ///
@@ -174,38 +179,111 @@ pub fn Get_new_inode<T>(Map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type
     Ok(Inode)
 }
 
-#[cfg(test)]
 pub mod Tests {
-    use std::mem::MaybeUninit;
+    use std::sync::RwLock;
 
-    use Users::Root_user_identifier;
-
-    use crate::{Entry_type, Open_type, Path_owned_type, Type_type};
+    use crate::{Device_trait, Open_type, Path_owned_type, Type_type};
 
     use super::*;
+
+    pub struct Memory_device_type<const Block_size: usize>(RwLock<(Vec<u8>, usize)>);
+
+    impl<const Block_size: usize> Memory_device_type<Block_size> {
+        pub fn New(Size: usize) -> Self {
+            assert!(Size % Block_size == 0);
+
+            let Data: Vec<u8> = vec![0; Size];
+
+            Self(RwLock::new((Data, 0)))
+        }
+
+        pub fn Get_block_count(&self) -> usize {
+            self.0.read().unwrap().0.len() / Block_size
+        }
+    }
+
+    impl<const Block_size: usize> Device_trait for Memory_device_type<Block_size> {
+        fn Read(&self, Buffer: &mut [u8]) -> crate::Result_type<Size_type> {
+            let mut Inner = self
+                .0
+                .try_write()
+                .map_err(|_| crate::Error_type::Ressource_busy)?;
+            let (Data, Position) = &mut *Inner;
+
+            let Read_size = Buffer.len().min(Data.len().saturating_sub(*Position));
+            Buffer[..Read_size].copy_from_slice(&Data[*Position..*Position + Read_size]);
+            *Position += Read_size;
+            Ok(Read_size.into())
+        }
+
+        fn Write(&self, Buffer: &[u8]) -> crate::Result_type<Size_type> {
+            let mut Inner = self
+                .0
+                .write()
+                .map_err(|_| crate::Error_type::Ressource_busy)?;
+            let (Data, Position) = &mut *Inner;
+
+            Data[*Position..*Position + Buffer.len()].copy_from_slice(Buffer);
+            *Position += Buffer.len();
+            Ok(Buffer.len().into())
+        }
+
+        fn Get_size(&self) -> crate::Result_type<Size_type> {
+            let Inner = self
+                .0
+                .read()
+                .map_err(|_| crate::Error_type::Ressource_busy)?;
+            Ok(Size_type::New(Inner.0.len() as u64))
+        }
+
+        fn Set_position(&self, Position: &Position_type) -> crate::Result_type<Size_type> {
+            let mut Inner = self
+                .0
+                .write()
+                .map_err(|_| crate::Error_type::Ressource_busy)?;
+            let (Data, Device_position) = &mut *Inner;
+
+            match Position {
+                Position_type::Start(Position) => *Device_position = *Position as usize,
+                Position_type::Current(Position) => {
+                    *Device_position = (*Device_position as isize + *Position as isize) as usize
+                }
+                Position_type::End(Position) => {
+                    *Device_position = (Data.len() as isize - *Position as isize) as usize
+                }
+            }
+
+            Ok(Size_type::New(*Device_position as u64))
+        }
+
+        fn Erase(&self) -> crate::Result_type<()> {
+            let mut Inner = self
+                .0
+                .write()
+                .map_err(|_| crate::Error_type::Ressource_busy)?;
+
+            let (Data, Position) = &mut *Inner;
+
+            Data[*Position..*Position + Block_size].fill(0);
+
+            Ok(())
+        }
+
+        fn Flush(&self) -> crate::Result_type<()> {
+            Ok(())
+        }
+
+        fn Get_block_size(&self) -> crate::Result_type<usize> {
+            Ok(Block_size)
+        }
+    }
 
     pub fn Get_test_path() -> Path_owned_type {
         Path_type::Get_root().to_owned()
     }
 
-    pub fn Initialize() -> Task_identifier_type {
-        let _ = Users::Initialize();
-
-        if let Err(Error) = Task::Initialize() {
-            unsafe {
-                Task::Get_instance().Register_task();
-            }
-        }
-
-        let _ = Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()));
-
-        Task::Get_instance()
-            .Get_current_task_identifier()
-            .expect("Error getting current task identifier")
-    }
-
     pub fn Test_open_close_delete(File_system: impl File_system_traits) {
-        let Task = Initialize();
+        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
 
         let Path = Get_test_path().Append("Test_open_close_delete").unwrap();
 
@@ -222,7 +300,7 @@ pub mod Tests {
     }
 
     pub fn Test_read_write(File_system: impl File_system_traits) {
-        let Task = Initialize();
+        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
 
         let Path = Get_test_path().Append("Test_read_write").unwrap();
 
@@ -253,7 +331,7 @@ pub mod Tests {
     }
 
     pub fn Test_move(File_system: impl File_system_traits) {
-        let Task = Initialize();
+        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
 
         let Path = Get_test_path().Append("Test_move").unwrap();
         let Path_destination = Get_test_path().Append("Test_move_destination").unwrap();
@@ -292,7 +370,7 @@ pub mod Tests {
     }
 
     pub fn Test_set_position(File_system: impl File_system_traits) {
-        let Task = Initialize();
+        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
 
         let Path = Get_test_path().Append("Test_set_position").unwrap();
 
@@ -330,7 +408,7 @@ pub mod Tests {
     }
 
     pub fn Test_flush(File_system: impl File_system_traits) {
-        let Task = Initialize();
+        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
 
         let Path = Get_test_path().Append("Test_flush").unwrap();
 
@@ -350,7 +428,7 @@ pub mod Tests {
     }
 
     pub fn Test_set_get_metadata(File_system: impl File_system_traits) {
-        let Task = Initialize();
+        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
 
         let Path = Get_test_path().Append("Test_set_owner").unwrap();
 
@@ -358,7 +436,7 @@ pub mod Tests {
 
         let File = File_system.Open(Task, &Path, Flags).unwrap();
 
-        let Metadata = Metadata_type::Get_default(Task, Flags).unwrap();
+        let Metadata = Metadata_type::Get_default(Task, Type_type::File).unwrap();
 
         File_system.Set_metadata(&Path, &Metadata).unwrap();
 
@@ -372,7 +450,7 @@ pub mod Tests {
     }
 
     pub fn Test_read_directory(File_system: impl File_system_traits) {
-        let Task = Initialize();
+        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
 
         // Create multiple files
         for i in 0..10 {
@@ -380,7 +458,7 @@ pub mod Tests {
             let File = File_system
                 .Open(Task, &format!("/Test{}", i).as_str(), Flags)
                 .unwrap();
-            File_system.Close(File);
+            File_system.Close(File).unwrap();
         }
 
         let Path = Path_type::New("/").unwrap();
@@ -405,7 +483,7 @@ pub mod Tests {
     }
 
     pub fn Test_set_position_directory(File_system: impl File_system_traits) {
-        let Task = Initialize();
+        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
 
         // Create multiple files
         for i in 0..10 {
@@ -413,7 +491,7 @@ pub mod Tests {
             let File = File_system
                 .Open(Task, &format!("/Test{}", i).as_str(), Flags)
                 .unwrap();
-            File_system.Close(File);
+            File_system.Close(File).unwrap();
         }
 
         let Directory = File_system.Open_directory(&"/", Task).unwrap();
@@ -448,7 +526,7 @@ pub mod Tests {
     }
 
     pub fn Test_rewind_directory(File_system: impl File_system_traits) {
-        let Task = Initialize();
+        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
 
         // Create multiple files
         for i in 0..10 {
@@ -456,7 +534,7 @@ pub mod Tests {
             let File = File_system
                 .Open(Task, &format!("/Test{}", i).as_str(), Flags)
                 .unwrap();
-            File_system.Close(File);
+            File_system.Close(File).unwrap();
         }
 
         let Directory = File_system.Open_directory(&"/", Task).unwrap();
@@ -497,7 +575,7 @@ pub mod Tests {
     }
 
     pub fn Test_create_remove_directory(File_system: impl File_system_traits) {
-        let Task = Initialize();
+        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
 
         let Path = Get_test_path().Append("Test_create_directory").unwrap();
 

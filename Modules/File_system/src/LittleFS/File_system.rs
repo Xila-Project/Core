@@ -528,109 +528,24 @@ mod Tests {
 
     use std::sync::Arc;
 
-    use crate::{Device_trait, Position_type};
+    use crate::Tests::Memory_device_type;
 
     use super::*;
-
-    struct Mock_device_type(RwLock<(Vec<u8>, usize)>);
-
-    impl Mock_device_type {
-        const Block_size: usize = 512;
-
-        pub fn New(Size: usize) -> Self {
-            assert!(Size % Self::Block_size == 0);
-
-            let mut Data: Vec<u8> = vec![];
-            Data.resize(Size, 0);
-
-            Self(RwLock::new((Data, 0)))
-        }
-
-        pub fn Get_block_count(&self) -> usize {
-            self.0.read().unwrap().0.len() / Self::Block_size
-        }
-    }
-
-    impl Device_trait for Mock_device_type {
-        fn Read(&self, Buffer: &mut [u8]) -> crate::Result_type<Size_type> {
-            let mut Inner = self
-                .0
-                .try_write()
-                .map_err(|_| crate::Error_type::Ressource_busy)?;
-            let (Data, Position) = &mut *Inner;
-
-            let Read_size = Buffer.len().min(Data.len().saturating_sub(*Position));
-            Buffer[..Read_size].copy_from_slice(&Data[*Position..*Position + Read_size]);
-            *Position += Read_size;
-            Ok(Read_size.into())
-        }
-
-        fn Write(&self, Buffer: &[u8]) -> crate::Result_type<Size_type> {
-            let mut Inner = self
-                .0
-                .write()
-                .map_err(|_| crate::Error_type::Ressource_busy)?;
-            let (Data, Position) = &mut *Inner;
-
-            Data[*Position..*Position + Buffer.len()].copy_from_slice(Buffer);
-            *Position += Buffer.len();
-            Ok(Buffer.len().into())
-        }
-
-        fn Get_size(&self) -> crate::Result_type<Size_type> {
-            let Inner = self
-                .0
-                .read()
-                .map_err(|_| crate::Error_type::Ressource_busy)?;
-            Ok(Size_type::New(Inner.0.len() as u64))
-        }
-
-        fn Set_position(&self, Position: &Position_type) -> crate::Result_type<Size_type> {
-            let mut Inner = self
-                .0
-                .write()
-                .map_err(|_| crate::Error_type::Ressource_busy)?;
-            let (Data, Device_position) = &mut *Inner;
-
-            match Position {
-                Position_type::Start(Position) => *Device_position = *Position as usize,
-                Position_type::Current(Position) => {
-                    *Device_position = (*Device_position as isize + *Position as isize) as usize
-                }
-                Position_type::End(Position) => {
-                    *Device_position = (Data.len() as isize - *Position as isize) as usize
-                }
-            }
-
-            Ok(Size_type::New(*Device_position as u64))
-        }
-
-        fn Erase(&self) -> crate::Result_type<()> {
-            let mut Inner = self
-                .0
-                .write()
-                .map_err(|_| crate::Error_type::Ressource_busy)?;
-
-            let (Data, Position) = &mut *Inner;
-
-            Data[*Position..*Position + Self::Block_size].fill(0);
-
-            Ok(())
-        }
-
-        fn Flush(&self) -> crate::Result_type<()> {
-            Ok(())
-        }
-
-        fn Get_block_size(&self) -> crate::Result_type<usize> {
-            Ok(Self::Block_size)
-        }
-    }
 
     const Cache_size: usize = 256;
 
     fn Initialize() -> File_system_type {
-        let Mock_device = Mock_device_type::New(2048 * 512);
+        let _ = Users::Initialize();
+
+        if let Err(Error) = Task::Initialize() {
+            unsafe {
+                Task::Get_instance().Register_task();
+            }
+        }
+
+        let _ = Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()));
+
+        let Mock_device = Memory_device_type::<512>::New(2048 * 512);
 
         let Device = Device_type::New(Arc::new(Mock_device));
 

@@ -260,74 +260,40 @@ impl File_system_type {
 
 #[cfg(test)]
 mod tests {
+    use crate::Create_device;
+    use crate::Device_trait;
     use crate::Position_type;
+    use crate::Tests::Memory_device_type;
 
     use super::*;
     use std::collections::BTreeMap;
     use std::sync::Arc;
     use std::sync::RwLock;
 
-    struct Mock_device_type(RwLock<([u8; 100], usize)>);
-
-    impl Mock_device_type {
-        fn New() -> Self {
-            Self(RwLock::new(([0; 100], 0)))
-        }
-    }
-
-    impl Device_trait for Mock_device_type {
-        fn Read(&self, Buffer: &mut [u8]) -> Result_type<Size_type> {
-            let mut Inner = self.0.try_write().map_err(|_| Error_type::Ressource_busy)?;
-            let Size = Buffer.len().min(Inner.0.len() - Inner.1);
-            Buffer[..Size].copy_from_slice(&Inner.0[Inner.1..Inner.1 + Size]);
-            Inner.1 += Size;
-            Ok(Size.into())
-        }
-
-        fn Write(&self, Buffer: &[u8]) -> Result_type<Size_type> {
-            let mut Inner = self.0.try_write().map_err(|_| Error_type::Ressource_busy)?;
-            let Position = Inner.1;
-            Inner.0[Position..Position + Buffer.len()].copy_from_slice(Buffer);
-            Inner.1 += Buffer.len();
-            Ok(Buffer.len().into())
-        }
-
-        fn Get_size(&self) -> Result_type<Size_type> {
-            Ok(100_u64.into())
-        }
-
-        fn Set_position(&self, Position: &Position_type) -> Result_type<Size_type> {
-            let mut Inner = self.0.try_write().map_err(|_| Error_type::Ressource_busy)?;
-
-            match Position {
-                Position_type::Start(Position) => Inner.1 = *Position as usize,
-                Position_type::Current(Position) => Inner.1 += *Position as usize,
-                Position_type::End(Position) => Inner.1 = Inner.0.len() - *Position as usize,
-            }
-
-            Ok(Inner.1.into())
-        }
-
-        fn Flush(&self) -> Result_type<()> {
-            Ok(())
-        }
-    }
+    pub const Memory_device_size: usize = 1024;
+    pub const Memory_device_block_size: usize = 512;
 
     #[test]
     fn Test_mount_device() {
         let fs = File_system_type::New();
-        let device = Arc::new(Mock_device_type::New());
 
-        let Inode = fs.Mount_device(device).unwrap();
+        let Inode = fs
+            .Mount_device(Create_device!(
+                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
+            ))
+            .unwrap();
         assert!(fs.Get_raw_device(Inode).is_ok());
     }
 
     #[test]
     fn Test_open_close_device() {
         let fs = File_system_type::New();
-        let device = Arc::new(Mock_device_type::New());
 
-        let Inode = fs.Mount_device(device).unwrap();
+        let Inode = fs
+            .Mount_device(Create_device!(
+                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
+            ))
+            .unwrap();
         let file_id = fs
             .Open(
                 Inode,
@@ -341,9 +307,12 @@ mod tests {
     #[test]
     fn Test_read_write_device() {
         let fs = File_system_type::New();
-        let device = Arc::new(Mock_device_type::New());
 
-        let Inode = fs.Mount_device(device).unwrap();
+        let Inode = fs
+            .Mount_device(Create_device!(
+                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
+            ))
+            .unwrap();
         let file_id = fs
             .Open(
                 Inode,
@@ -366,9 +335,12 @@ mod tests {
     #[test]
     fn Test_duplicate_file_identifier() {
         let fs = File_system_type::New();
-        let device = Arc::new(Mock_device_type::New());
 
-        let Inode = fs.Mount_device(device).unwrap();
+        let Inode = fs
+            .Mount_device(Create_device!(
+                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
+            ))
+            .unwrap();
         let file_id = fs
             .Open(
                 Inode,
@@ -384,9 +356,12 @@ mod tests {
     #[test]
     fn Test_transfert_file_identifier() {
         let fs = File_system_type::New();
-        let device = Arc::new(Mock_device_type::New());
 
-        let Inode = fs.Mount_device(device).unwrap();
+        let Inode = fs
+            .Mount_device(Create_device!(
+                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
+            ))
+            .unwrap();
         let file_id = fs
             .Open(
                 Inode,
@@ -404,18 +379,24 @@ mod tests {
     #[test]
     fn Test_delete_device() {
         let fs = File_system_type::New();
-        let device = Arc::new(Mock_device_type::New());
 
-        let Inode = fs.Mount_device(device).unwrap();
-        assert!(fs.Remove(&Inode).is_ok());
+        let Inode = fs
+            .Mount_device(Create_device!(
+                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
+            ))
+            .unwrap();
+        assert!(fs.Remove(Inode).is_ok());
     }
 
     #[test]
     fn Test_get_size() {
         let fs = File_system_type::New();
-        let device = Arc::new(Mock_device_type::New());
 
-        let Inode = fs.Mount_device(device).unwrap();
+        let Inode = fs
+            .Mount_device(Create_device!(
+                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
+            ))
+            .unwrap();
         let file_id = fs
             .Open(
                 Inode,
@@ -424,15 +405,18 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(fs.Get_size(file_id).unwrap(), 100);
+        assert_eq!(Memory_device_size, fs.Get_size(file_id).unwrap().into());
     }
 
     #[test]
     fn Test_set_position() {
         let fs = File_system_type::New();
-        let device = Arc::new(Mock_device_type::New());
 
-        let Inode = fs.Mount_device(device).unwrap();
+        let Inode = fs
+            .Mount_device(Create_device!(
+                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
+            ))
+            .unwrap();
         let file_id = fs
             .Open(
                 Inode,
@@ -442,15 +426,18 @@ mod tests {
             .unwrap();
 
         fs.Set_position(file_id, &Position_type::Start(10)).unwrap();
-        assert_eq!(fs.Get_size(file_id).unwrap(), 100);
+        assert_eq!(Memory_device_size, fs.Get_size(file_id).unwrap().into());
     }
 
     #[test]
     fn Test_flush() {
         let fs = File_system_type::New();
-        let device = Arc::new(Mock_device_type::New());
 
-        let Inode = fs.Mount_device(device).unwrap();
+        let Inode = fs
+            .Mount_device(Create_device!(
+                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
+            ))
+            .unwrap();
         let file_id = fs
             .Open(
                 Inode,
@@ -465,9 +452,12 @@ mod tests {
     #[test]
     fn Test_get_mode() {
         let fs = File_system_type::New();
-        let device = Arc::new(Mock_device_type::New());
 
-        let Inode = fs.Mount_device(device).unwrap();
+        let Inode = fs
+            .Mount_device(Create_device!(
+                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
+            ))
+            .unwrap();
         let file_id = fs
             .Open(
                 Inode,

@@ -101,12 +101,11 @@ impl Debug for Mode_type {
 /// ```rust
 /// use File_system::Open_type;
 ///
-/// let Open = Open_type::New(true, true, false, false);
+/// let Open = Open_type::New(true, true, false);
 ///
 /// assert_eq!(Open.Get_create(), true);
 /// assert_eq!(Open.Get_exclusive(), true);
 /// assert_eq!(Open.Get_truncate(), false);
-/// assert_eq!(Open.Get_directory(), false);
 /// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
@@ -119,17 +118,16 @@ impl Open_type {
 
     pub const Size: u8 = 3;
 
-    pub const None: Self = Self::New(false, false, false, false);
+    pub const None: Self = Self::New(false, false, false);
 
-    pub const Create: Self = Self::New(true, false, false, false);
-    pub const Create_only: Self = Self::New(true, true, false, false);
+    pub const Create: Self = Self::New(true, false, false);
+    pub const Create_only: Self = Self::New(true, true, false);
 
-    pub const fn New(Create: bool, Create_only: bool, Truncate: bool, Directory: bool) -> Self {
+    pub const fn New(Create: bool, Create_only: bool, Truncate: bool) -> Self {
         Self(0)
             .Set_create(Create)
             .Set_exclusive(Create_only)
             .Set_truncate(Truncate)
-            .Set_directory(Directory)
     }
 
     pub const fn Get_bit(&self, Mask: u8) -> bool {
@@ -183,7 +181,6 @@ impl Debug for Open_type {
             .field("Create", &self.Get_create())
             .field("Create_only", &self.Get_exclusive())
             .field("Truncate", &self.Get_truncate())
-            .field("Directory", &self.Get_directory())
             .finish()
     }
 }
@@ -447,11 +444,10 @@ mod Tests {
 
     #[test]
     fn Test_open_type_new() {
-        let Open = Open_type::New(true, false, true, false);
+        let Open = Open_type::New(true, false, true);
         assert!(Open.Get_create());
         assert!(!Open.Get_exclusive());
         assert!(Open.Get_truncate());
-        assert!(!Open.Get_directory());
     }
 
     #[test]
@@ -467,9 +463,6 @@ mod Tests {
 
         Open = Open.Set_truncate(true);
         assert!(Open.Get_truncate());
-
-        Open = Open.Set_directory(true);
-        assert!(Open.Get_directory());
     }
 
     #[test]
@@ -501,7 +494,7 @@ mod Tests {
     #[test]
     fn Test_flags_type_new() {
         let Mode = Mode_type::Read_write;
-        let Open = Open_type::New(true, false, true, false);
+        let Open = Open_type::New(true, false, true);
         let Status = Status_type::New(true, false, true, false);
 
         let Flags = Flags_type::New(Mode, Some(Open), Some(Status));
@@ -518,7 +511,7 @@ mod Tests {
         let Flags = Flags.Set_mode(New_mode);
         assert_eq!(Flags.Get_mode(), New_mode);
 
-        let New_open = Open_type::New(true, true, false, false);
+        let New_open = Open_type::New(true, true, false);
         let Flags = Flags.Set_open(New_open);
         assert_eq!(Flags.Get_open(), New_open);
 

@@ -180,16 +180,20 @@ impl Virtual_file_system_type {
             return Err(Error_type::Invalid_path);
         }
 
-        let mut File_systems = self.File_systems.write()?; // Get the file systems
+        let File_system_identifier = {
+            let File_systems = self.File_systems.read()?; // Get the file systems
 
-        let (File_system_identifier, _, Relative_path) =
-            Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
+            let (File_system_identifier, _, Relative_path) =
+                Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
-        if !Relative_path.Is_root() {
-            return Err(Error_type::Invalid_path);
-        }
+            if !Relative_path.Is_root() {
+                return Err(Error_type::Invalid_path);
+            }
 
-        //let mut File_systems = self.File_systems.write()?;
+            File_system_identifier
+        };
+
+        let mut File_systems = self.File_systems.write()?;
 
         let File_system = File_systems
             .remove(&File_system_identifier)
@@ -197,9 +201,10 @@ impl Virtual_file_system_type {
 
         File_system.Inner.Close_all(Task)?;
 
-        let Parent_file_system = Self::Get_file_system_from_path(&File_systems, &Relative_path)?;
+        let (_, Parent_file_system, Relative_path) =
+            Self::Get_file_system_from_path(&File_systems, &File_system.Mount_point)?;
 
-        Parent_file_system.1.Remove(&Relative_path)?;
+        Parent_file_system.Remove(&Relative_path)?;
 
         Ok(())
     }
@@ -213,30 +218,40 @@ impl Virtual_file_system_type {
         &'b Path_type,
     )> {
         let mut Result_score = 0;
-        let mut Result: Option<(
-            File_system_identifier_type,
-            &'b dyn File_system_traits,
-            &'b Path_type,
-        )> = None;
+        let mut Result: Option<File_system_identifier_type> = None;
 
         let Path = Path.as_ref();
+        let Path_components = Path.Get_components();
 
         for (File_system_identifier, File_system) in File_systems.iter() {
-            let Mount_point = File_system.Mount_point.as_ref();
-            if let Some(Relative_path) = Path.Strip_prefix_absolute(Mount_point) {
-                let Score = Relative_path.Get_length();
-                if Score > Result_score {
-                    Result_score = Score;
-                    Result = Some((
-                        *File_system_identifier,
-                        File_system.Inner.as_ref(),
-                        Relative_path,
-                    ));
-                }
+            let Mount_point: &Path_type = File_system.Mount_point.as_ref();
+            let Mount_point_components = Mount_point.Get_components();
+
+            let Score = Path_components
+                .clone()
+                .Get_common_components(Mount_point_components);
+
+            if Result_score <= Score {
+                Result_score = Score;
+                Result = Some(*File_system_identifier);
             }
         }
 
-        Result.ok_or(Error_type::Invalid_path)
+        let File_system_identifier = Result.ok_or(Error_type::Invalid_path)?;
+
+        let File_system = File_systems
+            .get(&File_system_identifier)
+            .ok_or(Error_type::Invalid_path)?;
+
+        let Relative_path = Path
+            .Strip_prefix_absolute(File_system.Mount_point.as_ref())
+            .ok_or(Error_type::Invalid_path)?;
+
+        Ok((
+            File_system_identifier,
+            File_system.Inner.as_ref(),
+            Relative_path,
+        ))
     }
 
     pub fn Open(
@@ -534,11 +549,21 @@ impl Virtual_file_system_type {
     ) -> Result_type<Unique_file_identifier_type> {
         let (File_system, File) = File.Into_local_file_identifier(Current_task);
 
-        let File_systems = self.File_systems.read()?;
+        let New_file = match File_system {
+            File_system_identifier_type::Pipe_file_system => self
+                .Pipe_file_system
+                .Transfert_file_identifier(New_task, File)?,
+            File_system_identifier_type::Device_file_system => self
+                .Device_file_system
+                .Transfert_file_identifier(New_task, File)?,
+            _ => {
+                let File_systems = self.File_systems.read()?;
 
-        let New_file = Self::Get_file_system_from_identifier(&File_systems, File_system)?
-            .Inner
-            .Transfert_file_identifier(New_task, File)?;
+                Self::Get_file_system_from_identifier(&File_systems, File_system)?
+                    .Inner
+                    .Transfert_file_identifier(New_task, File)?
+            }
+        };
 
         let (_, New_file) = New_file.Into_unique_file_identifier(File_system);
 
@@ -777,5 +802,192 @@ impl Virtual_file_system_type {
         let Standard_out = self.Transfert_file_identifier(Standard_out, Current_task, New_task)?;
 
         Ok((Standard_in, Standard_error, Standard_out))
+    }
+}
+
+#[cfg(test)]
+mod Tests {
+    use super::*;
+
+    struct Dummy_file_system_type;
+
+    impl File_system_traits for Dummy_file_system_type {
+        fn Open(
+            &self,
+            _: Task_identifier_type,
+            _: &dyn AsRef<Path_type>,
+            _: Flags_type,
+        ) -> Result_type<crate::Local_file_identifier_type> {
+            todo!()
+        }
+
+        fn Close(&self, _: crate::Local_file_identifier_type) -> Result_type<()> {
+            todo!()
+        }
+
+        fn Close_all(&self, _: Task_identifier_type) -> Result_type<()> {
+            todo!()
+        }
+
+        fn Duplicate_file_identifier(
+            &self,
+            _: crate::Local_file_identifier_type,
+        ) -> Result_type<crate::Local_file_identifier_type> {
+            todo!()
+        }
+
+        fn Transfert_file_identifier(
+            &self,
+            _: Task_identifier_type,
+            _: crate::Local_file_identifier_type,
+        ) -> Result_type<crate::Local_file_identifier_type> {
+            todo!()
+        }
+
+        fn Remove(&self, _: &dyn AsRef<Path_type>) -> Result_type<()> {
+            todo!()
+        }
+
+        fn Read(
+            &self,
+            _: crate::Local_file_identifier_type,
+            _: &mut [u8],
+        ) -> Result_type<Size_type> {
+            todo!()
+        }
+
+        fn Write(&self, _: crate::Local_file_identifier_type, _: &[u8]) -> Result_type<Size_type> {
+            todo!()
+        }
+
+        fn Move(&self, _: &dyn AsRef<Path_type>, _: &dyn AsRef<Path_type>) -> Result_type<()> {
+            todo!()
+        }
+
+        fn Set_position(
+            &self,
+            _: crate::Local_file_identifier_type,
+            _: &Position_type,
+        ) -> Result_type<Size_type> {
+            todo!()
+        }
+
+        fn Flush(&self, _: crate::Local_file_identifier_type) -> Result_type<()> {
+            todo!()
+        }
+
+        fn Create_directory(
+            &self,
+            _: &dyn AsRef<Path_type>,
+            _: Task_identifier_type,
+        ) -> Result_type<()> {
+            todo!()
+        }
+
+        fn Open_directory(
+            &self,
+            _: &dyn AsRef<Path_type>,
+            _: Task_identifier_type,
+        ) -> Result_type<crate::Local_file_identifier_type> {
+            todo!()
+        }
+
+        fn Read_directory(&self, _: crate::Local_file_identifier_type) -> Result_type<Entry_type> {
+            todo!()
+        }
+
+        fn Set_position_directory(
+            &self,
+            _: crate::Local_file_identifier_type,
+            _: Size_type,
+        ) -> Result_type<()> {
+            todo!()
+        }
+
+        fn Get_position_directory(
+            &self,
+            _: crate::Local_file_identifier_type,
+        ) -> Result_type<Size_type> {
+            todo!()
+        }
+
+        fn Rewind_directory(&self, _: crate::Local_file_identifier_type) -> Result_type<()> {
+            todo!()
+        }
+
+        fn Close_directory(&self, _: crate::Local_file_identifier_type) -> Result_type<()> {
+            todo!()
+        }
+
+        fn Set_metadata(&self, _: &dyn AsRef<Path_type>, _: &Metadata_type) -> Result_type<()> {
+            todo!()
+        }
+
+        fn Get_metadata(&self, _: &dyn AsRef<Path_type>) -> Result_type<Metadata_type> {
+            todo!()
+        }
+
+        fn Get_statistics(
+            &self,
+            _: crate::Local_file_identifier_type,
+        ) -> Result_type<Statistics_type> {
+            todo!()
+        }
+
+        fn Get_mode(&self, _: crate::Local_file_identifier_type) -> Result_type<Mode_type> {
+            todo!()
+        }
+    }
+
+    #[test]
+    fn Test_get_file_system_from_path() {
+        let mut File_systems: BTreeMap<File_system_identifier_type, Internal_file_system_type> =
+            BTreeMap::new();
+
+        File_systems.insert(
+            1.into(),
+            Internal_file_system_type {
+                Mount_point: Path_owned_type::New("/".to_string()).unwrap(),
+                Inner: Box::new(Dummy_file_system_type),
+            },
+        );
+
+        File_systems.insert(
+            2.into(),
+            Internal_file_system_type {
+                Mount_point: Path_owned_type::New("/Foo".to_string()).unwrap(),
+                Inner: Box::new(Dummy_file_system_type),
+            },
+        );
+
+        File_systems.insert(
+            3.into(),
+            Internal_file_system_type {
+                Mount_point: Path_owned_type::New("/Foo/Bar".to_string()).unwrap(),
+                Inner: Box::new(Dummy_file_system_type),
+            },
+        );
+
+        let (File_system, _, _) =
+            Virtual_file_system_type::Get_file_system_from_path(&File_systems, &"/").unwrap();
+
+        assert_eq!(File_system, 1.into());
+
+        let (File_system, _, _) =
+            Virtual_file_system_type::Get_file_system_from_path(&File_systems, &"/Foo/Bar")
+                .unwrap();
+
+        assert_eq!(File_system, 3.into());
+
+        let (File_system, _, _) =
+            Virtual_file_system_type::Get_file_system_from_path(&File_systems, &"/Foo/Bar/Baz")
+                .unwrap();
+
+        assert_eq!(File_system, 3.into());
+
+        let (File_system, _, _) =
+            Virtual_file_system_type::Get_file_system_from_path(&File_systems, &"/Foo").unwrap();
+
+        assert_eq!(File_system, 2.into());
     }
 }
