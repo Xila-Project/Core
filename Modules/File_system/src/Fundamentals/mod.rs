@@ -1,17 +1,17 @@
-use std::ops;
-
-mod Directory;
+mod Entry;
 mod Flags;
 mod Identifiers;
+mod Metadata;
 mod Path;
 mod Permission;
 mod Position;
 mod Size;
 mod Statistics;
 
-pub use Directory::*;
+pub use Entry::*;
 pub use Flags::*;
 pub use Identifiers::*;
+pub use Metadata::*;
 pub use Path::*;
 pub use Permission::*;
 pub use Position::*;
