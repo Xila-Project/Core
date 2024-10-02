@@ -1,8 +1,4 @@
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, RwLock},
-    time::Duration,
-};
+use std::{collections::BTreeMap, sync::RwLock, time::Duration};
 
 use Task::Task_identifier_type;
 
@@ -11,7 +7,7 @@ use crate::{
     Local_file_identifier_type, Mode_type, Result_type, Size_type,
 };
 
-use super::{Device_trait, Device_type};
+use super::Device_type;
 
 struct Inner_type {
     pub Devices: BTreeMap<Inode_type, Device_type>,
@@ -37,14 +33,14 @@ impl File_system_type {
         (&mut Inner.Devices, &mut Inner.Open_devices)
     }
 
-    pub fn Mount_device(&self, Device: Arc<dyn Device_trait>) -> Result_type<Inode_type> {
+    pub fn Mount_device(&self, Device: Device_type) -> Result_type<Inode_type> {
         let mut Inner = self.0.write()?;
 
         let (Devices, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
         let Inode = Get_new_inode(Devices)?;
 
-        Devices.insert(Inode, Device_type::New(Device));
+        Devices.insert(Inode, Device);
 
         Ok(Inode)
     }
@@ -139,11 +135,11 @@ impl File_system_type {
         Ok(New_file)
     }
 
-    pub fn Delete(&self, Inode: &Inode_type) -> Result_type<()> {
+    pub fn Remove(&self, Inode: Inode_type) -> Result_type<()> {
         self.0
             .write()?
             .Devices
-            .remove(Inode)
+            .remove(&Inode)
             .ok_or(Error_type::Invalid_identifier)?;
 
         Ok(())
@@ -411,7 +407,7 @@ mod tests {
         let device = Arc::new(Mock_device_type::New());
 
         let Inode = fs.Mount_device(device).unwrap();
-        assert!(fs.Delete(&Inode).is_ok());
+        assert!(fs.Remove(&Inode).is_ok());
     }
 
     #[test]
