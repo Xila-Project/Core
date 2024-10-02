@@ -20,8 +20,10 @@ pub type File_system_identifier_inner_type = u32;
 pub struct File_system_identifier_type(File_system_identifier_inner_type);
 
 impl File_system_identifier_type {
-    pub const Minimum: File_system_identifier_type =
-        File_system_identifier_type::New(File_system_identifier_inner_type::MIN);
+    pub const Pipe_file_system: File_system_identifier_type = File_system_identifier_type::New(0);
+    pub const Device_file_system: File_system_identifier_type = File_system_identifier_type::New(1);
+
+    pub const Minimum: File_system_identifier_type = File_system_identifier_type::New(2);
     pub const Maximum: File_system_identifier_type =
         File_system_identifier_type::New(File_system_identifier_inner_type::MAX);
 
