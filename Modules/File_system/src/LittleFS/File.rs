@@ -1,19 +1,17 @@
 use std::{
     ffi::{c_void, CString},
     mem::{forget, MaybeUninit},
-    ptr::null_mut,
     rc::Rc,
 };
 
-use littlefs2_sys::lfs_attr;
 use Task::Task_identifier_type;
 
 use crate::{
-    File_system_identifier_type, Flags_type, Inode_type, Mode_type, Path_type, Position_type,
-    Size_type, Statistics_type,
+    File_system_identifier_type, Flags_type, Inode_type, Metadata_type, Mode_type, Path_type,
+    Position_type, Size_type, Statistics_type, Type_type,
 };
 
-use super::{littlefs, Convert_flags, Convert_result, Error_type, Metadata_type, Result_type};
+use super::{littlefs, Convert_flags, Convert_result, Error_type, Result_type};
 
 fn Convert_position(Position: &Position_type) -> (i32, i32) {
     match Position {
@@ -69,12 +67,15 @@ impl File_type {
         let Little_fs_flags = Convert_flags(Flags);
 
         // - Create the attribute
-        let Metadata_buffer = Box::new(MaybeUninit::<Metadata_type>::uninit());
+        let Metadata = Metadata_type::Get_default(Task, Type_type::File)
+            .ok_or(Error_type::Invalid_parameter)?;
+
+        let Metadata_buffer = Box::new(Metadata);
 
         let Attribute = Box::new(littlefs::lfs_attr {
             type_: Metadata_type::Identifier,
             buffer: Box::into_raw(Metadata_buffer) as *mut c_void,
-            size: core::mem::size_of::<Metadata_type>() as u32,
+            size: size_of::<Metadata_type>() as u32,
         });
 
         let mut Buffer = vec![0_u8; Cache_size];
@@ -108,9 +109,10 @@ impl File_type {
             File
         };
 
-        //      if Flags.Get_open().Get_create() {
-        //          *File.Get_metadata_mutable()? = Metadata_type::Get(Task, Flags)?;
-        //      }
+        // Ensure that metadata is written to created files
+        if Flags.Get_open().Get_create() {
+            File.Flush(File_system)?;
+        }
 
         Ok(File)
     }
@@ -202,10 +204,10 @@ impl File_type {
             Inode_type::New(0),
             1,
             Size,
-            Metadata.Creation_time,
-            Metadata.Modification_time,
-            Metadata.Access_time,
-            Metadata.Type,
+            Metadata.Get_creation_time(),
+            Metadata.Get_modification_time(),
+            Metadata.Get_access_time(),
+            Metadata.Get_type(),
         );
 
         Ok(Statistics)
@@ -260,5 +262,48 @@ impl File_type {
         };
 
         Ok(Size_type::from(Size as usize))
+    }
+
+    pub fn Get_metadata_from_path(
+        File_system: &mut super::littlefs::lfs_t,
+        Path: &dyn AsRef<Path_type>,
+    ) -> Result_type<Metadata_type> {
+        let Path =
+            CString::new(Path.as_ref().As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+
+        let mut Metadata = MaybeUninit::<Metadata_type>::uninit();
+
+        Convert_result(unsafe {
+            littlefs::lfs_getattr(
+                File_system as *mut _,
+                Path.as_ptr(),
+                Metadata_type::Identifier,
+                Metadata.as_mut_ptr() as *mut c_void,
+                size_of::<Metadata_type>() as u32,
+            )
+        })?;
+
+        Ok(unsafe { Metadata.assume_init() })
+    }
+
+    pub fn Set_metadata_from_path(
+        File_system: &mut super::littlefs::lfs_t,
+        Path: &dyn AsRef<Path_type>,
+        Metadata: &Metadata_type,
+    ) -> Result_type<()> {
+        let Path =
+            CString::new(Path.as_ref().As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+
+        Convert_result(unsafe {
+            littlefs::lfs_setattr(
+                File_system as *mut _,
+                Path.as_ptr(),
+                Metadata_type::Identifier,
+                Metadata as *const _ as *const c_void,
+                size_of::<Metadata_type>() as u32,
+            )
+        })?;
+
+        Ok(())
     }
 }

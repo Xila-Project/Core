@@ -1,16 +1,23 @@
 use core::mem::MaybeUninit;
-use std::{collections::BTreeMap, ffi::CString, sync::RwLock};
+use std::{collections::BTreeMap, ffi::CString, fs::Permissions, sync::RwLock};
+
+use Task::{Task_identifier_type, Task_type};
+use Users::User_identifier_type;
 
 use crate::{
     Device::Device_type, File_system_traits, Get_new_file_identifier, Local_file_identifier_type,
-    Mode_type, Path_type, Size_type, Statistics_type,
+    Metadata_type, Mode_type, Path_type, Size_type, Statistics_type,
 };
 
-use super::{littlefs, Configuration_type, Convert_result, Error_type, File_type, Result_type};
+use super::{
+    littlefs, Configuration_type, Convert_result, Directory_type, Error_type, File_type,
+    Result_type,
+};
 
 struct Inner_type {
     File_system: littlefs::lfs_t,
     Open_files: BTreeMap<Local_file_identifier_type, File_type>,
+    Open_directories: BTreeMap<Local_file_identifier_type, Directory_type>,
 }
 
 pub struct File_system_type {
@@ -101,6 +108,7 @@ impl File_system_type {
         let Inner = Inner_type {
             File_system: unsafe { File_system.assume_init() },
             Open_files: BTreeMap::new(),
+            Open_directories: BTreeMap::new(),
         };
 
         Ok(Self {
@@ -142,8 +150,13 @@ impl File_system_type {
     ) -> (
         &mut littlefs::lfs_t,
         &mut BTreeMap<Local_file_identifier_type, File_type>,
+        &mut BTreeMap<Local_file_identifier_type, Directory_type>,
     ) {
-        (&mut Inner_2.File_system, &mut Inner_2.Open_files)
+        (
+            &mut Inner_2.File_system,
+            &mut Inner_2.Open_files,
+            &mut Inner_2.Open_directories,
+        )
     }
 }
 
@@ -250,7 +263,7 @@ impl File_system_traits for File_system_type {
         Ok(File_identifier)
     }
 
-    fn Delete(&self, Path: &dyn AsRef<Path_type>) -> crate::Result_type<()> {
+    fn Remove(&self, Path: &dyn AsRef<Path_type>) -> crate::Result_type<()> {
         let Path =
             CString::new(Path.as_ref().As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
@@ -270,7 +283,7 @@ impl File_system_traits for File_system_type {
     ) -> crate::Result_type<Size_type> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
         let File = Open_files
             .get_mut(&File)
@@ -286,7 +299,7 @@ impl File_system_traits for File_system_type {
     ) -> crate::Result_type<Size_type> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
         let File = Open_files
             .get_mut(&File)
@@ -326,7 +339,7 @@ impl File_system_traits for File_system_type {
     ) -> crate::Result_type<Size_type> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
         let File = Open_files
             .get_mut(&File)
@@ -338,7 +351,7 @@ impl File_system_traits for File_system_type {
     fn Flush(&self, File: Local_file_identifier_type) -> crate::Result_type<()> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
         let File = Open_files
             .get_mut(&File)
@@ -353,7 +366,7 @@ impl File_system_traits for File_system_type {
     ) -> crate::Result_type<Statistics_type> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, Open_files) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
         let File = Open_files
             .get_mut(&File)
@@ -370,6 +383,143 @@ impl File_system_traits for File_system_type {
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
             .Get_mode())
+    }
+
+    fn Open_directory(
+        &self,
+        Path: &dyn AsRef<Path_type>,
+        Task: Task::Task_identifier_type,
+    ) -> crate::Result_type<Local_file_identifier_type> {
+        let mut Inner = self.Inner.write()?;
+
+        let Directory = Directory_type::Open(&mut Inner.File_system, Path)?;
+
+        let File_identifier = Get_new_file_identifier(Task, &Inner.Open_directories)?;
+
+        if Inner
+            .Open_directories
+            .insert(File_identifier, Directory)
+            .is_some()
+        {
+            return Err(Error_type::Internal_error.into());
+        }
+
+        Ok(File_identifier)
+    }
+
+    fn Read_directory(
+        &self,
+        File: Local_file_identifier_type,
+    ) -> crate::Result_type<crate::Entry_type> {
+        let mut Inner = self.Inner.write()?;
+
+        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+
+        let Directory = Open_directories
+            .get_mut(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Ok(Directory.Read(File_system)?)
+    }
+
+    fn Set_position_directory(
+        &self,
+        File: Local_file_identifier_type,
+        Position: Size_type,
+    ) -> crate::Result_type<()> {
+        let mut Inner = self.Inner.write()?;
+
+        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+
+        let Directory = Open_directories
+            .get_mut(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Ok(Directory.Set_position(File_system, Position)?)
+    }
+
+    fn Rewind_directory(&self, File: Local_file_identifier_type) -> crate::Result_type<()> {
+        let mut Inner = self.Inner.write()?;
+
+        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+
+        let Directory = Open_directories
+            .get_mut(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Directory.Rewind(File_system)?;
+
+        Ok(())
+    }
+
+    fn Close_directory(&self, File: Local_file_identifier_type) -> crate::Result_type<()> {
+        let mut Inner = self.Inner.write()?;
+
+        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+
+        let mut Directory = Open_directories
+            .remove(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Directory.Close(File_system)?;
+
+        Ok(())
+    }
+
+    fn Create_directory(
+        &self,
+        Path: &dyn AsRef<Path_type>,
+        Task: Task_identifier_type,
+    ) -> crate::Result_type<()> {
+        let mut Inner = self.Inner.write()?;
+
+        Directory_type::Create_directory(&mut Inner.File_system, Path)?;
+
+        let Metadata = crate::Metadata_type::Get_default(Task, crate::Type_type::Directory)
+            .ok_or(Error_type::Invalid_parameter)?;
+
+        File_type::Set_metadata_from_path(&mut Inner.File_system, Path, &Metadata)?;
+
+        Ok(())
+    }
+
+    fn Get_position_directory(
+        &self,
+        File: Local_file_identifier_type,
+    ) -> crate::Result_type<Size_type> {
+        let mut Inner = self.Inner.write()?;
+
+        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+
+        let Directory = Open_directories
+            .get_mut(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Ok(Directory.Get_position(File_system)?)
+    }
+
+    fn Set_metadata(
+        &self,
+        Path: &dyn AsRef<Path_type>,
+        Metadata: &Metadata_type,
+    ) -> crate::Result_type<()> {
+        let mut Inner = self.Inner.write()?;
+
+        File_type::Set_metadata_from_path(&mut Inner.File_system, Path, &Metadata)?;
+
+        Ok(())
+    }
+
+    fn Get_metadata(
+        &self,
+        Path: &dyn AsRef<Path_type>,
+    ) -> crate::Result_type<crate::Metadata_type> {
+        let mut Inner = self.Inner.write()?;
+
+        Ok(File_type::Get_metadata_from_path(
+            &mut Inner.File_system,
+            Path,
+        )?)
     }
 }
 
@@ -515,12 +665,27 @@ mod Tests {
     }
 
     #[test]
-    fn Test_set_owner() {
-        crate::Tests::Test_set_owner(Initialize());
+    fn Test_set_get_metadata() {
+        crate::Tests::Test_set_get_metadata(Initialize());
     }
 
     #[test]
-    fn Test_set_permissions() {
-        crate::Tests::Test_set_permissions(Initialize());
+    fn Test_read_directory() {
+        crate::Tests::Test_read_directory(Initialize());
+    }
+
+    #[test]
+    fn Test_set_position_directory() {
+        crate::Tests::Test_set_position_directory(Initialize());
+    }
+
+    #[test]
+    fn Test_rewind_directory() {
+        crate::Tests::Test_rewind_directory(Initialize());
+    }
+
+    #[test]
+    fn Test_create_remove_directory() {
+        crate::Tests::Test_create_remove_directory(Initialize());
     }
 }
