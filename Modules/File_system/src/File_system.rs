@@ -279,7 +279,7 @@ pub mod Tests {
     }
 
     pub fn Get_test_path() -> Path_owned_type {
-        Path_type::Get_root().to_owned()
+        Path_type::Root.to_owned()
     }
 
     pub fn Test_open_close_delete(File_system: impl File_system_traits) {
