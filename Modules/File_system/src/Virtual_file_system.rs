@@ -231,7 +231,7 @@ impl Virtual_file_system_type {
                 .clone()
                 .Get_common_components(Mount_point_components);
 
-            if Result_score <= Score {
+            if Result_score < Score {
                 Result_score = Score;
                 Result = Some(*File_system_identifier);
             }
