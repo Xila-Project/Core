@@ -10,13 +10,8 @@ use super::*;
 pub struct Path_type(str);
 
 impl Path_type {
-    pub fn Get_root() -> &'static Path_type {
-        unsafe { Self::New_unchecked("/") }
-    }
-
-    pub fn Get_empty() -> &'static Path_type {
-        unsafe { Self::New_unchecked("") }
-    }
+    pub const Root: &'static Path_type = unsafe { Self::New_unchecked_constant("/") };
+    pub const Empty: &'static Path_type = unsafe { Self::New_unchecked_constant("") };
 
     /// # Safety
     /// The caller must ensure that the string is a valid path string.
@@ -71,7 +66,7 @@ impl Path_type {
                 // If there is no separator, the path is either empty or relative to the current directory.
                 if self.Get_length() > 0 {
                     // Relative to the current directory.
-                    return Some(Self::Get_empty());
+                    return Some(Self::Empty);
                 } else {
                     return None;
                 }
@@ -84,7 +79,7 @@ impl Path_type {
             }
 
             if self.Is_absolute() {
-                return Some(Self::Get_root());
+                return Some(Self::Root);
             } else {
                 return Some(unsafe { Self::New_unchecked("") });
             }
