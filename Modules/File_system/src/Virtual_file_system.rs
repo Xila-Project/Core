@@ -968,26 +968,30 @@ mod Tests {
             },
         );
 
-        let (File_system, _, _) =
+        let (File_system, _, Relative_path) =
             Virtual_file_system_type::Get_file_system_from_path(&File_systems, &"/").unwrap();
 
         assert_eq!(File_system, 1.into());
+        assert_eq!(Relative_path, Path_type::Root);
 
-        let (File_system, _, _) =
+        let (File_system, _, Relative_path) =
             Virtual_file_system_type::Get_file_system_from_path(&File_systems, &"/Foo/Bar")
                 .unwrap();
 
         assert_eq!(File_system, 3.into());
+        assert_eq!(Relative_path, Path_type::Root);
 
-        let (File_system, _, _) =
+        let (File_system, _, Relative_path) =
             Virtual_file_system_type::Get_file_system_from_path(&File_systems, &"/Foo/Bar/Baz")
                 .unwrap();
 
         assert_eq!(File_system, 3.into());
+        assert_eq!(Relative_path, "/Baz".as_ref());
 
-        let (File_system, _, _) =
+        let (File_system, _, Relative_path) =
             Virtual_file_system_type::Get_file_system_from_path(&File_systems, &"/Foo").unwrap();
 
         assert_eq!(File_system, 2.into());
+        assert_eq!(Relative_path, Path_type::Root);
     }
 }
