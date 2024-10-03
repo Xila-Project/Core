@@ -146,6 +146,10 @@ impl Path_type {
 
         let Stripped_prefix = self.0.strip_prefix(&Path_prefix.0)?;
 
+        if Stripped_prefix.is_empty() {
+            return Some(Self::Root);
+        }
+
         Self::New(Stripped_prefix)
     }
 
@@ -240,6 +244,14 @@ mod Tests {
 
     #[test]
     fn Test_strip_prefix_absolute() {
+        let Path = Path_type::New("/").unwrap();
+        let Prefix = Path_type::New("/").unwrap();
+        assert_eq!(Path.Strip_prefix_absolute(Prefix).unwrap().As_str(), "/");
+
+        let Path = Path_type::New("/Foo/Bar").unwrap();
+        let Prefix = Path_type::New("/Foo/Bar").unwrap();
+        assert_eq!(Path.Strip_prefix_absolute(Prefix).unwrap().As_str(), "/");
+
         let Path = Path_type::New("/home/user/file.txt").unwrap();
         let Prefix = Path_type::New("/home/user").unwrap();
         assert_eq!(
