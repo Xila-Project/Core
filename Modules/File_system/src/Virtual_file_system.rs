@@ -63,10 +63,6 @@ pub fn Get_instance() -> &'static Virtual_file_system_type {
 ///
 /// It is a singleton.
 pub struct Virtual_file_system_type {
-    /// A reference to the task manager.
-    Task_manager: &'static Task::Manager_type,
-    /// User manager.
-    User_manager: &'static Users::Manager_type,
     /// Mounted file systems.
     File_systems: RwLock<BTreeMap<File_system_identifier_type, Internal_file_system_type>>,
     /// Devices.
@@ -80,9 +76,9 @@ impl Virtual_file_system_type {
     pub const Standard_output_file_identifier: File_identifier_type = File_identifier_type::New(1);
     pub const Standard_error_file_identifier: File_identifier_type = File_identifier_type::New(2);
 
-    fn New(
-        Task_manager: &'static Task::Manager_type,
-        User_manager: &'static Users::Manager_type,
+    pub fn New(
+        _: &'static Task::Manager_type,
+        _: &'static Users::Manager_type,
         _: &'static Time::Manager_type,
         Root_file_system: Box<dyn File_system_traits>,
     ) -> Result_type<Self> {
@@ -100,8 +96,6 @@ impl Virtual_file_system_type {
         );
 
         Ok(Self {
-            Task_manager,
-            User_manager,
             File_systems: RwLock::new(File_systems),
             Device_file_system: Device::File_system_type::New(),
             Pipe_file_system: Pipe::File_system_type::New(),
