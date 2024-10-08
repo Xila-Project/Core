@@ -139,13 +139,13 @@ impl File_system_type {
         Ok(())
     }
 
-    pub fn Duplicate_file_identifier(
+    pub fn Duplicate(
         &self,
         File: Local_file_identifier_type,
     ) -> Result_type<Local_file_identifier_type> {
         let mut Inner = self.0.write()?;
 
-        let (Pipe, Flags) = Inner
+        let (Pipe, Flags, Underlying_file) = Inner
             .Open_pipes
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
@@ -155,26 +155,43 @@ impl File_system_type {
 
         Inner
             .Open_pipes
-            .insert(New_file, (Pipe.clone(), Flags.clone()));
+            .insert(New_file, (Pipe.clone(), Flags, Underlying_file));
 
         Ok(New_file)
     }
 
-    pub fn Transfert_file_identifier(
+    pub fn Transfert(
         &self,
         New_task: Task_identifier_type,
         File: Local_file_identifier_type,
+        New_file: Option<File_identifier_type>,
     ) -> Result_type<Local_file_identifier_type> {
         let mut Inner = self.0.write()?;
 
-        let (Pipe, Flags) = Inner
+        let (Pipe, Flags, Underlying_file) = Inner
             .Open_pipes
             .remove(&File)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        let New_file = Get_new_file_identifier(New_task, &Inner.Open_pipes)?;
+        let New_file = if let Some(File) = New_file {
+            let File = Local_file_identifier_type::New(New_task, File);
 
-        Inner.Open_pipes.insert(New_file, (Pipe, Flags));
+            if Inner.Open_pipes.contains_key(&File) {
+                return Err(Error_type::Invalid_identifier);
+            }
+
+            File
+        } else {
+            Get_new_file_identifier(New_task, &Inner.Open_pipes)?
+        };
+
+        if Inner
+            .Open_pipes
+            .insert(New_file, (Pipe, Flags, Underlying_file))
+            .is_some()
+        {
+            return Err(Error_type::Internal_error); // Should never happen
+        }
 
         Ok(New_file)
     }

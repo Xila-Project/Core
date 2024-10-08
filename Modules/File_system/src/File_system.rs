@@ -59,16 +59,17 @@ pub trait File_system_traits: Send + Sync {
     fn Close_all(&self, Task: Task_identifier_type) -> Result_type<()>;
 
     /// Duplicate a file identifier.
-    fn Duplicate_file_identifier(
+    fn Duplicate(
         &self,
         File: Local_file_identifier_type,
     ) -> Result_type<Local_file_identifier_type>;
 
     /// Transfer a file identifier from a task to another.
-    fn Transfert_file_identifier(
+    fn Transfert(
         &self,
         New_task: Task_identifier_type,
         File: Local_file_identifier_type,
+        New_file: Option<File_identifier_type>,
     ) -> Result_type<Local_file_identifier_type>;
 
     /// Remove a file or a directory.

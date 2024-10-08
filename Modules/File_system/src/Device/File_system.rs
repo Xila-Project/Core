@@ -95,13 +95,13 @@ impl File_system_type {
         Ok(())
     }
 
-    pub fn Duplicate_file_identifier(
+    pub fn Duplicate(
         &self,
         File: Local_file_identifier_type,
     ) -> Result_type<Local_file_identifier_type> {
         let mut Inner = self.0.write()?;
 
-        let (Device, Flags) = Inner
+        let (Device, Flags, Underlying_file) = Inner
             .Open_devices
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
@@ -111,26 +111,43 @@ impl File_system_type {
 
         Inner
             .Open_devices
-            .insert(New_file, (Device.clone(), Flags.clone()));
+            .insert(New_file, (Device.clone(), Flags, Underlying_file));
 
         Ok(New_file)
     }
 
-    pub fn Transfert_file_identifier(
+    pub fn Transfert(
         &self,
         New_task: Task_identifier_type,
         File: Local_file_identifier_type,
+        New_file: Option<File_identifier_type>,
     ) -> Result_type<Local_file_identifier_type> {
         let mut Inner = self.0.write()?;
 
-        let (Device, Flags) = Inner
+        let (Device, Flags, Underlying_file) = Inner
             .Open_devices
             .remove(&File)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        let New_file = Get_new_file_identifier(New_task, &Inner.Open_devices)?;
+        let New_file = if let Some(New_file) = New_file {
+            let File = Local_file_identifier_type::New(New_task, New_file);
 
-        Inner.Open_devices.insert(New_file, (Device, Flags));
+            if Inner.Open_devices.contains_key(&File) {
+                return Err(Error_type::Invalid_identifier);
+            }
+
+            File
+        } else {
+            Get_new_file_identifier(New_task, &Inner.Open_devices)?
+        };
+
+        if Inner
+            .Open_devices
+            .insert(New_file, (Device, Flags, Underlying_file))
+            .is_some()
+        {
+            return Err(Error_type::Internal_error); // Should never happen
+        }
 
         Ok(New_file)
     }

@@ -218,7 +218,7 @@ impl File_system_traits for File_system_type {
         Ok(())
     }
 
-    fn Duplicate_file_identifier(
+    fn Duplicate(
         &self,
         File: Local_file_identifier_type,
     ) -> crate::Result_type<Local_file_identifier_type> {
@@ -242,10 +242,11 @@ impl File_system_traits for File_system_type {
         Ok(File_identifier)
     }
 
-    fn Transfert_file_identifier(
+    fn Transfert(
         &self,
         New_task: Task::Task_identifier_type,
         File: Local_file_identifier_type,
+        New_file: Option<File_identifier_type>,
     ) -> crate::Result_type<Local_file_identifier_type> {
         let mut Inner = self.Inner.write()?;
 
@@ -254,10 +255,20 @@ impl File_system_traits for File_system_type {
             .remove(&File)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        let File_identifier = Get_new_file_identifier(New_task, &Inner.Open_files)?;
+        let File_identifier = if let Some(New_file) = New_file {
+            let File = Local_file_identifier_type::New(New_task, New_file);
+
+            if Inner.Open_files.contains_key(&File) {
+                return Err(Error_type::Invalid_identifier.into());
+            }
+
+            File
+        } else {
+            Get_new_file_identifier(New_task, &Inner.Open_files)?
+        };
 
         if Inner.Open_files.insert(File_identifier, File).is_some() {
-            return Err(Error_type::Internal_error.into());
+            return Err(Error_type::Internal_error.into()); // Should never happen
         }
 
         Ok(File_identifier)
