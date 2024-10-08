@@ -3,20 +3,15 @@ use std::borrow::Borrow;
 use super::*;
 
 /// A borrowed path type.
-/// The implementation is very similar to the standard library's `std::path::Path`.
+/// The implementation is very similar to the standard library's [`std::path::Path`].
 /// However, this implementation is more lightweight and allows for std-less usage.
 #[derive(Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct Path_type(str);
 
 impl Path_type {
-    pub fn Get_root() -> &'static Path_type {
-        unsafe { Self::New_unchecked("/") }
-    }
-
-    pub fn Get_empty() -> &'static Path_type {
-        unsafe { Self::New_unchecked("") }
-    }
+    pub const Root: &'static Path_type = unsafe { Self::New_unchecked_constant("/") };
+    pub const Empty: &'static Path_type = unsafe { Self::New_unchecked_constant("") };
 
     /// # Safety
     /// The caller must ensure that the string is a valid path string.
@@ -71,7 +66,7 @@ impl Path_type {
                 // If there is no separator, the path is either empty or relative to the current directory.
                 if self.Get_length() > 0 {
                     // Relative to the current directory.
-                    return Some(Self::Get_empty());
+                    return Some(Self::Empty);
                 } else {
                     return None;
                 }
@@ -84,7 +79,7 @@ impl Path_type {
             }
 
             if self.Is_absolute() {
-                return Some(Self::Get_root());
+                return Some(Self::Root);
             } else {
                 return Some(unsafe { Self::New_unchecked("") });
             }
@@ -150,6 +145,10 @@ impl Path_type {
         }
 
         let Stripped_prefix = self.0.strip_prefix(&Path_prefix.0)?;
+
+        if Stripped_prefix.is_empty() {
+            return Some(Self::Root);
+        }
 
         Self::New(Stripped_prefix)
     }
@@ -245,6 +244,14 @@ mod Tests {
 
     #[test]
     fn Test_strip_prefix_absolute() {
+        let Path = Path_type::New("/").unwrap();
+        let Prefix = Path_type::New("/").unwrap();
+        assert_eq!(Path.Strip_prefix_absolute(Prefix).unwrap().As_str(), "/");
+
+        let Path = Path_type::New("/Foo/Bar").unwrap();
+        let Prefix = Path_type::New("/Foo/Bar").unwrap();
+        assert_eq!(Path.Strip_prefix_absolute(Prefix).unwrap().As_str(), "/");
+
         let Path = Path_type::New("/home/user/file.txt").unwrap();
         let Prefix = Path_type::New("/home/user").unwrap();
         assert_eq!(

@@ -34,6 +34,10 @@ extern "C"
 #define BH_PLATFORM_XILA
 #endif
 
+#ifndef PATH_MAX
+    #define PATH_MAX 256
+#endif
+
     typedef uint32_t korp_tid;
 
     struct Raw_mutex_type
@@ -114,7 +118,7 @@ extern "C"
 #define DT_LNK DTYPE_LINK
 #define DT_SOCK DTYPE_SOCK
 
-    typedef void *os_dir_stream;
+    typedef uint64_t os_dir_stream;
     typedef uint64_t os_raw_file_handle;
     typedef uint64_t os_file_handle;
 

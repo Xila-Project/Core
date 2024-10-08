@@ -1,6 +1,19 @@
-#include "Xila.h"
+#include "../../../ABI/include/Xila.h"
 
-__wasi_errno_t Into_Wasi_Error(File_system_result_type Error)
+Xila_file_system_whence_type Into_Xila_whence(__wasi_whence_t Whence)
+{
+    switch (Whence)
+    {
+    case __WASI_WHENCE_CUR:
+        return Xila_file_system_whence_current;
+    case __WASI_WHENCE_END:
+        return Xila_file_system_whence_end;
+    default:
+        return Xila_file_system_whence_start;
+    }
+}
+
+__wasi_errno_t Into_WASI_Error(File_system_result_type Error)
 {
     switch (Error)
     {
@@ -9,8 +22,29 @@ __wasi_errno_t Into_Wasi_Error(File_system_result_type Error)
     case Not_found:
         return __WASI_ENOENT;
     default:
-        return __WASI_ECANCELED;
+        return Error;
         break;
+    }
+}
+
+__wasi_filetype_t Into_WASI_file_type(Xila_file_system_type_type Type)
+{
+    switch (Type)
+    {
+    case Xila_file_system_type_file:
+        return __WASI_FILETYPE_REGULAR_FILE;
+    case Xila_file_system_type_directory:
+        return __WASI_FILETYPE_DIRECTORY;
+    case Xila_file_system_type_symbolic_link:
+        return __WASI_FILETYPE_SYMBOLIC_LINK;
+    case Xila_file_system_type_character_device:
+        return __WASI_FILETYPE_CHARACTER_DEVICE;
+    case Xila_file_system_type_block_device:
+        return __WASI_FILETYPE_BLOCK_DEVICE;
+    case Xila_file_system_type_socket:
+        return __WASI_FILETYPE_SOCKET_DGRAM;
+    default:
+        return __WASI_FILETYPE_UNKNOWN;
     }
 }
 
@@ -25,40 +59,15 @@ void Into_WASI_file_statistics(const Xila_file_system_statistics_type *Statistic
     WASI_Statistics->st_atim = Statistics->Last_access;
     WASI_Statistics->st_mtim = Statistics->Last_modification;
     WASI_Statistics->st_ctim = Statistics->Last_status_change;
-
-    switch (Statistics->Type)
-    {
-    case Xila_file_system_type_file:
-        WASI_Statistics->st_filetype = __WASI_FILETYPE_REGULAR_FILE;
-        break;
-    case Xila_file_system_type_directory:
-        WASI_Statistics->st_filetype = __WASI_FILETYPE_DIRECTORY;
-        break;
-    case Xila_file_system_type_symbolic_link:
-        WASI_Statistics->st_filetype = __WASI_FILETYPE_SYMBOLIC_LINK;
-        break;
-    case Xila_file_system_type_character_device:
-        WASI_Statistics->st_filetype = __WASI_FILETYPE_CHARACTER_DEVICE;
-        break;
-    case Xila_file_system_type_block_device:
-        WASI_Statistics->st_filetype = __WASI_FILETYPE_BLOCK_DEVICE;
-        break;
-        break;
-    case Xila_file_system_type_socket:
-        WASI_Statistics->st_filetype = __WASI_FILETYPE_SOCKET_DGRAM;
-        break;
-    default:
-        WASI_Statistics->st_filetype = __WASI_FILETYPE_UNKNOWN;
-        break;
-    }
+    WASI_Statistics->st_filetype = Into_WASI_file_type(Statistics->Type);
 }
 
 wasi_libc_file_access_mode Into_WASI_access_mode(Xila_file_system_mode_type Mode)
 {
 
-    if (Mode & Xila_file_system_mode_write_bit)
+    if (Mode & Xila_file_system_mode_write_mask)
     {
-        if (Mode & Xila_file_system_mode_read_bit)
+        if (Mode & Xila_file_system_mode_read_mask)
         {
             return WASI_LIBC_ACCESS_MODE_READ_WRITE;
         }
@@ -67,4 +76,55 @@ wasi_libc_file_access_mode Into_WASI_access_mode(Xila_file_system_mode_type Mode
     }
 
     return WASI_LIBC_ACCESS_MODE_READ_ONLY;
+}
+
+Xila_file_system_mode_type Into_Xila_mode(wasi_libc_file_access_mode Mode)
+{
+    switch (Mode)
+    {
+    case WASI_LIBC_ACCESS_MODE_READ_ONLY:
+        return Xila_file_system_mode_read_mask;
+
+    case WASI_LIBC_ACCESS_MODE_WRITE_ONLY:
+        return Xila_file_system_mode_write_mask;
+    case WASI_LIBC_ACCESS_MODE_READ_WRITE:
+        return Xila_file_system_mode_read_mask | Xila_file_system_mode_write_mask;
+    default:
+        return 0;
+    }
+}
+
+Xila_file_system_open_type Into_Xila_open(__wasi_oflags_t WASI_open)
+{
+    Xila_file_system_open_type Open = 0;
+
+    if (WASI_open & __WASI_O_CREAT)
+        Open |= Xila_file_system_open_create_mask;
+
+    if (WASI_open & __WASI_O_EXCL)
+        Open |= Xila_file_system_open_create_only_mask;
+
+    if (WASI_open & __WASI_O_TRUNC)
+        Open |= Xila_file_system_open_truncate_mask;
+
+    return Open;
+}
+
+Xila_file_system_status_type Into_Xila_status(__wasi_fdflags_t WASI_status)
+{
+    Xila_file_system_status_type Status = 0;
+
+    if (WASI_status & __WASI_FDFLAG_APPEND)
+        Status |= Xila_file_system_status_append_mask;
+
+    if (WASI_status & __WASI_FDFLAG_SYNC)
+        Status |= Xila_file_system_status_synchronous_mask;
+
+    if (WASI_status & __WASI_FDFLAG_DSYNC)
+        Status |= Xila_file_system_status_synchronous_data_only_mask;
+
+    if (WASI_status & __WASI_FDFLAG_NONBLOCK)
+        Status |= Xila_file_system_status_non_blocking_mask;
+
+    return Status;
 }

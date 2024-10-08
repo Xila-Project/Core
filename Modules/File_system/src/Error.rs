@@ -32,6 +32,16 @@ pub enum Error_type {
     Failed_to_get_users_manager_instance,
     Failed_to_get_task_manager_instance,
     Invalid_input,
+    Invalid_flags,
+    Not_directory,
+    Is_directory,
+    Input_output,
+    Directory_not_empty,
+    File_too_large,
+    No_attribute,
+    Name_too_long,
+    Corrupted,
+    No_memory,
     Other,
 }
 
@@ -61,6 +71,12 @@ impl From<std::io::Error> for Error_type {
 impl From<Task::Error_type> for Error_type {
     fn from(_: Task::Error_type) -> Self {
         Error_type::Failed_to_get_task_informations
+    }
+}
+
+impl From<Users::Error_type> for Error_type {
+    fn from(_: Users::Error_type) -> Self {
+        Error_type::Failed_to_get_users_informations
     }
 }
 

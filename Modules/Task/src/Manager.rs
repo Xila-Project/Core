@@ -6,7 +6,7 @@ use super::*;
 use std::{
     borrow::Cow,
     collections::{BTreeMap, HashMap},
-    sync::RwLock,
+    sync::{OnceLock, RwLock},
     time::Duration,
 };
 use Users::{Root_user_identifier, User_identifier_type};
@@ -23,30 +23,22 @@ struct Task_internal_type {
     Environment_variables: HashMap<Cow<'static, str>, Cow<'static, str>>,
 }
 
-static mut Manager_instance: Option<Manager_type> = None;
+static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
 
 pub fn Initialize() -> Result_type<&'static Manager_type> {
-    if Is_initialized() {
-        return Err(Error_type::Already_initialized);
-    }
-
-    unsafe {
-        Manager_instance = Some(Manager_type::New());
-    }
+    Manager_instance.get_or_init(Manager_type::New);
 
     Ok(Get_instance())
 }
 
 pub fn Get_instance() -> &'static Manager_type {
-    unsafe {
-        Manager_instance
-            .as_ref()
-            .expect("Cannot get Task manager instance before initialization")
-    }
+    Manager_instance
+        .get()
+        .expect("Cannot get Task manager instance before initialization")
 }
 
 pub fn Is_initialized() -> bool {
-    unsafe { Manager_instance.is_some() }
+    Manager_instance.get().is_some()
 }
 
 struct Inner_manager_type {
@@ -81,7 +73,7 @@ impl Manager_type {
             Environment_variables: HashMap::new(),
         };
 
-        Self::Register_task(Task_identifier, Task_internal, &mut Inner.Tasks)
+        Self::Register_task_internal(Task_identifier, Task_internal, &mut Inner.Tasks)
             .expect("Failed to register root task");
 
         drop(Inner); // Release write lock
@@ -93,6 +85,40 @@ impl Manager_type {
             .expect("Failed to register root thread");
 
         Manager
+    }
+
+    /// Register the current thread as a task.
+    ///
+    /// This function should ONLY be called for testing purposes.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it can lead to undefined behavior if the current thread is already registered.
+    pub unsafe fn Register_task(&self) -> Result_type<()> {
+        let mut Inner = self.0.write()?;
+
+        let Task_identifier = Self::Get_new_task_identifier(&Inner.Tasks)?;
+
+        // Create root task which is its own parent
+        let Task_internal = Task_internal_type {
+            Main_thread: Thread_wrapper_type::Get_current(),
+            Parent: Self::Root_task_identifier,
+            Owner: Root_user_identifier,
+            Environment_variables: HashMap::new(),
+        };
+
+        if Inner
+            .Threads
+            .insert(
+                Thread_wrapper_type::Get_current().Get_identifier(),
+                Task_identifier,
+            )
+            .is_some()
+        {
+            return Err(Error_type::Thread_already_registered);
+        }
+
+        Self::Register_task_internal(Task_identifier, Task_internal, &mut Inner.Tasks)
     }
 
     fn Get_new_task_identifier(
@@ -127,7 +153,7 @@ impl Manager_type {
     ///
     /// This function check if the task identifier is not already used,
     /// however it doesn't check if the parent task exists.
-    fn Register_task(
+    fn Register_task_internal(
         Task_identifier: Task_identifier_type,
         Task_internal: Task_internal_type,
         Tasks: &mut BTreeMap<Task_identifier_type, Task_internal_type>,
@@ -295,7 +321,7 @@ impl Manager_type {
         let Join_handle =
             Self::New_thread_internal(Child_task_identifier, Name, Stack_size, Function, true)?;
 
-        Self::Register_task(
+        Self::Register_task_internal(
             Child_task_identifier,
             Task_internal_type {
                 Main_thread: Join_handle.Get_thread_wrapper(),

@@ -1,4 +1,4 @@
-#include "Xila.h"
+#include "../../../ABI/include/Xila.h"
 #include "Internal.h"
 
 /***************************************************
@@ -1311,12 +1311,12 @@ os_fstat(os_file_handle handle, struct __wasi_filestat_t *buf)
 {
     Xila_file_system_statistics_type Statistics;
 
-    File_system_result_type Result = Xila_get_file_statistics(handle, &Statistics);
+    File_system_result_type Result = Xila_file_system_get_statistics(handle, &Statistics);
 
     if (Result == 0)
         Into_WASI_file_statistics(&Statistics, buf);
 
-    return Into_Wasi_Error(Result);
+    return Into_WASI_Error(Result);
 }
 
 /**
@@ -1369,7 +1369,7 @@ os_file_set_fdflags(os_file_handle handle, __wasi_fdflags_t flags)
 __wasi_errno_t
 os_fdatasync(os_file_handle handle)
 {
-    return Xila_synchronize_file_data(handle, false);
+    return Into_WASI_Error(Xila_file_system_flush(handle, false));
 }
 
 /**
@@ -1380,7 +1380,7 @@ os_fdatasync(os_file_handle handle)
 __wasi_errno_t
 os_fsync(os_file_handle handle)
 {
-    return Xila_synchronize_file_data(handle, true);
+    return Into_WASI_Error(Xila_file_system_flush(handle, true));
 }
 
 /**
@@ -1393,7 +1393,12 @@ os_fsync(os_file_handle handle)
 __wasi_errno_t
 os_open_preopendir(const char *path, os_file_handle *out)
 {
-    return Into_Wasi_Error(Xila_pre_open_directory(path, out));
+
+    printf("Open preopendir: %s\n", path);
+
+    File_system_error_type Result = Xila_file_system_open_directory(path, out);
+
+    return Into_WASI_Error(Result);
 }
 
 /**
@@ -1414,8 +1419,40 @@ os_openat(os_file_handle handle, const char *path, __wasi_oflags_t oflags,
           __wasi_fdflags_t fd_flags, __wasi_lookupflags_t lookup_flags,
           wasi_libc_file_access_mode access_mode, os_file_handle *out)
 {
-    return Xila_open_at(handle, path, oflags, fd_flags, lookup_flags,
-                        access_mode, out);
+    if (oflags & __WASI_O_DIRECTORY)
+    {
+        if (path[0] == '.')
+        {
+            size_t Path_size = strlen(path) + 1;
+            char New_path[Path_size];
+            strncpy(New_path, path, Path_size);
+            New_path[0] = '/';
+
+            return Into_WASI_Error(Xila_file_system_open_directory(New_path, out));
+        }
+        else
+        {
+            return Into_WASI_Error(Xila_file_system_open_directory(path, out));
+        }
+    }
+    else
+    {
+        Xila_file_system_mode_type Mode = Into_Xila_mode(access_mode);
+        Xila_file_system_open_type Open = Into_Xila_open(oflags);
+        Xila_file_system_status_type Status = Into_Xila_status(fd_flags);
+
+        if (path[0] != '/')
+        {
+            size_t Path_size = strlen(path) + 1;
+            char New_path[Path_size];
+            strncpy(New_path + 1, path, Path_size);
+            New_path[0] = '/';
+
+            return Into_WASI_Error(Xila_file_system_open(New_path, Mode, Open, Status, out));
+        }
+
+        return Into_WASI_Error(Xila_file_system_open(path, Mode, Open, Status, out));
+    }
 }
 
 /**
@@ -1439,7 +1476,7 @@ os_file_get_access_mode(os_file_handle handle,
         *access_mode = Into_WASI_access_mode(Mode);
     }
 
-    return Into_Wasi_Error(Result);
+    return Into_WASI_Error(Result);
 }
 
 /**
@@ -1614,7 +1651,7 @@ __wasi_errno_t
 os_readlinkat(os_file_handle handle, const char *path, char *buf,
               size_t bufsize, size_t *nread)
 {
-    return Xila_read_link_at(handle, path, buf, bufsize, nread);
+    return __WASI_EINVAL;
 }
 
 /**
@@ -1634,7 +1671,7 @@ os_linkat(os_file_handle from_handle, const char *from_path,
 {
     bool follow = lookup_flags & __WASI_LOOKUP_SYMLINK_FOLLOW;
 
-    return Into_Wasi_Error(
+    return Into_WASI_Error(
         Xila_create_link_at(from_handle, from_path, to_handle, to_path,
                             follow));
 }
@@ -1649,7 +1686,7 @@ os_linkat(os_file_handle from_handle, const char *from_path,
 __wasi_errno_t
 os_symlinkat(const char *old_path, os_file_handle handle, const char *new_path)
 {
-    return Into_Wasi_Error(Xila_create_symbolic_link_at(old_path, handle, new_path));
+    return Into_WASI_Error(Xila_create_symbolic_link_at(old_path, handle, new_path));
 }
 
 /**
@@ -1661,7 +1698,18 @@ os_symlinkat(const char *old_path, os_file_handle handle, const char *new_path)
 __wasi_errno_t
 os_mkdirat(os_file_handle handle, const char *path)
 {
-    return Into_Wasi_Error(Xila_create_directory_at(handle, path));
+    if (path[0] != '/')
+    {
+        size_t Path_size = strlen(path) + 2;
+        char New_path[strlen(path) + 2];
+
+        New_path[0] = '/';
+        strncpy(New_path + 1, path, Path_size);
+
+        return Into_WASI_Error(Xila_file_system_create_directory(New_path));
+    }
+
+    return Into_WASI_Error(Xila_file_system_create_directory(path));
 }
 
 /**
@@ -1677,7 +1725,21 @@ __wasi_errno_t
 os_renameat(os_file_handle old_handle, const char *old_path,
             os_file_handle new_handle, const char *new_path)
 {
-    return Xila_rename_at(old_handle, old_path, new_handle, new_path);
+    size_t Old_path_size = strlen(old_path) + 2;
+
+    char Old_new_path[Old_path_size];
+
+    Old_new_path[0] = '/';
+    strncpy(Old_new_path + 1, old_path, Old_path_size);
+
+    size_t New_path_size = strlen(new_path) + 2;
+
+    char New_new_path[New_path_size];
+
+    New_new_path[0] = '/';
+    strncpy(New_new_path + 1, new_path, New_path_size);
+
+    return Into_WASI_Error(Xila_file_system_rename(Old_new_path, New_new_path));
 }
 
 /**
@@ -1705,7 +1767,9 @@ __wasi_errno_t
 os_lseek(os_file_handle handle, __wasi_filedelta_t offset,
          __wasi_whence_t whence, __wasi_filesize_t *new_offset)
 {
-    return Xila_set_position(handle, offset, whence, new_offset);
+    Xila_file_system_whence_type Whence = Into_Xila_whence(whence);
+
+    return Into_WASI_Error(Xila_file_system_set_position(handle, offset, Whence, new_offset));
 }
 
 /**
@@ -1724,6 +1788,8 @@ __wasi_errno_t
 os_fadvise(os_file_handle handle, __wasi_filesize_t offset,
            __wasi_filesize_t length, __wasi_advice_t advice)
 {
+    printf("os_fadvise\n");
+
     return Xila_get_advisory_information(handle, offset, length, advice);
 }
 
@@ -1737,7 +1803,7 @@ os_fadvise(os_file_handle handle, __wasi_filesize_t offset,
 __wasi_errno_t
 os_isatty(os_file_handle handle)
 {
-    return Xila_file_system_is_terminal(handle);
+    return Xila_file_system_is_a_terminal(handle);
 }
 
 /**
@@ -1795,7 +1861,9 @@ os_convert_stderr_handle(os_raw_file_handle raw_stderr)
 __wasi_errno_t
 os_fdopendir(os_file_handle handle, os_dir_stream *dir_stream)
 {
-    return Into_Wasi_Error(Xila_open_directory(handle, dir_stream));
+    *dir_stream = handle;
+
+    return __WASI_ESUCCESS;
 }
 
 /**
@@ -1806,7 +1874,7 @@ os_fdopendir(os_file_handle handle, os_dir_stream *dir_stream)
 __wasi_errno_t
 os_rewinddir(os_dir_stream dir_stream)
 {
-    return Into_Wasi_Error(Xila_rewind_directory(dir_stream));
+    return Into_WASI_Error(Xila_file_system_rewind_directory(dir_stream));
 }
 
 /**
@@ -1818,7 +1886,7 @@ os_rewinddir(os_dir_stream dir_stream)
 __wasi_errno_t
 os_seekdir(os_dir_stream dir_stream, __wasi_dircookie_t position)
 {
-    return Into_Wasi_Error(Xila_set_directory_position(dir_stream, position));
+    return Into_WASI_Error(Xila_file_system_set_directory_position(dir_stream, position));
 }
 
 /**
@@ -1832,7 +1900,19 @@ os_seekdir(os_dir_stream dir_stream, __wasi_dircookie_t position)
  */
 __wasi_errno_t os_readdir(os_dir_stream dir_stream, __wasi_dirent_t *entry, const char **d_name)
 {
-    return Into_Wasi_Error(Xila_read_directory(dir_stream, entry, d_name));
+    Xila_file_system_size_type Size = 0;
+    Xila_file_system_inode_type Inode = 0;
+    Xila_file_system_type_type Type = 0;
+
+    File_system_result_type Result = Xila_file_system_read_directory(dir_stream, d_name, &Type, &Size, &Inode);
+
+    if ((*d_name) != NULL)
+    {
+        entry->d_ino = Inode;
+        entry->d_namlen = strlen(*d_name);
+        entry->d_type = Into_WASI_file_type(Type);
+    }
+    return Into_WASI_Error(Result);
 }
 
 /**
@@ -1844,7 +1924,7 @@ __wasi_errno_t os_readdir(os_dir_stream dir_stream, __wasi_dirent_t *entry, cons
 __wasi_errno_t
 os_closedir(os_dir_stream dir_stream)
 {
-    return Into_Wasi_Error(Xila_close_directory(dir_stream));
+    return Into_WASI_Error(Xila_file_system_close_directory(dir_stream));
 }
 
 /**
@@ -1855,7 +1935,7 @@ os_closedir(os_dir_stream dir_stream)
  */
 os_dir_stream os_get_invalid_dir_stream()
 {
-    return NULL;
+    return 0xFFFFFFFFFFFFFFFF;
 }
 
 /**
@@ -1867,7 +1947,7 @@ os_dir_stream os_get_invalid_dir_stream()
  */
 bool os_is_dir_stream_valid(os_dir_stream *dir_stream)
 {
-    return *dir_stream != NULL;
+    return *dir_stream != os_get_invalid_dir_stream();
 }
 
 /**
@@ -1892,7 +1972,20 @@ bool os_is_handle_valid(os_file_handle *handle)
  */
 char *os_realpath(const char *path, char *resolved_path)
 {
-    return Xila_resolve_path(path, resolved_path);
+    printf("Resolve path: %s\n", path);
+
+    // File_system_result_type Result = Xila_file_system_resolve_path(path, resolved_path, PATH_MAX);
+
+    // printf("os_realpath: %s - %u\n", resolved_path, Result);
+
+    // if (Result == 0)
+    //     return resolved_path;
+    // else
+    //     return NULL;
+
+    strncpy(resolved_path, path, PATH_MAX);
+
+    return resolved_path;
 }
 
 /****************************************************
@@ -1945,5 +2038,5 @@ bool os_is_stdout_handle(os_file_handle fd)
 
 bool os_is_stderr_handle(os_file_handle fd)
 {
-    return Xila_file_system_is_stdout(fd);
+    return Xila_file_system_is_stderr(fd);
 }

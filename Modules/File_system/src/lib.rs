@@ -11,7 +11,9 @@ mod Pipe;
 mod Time;
 mod Virtual_file_system;
 
-pub use Device::Device_trait;
+pub mod LittleFS;
+
+pub use Device::{Device_trait, Device_type};
 pub use Error::*;
 pub use File::*;
 pub use File_system::*;

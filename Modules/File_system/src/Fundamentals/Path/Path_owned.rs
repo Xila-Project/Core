@@ -110,7 +110,7 @@ impl Path_owned_type {
             Stack.push("");
         }
 
-        for Component in self.0.split('/') {
+        for Component in self.0.split(Separator) {
             match Component {
                 ".." => {
                     Stack.pop();

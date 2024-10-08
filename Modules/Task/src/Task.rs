@@ -21,6 +21,10 @@ impl Task_identifier_type {
     pub const fn New(Identifier: Task_identifier_inner_type) -> Self {
         Self(Identifier)
     }
+
+    pub const fn Into_inner(self) -> Task_identifier_inner_type {
+        self.0
+    }
 }
 
 impl From<Task_identifier_inner_type> for Task_identifier_type {

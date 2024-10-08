@@ -1,10 +1,26 @@
 use crate::{File_system_identifier_type, Size_type, Time_type, Type_type};
 
+use super::Inode_type;
+
+/// Statistics of a file.
+///
+/// This type contains information about a file, such as its size, inode, etc.
+///
+/// # Fields
+///
+/// * `File_system`: The file system the file is on.
+/// * `Inode`: The inode of the file.
+/// * `Links`: The number of hard links to the file.
+/// * `Size`: The size of the file.
+/// * `Last_access`: The last time the file was accessed.
+/// * `Last_modification`: The last time the file was modified.
+/// * `Last_status_change`: The last time the file's status was changed.
+/// * `Type`: The type of the file.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct Statistics_type {
     File_system: File_system_identifier_type,
-    Inode: u64,
+    Inode: Inode_type,
     Links: u64,
     Size: Size_type,
     Last_access: Time_type,
@@ -17,7 +33,7 @@ impl Statistics_type {
     #[allow(clippy::too_many_arguments)]
     pub fn New(
         File_system: File_system_identifier_type,
-        Inode: u64,
+        Inode: Inode_type,
         Links: u64,
         Size: Size_type,
         Last_access: Time_type,
@@ -41,7 +57,7 @@ impl Statistics_type {
         self.File_system
     }
 
-    pub const fn Get_inode(&self) -> u64 {
+    pub const fn Get_inode(&self) -> Inode_type {
         self.Inode
     }
 
@@ -70,7 +86,7 @@ impl Statistics_type {
         self
     }
 
-    pub fn Set_inode(&mut self, Inode: u64) -> &mut Self {
+    pub fn Set_inode(&mut self, Inode: Inode_type) -> &mut Self {
         self.Inode = Inode;
         self
     }

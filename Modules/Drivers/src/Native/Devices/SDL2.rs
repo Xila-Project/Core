@@ -10,7 +10,7 @@ use sdl2::{
     video::Window,
     EventPump, Sdl, VideoSubsystem,
 };
-use File_system::{Device_trait, Result_type};
+use File_system::{Device_trait, Result_type, Size_type};
 
 use std::{marker::PhantomData, mem::size_of, process::exit, sync::RwLock};
 
@@ -103,7 +103,7 @@ impl Screen_device_type {
 }
 
 impl Device_trait for Screen_device_type {
-    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<usize> {
+    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<Size_type> {
         let Data: &mut Screen_read_data_type = Buffer
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_input)?;
@@ -113,24 +113,24 @@ impl Device_trait for Screen_device_type {
                 .map_err(|_| File_system::Error_type::Internal_error)?,
         );
 
-        Ok(size_of::<Screen_read_data_type>())
+        Ok(Size_type::New(size_of::<Self>() as u64))
     }
 
-    fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<usize> {
+    fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<Size_type> {
         let Data: &Screen_write_data_type = Buffer
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_input)?;
 
         self.Update(Data).expect("Error updating screen.");
 
-        Ok(size_of::<Screen_write_data_type>())
+        Ok(Size_type::New(size_of::<Self>() as u64))
     }
 
-    fn Get_size(&self) -> File_system::Result_type<usize> {
-        Ok(size_of::<Self>())
+    fn Get_size(&self) -> File_system::Result_type<Size_type> {
+        Ok(Size_type::New(size_of::<Self>() as u64))
     }
 
-    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<usize> {
+    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<Size_type> {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
@@ -218,7 +218,7 @@ impl Pointer_device_type {
 }
 
 impl Device_trait for Pointer_device_type {
-    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<usize> {
+    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<Size_type> {
         if self.Update().is_err() {
             return Err(File_system::Error_type::Internal_error);
         }
@@ -229,18 +229,18 @@ impl Device_trait for Pointer_device_type {
 
         *Input = *self.Last_input.read()?;
 
-        Ok(size_of::<Pointer_data_type>())
+        Ok(Size_type::New(size_of::<Pointer_data_type>() as u64))
     }
 
-    fn Write(&self, _: &[u8]) -> File_system::Result_type<usize> {
+    fn Write(&self, _: &[u8]) -> File_system::Result_type<Size_type> {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
-    fn Get_size(&self) -> File_system::Result_type<usize> {
-        Ok(size_of::<Pointer_data_type>())
+    fn Get_size(&self) -> File_system::Result_type<Size_type> {
+        Ok(Size_type::New(size_of::<Pointer_data_type>() as u64))
     }
 
-    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<usize> {
+    fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<Size_type> {
         Err(File_system::Error_type::Unsupported_operation)
     }
 

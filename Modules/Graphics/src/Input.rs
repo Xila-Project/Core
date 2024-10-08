@@ -1,4 +1,4 @@
-use std::{ffi::c_void, pin::Pin};
+use std::ffi::c_void;
 
 //use lvgl::input_device::{pointer, InputDriver};
 use File_system::File_type;
@@ -7,8 +7,8 @@ use crate::{Display::Display_type, Pointer_data_type, Result_type};
 
 use super::lvgl;
 
-struct User_data_type {
-    pub File: File_type,
+struct User_data_type<'a> {
+    pub File: File_type<'a>,
 }
 
 pub struct Input_type {
@@ -63,16 +63,13 @@ impl Input_type {
         _: &Display_type<Buffer_size>,
     ) -> Result_type<Self> {
         // User_data is a pinned box, so it's ownership can be transferred to LVGL and will not move or dropper until the Input_device is dropped.
-        let User_data = Box::pin(User_data_type { File });
+        let User_data = Box::new(User_data_type { File });
 
         let Input_device = unsafe {
             let Input_device = lvgl::lv_indev_create();
             lvgl::lv_indev_set_type(Input_device, lvgl::lv_indev_type_t_LV_INDEV_TYPE_POINTER);
             lvgl::lv_indev_set_read_cb(Input_device, Some(Binding_callback_function));
-            lvgl::lv_indev_set_user_data(
-                Input_device,
-                Box::into_raw(Pin::into_inner_unchecked(User_data)) as *mut c_void,
-            );
+            lvgl::lv_indev_set_user_data(Input_device, Box::into_raw(User_data) as *mut c_void);
 
             Input_device
         };
