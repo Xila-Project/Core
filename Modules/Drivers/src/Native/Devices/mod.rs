@@ -21,16 +21,18 @@ pub fn Mount_devices(
     Virtual_file_systems
         .Mount_device(
             Task,
-            &"/Devices/Pointer",
+            "/Devices/Pointer",
             Device_type::New(Arc::new(Pointer_device)),
+            false,
         )
         .expect("Error adding pointer device");
 
     Virtual_file_systems
         .Mount_device(
             Task,
-            &"/Devices/Screen",
+            "/Devices/Screen",
             Device_type::New(Arc::new(Screen_device)),
+            false,
         )
         .expect("Error adding screen device");
 
