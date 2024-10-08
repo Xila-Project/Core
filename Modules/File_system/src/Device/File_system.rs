@@ -313,14 +313,10 @@ impl File_system_type {
 #[cfg(test)]
 mod tests {
     use crate::Create_device;
-    use crate::Device_trait;
     use crate::Position_type;
     use crate::Tests::Memory_device_type;
 
     use super::*;
-    use std::collections::BTreeMap;
-    use std::sync::Arc;
-    use std::sync::RwLock;
 
     pub const Memory_device_size: usize = 1024;
     pub const Memory_device_block_size: usize = 512;
@@ -351,6 +347,7 @@ mod tests {
                 Inode,
                 Task_identifier_type::New(0),
                 Mode_type::Read_only.into(),
+                0_usize.into(),
             )
             .unwrap();
         assert!(fs.Close(file_id).is_ok());
@@ -370,6 +367,7 @@ mod tests {
                 Inode,
                 Task_identifier_type::New(0),
                 Mode_type::Read_write.into(),
+                0_usize.into(),
             )
             .unwrap();
 
@@ -398,9 +396,10 @@ mod tests {
                 Inode,
                 Task_identifier_type::New(0),
                 Mode_type::Read_only.into(),
+                0_usize.into(),
             )
             .unwrap();
-        let new_file_id = fs.Duplicate_file_identifier(file_id).unwrap();
+        let new_file_id = fs.Duplicate(file_id).unwrap();
 
         assert!(fs.Close(new_file_id).is_ok());
     }
@@ -419,10 +418,11 @@ mod tests {
                 Inode,
                 Task_identifier_type::New(0),
                 Mode_type::Read_only.into(),
+                0_usize.into(),
             )
             .unwrap();
         let new_file_id = fs
-            .Transfert_file_identifier(Task_identifier_type::New(0), file_id)
+            .Transfert(Task_identifier_type::New(0), file_id, None)
             .unwrap();
 
         assert!(fs.Close(new_file_id).is_ok());
@@ -441,26 +441,6 @@ mod tests {
     }
 
     #[test]
-    fn Test_get_size() {
-        let fs = File_system_type::New();
-
-        let Inode = fs
-            .Mount_device(Create_device!(
-                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
-            ))
-            .unwrap();
-        let file_id = fs
-            .Open(
-                Inode,
-                Task_identifier_type::New(0),
-                Mode_type::Read_only.into(),
-            )
-            .unwrap();
-
-        assert_eq!(Memory_device_size, fs.Get_size(file_id).unwrap().into());
-    }
-
-    #[test]
     fn Test_set_position() {
         let fs = File_system_type::New();
 
@@ -474,11 +454,11 @@ mod tests {
                 Inode,
                 Task_identifier_type::New(0),
                 Mode_type::Read_only.into(),
+                0_usize.into(),
             )
             .unwrap();
 
         fs.Set_position(file_id, &Position_type::Start(10)).unwrap();
-        assert_eq!(Memory_device_size, fs.Get_size(file_id).unwrap().into());
     }
 
     #[test]
@@ -495,6 +475,7 @@ mod tests {
                 Inode,
                 Task_identifier_type::New(0),
                 Mode_type::Read_only.into(),
+                0_usize.into(),
             )
             .unwrap();
 
@@ -515,6 +496,7 @@ mod tests {
                 Inode,
                 Task_identifier_type::New(0),
                 Mode_type::Read_only.into(),
+                0_usize.into(),
             )
             .unwrap();
 
