@@ -352,7 +352,7 @@ pub mod Tests {
         File_system.Close(File).unwrap();
 
         // - Move
-        File_system.Move(&Path, &Path_destination).unwrap();
+        File_system.Rename(&Path, &Path_destination).unwrap();
 
         // - Open
         let File = File_system
@@ -441,9 +441,11 @@ pub mod Tests {
 
         let Metadata = Metadata_type::Get_default(Task, Type_type::File).unwrap();
 
-        File_system.Set_metadata(&Path, &Metadata).unwrap();
+        File_system
+            .Set_metadata_from_path(&Path, &Metadata)
+            .unwrap();
 
-        let Metadata_read = File_system.Get_metadata(&Path).unwrap();
+        let Metadata_read = File_system.Get_metadata_from_path(&Path).unwrap();
 
         assert_eq!(Metadata, Metadata_read);
 
@@ -467,16 +469,16 @@ pub mod Tests {
         let Path = Path_type::New("/").unwrap();
         let Directory = File_system.Open_directory(&Path, Task).unwrap();
 
-        let Current_directory = File_system.Read_directory(Directory).unwrap();
+        let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Current_directory.Get_name(), ".");
         assert_eq!(Current_directory.Get_type(), Type_type::Directory);
 
-        let Parent_directory = File_system.Read_directory(Directory).unwrap();
+        let Parent_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Parent_directory.Get_name(), "..");
         assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
 
         for i in 0..10 {
-            let Entry = File_system.Read_directory(Directory).unwrap();
+            let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
             assert_eq!(*Entry.Get_name(), format!("Test{}", i));
             assert_eq!(Entry.Get_type(), Type_type::File);
@@ -499,18 +501,18 @@ pub mod Tests {
 
         let Directory = File_system.Open_directory(&"/", Task).unwrap();
 
-        let Current_directory = File_system.Read_directory(Directory).unwrap();
+        let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Current_directory.Get_name(), ".");
         assert_eq!(Current_directory.Get_type(), Type_type::Directory);
 
-        let Parent_directory = File_system.Read_directory(Directory).unwrap();
+        let Parent_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Parent_directory.Get_name(), "..");
         assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
 
         let Position = File_system.Get_position_directory(Directory).unwrap();
 
         for i in 0..10 {
-            let Entry = File_system.Read_directory(Directory).unwrap();
+            let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
             assert_eq!(*Entry.Get_name(), format!("Test{}", i));
             assert_eq!(Entry.Get_type(), Type_type::File);
@@ -521,7 +523,7 @@ pub mod Tests {
             .unwrap();
 
         for i in 0..10 {
-            let Entry = File_system.Read_directory(Directory).unwrap();
+            let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
             assert_eq!(*Entry.Get_name(), format!("Test{}", i));
             assert_eq!(Entry.Get_type(), Type_type::File);
@@ -542,16 +544,16 @@ pub mod Tests {
 
         let Directory = File_system.Open_directory(&"/", Task).unwrap();
 
-        let Current_directory = File_system.Read_directory(Directory).unwrap();
+        let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Current_directory.Get_name(), ".");
         assert_eq!(Current_directory.Get_type(), Type_type::Directory);
 
-        let Parent_directory = File_system.Read_directory(Directory).unwrap();
+        let Parent_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Parent_directory.Get_name(), "..");
         assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
 
         for i in 0..10 {
-            let Entry = File_system.Read_directory(Directory).unwrap();
+            let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
             assert_eq!(*Entry.Get_name(), format!("Test{}", i));
             assert_eq!(Entry.Get_type(), Type_type::File);
@@ -559,16 +561,16 @@ pub mod Tests {
 
         File_system.Rewind_directory(Directory).unwrap();
 
-        let Current_directory = File_system.Read_directory(Directory).unwrap();
+        let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Current_directory.Get_name(), ".");
         assert_eq!(Current_directory.Get_type(), Type_type::Directory);
 
-        let Parent_directory = File_system.Read_directory(Directory).unwrap();
+        let Parent_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Parent_directory.Get_name(), "..");
         assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
 
         for i in 0..10 {
-            let Entry = File_system.Read_directory(Directory).unwrap();
+            let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
             assert_eq!(*Entry.Get_name(), format!("Test{}", i));
             assert_eq!(Entry.Get_type(), Type_type::File);
@@ -587,15 +589,15 @@ pub mod Tests {
         {
             let Root_directory = File_system.Open_directory(&"/", Task).unwrap();
 
-            let Current_directory = File_system.Read_directory(Root_directory).unwrap();
+            let Current_directory = File_system.Read_directory(Root_directory).unwrap().unwrap();
             assert_eq!(*Current_directory.Get_name(), ".");
             assert_eq!(Current_directory.Get_type(), Type_type::Directory);
 
-            let Parent_directory = File_system.Read_directory(Root_directory).unwrap();
+            let Parent_directory = File_system.Read_directory(Root_directory).unwrap().unwrap();
             assert_eq!(*Parent_directory.Get_name(), "..");
             assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
 
-            let Directory = File_system.Read_directory(Root_directory).unwrap();
+            let Directory = File_system.Read_directory(Root_directory).unwrap().unwrap();
             assert_eq!(*Directory.Get_name(), "Test_create_directory");
             assert_eq!(Directory.Get_type(), Type_type::Directory);
 
@@ -605,12 +607,12 @@ pub mod Tests {
         {
             let Directory = File_system.Open_directory(&Path, Task).unwrap();
 
-            let Current_directory = File_system.Read_directory(Directory).unwrap();
+            let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
 
             assert_eq!(*Current_directory.Get_name(), ".");
             assert_eq!(Current_directory.Get_type(), Type_type::Directory);
 
-            let Parent_directory = File_system.Read_directory(Directory).unwrap();
+            let Parent_directory = File_system.Read_directory(Directory).unwrap().unwrap();
             assert_eq!(*Parent_directory.Get_name(), "..");
             assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
 
