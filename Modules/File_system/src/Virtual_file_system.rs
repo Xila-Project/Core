@@ -803,6 +803,22 @@ impl Virtual_file_system_type {
 
         Ok((Standard_in, Standard_error, Standard_out))
     }
+
+    pub fn Is_a_terminal(
+        &self,
+        File: Unique_file_identifier_type,
+        Task: Task_identifier_type,
+    ) -> Result_type<bool> {
+        let (File_system, File) = File.Into_local_file_identifier(Task);
+
+        match File_system {
+            File_system_identifier_type::Pipe_file_system => Err(Error_type::Unsupported_operation),
+            File_system_identifier_type::Device_file_system => {
+                self.Device_file_system.Is_a_terminal(File)
+            }
+            _ => Err(Error_type::Unsupported_operation),
+        }
+    }
 }
 
 #[cfg(test)]

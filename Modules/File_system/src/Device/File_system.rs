@@ -256,6 +256,17 @@ impl File_system_type {
             .ok_or(Error_type::Invalid_identifier)?
             .clone())
     }
+
+    pub fn Is_a_terminal(&self, File: Local_file_identifier_type) -> Result_type<bool> {
+        Ok(self
+            .0
+            .read()?
+            .Open_devices
+            .get(&File)
+            .ok_or(Error_type::Invalid_identifier)?
+            .0
+            .Is_a_terminal())
+    }
 }
 
 #[cfg(test)]

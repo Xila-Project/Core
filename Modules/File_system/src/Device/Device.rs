@@ -46,6 +46,10 @@ pub trait Device_trait: Send + Sync {
     fn Get_block_size(&self) -> Result_type<usize> {
         Err(Error_type::Unsupported_operation)
     }
+
+    fn Is_a_terminal(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Clone)]
@@ -89,5 +93,9 @@ impl Device_type {
 
     pub fn Get_block_size(&self) -> Result_type<usize> {
         self.0.Get_block_size()
+    }
+
+    pub fn Is_a_terminal(&self) -> bool {
+        self.0.Is_a_terminal()
     }
 }
