@@ -320,9 +320,20 @@ impl Default for Status_type {
 /// assert_eq!(Flags.Get_open(), Open_type::Create_only);
 /// assert_eq!(Flags.Get_status(), Status_type::Non_blocking);
 /// ```
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
 pub struct Flags_type(u16);
+
+impl Debug for Flags_type {
+    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Formatter
+            .debug_struct("Flags_type")
+            .field("Mode", &self.Get_mode())
+            .field("Open", &self.Get_open())
+            .field("Status", &self.Get_status())
+            .finish()
+    }
+}
 
 impl Flags_type {
     const Mode_position: u8 = 0;
