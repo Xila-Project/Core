@@ -138,36 +138,43 @@ pub fn Instantiate_test_environment(
     Virtual_file_system
         .Mount_device(
             Task,
-            "stdin",
+            "/stdin",
             Device_type::New(Arc::new(Standard_in_device_type)),
+            false,
         )
-        .expect("Failed to add stdin device");
+        .unwrap();
+
     Virtual_file_system
         .Mount_device(
             Task,
-            "stdout",
-            Device_type::New(Arc::new(Standard_in_device_type)),
+            "/stdout",
+            Device_type::New(Arc::new(Standard_out_device_type)),
+            false,
         )
-        .expect("Failed to add stdout device");
+        .unwrap();
+
     Virtual_file_system
         .Mount_device(
             Task,
-            "stderr",
-            Device_type::New(Arc::new(Standard_in_device_type)),
+            "/stderr",
+            Device_type::New(Arc::new(Standard_error_device_type)),
+            false,
         )
-        .expect("Failed to add stderr device");
+        .unwrap();
 
     let Stdin = Virtual_file_system
-        .Open(&"stdin", File_system::Mode_type::Read_only.into(), Task)
+        .Open(&"/stdin", File_system::Mode_type::Read_only.into(), Task)
         .expect("Failed to open stdin");
-
     let Stdout = Virtual_file_system
-        .Open(&"stdout", File_system::Mode_type::Write_only.into(), Task)
+        .Open(&"/stdout", File_system::Mode_type::Write_only.into(), Task)
         .expect("Failed to open stdout");
-
     let Stderr = Virtual_file_system
-        .Open(&"stderr", File_system::Mode_type::Write_only.into(), Task)
+        .Open(&"/stderr", File_system::Mode_type::Write_only.into(), Task)
         .expect("Failed to open stderr");
+
+    let (Stdin, Stdout, Stderr) = Virtual_file_system
+        .Create_new_task_standard_io(Stdin, Stderr, Stdout, Task, Task, false)
+        .unwrap();
 
     let Instance = Instance_type::New(
         &Runtime,
