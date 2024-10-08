@@ -67,7 +67,6 @@ impl<'a> Environment_type<'a> {
     /// # Safety
     ///
     /// This function is unsafe because it is not checked that the user data is valid pointer.
-    #[allow(clippy::mut_from_ref)]
     pub fn Get_user_data(&self) -> &Data_type {
         unsafe {
             let User_data = wasm_runtime_get_user_data(self.0);
