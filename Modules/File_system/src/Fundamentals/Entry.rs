@@ -32,6 +32,10 @@ impl Entry_type {
         self.Type
     }
 
+    pub fn Get_size(&self) -> Size_type {
+        self.Size
+    }
+
     pub fn Set_inode(&mut self, Inode: Inode_type) {
         self.Inode = Inode;
     }
@@ -42,6 +46,10 @@ impl Entry_type {
 
     pub fn Set_type(&mut self, Type: Type_type) {
         self.Type = Type;
+    }
+
+    pub fn Set_size(&mut self, Size: Size_type) {
+        self.Size = Size;
     }
 }
 
