@@ -94,7 +94,7 @@ pub trait File_system_traits: Send + Sync {
     /// - If the file is not opened in write mode (invalid mode).
     fn Write(&self, File: Local_file_identifier_type, Buffer: &[u8]) -> Result_type<Size_type>;
 
-    fn Move(
+    fn Rename(
         &self,
         Source: &dyn AsRef<Path_type>,
         Destination: &dyn AsRef<Path_type>,

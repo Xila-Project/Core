@@ -319,7 +319,7 @@ impl File_system_traits for File_system_type {
         Ok(File.Write(File_system, Buffer)?)
     }
 
-    fn Move(
+    fn Rename(
         &self,
         Source: &dyn AsRef<Path_type>,
         Destination: &dyn AsRef<Path_type>,
