@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    Entry_type, Inode_type, Local_file_identifier_type, Metadata_type, Mode_type, Statistics_type,
+    Entry_type, File_identifier_type, Inode_type, Local_file_identifier_type, Metadata_type,
+    Mode_type, Statistics_type,
 };
 
 use super::{Error_type, Flags_type, Path_type, Position_type, Result_type, Size_type};
