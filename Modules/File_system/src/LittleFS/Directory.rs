@@ -28,20 +28,17 @@ impl Debug for Directory_type {
 impl Directory_type {
     pub fn Create_directory(
         File_system: &mut super::littlefs::lfs_t,
-        Path: &dyn AsRef<Path_type>,
+        Path: &Path_type,
     ) -> Result_type<()> {
-        let Path = CString::new(Path.as_ref().As_str()).unwrap();
+        let Path = CString::new(Path.As_str()).unwrap();
 
         Convert_result(unsafe { littlefs::lfs_mkdir(File_system as *mut _, Path.as_ptr()) })?;
 
         Ok(())
     }
 
-    pub fn Open(
-        File_system: &mut super::littlefs::lfs_t,
-        Path: &dyn AsRef<Path_type>,
-    ) -> Result_type<Self> {
-        let Path = CString::new(Path.as_ref().As_str()).unwrap();
+    pub fn Open(File_system: &mut super::littlefs::lfs_t, Path: &Path_type) -> Result_type<Self> {
+        let Path = CString::new(Path.As_str()).unwrap();
 
         let Directory = MaybeUninit::<littlefs::lfs_dir_t>::uninit();
 

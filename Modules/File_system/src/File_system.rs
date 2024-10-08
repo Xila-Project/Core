@@ -45,7 +45,7 @@ pub trait File_system_traits: Send + Sync {
     fn Open(
         &self,
         Task: Task_identifier_type,
-        Path: &dyn AsRef<Path_type>,
+        Path: &Path_type,
         Flags: Flags_type,
     ) -> Result_type<Local_file_identifier_type>;
 
@@ -78,7 +78,7 @@ pub trait File_system_traits: Send + Sync {
     /// # Errors
     /// Returns an error if the file doesn't exists.
     /// Returns an error if the user / group doesn't have the permission to delete the file (no write permission on parent directory).
-    fn Remove(&self, Path: &dyn AsRef<Path_type>) -> Result_type<()>;
+    fn Remove(&self, Path: &Path_type) -> Result_type<()>;
     // - - File operations
 
     /// Read a file.
@@ -95,11 +95,7 @@ pub trait File_system_traits: Send + Sync {
     /// - If the file is not opened in write mode (invalid mode).
     fn Write(&self, File: Local_file_identifier_type, Buffer: &[u8]) -> Result_type<Size_type>;
 
-    fn Rename(
-        &self,
-        Source: &dyn AsRef<Path_type>,
-        Destination: &dyn AsRef<Path_type>,
-    ) -> Result_type<()>;
+    fn Rename(&self, Source: &Path_type, Destination: &Path_type) -> Result_type<()>;
 
     /// Set the position of the file.
     ///
@@ -115,15 +111,11 @@ pub trait File_system_traits: Send + Sync {
 
     // - Directory
 
-    fn Create_directory(
-        &self,
-        Path: &dyn AsRef<Path_type>,
-        Task: Task_identifier_type,
-    ) -> Result_type<()>;
+    fn Create_directory(&self, Path: &Path_type, Task: Task_identifier_type) -> Result_type<()>;
 
     fn Open_directory(
         &self,
-        Path: &dyn AsRef<Path_type>,
+        Path: &Path_type,
         Task: Task_identifier_type,
     ) -> Result_type<Local_file_identifier_type>;
 
@@ -145,13 +137,10 @@ pub trait File_system_traits: Send + Sync {
 
     fn Get_metadata(&self, File: Local_file_identifier_type) -> Result_type<Metadata_type>;
 
-    fn Set_metadata_from_path(
-        &self,
-        Path: &dyn AsRef<Path_type>,
-        Metadata: &Metadata_type,
-    ) -> Result_type<()>;
+    fn Set_metadata_from_path(&self, Path: &Path_type, Metadata: &Metadata_type)
+        -> Result_type<()>;
 
-    fn Get_metadata_from_path(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Metadata_type>;
+    fn Get_metadata_from_path(&self, Path: &Path_type) -> Result_type<Metadata_type>;
 
     fn Get_statistics(&self, File: Local_file_identifier_type) -> Result_type<Statistics_type>;
 
@@ -462,13 +451,13 @@ pub mod Tests {
         for i in 0..10 {
             let Flags = Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None);
             let File = File_system
-                .Open(Task, &format!("/Test{}", i).as_str(), Flags)
+                .Open(Task, Path_type::From_str(&format!("/Test{}", i)), Flags)
                 .unwrap();
             File_system.Close(File).unwrap();
         }
 
-        let Path = Path_type::New("/").unwrap();
-        let Directory = File_system.Open_directory(&Path, Task).unwrap();
+        let Path = Path_type::From_str("/");
+        let Directory = File_system.Open_directory(Path, Task).unwrap();
 
         let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Current_directory.Get_name(), ".");
@@ -495,12 +484,12 @@ pub mod Tests {
         for i in 0..10 {
             let Flags = Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None);
             let File = File_system
-                .Open(Task, &format!("/Test{}", i).as_str(), Flags)
+                .Open(Task, Path_type::From_str(&format!("/Test{}", i)), Flags)
                 .unwrap();
             File_system.Close(File).unwrap();
         }
 
-        let Directory = File_system.Open_directory(&"/", Task).unwrap();
+        let Directory = File_system.Open_directory(Path_type::Root, Task).unwrap();
 
         let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Current_directory.Get_name(), ".");
@@ -538,12 +527,12 @@ pub mod Tests {
         for i in 0..10 {
             let Flags = Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None);
             let File = File_system
-                .Open(Task, &format!("/Test{}", i).as_str(), Flags)
+                .Open(Task, Path_type::From_str(&format!("/Test{}", i)), Flags)
                 .unwrap();
             File_system.Close(File).unwrap();
         }
 
-        let Directory = File_system.Open_directory(&"/", Task).unwrap();
+        let Directory = File_system.Open_directory(Path_type::Root, Task).unwrap();
 
         let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Current_directory.Get_name(), ".");
@@ -588,7 +577,7 @@ pub mod Tests {
         File_system.Create_directory(&Path, Task).unwrap();
 
         {
-            let Root_directory = File_system.Open_directory(&"/", Task).unwrap();
+            let Root_directory = File_system.Open_directory(Path_type::Root, Task).unwrap();
 
             let Current_directory = File_system.Read_directory(Root_directory).unwrap().unwrap();
             assert_eq!(*Current_directory.Get_name(), ".");

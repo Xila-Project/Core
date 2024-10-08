@@ -52,7 +52,7 @@ impl Path_owned_type {
     }
 
     pub fn Append(self, Path: &str) -> Option<Self> {
-        self.Join(Path_type::New(Path)?)
+        self.Join(Path_type::From_str(Path))
     }
 
     pub fn Revert_parent_directory(&mut self) -> &mut Self {
@@ -184,7 +184,7 @@ impl Deref for Path_owned_type {
     type Target = Path_type;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { Path_type::New_unchecked(self.0.as_str()) }
+        Path_type::From_str(self.0.as_str())
     }
 }
 
