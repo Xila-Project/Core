@@ -377,13 +377,26 @@ impl File_system_traits for File_system_type {
     ) -> crate::Result_type<Statistics_type> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, Open_files, Open_directories) =
+            Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
-        let File = Open_files
-            .get_mut(&File)
-            .ok_or(Error_type::Invalid_identifier)?;
-
-        Ok(File.Get_statistics(File_system)?)
+        // TODO : Find a way to get the metadata of the directories
+        if Open_directories.get_mut(&File).is_some() {
+            Ok(Statistics_type::New(
+                File_system_identifier_type::New(0),
+                Inode_type::New(0),
+                1,
+                Size_type::New(0),
+                Time_type::Get_now(),
+                Time_type::Get_now(),
+                Time_type::Get_now(),
+                Type_type::Directory,
+            ))
+        } else if let Some(File) = Open_files.get_mut(&File) {
+            Ok(File.Get_statistics(File_system)?)
+        } else {
+            Err(Error_type::Invalid_identifier.into())
+        }
     }
 
     fn Get_mode(&self, File: Local_file_identifier_type) -> crate::Result_type<Mode_type> {
