@@ -41,12 +41,12 @@ impl Instance_type {
         Standard_out: Unique_file_identifier_type,
         Standard_error: Unique_file_identifier_type,
     ) -> Result_type<Self> {
-        let mut Directory_paths = [CString::new("/").unwrap()];
+        let Directory_paths = [CString::new("/").unwrap()];
 
         let mut Directory_paths_raw: Vec<*const i8> =
             Directory_paths.iter().map(|x| x.as_ptr()).collect();
 
-        Directory_paths.iter_mut().for_each(forget);
+        forget(Directory_paths);
 
         unsafe {
             wasm_runtime_set_wasi_args_ex(
