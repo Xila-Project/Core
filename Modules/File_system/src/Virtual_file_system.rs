@@ -819,6 +819,30 @@ impl Virtual_file_system_type {
             _ => Err(Error_type::Unsupported_operation),
         }
     }
+
+    pub fn Rename(
+        &self,
+        Old_path: &impl AsRef<Path_type>,
+        New_path: &impl AsRef<Path_type>,
+    ) -> Result_type<()> {
+        let File_systems = self.File_systems.read()?; // Get the file systems
+
+        let (Old_file_system_identifier, Old_file_system, Old_relative_path) =
+            Self::Get_file_system_from_path(&File_systems, Old_path)?; // Get the file system identifier and the relative path
+
+        let (New_file_system_identifier, _, New_relative_path) =
+            Self::Get_file_system_from_path(&File_systems, New_path)?; // Get the file system identifier and the relative path
+
+        if Old_file_system_identifier != New_file_system_identifier {
+            return Err(Error_type::Invalid_path);
+        }
+
+        if Old_file_system_identifier == New_file_system_identifier {
+            Old_file_system.Rename(&Old_relative_path, &New_relative_path)
+        } else {
+            Err(Error_type::Unsupported_operation) // TODO : Add support for moving between file systems
+        }
+    }
 }
 
 #[cfg(test)]
