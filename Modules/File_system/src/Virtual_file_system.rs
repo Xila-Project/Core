@@ -843,6 +843,29 @@ impl Virtual_file_system_type {
             Err(Error_type::Unsupported_operation) // TODO : Add support for moving between file systems
         }
     }
+
+    pub fn Get_raw_device(&self, Path: &impl AsRef<Path_type>) -> Result_type<Device_type> {
+        let File_systems = self
+            .File_systems
+            .read()
+            .map_err(|_| Error_type::Poisoned_lock)?;
+
+        let (_, File_system, Relative_path) = Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
+
+        let Metadata = File_system.Get_metadata_from_path(&Relative_path)?;
+
+        if Metadata.Get_type() != Type_type::Block_device
+            && Metadata.Get_type() != Type_type::Character_device
+        {
+            return Err(Error_type::Unsupported_operation);
+        }
+
+        if let Some(Inode) = Metadata.Get_inode() {
+            self.Device_file_system.Get_raw_device(Inode)
+        } else {
+            Err(Error_type::Corrupted)
+        }
+    }
 }
 
 #[cfg(test)]
