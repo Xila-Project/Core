@@ -82,7 +82,7 @@ extern "C" fn Test_string(
 
 #[test]
 fn Integration_test() {
-    Task::Initialize().expect("Failed to initialize task manager");
+    let Task_instance = Task::Initialize().expect("Failed to initialize task manager");
 
     Users::Initialize().expect("Failed to initialize users manager");
 
@@ -96,9 +96,18 @@ fn Integration_test() {
 
     File_system::Initialize(File_system).unwrap();
 
+    // Set environment variables
+    let Task = Task_instance.Get_current_task_identifier().unwrap();
+
+    Task_instance
+        .Set_environment_variable(Task, "Path", "/:/bin:/usr/bin")
+        .unwrap();
+
+    // Load the WASM binary
     let Binary_buffer =
         include_bytes!("./WASM_test/target/wasm32-wasip1/release/Virtual_machine_WASM_test.wasm");
 
+    // Register the functions
     pub struct Registrable {}
 
     impl Registrable_trait for Registrable {
@@ -116,6 +125,7 @@ fn Integration_test() {
 
     let User_data = Data_type::New();
 
+    // Instantiate the environment
     let (_Runtime, _Module, Instance) = Instantiate_test_environment(
         Binary_buffer,
         Registrable {},

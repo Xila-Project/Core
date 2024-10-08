@@ -134,6 +134,16 @@ fn Test_file() {
     }
 }
 
+fn Test_environment_variables() {
+    println!("Environment variables:");
+
+    let Environment = std::env::vars();
+
+    for (Key, Value) in Environment {
+        println!("{}: {}", Key, Value);
+    }
+}
+
 fn Test_directory() {
     create_dir("/test_dir").unwrap();
 
@@ -170,6 +180,8 @@ fn main() -> Result<(), ()> {
     Test_file();
 
     Test_directory();
+
+    Test_environment_variables();
 
     Ok(())
 }
