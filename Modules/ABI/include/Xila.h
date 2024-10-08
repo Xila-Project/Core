@@ -14,7 +14,7 @@ int Rust_function Xila_virtual_print_formatted(const char *format, va_list ap);
 // - CPU
 void Rust_function Xila_flush_data_cache();
 void Rust_function Xila_flush_instruction_cache(void *Start, size_t Length);
- 
+
 // - File system
 typedef enum
 {
@@ -60,7 +60,7 @@ enum
     Xila_file_system_type_symbolic_link,
 };
 
-typedef uint8_t File_system_type_type;
+typedef uint8_t Xila_file_system_type_type;
 
 typedef struct
 {
@@ -71,12 +71,21 @@ typedef struct
     uint64_t Last_access;
     uint64_t Last_modification;
     uint64_t Last_status_change;
-    File_system_type_type Type;
+    Xila_file_system_type_type Type;
 } Xila_file_system_statistics_type;
+
+typedef enum
+{
+    Xila_file_system_whence_start,
+    Xila_file_system_whence_current,
+    Xila_file_system_whence_end,
+} Xila_file_system_whence_type;
 
 typedef uint8_t Xila_file_system_mode_type;
 typedef uint8_t Xila_file_system_open_type;
 typedef uint8_t Xila_file_system_status_type;
+typedef uint64_t Xila_file_system_size_type;
+typedef uint64_t Xila_file_system_inode_type;
 
 extern const Xila_file_system_mode_type Xila_file_system_mode_read_mask;
 extern const Xila_file_system_mode_type Xila_file_system_mode_write_mask;
@@ -84,7 +93,6 @@ extern const Xila_file_system_mode_type Xila_file_system_mode_write_mask;
 extern const Xila_file_system_open_type Xila_file_system_open_create_mask;
 extern const Xila_file_system_open_type Xila_file_system_open_create_only_mask;
 extern const Xila_file_system_open_type Xila_file_system_open_truncate_mask;
-extern const Xila_file_system_open_type Xila_file_system_open_directory_mask;
 
 extern const Xila_file_system_status_type Xila_file_system_status_append_mask;
 extern const Xila_file_system_status_type Xila_file_system_status_non_blocking_mask;
@@ -94,16 +102,15 @@ extern const Xila_file_system_status_type Xila_file_system_status_synchronous_da
 typedef uint64_t Xile_file_system_file_identifier_type;
 
 __wasi_errno_t
-Into_Wasi_Error(File_system_result_type Error);
+Into_WASI_Error(File_system_result_type Error);
 void Into_WASI_file_statistics(const Xila_file_system_statistics_type *Statistics, __wasi_filestat_t *WASI_Statistics);
 
-File_system_result_type Rust_function Xila_get_file_statistics(Xile_file_system_file_identifier_type Handle, Xila_file_system_statistics_type *Buffer);
+File_system_result_type Rust_function Xila_file_system_get_statistics(Xile_file_system_file_identifier_type Handle, Xila_file_system_statistics_type *Buffer);
 File_system_result_type Rust_function Xila_get_file_statistics_at(Xile_file_system_file_identifier_type Handle, const char *Path, struct __wasi_filestat_t *Buffer, __wasi_lookupflags_t Flags);
 File_system_result_type Rust_function Xila_get_file_flags(Xile_file_system_file_identifier_type Handle, __wasi_fdflags_t *Flags);
 File_system_result_type Rust_function Xila_set_file_flags(Xile_file_system_file_identifier_type Handle, __wasi_fdflags_t Flags);
-File_system_result_type Rust_function Xila_synchronize_file_data(Xile_file_system_file_identifier_type Handle, bool metadata);
-File_system_result_type Rust_function Xila_file_system_open(const char *Path, Xila_file_system_mode_type Mode, Xila_file_system_open_type Open, Xila_file_system_status_type Status, Xile_file_system_file_identifier_type *Handle);
-File_system_result_type Rust_function Xila_file_system_open_at(Xile_file_system_file_identifier_type Handle, const char *Path, Xila_file_system_mode_type Mode, Xila_file_system_open_type Open, Xila_file_system_status_type Status,  Xile_file_system_file_identifier_type *New_handle);
+File_system_result_type Rust_function Xila_file_system_flush(Xile_file_system_file_identifier_type Handle, bool All);
+File_system_result_type Rust_function Xila_file_system_open(const char *Path, Xila_file_system_mode_type Mode, Xila_file_system_open_type Open, Xila_file_system_status_type Status, Xile_file_system_file_identifier_type *New_handle);
 File_system_result_type Rust_function Xila_file_system_get_access_mode(Xile_file_system_file_identifier_type Handle, uint8_t *Access_mode);
 File_system_result_type Rust_function Xila_file_system_close(Xile_file_system_file_identifier_type Handle);
 File_system_result_type Rust_function Xila_positioned_read_vectored(Xile_file_system_file_identifier_type Handle, const struct __wasi_iovec_t *IOV, int IOV_len, __wasi_filesize_t Offset, size_t *NRead);
@@ -114,21 +121,20 @@ File_system_result_type Rust_function Xila_allocate_file(Xile_file_system_file_i
 File_system_result_type Rust_function Xila_truncate_file(Xile_file_system_file_identifier_type handle, __wasi_filesize_t size);
 File_system_result_type Rust_function Xila_set_file_times(Xile_file_system_file_identifier_type handle, __wasi_timestamp_t ATime, __wasi_timestamp_t MTime, __wasi_fstflags_t Fst_flags);
 File_system_result_type Rust_function Xila_set_file_times_at(Xile_file_system_file_identifier_type handle, const char *Path, size_t Path_length, __wasi_timestamp_t ATime, __wasi_timestamp_t MTime, __wasi_fstflags_t Fst_flags);
-File_system_result_type Rust_function Xila_read_link_at(Xile_file_system_file_identifier_type handle, const char *Path, char *Buffer, size_t Buffer_size, size_t *Buffer_used);
+File_system_result_type Rust_function Xila_file_system_read_link_at(Xile_file_system_file_identifier_type Directory, const char *Path, char *Buffer, size_t Buffer_size, size_t *Buffer_used);
 File_system_result_type Rust_function Xila_create_link_at(Xile_file_system_file_identifier_type Old_handle, const char *Old_path, Xile_file_system_file_identifier_type New_handle, const char *New_path, bool Follow);
 File_system_result_type Rust_function Xila_create_symbolic_link_at(const char *Target_path, Xile_file_system_file_identifier_type New_handle, const char *Link_path);
-File_system_result_type Rust_function Xila_create_directory(Xile_file_system_file_identifier_type Handle, const char *Path);
-File_system_result_type Rust_function Xila_create_directory_at(Xile_file_system_file_identifier_type Handle, const char *Path);
-File_system_result_type Rust_function Xila_rename_at(Xile_file_system_file_identifier_type Old_handle, const char *Old_path, Xile_file_system_file_identifier_type New_handle, const char *New_path);
+File_system_result_type Rust_function Xila_file_system_create_directory(const char *Path);
+File_system_result_type Rust_function Xila_file_system_rename(const char *Old_path, const char *New_path);
 File_system_result_type Rust_function Xila_unlink_at(Xile_file_system_file_identifier_type Handle, const char *Path, bool Is_directory);
-File_system_result_type Rust_function Xila_set_position(Xile_file_system_file_identifier_type Handle, __wasi_filedelta_t Offset, __wasi_whence_t Whence, __wasi_filesize_t *New_offset);
+File_system_result_type Rust_function Xila_file_system_set_position(Xile_file_system_file_identifier_type Handle, int64_t Offset, Xila_file_system_whence_type Whence, Xila_file_system_size_type *New_offset);
 File_system_result_type Rust_function Xila_get_advisory_information(Xile_file_system_file_identifier_type Handle, __wasi_advice_t Advice, __wasi_filesize_t Offset, __wasi_filesize_t Len);
-File_system_result_type Rust_function Xila_file_system_is_terminal(Xile_file_system_file_identifier_type Handle);
-File_system_result_type Rust_function Xila_open_directory(Xile_file_system_file_identifier_type Handle, os_dir_stream *Dir_stream);
-File_system_result_type Rust_function Xila_rewind_directory(os_dir_stream Dir_stream);
-File_system_result_type Rust_function Xila_set_directory_position(os_dir_stream Dir_stream, uint64_t Position);
-File_system_result_type Rust_function Xila_read_directory(os_dir_stream Dir_stream, __wasi_dirent_t *Buffer, const char **Buffer_used);
-File_system_result_type Rust_function Xila_close_directory(os_dir_stream Dir_stream);
+File_system_result_type Rust_function Xila_file_system_is_a_terminal(Xile_file_system_file_identifier_type Handle);
+File_system_result_type Rust_function Xila_file_system_open_directory(const char *Path, Xile_file_system_file_identifier_type *Directory);
+File_system_result_type Rust_function Xila_file_system_rewind_directory(os_dir_stream Dir_stream);
+File_system_result_type Rust_function Xila_file_system_set_directory_position(os_dir_stream Dir_stream, uint64_t Position);
+File_system_result_type Rust_function Xila_file_system_read_directory(Xile_file_system_file_identifier_type Dir_stream, const char **Name, Xila_file_system_type_type *Type, Xila_file_system_size_type *Size, Xila_file_system_inode_type *Inode);
+File_system_result_type Rust_function Xila_file_system_close_directory(os_dir_stream Dir_stream);
 File_system_result_type Xila_file_system_resolve_path(const char *Path, char *Resolved_path, size_t Resolved_path_size);
 bool Rust_function Xila_file_system_is_stdin(Xile_file_system_file_identifier_type File);
 bool Rust_function Xila_file_system_is_stdout(Xile_file_system_file_identifier_type File);
