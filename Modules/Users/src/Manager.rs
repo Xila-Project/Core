@@ -52,7 +52,7 @@ impl Manager_type {
     fn New() -> Self {
         let mut Groups = BTreeMap::new();
         Groups.insert(
-            Root_group_identifier,
+            Group_identifier_type::Root,
             Internal_group_type {
                 Name: "root".to_string(),
                 Users: BTreeSet::new(),
@@ -61,10 +61,10 @@ impl Manager_type {
 
         let mut Users = BTreeMap::new();
         Users.insert(
-            crate::Root_user_identifier,
+            User_identifier_type::Root,
             Internal_user_type {
                 Name: "root".to_string(),
-                Primary_group: Root_group_identifier,
+                Primary_group: Group_identifier_type::Root,
             },
         );
 
@@ -74,17 +74,33 @@ impl Manager_type {
     fn Get_new_group_identifier<T>(
         Groups: &BTreeMap<Group_identifier_type, T>,
     ) -> Result_type<Group_identifier_type> {
-        (0..Group_identifier_type::MAX)
-            .find(|Identifier| !Groups.contains_key(Identifier))
-            .ok_or(Error_type::Too_many_groups)
+        let mut Identifier = Group_identifier_type::Minimum;
+
+        while Groups.contains_key(&Identifier) {
+            Identifier += 1;
+
+            if Identifier == Group_identifier_type::Maximum {
+                return Err(Error_type::Too_many_groups);
+            }
+        }
+
+        Ok(Identifier)
     }
 
     fn Get_new_user_identifier(
         Users: &BTreeMap<User_identifier_type, Internal_user_type>,
     ) -> Result_type<User_identifier_type> {
-        (0..User_identifier_type::MAX)
-            .find(|Identifier| !Users.contains_key(Identifier))
-            .ok_or(Error_type::Too_many_users)
+        let mut Identifier = User_identifier_type::Minimum;
+
+        while Users.contains_key(&Identifier) {
+            Identifier += 1;
+
+            if Identifier == User_identifier_type::Maximum {
+                return Err(Error_type::Too_many_users);
+            }
+        }
+
+        Ok(Identifier)
     }
 
     pub fn Create_user(
@@ -148,7 +164,7 @@ impl Manager_type {
     }
 
     pub fn Is_root(Identifier: User_identifier_type) -> bool {
-        crate::Root_user_identifier == Identifier
+        User_identifier_type::Root == Identifier
     }
 
     pub fn Is_in_group(
@@ -270,7 +286,7 @@ mod Tests {
     fn Create_user() {
         let Manager = Manager_type::New();
         let User_name = "Alice";
-        let Result = Manager.Create_user(User_name, Root_group_identifier);
+        let Result = Manager.Create_user(User_name, Group_identifier_type::Root);
         assert!(Result.is_ok());
         let User_id = Result.unwrap();
         assert!(Manager.Exists_user(User_id).unwrap());
@@ -288,7 +304,7 @@ mod Tests {
 
     #[test]
     fn Is_root() {
-        let Root_id = crate::Root_user_identifier;
+        let Root_id = User_identifier_type::Root;
         assert!(Manager_type::Is_root(Root_id));
     }
 
@@ -297,7 +313,7 @@ mod Tests {
         let Manager = Manager_type::New();
         let User_name = "Bob";
         let User_id = Manager
-            .Create_user(User_name, Root_group_identifier)
+            .Create_user(User_name, Group_identifier_type::Root)
             .unwrap();
         let Group_name = "Admins";
         let Group_id = Manager.Create_group(Group_name, None).unwrap();
@@ -311,7 +327,7 @@ mod Tests {
 
         let User_name = "Charlie";
         let User_id = Manager
-            .Create_user(User_name, Root_group_identifier)
+            .Create_user(User_name, Group_identifier_type::Root)
             .unwrap();
         let Group_name1 = "TeamA";
         let Group_id1 = Manager.Create_group(Group_name1, None).unwrap();
@@ -325,7 +341,7 @@ mod Tests {
         assert!(
             Groups.contains(&Group_id1)
                 && Groups.contains(&Group_id2)
-                && Groups.contains(&Root_group_identifier)
+                && Groups.contains(&Group_identifier_type::Root)
         );
     }
 
@@ -343,7 +359,7 @@ mod Tests {
         let Manager = Manager_type::New();
         let User_name = "Dave";
         let User_id = Manager
-            .Create_user(User_name, Root_group_identifier)
+            .Create_user(User_name, Group_identifier_type::Root)
             .unwrap();
         let Group_name = "Engineers";
         let Group_id = Manager.Create_group(Group_name, None).unwrap();
@@ -358,7 +374,7 @@ mod Tests {
         let Manager = Manager_type::New();
         let User_name = "Eve";
         let User_id = Manager
-            .Create_user(User_name, Root_group_identifier)
+            .Create_user(User_name, Group_identifier_type::Root)
             .unwrap();
         let Retrieved_name = Manager.Get_user_name(User_id).unwrap();
         assert_eq!(User_name, Retrieved_name);
