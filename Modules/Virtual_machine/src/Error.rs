@@ -17,6 +17,7 @@ pub enum Error_type {
     Execution_error(String),
     Function_not_found,
     Allocation_failure,
+    Failed_to_get_task_informations(Task::Error_type),
 }
 
 impl From<RuntimeError> for Error_type {
