@@ -39,7 +39,7 @@ impl Device_trait for Standard_in_device_type {
         #[allow(clippy::unused_io_amount)]
         stdin().read(Buffer).unwrap();
 
-        Ok(Size_type::New(Buffer.len() as u64).into())
+        Ok(Size_type::New(Buffer.len() as u64))
     }
 
     fn Write(&self, _: &[u8]) -> File_system::Result_type<Size_type> {
@@ -56,6 +56,10 @@ impl Device_trait for Standard_in_device_type {
 
     fn Flush(&self) -> File_system::Result_type<()> {
         Ok(())
+    }
+
+    fn Is_a_terminal(&self) -> bool {
+        true
     }
 }
 
@@ -81,6 +85,10 @@ impl Device_trait for Standard_out_device_type {
     fn Flush(&self) -> File_system::Result_type<()> {
         Ok(stdout().flush()?)
     }
+
+    fn Is_a_terminal(&self) -> bool {
+        true
+    }
 }
 
 struct Standard_error_device_type;
@@ -104,6 +112,10 @@ impl Device_trait for Standard_error_device_type {
 
     fn Flush(&self) -> File_system::Result_type<()> {
         Ok(stderr().flush()?)
+    }
+
+    fn Is_a_terminal(&self) -> bool {
+        true
     }
 }
 
