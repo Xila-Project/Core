@@ -2,26 +2,23 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
-use File_system::Path_type;
+use Task::Task_identifier_type;
 
-const Device_path: &Path_type = unsafe { Path_type::New_unchecked_constant("/Device") };
+use File_system::{
+    Create_device, Create_file_system, File_type, Flags_type, LittleFS, Mode_type, Open_type,
+    Path_type, Position_type, Status_type, Tests::Memory_device_type, Virtual_file_system_type,
+};
 
-#[cfg(target_os = "linux")]
-#[test]
-fn Test_file_system() {
-    use std::sync::RwLock;
-
-    use File_system::{
-        Create_device, Create_file_system, Device_type, File_type, Flags_type, LittleFS, Mode_type,
-        Open_type, Path_type, Position_type, Result_type, Status_type, Tests::Memory_device_type,
-    };
-
+fn Initialize() -> (Task_identifier_type, Virtual_file_system_type) {
     let Task_instance = Task::Initialize().expect("Failed to initialize task manager");
 
-    Users::Initialize().expect("Failed to initialize users manager");
+    unsafe {
+        let _ = Task_instance.Register_task();
+    }
 
-    Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()))
-        .expect("Failed to initialize time manager");
+    let _ = Users::Initialize();
+
+    let _ = Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()));
 
     let Task = Task_instance
         .Get_current_task_identifier()
@@ -34,12 +31,26 @@ fn Test_file_system() {
     LittleFS::File_system_type::Format(Device.clone(), Cache_size).unwrap();
     let File_system = LittleFS::File_system_type::New(Device, Cache_size).unwrap();
 
-    let Virtual_file_system = File_system::Initialize(Create_file_system!(File_system)).unwrap();
+    let Virtual_file_system = Virtual_file_system_type::New(
+        Task_instance,
+        Users::Get_instance(),
+        Time::Get_instance(),
+        Create_file_system!(File_system),
+    )
+    .unwrap();
+
+    (Task, Virtual_file_system)
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn Test_file() {
+    let (Task, Virtual_file_system) = Initialize();
 
     let File_path = "/file";
 
     let File = File_type::Open(
-        Virtual_file_system,
+        &Virtual_file_system,
         File_path,
         Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None),
         Task,
@@ -61,14 +72,22 @@ fn Test_file_system() {
     std::mem::drop(File);
 
     Virtual_file_system.Remove(File_path).unwrap();
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn Test_unnamed_pipe() {
+    let (Task, Virtual_file_system) = Initialize();
 
     let (Pipe_read, Pipe_write) = File_type::Create_unnamed_pipe(
-        Virtual_file_system,
+        &Virtual_file_system,
         512_usize.into(),
         Status_type::default(),
         Task,
     )
     .unwrap();
+
+    let Data = b"Hello, world!";
 
     Pipe_write.Write(Data).unwrap();
 
@@ -77,6 +96,12 @@ fn Test_file_system() {
     Pipe_read.Read(&mut Buffer).unwrap();
 
     assert_eq!(Buffer, *Data);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn Test_named_pipe() {
+    let (Task, Virtual_file_system) = Initialize();
 
     let Pipe_path = "/pipe";
 
@@ -85,7 +110,7 @@ fn Test_file_system() {
         .unwrap();
 
     let Pipe_read = File_type::Open(
-        Virtual_file_system,
+        &Virtual_file_system,
         Pipe_path,
         Mode_type::Read_only.into(),
         Task,
@@ -93,12 +118,14 @@ fn Test_file_system() {
     .unwrap();
 
     let Pipe_write = File_type::Open(
-        Virtual_file_system,
+        &Virtual_file_system,
         Pipe_path,
         Mode_type::Write_only.into(),
         Task,
     )
     .unwrap();
+
+    let Data = b"Hello, world!";
 
     Pipe_write.Write(Data).unwrap();
 
@@ -110,8 +137,22 @@ fn Test_file_system() {
     std::mem::drop(Pipe_read);
     std::mem::drop(Pipe_write);
 
+    Virtual_file_system.Remove(Pipe_path).unwrap();
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn Test_device() {
+    let (Task, Virtual_file_system) = Initialize();
+
+    const Device_path: &Path_type = unsafe { Path_type::New_unchecked_constant("/Device") };
+
+    let Device = Create_device!(Memory_device_type::<512>::New(512));
+
+    Virtual_file_system.Mount_device(Task, Device_path, Device, true);
+
     let Device_file = File_type::Open(
-        Virtual_file_system,
+        &Virtual_file_system,
         Device_path,
         Mode_type::Read_write.into(),
         Task,
