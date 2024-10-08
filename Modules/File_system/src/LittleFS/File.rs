@@ -217,7 +217,7 @@ impl File_type {
         Ok(Statistics)
     }
 
-    fn Get_metadata(&self) -> Result_type<&Metadata_type> {
+    pub fn Get_metadata(&self) -> Result_type<&Metadata_type> {
         let Configuration = unsafe { self.0.File.cfg.read() };
 
         if Configuration.attr_count == 0 {
@@ -235,7 +235,7 @@ impl File_type {
         Ok(Metadata)
     }
 
-    fn Get_metadata_mutable(&mut self) -> Result_type<&mut Metadata_type> {
+    pub fn Get_metadata_mutable(&mut self) -> Result_type<&mut Metadata_type> {
         let Configuration = unsafe { self.0.File.cfg.read() };
 
         if Configuration.attr_count == 0 {
