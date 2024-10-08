@@ -168,7 +168,7 @@ impl File_system_traits for File_system_type {
     fn Open(
         &self,
         Task: Task::Task_identifier_type,
-        Path: &dyn AsRef<Path_type>,
+        Path: &Path_type,
         Flags: crate::Flags_type,
     ) -> crate::Result_type<Local_file_identifier_type> {
         let mut Inner = self.Inner.write()?;
@@ -274,9 +274,8 @@ impl File_system_traits for File_system_type {
         Ok(File_identifier)
     }
 
-    fn Remove(&self, Path: &dyn AsRef<Path_type>) -> crate::Result_type<()> {
-        let Path =
-            CString::new(Path.as_ref().As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+    fn Remove(&self, Path: &Path_type) -> crate::Result_type<()> {
+        let Path = CString::new(Path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
         let mut Inner = self.Inner.write()?;
 
@@ -319,16 +318,11 @@ impl File_system_traits for File_system_type {
         Ok(File.Write(File_system, Buffer)?)
     }
 
-    fn Rename(
-        &self,
-        Source: &dyn AsRef<Path_type>,
-        Destination: &dyn AsRef<Path_type>,
-    ) -> crate::Result_type<()> {
-        let Source =
-            CString::new(Source.as_ref().As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+    fn Rename(&self, Source: &Path_type, Destination: &Path_type) -> crate::Result_type<()> {
+        let Source = CString::new(Source.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
-        let Destination = CString::new(Destination.as_ref().As_str())
-            .map_err(|_| Error_type::Invalid_parameter)?;
+        let Destination =
+            CString::new(Destination.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
         let mut Inner = self.Inner.write()?;
 
@@ -411,7 +405,7 @@ impl File_system_traits for File_system_type {
 
     fn Open_directory(
         &self,
-        Path: &dyn AsRef<Path_type>,
+        Path: &Path_type,
         Task: Task::Task_identifier_type,
     ) -> crate::Result_type<Local_file_identifier_type> {
         let mut Inner = self.Inner.write()?;
@@ -492,7 +486,7 @@ impl File_system_traits for File_system_type {
 
     fn Create_directory(
         &self,
-        Path: &dyn AsRef<Path_type>,
+        Path: &Path_type,
         Task: Task_identifier_type,
     ) -> crate::Result_type<()> {
         let mut Inner = self.Inner.write()?;
@@ -524,7 +518,7 @@ impl File_system_traits for File_system_type {
 
     fn Set_metadata_from_path(
         &self,
-        Path: &dyn AsRef<Path_type>,
+        Path: &Path_type,
         Metadata: &Metadata_type,
     ) -> crate::Result_type<()> {
         let mut Inner = self.Inner.write()?;
@@ -534,10 +528,7 @@ impl File_system_traits for File_system_type {
         Ok(())
     }
 
-    fn Get_metadata_from_path(
-        &self,
-        Path: &dyn AsRef<Path_type>,
-    ) -> crate::Result_type<crate::Metadata_type> {
+    fn Get_metadata_from_path(&self, Path: &Path_type) -> crate::Result_type<crate::Metadata_type> {
         let mut Inner = self.Inner.write()?;
 
         Ok(File_type::Get_metadata_from_path(

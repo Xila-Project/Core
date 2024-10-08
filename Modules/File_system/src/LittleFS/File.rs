@@ -57,7 +57,7 @@ impl File_type {
     pub fn Open(
         File_system: &mut super::littlefs::lfs_t,
         Task: Task_identifier_type,
-        Path: &dyn AsRef<Path_type>,
+        Path: &Path_type,
         Flags: Flags_type,
         Cache_size: usize,
     ) -> Result_type<Self> {
@@ -69,8 +69,7 @@ impl File_type {
             Self::Get_metadata_from_path(File_system, Path)?
         };
 
-        let Path =
-            CString::new(Path.as_ref().As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+        let Path = CString::new(Path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
         let Little_fs_flags = Convert_flags(Flags);
 
@@ -270,10 +269,9 @@ impl File_type {
 
     pub fn Get_metadata_from_path(
         File_system: &mut super::littlefs::lfs_t,
-        Path: &dyn AsRef<Path_type>,
+        Path: &Path_type,
     ) -> Result_type<Metadata_type> {
-        let Path =
-            CString::new(Path.as_ref().As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+        let Path = CString::new(Path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
         let mut Metadata = MaybeUninit::<Metadata_type>::uninit();
 
@@ -292,11 +290,10 @@ impl File_type {
 
     pub fn Set_metadata_from_path(
         File_system: &mut super::littlefs::lfs_t,
-        Path: &dyn AsRef<Path_type>,
+        Path: &Path_type,
         Metadata: &Metadata_type,
     ) -> Result_type<()> {
-        let Path =
-            CString::new(Path.as_ref().As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+        let Path = CString::new(Path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
         Convert_result(unsafe {
             littlefs::lfs_setattr(

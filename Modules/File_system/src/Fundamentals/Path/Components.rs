@@ -57,7 +57,7 @@ mod Tests {
     #[test]
     fn Test_components() {
         assert_eq!(
-            Components_type::New(Path_type::New("/a/b/c").unwrap()).collect::<Vec<_>>(),
+            Components_type::New(Path_type::From_str("/a/b/c")).collect::<Vec<_>>(),
             vec![
                 Component_type::Root,
                 Component_type::Normal("a"),
@@ -67,7 +67,7 @@ mod Tests {
         );
 
         assert_eq!(
-            Components_type::New(Path_type::New("/a/./b/c").unwrap()).collect::<Vec<_>>(),
+            Components_type::New(Path_type::From_str("/a/./b/c")).collect::<Vec<_>>(),
             vec![
                 Component_type::Root,
                 Component_type::Normal("a"),
@@ -78,7 +78,7 @@ mod Tests {
         );
 
         assert_eq!(
-            Components_type::New(Path_type::New("a/b/c").unwrap()).collect::<Vec<_>>(),
+            Components_type::New(Path_type::From_str("a/b/c")).collect::<Vec<_>>(),
             vec![
                 Component_type::Normal("a"),
                 Component_type::Normal("b"),
@@ -87,7 +87,7 @@ mod Tests {
         );
 
         assert_eq!(
-            Components_type::New(Path_type::New("a/./../b/c").unwrap()).collect::<Vec<_>>(),
+            Components_type::New(Path_type::From_str("a/./../b/c")).collect::<Vec<_>>(),
             vec![
                 Component_type::Normal("a"),
                 Component_type::Current,

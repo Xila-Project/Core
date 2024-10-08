@@ -146,7 +146,7 @@ impl Virtual_file_system_type {
         let (_, Parent_file_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
-        Parent_file_system.Create_directory(&Relative_path, Task)?;
+        Parent_file_system.Create_directory(Relative_path, Task)?;
 
         // Create a directory at the mount point
         let File_system_identifier = Self::Get_new_file_system_identifier(&File_systems)
@@ -198,7 +198,7 @@ impl Virtual_file_system_type {
         let (_, Parent_file_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, &File_system.Mount_point)?;
 
-        Parent_file_system.Remove(&Relative_path)?;
+        Parent_file_system.Remove(Relative_path)?;
 
         Ok(())
     }
@@ -259,7 +259,7 @@ impl Virtual_file_system_type {
         let (File_system_identifier, File_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
-        let Local_file = File_system.Open(Task, &Relative_path, Flags)?;
+        let Local_file = File_system.Open(Task, Relative_path, Flags)?;
 
         let Metadata = File_system.Get_metadata(Local_file)?;
 
@@ -472,7 +472,7 @@ impl Virtual_file_system_type {
         let (_, File_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
-        let mut Metadata = File_system.Get_metadata_from_path(&Relative_path)?;
+        let mut Metadata = File_system.Get_metadata_from_path(Relative_path)?;
 
         if let Some(User) = User {
             Metadata.Set_owner(User);
@@ -482,7 +482,7 @@ impl Virtual_file_system_type {
             Metadata.Set_group(Group);
         }
 
-        File_system.Set_metadata_from_path(&Relative_path, &Metadata)
+        File_system.Set_metadata_from_path(Relative_path, &Metadata)
     }
 
     pub fn Set_permissions(
@@ -495,11 +495,11 @@ impl Virtual_file_system_type {
         let (_, File_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
-        let mut Metadata = File_system.Get_metadata_from_path(&Relative_path)?;
+        let mut Metadata = File_system.Get_metadata_from_path(Relative_path)?;
 
         Metadata.Set_permissions(Permissions);
 
-        File_system.Set_metadata_from_path(&Relative_path, &Metadata)
+        File_system.Set_metadata_from_path(Relative_path, &Metadata)
     }
 
     pub fn Close_all(&self, Task_identifier: Task_identifier_type) -> Result_type<()> {
@@ -531,7 +531,7 @@ impl Virtual_file_system_type {
 
         let File = File_system.Open(
             Task,
-            &Relative_path,
+            Relative_path,
             Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None),
         )?;
 
@@ -551,7 +551,7 @@ impl Virtual_file_system_type {
             Metadata_type::Get_default(Task, Type).ok_or(Error_type::Invalid_input)?;
         Metadata.Set_inode(Inode);
 
-        File_system.Set_metadata_from_path(&Relative_path, &Metadata)?;
+        File_system.Set_metadata_from_path(Relative_path, &Metadata)?;
 
         Ok(())
     }
@@ -568,7 +568,7 @@ impl Virtual_file_system_type {
 
         let File = File_system.Open(
             Task,
-            &Relative_path,
+            Relative_path,
             Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None),
         )?;
 
@@ -580,7 +580,7 @@ impl Virtual_file_system_type {
             Metadata_type::Get_default(Task, Type_type::Pipe).ok_or(Error_type::Invalid_input)?;
         Metadata.Set_inode(Inode);
 
-        File_system.Set_metadata_from_path(&Relative_path, &Metadata)?;
+        File_system.Set_metadata_from_path(Relative_path, &Metadata)?;
 
         Ok(())
     }
@@ -610,9 +610,9 @@ impl Virtual_file_system_type {
         let (_, File_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
-        let Metadata = File_system.Get_metadata_from_path(&Relative_path)?;
+        let Metadata = File_system.Get_metadata_from_path(Relative_path)?;
 
-        File_system.Remove(&Relative_path)?;
+        File_system.Remove(Relative_path)?;
 
         match Metadata.Get_type() {
             Type_type::Pipe => {
@@ -744,7 +744,7 @@ impl Virtual_file_system_type {
             Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
         let (_, File) = File_system
-            .Open_directory(&Relative_path, Task)?
+            .Open_directory(Relative_path, Task)?
             .Into_unique_file_identifier(File_system_identifier);
 
         Ok(File)
@@ -870,7 +870,7 @@ impl Virtual_file_system_type {
 
         let (_, File_system, Relative_path) = Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
-        File_system.Create_directory(&Relative_path, Task)
+        File_system.Create_directory(Relative_path, Task)
     }
 
     pub fn Get_mode(
@@ -1000,7 +1000,7 @@ impl Virtual_file_system_type {
         }
 
         if Old_file_system_identifier == New_file_system_identifier {
-            Old_file_system.Rename(&Old_relative_path, &New_relative_path)
+            Old_file_system.Rename(Old_relative_path, New_relative_path)
         } else {
             Err(Error_type::Unsupported_operation) // TODO : Add support for moving between file systems
         }
@@ -1014,7 +1014,7 @@ impl Virtual_file_system_type {
 
         let (_, File_system, Relative_path) = Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
-        let Metadata = File_system.Get_metadata_from_path(&Relative_path)?;
+        let Metadata = File_system.Get_metadata_from_path(Relative_path)?;
 
         if Metadata.Get_type() != Type_type::Block_device
             && Metadata.Get_type() != Type_type::Character_device
@@ -1040,7 +1040,7 @@ mod Tests {
         fn Open(
             &self,
             _: Task_identifier_type,
-            _: &dyn AsRef<Path_type>,
+            _: &Path_type,
             _: Flags_type,
         ) -> Result_type<crate::Local_file_identifier_type> {
             todo!()
@@ -1070,7 +1070,7 @@ mod Tests {
             todo!()
         }
 
-        fn Remove(&self, _: &dyn AsRef<Path_type>) -> Result_type<()> {
+        fn Remove(&self, _: &Path_type) -> Result_type<()> {
             todo!()
         }
 
@@ -1086,7 +1086,7 @@ mod Tests {
             todo!()
         }
 
-        fn Rename(&self, _: &dyn AsRef<Path_type>, _: &dyn AsRef<Path_type>) -> Result_type<()> {
+        fn Rename(&self, _: &Path_type, _: &Path_type) -> Result_type<()> {
             todo!()
         }
 
@@ -1102,17 +1102,13 @@ mod Tests {
             todo!()
         }
 
-        fn Create_directory(
-            &self,
-            _: &dyn AsRef<Path_type>,
-            _: Task_identifier_type,
-        ) -> Result_type<()> {
+        fn Create_directory(&self, _: &Path_type, _: Task_identifier_type) -> Result_type<()> {
             todo!()
         }
 
         fn Open_directory(
             &self,
-            _: &dyn AsRef<Path_type>,
+            _: &Path_type,
             _: Task_identifier_type,
         ) -> Result_type<crate::Local_file_identifier_type> {
             todo!()
@@ -1148,15 +1144,11 @@ mod Tests {
             todo!()
         }
 
-        fn Set_metadata_from_path(
-            &self,
-            _: &dyn AsRef<Path_type>,
-            _: &Metadata_type,
-        ) -> Result_type<()> {
+        fn Set_metadata_from_path(&self, _: &Path_type, _: &Metadata_type) -> Result_type<()> {
             todo!()
         }
 
-        fn Get_metadata_from_path(&self, _: &dyn AsRef<Path_type>) -> Result_type<Metadata_type> {
+        fn Get_metadata_from_path(&self, _: &Path_type) -> Result_type<Metadata_type> {
             todo!()
         }
 

@@ -145,7 +145,7 @@ fn Test_named_pipe() {
 fn Test_device() {
     let (Task, Virtual_file_system) = Initialize();
 
-    const Device_path: &Path_type = unsafe { Path_type::New_unchecked_constant("/Device") };
+    const Device_path: &Path_type = unsafe { Path_type::From_str("/Device") };
 
     let Device = Create_device!(Memory_device_type::<512>::New(512));
 
