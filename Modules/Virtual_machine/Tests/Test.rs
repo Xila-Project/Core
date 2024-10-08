@@ -4,6 +4,7 @@
 
 use wamr_rust_sdk::value::WasmValue;
 
+use File_system::{Create_device, Create_file_system, LittleFS, Tests::Memory_device_type};
 use Virtual_machine::{
     Data_type, Environment_pointer_type, Environment_type, Function_descriptor_type,
     Function_descriptors, Instantiate_test_environment, Registrable_trait, WASM_pointer,
@@ -88,7 +89,12 @@ fn Integration_test() {
     Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()))
         .expect("Failed to initialize time manager");
 
-    File_system::Initialize().expect("Failed to initialize file system");
+    let Device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
+
+    LittleFS::File_system_type::Format(Device.clone(), 512).unwrap();
+    let File_system = Create_file_system!(LittleFS::File_system_type::New(Device, 256).unwrap());
+
+    File_system::Initialize(File_system).unwrap();
 
     let Binary_buffer =
         include_bytes!("./WASM_test/target/wasm32-wasip1/release/Virtual_machine_WASM_test.wasm");

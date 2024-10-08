@@ -2,6 +2,11 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
+use std::{
+    fs::{create_dir, read_dir, rename, OpenOptions},
+    io::{Read, Write},
+};
+
 #[link(wasm_import_module = "host")]
 extern "C" {
     pub fn Test_mutable_slice(Slice: *mut i32, Size: usize);
@@ -88,17 +93,67 @@ fn Test_stdio() -> Result<(), ()> {
     let mut Input = String::new();
 
     std::io::stdin().read_line(&mut Input).unwrap();
-    
+
     println!("Input: {}", Input);
-    
 
     Ok(())
 }
 
-fn Test_file() -> Result<(), ()> {
-    let File = std::fs::File::open("/test.txt").unwrap();
+fn Test_file() {
+    {
+        let mut File = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open("/test.txt")
+            .unwrap();
 
-    Ok(())
+        File.write_all(b"Hello World from WASM!").unwrap();
+    }
+
+    {
+        let mut File = OpenOptions::new().read(true).open("/test.txt").unwrap();
+
+        let mut String = String::new();
+
+        File.read_to_string(&mut String).unwrap();
+
+        assert_eq!(String, "Hello World from WASM!");
+    }
+
+    {
+        rename("/test.txt", "/test2.txt").unwrap();
+
+        let mut File = OpenOptions::new().read(true).open("/test2.txt").unwrap();
+
+        let mut String = String::new();
+
+        File.read_to_string(&mut String).unwrap();
+
+        assert_eq!(String, "Hello World from WASM!");
+    }
+}
+
+fn Test_directory() {
+    create_dir("/test_dir").unwrap();
+
+    for Entry in read_dir("/").unwrap() {
+        let Entry = Entry.unwrap();
+
+        let Type = Entry.file_type().unwrap();
+
+        let Type = if Type.is_dir() {
+            "Directory"
+        } else if Type.is_file() {
+            "File"
+        } else if Type.is_symlink() {
+            "Symlink"
+        } else {
+            "Unknown"
+        };
+
+        println!("{:?} - {}", Entry.file_name(), Type);
+    }
 }
 
 fn main() -> Result<(), ()> {
@@ -112,7 +167,9 @@ fn main() -> Result<(), ()> {
 
     Test_stdio()?;
 
-    Test_file()?;
+    Test_file();
+
+    Test_directory();
 
     Ok(())
 }
