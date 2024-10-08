@@ -9,9 +9,11 @@ use crate::{
 
 use super::Pipe_type;
 
+type Open_pipes_inner_type = (Pipe_type, Flags_type, Option<Unique_file_identifier_type>);
+
 struct Inner_type {
     pub Named_pipes: BTreeMap<Inode_type, Pipe_type>,
-    pub Open_pipes: BTreeMap<Local_file_identifier_type, (Pipe_type, Flags_type)>,
+    pub Open_pipes: BTreeMap<Local_file_identifier_type, Open_pipes_inner_type>,
 }
 
 pub struct File_system_type(RwLock<Inner_type>);
@@ -68,7 +70,7 @@ impl File_system_type {
         Inner: &mut Inner_type,
     ) -> (
         &mut BTreeMap<Inode_type, Pipe_type>,
-        &mut BTreeMap<Local_file_identifier_type, (Pipe_type, Flags_type)>,
+        &mut BTreeMap<Local_file_identifier_type, Open_pipes_inner_type>,
     ) {
         (&mut Inner.Named_pipes, &mut Inner.Open_pipes)
     }

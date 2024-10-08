@@ -9,9 +9,11 @@ use crate::{
 
 use super::Device_type;
 
+type Open_device_inner_type = (Device_type, Flags_type, Unique_file_identifier_type);
+
 struct Inner_type {
     pub Devices: BTreeMap<Inode_type, Device_type>,
-    pub Open_devices: BTreeMap<Local_file_identifier_type, (Device_type, Flags_type)>,
+    pub Open_devices: BTreeMap<Local_file_identifier_type, Open_device_inner_type>,
 }
 
 pub struct File_system_type(RwLock<Inner_type>);
@@ -28,7 +30,7 @@ impl File_system_type {
         Inner: &mut Inner_type,
     ) -> (
         &mut BTreeMap<Inode_type, Device_type>,
-        &mut BTreeMap<Local_file_identifier_type, (Device_type, Flags_type)>,
+        &mut BTreeMap<Local_file_identifier_type, Open_device_inner_type>,
     ) {
         (&mut Inner.Devices, &mut Inner.Open_devices)
     }
