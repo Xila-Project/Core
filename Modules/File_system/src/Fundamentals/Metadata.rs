@@ -1,9 +1,9 @@
 use Task::Task_identifier_type;
 use Users::{Group_identifier_type, User_identifier_type};
 
-use crate::{Error_type, Flags_type, Permissions_type, Time_type, Type_type};
+use crate::{Error_type, Permissions_type, Time_type, Type_type};
 
-use super::{File_system_identifier_type, Inode_type};
+use super::Inode_type;
 
 /// File attributes.
 ///
