@@ -522,19 +522,19 @@ impl File_system_traits for File_system_type {
         Ok(Directory.Get_position(File_system)?)
     }
 
-    fn Set_metadata(
+    fn Set_metadata_from_path(
         &self,
         Path: &dyn AsRef<Path_type>,
         Metadata: &Metadata_type,
     ) -> crate::Result_type<()> {
         let mut Inner = self.Inner.write()?;
 
-        File_type::Set_metadata_from_path(&mut Inner.File_system, Path, &Metadata)?;
+        File_type::Set_metadata_from_path(&mut Inner.File_system, Path, Metadata)?;
 
         Ok(())
     }
 
-    fn Get_metadata(
+    fn Get_metadata_from_path(
         &self,
         Path: &dyn AsRef<Path_type>,
     ) -> crate::Result_type<crate::Metadata_type> {
@@ -544,6 +544,18 @@ impl File_system_traits for File_system_type {
             &mut Inner.File_system,
             Path,
         )?)
+    }
+
+    fn Get_metadata(&self, File: Local_file_identifier_type) -> crate::Result_type<Metadata_type> {
+        let mut Inner = self.Inner.write()?;
+
+        let (_, Open_files, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+
+        let File = Open_files
+            .get_mut(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        Ok(File.Get_metadata()?.clone())
     }
 }
 

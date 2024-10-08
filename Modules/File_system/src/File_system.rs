@@ -142,13 +142,15 @@ pub trait File_system_traits: Send + Sync {
 
     // - Metadata
 
-    fn Set_metadata(
+    fn Get_metadata(&self, File: Local_file_identifier_type) -> Result_type<Metadata_type>;
+
+    fn Set_metadata_from_path(
         &self,
         Path: &dyn AsRef<Path_type>,
         Metadata: &Metadata_type,
     ) -> Result_type<()>;
 
-    fn Get_metadata(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Metadata_type>;
+    fn Get_metadata_from_path(&self, Path: &dyn AsRef<Path_type>) -> Result_type<Metadata_type>;
 
     fn Get_statistics(&self, File: Local_file_identifier_type) -> Result_type<Statistics_type>;
 
