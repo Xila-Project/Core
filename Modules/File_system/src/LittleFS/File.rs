@@ -61,14 +61,18 @@ impl File_type {
         Flags: Flags_type,
         Cache_size: usize,
     ) -> Result_type<Self> {
+        // - Create or get the metadata
+        let Metadata = if Flags.Get_open().Get_create() {
+            Metadata_type::Get_default(Task, Type_type::File)
+                .ok_or(Error_type::Invalid_parameter)?
+        } else {
+            Self::Get_metadata_from_path(File_system, Path)?
+        };
+
         let Path =
             CString::new(Path.as_ref().As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
         let Little_fs_flags = Convert_flags(Flags);
-
-        // - Create the attribute
-        let Metadata = Metadata_type::Get_default(Task, Type_type::File)
-            .ok_or(Error_type::Invalid_parameter)?;
 
         let Metadata_buffer = Box::new(Metadata);
 
