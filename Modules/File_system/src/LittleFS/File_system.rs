@@ -573,10 +573,10 @@ mod Tests {
     fn Initialize() -> File_system_type {
         let _ = Users::Initialize();
 
-        if let Err(Error) = Task::Initialize() {
-            unsafe {
-                Task::Get_instance().Register_task();
-            }
+        Task::Initialize().unwrap();
+
+        unsafe {
+            let _ = Task::Get_instance().Register_task();
         }
 
         let _ = Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()));
