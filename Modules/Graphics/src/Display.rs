@@ -10,8 +10,8 @@ use crate::{
 
 use super::lvgl;
 
-struct User_data {
-    File: File_type,
+struct User_data<'a> {
+    File: File_type<'a>,
 }
 
 pub struct Display_type<const Buffer_size: usize> {

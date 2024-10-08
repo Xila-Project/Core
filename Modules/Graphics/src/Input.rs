@@ -7,8 +7,8 @@ use crate::{Display::Display_type, Pointer_data_type, Result_type};
 
 use super::lvgl;
 
-struct User_data_type {
-    pub File: File_type,
+struct User_data_type<'a> {
+    pub File: File_type<'a>,
 }
 
 pub struct Input_type {
