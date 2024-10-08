@@ -125,7 +125,7 @@ pub trait File_system_traits: Send + Sync {
         Task: Task_identifier_type,
     ) -> Result_type<Local_file_identifier_type>;
 
-    fn Read_directory(&self, File: Local_file_identifier_type) -> Result_type<Entry_type>;
+    fn Read_directory(&self, File: Local_file_identifier_type) -> Result_type<Option<Entry_type>>;
 
     fn Set_position_directory(
         &self,

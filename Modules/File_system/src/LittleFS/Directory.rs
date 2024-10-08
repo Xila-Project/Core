@@ -101,18 +101,27 @@ impl Directory_type {
         Ok(())
     }
 
-    pub fn Read(&mut self, File_system: &mut super::littlefs::lfs_t) -> Result_type<Entry_type> {
+    pub fn Read(
+        &mut self,
+        File_system: &mut super::littlefs::lfs_t,
+    ) -> Result_type<Option<Entry_type>> {
         let Informations = MaybeUninit::<littlefs::lfs_info>::uninit();
 
         let mut Informations = unsafe { Informations.assume_init() };
 
-        Convert_result(unsafe {
+        let Result = unsafe {
             littlefs::lfs_dir_read(
                 File_system as *mut _,
                 &self.0.Directory as *const _ as *mut _,
                 &mut Informations as *mut _,
             )
-        })?;
+        };
+
+        if Result == 0 {
+            return Ok(None);
+        }
+
+        Convert_result(Result)?;
 
         let Name = unsafe { CStr::from_ptr(Informations.name.as_ptr()) };
         let Name = Name.to_str().unwrap().to_string();
@@ -130,7 +139,7 @@ impl Directory_type {
             Size_type::New(Informations.size as u64),
         );
 
-        Ok(Entry)
+        Ok(Some(Entry))
     }
 
     pub fn Close(&mut self, File_system: &mut super::littlefs::lfs_t) -> Result_type<()> {

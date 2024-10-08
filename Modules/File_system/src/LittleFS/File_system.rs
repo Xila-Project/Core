@@ -410,7 +410,7 @@ impl File_system_traits for File_system_type {
     fn Read_directory(
         &self,
         File: Local_file_identifier_type,
-    ) -> crate::Result_type<crate::Entry_type> {
+    ) -> crate::Result_type<Option<crate::Entry_type>> {
         let mut Inner = self.Inner.write()?;
 
         let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
