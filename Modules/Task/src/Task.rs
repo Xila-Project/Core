@@ -1,8 +1,6 @@
-use std::borrow::Cow;
-
 use Users::User_identifier_type;
 
-use crate::{Get_instance, Join_handle_type, Result_type};
+use crate::{Environment_variable_type, Get_instance, Join_handle_type, Result_type};
 
 #[cfg(target_pointer_width = "32")]
 pub type Task_identifier_inner_type = u16;
@@ -87,7 +85,7 @@ impl Task_type {
         Get_instance().Get_owner(self.Identifier)
     }
 
-    pub fn Get_environment_variable(&self, Name: &str) -> Result_type<Cow<'static, str>> {
+    pub fn Get_environment_variable(&self, Name: &str) -> Result_type<Environment_variable_type> {
         Get_instance().Get_environment_variable(self.Identifier, Name)
     }
 

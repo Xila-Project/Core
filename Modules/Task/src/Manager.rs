@@ -4,8 +4,7 @@ use super::*;
 // - - External
 // - - - Standard library
 use std::{
-    borrow::Cow,
-    collections::{BTreeMap, HashMap},
+    collections::BTreeMap,
     sync::{OnceLock, RwLock},
     time::Duration,
 };
@@ -20,7 +19,7 @@ struct Task_internal_type {
     /// The identifier of the user that owns the task.
     Owner: User_identifier_type,
     /// Environment variables of the task.
-    Environment_variables: HashMap<Cow<'static, str>, Cow<'static, str>>,
+    Environment_variables: Vec<Environment_variable_type>,
 }
 
 static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
@@ -70,7 +69,7 @@ impl Manager_type {
             Main_thread: Thread_wrapper_type::Get_current(),
             Parent: Task_identifier,
             Owner: Root_user_identifier,
-            Environment_variables: HashMap::new(),
+            Environment_variables: vec![],
         };
 
         Self::Register_task_internal(Task_identifier, Task_internal, &mut Inner.Tasks)
@@ -104,7 +103,7 @@ impl Manager_type {
             Main_thread: Thread_wrapper_type::Get_current(),
             Parent: Self::Root_task_identifier,
             Owner: Root_user_identifier,
-            Environment_variables: HashMap::new(),
+            Environment_variables: vec![],
         };
 
         if Inner
@@ -444,7 +443,7 @@ impl Manager_type {
         &self,
         Task_identifier: Task_identifier_type,
         Name: &str,
-    ) -> Result_type<Cow<'static, str>> {
+    ) -> Result_type<Environment_variable_type> {
         Ok(self
             .0
             .read()?
@@ -452,7 +451,8 @@ impl Manager_type {
             .get(&Task_identifier)
             .ok_or(Error_type::Invalid_task_identifier)?
             .Environment_variables
-            .get(Name)
+            .iter()
+            .find(|Variable| Variable.Get_name() == Name)
             .ok_or(Error_type::Invalid_environment_variable)?
             .clone())
     }
@@ -460,7 +460,7 @@ impl Manager_type {
     pub fn Get_environment_variables(
         &self,
         Task_identifier: Task_identifier_type,
-    ) -> Result_type<HashMap<Cow<'static, str>, Cow<'static, str>>> {
+    ) -> Result_type<Vec<Environment_variable_type>> {
         Ok(self
             .0
             .read()?
@@ -477,13 +477,15 @@ impl Manager_type {
         Name: &str,
         Value: &str,
     ) -> Result_type<()> {
+        let Environment_variable = Environment_variable_type::New(Name, Value);
+
         self.0
             .write()?
             .Tasks
             .get_mut(&Task_identifier)
             .ok_or(Error_type::Invalid_task_identifier)?
             .Environment_variables
-            .insert(Cow::Owned(Name.to_string()), Cow::Owned(Value.to_string()));
+            .push(Environment_variable);
 
         Ok(())
     }
@@ -499,7 +501,7 @@ impl Manager_type {
             .get_mut(&Task_identifier)
             .ok_or(Error_type::Invalid_task_identifier)?
             .Environment_variables
-            .remove(Name);
+            .retain(|Variable| Variable.Get_name() != Name);
 
         Ok(())
     }
@@ -633,7 +635,8 @@ mod Tests {
         assert_eq!(
             Manager
                 .Get_environment_variable(Task_identifier, Name)
-                .unwrap(),
+                .unwrap()
+                .Get_value(),
             Value
         );
         Manager
@@ -662,7 +665,8 @@ mod Tests {
                         assert_eq!(
                             Get_instance()
                                 .Get_environment_variable(Current_task, "Key")
-                                .unwrap(),
+                                .unwrap()
+                                .Get_value(),
                             "Value"
                         );
                     })
