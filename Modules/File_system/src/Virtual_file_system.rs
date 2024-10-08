@@ -1054,17 +1054,18 @@ mod Tests {
             todo!()
         }
 
-        fn Duplicate_file_identifier(
+        fn Duplicate(
             &self,
             _: crate::Local_file_identifier_type,
         ) -> Result_type<crate::Local_file_identifier_type> {
             todo!()
         }
 
-        fn Transfert_file_identifier(
+        fn Transfert(
             &self,
             _: Task_identifier_type,
             _: crate::Local_file_identifier_type,
+            _: Option<File_identifier_type>,
         ) -> Result_type<crate::Local_file_identifier_type> {
             todo!()
         }
@@ -1085,7 +1086,7 @@ mod Tests {
             todo!()
         }
 
-        fn Move(&self, _: &dyn AsRef<Path_type>, _: &dyn AsRef<Path_type>) -> Result_type<()> {
+        fn Rename(&self, _: &dyn AsRef<Path_type>, _: &dyn AsRef<Path_type>) -> Result_type<()> {
             todo!()
         }
 
@@ -1117,7 +1118,10 @@ mod Tests {
             todo!()
         }
 
-        fn Read_directory(&self, _: crate::Local_file_identifier_type) -> Result_type<Entry_type> {
+        fn Read_directory(
+            &self,
+            _: crate::Local_file_identifier_type,
+        ) -> Result_type<Option<Entry_type>> {
             todo!()
         }
 
@@ -1144,11 +1148,15 @@ mod Tests {
             todo!()
         }
 
-        fn Set_metadata(&self, _: &dyn AsRef<Path_type>, _: &Metadata_type) -> Result_type<()> {
+        fn Set_metadata_from_path(
+            &self,
+            _: &dyn AsRef<Path_type>,
+            _: &Metadata_type,
+        ) -> Result_type<()> {
             todo!()
         }
 
-        fn Get_metadata(&self, _: &dyn AsRef<Path_type>) -> Result_type<Metadata_type> {
+        fn Get_metadata_from_path(&self, _: &dyn AsRef<Path_type>) -> Result_type<Metadata_type> {
             todo!()
         }
 
@@ -1160,6 +1168,10 @@ mod Tests {
         }
 
         fn Get_mode(&self, _: crate::Local_file_identifier_type) -> Result_type<Mode_type> {
+            todo!()
+        }
+
+        fn Get_metadata(&self, _: crate::Local_file_identifier_type) -> Result_type<Metadata_type> {
             todo!()
         }
     }
