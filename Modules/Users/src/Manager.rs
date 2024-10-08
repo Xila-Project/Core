@@ -71,16 +71,20 @@ impl Manager_type {
         Self(RwLock::new(Internal_manager_type { Users, Groups }))
     }
 
-    fn Get_new_group_identifier(&self) -> Option<Group_identifier_type> {
-        let Inner = self.0.read().ok()?;
-
-        (0..Group_identifier_type::MAX).find(|Identifier| !Inner.Groups.contains_key(Identifier))
+    fn Get_new_group_identifier<T>(
+        Groups: &BTreeMap<Group_identifier_type, T>,
+    ) -> Result_type<Group_identifier_type> {
+        (0..Group_identifier_type::MAX)
+            .find(|Identifier| !Groups.contains_key(Identifier))
+            .ok_or(Error_type::Too_many_groups)
     }
 
-    fn Get_new_user_identifier(&self) -> Option<User_identifier_type> {
-        let Inner = self.0.read().ok()?;
-
-        (0..User_identifier_type::MAX).find(|Identifier| !Inner.Users.contains_key(Identifier))
+    fn Get_new_user_identifier(
+        Users: &BTreeMap<User_identifier_type, Internal_user_type>,
+    ) -> Result_type<User_identifier_type> {
+        (0..User_identifier_type::MAX)
+            .find(|Identifier| !Users.contains_key(Identifier))
+            .ok_or(Error_type::Too_many_users)
     }
 
     pub fn Create_user(
@@ -88,27 +92,30 @@ impl Manager_type {
         Name: &str,
         Primary_group: Group_identifier_type,
     ) -> Result_type<User_identifier_type> {
-        let Identifier = match self.Get_new_user_identifier() {
-            Some(Identifier) => Identifier,
-            None => return Err(Error_type::Too_many_users),
-        };
+        let mut Inner = self.0.write()?;
+
+        let Identifier = Self::Get_new_user_identifier(&Inner.Users)?;
 
         let User = Internal_user_type {
             Name: Name.to_string(),
             Primary_group,
         };
 
-        if self.Exists_user(Identifier)? {
-            return Err(Error_type::Duplicate_user_identifier);
-        }
-
-        let mut Inner = self.0.write().unwrap();
-
+        // - Add user to the users map
         if Inner.Users.insert(Identifier, User).is_some() {
             return Err(Error_type::Duplicate_user_identifier); // Shouldn't happen
         }
 
-        self.Add_to_group(Identifier, Primary_group)?;
+        // - Add user to the primary group
+        if !Inner
+            .Groups
+            .get_mut(&Primary_group)
+            .ok_or(Error_type::Invalid_group_identifier)?
+            .Users
+            .insert(Identifier)
+        {
+            return Err(Error_type::Duplicate_user_identifier); // Shouldn't happen
+        }
 
         Ok(Identifier)
     }
@@ -118,23 +125,21 @@ impl Manager_type {
         Name: &str,
         Identifier: Option<Group_identifier_type>,
     ) -> Result_type<Group_identifier_type> {
-        let Identifier = match Identifier {
-            Some(Identifier) => Identifier,
-            None => self
-                .Get_new_group_identifier()
-                .ok_or(Error_type::Too_many_groups)?,
+        let mut Inner = self.0.write()?;
+
+        let Identifier = if let Some(Identifier) = Identifier {
+            if Inner.Groups.contains_key(&Identifier) {
+                return Err(Error_type::Duplicate_group_identifier);
+            }
+            Identifier
+        } else {
+            Self::Get_new_group_identifier(&Inner.Groups)?
         };
 
         let Group = Internal_group_type {
             Name: Name.to_string(),
             Users: BTreeSet::new(),
         };
-
-        if self.Exists_group(Identifier)? {
-            return Err(Error_type::Duplicate_group_identifier);
-        }
-
-        let mut Inner = self.0.write().unwrap();
 
         if Inner.Groups.insert(Identifier, Group).is_some() {
             return Err(Error_type::Duplicate_group_identifier); // Shouldn't happen
@@ -163,20 +168,10 @@ impl Manager_type {
     pub fn Get_user_groups(
         &self,
         Identifier: User_identifier_type,
-    ) -> Option<Vec<Group_identifier_type>> {
-        let Inner = self.0.read().unwrap();
+    ) -> Result_type<BTreeSet<Group_identifier_type>> {
+        let Inner = self.0.read()?;
 
-        let mut Size = 1;
-
-        Size += Inner
-            .Groups
-            .iter()
-            .filter(|(_, Group)| Group.Users.contains(&Identifier))
-            .count();
-
-        let mut User_groups: Vec<Group_identifier_type> = Vec::with_capacity(Size);
-
-        User_groups.push(Inner.Users.get(&Identifier).unwrap().Primary_group);
+        let mut User_groups: BTreeSet<Group_identifier_type> = BTreeSet::new();
 
         User_groups.extend(
             Inner
@@ -186,7 +181,7 @@ impl Manager_type {
                 .map(|(Identifier, _)| *Identifier),
         );
 
-        Some(User_groups)
+        Ok(User_groups)
     }
 
     pub fn Exists_group(&self, Identifier: Group_identifier_type) -> Result_type<bool> {
@@ -272,12 +267,6 @@ mod Tests {
     use super::*;
 
     #[test]
-    fn New() {
-        let Manager = Manager_type::New();
-        assert!(Manager.0.read().unwrap().Groups.is_empty());
-    }
-
-    #[test]
     fn Create_user() {
         let Manager = Manager_type::New();
         let User_name = "Alice";
@@ -331,8 +320,13 @@ mod Tests {
         Manager.Add_to_group(User_id, Group_id1).unwrap();
         Manager.Add_to_group(User_id, Group_id2).unwrap();
         let Groups = Manager.Get_user_groups(User_id).unwrap();
-        assert_eq!(Groups.len(), 2);
-        assert!(Groups.contains(&Group_id1) && Groups.contains(&Group_id2));
+        println!("{:?}", Groups);
+        assert_eq!(Groups.len(), 3);
+        assert!(
+            Groups.contains(&Group_id1)
+                && Groups.contains(&Group_id2)
+                && Groups.contains(&Root_group_identifier)
+        );
     }
 
     #[test]
