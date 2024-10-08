@@ -107,10 +107,16 @@ impl Manager_type {
             Environment_variables: HashMap::new(),
         };
 
-        Inner.Threads.insert(
-            Thread_wrapper_type::Get_current().Get_identifier(),
-            Task_identifier,
-        );
+        if Inner
+            .Threads
+            .insert(
+                Thread_wrapper_type::Get_current().Get_identifier(),
+                Task_identifier,
+            )
+            .is_some()
+        {
+            return Err(Error_type::Thread_already_registered);
+        }
 
         Self::Register_task_internal(Task_identifier, Task_internal, &mut Inner.Tasks)
     }
