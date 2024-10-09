@@ -175,7 +175,7 @@ pub fn Get_new_inode<T>(Map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type
 pub mod Tests {
     use std::sync::RwLock;
 
-    use crate::{Device_trait, Open_type, Path_owned_type, Type_type};
+    use crate::{Device_trait, Open_type, Path_owned_type, Time_type, Type_type};
 
     use super::*;
 
@@ -429,7 +429,9 @@ pub mod Tests {
 
         let File = File_system.Open(Task, &Path, Flags).unwrap();
 
-        let Metadata = Metadata_type::Get_default(Task, Type_type::File).unwrap();
+        let Time = Time_type::New(123);
+
+        let Metadata = Metadata_type::Get_default(Task, Type_type::File, Time).unwrap();
 
         File_system
             .Set_metadata_from_path(&Path, &Metadata)

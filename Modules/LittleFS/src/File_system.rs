@@ -362,6 +362,8 @@ impl File_system_traits for File_system_type {
         let (File_system, Open_files, Open_directories) =
             Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
+        let Current_time: Time_type = Time::Get_instance().Get_current_time().into();
+
         // TODO : Find a way to get the metadata of the directories
         if Open_directories.get_mut(&File).is_some() {
             Ok(Statistics_type::New(
@@ -369,9 +371,9 @@ impl File_system_traits for File_system_type {
                 Inode_type::New(0),
                 1,
                 Size_type::New(0),
-                Time_type::Get_now(),
-                Time_type::Get_now(),
-                Time_type::Get_now(),
+                Current_time,
+                Current_time,
+                Current_time,
                 Type_type::Directory,
             ))
         } else if let Some(File) = Open_files.get_mut(&File) {
@@ -474,7 +476,9 @@ impl File_system_traits for File_system_type {
 
         Directory_type::Create_directory(&mut Inner.File_system, Path)?;
 
-        let Metadata = Metadata_type::Get_default(Task, Type_type::Directory)
+        let Current_time: Time_type = Time::Get_instance().Get_current_time().into();
+
+        let Metadata = Metadata_type::Get_default(Task, Type_type::Directory, Current_time)
             .ok_or(Error_type::Invalid_parameter)?;
 
         File_type::Set_metadata_from_path(&mut Inner.File_system, Path, &Metadata)?;

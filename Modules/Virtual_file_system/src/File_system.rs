@@ -5,7 +5,7 @@ use Users::{Group_identifier_type, User_identifier_type};
 
 use File_system::{
     Device_type, Entry_type, File_identifier_type, Metadata_type, Mode_type, Open_type,
-    Statistics_type, Type_type,
+    Statistics_type, Time_type, Type_type,
 };
 
 use File_system::{
@@ -547,9 +547,11 @@ impl Virtual_file_system_type {
             Type_type::Character_device
         };
 
+        let Current_time: Time_type = Time::Get_instance().Get_current_time().into();
+
         // Set the metadata of the special file.
-        let mut Metadata =
-            Metadata_type::Get_default(Task, Type).ok_or(Error_type::Invalid_parameter)?;
+        let mut Metadata = Metadata_type::Get_default(Task, Type, Current_time)
+            .ok_or(Error_type::Invalid_parameter)?;
         Metadata.Set_inode(Inode);
 
         File_system.Set_metadata_from_path(Relative_path, &Metadata)?;
@@ -577,7 +579,9 @@ impl Virtual_file_system_type {
 
         let Inode = self.Pipe_file_system.Create_named_pipe(Size)?;
 
-        let mut Metadata = Metadata_type::Get_default(Task, Type_type::Pipe)
+        let Current_time: Time_type = Time::Get_instance().Get_current_time().into();
+
+        let mut Metadata = Metadata_type::Get_default(Task, Type_type::Pipe, Current_time)
             .ok_or(Error_type::Invalid_parameter)?;
         Metadata.Set_inode(Inode);
 
