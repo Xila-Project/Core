@@ -8,7 +8,7 @@ use std::{
     sync::{OnceLock, RwLock},
     time::Duration,
 };
-use Users::{Root_user_identifier, User_identifier_type};
+use Users::User_identifier_type;
 
 /// Internal representation of a task.
 struct Task_internal_type {
@@ -68,7 +68,7 @@ impl Manager_type {
         let Task_internal = Task_internal_type {
             Main_thread: Thread_wrapper_type::Get_current(),
             Parent: Task_identifier,
-            Owner: Root_user_identifier,
+            Owner: User_identifier_type::Root,
             Environment_variables: vec![],
         };
 
@@ -102,7 +102,7 @@ impl Manager_type {
         let Task_internal = Task_internal_type {
             Main_thread: Thread_wrapper_type::Get_current(),
             Parent: Self::Root_task_identifier,
-            Owner: Root_user_identifier,
+            Owner: User_identifier_type::Root,
             Environment_variables: vec![],
         };
 
@@ -558,7 +558,7 @@ mod Tests {
     }
 
     fn Test_get_owner(Manager: &Manager_type) {
-        let User_identifier = 123; // Assuming User_identifier_type is i32 for example
+        let User_identifier = User_identifier_type::New(123); // Assuming User_identifier_type is i32 for example
 
         let Task = Manager.Get_current_task_identifier().unwrap();
 
@@ -590,7 +590,7 @@ mod Tests {
     }
 
     fn Test_task_owner_inheritance(Manager: &Manager_type) {
-        let User_identifier = 123; // Assuming User_identifier_type is i32 for example
+        let User_identifier = User_identifier_type::New(123); // Assuming User_identifier_type is i32 for example
         let Task = Manager.Get_current_task_identifier().unwrap();
 
         let _ = Manager
@@ -611,12 +611,14 @@ mod Tests {
                     })
                     .unwrap();
 
+                let User_identifier = User_identifier_type::New(6969); // Assuming User_identifier_type is i32 for example
+
                 // - Overwrite owner
                 let _ = Get_instance()
-                    .New_task(Task, Some(6969), "Task 3", None, move || {
+                    .New_task(Task, Some(User_identifier), "Task 3", None, move || {
                         let Task = Get_instance().Get_current_task_identifier().unwrap();
 
-                        assert_eq!(Get_instance().Get_owner(Task).unwrap(), 6969);
+                        assert_eq!(Get_instance().Get_owner(Task).unwrap(), User_identifier);
                         assert_eq!(Get_instance().Get_task_name(Task).unwrap(), "Task 3");
                     })
                     .unwrap();
