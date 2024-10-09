@@ -2,10 +2,6 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
-///! File system module
-///
-/// This module contains basic file system types, traits and functions.
-///
 mod Device;
 mod Error;
 mod File_system;
