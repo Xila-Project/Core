@@ -5,9 +5,10 @@
 use Task::Task_identifier_type;
 
 use File_system::{
-    Create_device, Create_file_system, File_type, Flags_type, LittleFS, Mode_type, Open_type,
-    Path_type, Position_type, Status_type, Tests::Memory_device_type, Virtual_file_system_type,
+    Create_device, Create_file_system, Flags_type, Mode_type, Open_type, Path_type, Position_type,
+    Status_type, Tests::Memory_device_type,
 };
+use Virtual_file_system::{File_type, Virtual_file_system_type};
 
 fn Initialize() -> (Task_identifier_type, Virtual_file_system_type) {
     let Task_instance = Task::Initialize().expect("Failed to initialize task manager");
@@ -79,13 +80,9 @@ fn Test_file() {
 fn Test_unnamed_pipe() {
     let (Task, Virtual_file_system) = Initialize();
 
-    let (Pipe_read, Pipe_write) = File_type::Create_unnamed_pipe(
-        &Virtual_file_system,
-        512_usize.into(),
-        Status_type::default(),
-        Task,
-    )
-    .unwrap();
+    let (Pipe_read, Pipe_write) =
+        File_type::Create_unnamed_pipe(&Virtual_file_system, 512, Status_type::default(), Task)
+            .unwrap();
 
     let Data = b"Hello, world!";
 
@@ -145,11 +142,13 @@ fn Test_named_pipe() {
 fn Test_device() {
     let (Task, Virtual_file_system) = Initialize();
 
-    const Device_path: &Path_type = unsafe { Path_type::From_str("/Device") };
+    const Device_path: &Path_type = Path_type::From_str("/Device");
 
     let Device = Create_device!(Memory_device_type::<512>::New(512));
 
-    Virtual_file_system.Mount_device(Task, Device_path, Device, true);
+    Virtual_file_system
+        .Mount_device(Task, Device_path, Device, true)
+        .unwrap();
 
     let Device_file = File_type::Open(
         &Virtual_file_system,

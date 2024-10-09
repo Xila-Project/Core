@@ -1,17 +1,14 @@
 [package]
-name = "File_system"
+name = "LittleFS"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+File_system = { path = "../File_system" }
 Task = { path = "../Task" }
 Users = { path = "../Users" }
-Shared = { path = "../Shared" }
 Time = { path = "../Time" }
+littlefs2-sys = "0.2.0"
 
 [dev-dependencies]
 Drivers = { path = "../Drivers" }
-
-[features]
-std = []
-default = ["std"]

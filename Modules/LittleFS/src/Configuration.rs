@@ -1,6 +1,6 @@
 use std::{ffi::c_void, mem::forget};
 
-use crate::Device::Device_type;
+use File_system::Device_type;
 
 use super::{littlefs, Callbacks};
 

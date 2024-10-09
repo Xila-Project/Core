@@ -49,7 +49,7 @@ impl Metadata_type {
 
         let Group = match Users_instance
             .Get_user_primary_group(Owner)
-            .map_err(|_| Error_type::Invalid_input)
+            .map_err(|_| Error_type::Invalid_parameter)
         {
             Ok(Group) => Group,
             Err(_) => return None,
