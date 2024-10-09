@@ -1,4 +1,4 @@
-use std::time::Duration;
+use Shared::Duration_type;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
@@ -12,16 +12,16 @@ impl Time_type {
     }
 }
 
-impl From<Duration> for Time_type {
-    fn from(Duration: Duration) -> Self {
+impl From<Duration_type> for Time_type {
+    fn from(Duration: Duration_type) -> Self {
         Self {
-            Seconds: Duration.as_secs(),
+            Seconds: Duration.As_seconds(),
         }
     }
 }
 
-impl From<Time_type> for Duration {
+impl From<Time_type> for Duration_type {
     fn from(Time: Time_type) -> Self {
-        Self::from_secs(Time.Seconds)
+        Duration_type::New(Time.Seconds, 0)
     }
 }

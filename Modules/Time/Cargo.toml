@@ -4,3 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+File_system = { path = "../File_system" }
+Shared = { path = "../Shared" }
+
+[dev-dependencies]
+Drivers = { path = "../Drivers" }
+
+[[test]]
+name = "Integration"
+path = "Tests/Integration.rs"

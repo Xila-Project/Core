@@ -12,6 +12,9 @@ use Time::Get_instance;
 #[no_mangle]
 pub unsafe extern "C" fn Xila_instant_since_startup_microseconds(Results: *mut u128) {
     unsafe {
-        *Results = Get_instance().Get_current_time_since_startup().as_micros();
+        *Results = Get_instance()
+            .Get_current_time_since_startup()
+            .unwrap_or_default()
+            .As_microseconds();
     }
 }

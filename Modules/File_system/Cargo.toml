@@ -10,7 +10,6 @@ Shared = { path = "../Shared" }
 
 [dev-dependencies]
 Drivers = { path = "../Drivers" }
-Time = { path = "../Time" }
 
 [features]
 std = []

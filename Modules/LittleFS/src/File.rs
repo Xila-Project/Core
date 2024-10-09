@@ -62,7 +62,10 @@ impl File_type {
         Cache_size: usize,
     ) -> Result_type<Self> {
         // - Create or get the metadata
-        let Current_time: Time_type = Time::Get_instance().Get_current_time().into();
+        let Current_time: Time_type = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
 
         let Metadata = if Flags.Get_open().Get_create() {
             Metadata_type::Get_default(Task, Type_type::File, Current_time)
