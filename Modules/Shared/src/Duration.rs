@@ -137,12 +137,12 @@ impl Duration_type {
     }
 
     /// Returns the number of seconds in the duration.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```rust
     /// use Shared::Duration_type;
-    /// 
+    ///
     /// let duration = Duration_type::New(1, 500_000_000);
     /// assert_eq!(duration.As_seconds(), 1);
     /// ```
@@ -151,12 +151,12 @@ impl Duration_type {
     }
 
     /// Returns the number of milliseconds in the duration.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```rust
     /// use Shared::Duration_type;
-    /// 
+    ///
     /// let duration = Duration_type::New(1, 500_000_000);
     /// assert_eq!(duration.As_milliseconds(), 1_500);
     /// ```
@@ -165,14 +165,14 @@ impl Duration_type {
     }
 
     /// Returns the number of microseconds in the duration.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```rust
     /// use Shared::Duration_type;
-    /// 
+    ///
     /// let duration = Duration_type::New(1, 500_000_000);
-    /// 
+    ///
     /// assert_eq!(duration.As_microseconds(), 1_500_000);
     /// ```
     pub fn As_microseconds(&self) -> u128 {
@@ -180,12 +180,12 @@ impl Duration_type {
     }
 
     /// Returns the number of nanoseconds in the duration.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```rust
     /// use Shared::Duration_type;
-    /// 
+    ///
     /// let duration = Duration_type::New(1, 500_000_000);
     /// assert_eq!(duration.As_nanoseconds(), 1_500_000_000);
     /// ```
