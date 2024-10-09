@@ -3,6 +3,7 @@
 #![allow(non_camel_case_types)]
 
 use Task::Task_identifier_type;
+use Virtual_file_system::Virtual_file_system_type;
 
 #[cfg(target_vendor = "espressif")]
 pub mod Espressif;
@@ -12,7 +13,7 @@ pub mod Native;
 
 pub fn Mount_devices(
     Task: Task_identifier_type,
-    Virtual_file_systems: &File_system::Virtual_file_system_type,
+    Virtual_file_systems: &Virtual_file_system_type,
 ) -> Result<(), String> {
     #[cfg(target_vendor = "espressif")]
     Espressif::Mount_devices(Virtual_file_systems)?;

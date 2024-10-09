@@ -4,7 +4,7 @@ use std::time::Duration;
 use super::lvgl;
 
 use super::Point_type;
-use File_system::File_type;
+use Virtual_file_system::File_type;
 
 use crate::Display_type;
 use crate::{Error_type, Input_type, Result_type, Screen_read_data_type};

@@ -7,12 +7,13 @@ use std::{
 };
 
 use File_system::{
-    Error_type, File_identifier_type, Flags_type, Get_instance as Get_file_system_instance,
-    Inode_type, Mode_type, Open_type, Position_type, Result_type, Size_type, Statistics_type,
-    Status_type, Type_type, Unique_file_identifier_type, Whence_type,
+    Error_type, File_identifier_type, Flags_type, Inode_type, Mode_type, Open_type, Position_type,
+    Result_type, Size_type, Statistics_type, Status_type, Type_type, Unique_file_identifier_type,
+    Whence_type,
 };
 
 use Task::Get_instance as Get_task_manager_instance;
+use Virtual_file_system::Get_instance as Get_file_system_instance;
 
 #[no_mangle]
 pub static Xila_file_system_mode_read_mask: u8 = Mode_type::Read_bit;
@@ -85,7 +86,7 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics(
             .map_err(|_| Error_type::Failed_to_get_task_informations)?;
 
         let Statistics =
-            Statistics_from_mutable_pointer(Statistics).ok_or(Error_type::Invalid_input)?;
+            Statistics_from_mutable_pointer(Statistics).ok_or(Error_type::Invalid_parameter)?;
 
         *Statistics = Get_file_system_instance()
             .Get_statistics(File, Task_identifier)
@@ -119,7 +120,7 @@ pub unsafe extern "C" fn Xila_file_system_get_access_mode(
             .map_err(|_| Error_type::Failed_to_get_task_informations)?;
 
         if Mode.is_null() {
-            return Err(Error_type::Invalid_input);
+            return Err(Error_type::Invalid_parameter);
         }
 
         Mode.write(Get_file_system_instance().Get_mode(File, Task_identifier)?);
@@ -257,7 +258,7 @@ pub unsafe extern "C" fn Xila_file_system_is_terminal(
             .map_err(|_| Error_type::Failed_to_get_task_informations)?;
 
         if Is_a_terminal.is_null() {
-            return Err(Error_type::Invalid_input);
+            return Err(Error_type::Invalid_parameter);
         }
 
         *Is_a_terminal = Get_file_system_instance().Is_a_terminal(File, Task_identifier)?;
@@ -321,7 +322,7 @@ pub unsafe extern "C" fn Xila_file_system_open(
     Into_u32(move || {
         let Path = std::ffi::CStr::from_ptr(Path)
             .to_str()
-            .map_err(|_| Error_type::Invalid_input)?;
+            .map_err(|_| Error_type::Invalid_parameter)?;
 
         let Flags = Flags_type::New(Mode, Some(Open), Some(Status));
 
@@ -353,7 +354,7 @@ pub unsafe extern "C" fn Xila_file_system_resolve_path(
     Into_u32(move || {
         let Path = std::ffi::CStr::from_ptr(Path)
             .to_str()
-            .map_err(|_| Error_type::Invalid_input)?;
+            .map_err(|_| Error_type::Invalid_parameter)?;
 
         println!("Resolving path : {:?}", Path);
 
@@ -381,7 +382,7 @@ pub unsafe extern "C" fn Xila_file_system_open_directory(
     Into_u32(move || {
         let Path = CStr::from_ptr(Path)
             .to_str()
-            .map_err(|_| Error_type::Invalid_input)?;
+            .map_err(|_| Error_type::Invalid_parameter)?;
 
         println!("Opening directory : {:?}", Path);
 
@@ -523,7 +524,7 @@ pub unsafe extern "C" fn Xila_file_system_create_directory(Path: *const c_char) 
     Into_u32(move || {
         let Path = CStr::from_ptr(Path)
             .to_str()
-            .map_err(|_| Error_type::Invalid_input)?;
+            .map_err(|_| Error_type::Invalid_parameter)?;
 
         println!("Creating directory : {:?}", Path);
 
@@ -550,11 +551,11 @@ pub unsafe extern "C" fn Xila_file_system_rename(
     Into_u32(move || {
         let Old_path = CStr::from_ptr(Old_path)
             .to_str()
-            .map_err(|_| Error_type::Invalid_input)?;
+            .map_err(|_| Error_type::Invalid_parameter)?;
 
         let New_path = CStr::from_ptr(New_path)
             .to_str()
-            .map_err(|_| Error_type::Invalid_input)?;
+            .map_err(|_| Error_type::Invalid_parameter)?;
 
         println!("Renaming : {:?} to : {:?}", Old_path, New_path);
 

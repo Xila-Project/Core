@@ -9,9 +9,11 @@ build = "Build.rs"
 wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git" }
 Shared = { version = "0.1.0", path = "../Shared" }
 Memory = { version = "0.1.0", path = "../Memory" }
-File_system = { version = "0.1.0", path = "../File_system" }
+File_system = { path = "../File_system" }
+Virtual_file_system = { path = "../Virtual_file_system" }
+LittleFS = { path = "../LittleFS" }
 Task = { version = "0.1.0", path = "../Task" }
-Time = { version = "0.1.0", path = "../Time"}
+Time = { version = "0.1.0", path = "../Time" }
 ABI = { version = "0.1.0", path = "../ABI" }
 
 [dev-dependencies]

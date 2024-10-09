@@ -1,7 +1,7 @@
 use core::slice;
 use std::{ffi::c_void, ptr::null_mut};
 
-use File_system::File_type;
+use Virtual_file_system::File_type;
 
 use crate::{
     Area_type, Color_type, Draw_buffer::Buffer_type, Point_type, Result_type,
