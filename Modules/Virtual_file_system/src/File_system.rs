@@ -547,7 +547,10 @@ impl Virtual_file_system_type {
             Type_type::Character_device
         };
 
-        let Current_time: Time_type = Time::Get_instance().Get_current_time().into();
+        let Current_time: Time_type = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
 
         // Set the metadata of the special file.
         let mut Metadata = Metadata_type::Get_default(Task, Type, Current_time)
@@ -579,7 +582,10 @@ impl Virtual_file_system_type {
 
         let Inode = self.Pipe_file_system.Create_named_pipe(Size)?;
 
-        let Current_time: Time_type = Time::Get_instance().Get_current_time().into();
+        let Current_time: Time_type = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
 
         let mut Metadata = Metadata_type::Get_default(Task, Type_type::Pipe, Current_time)
             .ok_or(Error_type::Invalid_parameter)?;

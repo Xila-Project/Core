@@ -2,7 +2,7 @@ use std::{num::NonZeroU32, sync::PoisonError};
 
 pub type Result_type<T> = std::result::Result<T, Error_type>;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Eq)]
 #[repr(C)]
 pub enum Error_type {
     Failed_to_initialize_file_system = 1,
@@ -43,6 +43,7 @@ pub enum Error_type {
     Corrupted,
     No_memory,
     No_space_left,
+    Time_error,
     Other,
 }
 

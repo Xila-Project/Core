@@ -86,7 +86,7 @@ fn Integration_test() {
 
     Users::Initialize().expect("Failed to initialize users manager");
 
-    Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()))
+    Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()))
         .expect("Failed to initialize time manager");
 
     let Device = Create_device!(Memory_device_type::<512>::New(1024 * 512));

@@ -362,10 +362,10 @@ impl File_system_traits for File_system_type {
         let (File_system, Open_files, Open_directories) =
             Self::Borrow_mutable_inner_2_splited(&mut Inner);
 
-        let Current_time: Time_type = Time::Get_instance().Get_current_time().into();
-
         // TODO : Find a way to get the metadata of the directories
         if Open_directories.get_mut(&File).is_some() {
+            let Current_time: Time_type = Time::Get_instance().Get_current_time().unwrap().into();
+
             Ok(Statistics_type::New(
                 File_system_identifier_type::New(0),
                 Inode_type::New(0),
@@ -476,7 +476,10 @@ impl File_system_traits for File_system_type {
 
         Directory_type::Create_directory(&mut Inner.File_system, Path)?;
 
-        let Current_time: Time_type = Time::Get_instance().Get_current_time().into();
+        let Current_time: Time_type = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
 
         let Metadata = Metadata_type::Get_default(Task, Type_type::Directory, Current_time)
             .ok_or(Error_type::Invalid_parameter)?;
@@ -534,7 +537,7 @@ mod Tests {
 
     use std::sync::Arc;
 
-    use File_system::Tests::Memory_device_type;
+    use File_system::{Create_device, Tests::Memory_device_type};
 
     use super::*;
 
@@ -549,7 +552,7 @@ mod Tests {
             let _ = Task::Get_instance().Register_task();
         }
 
-        let _ = Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()));
+        let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()));
 
         let Mock_device = Memory_device_type::<512>::New(2048 * 512);
 

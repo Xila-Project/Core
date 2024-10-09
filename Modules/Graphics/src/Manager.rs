@@ -44,7 +44,10 @@ impl Drop for Manager_type {
 }
 
 extern "C" fn Binding_tick_callback_function() -> u32 {
-    Time::Get_instance().Get_current_time().as_millis() as u32
+    Time::Get_instance()
+        .Get_current_time()
+        .unwrap_or_default()
+        .As_milliseconds() as u32
 }
 
 impl Manager_type {

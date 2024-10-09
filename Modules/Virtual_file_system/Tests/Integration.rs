@@ -19,7 +19,7 @@ fn Initialize() -> (Task_identifier_type, Virtual_file_system_type) {
 
     let _ = Users::Initialize();
 
-    let _ = Time::Initialize(Box::new(Drivers::Native::Time_driver_type::New()));
+    let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()));
 
     let Task = Task_instance
         .Get_current_task_identifier()
