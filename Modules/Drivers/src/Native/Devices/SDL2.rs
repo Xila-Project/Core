@@ -106,7 +106,7 @@ impl Device_trait for Screen_device_type {
     fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<Size_type> {
         let Data: &mut Screen_read_data_type = Buffer
             .try_into()
-            .map_err(|_| File_system::Error_type::Invalid_input)?;
+            .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
         Data.Set_resolution(
             self.Get_resolution()
@@ -119,7 +119,7 @@ impl Device_trait for Screen_device_type {
     fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<Size_type> {
         let Data: &Screen_write_data_type = Buffer
             .try_into()
-            .map_err(|_| File_system::Error_type::Invalid_input)?;
+            .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
         self.Update(Data).expect("Error updating screen.");
 
@@ -225,7 +225,7 @@ impl Device_trait for Pointer_device_type {
 
         let Input: &mut Pointer_data_type = Buffer
             .try_into()
-            .map_err(|_| File_system::Error_type::Invalid_input)?;
+            .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
         *Input = *self.Last_input.read()?;
 

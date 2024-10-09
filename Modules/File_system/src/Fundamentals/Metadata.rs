@@ -38,7 +38,11 @@ pub struct Metadata_type {
 impl Metadata_type {
     pub const Identifier: u8 = 0x01;
 
-    pub fn Get_default(Task: Task_identifier_type, Type: Type_type) -> Option<Self> {
+    pub fn Get_default(
+        Task: Task_identifier_type,
+        Type: Type_type,
+        Current_time: Time_type,
+    ) -> Option<Self> {
         let Users_instance = Users::Get_instance();
         let Task_instance = Task::Get_instance();
 
@@ -49,15 +53,13 @@ impl Metadata_type {
 
         let Group = match Users_instance
             .Get_user_primary_group(Owner)
-            .map_err(|_| Error_type::Invalid_input)
+            .map_err(|_| Error_type::Invalid_parameter)
         {
             Ok(Group) => Group,
             Err(_) => return None,
         };
 
         let Permissions = Permissions_type::New_default(Type);
-
-        let Current_time = Time_type::Get_now();
 
         Some(Metadata_type {
             Inode: None,
@@ -133,17 +135,5 @@ impl Metadata_type {
 
     pub fn Set_group(&mut self, Group: Group_identifier_type) {
         self.Group = Group;
-    }
-
-    pub fn Update_access_time(&mut self) {
-        self.Access_time = Time_type::Get_now();
-    }
-
-    pub fn Update_modification_time(&mut self) {
-        self.Modification_time = Time_type::Get_now();
-    }
-
-    pub fn Update_creation_time(&mut self) {
-        self.Creation_time = Time_type::Get_now();
     }
 }

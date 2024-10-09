@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 File_system = { path = "../File_system" }
+Virtual_file_system = { path = "../Virtual_file_system" }
 Task = { path = "../Task" }
 Users = { path = "../Users" }
 Graphics = { path = "../Graphics" }

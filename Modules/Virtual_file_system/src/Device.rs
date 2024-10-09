@@ -2,13 +2,11 @@ use std::{collections::BTreeMap, sync::RwLock, time::Duration};
 
 use Task::Task_identifier_type;
 
-use crate::{
-    Error_type, File_identifier_type, Flags_type, Get_new_file_identifier, Get_new_inode,
-    Inode_type, Local_file_identifier_type, Mode_type, Result_type, Size_type,
-    Unique_file_identifier_type,
+use File_system::{
+    Device_type, Error_type, File_identifier_type, Flags_type, Get_new_file_identifier,
+    Get_new_inode, Inode_type, Local_file_identifier_type, Mode_type, Position_type, Result_type,
+    Size_type, Unique_file_identifier_type,
 };
-
-use super::Device_type;
 
 type Open_device_inner_type = (Device_type, Flags_type, Unique_file_identifier_type);
 
@@ -249,7 +247,7 @@ impl File_system_type {
     pub fn Set_position(
         &self,
         File: Local_file_identifier_type,
-        Position: &crate::Position_type,
+        Position: &Position_type,
     ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
         let Inner = self.0.read()?;
 
@@ -312,9 +310,9 @@ impl File_system_type {
 
 #[cfg(test)]
 mod tests {
-    use crate::Create_device;
-    use crate::Position_type;
-    use crate::Tests::Memory_device_type;
+    use File_system::{Create_device, Position_type};
+
+    use File_system::Tests::Memory_device_type;
 
     use super::*;
 

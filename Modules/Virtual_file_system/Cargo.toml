@@ -1,0 +1,18 @@
+[package]
+name = "Virtual_file_system"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+File_system = { path = "../File_system" }
+Task = { path = "../Task" }
+Users = { path = "../Users" }
+Time = { path = "../Time" }
+
+[dev-dependencies]
+Drivers = { path = "../Drivers" }
+LittleFS = { path = "../LittleFS" }
+
+[[test]]
+name = "Integration"
+path = "Tests/Integration.rs"

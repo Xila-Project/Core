@@ -6,12 +6,12 @@ use std::{
 
 use Task::Task_identifier_type;
 
-use crate::{
-    File_system_identifier_type, Flags_type, Inode_type, Metadata_type, Mode_type, Path_type,
-    Position_type, Size_type, Statistics_type, Type_type,
+use File_system::{
+    Error_type, File_system_identifier_type, Flags_type, Inode_type, Metadata_type, Mode_type,
+    Path_type, Position_type, Result_type, Size_type, Statistics_type, Time_type, Type_type,
 };
 
-use super::{littlefs, Convert_flags, Convert_result, Error_type, Result_type};
+use super::{littlefs, Convert_flags, Convert_result};
 
 fn Convert_position(Position: &Position_type) -> (i32, i32) {
     match Position {
@@ -62,8 +62,10 @@ impl File_type {
         Cache_size: usize,
     ) -> Result_type<Self> {
         // - Create or get the metadata
+        let Current_time: Time_type = Time::Get_instance().Get_current_time().into();
+
         let Metadata = if Flags.Get_open().Get_create() {
-            Metadata_type::Get_default(Task, Type_type::File)
+            Metadata_type::Get_default(Task, Type_type::File, Current_time)
                 .ok_or(Error_type::Invalid_parameter)?
         } else {
             Self::Get_metadata_from_path(File_system, Path)?

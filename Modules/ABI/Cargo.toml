@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+Virtual_file_system = { path = "../Virtual_file_system" }
 File_system = { path = "../File_system" }
 Task = { path = "../Task" }
 Time = { path = "../Time" }

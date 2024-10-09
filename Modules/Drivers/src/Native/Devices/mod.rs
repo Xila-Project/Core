@@ -7,11 +7,12 @@ pub use Drive_file::*;
 use File_system::Device_type;
 use Graphics::Point_type;
 use Task::Task_identifier_type;
+use Virtual_file_system::Virtual_file_system_type;
 pub use SDL2::*;
 
 pub fn Mount_devices(
     Task: Task_identifier_type,
-    Virtual_file_systems: &File_system::Virtual_file_system_type,
+    Virtual_file_systems: &Virtual_file_system_type,
 ) -> Result<(), String> {
     const Resolution: Point_type = Point_type::New(800, 600);
 

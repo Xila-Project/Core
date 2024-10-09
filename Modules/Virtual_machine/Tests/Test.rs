@@ -4,7 +4,7 @@
 
 use wamr_rust_sdk::value::WasmValue;
 
-use File_system::{Create_device, Create_file_system, LittleFS, Tests::Memory_device_type};
+use File_system::{Create_device, Create_file_system, Tests::Memory_device_type};
 use Virtual_machine::{
     Data_type, Environment_pointer_type, Environment_type, Function_descriptor_type,
     Function_descriptors, Instantiate_test_environment, Registrable_trait, WASM_pointer,
@@ -94,7 +94,7 @@ fn Integration_test() {
     LittleFS::File_system_type::Format(Device.clone(), 512).unwrap();
     let File_system = Create_file_system!(LittleFS::File_system_type::New(Device, 256).unwrap());
 
-    File_system::Initialize(File_system).unwrap();
+    Virtual_file_system::Initialize(File_system).unwrap();
 
     // Set environment variables
     let Task = Task_instance.Get_current_task_identifier().unwrap();
@@ -131,7 +131,7 @@ fn Integration_test() {
         Registrable {},
         &User_data,
         Task::Get_instance(),
-        File_system::Get_instance(),
+        Virtual_file_system::Get_instance(),
     );
 
     let _ =

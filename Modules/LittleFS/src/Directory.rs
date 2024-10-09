@@ -5,9 +5,9 @@ use std::{
     rc::Rc,
 };
 
-use crate::{Entry_type, Inode_type, Path_type, Size_type, Type_type};
+use File_system::{Entry_type, Inode_type, Path_type, Result_type, Size_type, Type_type};
 
-use super::{littlefs, Convert_result, Result_type};
+use super::{littlefs, Convert_result};
 
 struct Inner_type {
     Directory: littlefs::lfs_dir_t,

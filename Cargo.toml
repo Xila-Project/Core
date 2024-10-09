@@ -11,6 +11,8 @@ members = [
     "Modules/Memory",
     "Modules/Time",
     "Modules/ABI",
+    "Modules/Virtual_file_system",
+    "Modules/LittleFS",
 ]
 exclude = [
     "Build_tool",

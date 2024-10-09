@@ -1,7 +1,7 @@
-use std::sync::PoisonError;
-
 use super::littlefs;
+use File_system::{Error_type, Result_type};
 
+/*
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Error_type {
     // LittleFS errors
@@ -25,19 +25,18 @@ pub enum Error_type {
     Poisoned_lock,       // Poisoned lock
     Invalid_identifier,  // Invalid file identifier
 }
-
-pub type Result_type<T> = core::result::Result<T, Error_type>;
+    */
 
 pub(crate) fn Convert_result(Error: i32) -> Result_type<u32> {
     match Error {
         littlefs::lfs_error_LFS_ERR_IO => Err(Error_type::Input_output),
         littlefs::lfs_error_LFS_ERR_CORRUPT => Err(Error_type::Corrupted),
-        littlefs::lfs_error_LFS_ERR_NOENT => Err(Error_type::No_Entry),
-        littlefs::lfs_error_LFS_ERR_EXIST => Err(Error_type::Entry_exists),
+        littlefs::lfs_error_LFS_ERR_NOENT => Err(Error_type::Not_found),
+        littlefs::lfs_error_LFS_ERR_EXIST => Err(Error_type::Already_exists),
         littlefs::lfs_error_LFS_ERR_NOTDIR => Err(Error_type::Not_directory),
         littlefs::lfs_error_LFS_ERR_ISDIR => Err(Error_type::Is_directory),
         littlefs::lfs_error_LFS_ERR_NOTEMPTY => Err(Error_type::Directory_not_empty),
-        littlefs::lfs_error_LFS_ERR_BADF => Err(Error_type::Bad_file_number),
+        littlefs::lfs_error_LFS_ERR_BADF => Err(Error_type::Invalid_identifier),
         littlefs::lfs_error_LFS_ERR_FBIG => Err(Error_type::File_too_large),
         littlefs::lfs_error_LFS_ERR_INVAL => Err(Error_type::Invalid_parameter),
         littlefs::lfs_error_LFS_ERR_NOSPC => Err(Error_type::No_space_left),
@@ -53,7 +52,7 @@ pub(crate) fn Convert_result(Error: i32) -> Result_type<u32> {
         }
     }
 }
-
+/*
 impl From<Error_type> for crate::Error_type {
     fn from(Error: Error_type) -> Self {
         match Error {
@@ -83,4 +82,4 @@ impl<T> From<PoisonError<T>> for Error_type {
     fn from(_: PoisonError<T>) -> Self {
         Error_type::Poisoned_lock
     }
-}
+}*/
