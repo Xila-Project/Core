@@ -1,7 +1,7 @@
 use core::slice;
 use std::{ffi::c_void, ptr::null_mut};
 
-use Virtual_file_system::File_type;
+use File_system::Device_type;
 
 use crate::{
     Area_type, Color_type, Draw_buffer::Buffer_type, Point_type, Result_type,
@@ -10,8 +10,8 @@ use crate::{
 
 use super::lvgl;
 
-struct User_data<'a> {
-    File: File_type<'a>,
+struct User_data {
+    Device: Device_type,
 }
 
 pub struct Display_type<const Buffer_size: usize> {
@@ -39,9 +39,10 @@ unsafe extern "C" fn Binding_callback_function(
 
     let User_data = unsafe { &*(lvgl::lv_display_get_user_data(Display) as *mut User_data) };
 
-    let File = &User_data.File;
+    let Device = &User_data.Device;
 
-    File.Write(Screen_write_data.as_ref())
+    Device
+        .Write(Screen_write_data.as_ref())
         .expect("Error writing to display");
 
     lvgl::lv_display_flush_ready(Display);
@@ -57,7 +58,7 @@ impl<const Buffer_size: usize> Drop for Display_type<Buffer_size> {
 
 impl<const Buffer_size: usize> Display_type<Buffer_size> {
     pub fn New(
-        File: File_type,
+        File: Device_type,
         Resolution: Point_type,
         Double_buffered: bool,
     ) -> Result_type<Self> {
@@ -88,7 +89,7 @@ impl<const Buffer_size: usize> Display_type<Buffer_size> {
         }
 
         // Set the user data.
-        let User_data = Box::new(User_data { File });
+        let User_data = Box::new(User_data { Device: File });
 
         unsafe {
             lvgl::lv_display_set_user_data(LVGL_display, Box::into_raw(User_data) as *mut c_void)

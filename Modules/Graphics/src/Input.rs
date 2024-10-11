@@ -1,14 +1,13 @@
 use std::ffi::c_void;
 
-//use lvgl::input_device::{pointer, InputDriver};
-use Virtual_file_system::File_type;
+use File_system::Device_type;
 
 use crate::{Display::Display_type, Pointer_data_type, Result_type};
 
 use super::lvgl;
 
-struct User_data_type<'a> {
-    pub File: File_type<'a>,
+struct User_data_type {
+    pub Device: Device_type,
 }
 
 pub struct Input_type {
@@ -45,11 +44,12 @@ unsafe extern "C" fn Binding_callback_function(
 ) {
     let User_data = unsafe { lvgl::lv_indev_get_user_data(Input_device) as *mut User_data_type };
 
-    let File = &(*User_data).File;
+    let Device = &(*User_data).Device;
 
     let mut Pointer_data = Pointer_data_type::default();
 
-    File.Read(Pointer_data.as_mut())
+    Device
+        .Read(Pointer_data.as_mut())
         .expect("Error reading from input device");
 
     unsafe {
@@ -59,11 +59,11 @@ unsafe extern "C" fn Binding_callback_function(
 
 impl Input_type {
     pub fn New<const Buffer_size: usize>(
-        File: File_type,
+        File: Device_type,
         _: &Display_type<Buffer_size>,
     ) -> Result_type<Self> {
         // User_data is a pinned box, so it's ownership can be transferred to LVGL and will not move or dropper until the Input_device is dropped.
-        let User_data = Box::new(User_data_type { File });
+        let User_data = Box::new(User_data_type { Device: File });
 
         let Input_device = unsafe {
             let Input_device = lvgl::lv_indev_create();
