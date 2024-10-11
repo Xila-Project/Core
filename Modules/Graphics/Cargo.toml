@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 cstr_core = "0.2.6"
 Task = { path = "../Task" }
-Virtual_file_system = { path = "../Virtual_file_system" }
+File_system = { path = "../File_system" }
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
 
 [target.'cfg( target_os = "espidf" )'.dependencies]
