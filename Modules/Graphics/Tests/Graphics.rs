@@ -29,9 +29,9 @@ fn main() {
         .Get_current_task_identifier()
         .expect("Failed to get current task identifier");
 
-    Graphics::Initialize().expect("Error initializing manager");
+    Graphics::Initialize();
 
-    let Graphics_manager = Graphics::Get_instance().expect("Error getting manager");
+    let Graphics_manager = Graphics::Get_instance();
 
     let Display = Graphics_manager
         .Create_display::<Buffer_size>(Screen_device, Pointer_device, false)
