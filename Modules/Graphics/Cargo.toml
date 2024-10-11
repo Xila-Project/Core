@@ -18,6 +18,7 @@ Shared = { path = "../Shared" }
 Time = { path = "../Time" }
 
 [dev-dependencies]
+Drivers = { path = "../Drivers" }
 Users = { path = "../Users" }
 Task = { path = "../Task" }
 
