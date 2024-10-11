@@ -1,4 +1,5 @@
 use std::sync::Mutex;
+use std::sync::OnceLock;
 use std::time::Duration;
 
 use File_system::Device_type;
@@ -10,26 +11,18 @@ use super::Point_type;
 use crate::Display_type;
 use crate::{Error_type, Input_type, Result_type, Screen_read_data_type};
 
-/// Avoid using Arc, because the manager is a singleton.
-static mut Manager_instance: Option<Manager_type> = None;
+static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
 
-pub fn Initialize() -> Result_type<&'static Manager_type> {
-    unsafe {
-        if Is_initialized() {
-            return Err(Error_type::Already_initialized);
-        }
-
-        Manager_instance.replace(Manager_type::New(Time::Get_instance())?);
-    }
-    Get_instance()
+pub fn Initialize() -> &'static Manager_type {
+    Manager_instance.get_or_init(|| {
+        Manager_type::New(Time::Get_instance()).expect("Failed to create manager instance")
+    })
 }
 
-pub fn Is_initialized() -> bool {
-    unsafe { Manager_instance.is_some() }
-}
-
-pub fn Get_instance() -> Result_type<&'static Manager_type> {
-    unsafe { Manager_instance.as_ref().ok_or(Error_type::Not_initialized) }
+pub fn Get_instance() -> &'static Manager_type {
+    Manager_instance
+        .get()
+        .expect("Failed to get manager instance")
 }
 
 struct Inner(Option<Input_type>);
