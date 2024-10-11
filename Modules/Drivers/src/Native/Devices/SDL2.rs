@@ -10,7 +10,7 @@ use sdl2::{
     video::Window,
     EventPump, Sdl, VideoSubsystem,
 };
-use File_system::{Device_trait, Result_type, Size_type};
+use File_system::{Create_device, Device_trait, Device_type, Result_type, Size_type};
 
 use std::{marker::PhantomData, mem::size_of, process::exit, sync::RwLock};
 
@@ -249,9 +249,7 @@ impl Device_trait for Pointer_device_type {
     }
 }
 
-pub fn New_touchscreen(
-    Size: Point_type,
-) -> Result<(Screen_device_type, Pointer_device_type), String> {
+pub fn New_touchscreen(Size: Point_type) -> Result<(Device_type, Device_type), String> {
     let Context = sdl2::init().map_err(|Error| format!("Error initializing SDL2: {:?}", Error))?;
 
     let Video_subsystem = Context
@@ -272,5 +270,5 @@ pub fn New_touchscreen(
 
     let Screen = Screen_device_type::New(Context, Video_subsystem, Window)?;
 
-    Ok((Screen, Pointer))
+    Ok((Create_device!(Screen), Create_device!(Pointer)))
 }
