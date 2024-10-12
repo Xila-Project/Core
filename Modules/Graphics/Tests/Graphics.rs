@@ -8,7 +8,7 @@
 fn main() {
     use Drivers::Native::New_touchscreen;
     use File_system::Create_device;
-    use Graphics::{lvgl, Get_recommended_buffer_size, Point_type};
+    use Graphics::{lvgl, Get_recommended_buffer_size, Parse_string, Point_type};
     use Time::Duration_type;
 
     Users::Initialize().expect("Error initializing users manager");
@@ -25,11 +25,15 @@ fn main() {
     let (Screen_device, Pointer_device) =
         New_touchscreen(Resolution).expect("Error creating touchscreen");
 
-    let Task = Task_instance
+    let _Task = Task_instance
         .Get_current_task_identifier()
         .expect("Failed to get current task identifier");
 
     Graphics::Initialize();
+
+    let File = Graphics::lvgl::_bindgen_raw_src();
+
+    Parse_string(File);
 
     let Graphics_manager = Graphics::Get_instance();
 
