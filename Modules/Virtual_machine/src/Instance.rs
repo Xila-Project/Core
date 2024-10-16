@@ -1,16 +1,25 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
-use std::{ffi::CString, ptr::null_mut};
+use std::{
+    ffi::{c_void, CString},
+    ptr::null_mut,
+};
 
 use wamr_rust_sdk::{
-    function::Function, instance::Instance, sys::wasm_runtime_set_wasi_args_ex, value::WasmValue,
+    function::Function,
+    instance::Instance,
+    sys::{
+        wasm_runtime_addr_native_to_app, wasm_runtime_set_wasi_args_ex,
+        wasm_runtime_validate_native_addr,
+    },
+    value::WasmValue,
 };
 use File_system::Unique_file_identifier_type;
 
 use crate::{
     Data::Data_type, Environment_type, Error_type, Module::Module_type, Result_type,
-    Runtime::Runtime_type,
+    Runtime::Runtime_type, WASM_pointer_type,
 };
 
 pub struct Instance_type {
@@ -85,6 +94,44 @@ impl Instance_type {
         Execution_environment.Set_user_data(Data);
 
         Ok(Instance)
+    }
+
+    pub fn Validate_native_pointer<T>(&self, Pointer: *const T, Size: usize) -> bool {
+        unsafe {
+            wasm_runtime_validate_native_addr(
+                self.Get_inner_reference().get_inner_instance(),
+                Pointer as *mut c_void,
+                Size as u64,
+            )
+        }
+    }
+
+    pub fn Validate_WASM_pointer(&self, Address: WASM_pointer_type, Size: usize) -> bool {
+        unsafe {
+            wasm_runtime_validate_native_addr(
+                self.Get_inner_reference().get_inner_instance(),
+                Address as *mut c_void,
+                Size as u64,
+            )
+        }
+    }
+
+    pub fn Convert_to_WASM_pointer<T>(&self, Pointer: *const T) -> WASM_pointer_type {
+        unsafe {
+            wasm_runtime_addr_native_to_app(
+                self.Get_inner_reference().get_inner_instance(),
+                Pointer as *mut c_void,
+            ) as WASM_pointer_type
+        }
+    }
+
+    pub fn Convert_to_native_pointer<T>(&self, Address: WASM_pointer_type) -> *mut T {
+        unsafe {
+            wasm_runtime_addr_native_to_app(
+                self.Get_inner_reference().get_inner_instance(),
+                Address as *mut c_void,
+            ) as *mut T
+        }
     }
 
     pub fn Call_export_function(

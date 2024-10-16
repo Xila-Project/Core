@@ -1,12 +1,6 @@
 #![allow(non_camel_case_types)]
 
-use std::{
-    ffi::CStr,
-    marker::PhantomData,
-    mem::size_of,
-    os::raw::c_void,
-    ptr::{null_mut, NonNull},
-};
+use std::{ffi::CStr, marker::PhantomData, mem::size_of, os::raw::c_void, ptr::null_mut};
 
 use wamr_rust_sdk::{
     sys::{
@@ -19,12 +13,14 @@ use wamr_rust_sdk::{
     },
     value::WasmValue,
 };
-use Shared::Mutable_string_type;
 
-use crate::{Data::Data_type, Error_type, Instance_type, Result_type, WASM_pointer, WASM_usize};
+use crate::{
+    Data::Data_type, Error_type, Instance_type, Result_type, WASM_pointer_type, WASM_usize_type,
+};
 
 pub type Environment_pointer_type = wasm_exec_env_t;
 
+#[derive(Debug, Clone, Copy)]
 pub struct Environment_type<'a>(Environment_pointer_type, PhantomData<&'a ()>);
 
 unsafe impl Send for Environment_type<'_> {}
@@ -82,20 +78,20 @@ impl<'a> Environment_type<'a> {
     ///
     /// This function is unsafe because it is not checked that the address is valid.
     /// Please use `Validate_WASM_pointer` to check the address.
-    pub unsafe fn Convert_to_native_pointer(&self, Address: WASM_pointer) -> *mut c_void {
-        wasm_runtime_addr_app_to_native(self.Get_instance_pointer(), Address as u64) as *mut c_void
+    pub unsafe fn Convert_to_native_pointer<T>(&self, Address: WASM_pointer_type) -> *mut T {
+        wasm_runtime_addr_app_to_native(self.Get_instance_pointer(), Address as u64) as *mut T
     }
 
     /// # Safety
     ///
     /// This function is unsafe because it is not checked that the address is valid.
     /// Please use `Validate_WASM_pointer` to check the address.
-    pub unsafe fn Convert_to_WASM_pointer<T>(&self, Pointer: *const T) -> WASM_pointer {
+    pub unsafe fn Convert_to_WASM_pointer<T>(&self, Pointer: *const T) -> WASM_pointer_type {
         wasm_runtime_addr_native_to_app(self.Get_instance_pointer(), Pointer as *mut c_void)
-            as WASM_pointer
+            as WASM_pointer_type
     }
 
-    pub fn Validate_WASM_pointer(&self, Address: WASM_pointer, Size: WASM_usize) -> bool {
+    pub fn Validate_WASM_pointer(&self, Address: WASM_pointer_type, Size: WASM_usize_type) -> bool {
         unsafe {
             wasm_runtime_validate_app_addr(self.Get_instance_pointer(), Address as u64, Size as u64)
         }
@@ -113,8 +109,8 @@ impl<'a> Environment_type<'a> {
 
     pub fn Convert_to_native_string(
         &self,
-        Address: WASM_pointer,
-        Size: WASM_usize,
+        Address: WASM_pointer_type,
+        Size: WASM_usize_type,
     ) -> Result_type<&str> {
         if !self.Validate_WASM_pointer(Address, Size) {
             return Err(Error_type::Invalid_pointer);
@@ -122,43 +118,17 @@ impl<'a> Environment_type<'a> {
         let Pointer = unsafe { self.Convert_to_native_pointer(Address) };
 
         let Str = unsafe {
-            std::str::from_utf8(std::slice::from_raw_parts(
-                Pointer as *const u8,
-                Size as usize,
-            ))
-            .map_err(|_| Error_type::Invalid_UTF8_string)?
+            std::str::from_utf8(std::slice::from_raw_parts(Pointer as *const u8, Size))
+                .map_err(|_| Error_type::Invalid_UTF8_string)?
         };
 
         Ok(Str)
     }
 
-    pub fn Convert_to_native_mutable_string(
-        &self,
-        String: WASM_pointer,
-        Length: WASM_pointer,
-        Size: WASM_usize,
-    ) -> Result_type<Mutable_string_type<'a>> {
-        if !self.Validate_WASM_pointer(String, Size) {
-            return Err(Error_type::Invalid_pointer);
-        }
-        if !self.Validate_WASM_pointer(Length, size_of::<WASM_pointer>() as WASM_usize) {
-            return Err(Error_type::Invalid_pointer);
-        }
-        let String_pointer = unsafe { self.Convert_to_native_pointer(String) };
-        let Length_pointer = unsafe { self.Convert_to_native_pointer(Length) };
-
-        Mutable_string_type::<'a>::From(
-            unsafe { NonNull::new_unchecked(String_pointer as *mut u8) },
-            unsafe { NonNull::new_unchecked(Length_pointer as *mut WASM_usize) },
-            Size,
-        )
-        .map_err(Error_type::Slice_conversion_failed)
-    }
-
     pub fn Convert_to_native_slice<T>(
         &self,
-        Address: WASM_pointer,
-        Length: WASM_usize,
+        Address: WASM_pointer_type,
+        Length: WASM_usize_type,
     ) -> Result_type<&[T]> {
         if !self.Validate_WASM_pointer(Address, Length) {
             return Err(Error_type::Invalid_pointer);
@@ -166,15 +136,15 @@ impl<'a> Environment_type<'a> {
 
         let Pointer = unsafe { self.Convert_to_native_pointer(Address) };
 
-        let Slice = unsafe { std::slice::from_raw_parts(Pointer as *const T, Length as usize) };
+        let Slice = unsafe { std::slice::from_raw_parts(Pointer as *const T, Length) };
 
         Ok(Slice)
     }
 
     pub fn Convert_to_native_mutable_slice<T>(
         &self,
-        Slice: WASM_pointer,
-        Size: WASM_usize,
+        Slice: WASM_pointer_type,
+        Size: WASM_usize_type,
     ) -> Result_type<&'a mut [T]> {
         if !self.Validate_WASM_pointer(Slice, Size) {
             return Err(Error_type::Invalid_pointer);
@@ -182,14 +152,13 @@ impl<'a> Environment_type<'a> {
 
         let Slice_pointer = unsafe { self.Convert_to_native_pointer(Slice) };
 
-        let Slice =
-            unsafe { std::slice::from_raw_parts_mut(Slice_pointer as *mut T, Size as usize) };
+        let Slice = unsafe { std::slice::from_raw_parts_mut(Slice_pointer, Size) };
 
         Ok(Slice)
     }
 
-    pub fn Convert_to_native_reference<T>(&self, Address: WASM_pointer) -> Result_type<&'a T> {
-        if !self.Validate_WASM_pointer(Address, size_of::<T>() as WASM_usize) {
+    pub fn Convert_to_native_reference<T>(&self, Address: WASM_pointer_type) -> Result_type<&'a T> {
+        if !self.Validate_WASM_pointer(Address, size_of::<T>() as WASM_usize_type) {
             return Err(Error_type::Invalid_pointer);
         }
 
@@ -202,20 +171,20 @@ impl<'a> Environment_type<'a> {
 
     pub fn Convert_to_native_mutable_reference<T>(
         &self,
-        Address: WASM_pointer,
+        Address: WASM_pointer_type,
     ) -> Result_type<&'a mut T> {
-        if !self.Validate_WASM_pointer(Address, size_of::<T>() as WASM_usize) {
+        if !self.Validate_WASM_pointer(Address, size_of::<T>() as WASM_usize_type) {
             return Err(Error_type::Invalid_pointer);
         }
 
         let Pointer = unsafe { self.Convert_to_native_pointer(Address) };
 
-        let Reference = unsafe { &mut *(Pointer as *mut T) };
+        let Reference = unsafe { &mut *(Pointer) };
 
         Ok(Reference)
     }
 
-    pub fn Allocate<T>(&self, Size: WASM_usize) -> Result_type<&mut [T]> {
+    pub fn Allocate<T>(&self, Size: WASM_usize_type) -> Result_type<&mut [T]> {
         let mut Pointer: *mut c_void = null_mut();
 
         unsafe {
@@ -234,7 +203,7 @@ impl<'a> Environment_type<'a> {
             return Err(Error_type::Invalid_pointer);
         }
 
-        Ok(unsafe { std::slice::from_raw_parts_mut(Pointer as *mut T, Size as usize) })
+        Ok(unsafe { std::slice::from_raw_parts_mut(Pointer as *mut T, Size) })
     }
 
     pub fn Deallocate<T>(&self, Slice: &mut [T]) {

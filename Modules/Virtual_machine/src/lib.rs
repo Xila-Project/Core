@@ -30,8 +30,8 @@ pub use Module::*;
 pub use Registrable::*;
 pub use Runtime::*;
 
-pub type WASM_pointer = u32;
-pub type WASM_usize = u32;
+pub type WASM_pointer_type = usize;
+pub type WASM_usize_type = usize;
 
 struct Standard_in_device_type;
 

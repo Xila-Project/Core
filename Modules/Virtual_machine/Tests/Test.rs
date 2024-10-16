@@ -7,16 +7,16 @@ use wamr_rust_sdk::value::WasmValue;
 use File_system::{Create_device, Create_file_system, Tests::Memory_device_type};
 use Virtual_machine::{
     Data_type, Environment_pointer_type, Environment_type, Function_descriptor_type,
-    Function_descriptors, Instantiate_test_environment, Registrable_trait, WASM_pointer,
-    WASM_usize,
+    Function_descriptors, Instantiate_test_environment, Registrable_trait, WASM_pointer_type,
+    WASM_usize_type,
 };
 
 const Testing_slice: [i32; 10] = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
 
 extern "C" fn Test_mutable_slice(
     Raw_environment: Environment_pointer_type,
-    Slice: WASM_pointer,
-    Size: WASM_usize,
+    Slice: WASM_pointer_type,
+    Size: WASM_usize_type,
 ) {
     let Environment = Environment_type::From_raw_pointer(Raw_environment).unwrap();
 
@@ -36,8 +36,8 @@ extern "C" fn Test_mutable_slice(
 
 extern "C" fn Test_slice(
     Raw_environment: Environment_pointer_type,
-    Slice: WASM_pointer,
-    Length: WASM_usize,
+    Slice: WASM_pointer_type,
+    Length: WASM_usize_type,
 ) {
     let Environment = Environment_type::From_raw_pointer(Raw_environment).unwrap();
 
@@ -49,9 +49,9 @@ extern "C" fn Test_slice(
 
 extern "C" fn Test_mutable_string(
     Raw_environment: Environment_pointer_type,
-    String: WASM_pointer,
-    Length: WASM_pointer,
-    Size: WASM_usize,
+    String: WASM_pointer_type,
+    Length: WASM_pointer_type,
+    Size: WASM_usize_type,
 ) {
     let Environment = Environment_type::From_raw_pointer(Raw_environment).unwrap();
 
@@ -68,8 +68,8 @@ extern "C" fn Test_mutable_string(
 
 extern "C" fn Test_string(
     Raw_environment: Environment_pointer_type,
-    String: WASM_pointer,
-    Length: WASM_usize,
+    String: WASM_pointer_type,
+    Length: WASM_usize_type,
 ) {
     let Environment = Environment_type::From_raw_pointer(Raw_environment).unwrap();
 
