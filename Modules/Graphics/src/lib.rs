@@ -3,7 +3,6 @@
 #![allow(non_upper_case_globals)]
 
 mod Area;
-mod Binding;
 mod Color;
 mod Display;
 mod Draw_buffer;
@@ -17,7 +16,6 @@ mod Screen;
 //mod Window;
 
 pub use Area::*;
-pub use Binding::*;
 pub use Color::*;
 pub use Display::*;
 pub use Draw_buffer::*;
