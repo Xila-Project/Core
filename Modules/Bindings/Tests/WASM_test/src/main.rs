@@ -2,8 +2,4 @@
 #![allow(non_camel_case_types)]
 #![no_main]
 
-mod File_system;
-
-mod Task;
-
 mod Graphics;
