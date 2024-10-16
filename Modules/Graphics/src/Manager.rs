@@ -1,4 +1,5 @@
 use std::sync::Mutex;
+use std::sync::MutexGuard;
 use std::sync::OnceLock;
 use std::time::Duration;
 
@@ -27,7 +28,10 @@ pub fn Get_instance() -> &'static Manager_type {
 
 struct Inner(Option<Input_type>);
 
-pub struct Manager_type(Mutex<Inner>);
+pub struct Manager_type {
+    Inner: Mutex<Inner>,
+    Global_lock: Mutex<()>,
+}
 
 impl Drop for Manager_type {
     fn drop(&mut self) {
@@ -56,14 +60,17 @@ impl Manager_type {
             lvgl::lv_tick_set_cb(Some(Binding_tick_callback_function));
         }
 
-        Ok(Self(Mutex::new(Inner(None))))
+        Ok(Self {
+            Inner: Mutex::new(Inner(None)),
+            Global_lock: Mutex::new(()),
+        })
     }
 
     pub fn Loop() {
         loop {
             unsafe {
-                let Time_untill_next = lvgl::lv_timer_handler();
-                Task::Manager_type::Sleep(Duration::from_millis(Time_untill_next as u64));
+                let Time_until_next = lvgl::lv_timer_handler();
+                Task::Manager_type::Sleep(Duration::from_millis(Time_until_next as u64));
             }
         }
     }
@@ -86,8 +93,12 @@ impl Manager_type {
 
         let Input = Input_type::New(Pointer_device, &Display)?;
 
-        self.0.lock()?.0.replace(Input);
+        self.Inner.lock()?.0.replace(Input);
 
         Ok(Display)
+    }
+
+    pub fn Lock(&self) -> Result_type<MutexGuard<'_, ()>> {
+        Ok(self.Global_lock.lock()?)
     }
 }
