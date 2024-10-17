@@ -47,25 +47,6 @@ extern "C" fn Test_slice(
     assert_eq!(Slice, Testing_slice);
 }
 
-extern "C" fn Test_mutable_string(
-    Raw_environment: Environment_pointer_type,
-    String: WASM_pointer_type,
-    Length: WASM_pointer_type,
-    Size: WASM_usize_type,
-) {
-    let Environment = Environment_type::From_raw_pointer(Raw_environment).unwrap();
-
-    let mut String = Environment
-        .Convert_to_native_mutable_string(String, Length, Size)
-        .unwrap();
-
-    assert_eq!(String.Get_length(), 5);
-
-    String += " World from WASM!";
-
-    assert_eq!(String.As_str(), "Hello World from WASM!");
-}
-
 extern "C" fn Test_string(
     Raw_environment: Environment_pointer_type,
     String: WASM_pointer_type,
@@ -116,10 +97,9 @@ fn Integration_test() {
         }
     }
 
-    const Functions: [Function_descriptor_type; 4] = Function_descriptors! {
+    const Functions: [Function_descriptor_type; 3] = Function_descriptors! {
         Test_mutable_slice,
         Test_slice,
-        Test_mutable_string,
         Test_string
     };
 

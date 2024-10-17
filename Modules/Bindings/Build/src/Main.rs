@@ -1,6 +1,9 @@
 #![allow(non_snake_case)]
 use std::{env, process::Command};
 
+use syn::visit::Visit;
+use Bindings_generator::{LVGL_functions_type, Native, WASM};
+
 mod Bindings_generator;
 
 fn main() -> Result<(), ()> {
@@ -29,7 +32,16 @@ fn main() -> Result<(), ()> {
         return Err(());
     }
 
-    Bindings_generator::Generate();
+    // Parse the input file
+    let String = lvgl_rust_sys::_bindgen_raw_src();
+    let File = syn::parse_str(String).expect("Error parsing lvgl bindings");
+
+    let mut LVGL_functions = LVGL_functions_type::default();
+    LVGL_functions.visit_file(&File);
+
+    Native::Generate(&LVGL_functions);
+    WASM::Generate_header(&LVGL_functions);
+    WASM::Generate_source(&LVGL_functions);
 
     Ok(())
 }

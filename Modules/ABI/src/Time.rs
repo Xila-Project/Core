@@ -1,20 +1,14 @@
 use Time::Get_instance;
 
-/// Retrieve the current time since the system startup in seconds.
+/// Retrieve the current time since the system startup in microseconds.
 ///
-/// # Safety
+/// # Returns
 ///
-/// This function is unsafe because it might dereference a null pointer.
-///
-/// # Parameters
-///
-/// - `Results`: Pointer to a `u128` where the result will be stored.
+/// The current time since the system startup in microseconds.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_instant_since_startup_microseconds(Results: *mut u128) {
-    unsafe {
-        *Results = Get_instance()
-            .Get_current_time_since_startup()
-            .unwrap_or_default()
-            .As_microseconds();
-    }
+pub extern "C" fn Xila_time_get_time_since_startup_microseconds() -> u64 {
+    Get_instance()
+        .Get_current_time_since_startup()
+        .unwrap_or_default()
+        .As_microseconds() as u64
 }

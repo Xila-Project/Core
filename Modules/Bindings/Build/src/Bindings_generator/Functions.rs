@@ -7,6 +7,7 @@ use super::Type_tree::Type_tree_type;
 pub struct LVGL_functions_type {
     Functions: Vec<Signature>,
     Type_tree: Type_tree_type,
+    Structures: Vec<String>,
 }
 
 impl LVGL_functions_type {
@@ -25,7 +26,6 @@ impl LVGL_functions_type {
             "lv_coord_",
             "lv_buttonmatrix_",
             "lv_calendar_",
-            "lv_canvas_",
             "lv_chart_",
             "lv_checkbox_",
             "lv_dropdown_",
@@ -50,6 +50,10 @@ impl LVGL_functions_type {
     pub fn Get_type_tree(&self) -> &Type_tree_type {
         &self.Type_tree
     }
+
+    pub fn Get_structures(&self) -> &Vec<String> {
+        &self.Structures
+    }
 }
 
 impl Visit<'_> for LVGL_functions_type {
@@ -69,5 +73,9 @@ impl Visit<'_> for LVGL_functions_type {
             i.ident.to_token_stream().to_string(),
             i.ty.to_token_stream().to_string(),
         );
+    }
+
+    fn visit_item_struct(&mut self, i: &'_ syn::ItemStruct) {
+        self.Structures.push(i.ident.to_string());
     }
 }

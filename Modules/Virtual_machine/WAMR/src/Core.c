@@ -81,7 +81,7 @@ int os_vprintf(const char *format, va_list ap)
  */
 uint64 os_time_get_boot_us(void)
 {
-    return Xila_get_boot_time_microseconds();
+    return Xila_time_get_time_since_startup_microseconds();
 }
 
 /**

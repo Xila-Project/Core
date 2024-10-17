@@ -1,8 +1,10 @@
+use std::collections::HashSet;
+
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{FnArg, ReturnType, Signature, TypePath};
 
-use super::Type_tree::Type_tree_type;
+use crate::Bindings_generator::Type_tree_type;
 
 fn Generate_conversion_for_argument(Type_tree: &Type_tree_type, Argument: &FnArg) -> TokenStream {
     match Argument {
@@ -194,6 +196,24 @@ fn Generate_from_signature(Type_tree: &Type_tree_type, Function: &Signature) -> 
 }
 
 pub fn Generate_code(Type_tree: &Type_tree_type, Signatures: Vec<Signature>) -> TokenStream {
+    let mut Unique_arguments_types = HashSet::<String>::new();
+
+    Signatures.iter().for_each(|x| {
+        x.inputs.iter().for_each(|x| {
+            if let FnArg::Typed(Pattern) = x {
+                let Path_string = Pattern.ty.to_token_stream().to_string();
+
+                Unique_arguments_types.insert(Path_string);
+            }
+        });
+    });
+
+    println!(
+        "cargo:warning=Unique arguments types : {:?} - {:?}",
+        Unique_arguments_types.len(),
+        Unique_arguments_types
+    );
+
     let Functions = Signatures
         .iter()
         .map(|x| Generate_from_signature(Type_tree, x))
@@ -215,7 +235,7 @@ pub fn Generate_code(Type_tree: &Type_tree_type, Signatures: Vec<Signature>) -> 
             __Argument_4: WASM_usize_type,
             __Argument_5: WASM_usize_type,
             __Argument_6: WASM_usize_type,
-            __Arguments_count: WASM_usize_type,
+            __Arguments_count: u8,
             __Result: WASM_pointer_type,
         )
         {

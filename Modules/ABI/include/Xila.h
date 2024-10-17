@@ -224,7 +224,7 @@ int Rust_function Xila_memory_protect(void *Pointer, size_t Size, int Protection
 size_t Rust_function Xila_memory_get_page_size();
 
 // - Time
-uint64_t Rust_function Xila_get_boot_time_microseconds();
+uint64_t Rust_function Xila_time_get_time_since_startup_microseconds();
 uint64_t Rust_function Xila_get_cpu_time_microseconds();
 
 // - Clock

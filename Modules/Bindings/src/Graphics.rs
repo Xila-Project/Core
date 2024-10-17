@@ -38,7 +38,7 @@ pub unsafe fn Call(
     Argument_4: WASM_usize_type,
     Argument_5: WASM_usize_type,
     Argument_6: WASM_usize_type,
-    Arguments_count: WASM_usize_type,
+    Arguments_count: u8,
     Result: WASM_pointer_type,
 ) {
     let Environment = Environment_type::From_raw_pointer(Environment).unwrap();
