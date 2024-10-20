@@ -30,8 +30,4 @@ impl Type_tree_type {
             Path_string
         }
     }
-
-    pub fn Get_inner(&self) -> &HashMap<String, String> {
-        &self.Type_tree
-    }
 }

@@ -535,9 +535,9 @@ typedef enum
     XILA_GRAPHICS_BASE_DIR_WEAK = 0x21,
 } Xila_graphics_base_dir_t;
 
-typedef enum Xila_graphics_display_t
+typedef struct
 {
-};
+} Xila_graphics_display_t;
 
 /** Scrollbar modes: shows when should the scrollbars be visible*/
 typedef enum
@@ -624,6 +624,9 @@ typedef enum
     LV_OBJ_TREE_WALK_END,
 } Xila_graphics_obj_tree_walk_res_t;
 
+/**
+ * A common type to handle all the property types in the same way.
+ */
 typedef union
 {
     int32_t num;                 /**< Number integer number (opacity, enums, booleans or "normal" numbers)*/
@@ -673,7 +676,8 @@ typedef enum
     LV_STYLE_RES_FOUND,
 } Xila_graphics_style_res_t;
 
-typedef enum {
+typedef enum
+{
     LV_EVENT_ALL = 0,
 
     /** Input device events*/
@@ -687,18 +691,18 @@ typedef enum {
     LV_EVENT_RELEASED,            /**< Called in every cases when the object has been released*/
     LV_EVENT_SCROLL_BEGIN,        /**< Scrolling begins. The event parameter is a pointer to the animation of the scroll. Can be modified*/
     LV_EVENT_SCROLL_THROW_BEGIN,
-    LV_EVENT_SCROLL_END,          /**< Scrolling ends*/
-    LV_EVENT_SCROLL,              /**< Scrolling*/
-    LV_EVENT_GESTURE,             /**< A gesture is detected. Get the gesture with `lv_indev_get_gesture_dir(lv_indev_active());` */
-    LV_EVENT_KEY,                 /**< A key is sent to the object. Get the key with `lv_indev_get_key(lv_indev_active());`*/
-    LV_EVENT_ROTARY,              /**< An encoder or wheel was rotated. Get the rotation count with `lv_event_get_rotary_diff(e);`*/
-    LV_EVENT_FOCUSED,             /**< The object is focused*/
-    LV_EVENT_DEFOCUSED,           /**< The object is defocused*/
-    LV_EVENT_LEAVE,               /**< The object is defocused but still selected*/
-    LV_EVENT_HIT_TEST,            /**< Perform advanced hit-testing*/
-    LV_EVENT_INDEV_RESET,         /**< Indev has been reset*/
-    LV_EVENT_HOVER_OVER,          /**< Indev hover over object*/
-    LV_EVENT_HOVER_LEAVE,         /**< Indev hover leave object*/
+    LV_EVENT_SCROLL_END,  /**< Scrolling ends*/
+    LV_EVENT_SCROLL,      /**< Scrolling*/
+    LV_EVENT_GESTURE,     /**< A gesture is detected. Get the gesture with `lv_indev_get_gesture_dir(lv_indev_active());` */
+    LV_EVENT_KEY,         /**< A key is sent to the object. Get the key with `lv_indev_get_key(lv_indev_active());`*/
+    LV_EVENT_ROTARY,      /**< An encoder or wheel was rotated. Get the rotation count with `lv_event_get_rotary_diff(e);`*/
+    LV_EVENT_FOCUSED,     /**< The object is focused*/
+    LV_EVENT_DEFOCUSED,   /**< The object is defocused*/
+    LV_EVENT_LEAVE,       /**< The object is defocused but still selected*/
+    LV_EVENT_HIT_TEST,    /**< Perform advanced hit-testing*/
+    LV_EVENT_INDEV_RESET, /**< Indev has been reset*/
+    LV_EVENT_HOVER_OVER,  /**< Indev hover over object*/
+    LV_EVENT_HOVER_LEAVE, /**< Indev hover leave object*/
 
     /** Drawing events*/
     LV_EVENT_COVER_CHECK,        /**< Check if the object fully covers an area. The event parameter is `lv_cover_check_info_t *`.*/
@@ -709,14 +713,14 @@ typedef enum {
     LV_EVENT_DRAW_POST_BEGIN,    /**< Starting the post draw phase (when all children are drawn)*/
     LV_EVENT_DRAW_POST,          /**< Perform the post draw phase (when all children are drawn)*/
     LV_EVENT_DRAW_POST_END,      /**< Finishing the post draw phase (when all children are drawn)*/
-    LV_EVENT_DRAW_TASK_ADDED,      /**< Adding a draw task */
+    LV_EVENT_DRAW_TASK_ADDED,    /**< Adding a draw task */
 
     /** Special events*/
-    LV_EVENT_VALUE_CHANGED,       /**< The object's value has changed (i.e. slider moved)*/
-    LV_EVENT_INSERT,              /**< A text is inserted to the object. The event data is `char *` being inserted.*/
-    LV_EVENT_REFRESH,             /**< Notify the object to refresh something on it (for the user)*/
-    LV_EVENT_READY,               /**< A process has finished*/
-    LV_EVENT_CANCEL,              /**< A process has been cancelled */
+    LV_EVENT_VALUE_CHANGED, /**< The object's value has changed (i.e. slider moved)*/
+    LV_EVENT_INSERT,        /**< A text is inserted to the object. The event data is `char *` being inserted.*/
+    LV_EVENT_REFRESH,       /**< Notify the object to refresh something on it (for the user)*/
+    LV_EVENT_READY,         /**< A process has finished*/
+    LV_EVENT_CANCEL,        /**< A process has been cancelled */
 
     /** Other events*/
     LV_EVENT_CREATE,              /**< Object is being created*/
@@ -749,8 +753,13 @@ typedef enum {
 
     LV_EVENT_VSYNC,
 
-    LV_EVENT_LAST,                 /** Number of default events*/
+    LV_EVENT_LAST, /** Number of default events*/
 
-    LV_EVENT_PREPROCESS = 0x8000,   /** This is a flag that can be set with an event so it's processed
-                                      before the class default event processing */
+    LV_EVENT_PREPROCESS = 0x8000, /** This is a flag that can be set with an event so it's processed
+                                    before the class default event processing */
 } Xila_graphics_event_code_t;
+
+typedef Xila_graphics_obj_tree_walk_res_t (*Xila_graphics_obj_tree_walk_cb_t)(Xila_graphics_obj_t *, void *);
+
+/** Get the current value during an animation*/
+typedef int32_t (*Xila_graphics_anim_path_cb_t)(const Xila_graphics_anim_t *);

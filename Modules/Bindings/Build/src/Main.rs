@@ -1,15 +1,27 @@
 #![allow(non_snake_case)]
-use std::{env, process::Command};
-
-use syn::visit::Visit;
-use Bindings_generator::{LVGL_functions_type, Native, WASM};
+use std::{env, path::Path, process::Command};
 
 mod Bindings_generator;
 
+use syn::visit::Visit;
+use Bindings_generator::{Functions, Native, WASM};
+
 fn main() -> Result<(), ()> {
+    let Input = lvgl_rust_sys::_bindgen_raw_src();
+    let Parsed_input = syn::parse_file(Input).expect("Error parsing input file");
+
+    let mut LVGL_functions = Functions::LVGL_functions_type::default();
+    LVGL_functions.visit_file(&Parsed_input);
+
+    let Out_directory = env::var("OUT_DIR").unwrap();
+    let Out_directory = Path::new(Out_directory.as_str());
+
+    println!("cargo:warning=Output directory : {:?}", Out_directory);
+
+    Native::Generate(&Out_directory, &LVGL_functions).expect("Error generating native bindings");
+    WASM::Generate(&Out_directory, &LVGL_functions).expect("Error generating WASM bindings");
+
     println!("cargo:rerun-if-changed=Tests/WASM_test/src/main.rs");
-    println!("cargo:rerun-if-changed=Tests/WASM_test/src/File_system.rs");
-    println!("cargo:rerun-if-changed=Tests/WASM_test/src/Task.rs");
     println!("cargo:rerun-if-changed=Tests/WASM_test/src/Graphics.rs");
     println!("cargo:rerun-if-changed=Tests/WASM_test/Cargo.toml");
 
@@ -31,17 +43,6 @@ fn main() -> Result<(), ()> {
         println! {"cargo:warning=status: {}", output.status};
         return Err(());
     }
-
-    // Parse the input file
-    let String = lvgl_rust_sys::_bindgen_raw_src();
-    let File = syn::parse_str(String).expect("Error parsing lvgl bindings");
-
-    let mut LVGL_functions = LVGL_functions_type::default();
-    LVGL_functions.visit_file(&File);
-
-    Native::Generate(&LVGL_functions);
-    WASM::Generate_header(&LVGL_functions);
-    WASM::Generate_source(&LVGL_functions);
 
     Ok(())
 }

@@ -3,7 +3,7 @@ use syn::{visit::Visit, ForeignItemFn, ItemType, Signature};
 
 use super::Type_tree::Type_tree_type;
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct LVGL_functions_type {
     Functions: Vec<Signature>,
     Type_tree: Type_tree_type,
@@ -15,8 +15,22 @@ impl LVGL_functions_type {
         self.Functions.clone()
     }
 
-    fn Get_authorized_prefixes() -> Vec<&'static str> {
-        vec![
+    pub fn Get_type_tree(&self) -> &Type_tree_type {
+        &self.Type_tree
+    }
+
+    pub fn Get_structures(&self) -> &Vec<String> {
+        &self.Structures
+    }
+
+    fn Filter_function(Signature: &Signature) -> bool {
+        let Unauthorized_functions = ["lv_obj_get_display"];
+
+        if Unauthorized_functions.contains(&Signature.ident.to_string().as_str()) {
+            return false;
+        }
+
+        let Authorized_prefixes = [
             "lv_point_",
             "lv_color",
             "lv_style_",
@@ -44,27 +58,18 @@ impl LVGL_functions_type {
             "lv_tabview_",
             "lv_tileview_",
             "lv_subject_",
-        ]
-    }
+        ];
 
-    pub fn Get_type_tree(&self) -> &Type_tree_type {
-        &self.Type_tree
-    }
-
-    pub fn Get_structures(&self) -> &Vec<String> {
-        &self.Structures
+        Authorized_prefixes
+            .iter()
+            .any(|&prefix| Signature.ident.to_string().starts_with(prefix))
     }
 }
 
 impl Visit<'_> for LVGL_functions_type {
-    fn visit_foreign_item_fn(&mut self, i: &ForeignItemFn) {
-        let Authorized_prefixes = Self::Get_authorized_prefixes();
-
-        if Authorized_prefixes
-            .iter()
-            .any(|&prefix| i.sig.ident.to_string().starts_with(prefix))
-        {
-            self.Functions.push(i.sig.clone());
+    fn visit_foreign_item_fn(&mut self, Foreign_item_function: &ForeignItemFn) {
+        if Self::Filter_function(&Foreign_item_function.sig) {
+            self.Functions.push(Foreign_item_function.sig.clone());
         }
     }
 

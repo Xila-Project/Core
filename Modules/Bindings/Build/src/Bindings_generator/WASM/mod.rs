@@ -1,8 +1,10 @@
-use std::{env, fs::File, io::Write, path::PathBuf, process::Command};
+use std::{fs::File, io::Write, path::Path};
 
-use super::{Functions::LVGL_functions_type, Type_tree_type};
+use super::Format::Format_C;
+
+use super::Functions::LVGL_functions_type;
 use quote::ToTokens;
-use syn::{Ident, ReturnType, Signature};
+use syn::{ReturnType, Signature};
 
 pub fn Convert_fundamental_type(Type: &str) -> String {
     match Type {
@@ -86,7 +88,8 @@ fn Generate_function_declarations(Signatures: Vec<Signature>) -> String {
         .map(Generate_function_signature)
         .collect::<Vec<_>>();
 
-    Functions.join(";\n")
+    let Functions = Functions.join(";\n");
+    Functions + ";\n"
 }
 
 fn Generate_opaque_types(Structures: Vec<String>) -> String {
@@ -118,6 +121,7 @@ fn Generate_graphics_call(Signature: &Signature) -> String {
                 if Pattern.ty.to_token_stream().to_string() == "lv_color_t"
                     || Pattern.ty.to_token_stream().to_string() == "lv_color32_t"
                     || Pattern.ty.to_token_stream().to_string() == "lv_color16_t"
+                    || Pattern.ty.to_token_stream().to_string() == "lv_style_value_t"
                 {
                     format!("*(size_t*)&{}", Pattern.pat.to_token_stream())
                 } else {
@@ -134,11 +138,34 @@ fn Generate_graphics_call(Signature: &Signature) -> String {
         Arguments.push("0".to_string());
     }
 
+    let Declaration = match &Signature.output {
+        ReturnType::Default => None,
+        ReturnType::Type(_, Type) => {
+            let Type = Convert_type(Type.to_token_stream().to_string());
+
+            let Declaration = format!("{} __Result;", Type);
+
+            Some(Declaration)
+        }
+    };
+
     format!(
-        "Xila_graphics_call({},{}, {}, NULL);",
+        "{}\nXila_graphics_call({},{}, {}, {});\n{}",
+        Declaration
+            .as_ref()
+            .map(|String| String.as_str())
+            .unwrap_or(""),
         Identifier,
         Arguments.join(", "),
-        Real_arguments_length
+        Real_arguments_length,
+        Declaration
+            .as_ref()
+            .map(|_| "(void*)&__Result")
+            .unwrap_or("NULL"),
+        Declaration
+            .as_ref()
+            .map(|_| "return __Result;")
+            .unwrap_or("")
     )
 }
 
@@ -157,14 +184,7 @@ fn Generate_function_definitions(Signatures: Vec<Signature>) -> String {
     Functions.join("\n")
 }
 
-pub fn Generate_header(LVGL_functions: &LVGL_functions_type) {
-    println!("cargo:rerun-if-changed=Bindings.h");
-    println!("cargo:rerun-if-changed=Prelude.h");
-
-    let Output_file_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("Xila_graphics.h");
-    println!("cargo:warning=Output file path : {:?}", Output_file_path);
-    let mut Output_file = File::create(&Output_file_path).expect("Error creating bindings file");
-
+pub fn Generate_header(Output_file: &mut File, LVGL_functions: &LVGL_functions_type) {
     Output_file
         .write_all(include_str!("Includes.h").as_bytes())
         .expect("Error writing to bindings file");
@@ -184,11 +204,6 @@ pub fn Generate_header(LVGL_functions: &LVGL_functions_type) {
     Output_file
         .write_all(Functions.as_bytes())
         .expect("Error writing to bindings file");
-
-    Command::new("clang-format")
-        .arg(Output_file_path.to_str().unwrap())
-        .status()
-        .expect("Error running clang-format");
 }
 
 pub fn Generate_code_enumeration(Signature: Vec<Signature>) -> String {
@@ -208,14 +223,7 @@ pub fn Generate_code_enumeration(Signature: Vec<Signature>) -> String {
     )
 }
 
-pub fn Generate_source(LVGL_functions: &LVGL_functions_type) {
-    println!("cargo:rerun-if-changed=Bindings.c");
-    println!("cargo:rerun-if-changed=Prelude.c");
-
-    let Output_file_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("Xila_graphics.c");
-    println!("cargo:warning=Output file path : {:?}", Output_file_path);
-    let mut Output_file = File::create(&Output_file_path).expect("Error creating bindings file");
-
+pub fn Generate_source(Output_file: &mut File, LVGL_functions: &LVGL_functions_type) {
     Output_file
         .write_all(include_str!("Includes.c").as_bytes())
         .expect("Error writing to bindings file");
@@ -233,9 +241,21 @@ pub fn Generate_source(LVGL_functions: &LVGL_functions_type) {
     Output_file
         .write_all(Functions.as_bytes())
         .expect("Error writing to bindings file");
+}
 
-    Command::new("clang-format")
-        .arg(Output_file_path.to_str().unwrap())
-        .status()
-        .expect("Error running clang-format");
+pub fn Generate(Output_path: &Path, LVGL_functions: &LVGL_functions_type) -> Result<(), String> {
+    let Source_file_path = Output_path.join("Xila_graphics.c");
+    let Header_file_path = Output_path.join("Xila_graphics.h");
+
+    let mut Header_file =
+        File::create(&Header_file_path).map_err(|_| "Error creating header file")?;
+    Generate_header(&mut Header_file, LVGL_functions);
+    Format_C(&Header_file_path)?;
+
+    let mut Source_file =
+        File::create(&Source_file_path).map_err(|_| "Error creating source file")?;
+    Generate_source(&mut Source_file, LVGL_functions);
+    Format_C(&Source_file_path)?;
+
+    Ok(())
 }

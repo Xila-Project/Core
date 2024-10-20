@@ -2,26 +2,26 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
-use std::{env, fs::File, io::Write, path::PathBuf, process::Command};
+use std::{fs::File, io::Write, path::Path};
 
-use super::Functions::LVGL_functions_type;
+use super::{Format::Format_rust, Functions::LVGL_functions_type};
 use quote::quote;
 
 mod Call;
 mod Enumeration;
 
-pub fn Generate(LVGL_functions: &LVGL_functions_type) {
+pub fn Generate(Output_path: &Path, LVGL_functions: &LVGL_functions_type) -> Result<(), String> {
     // Open the output file
-    let Output_file_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("Bindings.rs");
-
-    let mut Output_file = File::create(&Output_file_path).expect("Error creating bindings file");
+    let Output_file_path = Output_path.join("Bindings.rs");
+    let mut Output_file = File::create(&Output_file_path)
+        .map_err(|Error| format!("Error creating output file : {}", Error))?;
 
     let Enumerations = Enumeration::Generate_code(LVGL_functions.Get_signatures());
 
     let Functions = Call::Generate_code(
         LVGL_functions.Get_type_tree(),
         LVGL_functions.Get_signatures(),
-    );
+    )?;
 
     Output_file
         .write_all(
@@ -35,15 +35,9 @@ pub fn Generate(LVGL_functions: &LVGL_functions_type) {
             .to_string()
             .as_bytes(),
         )
-        .expect("Error writing to bindings file");
+        .map_err(|Error| format!("Error writing to output file : {}", Error))?;
 
-    Command::new("rustfmt")
-        .arg(Output_file_path.to_str().unwrap())
-        .status()
-        .expect("Error running rustfmt");
+    Format_rust(&Output_file_path)?;
 
-    // Output C header file for the bindings
-    let Output_file_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("Bindings.h");
-
-    let mut Output_file = File::create(&Output_file_path).expect("Error creating bindings file");
+    Ok(())
 }

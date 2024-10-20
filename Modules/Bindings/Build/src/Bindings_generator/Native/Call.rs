@@ -1,23 +1,22 @@
-use std::collections::HashSet;
-
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{FnArg, ReturnType, Signature, TypePath};
 
-use crate::Bindings_generator::Type_tree_type;
+use super::super::Type_tree::Type_tree_type;
 
-fn Generate_conversion_for_argument(Type_tree: &Type_tree_type, Argument: &FnArg) -> TokenStream {
+fn Generate_conversion_for_argument(
+    Type_tree: &Type_tree_type,
+    Argument: &FnArg,
+) -> Result<TokenStream, String> {
     match Argument {
         FnArg::Typed(Pattern) => {
             let Identifier = &*Pattern.pat;
             match &*Pattern.ty {
-                syn::Type::Ptr(Type) => {
-                    quote! {
-                        let #Identifier : #Type = __Environment.Convert_to_native_pointer(
-                            #Identifier
-                        ) as *mut _;
-                    }
-                }
+                syn::Type::Ptr(Type) => Ok(quote! {
+                    let #Identifier : #Type = __Environment.Convert_to_native_pointer(
+                        #Identifier
+                    ) as *mut _;
+                }),
                 syn::Type::Path(Path) => {
                     let Path_string = Type_tree.Resolve(&Path.path);
 
@@ -26,59 +25,55 @@ fn Generate_conversion_for_argument(Type_tree: &Type_tree_type, Argument: &FnArg
                     let Path_string_identifier: TypePath = syn::parse_str(&Path_string).unwrap();
 
                     if Path_string_stripped == "bool" {
-                        quote! {
+                        Ok(quote! {
                             let #Identifier = #Identifier != 0;
-                        }
+                        })
                     } else if Path_string_stripped == "lv_color_t" {
-                        quote! {
+                        Ok(quote! {
                             let #Identifier = lv_color_t {
                                 blue: #Identifier as u8,
                                 green: (#Identifier >> 8) as u8,
                                 red: (#Identifier >> 16) as u8,
                             };
-                        }
+                        })
                     } else if Path_string_stripped == "lv_color32_t" {
-                        quote! {
+                        Ok(quote! {
                             let #Identifier = core::mem::transmute::<u32, #Path_string_identifier>(#Identifier as u32);
-                        }
+                        })
                     } else if Path_string_stripped == "lv_color16_t" {
-                        quote! {
+                        Ok(quote! {
                             let #Identifier = core::mem::transmute::<u16, #Path_string_identifier>(#Identifier as u16);
-                        }
+                        })
                     } else if Path_string_stripped == "lv_style_value_t" {
-                        quote! {
+                        Ok(quote! {
                             let #Identifier = #Identifier as *mut lv_style_value_t;
                             let #Identifier = *#Identifier;
-                        }
+                        })
                     } else if Path_string_stripped.starts_with("::core::option::Option<") {
-                        quote! {
+                        Ok(quote! {
                             let #Identifier = if #Identifier == 0 {
                                 core::option::Option::None
                             } else {
                                 #[allow(clippy::missing_transmute_annotations)] // Too heavy to implement
                                 core::option::Option::Some(core::mem::transmute(#Identifier))
                             };
-                        }
+                        })
                     } else if Path_string_stripped == "usize" {
-                        quote! {}
+                        Ok(quote! {})
                     } else {
-                        quote! {
+                        Ok(quote! {
                             let #Identifier = #Identifier as #Path_string_identifier;
-                        }
+                        })
                     }
                 }
-                T => {
-                    panic!("Unsupported type conversion : {:?}", T);
-                }
+                T => Err(format!("Unsupported type conversion : {:?}", T)),
             }
         }
-        _ => {
-            panic!("Unsupported argument type");
-        }
+        _ => Err("Unsupported argument type".to_string()),
     }
 }
 
-fn Generate_conversion_for_output(Return: &ReturnType) -> Option<TokenStream> {
+fn Generate_conversion_for_output(Return: &ReturnType) -> Result<Option<TokenStream>, String> {
     match Return {
         ReturnType::Type(_, Type) => {
             let Conversion = match &**Type {
@@ -97,27 +92,30 @@ fn Generate_conversion_for_output(Return: &ReturnType) -> Option<TokenStream> {
                     }
                 }
                 T => {
-                    panic!("Unsupported type conversion : {:?}", T);
+                    return Err(format!("Unsupported return type : {:?}", T));
                 }
             };
 
-            Some(quote! {
+            Ok(Some(quote! {
                 #Conversion
 
                 *__Result = __Current_result;
-            })
+            }))
         }
         // If the return type is not specified, we don't need to convert it
-        ReturnType::Default => None,
+        ReturnType::Default => Ok(None),
     }
 }
 
-fn Generate_from_signature(Type_tree: &Type_tree_type, Function: &Signature) -> TokenStream {
+fn Generate_from_signature(
+    Type_tree: &Type_tree_type,
+    Function: &Signature,
+) -> Result<TokenStream, String> {
     let Conversion = Function
         .inputs
         .iter()
         .map(|Arguments| Generate_conversion_for_argument(Type_tree, Arguments))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
 
     let Assigns = Function
         .inputs
@@ -157,7 +155,7 @@ fn Generate_from_signature(Type_tree: &Type_tree_type, Function: &Signature) -> 
 
     let Identifier = &Function.ident;
 
-    let Return = Generate_conversion_for_output(&Function.output);
+    let Return = Generate_conversion_for_output(&Function.output)?;
 
     let Call = if let Some(Return) = &Return {
         quote! {
@@ -175,7 +173,7 @@ fn Generate_from_signature(Type_tree: &Type_tree_type, Function: &Signature) -> 
         }
     };
 
-    quote! {
+    Ok(quote! {
         Function_calls_type::#Identifier => {
             // Check arguments count
             if __Arguments_count != #Arguments_count {
@@ -192,34 +190,19 @@ fn Generate_from_signature(Type_tree: &Type_tree_type, Function: &Signature) -> 
             // Call function
             #Call
         }
-    }
+    })
 }
 
-pub fn Generate_code(Type_tree: &Type_tree_type, Signatures: Vec<Signature>) -> TokenStream {
-    let mut Unique_arguments_types = HashSet::<String>::new();
-
-    Signatures.iter().for_each(|x| {
-        x.inputs.iter().for_each(|x| {
-            if let FnArg::Typed(Pattern) = x {
-                let Path_string = Pattern.ty.to_token_stream().to_string();
-
-                Unique_arguments_types.insert(Path_string);
-            }
-        });
-    });
-
-    println!(
-        "cargo:warning=Unique arguments types : {:?} - {:?}",
-        Unique_arguments_types.len(),
-        Unique_arguments_types
-    );
-
+pub fn Generate_code(
+    Type_tree: &Type_tree_type,
+    Signatures: Vec<Signature>,
+) -> Result<TokenStream, String> {
     let Functions = Signatures
         .iter()
         .map(|x| Generate_from_signature(Type_tree, x))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
 
-    quote! {
+    Ok(quote! {
 
         use super::lvgl::*;
         use Virtual_machine::{Environment_type, WASM_pointer_type, WASM_usize_type};
@@ -250,5 +233,5 @@ pub fn Generate_code(Type_tree: &Type_tree_type, Signatures: Vec<Signature>) -> 
 
         }
     }
-    .to_token_stream()
+    .to_token_stream())
 }
