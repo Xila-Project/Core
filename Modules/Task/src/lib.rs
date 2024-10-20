@@ -15,4 +15,5 @@ pub use Environment_variable::*;
 pub use Error::*;
 pub use Manager::*;
 pub use Task::*;
+pub use Thread::Thread_identifier_type;
 use Thread::*;
