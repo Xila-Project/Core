@@ -7,10 +7,10 @@ pub struct Module_type(Module);
 impl Module_type {
     pub fn From_buffer(
         Runtime: &Runtime_type,
-        Buffer: &[u8],
+        Buffer: Vec<u8>,
         Name: &str,
     ) -> Result<Self, RuntimeError> {
-        Ok(Module_type(Module::from_buf(
+        Ok(Module_type(Module::from_vec(
             Runtime.Get_inner_reference(),
             Buffer,
             Name,

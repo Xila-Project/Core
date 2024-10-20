@@ -1,5 +1,7 @@
 #![allow(non_camel_case_types)]
 
+use std::sync::PoisonError;
+
 use wamr_rust_sdk::RuntimeError;
 
 pub type Result_type<T> = std::result::Result<T, Error_type>;
@@ -18,6 +20,7 @@ pub enum Error_type {
     Function_not_found,
     Allocation_failure,
     Failed_to_get_task_informations(Task::Error_type),
+    Poisoned_lock,
 }
 
 impl From<RuntimeError> for Error_type {
@@ -31,5 +34,11 @@ impl From<RuntimeError> for Error_type {
             RuntimeError::ExecutionError(e) => Error_type::Execution_error(e),
             RuntimeError::FunctionNotFound => Error_type::Function_not_found,
         }
+    }
+}
+
+impl<T> From<PoisonError<T>> for Error_type {
+    fn from(_: PoisonError<T>) -> Self {
+        Error_type::Poisoned_lock
     }
 }

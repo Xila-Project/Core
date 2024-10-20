@@ -6,6 +6,7 @@ mod Data;
 mod Environment;
 mod Error;
 mod Instance;
+mod Manager;
 mod Module;
 mod Registrable;
 mod Runtime;
@@ -121,8 +122,8 @@ impl Device_trait for Standard_error_device_type {
 }
 
 pub fn Instantiate_test_environment(
-    Binary_buffer: &[u8],
-    Registrable: impl Registrable_trait,
+    Binary_buffer: Vec<u8>,
+    Registrable: &dyn Registrable_trait,
     User_data: &Data_type,
     Task_manager: &Task::Manager_type,
     Virtual_file_system: &Virtual_file_system_type,

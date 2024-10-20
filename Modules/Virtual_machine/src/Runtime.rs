@@ -23,7 +23,7 @@ impl Runtime_builder_type {
         self
     }
 
-    pub fn Register(mut self, Registrable: impl Registrable_trait) -> Self {
+    pub fn Register(mut self, Registrable: &dyn Registrable_trait) -> Self {
         for Function_descriptor in Registrable.Get_functions() {
             self = self.Register_function(Function_descriptor.Name, Function_descriptor.Pointer);
         }
