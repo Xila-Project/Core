@@ -19,6 +19,7 @@ fn main() -> Result<(), ()> {
     println!("cargo:warning=Output directory : {:?}", Out_directory);
 
     Native::Generate(&Out_directory, &LVGL_functions).expect("Error generating native bindings");
+
     WASM::Generate(&Out_directory, &LVGL_functions).expect("Error generating WASM bindings");
 
     println!("cargo:rerun-if-changed=Tests/WASM_test/src/main.rs");

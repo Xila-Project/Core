@@ -1,9 +1,13 @@
 use std::{fs::File, io::Write, path::Path};
 
-use super::Format::Format_C;
+use crate::Bindings_generator::Format::Format_function_name;
+
+use super::Enumeration;
+use super::Format::{Format_C, Format_rust};
 
 use super::Functions::LVGL_functions_type;
-use quote::ToTokens;
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote, ToTokens};
 use syn::{ReturnType, Signature};
 
 pub fn Convert_fundamental_type(Type: &str) -> String {
@@ -56,9 +60,7 @@ pub fn Convert_type(Type: String) -> String {
 }
 
 fn Generate_function_signature(Signature: &Signature) -> String {
-    let Identifier = Signature.ident.to_string();
-
-    let Identifier = Identifier.replace("lv_", "Xila_graphics_");
+    let Identifier = Format_function_name(&Signature.ident.to_string());
 
     let Arguments = Signature
         .inputs
@@ -169,34 +171,111 @@ fn Generate_graphics_call(Signature: &Signature) -> String {
     )
 }
 
-fn Generate_function_definitions(Signatures: Vec<Signature>) -> String {
+fn Generate_function_definitions(Signatures: Vec<Signature>) -> TokenStream {
     let Functions = Signatures
         .iter()
         .map(|Signature| {
-            let C_signature = Generate_function_signature(Signature);
+            let Old_identifier = &Signature.ident;
+            let New_identifier = Signature.ident.to_string();
+            let New_identifier = Format_function_name(&New_identifier);
+            let New_identifier = format_ident!("{}", New_identifier);
 
-            let Call = Generate_graphics_call(Signature);
+            let mut Inputs = Signature.inputs.clone();
 
-            format!("{} {{\n    {}\n}}", C_signature, Call)
+            if let ReturnType::Type(_, Type) = &Signature.output {
+                Inputs.push(syn::parse_quote! { __Result: *mut #Type });
+            }
+            let Output_call = match &Signature.output {
+                ReturnType::Default => quote! { core::ptr::null_mut() },
+                ReturnType::Type(_, _) => quote! { __Result },
+            };
+
+            let Casts = Signature
+                .inputs
+                .iter()
+                .map(|Argument| match Argument {
+                    syn::FnArg::Typed(Pattern) => {
+                        let Identifier = &Pattern.pat;
+                        let Type = &Pattern.ty;
+
+                        if Type.to_token_stream().to_string() == "lv_color_t" {
+                            quote! { let #Identifier = Convert_lv_color_t(#Identifier); }
+                        } else if Type.to_token_stream().to_string() == "lv_color32_t" {
+                            quote! { let #Identifier = Convert_lv_color32_t(#Identifier); }
+                        } else if Type.to_token_stream().to_string() == "lv_color16_t" {
+                            quote! { let #Identifier = Convert_lv_color16_t(#Identifier); }
+                        } else if Type.to_token_stream().to_string() == "lv_style_value_t" {
+                            quote! { let #Identifier = #Identifier.num; }
+                        } else {
+                            quote! {}
+                        }
+                    }
+                    _ => panic!("Unsupported argument type"),
+                })
+                .collect::<Vec<_>>();
+
+            let mut Arguments = Signature
+                .inputs
+                .iter()
+                .map(|Argument| match Argument {
+                    syn::FnArg::Typed(Pattern) => {
+                        let Identifier = &Pattern.pat;
+
+                        quote! { #Identifier as usize }
+                    }
+                    _ => panic!("Unsupported argument type"),
+                })
+                .collect::<Vec<_>>();
+
+            let Arguments_count = proc_macro2::Literal::u8_unsuffixed(Arguments.len() as u8);
+
+            for _ in Arguments.len()..7 {
+                Arguments.push(syn::parse_quote! { 0 });
+            }
+
+            quote! {
+                #[no_mangle]
+                pub unsafe fn #New_identifier(
+                    #Inputs
+                ) {
+                    #( #Casts )*
+
+                    Xila_graphics_call(
+                        Function_calls_type::#Old_identifier,
+                        #( #Arguments ),*,
+                        #Arguments_count,
+                        #Output_call as *mut std::ffi::c_void
+                    )
+
+                }
+            }
         })
         .collect::<Vec<_>>();
 
-    Functions.join("\n")
+    quote! {
+        #(#Functions)*
+    }
+}
+
+pub fn Generate_types(LVGL_functions: &LVGL_functions_type) -> String {
+    let Includes = include_str!("Includes.h");
+
+    let Structures_name = LVGL_functions
+        .Get_structures()
+        .iter()
+        .map(|x| x.ident.to_string())
+        .collect::<Vec<_>>();
+
+    let Opaque_types = Generate_opaque_types(Structures_name);
+
+    let Types = include_str!("Types.h");
+
+    format!("{}\n{}\n{}", Includes, Opaque_types, Types)
 }
 
 pub fn Generate_header(Output_file: &mut File, LVGL_functions: &LVGL_functions_type) {
     Output_file
-        .write_all(include_str!("Includes.h").as_bytes())
-        .expect("Error writing to bindings file");
-
-    let Opaque_types = Generate_opaque_types(LVGL_functions.Get_structures().clone());
-
-    Output_file
-        .write_all(Opaque_types.as_bytes())
-        .expect("Error writing to bindings file");
-
-    Output_file
-        .write_all(include_str!("Types.h").as_bytes())
+        .write_all(Generate_types(LVGL_functions).as_bytes())
         .expect("Error writing to bindings file");
 
     let Functions = Generate_function_declarations(LVGL_functions.Get_signatures());
@@ -223,28 +302,88 @@ pub fn Generate_code_enumeration(Signature: Vec<Signature>) -> String {
     )
 }
 
-pub fn Generate_source(Output_file: &mut File, LVGL_functions: &LVGL_functions_type) {
+pub fn Generate_reactor(Output_file: &mut File, LVGL_functions: &LVGL_functions_type) {
+    let Types = LVGL_functions.Get_types();
+    let Structures = LVGL_functions.Get_structures();
+    let Unions = LVGL_functions.Get_unions();
+
     Output_file
-        .write_all(include_str!("Includes.c").as_bytes())
+        .write_all(
+            quote! {
+                #![allow(non_snake_case)]
+                #![allow(non_camel_case_types)]
+                #![allow(non_upper_case_globals)]
+            }
+            .to_string()
+            .as_bytes(),
+        )
         .expect("Error writing to bindings file");
 
     Output_file
-        .write_all(Generate_code_enumeration(LVGL_functions.Get_signatures()).as_bytes())
+        .write_all(
+            Enumeration::Generate_code(LVGL_functions.Get_signatures())
+                .to_string()
+                .as_bytes(),
+        )
         .expect("Error writing to bindings file");
 
     Output_file
-        .write_all(include_str!("Functions.c").as_bytes())
+        .write_all(
+            quote! {
+                #( #Types )*
+                #( #Structures )*
+                #( #Unions )*
+            }
+            .to_string()
+            .as_bytes(),
+        )
+        .expect("Error writing to bindings file");
+
+    Output_file
+        .write_all(
+            quote! {
+                pub const fn Convert_lv_color_t(Color: lv_color_t) -> u32 {
+                    (Color.red as u32) << 16 | (Color.green as u32) << 8 | Color.blue as u32
+                }
+
+                pub const fn Convert_lv_color32_t(Color: lv_color32_t) -> u32 {
+                    (Color.alpha as u32) << 24 | (Color.red as u32) << 16 | (Color.green as u32) << 8 | Color.blue as u32
+                }
+
+                pub const fn Convert_lv_color16_t(Color: lv_color16_t) -> u16 {
+                    let Bytes = Color._bitfield_1.storage;
+                    u16::from_le_bytes([Bytes[0], Bytes[1]])
+                }
+
+                extern "C" {
+                    fn Xila_graphics_call(
+                        Function_call: Function_calls_type,
+                        Argument_0: usize,
+                        Argument_1: usize,
+                        Argument_2: usize,
+                        Argument_3: usize,
+                        Argument_4: usize,
+                        Argument_5: usize,
+                        Argument_6: usize,
+                        Arguments_count: u8,
+                        Result: *mut std::ffi::c_void,
+                    );
+                }
+            }
+            .to_string()
+            .as_bytes(),
+        )
         .expect("Error writing to bindings file");
 
     let Functions = Generate_function_definitions(LVGL_functions.Get_signatures());
 
     Output_file
-        .write_all(Functions.as_bytes())
+        .write_all(Functions.to_string().as_bytes())
         .expect("Error writing to bindings file");
 }
 
 pub fn Generate(Output_path: &Path, LVGL_functions: &LVGL_functions_type) -> Result<(), String> {
-    let Source_file_path = Output_path.join("Xila_graphics.c");
+    let Reactor_file_path = Output_path.join("Xila_graphics.rs");
     let Header_file_path = Output_path.join("Xila_graphics.h");
 
     let mut Header_file =
@@ -253,9 +392,9 @@ pub fn Generate(Output_path: &Path, LVGL_functions: &LVGL_functions_type) -> Res
     Format_C(&Header_file_path)?;
 
     let mut Source_file =
-        File::create(&Source_file_path).map_err(|_| "Error creating source file")?;
-    Generate_source(&mut Source_file, LVGL_functions);
-    Format_C(&Source_file_path)?;
+        File::create(&Reactor_file_path).map_err(|_| "Error creating source file")?;
+    Generate_reactor(&mut Source_file, LVGL_functions);
+    Format_rust(&Reactor_file_path)?;
 
     Ok(())
 }

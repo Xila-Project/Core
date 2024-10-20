@@ -26,3 +26,11 @@ pub fn Format_C(File_path: &Path) -> Result<(), String> {
 
     Ok(())
 }
+
+pub fn Format_function_name(Function_name: &str) -> String {
+    if Function_name.starts_with("lv_") {
+        Function_name.replacen("lv_", "Xila_graphics_", 1)
+    } else {
+        Function_name.to_string()
+    }
+}

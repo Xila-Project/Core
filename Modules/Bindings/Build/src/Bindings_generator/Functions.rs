@@ -1,5 +1,5 @@
 use quote::ToTokens;
-use syn::{visit::Visit, ForeignItemFn, ItemType, Signature};
+use syn::{visit::Visit, ForeignItemFn, ItemEnum, ItemStruct, ItemType, ItemUnion, Signature};
 
 use super::Type_tree::Type_tree_type;
 
@@ -7,7 +7,9 @@ use super::Type_tree::Type_tree_type;
 pub struct LVGL_functions_type {
     Functions: Vec<Signature>,
     Type_tree: Type_tree_type,
-    Structures: Vec<String>,
+    Types: Vec<ItemType>,
+    Structures: Vec<ItemStruct>,
+    Unions: Vec<ItemUnion>,
 }
 
 impl LVGL_functions_type {
@@ -19,8 +21,16 @@ impl LVGL_functions_type {
         &self.Type_tree
     }
 
-    pub fn Get_structures(&self) -> &Vec<String> {
+    pub fn Get_types(&self) -> &Vec<ItemType> {
+        &self.Types
+    }
+
+    pub fn Get_structures(&self) -> &Vec<ItemStruct> {
         &self.Structures
+    }
+
+    pub fn Get_unions(&self) -> &Vec<ItemUnion> {
+        &self.Unions
     }
 
     fn Filter_function(Signature: &Signature) -> bool {
@@ -78,9 +88,15 @@ impl Visit<'_> for LVGL_functions_type {
             i.ident.to_token_stream().to_string(),
             i.ty.to_token_stream().to_string(),
         );
+
+        self.Types.push(i.clone());
     }
 
-    fn visit_item_struct(&mut self, i: &'_ syn::ItemStruct) {
-        self.Structures.push(i.ident.to_string());
+    fn visit_item_struct(&mut self, i: &'_ ItemStruct) {
+        self.Structures.push(i.clone());
+    }
+
+    fn visit_item_union(&mut self, i: &'_ ItemUnion) {
+        self.Unions.push(i.clone());
     }
 }

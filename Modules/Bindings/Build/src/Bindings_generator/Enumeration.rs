@@ -7,7 +7,7 @@ pub fn Generate_code(Signatures: Vec<Signature>) -> TokenStream {
 
     quote! {
         #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-        #[repr(u32)]
+        #[repr(u16)]
         pub enum Function_calls_type {
             #(
                 #Variants,

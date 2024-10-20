@@ -3,6 +3,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(clippy::upper_case_acronyms)]
 
+pub mod Enumeration;
 pub mod Format;
 pub mod Functions;
 pub mod Native;

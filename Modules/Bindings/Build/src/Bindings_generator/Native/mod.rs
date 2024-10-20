@@ -4,11 +4,10 @@
 
 use std::{fs::File, io::Write, path::Path};
 
-use super::{Format::Format_rust, Functions::LVGL_functions_type};
+use super::{Enumeration, Format::Format_rust, Functions::LVGL_functions_type};
 use quote::quote;
 
 mod Call;
-mod Enumeration;
 
 pub fn Generate(Output_path: &Path, LVGL_functions: &LVGL_functions_type) -> Result<(), String> {
     // Open the output file

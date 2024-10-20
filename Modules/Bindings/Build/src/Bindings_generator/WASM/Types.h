@@ -229,7 +229,7 @@ typedef enum
 
 typedef void *Xila_graphics_style_t;
 
-typedef Xila_graphics_opa_t (*Xila_graphics_color_filter_cb_t)(const struct Xila_graphics_color_filter_dsc_t *, Xila_graphics_color_t, Xila_graphics_opa_t);
+typedef Xila_graphics_opa_t (*Xila_graphics_color_filter_cb_t)(const Xila_graphics_color_filter_dsc_t *, Xila_graphics_color_t, Xila_graphics_opa_t);
 
 typedef struct
 {
