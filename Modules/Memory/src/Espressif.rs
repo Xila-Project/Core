@@ -26,7 +26,6 @@ impl Memory_allocator_trait for Memory_allocator_type {
             MALLOC_CAP_8BIT
         };
 
-        #[cfg(esp_idf_comp_esp_psram_enabled)]
         let _Caps = esp_idf_sys::MALLOC_CAP_SPIRAM;
 
         let Address =
@@ -58,10 +57,8 @@ impl Memory_allocator_trait for Memory_allocator_type {
     }
 }
 
-#[cfg(esp_idf_comp_esp_psram_enabled)]
 static Mutex: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-#[cfg(esp_idf_comp_esp_psram_enabled)]
 extern "C" {
     fn Cache_WriteBack_All();
     fn Cache_Disable_ICache() -> u32;
@@ -70,7 +67,6 @@ extern "C" {
 
 #[link_section = ".iram1"]
 pub fn Flush_data_cache() {
-    #[cfg(esp_idf_comp_esp_psram_enabled)]
     {
         let _Guard = Mutex
             .lock()

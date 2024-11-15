@@ -186,6 +186,9 @@ Xila_memory_flag_type To_xila_memory_flags(int flags)
     if (flags & MMAP_MAP_FIXED)
         Xila_flags |= Xila_memory_flag_fixed;
 
+    if (flags & MMAP_MAP_32BIT)
+        Xila_flags |= Xila_memory_flag_address_32_bits;
+
     return Xila_flags;
 }
 

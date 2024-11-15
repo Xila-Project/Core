@@ -96,6 +96,8 @@ pub static Xila_memory_flag_anonymous: u8 = Flags_type::Anonymous_bit;
 pub static Xila_memory_flag_fixed: u8 = Flags_type::Fixed_bit;
 #[no_mangle]
 pub static Xila_memory_flag_private: u8 = Flags_type::Private_bit;
+#[no_mangle]
+pub static Xila_memory_flag_address_32_bits: u8 = Flags_type::Address_32_bits;
 
 /// This function is used to allocate a memory region.
 ///
