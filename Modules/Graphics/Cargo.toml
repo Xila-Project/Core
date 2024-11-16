@@ -28,6 +28,7 @@ Task = { path = "../Task" }
 default = ["RGB565"]
 RGB565 = []
 ARGB8888 = []
+RGBA8888 = []
 
 [[test]]
 name = "Graphics"
