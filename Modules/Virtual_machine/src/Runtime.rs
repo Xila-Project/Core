@@ -1,3 +1,5 @@
+use core::ffi::c_void;
+
 use wamr_rust_sdk::{
     runtime::{Runtime, RuntimeBuilder},
     sys::{wasm_runtime_destroy_thread_env, wasm_runtime_init_thread_env},
@@ -14,13 +16,8 @@ impl Runtime_builder_type {
         Self(Runtime_builder)
     }
 
-    pub fn Register_function(
-        mut self,
-        Name: &str,
-        Function_pointer: *mut std::ffi::c_void,
-    ) -> Self {
-        self.0 = self.0.register_host_function(Name, Function_pointer);
-        self
+    pub fn Register_function(self, Name: &str, Function_pointer: *mut c_void) -> Self {
+        Self(self.0.register_host_function(Name, Function_pointer))
     }
 
     pub fn Register(mut self, Registrable: &dyn Registrable_trait) -> Self {
