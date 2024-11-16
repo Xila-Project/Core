@@ -11,6 +11,7 @@ impl Debug for Flags_type {
             .field("Anonymous", &self.Get_anonymous())
             .field("Fixed", &self.Get_fixed())
             .field("Private", &self.Get_private())
+            .field("Address_32_bits", &self.Get_address_32_bits())
             .finish()
     }
 }
@@ -19,6 +20,7 @@ impl Flags_type {
     pub const Anonymous_bit: u8 = 1 << 0;
     pub const Fixed_bit: u8 = 1 << 1;
     pub const Private_bit: u8 = 1 << 2;
+    pub const Address_32_bits: u8 = 1 << 3;
 
     pub fn New(Anonymous: bool, Fixed: bool) -> Self {
         let mut Flags = Self(0);
@@ -57,6 +59,10 @@ impl Flags_type {
         self.Set_bits(Self::Private_bit, Value)
     }
 
+    pub fn Set_address_32_bits(&mut self, Value: bool) -> &mut Self {
+        self.Set_bits(Self::Address_32_bits, Value)
+    }
+
     pub const fn Get_anonymous(&self) -> bool {
         self.Get_bits(Self::Anonymous_bit)
     }
@@ -67,6 +73,10 @@ impl Flags_type {
 
     pub const fn Get_private(&self) -> bool {
         self.Get_bits(Self::Private_bit)
+    }
+
+    pub const fn Get_address_32_bits(&self) -> bool {
+        self.Get_bits(Self::Address_32_bits)
     }
 }
 

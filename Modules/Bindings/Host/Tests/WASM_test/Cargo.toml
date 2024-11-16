@@ -1,0 +1,13 @@
+[workspace]
+
+[package]
+name = "WASM_test"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+opt-level = 's'
+strip = true
+
+[dependencies]
+WASM_bindings = { path = "../../../WASM" }

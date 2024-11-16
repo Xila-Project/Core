@@ -6,79 +6,23 @@ use wamr_rust_sdk::value::WasmValue;
 
 use File_system::{Create_device, Create_file_system, Tests::Memory_device_type};
 use Virtual_machine::{
-    Data_type, Environment_pointer_type, Environment_type, Function_descriptor_type,
-    Function_descriptors, Instantiate_test_environment, Registrable_trait, WASM_pointer,
-    WASM_usize,
+    Environment_type, Function_descriptor_type, Function_descriptors, Instance_type, Module_type,
+    Registrable_trait, Runtime_type,
 };
 
-const Testing_slice: [i32; 10] = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+pub struct Registrable;
 
-extern "C" fn Test_mutable_slice(
-    Raw_environment: Environment_pointer_type,
-    Slice: WASM_pointer,
-    Size: WASM_usize,
-) {
-    let Environment = Environment_type::From_raw_pointer(Raw_environment).unwrap();
-
-    let Slice: &mut [i32] = Environment
-        .Convert_to_native_mutable_slice(Slice, Size)
-        .unwrap();
-
-    assert_eq!(Slice.len(), Testing_slice.len());
-    assert_eq!(Slice, &Testing_slice);
-
-    for Element in Slice.iter_mut() {
-        *Element = 42;
+impl Registrable_trait for Registrable {
+    fn Get_functions(&self) -> &[Function_descriptor_type] {
+        &Functions
     }
 
-    assert_eq!(Slice, &[42; 10]);
+    fn Get_name(&self) -> &'static str {
+        "Virtual_machine_WASM_test"
+    }
 }
 
-extern "C" fn Test_slice(
-    Raw_environment: Environment_pointer_type,
-    Slice: WASM_pointer,
-    Length: WASM_usize,
-) {
-    let Environment = Environment_type::From_raw_pointer(Raw_environment).unwrap();
-
-    let Slice: &[i32] = Environment.Convert_to_native_slice(Slice, Length).unwrap();
-
-    assert_eq!(Slice.len(), Testing_slice.len());
-    assert_eq!(Slice, Testing_slice);
-}
-
-extern "C" fn Test_mutable_string(
-    Raw_environment: Environment_pointer_type,
-    String: WASM_pointer,
-    Length: WASM_pointer,
-    Size: WASM_usize,
-) {
-    let Environment = Environment_type::From_raw_pointer(Raw_environment).unwrap();
-
-    let mut String = Environment
-        .Convert_to_native_mutable_string(String, Length, Size)
-        .unwrap();
-
-    assert_eq!(String.Get_length(), 5);
-
-    String += " World from WASM!";
-
-    assert_eq!(String.As_str(), "Hello World from WASM!");
-}
-
-extern "C" fn Test_string(
-    Raw_environment: Environment_pointer_type,
-    String: WASM_pointer,
-    Length: WASM_usize,
-) {
-    let Environment = Environment_type::From_raw_pointer(Raw_environment).unwrap();
-
-    let String = Environment
-        .Convert_to_native_string(String, Length)
-        .unwrap();
-
-    assert_eq!(String, "Hello World from WASM!");
-}
+const Functions: [Function_descriptor_type; 0] = Function_descriptors! {};
 
 #[test]
 fn Integration_test() {
@@ -94,10 +38,20 @@ fn Integration_test() {
     LittleFS::File_system_type::Format(Device.clone(), 512).unwrap();
     let File_system = Create_file_system!(LittleFS::File_system_type::New(Device, 256).unwrap());
 
-    Virtual_file_system::Initialize(File_system).unwrap();
+    let Virtual_file_system = Virtual_file_system::Initialize(File_system).unwrap();
 
     // Set environment variables
     let Task = Task_instance.Get_current_task_identifier().unwrap();
+
+    Virtual_file_system
+        .Create_directory(&"/Devices", Task)
+        .unwrap();
+
+    Drivers::Native::Console::Mount_devices(
+        Task_instance.Get_current_task_identifier().unwrap(),
+        Virtual_file_system,
+    )
+    .unwrap();
 
     Task_instance
         .Set_environment_variable(Task, "Path", "/:/bin:/usr/bin")
@@ -108,31 +62,50 @@ fn Integration_test() {
         include_bytes!("./WASM_test/target/wasm32-wasip1/release/Virtual_machine_WASM_test.wasm");
 
     // Register the functions
-    pub struct Registrable {}
 
-    impl Registrable_trait for Registrable {
-        fn Get_functions(&self) -> &[Function_descriptor_type] {
-            &Functions
-        }
-    }
+    let Runtime = Runtime_type::Builder()
+        .Register(&Registrable)
+        .Build()
+        .unwrap();
 
-    const Functions: [Function_descriptor_type; 4] = Function_descriptors! {
-        Test_mutable_slice,
-        Test_slice,
-        Test_mutable_string,
-        Test_string
-    };
+    let Standard_in = Virtual_file_system
+        .Open(
+            &"/Devices/Standard_in",
+            File_system::Mode_type::Read_only.into(),
+            Task,
+        )
+        .expect("Failed to open stdin");
+    let Standard_out = Virtual_file_system
+        .Open(
+            &"/Devices/Standard_out",
+            File_system::Mode_type::Write_only.into(),
+            Task,
+        )
+        .expect("Failed to open stdout");
+    let Standard_error = Virtual_file_system
+        .Open(
+            &"/Devices/Standard_error",
+            File_system::Mode_type::Write_only.into(),
+            Task,
+        )
+        .expect("Failed to open stderr");
 
-    let User_data = Data_type::New();
+    let (Standard_in, Standard_out, Standard_error) = Virtual_file_system
+        .Create_new_task_standard_io(Standard_in, Standard_error, Standard_out, Task, Task, false)
+        .unwrap();
 
-    // Instantiate the environment
-    let (_Runtime, _Module, Instance) = Instantiate_test_environment(
-        Binary_buffer,
-        Registrable {},
-        &User_data,
-        Task::Get_instance(),
-        Virtual_file_system::Get_instance(),
-    );
+    let Module = Module_type::From_buffer(
+        &Runtime,
+        Binary_buffer.to_vec(),
+        "main",
+        Standard_in,
+        Standard_out,
+        Standard_error,
+    )
+    .unwrap();
+
+    let mut Instance =
+        Instance_type::New(&Runtime, &Module, 1024 * 4).expect("Failed to instantiate module");
 
     let _ =
         Environment_type::From_instance(&Instance).expect("Failed to get execution environment");
@@ -146,37 +119,15 @@ fn Integration_test() {
         WasmValue::I32(9)
     );
 
-    /*
-    let mut Slices: Vec<&mut [f64]> = vec![];
+    // Test allocation and deallocation
 
-    for i in 1..10 {
-        let Slice: &mut [f64] = Environment.Allocate(i * 10).unwrap();
+    let Pointer = Instance.Allocate::<u32>(4).unwrap();
 
-        for Element in Slice.iter_mut() {
-            *Element = 42.69;
-        }
+    unsafe {
+        Pointer.write(1234);
 
-        assert_eq!(
-            Instance
-                .Call_export_function("Get_allocations_count", &vec![])
-                .unwrap(),
-            WasmValue::I32(i as i32)
-        );
+        assert_eq!(1234, Pointer.read());
     }
 
-    for (i, Slice) in Slices.iter_mut().enumerate() {
-        assert_eq!(
-            Instance
-                .Call_export_function("Get_allocations_count", &vec![])
-                .unwrap(),
-            WasmValue::I32(10 - i as i32)
-        );
-
-        for Element in Slice.iter() {
-            assert_eq!(*Element, 42.69);
-        }
-
-        Environment.Deallocate(Slice);
-    }
-    */
+    Instance.Deallocate(Pointer);
 }

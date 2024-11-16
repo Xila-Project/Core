@@ -11,6 +11,7 @@ This repository contains the core of Xila. It contains the code for xila's core 
 Please install the following dependencies to build core:
 
 - `gcc-multilib` : to compile 32-bit applications on 64-bit systems with `gcc`.
+- `clang-format` : to format C/C++ code.
 - (Optional) Rust [xtensa-esp32*-espidf](https://docs.esp-rs.org/book/installation/riscv-and-xtensa.html) toolchain : to compile for ESP32 / ESP32-S series.
 - (Optional) Rust [riscv*-esp-espidf](https://docs.esp-rs.org/book/installation/riscv.html) : to compile for ESP32-H / ESP32-C series.
 

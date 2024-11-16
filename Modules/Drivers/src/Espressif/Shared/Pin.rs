@@ -1,7 +1,7 @@
 use std::sync::RwLock;
 
 use esp_idf_sys::{self, gpio_reset_pin};
-use File_system::Device_trait;
+use File_system::{Device_trait, Size_type};
 use Graphics::lvgl::input_device::Data;
 use Peripherals::{Direction_type, Pin_data_type, Pull_type};
 
@@ -52,7 +52,7 @@ impl Pin_device_type {
 }
 
 impl Device_trait for Pin_device_type {
-    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<usize> {
+    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<Size_type> {
         let Data: &mut Pin_data_type = Buffer
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_input)?;

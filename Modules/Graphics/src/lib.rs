@@ -12,8 +12,7 @@ mod Manager;
 mod Point;
 mod Pointer;
 mod Screen;
-
-//mod Window;
+mod Window;
 
 pub use Area::*;
 pub use Color::*;
@@ -25,7 +24,6 @@ pub use Manager::*;
 pub use Point::*;
 pub use Pointer::*;
 pub use Screen::*;
-
-//pub use Window::*;
+pub use Window::*;
 
 pub use lvgl_rust_sys as lvgl;

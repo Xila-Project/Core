@@ -1,5 +1,5 @@
 #[cfg(target_pointer_width = "32")]
-pub type Directory_entry_identifier_inner_type = u16;
+pub type Entry_identifier_inner_type = u16;
 #[cfg(target_pointer_width = "64")]
 pub type Entry_identifier_inner_type = u32;
 

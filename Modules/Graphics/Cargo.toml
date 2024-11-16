@@ -8,14 +8,11 @@ cstr_core = "0.2.6"
 Task = { path = "../Task" }
 File_system = { path = "../File_system" }
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
-
-[target.'cfg( target_os = "espidf" )'.dependencies]
-Shared = { path = "../Shared" }
-
-
-[target.'cfg( target_arch = "x86_64" )'.dependencies]
-Shared = { path = "../Shared" }
+syn = { version = "2.0", features = ["full"] }
+quote = "1.0"
 Time = { path = "../Time" }
+Shared = { path = "../Shared" }
+
 
 [dev-dependencies]
 Drivers = { path = "../Drivers" }
@@ -26,6 +23,7 @@ Task = { path = "../Task" }
 default = ["RGB565"]
 RGB565 = []
 ARGB8888 = []
+RGBA8888 = []
 
 [[test]]
 name = "Graphics"

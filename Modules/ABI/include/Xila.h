@@ -216,6 +216,7 @@ extern const Xila_memory_protection_type Xila_memory_protection_execute;
 extern const Xila_memory_flag_type Xila_memory_flag_anonymous;
 extern const Xila_memory_flag_type Xila_memory_flag_private;
 extern const Xila_memory_flag_type Xila_memory_flag_fixed;
+extern const Xila_memory_flag_type Xila_memory_flag_address_32_bits;
 
 void *Rust_function Xila_memory_allocate_custom(void *Pointer, size_t Size, uint8_t Alignment, Xila_memory_protection_type Protection, Xila_memory_flag_type Flags);
 void Rust_function Xila_memory_deallocate_custom(void *Pointer, size_t Size);
@@ -224,7 +225,7 @@ int Rust_function Xila_memory_protect(void *Pointer, size_t Size, int Protection
 size_t Rust_function Xila_memory_get_page_size();
 
 // - Time
-uint64_t Rust_function Xila_get_boot_time_microseconds();
+uint64_t Rust_function Xila_time_get_time_since_startup_microseconds();
 uint64_t Rust_function Xila_get_cpu_time_microseconds();
 
 // - Clock

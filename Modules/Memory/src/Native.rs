@@ -2,8 +2,8 @@ use core::ptr::NonNull;
 use std::os::raw::c_void;
 
 use libc::{
-    mmap, mprotect, munmap, sysconf, MAP_ANONYMOUS, MAP_FAILED, MAP_FIXED, MAP_PRIVATE, PROT_EXEC,
-    PROT_NONE, PROT_READ, PROT_WRITE, _SC_PAGE_SIZE,
+    mmap, mprotect, munmap, sysconf, MAP_32BIT, MAP_ANONYMOUS, MAP_FAILED, MAP_FIXED, MAP_PRIVATE,
+    PROT_EXEC, PROT_NONE, PROT_READ, PROT_WRITE, _SC_PAGE_SIZE,
 };
 
 use crate::{Flags_type, Layout_type, Memory_allocator_trait, Protection_type};
@@ -38,6 +38,10 @@ impl Memory_allocator_trait for Memory_allocator_type {
 
         if Flags.Get_fixed() {
             Libc_flags |= MAP_FIXED;
+        }
+
+        if Flags.Get_address_32_bits() {
+            Libc_flags |= MAP_32BIT;
         }
 
         // TODO : Add MAP_JIT flag for macOS, iOS and ARM64

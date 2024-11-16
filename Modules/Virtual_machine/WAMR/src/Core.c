@@ -81,7 +81,7 @@ int os_vprintf(const char *format, va_list ap)
  */
 uint64 os_time_get_boot_us(void)
 {
-    return Xila_get_boot_time_microseconds();
+    return Xila_time_get_time_since_startup_microseconds();
 }
 
 /**
@@ -185,6 +185,9 @@ Xila_memory_flag_type To_xila_memory_flags(int flags)
 
     if (flags & MMAP_MAP_FIXED)
         Xila_flags |= Xila_memory_flag_fixed;
+
+    if (flags & MMAP_MAP_32BIT)
+        Xila_flags |= Xila_memory_flag_address_32_bits;
 
     return Xila_flags;
 }

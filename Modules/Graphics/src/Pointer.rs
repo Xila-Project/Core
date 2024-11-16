@@ -5,20 +5,11 @@ use super::lvgl;
 
 use crate::Point_type;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 #[repr(C)]
 pub struct Pointer_data_type {
     pub Point: Point_type,
     pub Touch: Touch_type,
-}
-
-impl Default for Pointer_data_type {
-    fn default() -> Self {
-        Self {
-            Point: Point_type::New(0, 0),
-            Touch: Touch_type::Released,
-        }
-    }
 }
 
 impl Pointer_data_type {
@@ -86,11 +77,12 @@ impl From<Pointer_data_type> for lvgl::lv_indev_data_t {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 #[repr(u8)]
 pub enum Touch_type {
-    Pressed,
+    #[default]
     Released,
+    Pressed,
 }
 
 impl From<Touch_type> for lvgl::lv_indev_state_t {
@@ -113,8 +105,8 @@ impl TryFrom<u8> for Touch_type {
 
     fn try_from(Value: u8) -> Result<Self, Self::Error> {
         match Value {
-            0 => Ok(Self::Pressed),
-            1 => Ok(Self::Released),
+            0 => Ok(Self::Released),
+            1 => Ok(Self::Pressed),
             _ => Err(()),
         }
     }

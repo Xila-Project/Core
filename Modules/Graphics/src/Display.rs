@@ -31,7 +31,7 @@ unsafe extern "C" fn Binding_callback_function(
 ) {
     let Area: Area_type = unsafe { *Area }.into();
 
-    let Buffer_size: usize = (Area.Get_width() + 1) as usize * (Area.Get_height() + 1) as usize;
+    let Buffer_size: usize = (Area.Get_width()) as usize * (Area.Get_height()) as usize;
 
     let Buffer = unsafe { slice::from_raw_parts_mut(Data as *mut Color_type, Buffer_size) };
 

@@ -8,5 +8,10 @@ edition = "2021"
 [profile.release]
 opt-level = 's'
 strip = true
+lto = true
 
 [dependencies]
+
+[feature]
+default = []
+Execution_in_place = []

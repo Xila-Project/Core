@@ -522,7 +522,6 @@ impl Virtual_file_system_type {
         Task: Task_identifier_type,
         Path: impl AsRef<Path_type> + 'static,
         Device: Device_type,
-        Block: bool,
     ) -> Result_type<()> {
         let File_systems = self.File_systems.read()?; // Get the file systems
 
@@ -538,14 +537,14 @@ impl Virtual_file_system_type {
 
         File_system.Close(File)?;
 
-        // Create the actual device.
-        let Inode = self.Device_file_system.Mount_device(Device)?;
-
-        let Type = if Block {
+        let Type = if Device.Is_a_block_device() {
             Type_type::Block_device
         } else {
             Type_type::Character_device
         };
+
+        // Create the actual device.
+        let Inode = self.Device_file_system.Mount_device(Device)?;
 
         let Current_time: Time_type = Time::Get_instance()
             .Get_current_time()

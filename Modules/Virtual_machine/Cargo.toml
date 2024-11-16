@@ -6,7 +6,7 @@ build = "Build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git" }
+wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git", features = ["multi-module"] }
 Shared = { version = "0.1.0", path = "../Shared" }
 Memory = { version = "0.1.0", path = "../Memory" }
 File_system = { path = "../File_system" }
