@@ -97,6 +97,20 @@ fn Test_directory() {
     }
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn Allocate(Size: usize) -> *mut u8 {
+    let Layout = std::alloc::Layout::from_size_align(Size, std::mem::size_of::<usize>()).unwrap();
+
+    std::alloc::alloc(Layout)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Deallocate(Pointer: *mut u8, Size: usize) {
+    let Layout = std::alloc::Layout::from_size_align(Size, std::mem::size_of::<usize>()).unwrap();
+
+    std::alloc::dealloc(Pointer, Layout)
+}
+
 fn main() -> Result<(), ()> {
     Test_stdio()?;
 
