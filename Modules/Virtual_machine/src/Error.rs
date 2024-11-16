@@ -34,9 +34,14 @@ impl From<RuntimeError> for Error_type {
             RuntimeError::WasmFileFSError(_) => Error_type::Initialization_failure,
             RuntimeError::CompilationError(e) => Error_type::Compilation_error(e),
             RuntimeError::InstantiationFailure(e) => Error_type::Instantiation_failure(e),
-            RuntimeError::ExecutionError(e) => Error_type::Execution_error(e),
+            RuntimeError::ExecutionError(e) => Error_type::Execution_error(e.message),
             RuntimeError::FunctionNotFound => Error_type::Function_not_found,
         }
+    }
+}
+impl From<Task::Error_type> for Error_type {
+    fn from(Error: Task::Error_type) -> Self {
+        Error_type::Failed_to_get_task_informations(Error)
     }
 }
 
