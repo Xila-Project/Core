@@ -2,7 +2,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
-mod Data;
+mod Custom_data;
 mod Environment;
 mod Error;
 mod Instance;
@@ -16,7 +16,7 @@ mod Runtime;
 use ABI::*;
 
 pub use wamr_rust_sdk::value::WasmValue;
-pub use Data::*;
+pub use Custom_data::*;
 pub use Environment::*;
 pub use Error::*;
 pub use Instance::*;

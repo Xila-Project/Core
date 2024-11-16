@@ -15,7 +15,7 @@ use wamr_rust_sdk::{
 };
 
 use crate::{
-    Data::Data_type, Error_type, Instance_type, Result_type, WASM_pointer_type, WASM_usize_type,
+    Custom_data_type, Error_type, Instance_type, Result_type, WASM_pointer_type, WASM_usize_type,
 };
 
 pub type Environment_pointer_type = wasm_exec_env_t;
@@ -48,29 +48,27 @@ impl<'a> Environment_type<'a> {
         ))
     }
 
-    /// # Safety
-    ///
-    /// This function is unsafe because it is not checked that the user data is valid pointer.
-    pub(crate) fn Set_user_data(&mut self, User_data: &Data_type) {
+    pub fn Get_or_initialize_custom_data(&self) -> Result_type<&Custom_data_type> {
         unsafe {
-            wasm_runtime_set_user_data(
-                self.0,
-                User_data as *const Data_type as *mut std::ffi::c_void,
-            );
-        }
-    }
+            let Custom_data = wasm_runtime_get_custom_data(self.Get_instance_pointer())
+                as *const Custom_data_type;
 
-    /// # Safety
-    ///
-    /// This function is unsafe because it is not checked that the user data is valid pointer.
-    pub fn Get_user_data(&self) -> &Data_type {
-        unsafe {
-            let User_data = wasm_runtime_get_user_data(self.0);
+            let Custom_data = if Custom_data.is_null() {
+                let Task = Task::Get_instance().Get_current_task_identifier()?;
 
-            if User_data.is_null() {
-                panic!("Virtual machine user data is null");
-            }
-            &*(User_data as *const Data_type)
+                let Custom_data = Box::new(Custom_data_type::New(Task));
+
+                wasm_runtime_set_custom_data(
+                    self.Get_instance_pointer(),
+                    Box::into_raw(Custom_data) as *mut c_void,
+                );
+
+                wasm_runtime_get_custom_data(self.Get_instance_pointer()) as *const Custom_data_type
+            } else {
+                Custom_data
+            };
+
+            Ok(&*Custom_data)
         }
     }
 

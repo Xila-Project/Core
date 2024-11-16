@@ -18,8 +18,8 @@ use wamr_rust_sdk::{
 use File_system::Unique_file_identifier_type;
 
 use crate::{
-    Data::Data_type, Environment_type, Error_type, Module::Module_type, Result_type,
-    Runtime::Runtime_type, WASM_pointer_type,
+    Custom_data_type, Error_type, Module::Module_type, Result_type, Runtime::Runtime_type,
+    WASM_pointer_type,
 };
 
 pub struct Instance_type {
@@ -27,6 +27,21 @@ pub struct Instance_type {
     _Directory_paths: Vec<CString>,
     _Directory_paths_raw: Vec<*const i8>,
     _Environment_variables_raw: Vec<*const i8>,
+unsafe impl Send for Instance_type {}
+
+impl Drop for Instance_type {
+    fn drop(&mut self) {
+        let Instance = self.Get_inner_reference().get_inner_instance();
+        unsafe {
+            let User_data = wasm_runtime_get_custom_data(Instance) as *mut Custom_data_type;
+
+            if !User_data.is_null() {
+                let _ = Box::from_raw(User_data);
+            }
+        }
+
+        // User data is dropped here.
+    }
 }
 
 impl Instance_type {
@@ -34,48 +49,7 @@ impl Instance_type {
         Runtime: &Runtime_type,
         Module: &Module_type,
         Stack_size: usize,
-        Data: &Data_type,
-        Standard_in: Unique_file_identifier_type,
-        Standard_out: Unique_file_identifier_type,
-        Standard_error: Unique_file_identifier_type,
     ) -> Result_type<Self> {
-        // - Directory paths allowed to be accessed by the WASI module.
-        let Directory_paths = vec![CString::new("/").unwrap()];
-
-        let mut Directory_paths_raw: Vec<*const i8> =
-            Directory_paths.iter().map(|x| x.as_ptr()).collect();
-
-        // - Environment variables.
-        let Task_instance = Task::Get_instance();
-
-        let Task = Task_instance
-            .Get_current_task_identifier()
-            .map_err(Error_type::Failed_to_get_task_informations)?;
-
-        let mut Environment_variables_raw: Vec<*const i8> = Task_instance
-            .Get_environment_variables(Task)
-            .map_err(Error_type::Failed_to_get_task_informations)?
-            .into_iter()
-            .map(|x| x.Get_raw().as_ptr())
-            .collect();
-
-        unsafe {
-            wasm_runtime_set_wasi_args_ex(
-                Module.Get_inner_reference().get_inner_module(),
-                Directory_paths_raw.as_mut_ptr(),
-                Directory_paths_raw.len() as u32,
-                null_mut(),
-                0,
-                Environment_variables_raw.as_mut_ptr(),
-                Environment_variables_raw.len() as u32,
-                null_mut(),
-                0,
-                std::mem::transmute::<Unique_file_identifier_type, i64>(Standard_in),
-                std::mem::transmute::<Unique_file_identifier_type, i64>(Standard_out),
-                std::mem::transmute::<Unique_file_identifier_type, i64>(Standard_error),
-            )
-        }
-
         let WAMR_instance = Instance::new(
             Runtime.Get_inner_reference(),
             Module.Get_inner_reference(),
@@ -88,10 +62,6 @@ impl Instance_type {
             _Directory_paths_raw: Directory_paths_raw,
             _Environment_variables_raw: Environment_variables_raw,
         };
-
-        let mut Execution_environment = Environment_type::From_instance(&Instance)?;
-
-        Execution_environment.Set_user_data(Data);
 
         Ok(Instance)
     }
