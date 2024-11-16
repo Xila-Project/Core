@@ -60,8 +60,8 @@ embedded-graphics = "0.7.1"
 Graphics = { path = "../Graphics", features = ["RGB565"] }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
-sdl2 = "0.37.0"
-
+pixels = "0.14"
+winit = { version = "0.30", features = ["rwh_05"] }
 
 
 #[[test]]
