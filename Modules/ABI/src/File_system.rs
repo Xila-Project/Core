@@ -248,7 +248,7 @@ pub unsafe extern "C" fn Xila_file_system_read_vectored(
 ///
 /// This function may return an error if the file system fails to open the file.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_file_system_is_terminal(
+pub unsafe extern "C" fn Xila_file_system_is_a_terminal(
     File: Unique_file_identifier_type,
     Is_a_terminal: *mut bool,
 ) -> u32 {
