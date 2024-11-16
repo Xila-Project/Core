@@ -50,6 +50,10 @@ pub trait Device_trait: Send + Sync {
     fn Is_a_terminal(&self) -> bool {
         false
     }
+
+    fn Is_a_block_device(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Clone)]
@@ -97,5 +101,9 @@ impl Device_type {
 
     pub fn Is_a_terminal(&self) -> bool {
         self.0.Is_a_terminal()
+    }
+
+    pub fn Is_a_block_device(&self) -> bool {
+        self.0.Is_a_block_device()
     }
 }
