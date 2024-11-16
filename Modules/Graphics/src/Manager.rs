@@ -2,7 +2,6 @@ use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::OnceLock;
 use std::time::Duration;
-
 use File_system::Device_type;
 
 use super::lvgl;
@@ -10,14 +9,30 @@ use super::lvgl;
 use super::Point_type;
 
 use crate::Display_type;
+use crate::Window::Window_type;
 use crate::{Error_type, Input_type, Result_type, Screen_read_data_type};
 
 static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
 
 pub fn Initialize() -> &'static Manager_type {
-    Manager_instance.get_or_init(|| {
+    let Manager = Manager_instance.get_or_init(|| {
         Manager_type::New(Time::Get_instance()).expect("Failed to create manager instance")
-    })
+    });
+
+    let Task_instance = Task::Get_instance();
+
+    Task_instance
+        .New_thread(
+            Task_instance.Get_current_task_identifier().unwrap(),
+            "Graphics",
+            None,
+            move || {
+                Manager.Loop().unwrap();
+            },
+        )
+        .unwrap();
+
+    Manager
 }
 
 pub fn Get_instance() -> &'static Manager_type {
@@ -26,10 +41,10 @@ pub fn Get_instance() -> &'static Manager_type {
         .expect("Failed to get manager instance")
 }
 
-struct Inner(Option<Input_type>);
+struct Inner_type(Option<Input_type>);
 
 pub struct Manager_type {
-    Inner: Mutex<Inner>,
+    Inner: Mutex<Inner_type>,
     Global_lock: Mutex<()>,
 }
 
@@ -61,18 +76,27 @@ impl Manager_type {
         }
 
         Ok(Self {
-            Inner: Mutex::new(Inner(None)),
+            Inner: Mutex::new(Inner_type(None)),
             Global_lock: Mutex::new(()),
         })
     }
 
-    pub fn Loop() {
+    fn Loop(&self) -> Result_type<()> {
         loop {
-            unsafe {
-                let Time_until_next = lvgl::lv_timer_handler();
-                Task::Manager_type::Sleep(Duration::from_millis(Time_until_next as u64));
-            }
+            let Time_until_next = unsafe {
+                let _Lock = self.Global_lock.lock()?;
+                lvgl::lv_timer_handler()
+            };
+            Task::Manager_type::Sleep(Duration::from_millis(Time_until_next as u64));
         }
+    }
+
+    pub fn Create_window(&self) -> Result_type<Window_type> {
+        let Parent_object = unsafe { lvgl::lv_screen_active() };
+
+        let Window = unsafe { Window_type::New(Parent_object)? };
+
+        Ok(Window)
     }
 
     pub fn Create_display<const Buffer_size: usize>(
