@@ -6,7 +6,7 @@
 #[test]
 #[ignore]
 fn main() {
-    use Drivers::Native::New_touchscreen;
+    use Drivers::Native::Window_screen;
     use File_system::Create_device;
     use Graphics::{lvgl, Get_recommended_buffer_size, Point_type};
     use Time::Duration_type;
@@ -18,20 +18,20 @@ fn main() {
     Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()))
         .expect("Error initializing time manager");
 
+    Virtual_machine::Initialize(&[]);
+
     const Resolution: Point_type = Point_type::New(800, 480);
 
     const Buffer_size: usize = Get_recommended_buffer_size(&Resolution);
 
     let (Screen_device, Pointer_device) =
-        New_touchscreen(Resolution).expect("Error creating touchscreen");
+        Window_screen::New(Resolution).expect("Error creating touchscreen");
 
     let _Task = Task_instance
         .Get_current_task_identifier()
         .expect("Failed to get current task identifier");
 
     Graphics::Initialize();
-
-    let File = Graphics::lvgl::_bindgen_raw_src();
 
     let Graphics_manager = Graphics::Get_instance();
 
@@ -43,9 +43,19 @@ fn main() {
 
     let _Calendar = unsafe { lvgl::lv_calendar_create(Screen_object) };
 
-    loop {
-        Graphics::Manager_type::Loop();
+    let Button = unsafe { lvgl::lv_button_create(Screen_object) };
 
+    let Label = unsafe { lvgl::lv_label_create(Button) };
+
+    let Slider = unsafe { lvgl::lv_slider_create(Screen_object) };
+
+    unsafe {
+        lvgl::lv_obj_set_align(Slider, lvgl::lv_align_t_LV_ALIGN_LEFT_MID);
+        lvgl::lv_obj_set_align(Button, lvgl::lv_align_t_LV_ALIGN_CENTER);
+        lvgl::lv_label_set_text(Label, "Hello world!\0".as_ptr() as *const i8);
+    }
+
+    loop {
         Task::Manager_type::Sleep(Duration_type::from_millis(1000));
     }
 }
