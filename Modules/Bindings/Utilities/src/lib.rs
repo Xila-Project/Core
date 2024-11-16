@@ -3,9 +3,9 @@
 #![allow(non_upper_case_globals)]
 #![allow(clippy::upper_case_acronyms)]
 
+pub mod Additional;
+pub mod Context;
 pub mod Enumeration;
 pub mod Format;
-pub mod Functions;
-pub mod Native;
+pub mod Function;
 pub mod Type_tree;
-pub mod WASM;

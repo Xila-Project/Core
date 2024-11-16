@@ -200,9 +200,7 @@ typedef enum
 
 typedef uint32_t Xila_graphics_style_selector_t;
 
-typedef struct
-{
-} Xila_graphics_obj_t;
+typedef uint16_t Xila_graphics_object_t;
 
 typedef uint32_t Xila_graphics_part_t;
 
@@ -229,8 +227,6 @@ typedef enum
 
 typedef void *Xila_graphics_style_t;
 
-typedef Xila_graphics_opa_t (*Xila_graphics_color_filter_cb_t)(const Xila_graphics_color_filter_dsc_t *, Xila_graphics_color_t, Xila_graphics_opa_t);
-
 typedef struct
 {
 } Xila_graphics_font_t;
@@ -246,12 +242,6 @@ typedef enum
     XILA_GRAPHICS_DIR_VER = XILA_GRAPHICS_DIR_TOP | XILA_GRAPHICS_DIR_BOTTOM,
     XILA_GRAPHICS_DIR_ALL = XILA_GRAPHICS_DIR_HOR | XILA_GRAPHICS_DIR_VER,
 } Xila_graphics_dir_t;
-
-typedef void (*Xila_graphics_event_cb_t)(Xila_graphics_event_t *e);
-
-typedef struct
-{
-} Xila_graphics_event_t;
 
 /**
  * Represents a date on the calendar object (platform-agnostic).
@@ -301,9 +291,7 @@ typedef enum
     XILA_GRAPHICS_GRID_ALIGN_SPACE_BETWEEN,
 } Xila_graphics_grid_align_t;
 
-typedef struct
-{
-} Xila_graphics_obj_class_t;
+typedef uint16_t Xila_graphics_object_class_t;
 
 /** Type to store button control bits (disabled, hidden etc.)
  * The first 3 bits are used to store the width*/
@@ -369,40 +357,40 @@ typedef enum
  */
 typedef enum
 {
-    XILA_GRAPHICS_OBJ_FLAG_HIDDEN = (1L << 0),           /**< Make the object hidden. (Like it wasn't there at all)*/
-    XILA_GRAPHICS_OBJ_FLAG_CLICKABLE = (1L << 1),        /**< Make the object clickable by the input devices*/
-    XILA_GRAPHICS_OBJ_FLAG_CLICK_FOCUSABLE = (1L << 2),  /**< Add focused state to the object when clicked*/
-    XILA_GRAPHICS_OBJ_FLAG_CHECKABLE = (1L << 3),        /**< Toggle checked state when the object is clicked*/
-    XILA_GRAPHICS_OBJ_FLAG_SCROLLABLE = (1L << 4),       /**< Make the object scrollable*/
-    XILA_GRAPHICS_OBJ_FLAG_SCROLL_ELASTIC = (1L << 5),   /**< Allow scrolling inside but with slower speed*/
-    XILA_GRAPHICS_OBJ_FLAG_SCROLL_MOMENTUM = (1L << 6),  /**< Make the object scroll further when "thrown"*/
-    XILA_GRAPHICS_OBJ_FLAG_SCROLL_ONE = (1L << 7),       /**< Allow scrolling only one snappable children*/
-    XILA_GRAPHICS_OBJ_FLAG_SCROLL_CHAIN_HOR = (1L << 8), /**< Allow propagating the horizontal scroll to a parent*/
-    XILA_GRAPHICS_OBJ_FLAG_SCROLL_CHAIN_VER = (1L << 9), /**< Allow propagating the vertical scroll to a parent*/
-    XILA_GRAPHICS_OBJ_FLAG_SCROLL_CHAIN = (XILA_GRAPHICS_OBJ_FLAG_SCROLL_CHAIN_HOR | XILA_GRAPHICS_OBJ_FLAG_SCROLL_CHAIN_VER),
-    XILA_GRAPHICS_OBJ_FLAG_SCROLL_ON_FOCUS = (1L << 10),       /**< Automatically scroll object to make it visible when focused*/
-    XILA_GRAPHICS_OBJ_FLAG_SCROLL_WITH_ARROW = (1L << 11),     /**< Allow scrolling the focused object with arrow keys*/
-    XILA_GRAPHICS_OBJ_FLAG_SNAPPABLE = (1L << 12),             /**< If scroll snap is enabled on the parent it can snap to this object*/
-    XILA_GRAPHICS_OBJ_FLAG_PRESS_LOCK = (1L << 13),            /**< Keep the object pressed even if the press slid from the object*/
-    XILA_GRAPHICS_OBJ_FLAG_EVENT_BUBBLE = (1L << 14),          /**< Propagate the events to the parent too*/
-    XILA_GRAPHICS_OBJ_FLAG_GESTURE_BUBBLE = (1L << 15),        /**< Propagate the gestures to the parent*/
-    XILA_GRAPHICS_OBJ_FLAG_ADV_HITTEST = (1L << 16),           /**< Allow performing more accurate hit (click) test. E.g. consider rounded corners.*/
-    XILA_GRAPHICS_OBJ_FLAG_IGNORE_LAYOUT = (1L << 17),         /**< Make the object not positioned by the layouts*/
-    XILA_GRAPHICS_OBJ_FLAG_FLOATING = (1L << 18),              /**< Do not scroll the object when the parent scrolls and ignore layout*/
-    XILA_GRAPHICS_OBJ_FLAG_SEND_DRAW_TASK_EVENTS = (1L << 19), /**< Send `XILA_GRAPHICS_EVENT_DRAW_TASK_ADDED` events*/
-    XILA_GRAPHICS_OBJ_FLAG_OVERFLOW_VISIBLE = (1L << 20),      /**< Do not clip the children to the parent's ext draw size*/
-    XILA_GRAPHICS_OBJ_FLAG_FLEX_IN_NEW_TRACK = (1L << 21),     /**< Start a new flex track on this item*/
+    XILA_GRAPHICS_OBJECT_FLAG_HIDDEN = (1L << 0),           /**< Make the object hidden. (Like it wasn't there at all)*/
+    XILA_GRAPHICS_OBJECT_FLAG_CLICKABLE = (1L << 1),        /**< Make the object clickable by the input devices*/
+    XILA_GRAPHICS_OBJECT_FLAG_CLICK_FOCUSABLE = (1L << 2),  /**< Add focused state to the object when clicked*/
+    XILA_GRAPHICS_OBJECT_FLAG_CHECKABLE = (1L << 3),        /**< Toggle checked state when the object is clicked*/
+    XILA_GRAPHICS_OBJECT_FLAG_SCROLLABLE = (1L << 4),       /**< Make the object scrollable*/
+    XILA_GRAPHICS_OBJECT_FLAG_SCROLL_ELASTIC = (1L << 5),   /**< Allow scrolling inside but with slower speed*/
+    XILA_GRAPHICS_OBJECT_FLAG_SCROLL_MOMENTUM = (1L << 6),  /**< Make the object scroll further when "thrown"*/
+    XILA_GRAPHICS_OBJECT_FLAG_SCROLL_ONE = (1L << 7),       /**< Allow scrolling only one snappable children*/
+    XILA_GRAPHICS_OBJECT_FLAG_SCROLL_CHAIN_HOR = (1L << 8), /**< Allow propagating the horizontal scroll to a parent*/
+    XILA_GRAPHICS_OBJECT_FLAG_SCROLL_CHAIN_VER = (1L << 9), /**< Allow propagating the vertical scroll to a parent*/
+    XILA_GRAPHICS_OBJECT_FLAG_SCROLL_CHAIN = (XILA_GRAPHICS_OBJECT_FLAG_SCROLL_CHAIN_HOR | XILA_GRAPHICS_OBJECT_FLAG_SCROLL_CHAIN_VER),
+    XILA_GRAPHICS_OBJECT_FLAG_SCROLL_ON_FOCUS = (1L << 10),       /**< Automatically scroll object to make it visible when focused*/
+    XILA_GRAPHICS_OBJECT_FLAG_SCROLL_WITH_ARROW = (1L << 11),     /**< Allow scrolling the focused object with arrow keys*/
+    XILA_GRAPHICS_OBJECT_FLAG_SNAPPABLE = (1L << 12),             /**< If scroll snap is enabled on the parent it can snap to this object*/
+    XILA_GRAPHICS_OBJECT_FLAG_PRESS_LOCK = (1L << 13),            /**< Keep the object pressed even if the press slid from the object*/
+    XILA_GRAPHICS_OBJECT_FLAG_EVENT_BUBBLE = (1L << 14),          /**< Propagate the events to the parent too*/
+    XILA_GRAPHICS_OBJECT_FLAG_GESTURE_BUBBLE = (1L << 15),        /**< Propagate the gestures to the parent*/
+    XILA_GRAPHICS_OBJECT_FLAG_ADV_HITTEST = (1L << 16),           /**< Allow performing more accurate hit (click) test. E.g. consider rounded corners.*/
+    XILA_GRAPHICS_OBJECT_FLAG_IGNORE_LAYOUT = (1L << 17),         /**< Make the object not positioned by the layouts*/
+    XILA_GRAPHICS_OBJECT_FLAG_FLOATING = (1L << 18),              /**< Do not scroll the object when the parent scrolls and ignore layout*/
+    XILA_GRAPHICS_OBJECT_FLAG_SEND_DRAW_TASK_EVENTS = (1L << 19), /**< Send `XILA_GRAPHICS_EVENT_DRAW_TASK_ADDED` events*/
+    XILA_GRAPHICS_OBJECT_FLAG_OVERFLOW_VISIBLE = (1L << 20),      /**< Do not clip the children to the parent's ext draw size*/
+    XILA_GRAPHICS_OBJECT_FLAG_FLEX_IN_NEW_TRACK = (1L << 21),     /**< Start a new flex track on this item*/
 
-    XILA_GRAPHICS_OBJ_FLAG_LAYOUT_1 = (1L << 23), /**< Custom flag, free to use by layouts*/
-    XILA_GRAPHICS_OBJ_FLAG_LAYOUT_2 = (1L << 24), /**< Custom flag, free to use by layouts*/
+    XILA_GRAPHICS_OBJECT_FLAG_LAYOUT_1 = (1L << 23), /**< Custom flag, free to use by layouts*/
+    XILA_GRAPHICS_OBJECT_FLAG_LAYOUT_2 = (1L << 24), /**< Custom flag, free to use by layouts*/
 
-    XILA_GRAPHICS_OBJ_FLAG_WIDGET_1 = (1L << 25), /**< Custom flag, free to use by widget*/
-    XILA_GRAPHICS_OBJ_FLAG_WIDGET_2 = (1L << 26), /**< Custom flag, free to use by widget*/
-    XILA_GRAPHICS_OBJ_FLAG_USER_1 = (1L << 27),   /**< Custom flag, free to use by user*/
-    XILA_GRAPHICS_OBJ_FLAG_USER_2 = (1L << 28),   /**< Custom flag, free to use by user*/
-    XILA_GRAPHICS_OBJ_FLAG_USER_3 = (1L << 29),   /**< Custom flag, free to use by user*/
-    XILA_GRAPHICS_OBJ_FLAG_USER_4 = (1L << 30),   /**< Custom flag, free to use by user*/
-} Xila_graphics_obj_flag_t;
+    XILA_GRAPHICS_OBJECT_FLAG_WIDGET_1 = (1L << 25), /**< Custom flag, free to use by widget*/
+    XILA_GRAPHICS_OBJECT_FLAG_WIDGET_2 = (1L << 26), /**< Custom flag, free to use by widget*/
+    XILA_GRAPHICS_OBJECT_FLAG_USER_1 = (1L << 27),   /**< Custom flag, free to use by user*/
+    XILA_GRAPHICS_OBJECT_FLAG_USER_2 = (1L << 28),   /**< Custom flag, free to use by user*/
+    XILA_GRAPHICS_OBJECT_FLAG_USER_3 = (1L << 29),   /**< Custom flag, free to use by user*/
+    XILA_GRAPHICS_OBJECT_FLAG_USER_4 = (1L << 30),   /**< Custom flag, free to use by user*/
+} Xila_graphics_object_flag_t;
 
 /**
  * LVGL error codes.
@@ -413,20 +401,6 @@ typedef enum
                       function or an operation was failed*/
     XILA_GRAPHICS_RESULT_OK,          /*The object is valid (no deleted) after the action*/
 } Xila_graphics_result_t;
-
-/**
- * The subject (an observable value)
- */
-typedef struct
-{
-} Xila_graphics_subject_t;
-
-/**
- * The observer object: a descriptor returned when subscribing LVGL widgets to subjects
- */
-typedef struct
-{
-} Xila_graphics_observer_t;
 
 typedef uint16_t Xila_graphics_state_t;
 
@@ -491,32 +465,21 @@ typedef enum
 typedef enum
 {
     /** No flags */
-    XILA_GRAPHICS_OBJ_POINT_TRANSFORM_FLAG_NONE = 0x00,
+    XILA_GRAPHICS_OBJECT_POINT_TRANSFORM_FLAG_NONE = 0x00,
 
     /** Consider the transformation properties of the parents too */
-    XILA_GRAPHICS_OBJ_POINT_TRANSFORM_FLAG_RECURSIVE = 0x01,
+    XILA_GRAPHICS_OBJECT_POINT_TRANSFORM_FLAG_RECURSIVE = 0x01,
 
     /** Execute the inverse of the transformation (-angle and 1/zoom) */
-    XILA_GRAPHICS_OBJ_POINT_TRANSFORM_FLAG_INVERSE = 0x02,
+    XILA_GRAPHICS_OBJECT_POINT_TRANSFORM_FLAG_INVERSE = 0x02,
 
     /** Both inverse and recursive*/
-    XILA_GRAPHICS_OBJ_POINT_TRANSFORM_FLAG_INVERSE_RECURSIVE = 0x03,
-} Xila_graphics_obj_point_transform_flag_t;
+    XILA_GRAPHICS_OBJECT_POINT_TRANSFORM_FLAG_INVERSE_RECURSIVE = 0x03,
+} Xila_graphics_object_point_transform_flag_t;
 
 typedef struct
 {
 } Xila_graphics_group_t;
-
-typedef void (*Xila_graphics_observer_cb_t)(Xila_graphics_observer_t *observer, Xila_graphics_subject_t *subject);
-
-typedef struct lv_span_t
-{
-} Xila_graphics_span_t;
-
-/** Data of label*/
-struct lv_spangroup_t
-{
-} Xila_graphics_spangroup_t;
 
 /** Can be used to indicate if animations are enabled or disabled in a case*/
 typedef enum
@@ -577,17 +540,17 @@ typedef struct
 
 typedef enum
 {
-    XILA_GRAPHICS_SLIDER_MODE_NORMAL = XILA_GRAPHICS_BAR_MODE_NORMAL,
-    XILA_GRAPHICS_SLIDER_MODE_SYMMETRICAL = XILA_GRAPHICS_BAR_MODE_SYMMETRICAL,
-    XILA_GRAPHICS_SLIDER_MODE_RANGE = XILA_GRAPHICS_BAR_MODE_RANGE
-} Xila_graphics_slider_mode_t;
-
-typedef enum
-{
     XILA_GRAPHICS_BAR_MODE_NORMAL,
     XILA_GRAPHICS_BAR_MODE_SYMMETRICAL,
     XILA_GRAPHICS_BAR_MODE_RANGE
 } Xila_graphics_bar_mode_t;
+
+typedef enum
+{
+    XILA_GRAPHICS_SLIDER_MODE_NORMAL = XILA_GRAPHICS_BAR_MODE_NORMAL,
+    XILA_GRAPHICS_SLIDER_MODE_SYMMETRICAL = XILA_GRAPHICS_BAR_MODE_SYMMETRICAL,
+    XILA_GRAPHICS_SLIDER_MODE_RANGE = XILA_GRAPHICS_BAR_MODE_RANGE
+} Xila_graphics_slider_mode_t;
 
 typedef enum
 {
@@ -614,15 +577,6 @@ typedef enum
 typedef struct
 {
 } Xila_graphics_chart_cursor_t;
-
-typedef Xila_graphics_obj_tree_walk_res_t (*Xila_graphics_obj_tree_walk_cb_t)(Xila_graphics_obj_t *, void *);
-
-typedef enum
-{
-    LV_OBJ_TREE_WALK_NEXT,
-    LV_OBJ_TREE_WALK_SKIP_CHILDREN,
-    LV_OBJ_TREE_WALK_END,
-} Xila_graphics_obj_tree_walk_res_t;
 
 /**
  * A common type to handle all the property types in the same way.
@@ -759,7 +713,31 @@ typedef enum
                                     before the class default event processing */
 } Xila_graphics_event_code_t;
 
-typedef Xila_graphics_obj_tree_walk_res_t (*Xila_graphics_obj_tree_walk_cb_t)(Xila_graphics_obj_t *, void *);
+typedef enum
+{
+    LV_LABEL_LONG_WRAP,            /**< Keep the object width, wrap lines longer than object width and expand the object height*/
+    LV_LABEL_LONG_DOT,             /**< Keep the size and write dots at the end if the text is too long*/
+    LV_LABEL_LONG_SCROLL,          /**< Keep the size and roll the text back and forth*/
+    LV_LABEL_LONG_SCROLL_CIRCULAR, /**< Keep the size and roll the text circularly*/
+    LV_LABEL_LONG_CLIP,            /**< Keep the size and clip the text out of it*/
+} Xila_graphics_label_long_mode_t;
 
-/** Get the current value during an animation*/
-typedef int32_t (*Xila_graphics_anim_path_cb_t)(const Xila_graphics_anim_t *);
+typedef enum
+{
+    LV_SCR_LOAD_ANIM_NONE,
+    LV_SCR_LOAD_ANIM_OVER_LEFT,
+    LV_SCR_LOAD_ANIM_OVER_RIGHT,
+    LV_SCR_LOAD_ANIM_OVER_TOP,
+    LV_SCR_LOAD_ANIM_OVER_BOTTOM,
+    LV_SCR_LOAD_ANIM_MOVE_LEFT,
+    LV_SCR_LOAD_ANIM_MOVE_RIGHT,
+    LV_SCR_LOAD_ANIM_MOVE_TOP,
+    LV_SCR_LOAD_ANIM_MOVE_BOTTOM,
+    LV_SCR_LOAD_ANIM_FADE_IN,
+    LV_SCR_LOAD_ANIM_FADE_ON = LV_SCR_LOAD_ANIM_FADE_IN, /*For backward compatibility*/
+    LV_SCR_LOAD_ANIM_FADE_OUT,
+    LV_SCR_LOAD_ANIM_OUT_LEFT,
+    LV_SCR_LOAD_ANIM_OUT_RIGHT,
+    LV_SCR_LOAD_ANIM_OUT_TOP,
+    LV_SCR_LOAD_ANIM_OUT_BOTTOM,
+} Xila_graphics_screen_load_anim_t;

@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "Modules/File_system",
-    "Modules/Bindings",
     "Modules/Virtual_machine",
     "Modules/Graphics",
     "Modules/Task",
@@ -13,9 +12,12 @@ members = [
     "Modules/ABI",
     "Modules/Virtual_file_system",
     "Modules/LittleFS",
+    "Modules/Target",
+    "Modules/Bindings/Utilities",
+    "Modules/Bindings/Host",
+    "Modules/Bindings/WASM",
 ]
 exclude = [
-    "Build_tool",
     "Modules/Virtual_machine/Tests/WASM_test",
     "Modules/Bindings/Tests/WASM_test",
 ]

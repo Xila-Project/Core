@@ -1,0 +1,35 @@
+[package]
+name = "Host_bindings"
+version = "0.1.0"
+edition = "2021"
+build = "Build/Main.rs"
+
+[dependencies]
+File_system = { path = "../../File_system" }
+Virtual_machine = { path = "../../Virtual_machine" }
+Shared = { path = "../../Shared" }
+Users = { path = "../../Users" }
+Task = { path = "../../Task" }
+Graphics = { path = "../../Graphics" }
+Time = { path = "../../Time" }
+include_bytes_aligned = "0.1"
+#wit-bindgen = "0.34.0"
+
+[dev-dependencies]
+Drivers = { path = "../../Drivers" }
+LittleFS = { path = "../../LittleFS" }
+Virtual_file_system = { path = "../../Virtual_file_system" }
+
+[build-dependencies]
+lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
+#lvgl_rust_sys = { path = "../../../lvgl_rust_sys", default-features = false}
+Target = { path = "../../Target" }
+cbindgen = "0.27.0"
+Bindings_utilities = { path = "../Utilities" }
+syn = { version = "2.0", features = ["full", "visit", "extra-traits"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+
+[[test]]
+name = "Graphics_bindings_tests"
+path = "Tests/Graphics.rs"
