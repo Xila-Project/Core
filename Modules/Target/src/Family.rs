@@ -1,3 +1,5 @@
+use std::env;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Family_type {
     Unix,
@@ -11,7 +13,7 @@ impl Family_type {
     }
 
     pub fn Get_raw() -> String {
-        std::env::var("CARGO_CFG_TARGET_FAMILY").unwrap()
+        env::var("CARGO_CFG_TARGET_FAMILY").unwrap()
     }
 }
 

@@ -1,3 +1,5 @@
+use std::env;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Vendor_type {
     Espressif,
@@ -10,7 +12,7 @@ impl Vendor_type {
     }
 
     pub fn Get_raw() -> String {
-        std::env::var("CARGO_CFG_TARGET_VENDOR").unwrap()
+        env::var("CARGO_CFG_TARGET_VENDOR").unwrap()
     }
 }
 

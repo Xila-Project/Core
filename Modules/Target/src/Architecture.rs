@@ -1,3 +1,5 @@
+use std::env;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Architecture_type {
     x86,
@@ -6,6 +8,8 @@ pub enum Architecture_type {
     Aarch64,
     Xtensa,
     RiscV,
+    WASM32,
+    WASM64,
 }
 
 impl Architecture_type {
@@ -14,7 +18,7 @@ impl Architecture_type {
     }
 
     pub fn Get_raw() -> String {
-        std::env::var("CARGO_CFG_TARGET_ARCH").unwrap()
+        env::var("CARGO_CFG_TARGET_ARCH").unwrap()
     }
 }
 
@@ -27,6 +31,8 @@ impl From<String> for Architecture_type {
             "aarch64" => Architecture_type::Aarch64,
             "xtensa" => Architecture_type::Xtensa,
             "riscv" => Architecture_type::RiscV,
+            "wasm32" => Architecture_type::WASM32,
+            "wasm64" => Architecture_type::WASM64,
             _ => panic!("Unknown architecture type : {}", s),
         }
     }

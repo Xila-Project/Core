@@ -7,6 +7,8 @@ mod Family;
 mod Operating_system;
 mod Vendor;
 
+use std::env;
+
 pub use Architecture::*;
 pub use Family::*;
 pub use Operating_system::*;
@@ -35,12 +37,10 @@ impl Target_type {
 
     pub fn Get_current() -> Target_type {
         Target_type {
-            Architecture: Architecture_type::from(std::env::var("CARGO_CFG_TARGET_ARCH").unwrap()),
-            Operating_system: Operating_system_type::from(
-                std::env::var("CARGO_CFG_TARGET_OS").unwrap(),
-            ),
-            Family: Family_type::from(std::env::var("CARGO_CFG_TARGET_FAMILY").unwrap()),
-            Vendor: Vendor_type::from(std::env::var("CARGO_CFG_TARGET_VENDOR").unwrap()),
+            Architecture: Architecture_type::from(env::var("CARGO_CFG_TARGET_ARCH").unwrap()),
+            Operating_system: Operating_system_type::from(env::var("CARGO_CFG_TARGET_OS").unwrap()),
+            Family: Family_type::from(env::var("CARGO_CFG_TARGET_FAMILY").unwrap()),
+            Vendor: Vendor_type::from(env::var("CARGO_CFG_TARGET_VENDOR").unwrap()),
         }
     }
 }
