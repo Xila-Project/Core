@@ -16,6 +16,7 @@ pub enum Error_type {
     Failed_to_get_resolution,
     Not_registered,
     Not_available,
+    Failed_to_create_object,
 }
 
 impl<T> From<PoisonError<T>> for Error_type {
