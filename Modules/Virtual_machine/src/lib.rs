@@ -20,6 +20,7 @@ pub use Custom_data::*;
 pub use Environment::*;
 pub use Error::*;
 pub use Instance::*;
+pub use Manager::*;
 pub use Module::*;
 pub use Registrable::*;
 pub use Runtime::*;
