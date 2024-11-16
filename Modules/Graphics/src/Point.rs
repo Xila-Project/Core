@@ -1,6 +1,6 @@
 use super::lvgl;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct Point_type {
     X: i16,
     Y: i16,
