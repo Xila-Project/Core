@@ -12,6 +12,10 @@ impl<T> Join_handle_type<T> {
         self.0.join()
     }
 
+    pub fn Get_thread_identifier(&self) -> Thread_identifier_type {
+        self.Get_thread_wrapper().Get_identifier()
+    }
+
     pub(crate) fn Get_thread_wrapper(&self) -> Thread_wrapper_type {
         Thread_wrapper_type(self.0.thread().clone())
     }
