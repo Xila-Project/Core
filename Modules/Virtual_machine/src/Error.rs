@@ -21,6 +21,9 @@ pub enum Error_type {
     Allocation_failure,
     Failed_to_get_task_informations(Task::Error_type),
     Poisoned_lock,
+    Invalid_module,
+    Internal_error,
+    Invalid_thread_identifier,
 }
 
 impl From<RuntimeError> for Error_type {
