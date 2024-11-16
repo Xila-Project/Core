@@ -1,21 +1,17 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
-use std::{
-    ffi::{c_void, CString},
-    ptr::null_mut,
-};
+use core::ffi::c_void;
 
 use wamr_rust_sdk::{
     function::Function,
     instance::Instance,
     sys::{
-        wasm_runtime_addr_native_to_app, wasm_runtime_set_wasi_args_ex,
-        wasm_runtime_validate_native_addr,
+        wasm_runtime_addr_app_to_native, wasm_runtime_addr_native_to_app,
+        wasm_runtime_get_custom_data, wasm_runtime_validate_native_addr,
     },
     value::WasmValue,
 };
-use File_system::Unique_file_identifier_type;
 
 use crate::{
     Custom_data_type, Error_type, Module::Module_type, Result_type, Runtime::Runtime_type,
@@ -24,9 +20,10 @@ use crate::{
 
 pub struct Instance_type {
     Instance: Instance,
-    _Directory_paths: Vec<CString>,
-    _Directory_paths_raw: Vec<*const i8>,
-    _Environment_variables_raw: Vec<*const i8>,
+    Allocate: Option<Function>,
+    Deallocate: Option<Function>,
+}
+
 unsafe impl Send for Instance_type {}
 
 impl Drop for Instance_type {
@@ -56,11 +53,14 @@ impl Instance_type {
             Stack_size as u32,
         )?;
 
+        let Allocate = Function::find_export_func(&WAMR_instance, "Allocate").ok();
+
+        let Deallocate = Function::find_export_func(&WAMR_instance, "Deallocate").ok();
+
         let Instance = Instance_type {
             Instance: WAMR_instance,
-            _Directory_paths: Directory_paths,
-            _Directory_paths_raw: Directory_paths_raw,
-            _Environment_variables_raw: Environment_variables_raw,
+            Allocate,
+            Deallocate,
         };
 
         Ok(Instance)
@@ -95,13 +95,15 @@ impl Instance_type {
         }
     }
 
-    pub fn Convert_to_native_pointer<T>(&self, Address: WASM_pointer_type) -> *mut T {
-        unsafe {
-            wasm_runtime_addr_native_to_app(
-                self.Get_inner_reference().get_inner_instance(),
-                Address as *mut c_void,
-            ) as *mut T
-        }
+    /// # Safety
+    ///
+    /// This function is unsafe because it is not checked that the address is valid.
+    #[allow(clippy::mut_from_ref)]
+    pub unsafe fn Convert_to_native_pointer<T>(&self, Address: WASM_pointer_type) -> *mut T {
+        wasm_runtime_addr_app_to_native(
+            self.Get_inner_reference().get_inner_instance(),
+            Address as u64,
+        ) as *mut T
     }
 
     pub fn Call_export_function(
@@ -124,6 +126,37 @@ impl Instance_type {
 
     pub fn Call_main(&self, Parameters: &Vec<WasmValue>) -> Result_type<WasmValue> {
         self.Call_export_function("_start", Parameters)
+    }
+
+    pub fn Allocate<T>(&mut self, Size: usize) -> Result_type<*mut T> {
+        let Function = self
+            .Allocate
+            .as_ref()
+            .ok_or(Error_type::Allocation_failure)?;
+
+        let Pointer = Function.call(&self.Instance, &vec![WasmValue::I32(Size as i32)])?;
+
+        if let WasmValue::I32(Pointer) = Pointer {
+            let Pointer = unsafe { self.Convert_to_native_pointer(Pointer as u32) };
+
+            Ok(Pointer)
+        } else {
+            Err(Error_type::Allocation_failure)
+        }
+    }
+
+    pub fn Deallocate<T>(&mut self, Data: *mut T) {
+        let Function = self
+            .Deallocate
+            .as_ref()
+            .ok_or(Error_type::Allocation_failure)
+            .expect("No deallocate function found in exports");
+
+        let Pointer = self.Convert_to_WASM_pointer(Data);
+
+        Function
+            .call(&self.Instance, &vec![WasmValue::I32(Pointer as i32)])
+            .expect("Failed to deallocate pointer");
     }
 
     pub(crate) fn Get_inner_reference(&self) -> &Instance {
