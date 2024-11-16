@@ -1,11 +1,12 @@
+pub mod Console;
 mod Drive_file;
 pub mod Window_screen;
 
 pub use Drive_file::*;
+
 use Graphics::Point_type;
 use Task::Task_identifier_type;
 use Virtual_file_system::Virtual_file_system_type;
-pub use SDL2::*;
 
 pub fn Mount_devices(
     Task: Task_identifier_type,
@@ -23,6 +24,7 @@ pub fn Mount_devices(
         .Mount_device(Task, "/Devices/Pointer", Pointer)
         .map_err(|Error| format!("Error adding pointer device: {:?}", Error))?;
 
+    Console::Mount_devices(Task, Virtual_file_system)?;
 
     Ok(())
 }
