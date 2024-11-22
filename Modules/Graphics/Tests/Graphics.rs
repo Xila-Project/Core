@@ -18,8 +18,6 @@ fn main() {
     Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()))
         .expect("Error initializing time manager");
 
-    Virtual_machine::Initialize(&[]);
-
     const Resolution: Point_type = Point_type::New(800, 480);
 
     const Buffer_size: usize = Get_recommended_buffer_size(&Resolution);

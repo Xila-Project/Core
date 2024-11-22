@@ -54,7 +54,7 @@ impl File_system_type {
         // - Create the read file
         let Read_flags = Flags_type::New(Mode_type::Read_only, None, Some(Status));
 
-        let Read_file = Get_new_file_identifier(Task, &Inner.Open_pipes)?;
+        let Read_file = Get_new_file_identifier(Task, None, None, &Inner.Open_pipes)?;
 
         if Inner
             .Open_pipes
@@ -67,7 +67,7 @@ impl File_system_type {
         // - Create the write file
         let Write_flags = Flags_type::New(Mode_type::Write_only, None, Some(Status));
 
-        let Write_file = Get_new_file_identifier(Task, &Inner.Open_pipes)?;
+        let Write_file = Get_new_file_identifier(Task, None, None, &Inner.Open_pipes)?;
 
         if Inner
             .Open_pipes
@@ -118,7 +118,7 @@ impl File_system_type {
             .get(&Inode)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        let Local_file_identifier = Get_new_file_identifier(Task, Open_pipes)?;
+        let Local_file_identifier = Get_new_file_identifier(Task, None, None, Open_pipes)?;
 
         Open_pipes.insert(
             Local_file_identifier,
@@ -166,16 +166,17 @@ impl File_system_type {
     pub fn Duplicate(
         &self,
         File: Local_file_identifier_type,
+        Underlying_file: Option<Unique_file_identifier_type>,
     ) -> Result_type<Local_file_identifier_type> {
         let mut Inner = self.0.write()?;
 
-        let (Pipe, Flags, Underlying_file) = Inner
+        let (Pipe, Flags, _) = Inner
             .Open_pipes
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
             .clone();
 
-        let New_file = Get_new_file_identifier(File.Split().0, &Inner.Open_pipes)?;
+        let New_file = Get_new_file_identifier(File.Split().0, None, None, &Inner.Open_pipes)?;
 
         Inner
             .Open_pipes
@@ -206,7 +207,7 @@ impl File_system_type {
 
             File
         } else {
-            Get_new_file_identifier(New_task, &Inner.Open_pipes)?
+            Get_new_file_identifier(New_task, None, None, &Inner.Open_pipes)?
         };
 
         if Inner
@@ -363,7 +364,8 @@ mod Tests {
         let (read_file, _) = fs
             .Create_unnamed_pipe(task_id, status, buffer_size)
             .unwrap();
-        let new_file = fs.Duplicate(read_file).unwrap();
+
+        let new_file = fs.Duplicate(read_file, None).unwrap();
 
         assert!(fs.0.read().unwrap().Open_pipes.contains_key(&new_file));
     }

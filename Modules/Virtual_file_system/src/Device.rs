@@ -25,7 +25,7 @@ impl File_system_type {
         }))
     }
 
-    fn Borrow_mutable_inner_2_splited(
+    fn Borrow_mutable_inner_2_splitted(
         Inner: &mut Inner_type,
     ) -> (
         &mut BTreeMap<Inode_type, Device_type>,
@@ -50,7 +50,7 @@ impl File_system_type {
     pub fn Mount_device(&self, Device: Device_type) -> Result_type<Inode_type> {
         let mut Inner = self.0.write()?;
 
-        let (Devices, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (Devices, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let Inode = Get_new_inode(Devices)?;
 
@@ -68,11 +68,11 @@ impl File_system_type {
     ) -> Result_type<Local_file_identifier_type> {
         let mut Inner = self.0.write()?;
 
-        let (Devices, Open_pipes) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (Devices, Open_pipes) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let Device = Devices.get(&Inode).ok_or(Error_type::Invalid_identifier)?;
 
-        let Local_file_identifier = Get_new_file_identifier(Task, Open_pipes)?;
+        let Local_file_identifier = Get_new_file_identifier(Task, None, None, Open_pipes)?;
 
         Open_pipes.insert(
             Local_file_identifier,
@@ -120,16 +120,17 @@ impl File_system_type {
     pub fn Duplicate(
         &self,
         File: Local_file_identifier_type,
+        Underlying_file: Unique_file_identifier_type,
     ) -> Result_type<Local_file_identifier_type> {
         let mut Inner = self.0.write()?;
 
-        let (Device, Flags, Underlying_file) = Inner
+        let (Device, Flags, _) = Inner
             .Open_devices
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
             .clone();
 
-        let New_file = Get_new_file_identifier(File.Split().0, &Inner.Open_devices)?;
+        let New_file = Get_new_file_identifier(File.Split().0, None, None, &Inner.Open_devices)?;
 
         Inner
             .Open_devices
@@ -142,11 +143,12 @@ impl File_system_type {
         &self,
         New_task: Task_identifier_type,
         File: Local_file_identifier_type,
+        Underlying_file: Unique_file_identifier_type,
         New_file: Option<File_identifier_type>,
     ) -> Result_type<Local_file_identifier_type> {
         let mut Inner = self.0.write()?;
 
-        let (Device, Flags, Underlying_file) = Inner
+        let (Device, Flags, _) = Inner
             .Open_devices
             .remove(&File)
             .ok_or(Error_type::Invalid_identifier)?;
@@ -160,7 +162,7 @@ impl File_system_type {
 
             File
         } else {
-            Get_new_file_identifier(New_task, &Inner.Open_devices)?
+            Get_new_file_identifier(New_task, None, None, &Inner.Open_devices)?
         };
 
         if Inner
@@ -382,48 +384,62 @@ mod tests {
 
     #[test]
     fn Test_duplicate_file_identifier() {
-        let fs = File_system_type::New();
+        let File_system = File_system_type::New();
 
-        let Inode = fs
+        let Inode = File_system
             .Mount_device(Create_device!(
                 Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
             ))
             .unwrap();
-        let file_id = fs
+
+        let Underlying_file = 0_usize.into();
+
+        let File = File_system
             .Open(
                 Inode,
                 Task_identifier_type::New(0),
                 Mode_type::Read_only.into(),
-                0_usize.into(),
+                Underlying_file,
             )
             .unwrap();
-        let new_file_id = fs.Duplicate(file_id).unwrap();
 
-        assert!(fs.Close(new_file_id).is_ok());
+        let New_underlying_file = 1_usize.into();
+
+        let New_file = File_system.Duplicate(File, New_underlying_file).unwrap();
+
+        assert_eq!(
+            File_system.Get_underlying_file(New_file).unwrap(),
+            New_underlying_file
+        );
+
+        assert!(File_system.Close(New_file).is_ok());
     }
 
     #[test]
     fn Test_transfert_file_identifier() {
-        let fs = File_system_type::New();
+        let File_system = File_system_type::New();
 
-        let Inode = fs
+        let Inode = File_system
             .Mount_device(Create_device!(
                 Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
             ))
             .unwrap();
-        let file_id = fs
-            .Open(
-                Inode,
-                Task_identifier_type::New(0),
-                Mode_type::Read_only.into(),
-                0_usize.into(),
-            )
-            .unwrap();
-        let new_file_id = fs
-            .Transfert(Task_identifier_type::New(0), file_id, None)
+
+        let Task = Task_identifier_type::New(0);
+
+        let File_identifier = File_system
+            .Open(Inode, Task, Mode_type::Read_only.into(), 0_usize.into())
             .unwrap();
 
-        assert!(fs.Close(new_file_id).is_ok());
+        let New_task = Task_identifier_type::New(1);
+
+        let New_file_identifier = File_system
+            .Transfert(New_task, File_identifier, 0_usize.into(), None)
+            .unwrap();
+
+        assert_eq!(New_file_identifier.Split().0, New_task);
+
+        File_system.Close(New_file_identifier).unwrap();
     }
 
     #[test]

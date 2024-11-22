@@ -148,15 +148,23 @@ pub trait File_system_traits: Send + Sync {
 }
 
 pub fn Get_new_file_identifier<T>(
-    Task_identifier: Task::Task_identifier_type,
+    Task: Task_identifier_type,
+    Start: Option<File_identifier_type>,
+    End: Option<File_identifier_type>,
     Map: &BTreeMap<Local_file_identifier_type, T>,
 ) -> Result_type<Local_file_identifier_type> {
-    let Iterator = Local_file_identifier_type::Get_minimum(Task_identifier);
+    let Start = Start.unwrap_or(File_identifier_type::Minimum);
+    let mut Start = Local_file_identifier_type::New(Task, Start);
 
-    for Identifier in Iterator {
-        if !Map.contains_key(&Identifier) {
-            return Ok(Identifier);
+    let End = End.unwrap_or(File_identifier_type::Maximum);
+    let End = Local_file_identifier_type::New(Task, End);
+
+    while Start < End {
+        if !Map.contains_key(&Start) {
+            return Ok(Start);
         }
+
+        Start += 1;
     }
 
     Err(Error_type::Too_many_open_files)

@@ -47,8 +47,8 @@ impl Debug for Unique_file_identifier_type {
 
         Formatter
             .debug_struct("Unique_file_identifier_type")
-            .field("", &File_system_identifier)
-            .field("", &File_identifier)
+            .field("File_system_identifier", &File_system_identifier)
+            .field("File_identifier", &File_identifier)
             .finish()
     }
 }

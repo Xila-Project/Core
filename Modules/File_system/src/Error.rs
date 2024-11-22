@@ -1,4 +1,4 @@
-use std::{num::NonZeroU32, sync::PoisonError};
+use std::{fmt::Display, num::NonZeroU32, sync::PoisonError};
 
 pub type Result_type<T> = std::result::Result<T, Error_type>;
 
@@ -91,5 +91,58 @@ impl<T> From<PoisonError<T>> for Error_type {
 impl From<Error_type> for NonZeroU32 {
     fn from(Error: Error_type) -> Self {
         unsafe { NonZeroU32::new_unchecked(Error as u32) }
+    }
+}
+
+impl Display for Error_type {
+    fn fmt(&self, Formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let String = match self {
+            Error_type::Failed_to_initialize_file_system => "Failed to initialize file system",
+            Error_type::Permission_denied => "Permission denied",
+            Error_type::Not_found => "Not found",
+            Error_type::Already_exists => "Already exists",
+            Error_type::Directory_already_exists => "Directory already exists",
+            Error_type::File_system_full => "File system full",
+            Error_type::File_system_error => "File system error",
+            Error_type::Invalid_path => "Invalid path",
+            Error_type::Invalid_file => "Invalid file",
+            Error_type::Invalid_directory => "Invalid directory",
+            Error_type::Invalid_symbolic_link => "Invalid symbolic link",
+            Error_type::Unknown => "Unknown",
+            Error_type::Invalid_identifier => "Invalid identifier",
+            Error_type::Failed_to_get_task_informations => "Failed to get task informations",
+            Error_type::Failed_to_get_users_informations => "Failed to get users informations",
+            Error_type::Too_many_mounted_file_systems => "Too many mounted file systems",
+            Error_type::Poisoned_lock => "Poisoned lock",
+            Error_type::Too_many_open_files => "Too many open files",
+            Error_type::Internal_error => "Internal error",
+            Error_type::Invalid_mode => "Invalid mode",
+            Error_type::Unsupported_operation => "Unsupported operation",
+            Error_type::Ressource_busy => "Ressource busy",
+            Error_type::Already_initialized => "Already initialized",
+            Error_type::Not_initialized => "Not initialized",
+            Error_type::Failed_to_get_users_manager_instance => {
+                "Failed to get users manager instance"
+            }
+            Error_type::Failed_to_get_task_manager_instance => {
+                "Failed to get task manager instance"
+            }
+            Error_type::Invalid_parameter => "Invalid parameter",
+            Error_type::Invalid_flags => "Invalid flags",
+            Error_type::Not_directory => "Not directory",
+            Error_type::Is_directory => "Is directory",
+            Error_type::Input_output => "Input output",
+            Error_type::Directory_not_empty => "Directory not empty",
+            Error_type::File_too_large => "File too large",
+            Error_type::No_attribute => "No attribute",
+            Error_type::Name_too_long => "Name too long",
+            Error_type::Corrupted => "Corrupted",
+            Error_type::No_memory => "No memory",
+            Error_type::No_space_left => "No space left",
+            Error_type::Time_error => "Time error",
+            Error_type::Other => "Other",
+        };
+
+        write!(Formatter, "{}", String)
     }
 }

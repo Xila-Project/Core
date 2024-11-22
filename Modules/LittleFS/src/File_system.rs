@@ -157,6 +157,17 @@ impl File_system_type {
             &mut Inner_2.Open_directories,
         )
     }
+
+    #[cfg(target_pointer_width = "64")]
+    const Directory_flag: u32 = 1 << 31;
+    #[cfg(target_pointer_width = "32")]
+    const Directory_flag: u32 = 1 << 15;
+
+    const Directory_minimum: File_identifier_type = File_identifier_type::New(Self::Directory_flag);
+
+    pub fn Is_file(File: Local_file_identifier_type) -> bool {
+        File.Split().1 < Self::Directory_minimum
+    }
 }
 
 unsafe impl Send for File_system_type {}
@@ -174,7 +185,12 @@ impl File_system_traits for File_system_type {
 
         let File = File_type::Open(&mut Inner.File_system, Task, Path, Flags, self.Cache_size)?;
 
-        let File_identifier = Get_new_file_identifier(Task, &Inner.Open_files)?;
+        let File_identifier = Get_new_file_identifier(
+            Task,
+            Some(File_identifier_type::Minimum),
+            Some(Self::Directory_minimum),
+            &Inner.Open_files,
+        )?;
 
         if Inner.Open_files.insert(File_identifier, File).is_some() {
             return Err(Error_type::Internal_error);
@@ -232,7 +248,12 @@ impl File_system_traits for File_system_type {
 
         let File = File.clone();
 
-        let File_identifier = Get_new_file_identifier(Task, &Inner.Open_files)?;
+        let File_identifier = Get_new_file_identifier(
+            Task,
+            Some(Self::Directory_minimum),
+            Some(File_identifier_type::Maximum),
+            &Inner.Open_files,
+        )?;
 
         if Inner.Open_files.insert(File_identifier, File).is_some() {
             return Err(Error_type::Internal_error);
@@ -244,14 +265,14 @@ impl File_system_traits for File_system_type {
     fn Transfert(
         &self,
         New_task: Task::Task_identifier_type,
-        File: Local_file_identifier_type,
+        File_identifier: Local_file_identifier_type,
         New_file: Option<File_identifier_type>,
     ) -> Result_type<Local_file_identifier_type> {
         let mut Inner = self.Inner.write()?;
 
         let File = Inner
             .Open_files
-            .remove(&File)
+            .remove(&File_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
 
         let File_identifier = if let Some(New_file) = New_file {
@@ -262,8 +283,20 @@ impl File_system_traits for File_system_type {
             }
 
             File
+        } else if Self::Is_file(File_identifier) {
+            Get_new_file_identifier(
+                New_task,
+                Some(File_identifier_type::Minimum),
+                Some(Self::Directory_minimum),
+                &Inner.Open_files,
+            )?
         } else {
-            Get_new_file_identifier(New_task, &Inner.Open_files)?
+            Get_new_file_identifier(
+                New_task,
+                Some(Self::Directory_minimum),
+                Some(File_identifier_type::Maximum),
+                &Inner.Open_directories,
+            )?
         };
 
         if Inner.Open_files.insert(File_identifier, File).is_some() {
@@ -384,13 +417,24 @@ impl File_system_traits for File_system_type {
     }
 
     fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
-        Ok(self
-            .Inner
-            .read()?
-            .Open_files
-            .get(&File)
-            .ok_or(Error_type::Invalid_identifier)?
-            .Get_mode())
+        let Inner = self.Inner.read()?;
+
+        let Result = if Self::Is_file(File) {
+            Inner
+                .Open_files
+                .get(&File)
+                .ok_or(Error_type::Invalid_identifier)?
+                .Get_mode()
+        } else {
+            Inner
+                .Open_directories
+                .get(&File)
+                .ok_or(Error_type::Invalid_identifier)?;
+
+            Mode_type::Read_only
+        };
+
+        Ok(Result)
     }
 
     fn Open_directory(
@@ -402,7 +446,12 @@ impl File_system_traits for File_system_type {
 
         let Directory = Directory_type::Open(&mut Inner.File_system, Path)?;
 
-        let File_identifier = Get_new_file_identifier(Task, &Inner.Open_directories)?;
+        let File_identifier = Get_new_file_identifier(
+            Task,
+            Some(Self::Directory_minimum),
+            Some(File_identifier_type::Maximum),
+            &Inner.Open_directories,
+        )?;
 
         if Inner
             .Open_directories

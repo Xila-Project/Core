@@ -662,20 +662,48 @@ impl Virtual_file_system_type {
     ) -> Result_type<Unique_file_identifier_type> {
         let (File_system, File) = File.Into_local_file_identifier(Current_task);
 
+        let Underlying_file = match File_system {
+            File_system_identifier_type::Pipe_file_system => {
+                self.Pipe_file_system.Get_underlying_file(File)?
+            }
+            File_system_identifier_type::Device_file_system => {
+                Some(self.Device_file_system.Get_underlying_file(File)?)
+            }
+            _ => None,
+        };
+
+        let File_systems = self.File_systems.read()?;
+
+        let Underlying_file = if let Some(Underlying_file) = Underlying_file {
+            let (File_system, Local_file) =
+                Underlying_file.Into_local_file_identifier(Current_task);
+
+            Some(
+                File_systems
+                    .get(&File_system)
+                    .ok_or(Error_type::Invalid_identifier)?
+                    .Inner
+                    .Transfert(New_task, Local_file, New_file)?
+                    .Into_unique_file_identifier(File_system)
+                    .1,
+            )
+        } else {
+            None
+        };
+
         let New_file = match File_system {
             File_system_identifier_type::Pipe_file_system => {
                 self.Pipe_file_system.Transfert(New_task, File, New_file)?
             }
-            File_system_identifier_type::Device_file_system => self
-                .Device_file_system
-                .Transfert(New_task, File, New_file)?,
-            _ => {
-                let File_systems = self.File_systems.read()?;
+            File_system_identifier_type::Device_file_system => {
+                let Underlying_file = Underlying_file.ok_or(Error_type::Internal_error)?;
 
-                Self::Get_file_system_from_identifier(&File_systems, File_system)?
-                    .Inner
-                    .Transfert(New_task, File, New_file)?
+                self.Device_file_system
+                    .Transfert(New_task, File, Underlying_file, New_file)?
             }
+            _ => Self::Get_file_system_from_identifier(&File_systems, File_system)?
+                .Inner
+                .Transfert(New_task, File, New_file)?,
         };
 
         let (_, New_file) = New_file.Into_unique_file_identifier(File_system);
@@ -912,14 +940,42 @@ impl Virtual_file_system_type {
     ) -> Result_type<Unique_file_identifier_type> {
         let (File_system, File) = File.Into_local_file_identifier(Task);
 
+        let Underlying_file = match File_system {
+            File_system_identifier_type::Pipe_file_system => {
+                self.Pipe_file_system.Get_underlying_file(File)?
+            }
+            File_system_identifier_type::Device_file_system => {
+                Some(self.Device_file_system.Get_underlying_file(File)?)
+            }
+            _ => None,
+        };
+
         let File_systems = self.File_systems.read()?;
+
+        let Underlying_file = if let Some(Underlying_file) = Underlying_file {
+            let (File_system, Local_file) = Underlying_file.Into_local_file_identifier(Task);
+
+            Some(
+                File_systems
+                    .get(&File_system)
+                    .ok_or(Error_type::Invalid_identifier)?
+                    .Inner
+                    .Duplicate(Local_file)?
+                    .Into_unique_file_identifier(File_system)
+                    .1,
+            )
+        } else {
+            None
+        };
 
         let New_file = match File_system {
             File_system_identifier_type::Pipe_file_system => {
-                self.Pipe_file_system.Duplicate(File)?
+                self.Pipe_file_system.Duplicate(File, Underlying_file)?
             }
             File_system_identifier_type::Device_file_system => {
-                self.Device_file_system.Duplicate(File)?
+                let Underlying_file = Underlying_file.ok_or(Error_type::Internal_error)?;
+
+                self.Device_file_system.Duplicate(File, Underlying_file)?
             }
             _ => Self::Get_file_system_from_identifier(&File_systems, File_system)?
                 .Inner
@@ -1037,6 +1093,20 @@ impl Virtual_file_system_type {
         } else {
             Err(Error_type::Corrupted)
         }
+    }
+
+    pub fn Get_metadata_from_path(
+        &self,
+        Path: &impl AsRef<Path_type>,
+    ) -> Result_type<Metadata_type> {
+        let File_systems = self
+            .File_systems
+            .read()
+            .map_err(|_| Error_type::Poisoned_lock)?;
+
+        let (_, File_system, Relative_path) = Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
+
+        File_system.Get_metadata_from_path(Relative_path)
     }
 }
 

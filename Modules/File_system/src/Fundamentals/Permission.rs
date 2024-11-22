@@ -1,3 +1,5 @@
+use core::fmt;
+
 use crate::Type_type;
 
 /// Represents the permissions of a file or directory.
@@ -23,6 +25,16 @@ use crate::Type_type;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Permissions_type(u16);
+
+impl fmt::Display for Permissions_type {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let User = self.Get_user();
+        let Group = self.Get_group();
+        let Others = self.Get_others();
+
+        write!(f, "{}{}{}", User, Group, Others)
+    }
+}
 
 impl Permissions_type {
     pub const None: Self = Self::New(
@@ -161,6 +173,16 @@ impl Permissions_type {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Permission_type(u8);
+
+impl fmt::Display for Permission_type {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Read = if self.Get_read() { "r" } else { "-" };
+        let Write = if self.Get_write() { "w" } else { "-" };
+        let Execute = if self.Get_execute() { "x" } else { "-" };
+
+        write!(f, "{}{}{}", Read, Write, Execute)
+    }
+}
 
 impl Permission_type {
     pub const Read_only: Self = Self::New(true, false, false);
