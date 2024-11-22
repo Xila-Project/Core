@@ -1,4 +1,7 @@
-use std::ops::{Add, AddAssign};
+use std::{
+    fmt::Debug,
+    ops::{Add, AddAssign},
+};
 
 use Task::{Task_identifier_inner_type, Task_identifier_type};
 
@@ -42,7 +45,7 @@ use super::{
 /// assert_eq!(Task, Task_identifier_type::from(0x1234));
 /// assert_eq!(Unique_file_identifier, Unique_file_identifier_type::New(File_system_identifier_type::from(0x9ABC), File_identifier_type::from(0x5678)));
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
 pub struct Local_file_identifier_type(usize);
 
@@ -87,6 +90,18 @@ impl Local_file_identifier_type {
 
     pub const fn Into_inner(self) -> usize {
         self.0
+    }
+}
+
+impl Debug for Local_file_identifier_type {
+    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (Task, File) = self.Split();
+
+        Formatter
+            .debug_struct("Local_file_identifier_type")
+            .field("Task", &Task)
+            .field("File", &File)
+            .finish()
     }
 }
 

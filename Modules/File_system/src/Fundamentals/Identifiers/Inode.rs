@@ -14,6 +14,10 @@ impl Inode_type {
     pub const fn New(Item: u64) -> Self {
         Inode_type(Item)
     }
+
+    pub const fn Into_inner(self) -> u64 {
+        self.0
+    }
 }
 
 impl From<u64> for Inode_type {

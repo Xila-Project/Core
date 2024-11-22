@@ -1,4 +1,7 @@
-use std::ops::{Add, AddAssign};
+use core::{
+    fmt::{self, Display, Formatter},
+    ops::{Add, AddAssign},
+};
 
 /// Size type
 ///
@@ -16,9 +19,19 @@ use std::ops::{Add, AddAssign};
 #[repr(transparent)]
 pub struct Size_type(u64);
 
+impl Display for Size_type {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl Size_type {
     pub const fn New(Item: u64) -> Self {
         Size_type(Item)
+    }
+
+    pub const fn As_u64(&self) -> u64 {
+        self.0
     }
 }
 

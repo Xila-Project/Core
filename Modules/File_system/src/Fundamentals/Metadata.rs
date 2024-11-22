@@ -1,7 +1,7 @@
 use Task::Task_identifier_type;
 use Users::{Group_identifier_type, User_identifier_type};
 
-use crate::{Error_type, Permissions_type, Time_type, Type_type};
+use crate::{Permissions_type, Time_type, Type_type};
 
 use super::Inode_type;
 
@@ -48,15 +48,18 @@ impl Metadata_type {
 
         let Owner = match Task_instance.Get_owner(Task) {
             Ok(Owner) => Owner,
-            Err(_) => return None,
+            Err(e) => {
+                println!("Failed to get owner: {:?}", e);
+                return None;
+            }
         };
 
-        let Group = match Users_instance
-            .Get_user_primary_group(Owner)
-            .map_err(|_| Error_type::Invalid_parameter)
-        {
+        let Group = match Users_instance.Get_user_primary_group(Owner) {
             Ok(Group) => Group,
-            Err(_) => return None,
+            Err(_) => {
+                println!("Failed to get group");
+                return None;
+            }
         };
 
         let Permissions = Permissions_type::New_default(Type);

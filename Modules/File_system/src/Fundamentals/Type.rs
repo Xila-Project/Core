@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Type_type {
@@ -8,4 +10,20 @@ pub enum Type_type {
     Pipe,
     Socket,
     Symbolic_link,
+}
+
+impl Display for Type_type {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let Type = match self {
+            Type_type::File => "File",
+            Type_type::Directory => "Directory",
+            Type_type::Block_device => "Block device",
+            Type_type::Character_device => "Character device",
+            Type_type::Pipe => "Pipe",
+            Type_type::Socket => "Socket",
+            Type_type::Symbolic_link => "Symbolic link",
+        };
+
+        write!(f, "{}", Type)
+    }
 }
