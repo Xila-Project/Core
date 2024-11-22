@@ -18,15 +18,13 @@ use crate::{
     WASM_pointer_type,
 };
 
-pub struct Instance_type {
-    Instance: Instance,
-    Allocate: Option<Function>,
-    Deallocate: Option<Function>,
+pub struct Instance_type<'module> {
+    Instance: Instance<'module>,
 }
 
-unsafe impl Send for Instance_type {}
+unsafe impl Send for Instance_type<'_> {}
 
-impl Drop for Instance_type {
+impl Drop for Instance_type<'_> {
     fn drop(&mut self) {
         let Instance = self.Get_inner_reference().get_inner_instance();
         unsafe {
@@ -41,10 +39,10 @@ impl Drop for Instance_type {
     }
 }
 
-impl Instance_type {
+impl<'module> Instance_type<'module> {
     pub fn New(
         Runtime: &Runtime_type,
-        Module: &Module_type,
+        Module: &'module Module_type<'module>,
         Stack_size: usize,
     ) -> Result_type<Self> {
         let WAMR_instance = Instance::new(
@@ -53,14 +51,8 @@ impl Instance_type {
             Stack_size as u32,
         )?;
 
-        let Allocate = Function::find_export_func(&WAMR_instance, "Allocate").ok();
-
-        let Deallocate = Function::find_export_func(&WAMR_instance, "Deallocate").ok();
-
         let Instance = Instance_type {
             Instance: WAMR_instance,
-            Allocate,
-            Deallocate,
         };
 
         Ok(Instance)
@@ -129,14 +121,9 @@ impl Instance_type {
     }
 
     pub fn Allocate<T>(&mut self, Size: usize) -> Result_type<*mut T> {
-        let Function = self
-            .Allocate
-            .as_ref()
-            .ok_or(Error_type::Allocation_failure)?;
+        let Result = self.Call_export_function("Allocate", &vec![WasmValue::I32(Size as i32)])?;
 
-        let Pointer = Function.call(&self.Instance, &vec![WasmValue::I32(Size as i32)])?;
-
-        if let WasmValue::I32(Pointer) = Pointer {
+        if let WasmValue::I32(Pointer) = Result {
             let Pointer = unsafe { self.Convert_to_native_pointer(Pointer as u32) };
 
             Ok(Pointer)
@@ -146,17 +133,7 @@ impl Instance_type {
     }
 
     pub fn Deallocate<T>(&mut self, Data: *mut T) {
-        let Function = self
-            .Deallocate
-            .as_ref()
-            .ok_or(Error_type::Allocation_failure)
-            .expect("No deallocate function found in exports");
-
-        let Pointer = self.Convert_to_WASM_pointer(Data);
-
-        Function
-            .call(&self.Instance, &vec![WasmValue::I32(Pointer as i32)])
-            .expect("Failed to deallocate pointer");
+        let _ = self.Call_export_function("Deallocate", &vec![WasmValue::I32(Data as i32)]);
     }
 
     pub(crate) fn Get_inner_reference(&self) -> &Instance {
