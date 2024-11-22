@@ -1,11 +1,8 @@
-use std::{
-    ffi::CStr,
-    mem::forget,
-    sync::{OnceLock, RwLock},
-};
+use std::{ffi::CStr, mem::forget, sync::OnceLock};
 
-use wamr_rust_sdk::sys::{
-    wasm_runtime_is_xip_file, wasm_runtime_load, wasm_runtime_register_module,
+use wamr_rust_sdk::{
+    sys::{wasm_runtime_is_xip_file, wasm_runtime_load, wasm_runtime_register_module},
+    value::WasmValue,
 };
 use File_system::Unique_file_identifier_type;
 
@@ -27,11 +24,9 @@ pub fn Get_instance() -> &'static Manager_type {
         .expect("Cannot get virtual machine manager instance before initialization")
 }
 
-struct Inner_type {
-    pub Runtime: Runtime_type,
+pub struct Manager_type {
+    Runtime: Runtime_type,
 }
-
-pub struct Manager_type(RwLock<Inner_type>);
 
 unsafe impl Send for Manager_type {}
 
@@ -47,7 +42,7 @@ impl Manager_type {
 
         let Runtime = Runtime_builder.Build()?;
 
-        let Manager = Self(RwLock::new(Inner_type { Runtime }));
+        let Manager = Self { Runtime };
 
         for Registrable in Registrables {
             if let Some(Module_binary) = Registrable.Get_binary() {
@@ -108,17 +103,15 @@ impl Manager_type {
     }
 
     pub fn Instantiate(
-        &self,
+        &'static self,
         Buffer: Vec<u8>,
         Stack_size: usize,
         Standard_in: Unique_file_identifier_type,
         Standard_out: Unique_file_identifier_type,
         Standard_error: Unique_file_identifier_type,
-    ) -> Result_type<()> {
-        let Inner = self.0.write()?;
-
+    ) -> Result_type<WasmValue> {
         let Module = Module_type::From_buffer(
-            &Inner.Runtime,
+            &self.Runtime,
             Buffer,
             "module",
             Standard_in,
@@ -126,16 +119,10 @@ impl Manager_type {
             Standard_error,
         )?;
 
-        let Instance = Instance_type::New(&Inner.Runtime, &Module, Stack_size)?;
+        let Instance = Instance_type::New(&self.Runtime, &Module, Stack_size).unwrap();
 
-        let Task_instance = Task::Get_instance();
+        let Result = Instance.Call_main(&vec![])?;
 
-        let Parent_task = Task_instance.Get_current_task_identifier()?;
-
-        Task::Get_instance().New_thread(Parent_task, "WASM", None, move || {
-            Instance.Call_main(&vec![]).unwrap();
-        })?;
-
-        Ok(())
+        Ok(Result)
     }
 }

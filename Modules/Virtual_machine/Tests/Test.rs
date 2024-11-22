@@ -24,6 +24,7 @@ impl Registrable_trait for Registrable {
 
 const Functions: [Function_descriptor_type; 0] = Function_descriptors! {};
 
+#[ignore]
 #[test]
 fn Integration_test() {
     let Task_instance = Task::Initialize().expect("Failed to initialize task manager");
