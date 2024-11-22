@@ -16,6 +16,8 @@ members = [
     "Modules/Bindings/Utilities",
     "Modules/Bindings/Host",
     "Modules/Bindings/WASM",
+    "Modules/Executables/Shell/Command_line",
+    "Modules/Executable",
 ]
 exclude = [
     "Modules/Virtual_machine/Tests/WASM_test",
@@ -30,8 +32,9 @@ edition = "2021"
 resolver = "2"
 rust-version = "1.71"
 
+
 [dependencies]
-WASM_bindings = { path = "Modules/Bindings/WASM" , optional = true }
+WASM_bindings = { path = "Modules/Bindings/WASM", optional = true }
 
 [features]
 default = []
