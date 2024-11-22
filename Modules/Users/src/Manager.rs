@@ -54,7 +54,7 @@ impl Manager_type {
         Groups.insert(
             Group_identifier_type::Root,
             Internal_group_type {
-                Name: "root".to_string(),
+                Name: "Root".to_string(),
                 Users: BTreeSet::new(),
             },
         );
@@ -63,7 +63,7 @@ impl Manager_type {
         Users.insert(
             User_identifier_type::Root,
             Internal_user_type {
-                Name: "root".to_string(),
+                Name: "Root".to_string(),
                 Primary_group: Group_identifier_type::Root,
             },
         );
