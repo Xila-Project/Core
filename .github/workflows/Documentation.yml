@@ -34,7 +34,7 @@ jobs:
 
       - name: Build | Documentation
         run: |
-          cargo doc
+          cargo doc --all-features
           cp ./Documentation/index.html ./target/doc
 
       - name: Upload artifact
