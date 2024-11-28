@@ -4,7 +4,7 @@
 
 use Command_line_shell::Shell_executable_type;
 use Executable::Standard_type;
-use File_system::{Create_device, Create_file_system, Mode_type, Tests::Memory_device_type};
+use File_system::{Create_device, Create_file_system, Memory_device_type, Mode_type};
 
 #[ignore]
 #[test]
