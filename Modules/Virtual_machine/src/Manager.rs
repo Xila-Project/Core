@@ -102,7 +102,7 @@ impl Manager_type {
         Ok(())
     }
 
-    pub fn Instantiate(
+    pub fn Execute(
         &'static self,
         Buffer: Vec<u8>,
         Stack_size: usize,
