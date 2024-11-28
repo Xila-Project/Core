@@ -5,8 +5,8 @@
 use Task::Task_identifier_type;
 
 use File_system::{
-    Create_device, Create_file_system, Flags_type, Mode_type, Open_type, Path_type, Position_type,
-    Status_type, Tests::Memory_device_type,
+    Create_device, Create_file_system, Flags_type, Memory_device_type, Mode_type, Open_type,
+    Path_type, Position_type, Status_type,
 };
 use Virtual_file_system::{File_type, Virtual_file_system_type};
 

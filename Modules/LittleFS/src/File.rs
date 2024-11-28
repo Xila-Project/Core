@@ -4,12 +4,11 @@ use std::{
     rc::Rc,
 };
 
-use Task::Task_identifier_type;
-
 use File_system::{
     Error_type, File_system_identifier_type, Flags_type, Inode_type, Metadata_type, Mode_type,
     Path_type, Position_type, Result_type, Size_type, Statistics_type, Time_type, Type_type,
 };
+use Users::{Group_identifier_type, User_identifier_type};
 
 use super::{littlefs, Convert_flags, Convert_result};
 
@@ -56,19 +55,15 @@ pub struct File_type(Rc<Inner_type>);
 impl File_type {
     pub fn Open(
         File_system: &mut super::littlefs::lfs_t,
-        Task: Task_identifier_type,
         Path: &Path_type,
         Flags: Flags_type,
         Cache_size: usize,
+        Time: Time_type,
+        User: User_identifier_type,
+        Group: Group_identifier_type,
     ) -> Result_type<Self> {
-        // - Create or get the metadata
-        let Current_time: Time_type = Time::Get_instance()
-            .Get_current_time()
-            .map_err(|_| Error_type::Time_error)?
-            .into();
-
         let Metadata = if Flags.Get_open().Get_create() {
-            Metadata_type::Get_default(Task, Type_type::File, Current_time)
+            Metadata_type::Get_default(Type_type::File, Time, User, Group)
                 .ok_or(Error_type::Invalid_parameter)?
         } else {
             Self::Get_metadata_from_path(File_system, Path)?

@@ -4,7 +4,7 @@
 
 use wamr_rust_sdk::value::WasmValue;
 
-use File_system::{Create_device, Create_file_system, Tests::Memory_device_type};
+use File_system::{Create_device, Create_file_system, Memory_device_type};
 use Virtual_machine::{
     Environment_type, Function_descriptor_type, Function_descriptors, Instance_type, Module_type,
     Registrable_trait, Runtime_type,

@@ -24,6 +24,7 @@ pub enum Error_type {
     Invalid_module,
     Internal_error,
     Invalid_thread_identifier,
+    Time(Time::Error_type),
 }
 
 impl From<RuntimeError> for Error_type {

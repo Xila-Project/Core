@@ -14,15 +14,13 @@ pub struct Standard_type {
 
 impl Drop for Standard_type {
     fn drop(&mut self) {
-        self.Virtual_file_system
-            .Close(self.Standard_in, self.Task)
-            .unwrap();
-        self.Virtual_file_system
-            .Close(self.Standard_out, self.Task)
-            .unwrap();
-        self.Virtual_file_system
-            .Close(self.Standard_error, self.Task)
-            .unwrap();
+        let _ = self.Virtual_file_system.Close(self.Standard_in, self.Task);
+
+        let _ = self.Virtual_file_system.Close(self.Standard_out, self.Task);
+
+        let _ = self
+            .Virtual_file_system
+            .Close(self.Standard_error, self.Task);
     }
 }
 
@@ -44,9 +42,9 @@ impl Standard_type {
     }
 
     pub fn Print(&self, Arguments: &str) {
-        self.Virtual_file_system
-            .Write(self.Standard_out, Arguments.as_bytes(), self.Task)
-            .unwrap();
+        let _ = self
+            .Virtual_file_system
+            .Write(self.Standard_out, Arguments.as_bytes(), self.Task);
     }
 
     pub fn Out_flush(&self) {
@@ -56,9 +54,13 @@ impl Standard_type {
     }
 
     pub fn Write(&self, Data: &[u8]) -> Size_type {
-        self.Virtual_file_system
+        match self
+            .Virtual_file_system
             .Write(self.Standard_out, Data, self.Task)
-            .unwrap()
+        {
+            Ok(Size) => Size,
+            Err(_) => 0_usize.into(),
+        }
     }
 
     pub fn Print_line(&self, Arguments: &str) {
@@ -67,9 +69,9 @@ impl Standard_type {
     }
 
     pub fn Print_error(&self, Arguments: &str) {
-        self.Virtual_file_system
-            .Write(self.Standard_error, Arguments.as_bytes(), self.Task)
-            .unwrap();
+        let _ =
+            self.Virtual_file_system
+                .Write(self.Standard_error, Arguments.as_bytes(), self.Task);
     }
 
     pub fn Print_error_line(&self, Arguments: &str) {
@@ -120,6 +122,16 @@ impl Standard_type {
             self.Task,
             self.Virtual_file_system,
         ))
+    }
+
+    pub fn Split(
+        &self,
+    ) -> (
+        Unique_file_identifier_type,
+        Unique_file_identifier_type,
+        Unique_file_identifier_type,
+    ) {
+        (self.Standard_in, self.Standard_out, self.Standard_error)
     }
 
     pub(crate) fn Transfert(mut self, Task: Task_identifier_type) -> Result_type<Self> {

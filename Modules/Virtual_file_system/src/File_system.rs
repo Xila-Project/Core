@@ -147,7 +147,16 @@ impl Virtual_file_system_type {
         let (_, Parent_file_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
-        Parent_file_system.Create_directory(Relative_path, Task)?;
+        let Time = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
+
+        let User = Task::Get_instance().Get_user(Task)?;
+
+        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+
+        Parent_file_system.Create_directory(Relative_path, Time, User, Group)?;
 
         // Create a directory at the mount point
         let File_system_identifier = Self::Get_new_file_system_identifier(&File_systems)
@@ -260,7 +269,16 @@ impl Virtual_file_system_type {
         let (File_system_identifier, File_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
-        let Local_file = File_system.Open(Task, Relative_path, Flags)?;
+        let Time: Time_type = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
+
+        let User = Task::Get_instance().Get_user(Task)?;
+
+        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+
+        let Local_file = File_system.Open(Task, Relative_path, Flags, Time, User, Group)?;
 
         let Metadata = File_system.Get_metadata(Local_file)?;
 
@@ -348,6 +366,11 @@ impl Virtual_file_system_type {
     ) -> Result_type<Size_type> {
         let (File_system, Local_file_identifier) = File.Into_local_file_identifier(Task);
 
+        let Time = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
+
         let (Size, Underlying_file) = match File_system {
             File_system_identifier_type::Pipe_file_system => {
                 self.Pipe_file_system.Read(Local_file_identifier, Buffer)?
@@ -365,7 +388,7 @@ impl Virtual_file_system_type {
                     .get(&File_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .Inner
-                    .Read(Local_file_identifier, Buffer)
+                    .Read(Local_file_identifier, Buffer, Time)
             }
         };
 
@@ -378,9 +401,36 @@ impl Virtual_file_system_type {
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
-                .Read(Local_file_identifier, &mut [0; 0])?;
+                .Read(Local_file_identifier, &mut [0; 0], Time)?;
         }
         Ok(Size)
+    }
+
+    pub fn Read_to_end(
+        &self,
+        File: Unique_file_identifier_type,
+        Task: Task_identifier_type,
+        Buffer: &mut Vec<u8>,
+    ) -> Result_type<Size_type> {
+        const Chunk_size: usize = 512;
+
+        let mut Read_size = 0;
+
+        loop {
+            let mut Chunk = vec![0; Chunk_size];
+
+            let Size: usize = self.Read(File, &mut Chunk, Task)?.into();
+
+            if Size == 0 {
+                break;
+            }
+
+            Buffer.extend_from_slice(&Chunk[..Size]);
+
+            Read_size += Size;
+        }
+
+        Ok(Read_size.into())
     }
 
     pub fn Write(
@@ -390,6 +440,11 @@ impl Virtual_file_system_type {
         Task: Task_identifier_type,
     ) -> Result_type<Size_type> {
         let (File_system, Local_file_identifier) = File.Into_local_file_identifier(Task);
+
+        let Time = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
 
         let (Size, Underlying_file) = match File_system {
             File_system_identifier_type::Pipe_file_system => {
@@ -408,7 +463,7 @@ impl Virtual_file_system_type {
                     .get(&File_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .Inner
-                    .Write(Local_file_identifier, Buffer)
+                    .Write(Local_file_identifier, Buffer, Time)
             }
         };
 
@@ -421,7 +476,7 @@ impl Virtual_file_system_type {
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
-                .Write(Local_file_identifier, &[0; 0])?;
+                .Write(Local_file_identifier, &[0; 0], Time)?;
         }
 
         Ok(Size)
@@ -529,10 +584,22 @@ impl Virtual_file_system_type {
         let (_, File_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
+        let Time = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
+
+        let User = Task::Get_instance().Get_user(Task)?;
+
+        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+
         let File = File_system.Open(
             Task,
             Relative_path,
             Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None),
+            Time,
+            User,
+            Group,
         )?;
 
         File_system.Close(File)?;
@@ -546,13 +613,17 @@ impl Virtual_file_system_type {
         // Create the actual device.
         let Inode = self.Device_file_system.Mount_device(Device)?;
 
-        let Current_time: Time_type = Time::Get_instance()
+        let Time: Time_type = Time::Get_instance()
             .Get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
+        let User = Task::Get_instance().Get_user(Task)?;
+
+        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+
         // Set the metadata of the special file.
-        let mut Metadata = Metadata_type::Get_default(Task, Type, Current_time)
+        let mut Metadata = Metadata_type::Get_default(Type, Time, User, Group)
             .ok_or(Error_type::Invalid_parameter)?;
         Metadata.Set_inode(Inode);
 
@@ -571,22 +642,38 @@ impl Virtual_file_system_type {
 
         let (_, File_system, Relative_path) = Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
+        let Time = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
+
+        let User = Task::Get_instance().Get_user(Task)?;
+
+        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+
         let File = File_system.Open(
             Task,
             Relative_path,
             Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None),
+            Time,
+            User,
+            Group,
         )?;
 
         File_system.Close(File)?;
 
         let Inode = self.Pipe_file_system.Create_named_pipe(Size)?;
 
-        let Current_time: Time_type = Time::Get_instance()
+        let Time: Time_type = Time::Get_instance()
             .Get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let mut Metadata = Metadata_type::Get_default(Task, Type_type::Pipe, Current_time)
+        let User = Task::Get_instance().Get_user(Task)?;
+
+        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+
+        let mut Metadata = Metadata_type::Get_default(Type_type::Pipe, Time, User, Group)
             .ok_or(Error_type::Invalid_parameter)?;
         Metadata.Set_inode(Inode);
 
@@ -908,7 +995,16 @@ impl Virtual_file_system_type {
 
         let (_, File_system, Relative_path) = Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
-        File_system.Create_directory(Relative_path, Task)
+        let Time = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
+
+        let User = Task::Get_instance().Get_user(Task)?;
+
+        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+
+        File_system.Create_directory(Relative_path, Time, User, Group)
     }
 
     pub fn Get_mode(
@@ -1124,6 +1220,9 @@ mod Tests {
             _: Task_identifier_type,
             _: &Path_type,
             _: Flags_type,
+            _: Time_type,
+            _: User_identifier_type,
+            _: Group_identifier_type,
         ) -> Result_type<Local_file_identifier_type> {
             todo!()
         }
@@ -1156,11 +1255,21 @@ mod Tests {
             todo!()
         }
 
-        fn Read(&self, _: Local_file_identifier_type, _: &mut [u8]) -> Result_type<Size_type> {
+        fn Read(
+            &self,
+            _: Local_file_identifier_type,
+            _: &mut [u8],
+            _: Time_type,
+        ) -> Result_type<Size_type> {
             todo!()
         }
 
-        fn Write(&self, _: Local_file_identifier_type, _: &[u8]) -> Result_type<Size_type> {
+        fn Write(
+            &self,
+            _: Local_file_identifier_type,
+            _: &[u8],
+            _: Time_type,
+        ) -> Result_type<Size_type> {
             todo!()
         }
 
@@ -1180,7 +1289,13 @@ mod Tests {
             todo!()
         }
 
-        fn Create_directory(&self, _: &Path_type, _: Task_identifier_type) -> Result_type<()> {
+        fn Create_directory(
+            &self,
+            _: &Path_type,
+            _: Time_type,
+            _: User_identifier_type,
+            _: Group_identifier_type,
+        ) -> Result_type<()> {
             todo!()
         }
 

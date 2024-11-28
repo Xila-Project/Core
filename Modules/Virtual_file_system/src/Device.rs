@@ -314,7 +314,7 @@ impl File_system_type {
 mod tests {
     use File_system::{Create_device, Position_type};
 
-    use File_system::Tests::Memory_device_type;
+    use File_system::Memory_device_type;
 
     use super::*;
 

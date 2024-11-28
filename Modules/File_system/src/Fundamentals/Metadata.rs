@@ -1,4 +1,3 @@
-use Task::Task_identifier_type;
 use Users::{Group_identifier_type, User_identifier_type};
 
 use crate::{Permissions_type, Time_type, Type_type};
@@ -30,7 +29,7 @@ pub struct Metadata_type {
     /// The file permissions.
     Permissions: Permissions_type,
     /// The file owner.
-    Owner: User_identifier_type,
+    User: User_identifier_type,
     /// The file group.
     Group: Group_identifier_type,
 }
@@ -39,29 +38,11 @@ impl Metadata_type {
     pub const Identifier: u8 = 0x01;
 
     pub fn Get_default(
-        Task: Task_identifier_type,
         Type: Type_type,
         Current_time: Time_type,
+        User: User_identifier_type,
+        Group: Group_identifier_type,
     ) -> Option<Self> {
-        let Users_instance = Users::Get_instance();
-        let Task_instance = Task::Get_instance();
-
-        let Owner = match Task_instance.Get_owner(Task) {
-            Ok(Owner) => Owner,
-            Err(e) => {
-                println!("Failed to get owner: {:?}", e);
-                return None;
-            }
-        };
-
-        let Group = match Users_instance.Get_user_primary_group(Owner) {
-            Ok(Group) => Group,
-            Err(_) => {
-                println!("Failed to get group");
-                return None;
-            }
-        };
-
         let Permissions = Permissions_type::New_default(Type);
 
         Some(Metadata_type {
@@ -71,7 +52,7 @@ impl Metadata_type {
             Modification_time: Current_time,
             Access_time: Current_time,
             Permissions,
-            Owner,
+            User,
             Group,
         })
     }
@@ -100,8 +81,8 @@ impl Metadata_type {
         self.Permissions
     }
 
-    pub fn Get_owner(&self) -> User_identifier_type {
-        self.Owner
+    pub fn Get_user(&self) -> User_identifier_type {
+        self.User
     }
 
     pub fn Get_group(&self) -> Group_identifier_type {
@@ -133,7 +114,7 @@ impl Metadata_type {
     }
 
     pub fn Set_owner(&mut self, Owner: User_identifier_type) {
-        self.Owner = Owner;
+        self.User = Owner;
     }
 
     pub fn Set_group(&mut self, Group: Group_identifier_type) {

@@ -1,7 +1,9 @@
 mod Change_directory;
 mod Clear;
 mod Concatenate;
+mod Directory;
 mod Echo;
+mod Environment_variables;
 mod Exit;
 mod List;
 mod Statistics;

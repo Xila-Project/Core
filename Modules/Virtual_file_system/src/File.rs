@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use Task::Task_identifier_type;
 
 use File_system::{
-    Flags_type, Path_type, Position_type, Result_type, Size_type, Status_type,
+    Flags_type, Path_type, Position_type, Result_type, Size_type, Statistics_type, Status_type,
     Unique_file_identifier_type,
 };
 
@@ -108,6 +108,16 @@ impl<'a> File_type<'a> {
             Index += 1;
         }
         Ok(())
+    }
+
+    pub fn Read_to_end(&self, Buffer: &mut Vec<u8>) -> Result_type<Size_type> {
+        self.File_system
+            .Read_to_end(self.Get_file_identifier(), self.Task, Buffer)
+    }
+
+    pub fn Get_statistic(&self) -> Result_type<Statistics_type> {
+        self.File_system
+            .Get_statistics(self.Get_file_identifier(), self.Task)
     }
 }
 

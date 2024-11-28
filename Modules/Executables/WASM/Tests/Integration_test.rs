@@ -4,7 +4,10 @@
 
 use Command_line_shell::Shell_executable_type;
 use Executable::Standard_type;
-use File_system::{Create_device, Create_file_system, Memory_device_type, Mode_type};
+use File_system::{
+    Create_device, Create_file_system, Loader::Loader_type, Memory_device_type, Mode_type,
+};
+use WASM::WASM_device_type;
 
 #[ignore]
 #[test]
@@ -15,11 +18,20 @@ fn Integration_test() {
 
     let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()));
 
-    let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
+    let _ = Virtual_machine::Initialize(&[]);
+
+    let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 1024 * 512));
 
     LittleFS::File_system_type::Format(Memory_device.clone(), 256).unwrap();
 
-    let File_system = LittleFS::File_system_type::New(Memory_device, 256).unwrap();
+    let mut File_system = LittleFS::File_system_type::New(Memory_device, 256).unwrap();
+
+    let WASM_executable_path = "./Tests/WASM_test/target/wasm32-wasip1/release/WASM_test.wasm";
+    let Destination = "/Test.wasm";
+    Loader_type::New()
+        .Add_file(WASM_executable_path, Destination)
+        .Load(&mut File_system)
+        .unwrap();
 
     let Virtual_file_system =
         Virtual_file_system::Initialize(Create_file_system!(File_system)).unwrap();
@@ -28,6 +40,10 @@ fn Integration_test() {
 
     Virtual_file_system
         .Mount_device(Task, "/Shell", Create_device!(Shell_executable_type))
+        .unwrap();
+
+    Virtual_file_system
+        .Mount_device(Task, "/WASM", Create_device!(WASM_device_type))
         .unwrap();
 
     Virtual_file_system

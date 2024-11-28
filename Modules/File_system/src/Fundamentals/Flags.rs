@@ -122,6 +122,7 @@ impl Open_type {
 
     pub const Create: Self = Self::New(true, false, false);
     pub const Create_only: Self = Self::New(true, true, false);
+    pub const Truncate: Self = Self::New(false, false, true);
 
     pub const fn New(Create: bool, Create_only: bool, Truncate: bool) -> Self {
         Self(0)
