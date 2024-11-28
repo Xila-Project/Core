@@ -1,6 +1,8 @@
 #![allow(non_camel_case_types)]
 
-use std::{num::NonZeroU32, sync::PoisonError};
+use core::{fmt, num::NonZeroU32};
+
+use std::sync::PoisonError;
 
 pub type Result_type<T> = std::result::Result<T, Error_type>;
 
@@ -18,6 +20,12 @@ pub enum Error_type {
     Too_many_tasks,
     Already_initialized,
     Not_initialized,
+}
+
+impl fmt::Display for Error_type {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl<T> From<PoisonError<T>> for Error_type {
