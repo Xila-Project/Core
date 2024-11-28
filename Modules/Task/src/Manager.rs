@@ -379,7 +379,7 @@ impl Manager_type {
     }
 
     /// Get user identifier of the owner of a task.
-    pub fn Get_owner(
+    pub fn Get_user(
         &self,
         Task_identifier: Task_identifier_type,
     ) -> Result_type<User_identifier_type> {
@@ -571,7 +571,7 @@ mod Tests {
                 move || {
                     let Task = Get_instance().Get_current_task_identifier().unwrap();
 
-                    assert_eq!(Get_instance().Get_owner(Task).unwrap(), User_identifier);
+                    assert_eq!(Get_instance().Get_user(Task).unwrap(), User_identifier);
                 },
             )
             .unwrap();
@@ -597,14 +597,14 @@ mod Tests {
             .New_task(Task, Some(User_identifier), "Task 1", None, move || {
                 let Task = Get_instance().Get_current_task_identifier().unwrap();
 
-                assert_eq!(Get_instance().Get_owner(Task).unwrap(), User_identifier);
+                assert_eq!(Get_instance().Get_user(Task).unwrap(), User_identifier);
 
                 // - Inherit owner
                 let _ = Get_instance()
                     .New_task(Task, None, "Task 2", None, move || {
                         let Task = Get_instance().Get_current_task_identifier().unwrap();
 
-                        assert_eq!(Get_instance().Get_owner(Task).unwrap(), User_identifier);
+                        assert_eq!(Get_instance().Get_user(Task).unwrap(), User_identifier);
                         assert_eq!(Get_instance().Get_task_name(Task).unwrap(), "Task 2");
 
                         Manager_type::Sleep(std::time::Duration::from_secs(1));
@@ -618,7 +618,7 @@ mod Tests {
                     .New_task(Task, Some(User_identifier), "Task 3", None, move || {
                         let Task = Get_instance().Get_current_task_identifier().unwrap();
 
-                        assert_eq!(Get_instance().Get_owner(Task).unwrap(), User_identifier);
+                        assert_eq!(Get_instance().Get_user(Task).unwrap(), User_identifier);
                         assert_eq!(Get_instance().Get_task_name(Task).unwrap(), "Task 3");
                     })
                     .unwrap();

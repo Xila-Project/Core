@@ -82,7 +82,7 @@ impl Task_type {
     }
 
     pub fn Get_owner(&self) -> Result_type<User_identifier_type> {
-        Get_instance().Get_owner(self.Identifier)
+        Get_instance().Get_user(self.Identifier)
     }
 
     pub fn Get_environment_variable(&self, Name: &str) -> Result_type<Environment_variable_type> {
