@@ -2,12 +2,13 @@ use std::collections::BTreeMap;
 
 use crate::{
     Entry_type, File_identifier_type, Inode_type, Local_file_identifier_type, Metadata_type,
-    Mode_type, Statistics_type,
+    Mode_type, Statistics_type, Time_type,
 };
 
 use super::{Error_type, Flags_type, Path_type, Position_type, Result_type, Size_type};
 
 use Task::Task_identifier_type;
+use Users::{Group_identifier_type, User_identifier_type};
 
 #[macro_export]
 macro_rules! Create_file_system {
@@ -47,6 +48,9 @@ pub trait File_system_traits: Send + Sync {
         Task: Task_identifier_type,
         Path: &Path_type,
         Flags: Flags_type,
+        Time: Time_type,
+        User: User_identifier_type,
+        Group: Group_identifier_type,
     ) -> Result_type<Local_file_identifier_type>;
 
     /// Close a file.
@@ -86,14 +90,24 @@ pub trait File_system_traits: Send + Sync {
     /// # Errors
     /// - If the file is not opened.
     /// - If the file is not opened in read mode.
-    fn Read(&self, File: Local_file_identifier_type, Buffer: &mut [u8]) -> Result_type<Size_type>;
+    fn Read(
+        &self,
+        File: Local_file_identifier_type,
+        Buffer: &mut [u8],
+        Time_type: Time_type,
+    ) -> Result_type<Size_type>;
 
     /// Write a file.
     ///
     /// # Errors
     /// - If the file is not opened (invalid file identifier).
     /// - If the file is not opened in write mode (invalid mode).
-    fn Write(&self, File: Local_file_identifier_type, Buffer: &[u8]) -> Result_type<Size_type>;
+    fn Write(
+        &self,
+        File: Local_file_identifier_type,
+        Buffer: &[u8],
+        Time_type: Time_type,
+    ) -> Result_type<Size_type>;
 
     fn Rename(&self, Source: &Path_type, Destination: &Path_type) -> Result_type<()>;
 
@@ -111,7 +125,13 @@ pub trait File_system_traits: Send + Sync {
 
     // - Directory
 
-    fn Create_directory(&self, Path: &Path_type, Task: Task_identifier_type) -> Result_type<()>;
+    fn Create_directory(
+        &self,
+        Path: &Path_type,
+        Time: Time_type,
+        User: User_identifier_type,
+        Group: Group_identifier_type,
+    ) -> Result_type<()>;
 
     fn Open_directory(
         &self,
@@ -181,103 +201,10 @@ pub fn Get_new_inode<T>(Map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type
 }
 
 pub mod Tests {
-    use std::sync::RwLock;
 
-    use crate::{Device_trait, Open_type, Path_owned_type, Time_type, Type_type};
+    use crate::{Loader::Loader_type, Open_type, Path_owned_type, Time_type, Type_type};
 
     use super::*;
-
-    pub struct Memory_device_type<const Block_size: usize>(RwLock<(Vec<u8>, usize)>);
-
-    impl<const Block_size: usize> Memory_device_type<Block_size> {
-        pub fn New(Size: usize) -> Self {
-            assert!(Size % Block_size == 0);
-
-            let Data: Vec<u8> = vec![0; Size];
-
-            Self(RwLock::new((Data, 0)))
-        }
-
-        pub fn Get_block_count(&self) -> usize {
-            self.0.read().unwrap().0.len() / Block_size
-        }
-    }
-
-    impl<const Block_size: usize> Device_trait for Memory_device_type<Block_size> {
-        fn Read(&self, Buffer: &mut [u8]) -> crate::Result_type<Size_type> {
-            let mut Inner = self
-                .0
-                .try_write()
-                .map_err(|_| crate::Error_type::Ressource_busy)?;
-            let (Data, Position) = &mut *Inner;
-
-            let Read_size = Buffer.len().min(Data.len().saturating_sub(*Position));
-            Buffer[..Read_size].copy_from_slice(&Data[*Position..*Position + Read_size]);
-            *Position += Read_size;
-            Ok(Read_size.into())
-        }
-
-        fn Write(&self, Buffer: &[u8]) -> crate::Result_type<Size_type> {
-            let mut Inner = self
-                .0
-                .write()
-                .map_err(|_| crate::Error_type::Ressource_busy)?;
-            let (Data, Position) = &mut *Inner;
-
-            Data[*Position..*Position + Buffer.len()].copy_from_slice(Buffer);
-            *Position += Buffer.len();
-            Ok(Buffer.len().into())
-        }
-
-        fn Get_size(&self) -> crate::Result_type<Size_type> {
-            let Inner = self
-                .0
-                .read()
-                .map_err(|_| crate::Error_type::Ressource_busy)?;
-            Ok(Size_type::New(Inner.0.len() as u64))
-        }
-
-        fn Set_position(&self, Position: &Position_type) -> crate::Result_type<Size_type> {
-            let mut Inner = self
-                .0
-                .write()
-                .map_err(|_| crate::Error_type::Ressource_busy)?;
-            let (Data, Device_position) = &mut *Inner;
-
-            match Position {
-                Position_type::Start(Position) => *Device_position = *Position as usize,
-                Position_type::Current(Position) => {
-                    *Device_position = (*Device_position as isize + *Position as isize) as usize
-                }
-                Position_type::End(Position) => {
-                    *Device_position = (Data.len() as isize - *Position as isize) as usize
-                }
-            }
-
-            Ok(Size_type::New(*Device_position as u64))
-        }
-
-        fn Erase(&self) -> crate::Result_type<()> {
-            let mut Inner = self
-                .0
-                .write()
-                .map_err(|_| crate::Error_type::Ressource_busy)?;
-
-            let (Data, Position) = &mut *Inner;
-
-            Data[*Position..*Position + Block_size].fill(0);
-
-            Ok(())
-        }
-
-        fn Flush(&self) -> crate::Result_type<()> {
-            Ok(())
-        }
-
-        fn Get_block_size(&self) -> crate::Result_type<usize> {
-            Ok(Block_size)
-        }
-    }
 
     pub fn Get_test_path() -> Path_owned_type {
         Path_type::Root.to_owned()
@@ -291,7 +218,16 @@ pub mod Tests {
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
 
         // - Open
-        let File = File_system.Open(Task, &Path, Flags).unwrap();
+        let File = File_system
+            .Open(
+                Task,
+                &Path,
+                Flags,
+                Time_type::New(123),
+                User_identifier_type::Root,
+                Group_identifier_type::Root,
+            )
+            .unwrap();
 
         // - Close
         File_system.Close(File).unwrap();
@@ -308,11 +244,23 @@ pub mod Tests {
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
 
         // - Open
-        let File = File_system.Open(Task, &Path, Flags).unwrap();
+        let File = File_system
+            .Open(
+                Task,
+                &Path,
+                Flags,
+                Time_type::New(123),
+                User_identifier_type::Root,
+                Group_identifier_type::Root,
+            )
+            .unwrap();
 
         // - Write
         let Buffer = [0x01, 0x02, 0x03];
-        let Size = File_system.Write(File, &Buffer).unwrap();
+        let Size = File_system
+            .Write(File, &Buffer, Time_type::New(123))
+            .unwrap();
+
         assert_eq!(Size, Size_type::from(Buffer.len()));
         File_system
             .Set_position(File, &Position_type::Start(0))
@@ -320,7 +268,9 @@ pub mod Tests {
 
         // - Read
         let mut Buffer_read = [0; 3];
-        let Size = File_system.Read(File, &mut Buffer_read).unwrap();
+        let Size = File_system
+            .Read(File, &mut Buffer_read, Time_type::New(123))
+            .unwrap();
         assert_eq!(Buffer, Buffer_read);
         assert_eq!(Size, Size_type::from(Buffer.len()));
 
@@ -340,11 +290,22 @@ pub mod Tests {
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
 
         // - Open
-        let File = File_system.Open(Task, &Path, Flags).unwrap();
+        let File = File_system
+            .Open(
+                Task,
+                &Path,
+                Flags,
+                Time_type::New(123),
+                User_identifier_type::Root,
+                Group_identifier_type::Root,
+            )
+            .unwrap();
 
         // - Write
         let Buffer = [0x01, 0x02, 0x03];
-        let Size = File_system.Write(File, &Buffer).unwrap();
+        let Size = File_system
+            .Write(File, &Buffer, Time_type::New(123))
+            .unwrap();
         assert_eq!(Size, Size_type::from(Buffer.len()));
 
         File_system.Close(File).unwrap();
@@ -354,12 +315,21 @@ pub mod Tests {
 
         // - Open
         let File = File_system
-            .Open(Task, &Path_destination, Mode_type::Read_only.into())
+            .Open(
+                Task,
+                &Path_destination,
+                Mode_type::Read_only.into(),
+                Time_type::New(123),
+                User_identifier_type::Root,
+                Group_identifier_type::Root,
+            )
             .unwrap();
 
         // - Read
         let mut Buffer_read = [0; 3];
-        let Size = File_system.Read(File, &mut Buffer_read).unwrap();
+        let Size = File_system
+            .Read(File, &mut Buffer_read, Time_type::New(123))
+            .unwrap();
         assert_eq!(Size, Size_type::from(Buffer.len()));
         assert_eq!(Buffer, Buffer_read);
 
@@ -378,11 +348,22 @@ pub mod Tests {
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
 
         // - Open
-        let File = File_system.Open(Task, &Path, Flags).unwrap();
+        let File = File_system
+            .Open(
+                Task,
+                &Path,
+                Flags,
+                Time_type::New(123),
+                User_identifier_type::Root,
+                Group_identifier_type::Root,
+            )
+            .unwrap();
 
         // - Write
         let Buffer = [0x01, 0x02, 0x03];
-        let Size = File_system.Write(File, &Buffer).unwrap();
+        let Size = File_system
+            .Write(File, &Buffer, Time_type::New(123))
+            .unwrap();
         assert_eq!(Buffer.len(), Size.into());
 
         // - Set position
@@ -397,7 +378,9 @@ pub mod Tests {
 
         // - Read
         let mut Buffer_read = [0; 3];
-        let Size = File_system.Read(File, &mut Buffer_read).unwrap();
+        let Size = File_system
+            .Read(File, &mut Buffer_read, Time_type::New(123))
+            .unwrap();
         assert_eq!(Buffer, Buffer_read);
         assert_eq!(Buffer.len(), Size.into());
 
@@ -415,10 +398,21 @@ pub mod Tests {
 
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
 
-        let File = File_system.Open(Task, &Path, Flags).unwrap();
+        let File = File_system
+            .Open(
+                Task,
+                &Path,
+                Flags,
+                Time_type::New(123),
+                User_identifier_type::Root,
+                Group_identifier_type::Root,
+            )
+            .unwrap();
 
         let Buffer = [0x01, 0x02, 0x03];
-        let Size = File_system.Write(File, &Buffer).unwrap();
+        let Size = File_system
+            .Write(File, &Buffer, Time_type::New(123))
+            .unwrap();
         assert_eq!(Size, Size_type::from(Buffer.len()));
 
         File_system.Flush(File).unwrap();
@@ -435,11 +429,26 @@ pub mod Tests {
 
         let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
 
-        let File = File_system.Open(Task, &Path, Flags).unwrap();
+        let File = File_system
+            .Open(
+                Task,
+                &Path,
+                Flags,
+                Time_type::New(123),
+                User_identifier_type::Root,
+                Group_identifier_type::Root,
+            )
+            .unwrap();
 
         let Time = Time_type::New(123);
 
-        let Metadata = Metadata_type::Get_default(Task, Type_type::File, Time).unwrap();
+        let Metadata = Metadata_type::Get_default(
+            Type_type::File,
+            Time,
+            User_identifier_type::Root,
+            Group_identifier_type::Root,
+        )
+        .unwrap();
 
         File_system
             .Set_metadata_from_path(&Path, &Metadata)
@@ -461,7 +470,14 @@ pub mod Tests {
         for i in 0..10 {
             let Flags = Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None);
             let File = File_system
-                .Open(Task, Path_type::From_str(&format!("/Test{}", i)), Flags)
+                .Open(
+                    Task,
+                    Path_type::From_str(&format!("/Test{}", i)),
+                    Flags,
+                    Time_type::New(123),
+                    User_identifier_type::Root,
+                    Group_identifier_type::Root,
+                )
                 .unwrap();
             File_system.Close(File).unwrap();
         }
@@ -494,7 +510,14 @@ pub mod Tests {
         for i in 0..10 {
             let Flags = Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None);
             let File = File_system
-                .Open(Task, Path_type::From_str(&format!("/Test{}", i)), Flags)
+                .Open(
+                    Task,
+                    Path_type::From_str(&format!("/Test{}", i)),
+                    Flags,
+                    Time_type::New(123),
+                    User_identifier_type::Root,
+                    Group_identifier_type::Root,
+                )
                 .unwrap();
             File_system.Close(File).unwrap();
         }
@@ -537,7 +560,14 @@ pub mod Tests {
         for i in 0..10 {
             let Flags = Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None);
             let File = File_system
-                .Open(Task, Path_type::From_str(&format!("/Test{}", i)), Flags)
+                .Open(
+                    Task,
+                    Path_type::From_str(&format!("/Test{}", i)),
+                    Flags,
+                    Time_type::New(123),
+                    User_identifier_type::Root,
+                    Group_identifier_type::Root,
+                )
                 .unwrap();
             File_system.Close(File).unwrap();
         }
@@ -584,7 +614,14 @@ pub mod Tests {
 
         let Path = Get_test_path().Append("Test_create_directory").unwrap();
 
-        File_system.Create_directory(&Path, Task).unwrap();
+        File_system
+            .Create_directory(
+                &Path,
+                Time_type::New(123),
+                User_identifier_type::Root,
+                Group_identifier_type::Root,
+            )
+            .unwrap();
 
         {
             let Root_directory = File_system.Open_directory(Path_type::Root, Task).unwrap();
@@ -619,5 +656,38 @@ pub mod Tests {
             File_system.Close_directory(Directory).unwrap();
         }
         File_system.Remove(&Path).unwrap();
+    }
+
+    pub fn Test_loader(mut File_system: impl File_system_traits) {
+        // - Load the file in the file system
+        let Source_path = "Cargo.toml";
+        let Destination_path = "/Cargo.toml";
+
+        let Loader = Loader_type::New().Add_file(Source_path, Destination_path);
+
+        Loader.Load(&mut File_system).unwrap();
+
+        // - Read the file and compare it with the original
+        let Test_file = std::fs::read_to_string(Source_path).unwrap();
+
+        let mut Buffer = vec![0; Test_file.len()];
+
+        let File = File_system
+            .Open(
+                Task_identifier_type::New(0),
+                Path_type::New(Destination_path),
+                Flags_type::New(Mode_type::Read_only, None, None),
+                Time_type::New(0),
+                User_identifier_type::Root,
+                Group_identifier_type::Root,
+            )
+            .unwrap();
+
+        let Read = File_system
+            .Read(File, &mut Buffer, Time_type::New(0))
+            .unwrap();
+
+        assert_eq!(Read, Test_file.len());
+        assert_eq!(Buffer, Test_file.as_bytes());
     }
 }
