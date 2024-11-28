@@ -32,10 +32,10 @@ impl Shell_type {
             }
         };
 
-        let User = match Users::Get_instance().Get_user_name(Metadata.Get_owner()) {
+        let User = match Users::Get_instance().Get_user_name(Metadata.Get_user()) {
             Ok(User) => User,
             Err(_) => {
-                format!("{}", Metadata.Get_owner().Into_inner())
+                format!("{}", Metadata.Get_user().Into_inner())
             }
         };
 

@@ -37,25 +37,33 @@ impl Shell_type {
                 "clear" => self.Clear(Command.Get_arguments()),
                 "cat" => self.Concatenate(Command.Get_arguments()),
                 "stat" => self.Statistics(Command.Get_arguments()),
+                "mkdir" => self.Create_directory(Command.Get_arguments()),
+                "export" => self.Set_environment_variable(Command.Get_arguments()),
+                "unset" => self.Remove_environment_variable(Command.Get_arguments()),
+                "rm" => self.Remove(Command.Get_arguments()),
                 _ => {
+                    // - Set the current directory for the following commands.
+                    if let Err(Error) = Task::Get_instance().Set_environment_variable(
+                        self.Standard.Get_task(),
+                        "Current_directory",
+                        self.Current_directory.As_str(),
+                    ) {
+                        self.Standard.Print_error_line(&format!(
+                            "Failed to set current directory: {}",
+                            Error
+                        ));
+                    }
+
                     let Path = Resolve(Command.Get_command(), Paths)?;
 
                     let Standard = self.Standard.Duplicate().unwrap();
 
                     let Input = Command.Get_arguments().concat();
 
-                    let Result = Execute(&Path, Input, Standard)
+                    let _ = Execute(&Path, Input, Standard)
                         .map_err(|_| Error_type::Failed_to_execute_command)?
                         .Join()
                         .map_err(|_| Error_type::Failed_to_join_task)?;
-
-                    if Result < 0 {
-                        println!(
-                            "Command \"{}\" failed with exit code {}",
-                            Command.Get_command(),
-                            Result
-                        );
-                    }
                 }
             }
         }
