@@ -86,7 +86,7 @@ fn Integration_test() {
         .unwrap();
 
     Virtual_machine
-        .Instantiate(
+        .Execute(
             Binary_buffer.to_vec(),
             8 * 1024,
             Standard_in,
