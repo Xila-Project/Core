@@ -54,6 +54,16 @@ pub trait Device_trait: Send + Sync {
     fn Is_a_block_device(&self) -> bool {
         false
     }
+
+    fn Dump_device(&self) -> Result_type<Vec<u8>> {
+        let Size = self.Get_size()?;
+
+        let mut Buffer = vec![0; Size.into()];
+
+        self.Read(&mut Buffer)?;
+
+        Ok(Buffer)
+    }
 }
 
 #[derive(Clone)]
@@ -105,5 +115,9 @@ impl Device_type {
 
     pub fn Is_a_block_device(&self) -> bool {
         self.0.Is_a_block_device()
+    }
+
+    pub fn Dump_device(&self) -> Result_type<Vec<u8>> {
+        self.0.Dump_device()
     }
 }
