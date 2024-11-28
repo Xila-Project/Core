@@ -6,6 +6,7 @@ mod Device;
 mod Error;
 mod File_system;
 mod Fundamentals;
+pub mod Loader;
 mod Time;
 
 pub use Device::{Device_trait, Device_type};
