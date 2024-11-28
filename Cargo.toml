@@ -18,6 +18,7 @@ members = [
     "Modules/Bindings/WASM",
     "Modules/Executables/Shell/Command_line",
     "Modules/Executable",
+    "Modules/Executables/WASM",
 ]
 exclude = [
     "Modules/Virtual_machine/Tests/WASM_test",
