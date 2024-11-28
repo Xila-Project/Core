@@ -35,10 +35,39 @@ rust-version = "1.71"
 
 
 [dependencies]
+# - WASM
 WASM_bindings = { path = "Modules/Bindings/WASM", optional = true }
+# - Host
+LittleFS = { path = "Modules/LittleFS", optional = true }
+Virtual_machine = { path = "Modules/Virtual_machine", optional = true }
+Virtual_file_system = { path = "Modules/Virtual_file_system", optional = true }
+Graphics = { path = "Modules/Graphics", optional = true }
+Time = { path = "Modules/Time", optional = true }
+Task = { path = "Modules/Task", optional = true }
+Users = { path = "Modules/Users", optional = true }
+Drivers = { path = "Modules/Drivers", optional = true }
+Memory = { path = "Modules/Memory", optional = true }
+WASM = { path = "Modules/Executables/WASM", optional = true }
+Command_line_shell = { path = "Modules/Executables/Shell/Command_line", optional = true }
+
+[build-dependencies]
+Target = { path = "Modules/Target", optional = true }
 
 [features]
 default = []
 
-Host = []
-WASM = ["WASM_bindings"]
+Host = [
+    "dep:LittleFS",
+    "dep:Virtual_machine",
+    "dep:Virtual_file_system",
+    "dep:Graphics",
+    "dep:Task",
+    "dep:Time",
+    "dep:Users",
+    "dep:Drivers",
+    "dep:Memory",
+    "dep:WASM",
+    "dep:Command_line_shell",
+    "dep:Target",
+]
+WASM = ["dep:WASM_bindings"]
