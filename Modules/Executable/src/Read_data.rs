@@ -22,6 +22,10 @@ impl Read_data_type {
         [0; size_of::<Self>()]
     }
 
+    pub const fn Get_size(&self) -> usize {
+        size_of::<Self>()
+    }
+
     pub fn Get_main(&self) -> Option<Main_function_type> {
         self.Main
     }
