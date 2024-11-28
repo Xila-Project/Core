@@ -101,7 +101,7 @@ impl Path_type {
     pub fn Get_extension(&self) -> Option<&str> {
         let Extension_start = self.0.rfind(Extension_separator)?;
 
-        Some(&self.0[Extension_start..])
+        Some(&self.0[Extension_start + 1..])
     }
 
     pub fn Set_extension(&self, Extension: &str) -> Option<Path_owned_type> {
@@ -321,7 +321,7 @@ mod Tests {
     fn Test_path_file() {
         // Regular case
         let Path = Path_type::From_str("/Directory/File.txt");
-        assert_eq!(Path.Get_extension(), Some(".txt"));
+        assert_eq!(Path.Get_extension(), Some("txt"));
         assert_eq!(Path.Get_file_prefix(), Some("File"));
         assert_eq!(Path.Get_file_name(), Some("File.txt"));
 
@@ -333,7 +333,7 @@ mod Tests {
 
         // No file prefix
         let Path = Path_type::From_str("File.txt");
-        assert_eq!(Path.Get_extension(), Some(".txt"));
+        assert_eq!(Path.Get_extension(), Some("txt"));
         assert_eq!(Path.Get_file_prefix(), Some("File"));
         assert_eq!(Path.Get_file_name(), Some("File.txt"));
 
