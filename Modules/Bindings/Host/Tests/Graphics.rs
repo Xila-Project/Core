@@ -3,7 +3,7 @@
 #![allow(non_upper_case_globals)]
 
 use Drivers::Native::{Time_driver_type, Window_screen};
-use File_system::{Create_device, Create_file_system, Tests::Memory_device_type};
+use File_system::{Create_device, Create_file_system, Memory_device_type};
 use Graphics::{lvgl, Get_recommended_buffer_size, Point_type};
 use Time::Duration_type;
 
