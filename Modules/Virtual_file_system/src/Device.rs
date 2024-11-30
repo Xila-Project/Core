@@ -4,16 +4,18 @@ use Task::Task_identifier_type;
 
 use File_system::{
     Device_type, Error_type, File_identifier_type, Flags_type, Get_new_file_identifier,
-    Get_new_inode, Inode_type, Local_file_identifier_type, Mode_type, Position_type, Result_type,
-    Size_type, Unique_file_identifier_type,
+    Get_new_inode, Inode_type, Local_file_identifier_type, Mode_type, Path_type, Position_type,
+    Result_type, Size_type, Unique_file_identifier_type,
 };
 
 type Open_device_inner_type = (Device_type, Flags_type, Unique_file_identifier_type);
 
 struct Inner_type {
-    pub Devices: BTreeMap<Inode_type, Device_type>,
+    pub Devices: BTreeMap<Inode_type, (&'static Path_type, Device_type)>,
     pub Open_devices: BTreeMap<Local_file_identifier_type, Open_device_inner_type>,
 }
+
+type Device_inner_type = (&'static Path_type, Device_type);
 
 pub struct File_system_type(RwLock<Inner_type>);
 
@@ -28,7 +30,7 @@ impl File_system_type {
     fn Borrow_mutable_inner_2_splitted(
         Inner: &mut Inner_type,
     ) -> (
-        &mut BTreeMap<Inode_type, Device_type>,
+        &mut BTreeMap<Inode_type, Device_inner_type>,
         &mut BTreeMap<Local_file_identifier_type, Open_device_inner_type>,
     ) {
         (&mut Inner.Devices, &mut Inner.Open_devices)
@@ -47,16 +49,44 @@ impl File_system_type {
             .2)
     }
 
-    pub fn Mount_device(&self, Device: Device_type) -> Result_type<Inode_type> {
+    pub fn Mount_static_device(
+        &self,
+        Path: &'static impl AsRef<Path_type>,
+        Device: Device_type,
+    ) -> Result_type<Inode_type> {
         let mut Inner = self.0.write()?;
 
         let (Devices, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let Inode = Get_new_inode(Devices)?;
 
-        Devices.insert(Inode, Device);
+        Devices.insert(Inode, (Path.as_ref(), Device));
 
         Ok(Inode)
+    }
+
+    pub fn Get_devices_from_path(
+        &self,
+        Path: &'static Path_type,
+    ) -> Result_type<Vec<&'static Path_type>> {
+        if Path.Is_root() {
+            return Ok(self
+                .0
+                .read()?
+                .Devices
+                .values()
+                .map(|(Path, _)| *Path)
+                .collect());
+        }
+
+        Ok(self
+            .0
+            .read()?
+            .Devices
+            .iter()
+            .filter(|(_, (Device_path, _))| Device_path.Strip_prefix(Path).is_some())
+            .map(|(_, (Device_path, _))| *Device_path)
+            .collect())
     }
 
     pub fn Open(
@@ -76,7 +106,7 @@ impl File_system_type {
 
         Open_pipes.insert(
             Local_file_identifier,
-            (Device.clone(), Flags, Underlying_file),
+            (Device.1.clone(), Flags, Underlying_file),
         );
 
         Ok(Local_file_identifier)
@@ -176,14 +206,12 @@ impl File_system_type {
         Ok(New_file)
     }
 
-    pub fn Remove(&self, Inode: Inode_type) -> Result_type<()> {
+    pub fn Remove(&self, Inode: Inode_type) -> Result_type<(&'static Path_type, Device_type)> {
         self.0
             .write()?
             .Devices
             .remove(&Inode)
-            .ok_or(Error_type::Invalid_identifier)?;
-
-        Ok(())
+            .ok_or(Error_type::Invalid_identifier)
     }
 
     pub fn Read(
@@ -295,6 +323,7 @@ impl File_system_type {
             .Devices
             .get(&Inode)
             .ok_or(Error_type::Invalid_identifier)?
+            .1
             .clone())
     }
 
@@ -325,10 +354,12 @@ mod tests {
     fn Test_mount_device() {
         let fs = File_system_type::New();
 
+        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
+            Memory_device_size
+        ));
+
         let Inode = fs
-            .Mount_device(Create_device!(
-                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
-            ))
+            .Mount_static_device(&"Memory_device", Memory_device)
             .unwrap();
         assert!(fs.Get_raw_device(Inode).is_ok());
     }
@@ -337,10 +368,12 @@ mod tests {
     fn Test_open_close_device() {
         let fs = File_system_type::New();
 
+        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
+            Memory_device_size
+        ));
+
         let Inode = fs
-            .Mount_device(Create_device!(
-                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
-            ))
+            .Mount_static_device(&"Memory_device", Memory_device.clone())
             .unwrap();
         let file_id = fs
             .Open(
@@ -357,10 +390,12 @@ mod tests {
     fn Test_read_write_device() {
         let fs = File_system_type::New();
 
+        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
+            Memory_device_size
+        ));
+
         let Inode = fs
-            .Mount_device(Create_device!(
-                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
-            ))
+            .Mount_static_device(&"Memory_device", Memory_device.clone())
             .unwrap();
         let file_id = fs
             .Open(
@@ -386,10 +421,12 @@ mod tests {
     fn Test_duplicate_file_identifier() {
         let File_system = File_system_type::New();
 
+        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
+            Memory_device_size
+        ));
+
         let Inode = File_system
-            .Mount_device(Create_device!(
-                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
-            ))
+            .Mount_static_device(&"Memory_device", Memory_device.clone())
             .unwrap();
 
         let Underlying_file = 0_usize.into();
@@ -419,10 +456,12 @@ mod tests {
     fn Test_transfert_file_identifier() {
         let File_system = File_system_type::New();
 
+        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
+            Memory_device_size
+        ));
+
         let Inode = File_system
-            .Mount_device(Create_device!(
-                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
-            ))
+            .Mount_static_device(&"Memory_device", Memory_device.clone())
             .unwrap();
 
         let Task = Task_identifier_type::New(0);
@@ -446,10 +485,12 @@ mod tests {
     fn Test_delete_device() {
         let fs = File_system_type::New();
 
+        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
+            Memory_device_size
+        ));
+
         let Inode = fs
-            .Mount_device(Create_device!(
-                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
-            ))
+            .Mount_static_device(&"Memory_device", Memory_device.clone())
             .unwrap();
         assert!(fs.Remove(Inode).is_ok());
     }
@@ -458,10 +499,12 @@ mod tests {
     fn Test_set_position() {
         let fs = File_system_type::New();
 
+        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
+            Memory_device_size
+        ));
+
         let Inode = fs
-            .Mount_device(Create_device!(
-                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
-            ))
+            .Mount_static_device(&"Memory_device", Memory_device.clone())
             .unwrap();
         let file_id = fs
             .Open(
@@ -479,10 +522,12 @@ mod tests {
     fn Test_flush() {
         let fs = File_system_type::New();
 
+        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
+            Memory_device_size
+        ));
+
         let Inode = fs
-            .Mount_device(Create_device!(
-                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
-            ))
+            .Mount_static_device(&"Memory_device", Memory_device.clone())
             .unwrap();
         let file_id = fs
             .Open(
@@ -500,10 +545,12 @@ mod tests {
     fn Test_get_mode() {
         let fs = File_system_type::New();
 
+        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
+            Memory_device_size
+        ));
+
         let Inode = fs
-            .Mount_device(Create_device!(
-                Memory_device_type::<Memory_device_block_size>::New(Memory_device_size)
-            ))
+            .Mount_static_device(&"Memory_device", Memory_device.clone())
             .unwrap();
         let file_id = fs
             .Open(
