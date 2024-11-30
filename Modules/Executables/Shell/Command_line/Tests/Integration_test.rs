@@ -21,30 +21,29 @@ fn Integration_test() {
 
     let File_system = LittleFS::File_system_type::New(Memory_device, 256).unwrap();
 
-    let Virtual_file_system =
-        Virtual_file_system::Initialize(Create_file_system!(File_system)).unwrap();
+    Virtual_file_system::Initialize(Create_file_system!(File_system)).unwrap();
 
     let Task = Task_instance.Get_current_task_identifier().unwrap();
 
-    Virtual_file_system
-        .Mount_device(Task, "/Shell", Create_device!(Shell_executable_type))
+    Virtual_file_system::Get_instance()
+        .Mount_static_device(Task, &"/Shell", Create_device!(Shell_executable_type))
         .unwrap();
 
-    Virtual_file_system
+    Virtual_file_system::Get_instance()
         .Create_directory(&"/Devices", Task)
         .unwrap();
 
-    Drivers::Native::Console::Mount_devices(Task, Virtual_file_system).unwrap();
+    Drivers::Native::Console::Mount_devices(Task, Virtual_file_system::Get_instance()).unwrap();
 
-    let Standard_in = Virtual_file_system
+    let Standard_in = Virtual_file_system::Get_instance()
         .Open(&"/Devices/Standard_in", Mode_type::Read_only.into(), Task)
         .unwrap();
 
-    let Standard_out = Virtual_file_system
+    let Standard_out = Virtual_file_system::Get_instance()
         .Open(&"/Devices/Standard_out", Mode_type::Write_only.into(), Task)
         .unwrap();
 
-    let Standard_error = Virtual_file_system
+    let Standard_error = Virtual_file_system::Get_instance()
         .Open(
             &"/Devices/Standard_error",
             Mode_type::Write_only.into(),
@@ -57,7 +56,7 @@ fn Integration_test() {
         Standard_out,
         Standard_error,
         Task,
-        Virtual_file_system,
+        Virtual_file_system::Get_instance(),
     );
 
     Task_instance

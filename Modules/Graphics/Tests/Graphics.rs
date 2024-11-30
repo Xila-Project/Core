@@ -11,7 +11,7 @@ fn main() {
     use Graphics::{lvgl, Get_recommended_buffer_size, Point_type};
     use Time::Duration_type;
 
-    Users::Initialize().expect("Error initializing users manager");
+    let _ = Users::Initialize();
 
     let Task_instance = Task::Initialize().expect("Error initializing task manager");
 

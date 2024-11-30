@@ -26,16 +26,18 @@ fn Integration_test() {
     let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
     LittleFS::File_system_type::Format(Memory_device.clone(), 512).unwrap();
 
-    let Virtual_file_system = Virtual_file_system::Initialize(Create_file_system!(
-        LittleFS::File_system_type::New(Memory_device, 256).unwrap()
-    ))
+    Virtual_file_system::Initialize(Create_file_system!(LittleFS::File_system_type::New(
+        Memory_device,
+        256
+    )
+    .unwrap()))
     .unwrap();
 
-    Virtual_file_system
+    Virtual_file_system::Get_instance()
         .Create_directory(&"/Devices", Task)
         .unwrap();
 
-    Drivers::Native::Console::Mount_devices(Task, Virtual_file_system).unwrap();
+    Drivers::Native::Console::Mount_devices(Task, Virtual_file_system::Get_instance()).unwrap();
 
     Virtual_machine::Initialize(&[&Host_bindings::Graphics_bindings]);
 
@@ -61,7 +63,7 @@ fn Integration_test() {
 
     let _Calendar = unsafe { lvgl::lv_calendar_create(Screen_object) };
 
-    let Standard_in = Virtual_file_system
+    let Standard_in = Virtual_file_system::Get_instance()
         .Open(
             &"/Devices/Standard_in",
             File_system::Mode_type::Read_only.into(),
@@ -69,7 +71,7 @@ fn Integration_test() {
         )
         .unwrap();
 
-    let Standard_out = Virtual_file_system
+    let Standard_out = Virtual_file_system::Get_instance()
         .Open(
             &"/Devices/Standard_out",
             File_system::Mode_type::Write_only.into(),
@@ -77,7 +79,7 @@ fn Integration_test() {
         )
         .unwrap();
 
-    let Standard_error = Virtual_file_system
+    let Standard_error = Virtual_file_system::Get_instance()
         .Open(
             &"/Devices/Standard_out",
             File_system::Mode_type::Write_only.into(),
