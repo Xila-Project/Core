@@ -49,6 +49,9 @@ Drivers = { path = "Modules/Drivers", optional = true }
 Memory = { path = "Modules/Memory", optional = true }
 WASM = { path = "Modules/Executables/WASM", optional = true }
 Command_line_shell = { path = "Modules/Executables/Shell/Command_line", optional = true }
+Executable = { path = "Modules/Executable", optional = true }
+File_system = { path = "Modules/File_system", optional = true }
+Host_bindings = { path = "Modules/Bindings/Host", optional = true }
 
 [build-dependencies]
 Target = { path = "Modules/Target", optional = true }
@@ -69,5 +72,13 @@ Host = [
     "dep:WASM",
     "dep:Command_line_shell",
     "dep:Target",
+    "dep:Executable",
+    "dep:File_system",
+    "dep:Host_bindings",
 ]
 WASM = ["dep:WASM_bindings"]
+
+[[example]]
+name = "Native"
+path = "Examples/Native.rs"
+required-features = ["Host"]
