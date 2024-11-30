@@ -14,10 +14,15 @@ use crate::{Error_type, Input_type, Result_type, Screen_read_data_type};
 
 static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
 
-pub fn Initialize() -> &'static Manager_type {
-    let Manager = Manager_instance.get_or_init(|| {
-        Manager_type::New(Time::Get_instance()).expect("Failed to create manager instance")
-    });
+pub fn Initialize() {
+    Manager_instance
+        .set(Manager_type::New(Time::Get_instance()).expect("Failed to create manager instance"))
+        .map_err(|_| ())
+        .expect(
+            "
+         Graphics manager was already initialized
+        ",
+        );
 
     let Task_instance = Task::Get_instance();
 
@@ -27,12 +32,10 @@ pub fn Initialize() -> &'static Manager_type {
             "Graphics",
             None,
             move || {
-                Manager.Loop().unwrap();
+                Get_instance().Loop().unwrap();
             },
         )
         .unwrap();
-
-    Manager
 }
 
 pub fn Get_instance() -> &'static Manager_type {

@@ -39,18 +39,18 @@ fn Integration_test() {
     LittleFS::File_system_type::Format(Device.clone(), 512).unwrap();
     let File_system = Create_file_system!(LittleFS::File_system_type::New(Device, 256).unwrap());
 
-    let Virtual_file_system = Virtual_file_system::Initialize(File_system).unwrap();
+    Virtual_file_system::Initialize(File_system).unwrap();
 
     // Set environment variables
     let Task = Task_instance.Get_current_task_identifier().unwrap();
 
-    Virtual_file_system
+    Virtual_file_system::Get_instance()
         .Create_directory(&"/Devices", Task)
         .unwrap();
 
     Drivers::Native::Console::Mount_devices(
         Task_instance.Get_current_task_identifier().unwrap(),
-        Virtual_file_system,
+        Virtual_file_system::Get_instance(),
     )
     .unwrap();
 
@@ -69,21 +69,21 @@ fn Integration_test() {
         .Build()
         .unwrap();
 
-    let Standard_in = Virtual_file_system
+    let Standard_in = Virtual_file_system::Get_instance()
         .Open(
             &"/Devices/Standard_in",
             File_system::Mode_type::Read_only.into(),
             Task,
         )
         .expect("Failed to open stdin");
-    let Standard_out = Virtual_file_system
+    let Standard_out = Virtual_file_system::Get_instance()
         .Open(
             &"/Devices/Standard_out",
             File_system::Mode_type::Write_only.into(),
             Task,
         )
         .expect("Failed to open stdout");
-    let Standard_error = Virtual_file_system
+    let Standard_error = Virtual_file_system::Get_instance()
         .Open(
             &"/Devices/Standard_error",
             File_system::Mode_type::Write_only.into(),
@@ -91,7 +91,7 @@ fn Integration_test() {
         )
         .expect("Failed to open stderr");
 
-    let (Standard_in, Standard_out, Standard_error) = Virtual_file_system
+    let (Standard_in, Standard_out, Standard_error) = Virtual_file_system::Get_instance()
         .Create_new_task_standard_io(Standard_in, Standard_error, Standard_out, Task, Task, false)
         .unwrap();
 

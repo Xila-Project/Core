@@ -6,7 +6,9 @@ pub type Result_type<T> = Result<T, Error_type>;
 #[derive(Debug, Clone)]
 #[repr(u16)]
 pub enum Error_type {
-    Failed_to_tokenize_command_line = 1,
+    Authentication_failed = 1,
+    Failed_to_set_environment_variable,
+    Failed_to_tokenize_command_line,
     Missing_file_name_after_redirect_out,
     Missing_file_name_after_redirect_in,
     Missing_command,
@@ -17,12 +19,15 @@ pub enum Error_type {
     Failed_to_execute_command,
     Failed_to_join_task,
     Invalid_number_of_arguments,
-    Todo,
 }
 
 impl Display for Error_type {
     fn fmt(&self, Formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
+            Error_type::Authentication_failed => write!(Formatter, "Authentication failed"),
+            Error_type::Failed_to_set_environment_variable => {
+                write!(Formatter, "Failed to set environment variable")
+            }
             Error_type::Failed_to_tokenize_command_line => {
                 write!(Formatter, "Failed to tokenize command line")
             }
@@ -48,7 +53,6 @@ impl Display for Error_type {
             Error_type::Invalid_number_of_arguments => {
                 write!(Formatter, "Invalid number of arguments")
             }
-            Error_type::Todo => write!(Formatter, "Todo"),
         }
     }
 }

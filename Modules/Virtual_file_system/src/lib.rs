@@ -3,9 +3,11 @@
 #![allow(non_upper_case_globals)]
 
 mod Device;
+mod Error;
 mod File;
 mod File_system;
 mod Pipe;
 
+pub use Error::*;
 pub use File::*;
 pub use File_system::*;

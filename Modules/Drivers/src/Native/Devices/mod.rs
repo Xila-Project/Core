@@ -17,11 +17,11 @@ pub fn Mount_devices(
     let (Screen, Pointer) = Window_screen::New(Resolution)?;
 
     Virtual_file_system
-        .Mount_device(Task, "/Devices/Screen", Screen)
+        .Mount_static_device(Task, &"/Devices/Screen", Screen)
         .map_err(|Error| format!("Error adding screen device: {:?}", Error))?;
 
     Virtual_file_system
-        .Mount_device(Task, "/Devices/Pointer", Pointer)
+        .Mount_static_device(Task, &"/Devices/Pointer", Pointer)
         .map_err(|Error| format!("Error adding pointer device: {:?}", Error))?;
 
     Console::Mount_devices(Task, Virtual_file_system)?;

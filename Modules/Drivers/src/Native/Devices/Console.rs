@@ -96,25 +96,25 @@ pub fn Mount_devices(
     Virtual_file_system: &Virtual_file_system_type,
 ) -> Result<(), String> {
     Virtual_file_system
-        .Mount_device(
+        .Mount_static_device(
             Task,
-            "/Devices/Standard_in",
+            &"/Devices/Standard_in",
             Create_device!(Standard_in_device_type),
         )
         .map_err(|Error| format!("Error adding standard in device: {:?}", Error))?;
 
     Virtual_file_system
-        .Mount_device(
+        .Mount_static_device(
             Task,
-            "/Devices/Standard_out",
+            &"/Devices/Standard_out",
             Create_device!(Standard_out_device_type),
         )
         .map_err(|Error| format!("Error adding standard out device: {:?}", Error))?;
 
     Virtual_file_system
-        .Mount_device(
+        .Mount_static_device(
             Task,
-            "/Devices/Standard_error",
+            &"/Devices/Standard_error",
             Create_device!(Standard_error_device_type),
         )
         .map_err(|Error| format!("Error adding standard error device: {:?}", Error))?;

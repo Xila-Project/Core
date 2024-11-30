@@ -43,7 +43,7 @@ impl<'a> Iterator for Components_type<'a> {
     }
 }
 
-impl<'a> DoubleEndedIterator for Components_type<'a> {
+impl DoubleEndedIterator for Components_type<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(Component_type::from)
     }

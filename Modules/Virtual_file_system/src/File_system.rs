@@ -1,3 +1,4 @@
+use std::sync::OnceLock;
 use std::{collections::BTreeMap, sync::RwLock};
 
 use Task::Task_identifier_type;
@@ -27,37 +28,27 @@ struct Internal_file_system_type {
 /// I know, it is not safe to use mutable static variables.
 /// It is thread safe (after initialization) because it is only read after initialization.
 /// It is a pragmatic choice for efficiency in embedded systems contexts (avoid using Arc).
-static mut Virtual_file_system_instance: Option<Virtual_file_system_type> = None;
+static Virtual_file_system_instance: OnceLock<Virtual_file_system_type> = OnceLock::new();
 
-pub fn Initialize(
-    Root_file_system: Box<dyn File_system_traits>,
-) -> Result_type<&'static Virtual_file_system_type> {
-    unsafe {
-        if Is_initialized() {
-            return Err(Error_type::Already_initialized);
-        }
-
-        Virtual_file_system_instance.replace(Virtual_file_system_type::New(
+pub fn Initialize(Root_file_system: Box<dyn File_system_traits>) -> Result<(), crate::Error_type> {
+    Virtual_file_system_instance
+        .set(Virtual_file_system_type::New(
             Task::Get_instance(),
             Users::Get_instance(),
             Time::Get_instance(),
             Root_file_system,
-        )?);
-
-        Ok(Get_instance())
-    }
-}
-
-pub fn Is_initialized() -> bool {
-    unsafe { Virtual_file_system_instance.is_some() }
+        )?)
+        .map_err(|_| crate::Error_type::Already_initialized)
 }
 
 pub fn Get_instance() -> &'static Virtual_file_system_type {
-    unsafe {
-        Virtual_file_system_instance
-            .as_ref()
-            .expect("File system not initialized")
-    }
+    Virtual_file_system_instance
+        .get()
+        .expect("Virtual file system not initialized")
+}
+
+pub fn Uninitialize() {
+    Get_instance().Uninitialize();
 }
 
 /// The virtual file system.
@@ -101,6 +92,17 @@ impl Virtual_file_system_type {
             Device_file_system: Device::File_system_type::New(),
             Pipe_file_system: Pipe::File_system_type::New(),
         })
+    }
+
+    pub fn Uninitialize(&self) {
+        if let Ok(Paths) = self
+            .Device_file_system
+            .Get_devices_from_path(Path_type::Root)
+        {
+            for Path in Paths {
+                let _ = self.Remove(Path);
+            }
+        }
     }
 
     fn Get_new_file_system_identifier(
@@ -184,9 +186,9 @@ impl Virtual_file_system_type {
             return Err(Error_type::Invalid_path);
         }
 
-        let File_system_identifier = {
-            let File_systems = self.File_systems.read()?; // Get the file systems
+        let mut File_systems = self.File_systems.write()?; // Get the file systems
 
+        let File_system_identifier = {
             let (File_system_identifier, _, Relative_path) =
                 Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
@@ -196,8 +198,6 @@ impl Virtual_file_system_type {
 
             File_system_identifier
         };
-
-        let mut File_systems = self.File_systems.write()?;
 
         let File_system = File_systems
             .remove(&File_system_identifier)
@@ -572,10 +572,10 @@ impl Virtual_file_system_type {
         Ok(())
     }
 
-    pub fn Mount_device(
+    pub fn Mount_static_device(
         &self,
         Task: Task_identifier_type,
-        Path: impl AsRef<Path_type> + 'static,
+        Path: &'static impl AsRef<Path_type>,
         Device: Device_type,
     ) -> Result_type<()> {
         let File_systems = self.File_systems.read()?; // Get the file systems
@@ -611,7 +611,7 @@ impl Virtual_file_system_type {
         };
 
         // Create the actual device.
-        let Inode = self.Device_file_system.Mount_device(Device)?;
+        let Inode = self.Device_file_system.Mount_static_device(Path, Device)?;
 
         let Time: Time_type = Time::Get_instance()
             .Get_current_time()

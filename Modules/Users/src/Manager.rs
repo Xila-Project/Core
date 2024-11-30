@@ -1,34 +1,22 @@
 use super::*;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    sync::RwLock,
+    sync::{OnceLock, RwLock},
     vec::Vec,
 };
 
-static mut Manager_instance: Option<Manager_type> = None;
+static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
 
-pub fn Initialize() -> Result_type<&'static Manager_type> {
-    if Is_initialized() {
-        return Err(Error_type::Already_initialized);
-    }
-
-    unsafe {
-        Manager_instance = Some(Manager_type::New());
-    }
-
-    Ok(Get_instance())
+pub fn Initialize() -> Result_type<()> {
+    Manager_instance
+        .set(Manager_type::New())
+        .map_err(|_| Error_type::Already_initialized)
 }
 
 pub fn Get_instance() -> &'static Manager_type {
-    unsafe {
-        Manager_instance
-            .as_ref()
-            .expect("Users manager not initialized")
-    }
-}
-
-pub fn Is_initialized() -> bool {
-    unsafe { Manager_instance.is_some() }
+    Manager_instance
+        .get()
+        .expect("Users manager not initialized")
 }
 
 struct Internal_user_type {

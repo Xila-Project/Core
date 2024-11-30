@@ -12,7 +12,7 @@ pub struct Module_type<'runtime> {
 
 unsafe impl Send for Module_type<'_> {}
 
-const Directory_paths: [&CStr; 1] = [unsafe { CStr::from_bytes_with_nul_unchecked(b"/\0") }];
+const Directory_paths: [&CStr; 1] = [c"/"];
 const Directory_paths_raw: [*const i8; 1] = [Directory_paths[0].as_ptr()];
 
 impl<'runtime> Module_type<'runtime> {

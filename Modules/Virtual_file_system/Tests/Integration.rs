@@ -147,7 +147,7 @@ fn Test_device() {
     let Device = Create_device!(Memory_device_type::<512>::New(512));
 
     Virtual_file_system
-        .Mount_device(Task, Device_path, Device)
+        .Mount_static_device(Task, &Device_path, Device)
         .unwrap();
 
     let Device_file = File_type::Open(
