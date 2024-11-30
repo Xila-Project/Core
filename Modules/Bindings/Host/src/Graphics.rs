@@ -117,9 +117,11 @@ pub unsafe fn Call(
     let Lock = Instance.Lock();
 
     if Lock.is_ok() {
-        let _ = Pointer_table.get_or_init(Pointer_table_type::New);
+        let Pointer_table_reference = &raw mut Pointer_table;
 
-        let Pointer_table_reference = Pointer_table.get_mut().unwrap();
+        let _ = (*Pointer_table_reference).get_or_init(Pointer_table_type::New);
+
+        let Pointer_table_reference = (*Pointer_table_reference).get_mut().unwrap();
 
         Generated_bindings::Call_function(
             Environment,
