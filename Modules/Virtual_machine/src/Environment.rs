@@ -27,7 +27,7 @@ unsafe impl Send for Environment_type<'_> {}
 
 unsafe impl Sync for Environment_type<'_> {}
 
-impl<'a> Environment_type<'a> {
+impl Environment_type<'_> {
     pub fn From_raw_pointer(Raw_pointer: Environment_pointer_type) -> Result_type<Self> {
         if Raw_pointer.is_null() {
             return Err(Error_type::Invalid_pointer);

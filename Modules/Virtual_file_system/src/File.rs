@@ -19,7 +19,7 @@ pub struct File_type<'a> {
     Task: Task_identifier_type,
 }
 
-impl<'a> Debug for File_type<'a> {
+impl Debug for File_type<'_> {
     fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Formatter
             .debug_struct("File_type")
@@ -121,7 +121,7 @@ impl<'a> File_type<'a> {
     }
 }
 
-impl<'a> Drop for File_type<'a> {
+impl Drop for File_type<'_> {
     fn drop(&mut self) {
         let _ = self
             .File_system

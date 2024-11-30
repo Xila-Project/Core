@@ -14,13 +14,13 @@ impl<'a> Screen_write_data_type<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for Screen_write_data_type<'a> {
+impl AsRef<[u8]> for Screen_write_data_type<'_> {
     fn as_ref(&self) -> &[u8] {
         unsafe { std::slice::from_raw_parts(self as *const _ as *const u8, size_of::<Self>()) }
     }
 }
 
-impl<'a> TryFrom<&[u8]> for &Screen_write_data_type<'a> {
+impl TryFrom<&[u8]> for &Screen_write_data_type<'_> {
     type Error = ();
 
     /// This function is used to convert a buffer of bytes to a struct.
@@ -51,7 +51,7 @@ impl<'a> TryFrom<&[u8]> for &Screen_write_data_type<'a> {
     }
 }
 
-impl<'a> Screen_write_data_type<'a> {
+impl Screen_write_data_type<'_> {
     pub fn Get_area(&self) -> Area_type {
         self.Area
     }
