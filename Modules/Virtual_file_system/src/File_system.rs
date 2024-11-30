@@ -186,9 +186,9 @@ impl Virtual_file_system_type {
             return Err(Error_type::Invalid_path);
         }
 
-        let File_system_identifier = {
-            let File_systems = self.File_systems.read()?; // Get the file systems
+        let mut File_systems = self.File_systems.write()?; // Get the file systems
 
+        let File_system_identifier = {
             let (File_system_identifier, _, Relative_path) =
                 Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
 
@@ -198,8 +198,6 @@ impl Virtual_file_system_type {
 
             File_system_identifier
         };
-
-        let mut File_systems = self.File_systems.write()?;
 
         let File_system = File_systems
             .remove(&File_system_identifier)
@@ -574,10 +572,10 @@ impl Virtual_file_system_type {
         Ok(())
     }
 
-    pub fn Mount_device(
+    pub fn Mount_static_device(
         &self,
         Task: Task_identifier_type,
-        Path: impl AsRef<Path_type> + 'static,
+        Path: &'static impl AsRef<Path_type>,
         Device: Device_type,
     ) -> Result_type<()> {
         let File_systems = self.File_systems.read()?; // Get the file systems
@@ -613,7 +611,7 @@ impl Virtual_file_system_type {
         };
 
         // Create the actual device.
-        let Inode = self.Device_file_system.Mount_device(Device)?;
+        let Inode = self.Device_file_system.Mount_static_device(Path, Device)?;
 
         let Time: Time_type = Time::Get_instance()
             .Get_current_time()
