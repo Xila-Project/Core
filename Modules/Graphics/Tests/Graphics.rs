@@ -50,7 +50,7 @@ fn main() {
     unsafe {
         lvgl::lv_obj_set_align(Slider, lvgl::lv_align_t_LV_ALIGN_LEFT_MID);
         lvgl::lv_obj_set_align(Button, lvgl::lv_align_t_LV_ALIGN_CENTER);
-        lvgl::lv_label_set_text(Label, "Hello world!\0".as_ptr() as *const i8);
+        lvgl::lv_label_set_text(Label, c"Hello world!".as_ptr());
     }
 
     loop {
