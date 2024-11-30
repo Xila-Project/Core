@@ -22,7 +22,20 @@ impl Shell_type {
         }
     }
 
-    fn Run(&mut self, Input: &str, Paths: &[&Path_type]) -> Result_type<()> {
+    fn Run(&mut self, Path: &Path_type, Arguments: &[&str]) -> Result_type<()> {
+        let Standard = self.Standard.Duplicate().unwrap();
+
+        let Input = Arguments.join(" ");
+
+        let _ = Execute(Path, Input, Standard)
+            .map_err(|_| Error_type::Failed_to_execute_command)?
+            .Join()
+            .map_err(|_| Error_type::Failed_to_join_task)?;
+
+        Ok(())
+    }
+
+    fn Parse_input(&mut self, Input: &str, Paths: &[&Path_type]) -> Result_type<()> {
         let Tokens = Input.split_whitespace().collect::<Vec<&str>>();
 
         let Tokens = Tokenize(&Tokens);
@@ -54,16 +67,22 @@ impl Shell_type {
                         ));
                     }
 
-                    let Path = Resolve(Command.Get_command(), Paths)?;
+                    let Path = Path_type::From_str(Command.Get_command());
 
-                    let Standard = self.Standard.Duplicate().unwrap();
+                    if Path.Is_valid() {
+                        if Path.Is_absolute() {
+                            self.Run(Path, Command.Get_arguments())?;
+                        } else {
+                            match self.Current_directory.clone().Join(Path) {
+                                Some(Path) => self.Run(&Path, Command.Get_arguments())?,
+                                None => self.Standard.Print_error_line("Invalid command"),
+                            }
+                        }
+                    } else {
+                        let Path = Resolve(Command.Get_command(), Paths)?;
 
-                    let Input = Command.Get_arguments().concat();
-
-                    let _ = Execute(&Path, Input, Standard)
-                        .map_err(|_| Error_type::Failed_to_execute_command)?
-                        .Join()
-                        .map_err(|_| Error_type::Failed_to_join_task)?;
+                        self.Run(&Path, Command.Get_arguments())?;
+                    }
                 }
             }
         }
@@ -90,7 +109,7 @@ impl Shell_type {
                 continue;
             }
 
-            let Result = self.Run(&Input, Paths);
+            let Result = self.Parse_input(&Input, Paths);
 
             if let Err(Error) = Result {
                 self.Standard.Print_error_line(&Error.to_string());
@@ -101,6 +120,24 @@ impl Shell_type {
     }
 
     pub fn Main(&mut self, Arguments: String) -> Result<(), NonZeroUsize> {
+        let User =
+            match Task::Get_instance().Get_environment_variable(self.Standard.Get_task(), "User") {
+                Ok(User) => User.Get_value().to_string(),
+                Err(_) => match self.Authenticate() {
+                    Ok(User) => {
+                        Task::Get_instance()
+                            .Set_environment_variable(self.Standard.Get_task(), "User", &User)
+                            .map_err(|_| Error_type::Authentication_failed)?;
+
+                        User
+                    }
+
+                    Err(_) => return Err(Error_type::Authentication_failed)?,
+                },
+            };
+
+        self.User = User;
+
         let Paths = Task::Get_instance()
             .Get_environment_variable(self.Standard.Get_task(), "Paths")
             .map_err(|_| Error_type::Failed_to_get_path)?;
@@ -111,11 +148,6 @@ impl Shell_type {
             .map(Path_type::From_str)
             .collect::<Vec<&Path_type>>();
 
-        let User = Task::Get_instance()
-            .Get_environment_variable(self.Standard.Get_task(), "User")
-            .map_err(|_| Error_type::Failed_to_get_path)?;
-        self.User = User.Get_value().to_string();
-
         let Host = Task::Get_instance()
             .Get_environment_variable(self.Standard.Get_task(), "Host")
             .map_err(|_| Error_type::Failed_to_get_path)?;
@@ -124,7 +156,7 @@ impl Shell_type {
         if Arguments.is_empty() {
             self.Main_interactive(&Paths)?;
         } else {
-            self.Run(&Arguments, &Paths)?;
+            self.Parse_input(&Arguments, &Paths)?;
         }
 
         Ok(())
