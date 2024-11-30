@@ -1,3 +1,4 @@
+mod Authentication;
 mod Change_directory;
 mod Clear;
 mod Concatenate;
