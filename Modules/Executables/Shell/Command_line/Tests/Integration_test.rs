@@ -65,10 +65,6 @@ fn Integration_test() {
         .unwrap();
 
     Task_instance
-        .Set_environment_variable(Task, "User", "alix_anneraud")
-        .unwrap();
-
-    Task_instance
         .Set_environment_variable(Task, "Host", "xila")
         .unwrap();
 
