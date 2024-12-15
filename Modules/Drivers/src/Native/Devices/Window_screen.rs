@@ -183,7 +183,7 @@ unsafe impl Send for Inner_type {}
 impl Inner_type {
     fn New(Resolution: Point_type) -> Result<Self, String> {
         let mut Event_loop = EventLoop::builder()
-            .with_wayland()
+            //  .with_wayland()
             .with_any_thread(true)
             .build()
             .map_err(|Error| format!("Error building event loop: {:?}", Error))?;
