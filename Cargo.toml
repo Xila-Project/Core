@@ -19,6 +19,7 @@ members = [
     "Modules/Executables/Shell/Command_line",
     "Modules/Executable",
     "Modules/Executables/WASM",
+    "Modules/Executables/Shell/Graphical",
 ]
 exclude = [
     "Modules/Virtual_machine/Tests/WASM_test",
