@@ -58,12 +58,9 @@ unsafe extern "C" fn Binding_callback_function(
 }
 
 impl Input_type {
-    pub fn New<const Buffer_size: usize>(
-        File: Device_type,
-        _: &Display_type<Buffer_size>,
-    ) -> Result_type<Self> {
+    pub fn New(Device: Device_type, _: &Display_type) -> Result_type<Self> {
         // User_data is a pinned box, so it's ownership can be transferred to LVGL and will not move or dropper until the Input_device is dropped.
-        let User_data = Box::new(User_data_type { Device: File });
+        let User_data = Box::new(User_data_type { Device });
 
         let Input_device = unsafe {
             let Input_device = lvgl::lv_indev_create();

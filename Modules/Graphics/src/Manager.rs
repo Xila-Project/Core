@@ -1,6 +1,8 @@
+use std::path::Display;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::OnceLock;
+use std::sync::RwLock;
 use std::time::Duration;
 use File_system::Device_type;
 
@@ -14,9 +16,23 @@ use crate::{Error_type, Input_type, Result_type, Screen_read_data_type};
 
 static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
 
-pub fn Initialize() {
+pub fn Initialize(
+    Screen_device: Device_type,
+    Pointer_device: Device_type,
+    Buffer_size: usize,
+    Double_buffered: bool,
+) {
     Manager_instance
-        .set(Manager_type::New(Time::Get_instance()).expect("Failed to create manager instance"))
+        .set(
+            Manager_type::New(
+                Time::Get_instance(),
+                Screen_device,
+                Pointer_device,
+                Buffer_size,
+                Double_buffered,
+            )
+            .expect("Failed to create manager instance"),
+        )
         .map_err(|_| ())
         .expect(
             "
@@ -44,10 +60,13 @@ pub fn Get_instance() -> &'static Manager_type {
         .expect("Failed to get manager instance")
 }
 
-struct Inner_type(Option<Input_type>);
+struct Inner_type {
+    Inputs: Vec<Input_type>,
+    Displays: Vec<Display_type>,
+}
 
 pub struct Manager_type {
-    Inner: Mutex<Inner_type>,
+    Inner: RwLock<Inner_type>,
     Global_lock: Mutex<()>,
 }
 
@@ -67,7 +86,13 @@ extern "C" fn Binding_tick_callback_function() -> u32 {
 }
 
 impl Manager_type {
-    fn New(_: &Time::Manager_type) -> Result_type<Self> {
+    fn New(
+        _: &Time::Manager_type,
+        Screen_device: Device_type,
+        Pointer_device: Device_type,
+        Buffer_size: usize,
+        Double_buffered: bool,
+    ) -> Result_type<Self> {
         unsafe {
             lvgl::lv_init();
 
@@ -78,8 +103,14 @@ impl Manager_type {
             lvgl::lv_tick_set_cb(Some(Binding_tick_callback_function));
         }
 
+        let (Display, Input) =
+            Self::Create_display(Screen_device, Buffer_size, Pointer_device, Double_buffered)?;
+
         Ok(Self {
-            Inner: Mutex::new(Inner_type(None)),
+            Inner: RwLock::new(Inner_type {
+                Inputs: vec![Input],
+                Displays: vec![Display],
+            }),
             Global_lock: Mutex::new(()),
         })
     }
@@ -102,12 +133,12 @@ impl Manager_type {
         Ok(Window)
     }
 
-    pub fn Create_display<const Buffer_size: usize>(
-        &self,
+    fn Create_display(
         Screen_device: Device_type,
+        Buffer_size: usize,
         Pointer_device: Device_type,
         Double_buffered: bool,
-    ) -> Result_type<Display_type<Buffer_size>> {
+    ) -> Result_type<(Display_type, Input_type)> {
         let mut Screen_read_data = Screen_read_data_type::default();
 
         Screen_device
@@ -116,16 +147,20 @@ impl Manager_type {
 
         let Resolution: Point_type = Screen_read_data.Get_resolution();
 
-        let Display = Display_type::New(Screen_device, Resolution, Double_buffered)?;
+        let Display = Display_type::New(Screen_device, Resolution, Buffer_size, Double_buffered)?;
 
         let Input = Input_type::New(Pointer_device, &Display)?;
 
-        self.Inner.lock()?.0.replace(Input);
-
-        Ok(Display)
+        Ok((Display, Input))
     }
 
     pub fn Lock(&self) -> Result_type<MutexGuard<'_, ()>> {
         Ok(self.Global_lock.lock()?)
+    }
+
+    pub fn Get_current_screen(&self) -> Result_type<*mut lvgl::lv_obj_t> {
+        let _Lock = self.Lock()?;
+
+        Ok(unsafe { lvgl::lv_screen_active() })
     }
 }

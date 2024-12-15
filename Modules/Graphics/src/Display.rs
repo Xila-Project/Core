@@ -14,15 +14,15 @@ struct User_data {
     Device: Device_type,
 }
 
-pub struct Display_type<const Buffer_size: usize> {
+pub struct Display_type {
     Display: *mut lvgl::lv_display_t,
-    _Buffer_1: Buffer_type<Buffer_size>,
-    _Buffer_2: Option<Buffer_type<Buffer_size>>,
+    _Buffer_1: Buffer_type,
+    _Buffer_2: Option<Buffer_type>,
 }
 
-unsafe impl<const Buffer_size: usize> Send for Display_type<Buffer_size> {}
+unsafe impl Send for Display_type {}
 
-unsafe impl<const Buffer_size: usize> Sync for Display_type<Buffer_size> {}
+unsafe impl Sync for Display_type {}
 
 unsafe extern "C" fn Binding_callback_function(
     Display: *mut lvgl::lv_disp_t,
@@ -48,7 +48,7 @@ unsafe extern "C" fn Binding_callback_function(
     lvgl::lv_display_flush_ready(Display);
 }
 
-impl<const Buffer_size: usize> Drop for Display_type<Buffer_size> {
+impl Drop for Display_type {
     fn drop(&mut self) {
         unsafe {
             lvgl::lv_display_delete(self.Display);
@@ -56,10 +56,11 @@ impl<const Buffer_size: usize> Drop for Display_type<Buffer_size> {
     }
 }
 
-impl<const Buffer_size: usize> Display_type<Buffer_size> {
+impl Display_type {
     pub fn New(
         File: Device_type,
         Resolution: Point_type,
+        Buffer_size: usize,
         Double_buffered: bool,
     ) -> Result_type<Self> {
         // Create the display.
@@ -68,10 +69,10 @@ impl<const Buffer_size: usize> Display_type<Buffer_size> {
         };
 
         // Set the buffer(s) and the render mode.
-        let Buffer_1 = Buffer_type::<Buffer_size>::default();
+        let Buffer_1 = Buffer_type::New(Buffer_size);
 
         let Buffer_2 = if Double_buffered {
-            Some(Buffer_type::<Buffer_size>::default())
+            Some(Buffer_type::New(Buffer_size))
         } else {
             None
         };

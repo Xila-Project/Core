@@ -1,25 +1,29 @@
-use std::mem::MaybeUninit;
-
 use crate::{Color_type, Point_type};
 
 #[repr(transparent)]
-pub struct Buffer_type<const Buffer_size: usize> {
-    Buffer: Box<[MaybeUninit<Color_type>; Buffer_size]>,
+pub struct Buffer_type {
+    Buffer: Vec<Color_type>,
 }
 
-impl<const Buffer_size: usize> AsRef<[Color_type]> for Buffer_type<Buffer_size> {
+impl AsRef<[Color_type]> for Buffer_type {
     fn as_ref(&self) -> &[Color_type] {
         unsafe {
-            &*(&*self.Buffer as *const [MaybeUninit<Color_type>; Buffer_size]
-                as *const [Color_type; Buffer_size])
+            let Buffer = self.Buffer.as_ptr() as *const Color_type;
+            std::slice::from_raw_parts(Buffer, self.Buffer.len())
         }
     }
 }
 
-impl<const Buffer_size: usize> Default for Buffer_type<Buffer_size> {
-    fn default() -> Self {
+impl Buffer_type {
+    pub fn New_from_resolution(Resolution: &Point_type) -> Self {
+        let Buffer_size = Get_recommended_buffer_size(Resolution);
+
+        Self::New(Buffer_size)
+    }
+
+    pub fn New(Buffer_size: usize) -> Self {
         Self {
-            Buffer: Box::new([MaybeUninit::uninit(); Buffer_size]),
+            Buffer: vec![Color_type::New(0, 0, 0); Buffer_size],
         }
     }
 }

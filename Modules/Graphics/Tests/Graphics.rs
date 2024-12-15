@@ -29,15 +29,9 @@ fn main() {
         .Get_current_task_identifier()
         .expect("Failed to get current task identifier");
 
-    Graphics::Initialize();
+    Graphics::Initialize(Screen_device, Pointer_device, Buffer_size, true);
 
-    let Graphics_manager = Graphics::Get_instance();
-
-    let Display = Graphics_manager
-        .Create_display::<Buffer_size>(Screen_device, Pointer_device, false)
-        .expect("Error adding screen");
-
-    let Screen_object = Display.Get_object();
+    let Screen_object = Graphics::Get_instance().Get_current_screen().unwrap();
 
     let _Calendar = unsafe { lvgl::lv_calendar_create(Screen_object) };
 
