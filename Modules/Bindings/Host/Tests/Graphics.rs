@@ -51,17 +51,12 @@ fn Integration_test() {
 
     let _Task = Task_instance.Get_current_task_identifier().unwrap();
 
-    Graphics::Initialize();
+    Graphics::Initialize(Screen_device, Pointer_device, Buffer_size, true);
 
     let Graphics_manager = Graphics::Get_instance();
 
-    let Display = Graphics_manager
-        .Create_display::<Buffer_size>(Screen_device, Pointer_device, false)
-        .unwrap();
-
-    let Screen_object = Display.Get_object();
-
-    let _Calendar = unsafe { lvgl::lv_calendar_create(Screen_object) };
+    let _Calendar =
+        unsafe { lvgl::lv_calendar_create(Graphics_manager.Get_current_screen().unwrap()) };
 
     let Standard_in = Virtual_file_system::Get_instance()
         .Open(
