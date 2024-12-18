@@ -69,27 +69,25 @@ impl Window_type {
         let Width = (Point_2.Get_x() - Point_1.Get_x() + 1) as usize;
         let Height = (Point_2.Get_y() - Point_1.Get_y() + 1) as usize;
 
-        for y in 0..Height {
+        for (y, Data_row) in Data_buffer.chunks(Width).enumerate().take(Height) {
             let Frame_row_start = (Frame_y_start + y) * Frame_width + Frame_x_start;
             let Frame_row_end = Frame_row_start + Width;
             let Frame_row = &mut Frame[Frame_row_start..Frame_row_end];
 
-            let Data_row_start = y * Width;
-            let Data_row_end = Data_row_start + Width;
-            let Data_row = &Data_buffer[Data_row_start..Data_row_end];
-
             Frame_row
                 .iter_mut()
                 .zip(Data_row.iter())
-                .for_each(|(Destination, Source)| {
-                    let Source = Color_RGBA8888_type::From_RGB565(*Source);
+                .for_each(|(Destination, &Source)| {
+                    let Source = Color_RGBA8888_type::From_RGB565(Source);
                     *Destination = Source;
                 });
         }
 
-        Pixels
-            .render()
-            .map_err(|Error| format!("Error rendering pixels: {:?}", Error))?;
+        // - Request a redraw.
+        self.Window
+            .as_ref()
+            .ok_or_else(|| "Window is None.".to_string())?
+            .request_redraw();
 
         Ok(())
     }
@@ -153,6 +151,11 @@ impl ApplicationHandler for Window_type {
         }
 
         match Event {
+            WindowEvent::RedrawRequested => {
+                if let Some(Pixels) = &mut self.Pixels {
+                    Pixels.render().unwrap();
+                }
+            }
             WindowEvent::CursorMoved {
                 device_id: _,
                 position: Position,
