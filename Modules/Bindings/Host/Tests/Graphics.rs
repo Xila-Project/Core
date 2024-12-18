@@ -4,7 +4,7 @@
 
 use Drivers::Native::{Time_driver_type, Window_screen};
 use File_system::{Create_device, Create_file_system, Memory_device_type};
-use Graphics::{lvgl, Get_recommended_buffer_size, Point_type};
+use Graphics::{Get_minimal_buffer_size, Point_type, LVGL};
 use Time::Duration_type;
 
 #[ignore]
@@ -45,7 +45,7 @@ fn Integration_test() {
 
     const Resolution: Point_type = Point_type::New(800, 480);
 
-    const Buffer_size: usize = Get_recommended_buffer_size(&Resolution);
+    const Buffer_size: usize = Get_minimal_buffer_size(&Resolution);
 
     let (Screen_device, Pointer_device) = Window_screen::New(Resolution).unwrap();
 
@@ -55,8 +55,9 @@ fn Integration_test() {
 
     let Graphics_manager = Graphics::Get_instance();
 
-    let _Calendar =
-        unsafe { lvgl::lv_calendar_create(Graphics_manager.Get_current_screen().unwrap()) };
+    let Window = Graphics_manager.Create_window().unwrap();
+
+    let _Calendar = unsafe { LVGL::lv_calendar_create(Window.Into_raw()) };
 
     let Standard_in = Virtual_file_system::Get_instance()
         .Open(
