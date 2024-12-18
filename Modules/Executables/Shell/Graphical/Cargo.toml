@@ -10,6 +10,8 @@ Virtual_file_system = { path = "../../../Virtual_file_system" }
 Executable = { path = "../../../Executable" }
 Task = { path = "../../../Task" }
 Users = { path = "../../../Users" }
+Shared = { path = "../../../Shared" }
+Time = { path = "../../../Time" }
 
 [dev-dependencies]
 Drivers = { path = "../../../Drivers" }
