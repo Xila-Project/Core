@@ -44,44 +44,47 @@ impl Window_type {
 
     fn Draw(&mut self, Data: &Screen_write_data_type) -> Result<(), String> {
         let Frame_width = self.Resolution.Get_x() as usize;
-        let Data_width = Data.Get_area().Get_width() as usize;
+        let Data_area = Data.Get_area();
 
-        let Point_1 = Data.Get_area().Get_point_1();
-        let Point_2 = Data.Get_area().Get_point_2();
+        let Point_1 = Data_area.Get_point_1();
+        let Point_2 = Data_area.Get_point_2();
 
-        const Color_size: usize = size_of::<Color_RGBA8888_type>();
+        let Pixels = self
+            .Pixels
+            .as_mut()
+            .ok_or_else(|| "Pixels is None.".to_string())?;
 
-        // - Chunk the frame into rows and keep only the rows that are in the area.
-        let Pixels = if let Some(Pixels) = &mut self.Pixels {
-            Pixels
-        } else {
-            return Err("Pixels is None.".to_string());
+        let Frame = Pixels.frame_mut();
+        let Frame = unsafe {
+            core::slice::from_raw_parts_mut(
+                Frame.as_mut_ptr() as *mut Color_RGBA8888_type,
+                Frame.len() / size_of::<Color_RGBA8888_type>(),
+            )
         };
 
-        let Frame_Y_1 = Point_1.Get_y() as usize * Color_size * Frame_width;
-        let Frame_Y_2 = (Point_2.Get_y() + 1) as usize * Color_size * Frame_width;
+        let Data_buffer = Data.Get_buffer();
 
-        let Frame =
-            Pixels.frame_mut()[Frame_Y_1..Frame_Y_2].chunks_exact_mut(Color_size * Frame_width);
+        let Frame_x_start = Point_1.Get_x() as usize;
+        let Frame_y_start = Point_1.Get_y() as usize;
+        let Width = (Point_2.Get_x() - Point_1.Get_x() + 1) as usize;
+        let Height = (Point_2.Get_y() - Point_1.Get_y() + 1) as usize;
 
-        // Chunk the buffer into rows
-        let mut Buffer_iterator = Data.Get_buffer().chunks_exact(Data_width);
+        for y in 0..Height {
+            let Frame_row_start = (Frame_y_start + y) * Frame_width + Frame_x_start;
+            let Frame_row_end = Frame_row_start + Width;
+            let Frame_row = &mut Frame[Frame_row_start..Frame_row_end];
 
-        let mut Converted_colors: Vec<u8> = Vec::with_capacity(Data_width * Color_size); // Preallocate the converted colors buffer.
+            let Data_row_start = y * Width;
+            let Data_row_end = Data_row_start + Width;
+            let Data_row = &Data_buffer[Data_row_start..Data_row_end];
 
-        for (Frame_row, Data_row) in Frame.zip(Buffer_iterator.by_ref()) {
-            Converted_colors.clear();
-
-            // Convert the colors from RGB565 to RGBA8888.
-            for Color in Data_row.iter() {
-                let Color = Color_RGBA8888_type::From_RGB565(*Color).As_u32();
-                Converted_colors.extend_from_slice(&Color.to_be_bytes());
-            }
-
-            let Frame_X_1 = Point_1.Get_x() as usize * Color_size;
-            let Frame_X_2 = (Point_2.Get_x() + 1) as usize * Color_size;
-
-            Frame_row[Frame_X_1..Frame_X_2].copy_from_slice(&Converted_colors);
+            Frame_row
+                .iter_mut()
+                .zip(Data_row.iter())
+                .for_each(|(Destination, Source)| {
+                    let Source = Color_RGBA8888_type::From_RGB565(*Source);
+                    *Destination = Source;
+                });
         }
 
         Pixels
