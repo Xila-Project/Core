@@ -1,4 +1,3 @@
-use std::path::Display;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::OnceLock;
@@ -6,7 +5,7 @@ use std::sync::RwLock;
 use std::time::Duration;
 use File_system::Device_type;
 
-use super::lvgl;
+use super::LVGL;
 
 use super::Point_type;
 
@@ -61,8 +60,9 @@ pub fn Get_instance() -> &'static Manager_type {
 }
 
 struct Inner_type {
-    Inputs: Vec<Input_type>,
-    Displays: Vec<Display_type>,
+    _Inputs: Vec<Input_type>,
+    _Displays: Vec<Display_type>,
+    Window_parent: *mut LVGL::lv_obj_t,
 }
 
 pub struct Manager_type {
@@ -73,7 +73,7 @@ pub struct Manager_type {
 impl Drop for Manager_type {
     fn drop(&mut self) {
         unsafe {
-            lvgl::lv_deinit();
+            LVGL::lv_deinit();
         }
     }
 }
@@ -85,6 +85,10 @@ extern "C" fn Binding_tick_callback_function() -> u32 {
         .As_milliseconds() as u32
 }
 
+unsafe impl Send for Manager_type {}
+
+unsafe impl Sync for Manager_type {}
+
 impl Manager_type {
     fn New(
         _: &Time::Manager_type,
@@ -94,22 +98,25 @@ impl Manager_type {
         Double_buffered: bool,
     ) -> Result_type<Self> {
         unsafe {
-            lvgl::lv_init();
+            LVGL::lv_init();
 
-            if !lvgl::lv_is_initialized() {
+            if !LVGL::lv_is_initialized() {
                 panic!("Failed to initialize lvgl");
             }
 
-            lvgl::lv_tick_set_cb(Some(Binding_tick_callback_function));
+            LVGL::lv_tick_set_cb(Some(Binding_tick_callback_function));
         }
 
         let (Display, Input) =
             Self::Create_display(Screen_device, Buffer_size, Pointer_device, Double_buffered)?;
 
+        let Screen = Display.Get_object();
+
         Ok(Self {
             Inner: RwLock::new(Inner_type {
-                Inputs: vec![Input],
-                Displays: vec![Display],
+                _Inputs: vec![Input],
+                _Displays: vec![Display],
+                Window_parent: Screen,
             }),
             Global_lock: Mutex::new(()),
         })
@@ -119,14 +126,20 @@ impl Manager_type {
         loop {
             let Time_until_next = unsafe {
                 let _Lock = self.Global_lock.lock()?;
-                lvgl::lv_timer_handler()
+                LVGL::lv_timer_handler()
             };
             Task::Manager_type::Sleep(Duration::from_millis(Time_until_next as u64));
         }
     }
 
+    pub fn Set_window_parent(&self, Window_parent: *mut LVGL::lv_obj_t) -> Result_type<()> {
+        self.Inner.write()?.Window_parent = Window_parent;
+
+        Ok(())
+    }
+
     pub fn Create_window(&self) -> Result_type<Window_type> {
-        let Parent_object = unsafe { lvgl::lv_screen_active() };
+        let Parent_object = self.Inner.write()?.Window_parent;
 
         let Window = unsafe { Window_type::New(Parent_object)? };
 
@@ -158,9 +171,9 @@ impl Manager_type {
         Ok(self.Global_lock.lock()?)
     }
 
-    pub fn Get_current_screen(&self) -> Result_type<*mut lvgl::lv_obj_t> {
+    pub fn Get_current_screen(&self) -> Result_type<*mut LVGL::lv_obj_t> {
         let _Lock = self.Lock()?;
 
-        Ok(unsafe { lvgl::lv_screen_active() })
+        Ok(unsafe { LVGL::lv_screen_active() })
     }
 }

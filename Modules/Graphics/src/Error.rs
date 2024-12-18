@@ -1,9 +1,10 @@
+use core::fmt::Display;
 use std::sync::PoisonError;
 
 pub type Result_type<T> = Result<T, Error_type>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(C)]
+#[repr(u8)]
 pub enum Error_type {
     Invalid_reference,
     Already_initialized,
@@ -17,6 +18,27 @@ pub enum Error_type {
     Not_registered,
     Not_available,
     Failed_to_create_object,
+}
+
+impl Display for Error_type {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+        let String = match self {
+            Error_type::Invalid_reference => "Invalid reference",
+            Error_type::Already_initialized => "Already initialized",
+            Error_type::Failed_to_create_thread => "Failed to create thread",
+            Error_type::Not_initialized => "Not initialized",
+            Error_type::Out_of_memory => "Out of memory",
+            Error_type::Already_in_use => "Already in use",
+            Error_type::Poisoned_lock => "Poisoned lock",
+            Error_type::Failed_to_register => "Failed to register",
+            Error_type::Failed_to_get_resolution => "Failed to get resolution",
+            Error_type::Not_registered => "Not registered",
+            Error_type::Not_available => "Not available",
+            Error_type::Failed_to_create_object => "Failed to create object",
+        };
+
+        write!(Formatter, "{}", String)
+    }
 }
 
 impl<T> From<PoisonError<T>> for Error_type {

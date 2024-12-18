@@ -1,7 +1,7 @@
 use core::mem::size_of;
 use std::mem::transmute;
 
-use super::lvgl;
+use super::LVGL;
 
 use crate::Point_type;
 
@@ -61,9 +61,9 @@ impl AsMut<[u8]> for Pointer_data_type {
     }
 }
 
-impl From<Pointer_data_type> for lvgl::lv_indev_data_t {
-    fn from(Value: Pointer_data_type) -> lvgl::lv_indev_data_t {
-        let mut Input_device_data = lvgl::lv_indev_data_t::default();
+impl From<Pointer_data_type> for LVGL::lv_indev_data_t {
+    fn from(Value: Pointer_data_type) -> LVGL::lv_indev_data_t {
+        let mut Input_device_data = LVGL::lv_indev_data_t::default();
 
         let State = Value.Get_touch();
 
@@ -85,11 +85,11 @@ pub enum Touch_type {
     Pressed,
 }
 
-impl From<Touch_type> for lvgl::lv_indev_state_t {
-    fn from(Value: Touch_type) -> lvgl::lv_indev_state_t {
+impl From<Touch_type> for LVGL::lv_indev_state_t {
+    fn from(Value: Touch_type) -> LVGL::lv_indev_state_t {
         match Value {
-            Touch_type::Pressed => lvgl::lv_indev_state_t_LV_INDEV_STATE_PRESSED,
-            Touch_type::Released => lvgl::lv_indev_state_t_LV_INDEV_STATE_RELEASED,
+            Touch_type::Pressed => LVGL::lv_indev_state_t_LV_INDEV_STATE_PRESSED,
+            Touch_type::Released => LVGL::lv_indev_state_t_LV_INDEV_STATE_RELEASED,
         }
     }
 }

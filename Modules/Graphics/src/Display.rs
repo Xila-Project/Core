@@ -8,14 +8,14 @@ use crate::{
     Screen_write_data_type,
 };
 
-use super::lvgl;
+use super::LVGL;
 
 struct User_data {
     Device: Device_type,
 }
 
 pub struct Display_type {
-    Display: *mut lvgl::lv_display_t,
+    Display: *mut LVGL::lv_display_t,
     _Buffer_1: Buffer_type,
     _Buffer_2: Option<Buffer_type>,
 }
@@ -25,8 +25,8 @@ unsafe impl Send for Display_type {}
 unsafe impl Sync for Display_type {}
 
 unsafe extern "C" fn Binding_callback_function(
-    Display: *mut lvgl::lv_disp_t,
-    Area: *const lvgl::lv_area_t,
+    Display: *mut LVGL::lv_disp_t,
+    Area: *const LVGL::lv_area_t,
     Data: *mut u8,
 ) {
     let Area: Area_type = unsafe { *Area }.into();
@@ -37,7 +37,7 @@ unsafe extern "C" fn Binding_callback_function(
 
     let Screen_write_data = Screen_write_data_type::New(Area, Buffer);
 
-    let User_data = unsafe { &*(lvgl::lv_display_get_user_data(Display) as *mut User_data) };
+    let User_data = unsafe { &*(LVGL::lv_display_get_user_data(Display) as *mut User_data) };
 
     let Device = &User_data.Device;
 
@@ -45,13 +45,13 @@ unsafe extern "C" fn Binding_callback_function(
         .Write(Screen_write_data.as_ref())
         .expect("Error writing to display");
 
-    lvgl::lv_display_flush_ready(Display);
+    LVGL::lv_display_flush_ready(Display);
 }
 
 impl Drop for Display_type {
     fn drop(&mut self) {
         unsafe {
-            lvgl::lv_display_delete(self.Display);
+            LVGL::lv_display_delete(self.Display);
         }
     }
 }
@@ -65,7 +65,7 @@ impl Display_type {
     ) -> Result_type<Self> {
         // Create the display.
         let LVGL_display = unsafe {
-            lvgl::lv_display_create(Resolution.Get_x() as i32, Resolution.Get_y() as i32)
+            LVGL::lv_display_create(Resolution.Get_x() as i32, Resolution.Get_y() as i32)
         };
 
         // Set the buffer(s) and the render mode.
@@ -78,14 +78,14 @@ impl Display_type {
         };
 
         unsafe {
-            lvgl::lv_display_set_buffers(
+            LVGL::lv_display_set_buffers(
                 LVGL_display,
                 Buffer_1.as_ref().as_ptr() as *mut c_void,
                 Buffer_2
                     .as_ref()
                     .map_or(null_mut(), |Buffer| Buffer.as_ref().as_ptr() as *mut c_void),
                 Buffer_size as u32,
-                lvgl::lv_display_render_mode_t_LV_DISPLAY_RENDER_MODE_PARTIAL,
+                LVGL::lv_display_render_mode_t_LV_DISPLAY_RENDER_MODE_PARTIAL,
             )
         }
 
@@ -93,11 +93,11 @@ impl Display_type {
         let User_data = Box::new(User_data { Device: File });
 
         unsafe {
-            lvgl::lv_display_set_user_data(LVGL_display, Box::into_raw(User_data) as *mut c_void)
+            LVGL::lv_display_set_user_data(LVGL_display, Box::into_raw(User_data) as *mut c_void)
         };
 
         // Set the flush callback.
-        unsafe { lvgl::lv_display_set_flush_cb(LVGL_display, Some(Binding_callback_function)) }
+        unsafe { LVGL::lv_display_set_flush_cb(LVGL_display, Some(Binding_callback_function)) }
 
         Ok(Self {
             Display: LVGL_display,
@@ -106,7 +106,7 @@ impl Display_type {
         })
     }
 
-    pub fn Get_object(&self) -> *mut lvgl::lv_obj_t {
-        unsafe { lvgl::lv_display_get_screen_active(self.Display) }
+    pub fn Get_object(&self) -> *mut LVGL::lv_obj_t {
+        unsafe { LVGL::lv_display_get_screen_active(self.Display) }
     }
 }

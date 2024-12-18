@@ -4,7 +4,7 @@ use File_system::Device_type;
 
 use crate::{Display::Display_type, Pointer_data_type, Result_type};
 
-use super::lvgl;
+use super::LVGL;
 
 struct User_data_type {
     pub Device: Device_type,
@@ -19,10 +19,10 @@ impl Drop for Input_type {
     fn drop(&mut self) {
         unsafe {
             let _ = Box::from_raw(
-                lvgl::lv_indev_get_user_data(self.Input_device) as *mut User_data_type
+                LVGL::lv_indev_get_user_data(self.Input_device) as *mut User_data_type
             );
 
-            lvgl::lv_indev_delete(self.Input_device);
+            LVGL::lv_indev_delete(self.Input_device);
 
             // User_data will be dropped here.
         }
@@ -39,10 +39,10 @@ unsafe impl Sync for Input_type {}
 ///
 /// This function may dereference a raw pointer.
 unsafe extern "C" fn Binding_callback_function(
-    Input_device: *mut lvgl::lv_indev_t,
-    Data: *mut lvgl::lv_indev_data_t,
+    Input_device: *mut LVGL::lv_indev_t,
+    Data: *mut LVGL::lv_indev_data_t,
 ) {
-    let User_data = unsafe { lvgl::lv_indev_get_user_data(Input_device) as *mut User_data_type };
+    let User_data = unsafe { LVGL::lv_indev_get_user_data(Input_device) as *mut User_data_type };
 
     let Device = &(*User_data).Device;
 
@@ -63,10 +63,10 @@ impl Input_type {
         let User_data = Box::new(User_data_type { Device });
 
         let Input_device = unsafe {
-            let Input_device = lvgl::lv_indev_create();
-            lvgl::lv_indev_set_type(Input_device, lvgl::lv_indev_type_t_LV_INDEV_TYPE_POINTER);
-            lvgl::lv_indev_set_read_cb(Input_device, Some(Binding_callback_function));
-            lvgl::lv_indev_set_user_data(Input_device, Box::into_raw(User_data) as *mut c_void);
+            let Input_device = LVGL::lv_indev_create();
+            LVGL::lv_indev_set_type(Input_device, LVGL::lv_indev_type_t_LV_INDEV_TYPE_POINTER);
+            LVGL::lv_indev_set_read_cb(Input_device, Some(Binding_callback_function));
+            LVGL::lv_indev_set_user_data(Input_device, Box::into_raw(User_data) as *mut c_void);
 
             Input_device
         };

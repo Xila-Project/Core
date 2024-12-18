@@ -2,33 +2,31 @@ use std::{collections::VecDeque, mem::forget};
 
 use crate::{Error_type, Result_type};
 
-use lvgl_rust_sys::lv_obj_set_size;
-
-use super::lvgl;
+use super::LVGL;
 
 pub struct Window_type {
-    Window: *mut lvgl::lv_obj_t,
+    Window: *mut LVGL::lv_obj_t,
 }
 
 impl Drop for Window_type {
     fn drop(&mut self) {
         unsafe {
-            lvgl::lv_obj_delete(self.Window);
+            LVGL::lv_obj_delete(self.Window);
         }
     }
 }
 
-unsafe extern "C" fn Event_callback(Event: *mut lvgl::lv_event_t) {
-    let Code = lvgl::lv_event_get_code(Event);
+unsafe extern "C" fn Event_callback(Event: *mut LVGL::lv_event_t) {
+    let Code = LVGL::lv_event_get_code(Event);
 
-    let Queue = lvgl::lv_event_get_user_data(Event) as *mut VecDeque<Event_type>;
+    let Queue = LVGL::lv_event_get_user_data(Event) as *mut VecDeque<Event_type>;
     let mut Queue = Box::from_raw(Queue);
 
-    let Target = lvgl::lv_event_get_target(Event) as *mut lvgl::lv_obj_t;
+    let Target = LVGL::lv_event_get_target(Event) as *mut LVGL::lv_obj_t;
 
     match Code {
-        lvgl::lv_event_code_t_LV_EVENT_CHILD_CREATED => {
-            lvgl::lv_obj_add_flag(Target, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_EVENT_BUBBLE);
+        LVGL::lv_event_code_t_LV_EVENT_CHILD_CREATED => {
+            LVGL::lv_obj_add_flag(Target, LVGL::lv_obj_flag_t_LV_OBJ_FLAG_EVENT_BUBBLE);
         }
         _ => {
             Queue.push_back(Event_type { Code, Target });
@@ -40,8 +38,8 @@ unsafe extern "C" fn Event_callback(Event: *mut lvgl::lv_event_t) {
 
 #[derive(Debug, Clone)]
 pub struct Event_type {
-    pub Code: lvgl::lv_event_code_t,
-    pub Target: *mut lvgl::lv_obj_t,
+    pub Code: LVGL::lv_event_code_t,
+    pub Target: *mut LVGL::lv_obj_t,
 }
 
 impl Window_type {
@@ -59,8 +57,8 @@ impl Window_type {
     ///
     /// This function is unsafe because it may dereference raw pointers (e.g. `Parent_object`).
     ///
-    pub unsafe fn New(Parent_object: *mut lvgl::lv_obj_t) -> Result_type<Self> {
-        let Window = unsafe { lvgl::lv_obj_create(Parent_object) };
+    pub unsafe fn New(Parent_object: *mut LVGL::lv_obj_t) -> Result_type<Self> {
+        let Window = unsafe { LVGL::lv_obj_create(Parent_object) };
 
         if Window.is_null() {
             return Err(Error_type::Failed_to_create_object);
@@ -71,22 +69,24 @@ impl Window_type {
 
         unsafe {
             // Set the event callback for the window.
-            lvgl::lv_obj_add_event_cb(
+            LVGL::lv_obj_add_event_cb(
                 Window,
                 Some(Event_callback),
-                lvgl::lv_event_code_t_LV_EVENT_ALL,
+                LVGL::lv_event_code_t_LV_EVENT_ALL,
                 Queue as *mut core::ffi::c_void,
             );
-            lvgl::lv_obj_set_user_data(Window, Queue as *mut core::ffi::c_void);
+            LVGL::lv_obj_set_user_data(Window, Queue as *mut core::ffi::c_void);
             // Set the size of the window to 100% of the parent object.
-            lv_obj_set_size(Window, lvgl::lv_pct(100), lvgl::lv_pct(100));
+            LVGL::lv_obj_set_size(Window, LVGL::lv_pct(100), LVGL::lv_pct(100));
+            LVGL::lv_obj_set_style_border_width(Window, 0, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_style_radius(Window, 0, LVGL::LV_STATE_DEFAULT);
         }
 
         Ok(Self { Window })
     }
 
     pub fn Peek_event(&self) -> Option<Event_type> {
-        let Queue = unsafe { lvgl::lv_obj_get_user_data(self.Window) as *mut VecDeque<Event_type> };
+        let Queue = unsafe { LVGL::lv_obj_get_user_data(self.Window) as *mut VecDeque<Event_type> };
 
         let Queue = unsafe { Box::from_raw(Queue) };
 
@@ -98,7 +98,7 @@ impl Window_type {
     }
 
     pub fn Pop_event(&mut self) -> Option<Event_type> {
-        let Queue = unsafe { lvgl::lv_obj_get_user_data(self.Window) as *mut VecDeque<Event_type> };
+        let Queue = unsafe { LVGL::lv_obj_get_user_data(self.Window) as *mut VecDeque<Event_type> };
 
         let mut Queue = unsafe { Box::from_raw(Queue) };
 
@@ -107,6 +107,10 @@ impl Window_type {
         forget(Queue);
 
         Event
+    }
+
+    pub fn Get_object(&self) -> *mut LVGL::lv_obj_t {
+        self.Window
     }
 
     /// Convert a raw pointer to a window object.
@@ -119,11 +123,11 @@ impl Window_type {
     ///
     /// This function is unsafe because it may dereference raw pointers (e.g. `Window`).
     ///
-    pub unsafe fn From_raw(Window: *mut lvgl::lv_obj_t) -> Self {
+    pub unsafe fn From_raw(Window: *mut LVGL::lv_obj_t) -> Self {
         Self { Window }
     }
 
-    pub fn Into_raw(self) -> *mut lvgl::lv_obj_t {
+    pub fn Into_raw(self) -> *mut LVGL::lv_obj_t {
         let Window = self.Window;
 
         forget(self);

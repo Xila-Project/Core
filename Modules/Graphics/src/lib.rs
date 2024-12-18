@@ -14,6 +14,8 @@ mod Pointer;
 mod Screen;
 mod Window;
 
+pub mod LVGL;
+
 pub use Area::*;
 pub use Color::*;
 pub use Display::*;
@@ -25,5 +27,3 @@ pub use Point::*;
 pub use Pointer::*;
 pub use Screen::*;
 pub use Window::*;
-
-pub use lvgl_rust_sys as lvgl;

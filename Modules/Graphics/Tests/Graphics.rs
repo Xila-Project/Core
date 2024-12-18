@@ -6,9 +6,11 @@
 #[test]
 #[ignore]
 fn main() {
+    use std::{process::exit, ptr::null_mut};
+
     use Drivers::Native::Window_screen;
     use File_system::Create_device;
-    use Graphics::{lvgl, Get_recommended_buffer_size, Point_type};
+    use Graphics::{Get_recommended_buffer_size, Point_type, LVGL};
     use Time::Duration_type;
 
     let _ = Users::Initialize();
@@ -31,20 +33,32 @@ fn main() {
 
     Graphics::Initialize(Screen_device, Pointer_device, Buffer_size, true);
 
-    let Screen_object = Graphics::Get_instance().Get_current_screen().unwrap();
+    let Window = Graphics::Get_instance().Create_window().unwrap();
 
-    let _Calendar = unsafe { lvgl::lv_calendar_create(Screen_object) };
+    let Window = Window.Into_raw();
 
-    let Button = unsafe { lvgl::lv_button_create(Screen_object) };
+    let _Calendar = unsafe { LVGL::lv_calendar_create(Window) };
 
-    let Label = unsafe { lvgl::lv_label_create(Button) };
+    let Button = unsafe { LVGL::lv_button_create(Window) };
 
-    let Slider = unsafe { lvgl::lv_slider_create(Screen_object) };
+    let Label = unsafe { LVGL::lv_label_create(Button) };
+
+    let Slider = unsafe { LVGL::lv_slider_create(Window) };
+
+    unsafe extern "C" fn quit(_Event: *mut LVGL::lv_event_t) {
+        exit(0);
+    }
 
     unsafe {
-        lvgl::lv_obj_set_align(Slider, lvgl::lv_align_t_LV_ALIGN_LEFT_MID);
-        lvgl::lv_obj_set_align(Button, lvgl::lv_align_t_LV_ALIGN_CENTER);
-        lvgl::lv_label_set_text(Label, c"Hello world!".as_ptr());
+        LVGL::lv_obj_set_align(Slider, LVGL::lv_align_t_LV_ALIGN_LEFT_MID);
+        LVGL::lv_obj_set_align(Button, LVGL::lv_align_t_LV_ALIGN_CENTER);
+        LVGL::lv_label_set_text(Label, c"Quit".as_ptr());
+        LVGL::lv_obj_add_event_cb(
+            Button,
+            Some(quit),
+            LVGL::lv_event_code_t_LV_EVENT_CLICKED,
+            null_mut(),
+        );
     }
 
     loop {

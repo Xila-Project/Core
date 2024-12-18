@@ -1,4 +1,4 @@
-use super::lvgl;
+use super::LVGL;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct Point_type {
@@ -58,7 +58,7 @@ impl From<Point_type> for (i16, i16) {
     }
 }
 
-impl From<Point_type> for lvgl::lv_point_t {
+impl From<Point_type> for LVGL::lv_point_t {
     fn from(Point: Point_type) -> Self {
         Self {
             x: Point.X as i32,
