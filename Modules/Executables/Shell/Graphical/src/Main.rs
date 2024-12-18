@@ -38,7 +38,9 @@ impl Shell_type {
                 Terminal.Event_handler();
             }
 
-            self.Desk_loop();
+            if !self.Desk.Is_hidden() {
+                self.Desk.Event_handler();
+            }
 
             Task::Manager_type::Sleep(Duration::from_millis(20));
         }

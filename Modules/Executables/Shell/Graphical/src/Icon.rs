@@ -1,10 +1,11 @@
-use Graphics::LVGL;
+use Graphics::{Point_type, LVGL};
 
 use crate::Error::{Error_type, Result_type};
 
 pub unsafe fn Create_icon(
     Parent: *mut LVGL::lv_obj_t,
     Name: &str,
+    Size: Point_type,
 ) -> Result_type<*mut LVGL::lv_obj_t> {
     let Icon = LVGL::lv_button_create(Parent);
 
@@ -12,7 +13,7 @@ pub unsafe fn Create_icon(
         return Err(Error_type::Failed_to_create_object);
     }
 
-    LVGL::lv_obj_set_size(Icon, 32, 32);
+    LVGL::lv_obj_set_size(Icon, Size.Get_x().into(), Size.Get_y().into());
     LVGL::lv_obj_set_style_pad_all(Icon, 0, LVGL::LV_STATE_DEFAULT);
     LVGL::lv_obj_set_style_border_width(Icon, 0, LVGL::LV_STATE_DEFAULT);
     LVGL::lv_obj_set_style_radius(Icon, 5, LVGL::LV_STATE_DEFAULT);
@@ -25,6 +26,20 @@ pub unsafe fn Create_icon(
 
     if Label.is_null() {
         return Err(Error_type::Failed_to_create_object);
+    }
+
+    if Size.Get_x() >= 48 {
+        LVGL::lv_obj_set_style_text_font(
+            Label,
+            &LVGL::lv_font_montserrat_28,
+            LVGL::LV_STATE_DEFAULT,
+        );
+    } else {
+        LVGL::lv_obj_set_style_text_font(
+            Label,
+            &LVGL::lv_font_montserrat_18,
+            LVGL::LV_STATE_DEFAULT,
+        );
     }
 
     LVGL::lv_label_set_text(Label, c"IC".as_ptr());

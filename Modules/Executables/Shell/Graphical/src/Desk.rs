@@ -4,12 +4,13 @@ use crate::{
     Shell_type,
 };
 
-use Graphics::{Window_type, LVGL};
+use Graphics::{Point_type, Window_type, LVGL};
 
 pub struct Desk_type {
     Window: Window_type,
     Tile_view: *mut LVGL::lv_obj_t,
-    Drawer: *mut LVGL::lv_obj_t,
+    Drawer_tile: *mut LVGL::lv_obj_t,
+    Desk_tile: *mut LVGL::lv_obj_t,
     Dock: *mut LVGL::lv_obj_t,
     Main_button: *mut LVGL::lv_obj_t,
     Parts: [*mut LVGL::lv_obj_t; 4],
@@ -26,6 +27,9 @@ impl Drop for Desk_type {
 }
 
 impl Desk_type {
+    const Dock_icon_size: Point_type = Point_type::New(32, 32);
+    const Drawer_icon_size: Point_type = Point_type::New(48, 48);
+
     pub fn Get_window_object(&self) -> *mut LVGL::lv_obj_t {
         self.Window.Get_object()
     }
@@ -62,7 +66,7 @@ impl Desk_type {
         };
 
         // - Create the desk tile
-        let Desk = unsafe {
+        let Desk_tile = unsafe {
             let Desk = LVGL::lv_tileview_add_tile(Tile_view, 0, 0, LVGL::lv_dir_t_LV_DIR_NONE);
 
             if Desk.is_null() {
@@ -75,7 +79,7 @@ impl Desk_type {
         };
 
         // - Create the drawer tile
-        let Drawer = unsafe {
+        let Drawer_tile = unsafe {
             let Drawer = LVGL::lv_tileview_add_tile(Tile_view, 1, 0, LVGL::lv_dir_t_LV_DIR_LEFT);
 
             if Drawer.is_null() {
@@ -87,14 +91,12 @@ impl Desk_type {
             LVGL::lv_obj_set_style_pad_left(Drawer, 40, LVGL::LV_STATE_DEFAULT);
             LVGL::lv_obj_set_flex_flow(Drawer, LVGL::lv_flex_flow_t_LV_FLEX_FLOW_ROW_WRAP);
 
-            Self::Create_drawer_icons(Drawer)?;
-
             Drawer
         };
 
         // - Create a dock
         let Dock = unsafe {
-            let Dock = LVGL::lv_obj_create(Desk);
+            let Dock = LVGL::lv_obj_create(Desk_tile);
 
             if Dock.is_null() {
                 return Err(Error_type::Failed_to_create_object);
@@ -142,13 +144,14 @@ impl Desk_type {
         // Create some fake icons
         for i in 0..5 {
             unsafe {
-                Create_icon(Dock, &format!("Icon {}", i))?;
+                Create_icon(Dock, &format!("Icon {}", i), Self::Dock_icon_size)?;
             }
         }
 
         Ok(Self {
             Window,
-            Drawer,
+            Desk_tile,
+            Drawer_tile,
             Tile_view,
             Dock,
             Main_button,
@@ -156,7 +159,9 @@ impl Desk_type {
         })
     }
 
-    fn Create_drawer_icons(Drawer: *mut LVGL::lv_obj_t) -> Result_type<()> {
+    unsafe fn Create_drawer_interface(Drawer: *mut LVGL::lv_obj_t) -> Result_type<()> {
+        let _Lock = Graphics::Get_instance().Lock()?; // Lock the graphics
+
         for i in 0..67 {
             unsafe {
                 let Container = LVGL::lv_obj_create(Drawer);
@@ -172,7 +177,7 @@ impl Desk_type {
                     LVGL::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
                 );
 
-                let Icon = Create_icon(Container, &format!("Icon {}", i))?;
+                let Icon = Create_icon(Container, &format!("Icon {}", i), Self::Drawer_icon_size)?;
 
                 let Label = LVGL::lv_label_create(Container);
 
@@ -183,9 +188,23 @@ impl Desk_type {
         Ok(())
     }
 
-    fn Event_handler(&mut self) {
+    pub fn Event_handler(&mut self) {
         while let Some(Event) = self.Window.Pop_event() {
             match Event.Code {
+                LVGL::lv_event_code_t_LV_EVENT_VALUE_CHANGED => {
+                    if Event.Target == self.Tile_view {
+                        unsafe {
+                            if LVGL::lv_tileview_get_tile_active(self.Tile_view) == self.Desk_tile {
+                                let _Lock = Graphics::Get_instance().Lock().unwrap();
+
+                                LVGL::lv_obj_clean(self.Drawer_tile);
+                            } else {
+                                let _ = Self::Create_drawer_interface(self.Drawer_tile);
+                            }
+                        }
+                        println!("Tile view value changed");
+                    }
+                }
                 LVGL::lv_event_code_t_LV_EVENT_PRESSED => {
                     if Event.Target == self.Main_button
                         || self.Parts.iter().any(|&Part| Part == Event.Target)
@@ -220,16 +239,6 @@ impl Desk_type {
                 _ => {}
             }
         }
-    }
-}
-
-impl Shell_type {
-    pub fn Desk_loop(&mut self) {
-        if self.Desk.Is_hidden() {
-            return;
-        }
-
-        self.Desk.Event_handler();
     }
 }
 
