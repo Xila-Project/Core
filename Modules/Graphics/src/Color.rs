@@ -135,38 +135,38 @@ impl Color_RGBA8888_type {
     }
 
     pub const fn Get_red(&self) -> u8 {
-        ((self.0 >> 24) & 0b1111_1111) as u8
-    }
-
-    pub const fn Get_green(&self) -> u8 {
-        ((self.0 >> 16) & 0b1111_1111) as u8
-    }
-
-    pub const fn Get_blue(&self) -> u8 {
-        ((self.0 >> 8) & 0b1111_1111) as u8
-    }
-
-    pub const fn Get_alpha(&self) -> u8 {
         ((self.0) & 0b1111_1111) as u8
     }
 
+    pub const fn Get_green(&self) -> u8 {
+        ((self.0 >> 8) & 0b1111_1111) as u8
+    }
+
+    pub const fn Get_blue(&self) -> u8 {
+        ((self.0 >> 16) & 0b1111_1111) as u8
+    }
+
+    pub const fn Get_alpha(&self) -> u8 {
+        ((self.0 >> 24) & 0b1111_1111) as u8
+    }
+
     pub const fn Set_red(mut self, Value: u8) -> Self {
-        self.0 = (self.0 & !(0b1111_1111 << 24)) | ((Value as u32) << 24);
+        self.0 = (self.0 & 0xFFFF_FF00) | (Value as u32);
         self
     }
 
     pub const fn Set_green(mut self, Value: u8) -> Self {
-        self.0 = (self.0 & 0xFF00_FFFF) | ((Value as u32) << 16);
-        self
-    }
-
-    pub const fn Set_blue(mut self, Value: u8) -> Self {
         self.0 = (self.0 & 0xFFFF_00FF) | ((Value as u32) << 8);
         self
     }
 
+    pub const fn Set_blue(mut self, Value: u8) -> Self {
+        self.0 = (self.0 & 0xFF00_FFFF) | ((Value as u32) << 16);
+        self
+    }
+
     pub const fn Set_alpha(mut self, Value: u8) -> Self {
-        self.0 = (self.0 & 0xFFFF_FF00) | (Value as u32);
+        self.0 = (self.0 & !(0b1111_1111 << 24)) | ((Value as u32) << 24);
         self
     }
 }
