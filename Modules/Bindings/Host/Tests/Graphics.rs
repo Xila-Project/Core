@@ -51,7 +51,13 @@ fn Integration_test() {
 
     let _Task = Task_instance.Get_current_task_identifier().unwrap();
 
-    Graphics::Initialize(Screen_device, Pointer_device, Buffer_size, true);
+    Graphics::Initialize(
+        Screen_device,
+        Pointer_device,
+        Graphics::Input_type_type::Pointer,
+        Buffer_size,
+        true,
+    );
 
     let Graphics_manager = Graphics::Get_instance();
 

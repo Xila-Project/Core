@@ -11,8 +11,8 @@ use winit::{
 };
 use File_system::{Create_device, Device_trait, Device_type, Size_type};
 use Graphics::{
-    Color_RGBA8888_type, Point_type, Pointer_data_type, Screen_read_data_type,
-    Screen_write_data_type, Touch_type,
+    Color_RGBA8888_type, Input_data_type, Point_type, Screen_read_data_type,
+    Screen_write_data_type, State_type,
 };
 
 #[derive(Default)]
@@ -20,7 +20,7 @@ struct Window_type {
     Resolution: Point_type,
     Window: Option<Window>,
     Pixels: Option<Pixels>,
-    Pointer_data: Pointer_data_type,
+    Pointer_data: Input_data_type,
 }
 
 impl Window_type {
@@ -31,7 +31,7 @@ impl Window_type {
         }
     }
 
-    fn Get_pointer_data(&self) -> &Pointer_data_type {
+    fn Get_pointer_data(&self) -> &Input_data_type {
         &self.Pointer_data
     }
 
@@ -156,6 +156,18 @@ impl ApplicationHandler for Window_type {
                     Pixels.render().unwrap();
                 }
             }
+            WindowEvent::KeyboardInput {
+                device_id: _,
+                event,
+                is_synthetic: _,
+            } => {
+                if let ElementState::Pressed = event.state {
+                    println!("Key pressed: {:?}", event.logical_key);
+                    // - Handle keyboard input.
+                } else {
+                    println!("Key released: {:?}", event.logical_key);
+                }
+            }
             WindowEvent::CursorMoved {
                 device_id: _,
                 position: Position,
@@ -168,11 +180,11 @@ impl ApplicationHandler for Window_type {
                 button: _,
             } => match state {
                 ElementState::Pressed => {
-                    self.Pointer_data.Set_touch(Touch_type::Pressed);
+                    self.Pointer_data.Set_touch(State_type::Pressed);
                 }
 
                 ElementState::Released => {
-                    self.Pointer_data.Set_touch(Touch_type::Released);
+                    self.Pointer_data.Set_touch(State_type::Released);
                 }
             },
             _ => {}
@@ -209,7 +221,7 @@ impl Inner_type {
         self.0.Draw(Data)
     }
 
-    fn Get_pointer_data(&mut self) -> Result<&Pointer_data_type, String> {
+    fn Get_pointer_data(&mut self) -> Result<&Input_data_type, String> {
         self.1.pump_app_events(None, &mut self.0);
 
         Ok(self.0.Get_pointer_data())
@@ -278,14 +290,14 @@ impl Pointer_device_type {
 impl Device_trait for Pointer_device_type {
     fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<Size_type> {
         // - Cast the pointer data to the buffer.
-        let Data: &mut Pointer_data_type = Buffer
+        let Data: &mut Input_data_type = Buffer
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
         // Copy the pointer data.
         *Data = *self.0.lock()?.Get_pointer_data().unwrap();
 
-        Ok(size_of::<Pointer_data_type>().into())
+        Ok(size_of::<Input_data_type>().into())
     }
 
     fn Write(&self, _: &[u8]) -> File_system::Result_type<Size_type> {
@@ -293,7 +305,7 @@ impl Device_trait for Pointer_device_type {
     }
 
     fn Get_size(&self) -> File_system::Result_type<Size_type> {
-        Ok(size_of::<Pointer_data_type>().into())
+        Ok(size_of::<Input_data_type>().into())
     }
 
     fn Set_position(&self, _: &File_system::Position_type) -> File_system::Result_type<Size_type> {

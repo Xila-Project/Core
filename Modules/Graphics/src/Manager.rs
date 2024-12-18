@@ -10,6 +10,7 @@ use super::LVGL;
 use super::Point_type;
 
 use crate::Display_type;
+use crate::Input_type_type;
 use crate::Window::Window_type;
 use crate::{Error_type, Input_type, Result_type, Screen_read_data_type};
 
@@ -17,7 +18,8 @@ static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
 
 pub fn Initialize(
     Screen_device: Device_type,
-    Pointer_device: Device_type,
+    Input_device: Device_type,
+    Input_device_type: Input_type_type,
     Buffer_size: usize,
     Double_buffered: bool,
 ) {
@@ -26,7 +28,8 @@ pub fn Initialize(
             Manager_type::New(
                 Time::Get_instance(),
                 Screen_device,
-                Pointer_device,
+                Input_device,
+                Input_device_type,
                 Buffer_size,
                 Double_buffered,
             )
@@ -93,7 +96,8 @@ impl Manager_type {
     fn New(
         _: &Time::Manager_type,
         Screen_device: Device_type,
-        Pointer_device: Device_type,
+        Input_device: Device_type,
+        Input_device_type: Input_type_type,
         Buffer_size: usize,
         Double_buffered: bool,
     ) -> Result_type<Self> {
@@ -107,8 +111,13 @@ impl Manager_type {
             LVGL::lv_tick_set_cb(Some(Binding_tick_callback_function));
         }
 
-        let (Display, Input) =
-            Self::Create_display(Screen_device, Buffer_size, Pointer_device, Double_buffered)?;
+        let (Display, Input) = Self::Create_display(
+            Screen_device,
+            Buffer_size,
+            Input_device,
+            Input_device_type,
+            Double_buffered,
+        )?;
 
         let Screen = Display.Get_object();
 
@@ -146,10 +155,23 @@ impl Manager_type {
         Ok(Window)
     }
 
+    pub fn Add_input_device(
+        &self,
+        Input_device: Device_type,
+        Input_type: Input_type_type,
+    ) -> Result_type<()> {
+        let Input = Input_type::New(Input_device, Input_type)?;
+
+        self.Inner.write()?._Inputs.push(Input);
+
+        Ok(())
+    }
+
     fn Create_display(
         Screen_device: Device_type,
         Buffer_size: usize,
-        Pointer_device: Device_type,
+        Input_device: Device_type,
+        Input_device_type: Input_type_type,
         Double_buffered: bool,
     ) -> Result_type<(Display_type, Input_type)> {
         let mut Screen_read_data = Screen_read_data_type::default();
@@ -162,7 +184,7 @@ impl Manager_type {
 
         let Display = Display_type::New(Screen_device, Resolution, Buffer_size, Double_buffered)?;
 
-        let Input = Input_type::New(Pointer_device, &Display)?;
+        let Input = Input_type::New(Input_device, Input_device_type)?;
 
         Ok((Display, Input))
     }

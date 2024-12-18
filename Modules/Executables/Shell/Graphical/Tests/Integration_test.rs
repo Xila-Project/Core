@@ -11,7 +11,7 @@ use Graphical_shell::Shell_executable_type;
 #[test]
 fn main() {
     use Drivers::Native::Window_screen;
-    use Graphics::{Get_minimal_buffer_size, Point_type};
+    use Graphics::{Get_minimal_buffer_size, Input_type_type, Point_type};
 
     // - Initialize the task manager.
     let Task_instance = Task::Initialize().unwrap();
@@ -30,7 +30,13 @@ fn main() {
 
     const Buffer_size: usize = Get_minimal_buffer_size(&Resolution);
 
-    Graphics::Initialize(Screen_device, Pointer_device, Buffer_size, true);
+    Graphics::Initialize(
+        Screen_device,
+        Pointer_device,
+        Input_type_type::Pointer,
+        Buffer_size,
+        true,
+    );
 
     // - Initialize the virtual file system.
     let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));

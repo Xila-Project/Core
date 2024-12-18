@@ -10,7 +10,7 @@ fn main() {
 
     use Drivers::Native::Window_screen;
     use File_system::Create_device;
-    use Graphics::{Get_recommended_buffer_size, Point_type, LVGL};
+    use Graphics::{Get_recommended_buffer_size, Input_type_type, Point_type, LVGL};
     use Time::Duration_type;
 
     let _ = Users::Initialize();
@@ -31,7 +31,13 @@ fn main() {
         .Get_current_task_identifier()
         .expect("Failed to get current task identifier");
 
-    Graphics::Initialize(Screen_device, Pointer_device, Buffer_size, true);
+    Graphics::Initialize(
+        Screen_device,
+        Pointer_device,
+        Input_type_type::Pointer,
+        Buffer_size,
+        true,
+    );
 
     let Window = Graphics::Get_instance().Create_window().unwrap();
 

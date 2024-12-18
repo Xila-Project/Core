@@ -2,9 +2,23 @@ use std::ffi::c_void;
 
 use File_system::Device_type;
 
-use crate::{Display::Display_type, Pointer_data_type, Result_type};
+use crate::{Input_data_type, Result_type};
 
 use super::LVGL;
+
+pub enum Input_type_type {
+    Pointer,
+    Keypad,
+}
+
+impl From<Input_type_type> for LVGL::lv_indev_type_t {
+    fn from(Value: Input_type_type) -> Self {
+        match Value {
+            Input_type_type::Pointer => LVGL::lv_indev_type_t_LV_INDEV_TYPE_POINTER,
+            Input_type_type::Keypad => LVGL::lv_indev_type_t_LV_INDEV_TYPE_KEYPAD,
+        }
+    }
+}
 
 struct User_data_type {
     pub Device: Device_type,
@@ -46,7 +60,7 @@ unsafe extern "C" fn Binding_callback_function(
 
     let Device = &(*User_data).Device;
 
-    let mut Pointer_data = Pointer_data_type::default();
+    let mut Pointer_data = Input_data_type::default();
 
     Device
         .Read(Pointer_data.as_mut())
@@ -58,13 +72,13 @@ unsafe extern "C" fn Binding_callback_function(
 }
 
 impl Input_type {
-    pub fn New(Device: Device_type, _: &Display_type) -> Result_type<Self> {
+    pub fn New(Device: Device_type, Type: Input_type_type) -> Result_type<Self> {
         // User_data is a pinned box, so it's ownership can be transferred to LVGL and will not move or dropper until the Input_device is dropped.
         let User_data = Box::new(User_data_type { Device });
 
         let Input_device = unsafe {
             let Input_device = LVGL::lv_indev_create();
-            LVGL::lv_indev_set_type(Input_device, LVGL::lv_indev_type_t_LV_INDEV_TYPE_POINTER);
+            LVGL::lv_indev_set_type(Input_device, Type.into());
             LVGL::lv_indev_set_read_cb(Input_device, Some(Binding_callback_function));
             LVGL::lv_indev_set_user_data(Input_device, Box::into_raw(User_data) as *mut c_void);
 
