@@ -1,21 +1,41 @@
-use core::mem::size_of;
-use std::mem::transmute;
+use core::mem::transmute;
 
-use super::LVGL;
+use crate::{Point_type, LVGL};
 
-use crate::Point_type;
+use super::{Key_type, State_type};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(C)]
 pub struct Input_data_type {
+    pub Continue: bool,
     pub Point: Point_type,
     pub State: State_type,
-    pub Key: u32,
+    pub Key: Key_type,
+}
+
+impl Default for Input_data_type {
+    fn default() -> Self {
+        Self {
+            Point: Point_type::default(),
+            State: State_type::default(),
+            Key: Key_type::Character(0),
+            Continue: false,
+        }
+    }
 }
 
 impl Input_data_type {
-    pub const fn New(Point: Point_type, State: State_type, Key: u32) -> Self {
-        Self { Point, State, Key }
+    pub const fn New(Point: Point_type, State: State_type, Key: Key_type, Continue: bool) -> Self {
+        Self {
+            Point,
+            State,
+            Key,
+            Continue,
+        }
+    }
+
+    pub const fn Get_continue(&self) -> bool {
+        self.Continue
     }
 
     pub const fn Get_point(&self) -> &Point_type {
@@ -26,12 +46,24 @@ impl Input_data_type {
         &self.State
     }
 
+    pub const fn Get_key(&self) -> Key_type {
+        self.Key
+    }
+
+    pub const fn Set_continue(&mut self, Continue: bool) {
+        self.Continue = Continue;
+    }
+
     pub fn Set_point(&mut self, Point: Point_type) {
         self.Point = Point;
     }
 
-    pub fn Set_touch(&mut self, Touch: State_type) {
+    pub fn Set_state(&mut self, Touch: State_type) {
         self.State = Touch;
+    }
+
+    pub fn Set_key(&mut self, Key: Key_type) {
+        self.Key = Key;
     }
 
     pub fn Set(&mut self, Point: Point_type, Touch: State_type) {
@@ -73,43 +105,8 @@ impl From<Input_data_type> for LVGL::lv_indev_data_t {
         }
 
         Input_device_data.state = (*State).into();
-        Input_device_data.key = Value.Key;
+        Input_device_data.key = Value.Key.into();
 
         Input_device_data
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-#[repr(u8)]
-pub enum State_type {
-    #[default]
-    Released,
-    Pressed,
-}
-
-impl From<State_type> for LVGL::lv_indev_state_t {
-    fn from(Value: State_type) -> LVGL::lv_indev_state_t {
-        match Value {
-            State_type::Pressed => LVGL::lv_indev_state_t_LV_INDEV_STATE_PRESSED,
-            State_type::Released => LVGL::lv_indev_state_t_LV_INDEV_STATE_RELEASED,
-        }
-    }
-}
-
-impl From<State_type> for u8 {
-    fn from(Value: State_type) -> u8 {
-        Value as u8
-    }
-}
-
-impl TryFrom<u8> for State_type {
-    type Error = ();
-
-    fn try_from(Value: u8) -> Result<Self, Self::Error> {
-        match Value {
-            0 => Ok(Self::Released),
-            1 => Ok(Self::Pressed),
-            _ => Err(()),
-        }
     }
 }
