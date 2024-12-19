@@ -3,7 +3,7 @@ use crate::{
     Icon::Create_icon,
 };
 
-use Graphics::{Color_type, Point_type, Window_type, LVGL};
+use Graphics::{Color_type, Event_code_type, Point_type, Window_type, LVGL};
 
 pub struct Desk_type {
     Window: Window_type,
@@ -28,7 +28,7 @@ impl Desk_type {
     const Dock_icon_size: Point_type = Point_type::New(32, 32);
     const Drawer_icon_size: Point_type = Point_type::New(48, 48);
 
-    pub const Home_event: u32 = LVGL::lv_event_code_t_LV_EVENT_LAST + 1;
+    pub const Home_event: Event_code_type = Event_code_type::Custom_1;
 
     pub fn Get_window_object(&self) -> *mut LVGL::lv_obj_t {
         self.Window.Get_object()
@@ -190,7 +190,7 @@ impl Desk_type {
 
     pub fn Event_handler(&mut self) {
         while let Some(Event) = self.Window.Pop_event() {
-            match Event.Code {
+            match Event.Get_code() {
                 Self::Home_event => unsafe {
                     LVGL::lv_tileview_set_tile_by_index(
                         self.Tile_view,
@@ -199,8 +199,8 @@ impl Desk_type {
                         LVGL::lv_anim_enable_t_LV_ANIM_ON,
                     );
                 },
-                LVGL::lv_event_code_t_LV_EVENT_VALUE_CHANGED => {
-                    if Event.Target == self.Tile_view {
+                Event_code_type::Value_changed => {
+                    if Event.Get_target() == self.Tile_view {
                         unsafe {
                             if LVGL::lv_tileview_get_tile_active(self.Tile_view) == self.Desk_tile {
                                 let _Lock = Graphics::Get_instance().Lock().unwrap();
@@ -212,9 +212,11 @@ impl Desk_type {
                         }
                     }
                 }
-                LVGL::lv_event_code_t_LV_EVENT_PRESSED => {
-                    if Event.Target == self.Main_button
-                        || unsafe { LVGL::lv_obj_get_parent(Event.Target) == self.Main_button }
+                Event_code_type::Pressed => {
+                    if Event.Get_target() == self.Main_button
+                        || unsafe {
+                            LVGL::lv_obj_get_parent(Event.Get_target()) == self.Main_button
+                        }
                     {
                         unsafe {
                             LVGL::lv_obj_add_state(self.Main_button, LVGL::LV_STATE_PRESSED as u16);
@@ -226,9 +228,11 @@ impl Desk_type {
                         }
                     }
                 }
-                LVGL::lv_event_code_t_LV_EVENT_RELEASED => {
-                    if Event.Target == self.Main_button
-                        || unsafe { LVGL::lv_obj_get_parent(Event.Target) == self.Main_button }
+                Event_code_type::Released => {
+                    if Event.Get_target() == self.Main_button
+                        || unsafe {
+                            LVGL::lv_obj_get_parent(Event.Get_target()) == self.Main_button
+                        }
                     {
                         const State: u16 = LVGL::LV_STATE_PRESSED as u16;
 

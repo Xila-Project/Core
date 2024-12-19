@@ -88,6 +88,6 @@ unsafe extern "C" fn Handle_released(Event: *mut LVGL::lv_event_t) {
         LVGL::lv_obj_remove_flag(Desk, LVGL::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
         LVGL::lv_obj_move_foreground(Desk);
 
-        LVGL::lv_obj_send_event(Desk, Desk_type::Home_event, null_mut());
+        LVGL::lv_obj_send_event(Desk, Desk_type::Home_event.Into_LVGL_code(), null_mut());
     }
 }
