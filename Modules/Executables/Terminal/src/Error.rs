@@ -8,6 +8,7 @@ pub type Result_type<T> = Result<T, Error_type>;
 #[repr(u8)]
 pub enum Error_type {
     Graphics(Graphics::Error_type),
+    Failed_to_create_object,
 }
 
 impl Error_type {
@@ -26,6 +27,7 @@ impl Display for Error_type {
     fn fmt(&self, Formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             Self::Graphics(Error) => write!(Formatter, "Graphics: {}", Error),
+            Self::Failed_to_create_object => write!(Formatter, "Failed to create object"),
         }
     }
 }
