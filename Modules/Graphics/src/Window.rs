@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, mem::forget};
 
-use crate::{Error_type, Result_type};
+use crate::{Error_type, Event::Event_type, Event_code_type, Result_type};
 
 use super::LVGL;
 
@@ -27,19 +27,32 @@ unsafe extern "C" fn Event_callback(Event: *mut LVGL::lv_event_t) {
     match Code {
         LVGL::lv_event_code_t_LV_EVENT_CHILD_CREATED => {
             LVGL::lv_obj_add_flag(Target, LVGL::lv_obj_flag_t_LV_OBJ_FLAG_EVENT_BUBBLE);
+
+            Queue.push_back(Event_type::New(
+                Event_code_type::Child_created,
+                Target,
+                None,
+            ));
+        }
+        LVGL::lv_event_code_t_LV_EVENT_KEY => {
+            let Key = unsafe { LVGL::lv_indev_get_key(LVGL::lv_indev_active()) };
+
+            Queue.push_back(Event_type::New(
+                Event_code_type::Key,
+                Target,
+                Some(Key.into()),
+            ));
         }
         _ => {
-            Queue.push_back(Event_type { Code, Target });
+            Queue.push_back(Event_type::New(
+                Event_code_type::From_LVGL_code(Code),
+                Target,
+                None,
+            ));
         }
     }
 
     forget(Queue); // Forget the queue to prevent it from being dropped.
-}
-
-#[derive(Debug, Clone)]
-pub struct Event_type {
-    pub Code: LVGL::lv_event_code_t,
-    pub Target: *mut LVGL::lv_obj_t,
 }
 
 impl Window_type {
