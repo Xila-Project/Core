@@ -1,0 +1,23 @@
+[package]
+name = "Terminal"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+Graphics = { path = "../../Graphics" }
+File_system = { path = "../../File_system" }
+Virtual_file_system = { path = "../../Virtual_file_system" }
+Executable = { path = "../../Executable" }
+Task = { path = "../../Task" }
+Users = { path = "../../Users" }
+Shared = { path = "../../Shared" }
+Time = { path = "../../Time" }
+
+[dev-dependencies]
+Drivers = { path = "../../Drivers" }
+Time = { path = "../../Time" }
+LittleFS = { path = "../../LittleFS" }
+
+[[test]]
+name = "Integration_test"
+path = "Tests/Integration_test.rs"
