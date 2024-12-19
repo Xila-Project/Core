@@ -1,8 +1,8 @@
-use crate::{Color_type, Point_type};
+use crate::{Color_RGB565_type, Color_type, Point_type, Rendering_color_type};
 
 #[repr(transparent)]
 pub struct Buffer_type {
-    Buffer: Vec<Color_type>,
+    Buffer: Vec<Rendering_color_type>,
 }
 
 impl AsRef<[Color_type]> for Buffer_type {
@@ -23,7 +23,7 @@ impl Buffer_type {
 
     pub fn New(Buffer_size: usize) -> Self {
         Self {
-            Buffer: vec![Color_type::New(0, 0, 0); Buffer_size],
+            Buffer: vec![Color_RGB565_type::New(0, 0, 0); Buffer_size],
         }
     }
 }

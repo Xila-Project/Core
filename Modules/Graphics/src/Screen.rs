@@ -1,15 +1,15 @@
 use core::mem::{size_of, transmute};
 use std::mem::align_of;
 
-use crate::{Area_type, Color_type, Point_type};
+use crate::{Area_type, Point_type, Rendering_color_type};
 
 pub struct Screen_write_data_type<'a> {
     Area: Area_type,
-    Buffer: &'a [Color_type],
+    Buffer: &'a [Rendering_color_type],
 }
 
 impl<'a> Screen_write_data_type<'a> {
-    pub fn New(Area: Area_type, Buffer: &'a [Color_type]) -> Self {
+    pub fn New(Area: Area_type, Buffer: &'a [Rendering_color_type]) -> Self {
         Self { Area, Buffer }
     }
 }
@@ -56,7 +56,7 @@ impl Screen_write_data_type<'_> {
         self.Area
     }
 
-    pub fn Get_buffer(&self) -> &[Color_type] {
+    pub fn Get_buffer(&self) -> &[Rendering_color_type] {
         self.Buffer
     }
 }

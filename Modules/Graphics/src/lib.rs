@@ -10,7 +10,6 @@ mod Error;
 mod Input;
 mod Manager;
 mod Point;
-mod Pointer;
 mod Screen;
 mod Window;
 
@@ -24,6 +23,5 @@ pub use Error::*;
 pub use Input::*;
 pub use Manager::*;
 pub use Point::*;
-pub use Pointer::*;
 pub use Screen::*;
 pub use Window::*;

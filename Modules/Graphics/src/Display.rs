@@ -4,7 +4,7 @@ use std::{ffi::c_void, ptr::null_mut};
 use File_system::Device_type;
 
 use crate::{
-    Area_type, Color_type, Draw_buffer::Buffer_type, Point_type, Result_type,
+    Area_type, Draw_buffer::Buffer_type, Point_type, Rendering_color_type, Result_type,
     Screen_write_data_type,
 };
 
@@ -33,7 +33,8 @@ unsafe extern "C" fn Binding_callback_function(
 
     let Buffer_size: usize = (Area.Get_width()) as usize * (Area.Get_height()) as usize;
 
-    let Buffer = unsafe { slice::from_raw_parts_mut(Data as *mut Color_type, Buffer_size) };
+    let Buffer =
+        unsafe { slice::from_raw_parts_mut(Data as *mut Rendering_color_type, Buffer_size) };
 
     let Screen_write_data = Screen_write_data_type::New(Area, Buffer);
 

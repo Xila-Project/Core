@@ -10,9 +10,10 @@ use super::LVGL;
 use super::Point_type;
 
 use crate::Display_type;
+use crate::Input_type;
 use crate::Input_type_type;
 use crate::Window::Window_type;
-use crate::{Error_type, Input_type, Result_type, Screen_read_data_type};
+use crate::{Error_type, Result_type, Screen_read_data_type};
 
 static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
 
@@ -121,10 +122,16 @@ impl Manager_type {
 
         let Screen = Display.Get_object();
 
+        unsafe {
+            let Group = LVGL::lv_group_create();
+            LVGL::lv_group_set_default(Group);
+        }
+
         Ok(Self {
             Inner: RwLock::new(Inner_type {
                 _Inputs: vec![Input],
                 _Displays: vec![Display],
+
                 Window_parent: Screen,
             }),
             Global_lock: Mutex::new(()),
@@ -142,12 +149,16 @@ impl Manager_type {
     }
 
     pub fn Set_window_parent(&self, Window_parent: *mut LVGL::lv_obj_t) -> Result_type<()> {
+        let _Lock = self.Lock()?;
+
         self.Inner.write()?.Window_parent = Window_parent;
 
         Ok(())
     }
 
     pub fn Create_window(&self) -> Result_type<Window_type> {
+        let _Lock = self.Lock()?;
+
         let Parent_object = self.Inner.write()?.Window_parent;
 
         let Window = unsafe { Window_type::New(Parent_object)? };
@@ -160,6 +171,8 @@ impl Manager_type {
         Input_device: Device_type,
         Input_type: Input_type_type,
     ) -> Result_type<()> {
+        let _Lock = self.Lock()?;
+
         let Input = Input_type::New(Input_device, Input_type)?;
 
         self.Inner.write()?._Inputs.push(Input);

@@ -24,7 +24,7 @@ fn main() {
 
     const Buffer_size: usize = Get_recommended_buffer_size(&Resolution);
 
-    let (Screen_device, Pointer_device) =
+    let (Screen_device, Pointer_device, Keyboard_device) =
         Window_screen::New(Resolution).expect("Error creating touchscreen");
 
     let _Task = Task_instance
@@ -38,6 +38,10 @@ fn main() {
         Buffer_size,
         true,
     );
+
+    Graphics::Get_instance()
+        .Add_input_device(Keyboard_device, Input_type_type::Keypad)
+        .unwrap();
 
     let Window = Graphics::Get_instance().Create_window().unwrap();
 
