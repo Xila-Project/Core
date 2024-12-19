@@ -14,7 +14,7 @@ pub fn Mount_devices(
 ) -> Result<(), String> {
     const Resolution: Point_type = Point_type::New(800, 600);
 
-    let (Screen, Pointer) = Window_screen::New(Resolution)?;
+    let (Screen, Pointer, Keyboard) = Window_screen::New(Resolution)?;
 
     Virtual_file_system
         .Mount_static_device(Task, &"/Devices/Screen", Screen)
@@ -23,6 +23,10 @@ pub fn Mount_devices(
     Virtual_file_system
         .Mount_static_device(Task, &"/Devices/Pointer", Pointer)
         .map_err(|Error| format!("Error adding pointer device: {:?}", Error))?;
+
+    Virtual_file_system
+        .Mount_static_device(Task, &"/Devices/Keyboard", Keyboard)
+        .map_err(|Error| format!("Error adding keyboard device {:?}", Error))?;
 
     Console::Mount_devices(Task, Virtual_file_system)?;
 
