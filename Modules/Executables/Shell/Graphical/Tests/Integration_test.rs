@@ -26,7 +26,7 @@ fn main() {
 
     const Resolution: Point_type = Point_type::New(800, 480);
 
-    let (Screen_device, Pointer_device) = Window_screen::New(Resolution).unwrap();
+    let (Screen_device, Pointer_device, Keyboard_device) = Window_screen::New(Resolution).unwrap();
 
     const Buffer_size: usize = Get_minimal_buffer_size(&Resolution);
 
@@ -37,6 +37,10 @@ fn main() {
         Buffer_size,
         true,
     );
+
+    Graphics::Get_instance()
+        .Add_input_device(Keyboard_device, Input_type_type::Keypad)
+        .unwrap();
 
     // - Initialize the virtual file system.
     let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));

@@ -16,7 +16,10 @@ pub unsafe fn Create_icon(
     LVGL::lv_obj_set_size(Icon, Size.Get_x().into(), Size.Get_y().into());
     LVGL::lv_obj_set_style_pad_all(Icon, 0, LVGL::LV_STATE_DEFAULT);
     LVGL::lv_obj_set_style_border_width(Icon, 0, LVGL::LV_STATE_DEFAULT);
-    LVGL::lv_obj_set_style_radius(Icon, 5, LVGL::LV_STATE_DEFAULT);
+
+    let Radius: i32 = Size.Get_x() as i32 / 3;
+
+    LVGL::lv_obj_set_style_radius(Icon, Radius, LVGL::LV_STATE_DEFAULT);
 
     let Color = Get_color_from_name(Name);
 

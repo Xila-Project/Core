@@ -14,17 +14,13 @@ mod Home;
 mod Icon;
 mod Layout;
 mod Main;
-mod Terminal;
 
 pub use Device::*;
-use Terminal::Terminal_type;
 
 pub struct Shell_type {
-    Standard: Standard_type,
-    User: String,
+    _Standard: Standard_type,
     Running: bool,
     Layout: Layout_type,
     Desk: Desk_type,
-    Home: Home_type,
-    Terminal: Option<Terminal_type>,
+    _Home: Home_type,
 }

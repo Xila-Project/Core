@@ -1,10 +1,9 @@
 use crate::{
     Error::{Error_type, Result_type},
     Icon::Create_icon,
-    Shell_type,
 };
 
-use Graphics::{Point_type, Window_type, LVGL};
+use Graphics::{Color_type, Point_type, Window_type, LVGL};
 
 pub struct Desk_type {
     Window: Window_type,
@@ -13,7 +12,6 @@ pub struct Desk_type {
     Desk_tile: *mut LVGL::lv_obj_t,
     Dock: *mut LVGL::lv_obj_t,
     Main_button: *mut LVGL::lv_obj_t,
-    Parts: [*mut LVGL::lv_obj_t; 4],
 }
 
 impl Drop for Desk_type {
@@ -30,6 +28,8 @@ impl Desk_type {
     const Dock_icon_size: Point_type = Point_type::New(32, 32);
     const Drawer_icon_size: Point_type = Point_type::New(48, 48);
 
+    pub const Home_event: u32 = LVGL::lv_event_code_t_LV_EVENT_LAST + 1;
+
     pub fn Get_window_object(&self) -> *mut LVGL::lv_obj_t {
         self.Window.Get_object()
     }
@@ -39,13 +39,32 @@ impl Desk_type {
     }
 
     pub fn New() -> Result_type<Self> {
-        let _Lock = Graphics::Get_instance().Lock()?; // Lock the graphics
-
         // - Create a window
         let Window = Graphics::Get_instance().Create_window()?;
 
+        // - Lock the graphics
+        let _Lock = Graphics::Get_instance().Lock()?; // Lock the graphics
+
         unsafe {
             LVGL::lv_obj_set_style_pad_all(Window.Get_object(), 0, LVGL::LV_STATE_DEFAULT);
+        }
+
+        // - Create the logo
+        unsafe {
+            // Create the logo in the background of the window
+            let Logo = Create_logo(Window.Get_object(), 4, Color_type::Black)?;
+
+            LVGL::lv_obj_set_align(Logo, LVGL::lv_align_t_LV_ALIGN_CENTER);
+            LVGL::lv_obj_add_flag(Logo, LVGL::lv_obj_flag_t_LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+
+            // Set shadow color according to BG color
+            for i in 0..4 {
+                let Part = LVGL::lv_obj_get_child(Logo, i);
+
+                LVGL::lv_obj_set_style_bg_opa(Part, LVGL::LV_OPA_0 as u8, LVGL::LV_STATE_DEFAULT);
+
+                LVGL::lv_obj_set_style_border_width(Part, 2, LVGL::LV_STATE_DEFAULT);
+            }
         }
 
         // - Create a tile view
@@ -67,7 +86,7 @@ impl Desk_type {
 
         // - Create the desk tile
         let Desk_tile = unsafe {
-            let Desk = LVGL::lv_tileview_add_tile(Tile_view, 0, 0, LVGL::lv_dir_t_LV_DIR_NONE);
+            let Desk = LVGL::lv_tileview_add_tile(Tile_view, 0, 0, LVGL::lv_dir_t_LV_DIR_BOTTOM);
 
             if Desk.is_null() {
                 return Err(Error_type::Failed_to_create_object);
@@ -80,7 +99,7 @@ impl Desk_type {
 
         // - Create the drawer tile
         let Drawer_tile = unsafe {
-            let Drawer = LVGL::lv_tileview_add_tile(Tile_view, 1, 0, LVGL::lv_dir_t_LV_DIR_LEFT);
+            let Drawer = LVGL::lv_tileview_add_tile(Tile_view, 0, 1, LVGL::lv_dir_t_LV_DIR_TOP);
 
             if Drawer.is_null() {
                 return Err(Error_type::Failed_to_create_object);
@@ -102,13 +121,13 @@ impl Desk_type {
                 return Err(Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_set_style_bg_color(Dock, LVGL::lv_color_black(), LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_style_bg_color(Dock, Color_type::Black.into(), LVGL::LV_STATE_DEFAULT);
 
             LVGL::lv_obj_set_align(Dock, LVGL::lv_align_t_LV_ALIGN_BOTTOM_MID);
             LVGL::lv_obj_set_size(Dock, LVGL::LV_SIZE_CONTENT, LVGL::LV_SIZE_CONTENT);
             LVGL::lv_obj_set_style_border_width(Dock, 0, LVGL::LV_STATE_DEFAULT);
             LVGL::lv_obj_set_flex_flow(Dock, LVGL::lv_flex_flow_t_LV_FLEX_FLOW_ROW);
-            LVGL::lv_obj_set_style_bg_opa(Dock, LVGL::LV_OPA_80 as u8, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_style_bg_opa(Dock, LVGL::LV_OPA_50 as u8, LVGL::LV_STATE_DEFAULT);
 
             LVGL::lv_obj_set_style_pad_all(Dock, 12, LVGL::LV_STATE_DEFAULT);
 
@@ -116,30 +135,7 @@ impl Desk_type {
         };
 
         // - Create the main button
-        let Main_button = unsafe {
-            let Main_button = LVGL::lv_obj_create(Dock);
-
-            if Main_button.is_null() {
-                return Err(Error_type::Failed_to_create_object);
-            }
-
-            LVGL::lv_obj_set_size(Main_button, 32, 32);
-            LVGL::lv_obj_set_style_bg_opa(
-                Main_button,
-                LVGL::LV_OPA_0 as u8,
-                LVGL::LV_STATE_DEFAULT,
-            );
-            LVGL::lv_obj_set_style_pad_all(Main_button, 0, LVGL::LV_STATE_DEFAULT);
-            LVGL::lv_obj_set_style_radius(Main_button, 0, LVGL::LV_STATE_DEFAULT);
-            LVGL::lv_obj_set_style_border_width(Main_button, 0, LVGL::LV_STATE_DEFAULT);
-
-            Main_button
-        };
-
-        let Red_part = New_part(Main_button, LVGL::lv_align_t_LV_ALIGN_TOP_LEFT);
-        let Blue_part = New_part(Main_button, LVGL::lv_align_t_LV_ALIGN_BOTTOM_LEFT);
-        let Green_part = New_part(Main_button, LVGL::lv_align_t_LV_ALIGN_BOTTOM_RIGHT);
-        let Yellow_part = New_part(Main_button, LVGL::lv_align_t_LV_ALIGN_TOP_RIGHT);
+        let Main_button = unsafe { Create_logo(Dock, 1, Color_type::White)? };
 
         // Create some fake icons
         for i in 0..5 {
@@ -155,7 +151,6 @@ impl Desk_type {
             Tile_view,
             Dock,
             Main_button,
-            Parts: [Red_part, Blue_part, Green_part, Yellow_part],
         })
     }
 
@@ -167,6 +162,11 @@ impl Desk_type {
                 let Container = LVGL::lv_obj_create(Drawer);
 
                 LVGL::lv_obj_set_size(Container, 12 * 8, 11 * 8);
+                LVGL::lv_obj_set_style_bg_opa(
+                    Container,
+                    LVGL::LV_OPA_0 as u8,
+                    LVGL::LV_STATE_DEFAULT,
+                );
                 LVGL::lv_obj_set_style_border_width(Container, 0, LVGL::LV_STATE_DEFAULT);
                 LVGL::lv_obj_set_flex_flow(Container, LVGL::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN);
                 LVGL::lv_obj_set_style_pad_all(Container, 0, LVGL::LV_STATE_DEFAULT);
@@ -177,7 +177,7 @@ impl Desk_type {
                     LVGL::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
                 );
 
-                let Icon = Create_icon(Container, &format!("Icon {}", i), Self::Drawer_icon_size)?;
+                Create_icon(Container, &format!("Icon {}", i), Self::Drawer_icon_size)?;
 
                 let Label = LVGL::lv_label_create(Container);
 
@@ -191,6 +191,14 @@ impl Desk_type {
     pub fn Event_handler(&mut self) {
         while let Some(Event) = self.Window.Pop_event() {
             match Event.Code {
+                Self::Home_event => unsafe {
+                    LVGL::lv_tileview_set_tile_by_index(
+                        self.Tile_view,
+                        0,
+                        0,
+                        LVGL::lv_anim_enable_t_LV_ANIM_ON,
+                    );
+                },
                 LVGL::lv_event_code_t_LV_EVENT_VALUE_CHANGED => {
                     if Event.Target == self.Tile_view {
                         unsafe {
@@ -198,39 +206,46 @@ impl Desk_type {
                                 let _Lock = Graphics::Get_instance().Lock().unwrap();
 
                                 LVGL::lv_obj_clean(self.Drawer_tile);
-                            } else {
+                            } else if LVGL::lv_obj_get_child_count(self.Drawer_tile) == 0 {
                                 let _ = Self::Create_drawer_interface(self.Drawer_tile);
                             }
                         }
-                        println!("Tile view value changed");
                     }
                 }
                 LVGL::lv_event_code_t_LV_EVENT_PRESSED => {
                     if Event.Target == self.Main_button
-                        || self.Parts.iter().any(|&Part| Part == Event.Target)
+                        || unsafe { LVGL::lv_obj_get_parent(Event.Target) == self.Main_button }
                     {
-                        const State: u16 = LVGL::LV_STATE_PRESSED as u16;
+                        unsafe {
+                            LVGL::lv_obj_add_state(self.Main_button, LVGL::LV_STATE_PRESSED as u16);
+                            for i in 0..4 {
+                                let Part = LVGL::lv_obj_get_child(self.Main_button, i);
 
-                        self.Parts.iter().for_each(|&Part| unsafe {
-                            LVGL::lv_obj_add_state(Part, State);
-                        });
+                                LVGL::lv_obj_add_state(Part, LVGL::LV_STATE_PRESSED as u16);
+                            }
+                        }
                     }
                 }
                 LVGL::lv_event_code_t_LV_EVENT_RELEASED => {
                     if Event.Target == self.Main_button
-                        || self.Parts.iter().any(|&Part| Part == Event.Target)
+                        || unsafe { LVGL::lv_obj_get_parent(Event.Target) == self.Main_button }
                     {
                         const State: u16 = LVGL::LV_STATE_PRESSED as u16;
 
-                        self.Parts.iter().for_each(|&Part| unsafe {
-                            LVGL::lv_obj_remove_state(Part, State);
-                        });
+                        unsafe {
+                            LVGL::lv_obj_add_state(self.Main_button, State);
+                            for i in 0..4 {
+                                let Part = LVGL::lv_obj_get_child(self.Main_button, i);
+
+                                LVGL::lv_obj_remove_state(Part, State);
+                            }
+                        }
 
                         unsafe {
                             LVGL::lv_tileview_set_tile_by_index(
                                 self.Tile_view,
-                                1,
                                 0,
+                                1,
                                 LVGL::lv_anim_enable_t_LV_ANIM_ON,
                             );
                         }
@@ -242,27 +257,55 @@ impl Desk_type {
     }
 }
 
-fn New_part(Parent: *mut LVGL::lv_obj_t, Alignment: LVGL::lv_align_t) -> *mut LVGL::lv_obj_t {
-    let Color = match Alignment {
-        LVGL::lv_align_t_LV_ALIGN_TOP_LEFT => LVGL::lv_palette_t_LV_PALETTE_RED,
-        LVGL::lv_align_t_LV_ALIGN_BOTTOM_LEFT => LVGL::lv_palette_t_LV_PALETTE_BLUE,
-        LVGL::lv_align_t_LV_ALIGN_BOTTOM_RIGHT => LVGL::lv_palette_t_LV_PALETTE_GREEN,
-        LVGL::lv_align_t_LV_ALIGN_TOP_RIGHT => LVGL::lv_palette_t_LV_PALETTE_YELLOW,
-        _ => LVGL::lv_palette_t_LV_PALETTE_GREY,
-    };
+unsafe fn Create_logo(
+    Parent: *mut LVGL::lv_obj_t,
+    Factor: u8,
+    Color: Color_type,
+) -> Result_type<*mut LVGL::lv_obj_t> {
+    let Logo = LVGL::lv_button_create(Parent);
 
-    let Size = (10_i32, 21_i32);
+    if Logo.is_null() {
+        return Err(Error_type::Failed_to_create_object);
+    }
+
+    LVGL::lv_obj_set_size(Logo, 32 * Factor as i32, 32 * Factor as i32);
+    LVGL::lv_obj_set_style_bg_opa(Logo, LVGL::LV_OPA_0 as u8, LVGL::LV_STATE_DEFAULT);
+    LVGL::lv_obj_set_style_pad_all(Logo, 0, LVGL::LV_STATE_DEFAULT);
+    LVGL::lv_obj_set_style_radius(Logo, 0, LVGL::LV_STATE_DEFAULT);
+    LVGL::lv_obj_set_style_border_width(Logo, 0, LVGL::LV_STATE_DEFAULT);
+
+    New_part(Logo, LVGL::lv_align_t_LV_ALIGN_TOP_RIGHT, Factor, Color)?;
+    New_part(Logo, LVGL::lv_align_t_LV_ALIGN_BOTTOM_RIGHT, Factor, Color)?;
+    New_part(Logo, LVGL::lv_align_t_LV_ALIGN_BOTTOM_LEFT, Factor, Color)?;
+    New_part(Logo, LVGL::lv_align_t_LV_ALIGN_TOP_LEFT, Factor, Color)?;
+
+    Ok(Logo)
+}
+
+fn New_part(
+    Parent: *mut LVGL::lv_obj_t,
+    Alignment: LVGL::lv_align_t,
+    Factor: u8,
+    Color: Color_type,
+) -> Result_type<*mut LVGL::lv_obj_t> {
+    //let Color = match Alignment {
+    //    LVGL::lv_align_t_LV_ALIGN_TOP_RIGHT => LVGL::lv_palette_t_LV_PALETTE_YELLOW,
+    //    LVGL::lv_align_t_LV_ALIGN_BOTTOM_LEFT => LVGL::lv_palette_t_LV_PALETTE_BLUE,
+    //    LVGL::lv_align_t_LV_ALIGN_BOTTOM_RIGHT => LVGL::lv_palette_t_LV_PALETTE_GREEN,
+    //    LVGL::lv_align_t_LV_ALIGN_TOP_LEFT => LVGL::lv_palette_t_LV_PALETTE_RED,
+    //    _ => LVGL::lv_palette_t_LV_PALETTE_GREY,
+    //};
+
+    let Size = (10_i32 * Factor as i32, 21_i32 * Factor as i32);
 
     unsafe {
-        let Part = LVGL::lv_obj_create(Parent);
+        let Part = LVGL::lv_button_create(Parent);
 
         if Part.is_null() {
-            return Part;
+            return Err(Error_type::Failed_to_create_object);
         }
 
-        let Color = LVGL::lv_palette_main(Color);
-
-        LVGL::lv_obj_set_style_bg_color(Part, Color, LVGL::LV_STATE_DEFAULT);
+        LVGL::lv_obj_set_style_bg_color(Part, Color.Into_LVGL_color(), LVGL::LV_STATE_DEFAULT);
         LVGL::lv_obj_set_style_bg_color(Part, LVGL::lv_color_white(), LVGL::LV_STATE_PRESSED);
 
         LVGL::lv_obj_set_align(Part, Alignment);
@@ -282,6 +325,6 @@ fn New_part(Parent: *mut LVGL::lv_obj_t, Alignment: LVGL::lv_align_t) -> *mut LV
         LVGL::lv_obj_set_style_border_width(Part, 0, LVGL::LV_STATE_DEFAULT);
         LVGL::lv_obj_add_flag(Part, LVGL::lv_obj_flag_t_LV_OBJ_FLAG_EVENT_BUBBLE);
 
-        Part
+        Ok(Part)
     }
 }

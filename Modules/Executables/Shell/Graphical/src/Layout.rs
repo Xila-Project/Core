@@ -1,7 +1,4 @@
-use Graphics::{
-    Window_type,
-    LVGL::{self, lv_obj_create},
-};
+use Graphics::LVGL;
 use Shared::Unix_to_human_time;
 
 use crate::Error::{Error_type, Result_type};
@@ -145,6 +142,8 @@ impl Layout_type {
 
             Body
         };
+
+        drop(_Lock); // Unlock the graphics
 
         Graphics::Get_instance().Set_window_parent(Body)?;
 

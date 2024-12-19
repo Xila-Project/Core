@@ -11,8 +11,6 @@ pub fn Main(Standard: Standard_type, Arguments: String) -> Result<(), NonZeroUsi
 
 impl Shell_type {
     pub fn New(Standard: Standard_type) -> Self {
-        let User: String = "".to_string();
-
         let Layout = Layout_type::New().unwrap();
 
         let Desk = Desk_type::New().unwrap();
@@ -20,23 +18,17 @@ impl Shell_type {
         let Home = Home_type::New(Desk.Get_window_object()).unwrap();
 
         Self {
-            Standard,
-            User,
+            _Standard: Standard,
             Layout,
             Desk,
             Running: true,
-            Home,
-            Terminal: None,
+            _Home: Home,
         }
     }
 
-    pub fn Main(&mut self, Arguments: String) -> Result<(), NonZeroUsize> {
+    pub fn Main(&mut self, _: String) -> Result<(), NonZeroUsize> {
         while self.Running {
             self.Layout.Loop();
-
-            if let Some(Terminal) = &mut self.Terminal {
-                Terminal.Event_handler();
-            }
 
             if !self.Desk.Is_hidden() {
                 self.Desk.Event_handler();

@@ -2,7 +2,7 @@ use std::ptr::null_mut;
 
 use Graphics::LVGL;
 
-use crate::Error::Result_type;
+use crate::{Desk::Desk_type, Error::Result_type};
 
 pub struct Home_type {
     Button: *mut LVGL::lv_obj_t,
@@ -27,9 +27,9 @@ impl Home_type {
                 return Err(crate::Error::Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_set_size(Button, LVGL::lv_pct(40), 10);
-            LVGL::lv_obj_set_style_bg_color(Button, LVGL::lv_color_black(), LVGL::LV_STATE_DEFAULT);
-            LVGL::lv_obj_set_style_bg_opa(Button, LVGL::LV_OPA_80 as u8, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_size(Button, LVGL::lv_pct(40), 8);
+            LVGL::lv_obj_set_style_bg_color(Button, LVGL::lv_color_white(), LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_style_bg_opa(Button, LVGL::LV_OPA_50 as u8, LVGL::LV_STATE_DEFAULT);
             LVGL::lv_obj_set_align(Button, LVGL::lv_align_t_LV_ALIGN_BOTTOM_MID);
             LVGL::lv_obj_set_y(Button, -5);
 
@@ -87,5 +87,7 @@ unsafe extern "C" fn Handle_released(Event: *mut LVGL::lv_event_t) {
 
         LVGL::lv_obj_remove_flag(Desk, LVGL::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
         LVGL::lv_obj_move_foreground(Desk);
+
+        LVGL::lv_obj_send_event(Desk, Desk_type::Home_event, null_mut());
     }
 }
