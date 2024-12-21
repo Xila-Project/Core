@@ -39,11 +39,11 @@ impl Desk_type {
     }
 
     pub fn New() -> Result_type<Self> {
-        // - Create a window
-        let Window = Graphics::Get_instance().Create_window()?;
-
         // - Lock the graphics
         let _Lock = Graphics::Get_instance().Lock()?; // Lock the graphics
+
+        // - Create a window
+        let Window = Graphics::Get_instance().Create_window()?;
 
         unsafe {
             LVGL::lv_obj_set_style_pad_all(Window.Get_object(), 0, LVGL::LV_STATE_DEFAULT);
@@ -155,8 +155,6 @@ impl Desk_type {
     }
 
     unsafe fn Create_drawer_interface(Drawer: *mut LVGL::lv_obj_t) -> Result_type<()> {
-        let _Lock = Graphics::Get_instance().Lock()?; // Lock the graphics
-
         for i in 0..67 {
             unsafe {
                 let Container = LVGL::lv_obj_create(Drawer);
@@ -192,6 +190,8 @@ impl Desk_type {
         while let Some(Event) = self.Window.Pop_event() {
             match Event.Get_code() {
                 Self::Home_event => unsafe {
+                    let _Lock = Graphics::Get_instance().Lock().unwrap();
+
                     LVGL::lv_tileview_set_tile_by_index(
                         self.Tile_view,
                         0,
@@ -201,10 +201,9 @@ impl Desk_type {
                 },
                 Event_code_type::Value_changed => {
                     if Event.Get_target() == self.Tile_view {
+                        let _Lock = Graphics::Get_instance().Lock().unwrap();
                         unsafe {
                             if LVGL::lv_tileview_get_tile_active(self.Tile_view) == self.Desk_tile {
-                                let _Lock = Graphics::Get_instance().Lock().unwrap();
-
                                 LVGL::lv_obj_clean(self.Drawer_tile);
                             } else if LVGL::lv_obj_get_child_count(self.Drawer_tile) == 0 {
                                 let _ = Self::Create_drawer_interface(self.Drawer_tile);
@@ -213,6 +212,7 @@ impl Desk_type {
                     }
                 }
                 Event_code_type::Pressed => {
+                    let _Lock = Graphics::Get_instance().Lock().unwrap();
                     if Event.Get_target() == self.Main_button
                         || unsafe {
                             LVGL::lv_obj_get_parent(Event.Get_target()) == self.Main_button
