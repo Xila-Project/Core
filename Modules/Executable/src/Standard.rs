@@ -9,7 +9,7 @@ pub struct Standard_type {
     Standard_out: Unique_file_identifier_type,
     Standard_error: Unique_file_identifier_type,
     Task: Task_identifier_type,
-    Virtual_file_system: &'static Virtual_file_system_type,
+    Virtual_file_system: &'static Virtual_file_system_type<'static>,
 }
 
 impl Drop for Standard_type {
