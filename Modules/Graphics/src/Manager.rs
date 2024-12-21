@@ -149,16 +149,12 @@ impl Manager_type {
     }
 
     pub fn Set_window_parent(&self, Window_parent: *mut LVGL::lv_obj_t) -> Result_type<()> {
-        let _Lock = self.Lock()?;
-
         self.Inner.write()?.Window_parent = Window_parent;
 
         Ok(())
     }
 
     pub fn Create_window(&self) -> Result_type<Window_type> {
-        let _Lock = self.Lock()?;
-
         let Parent_object = self.Inner.write()?.Window_parent;
 
         let Window = unsafe { Window_type::New(Parent_object)? };
@@ -171,8 +167,6 @@ impl Manager_type {
         Input_device: Device_type,
         Input_type: Input_type_type,
     ) -> Result_type<()> {
-        let _Lock = self.Lock()?;
-
         let Input = Input_type::New(Input_device, Input_type)?;
 
         self.Inner.write()?._Inputs.push(Input);
@@ -207,8 +201,6 @@ impl Manager_type {
     }
 
     pub fn Get_current_screen(&self) -> Result_type<*mut LVGL::lv_obj_t> {
-        let _Lock = self.Lock()?;
-
         Ok(unsafe { LVGL::lv_screen_active() })
     }
 }
