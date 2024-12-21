@@ -15,7 +15,7 @@ use super::Virtual_file_system_type;
 /// This is a wrapper around the virtual file system.
 pub struct File_type<'a> {
     File_identifier: Unique_file_identifier_type,
-    File_system: &'a Virtual_file_system_type,
+    File_system: &'a Virtual_file_system_type<'a>,
     Task: Task_identifier_type,
 }
 
@@ -31,7 +31,7 @@ impl Debug for File_type<'_> {
 
 impl<'a> File_type<'a> {
     pub fn Open(
-        File_system: &'a Virtual_file_system_type,
+        File_system: &'a Virtual_file_system_type<'a>,
         Path: impl AsRef<Path_type>,
         Flags: Flags_type,
         Task: Task_identifier_type,
@@ -46,7 +46,7 @@ impl<'a> File_type<'a> {
     }
 
     pub fn Create_unnamed_pipe(
-        File_system: &'a Virtual_file_system_type,
+        File_system: &'a Virtual_file_system_type<'a>,
         Size: usize,
         Status: Status_type,
         Task: Task_identifier_type,

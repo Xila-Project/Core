@@ -15,6 +15,7 @@ use File_system::{
     Unique_file_identifier_type,
 };
 
+use crate::Device::Internal_path_type;
 use crate::{Device, Pipe};
 
 struct Internal_file_system_type {
@@ -41,7 +42,7 @@ pub fn Initialize(Root_file_system: Box<dyn File_system_traits>) -> Result<(), c
         .map_err(|_| crate::Error_type::Already_initialized)
 }
 
-pub fn Get_instance() -> &'static Virtual_file_system_type {
+pub fn Get_instance() -> &'static Virtual_file_system_type<'static> {
     Virtual_file_system_instance
         .get()
         .expect("Virtual file system not initialized")
@@ -54,16 +55,16 @@ pub fn Uninitialize() {
 /// The virtual file system.
 ///
 /// It is a singleton.
-pub struct Virtual_file_system_type {
+pub struct Virtual_file_system_type<'a> {
     /// Mounted file systems.
     File_systems: RwLock<BTreeMap<File_system_identifier_type, Internal_file_system_type>>,
     /// Devices.
-    Device_file_system: Device::File_system_type,
+    Device_file_system: Device::File_system_type<'a>,
     /// Pipes.
     Pipe_file_system: Pipe::File_system_type,
 }
 
-impl Virtual_file_system_type {
+impl<'a> Virtual_file_system_type<'a> {
     pub const Standard_input_file_identifier: File_identifier_type = File_identifier_type::New(0);
     pub const Standard_output_file_identifier: File_identifier_type = File_identifier_type::New(1);
     pub const Standard_error_file_identifier: File_identifier_type = File_identifier_type::New(2);
@@ -95,12 +96,21 @@ impl Virtual_file_system_type {
     }
 
     pub fn Uninitialize(&self) {
-        if let Ok(Paths) = self
+        if let Ok(Inodes) = self
             .Device_file_system
             .Get_devices_from_path(Path_type::Root)
         {
-            for Path in Paths {
-                let _ = self.Remove(Path);
+            for Inode in Inodes {
+                if let Ok(Path) = self.Device_file_system.Get_path_from_inode(Inode) {
+                    match Path {
+                        Internal_path_type::Owned(Path) => {
+                            let _ = self.Remove(Path);
+                        }
+                        Internal_path_type::Borrowed(Path) => {
+                            let _ = self.Remove(Path);
+                        }
+                    }
+                }
             }
         }
     }
@@ -572,10 +582,63 @@ impl Virtual_file_system_type {
         Ok(())
     }
 
+    pub fn Mount_device(
+        &self,
+        Task: Task_identifier_type,
+        Path: &impl AsRef<Path_type>,
+        Device: Device_type,
+    ) -> Result_type<()> {
+        let File_systems = self.File_systems.read()?; // Get the file systems
+
+        let (_, File_system, Relative_path) =
+            Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
+
+        let Time = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
+
+        let User = Task::Get_instance().Get_user(Task)?;
+
+        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+
+        let File = File_system.Open(
+            Task,
+            Relative_path,
+            Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None),
+            Time,
+            User,
+            Group,
+        )?;
+
+        File_system.Close(File)?;
+
+        let Inode = self
+            .Device_file_system
+            .Mount_device(Relative_path.to_owned(), Device)?;
+
+        let Time: Time_type = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
+
+        let User = Task::Get_instance().Get_user(Task)?;
+
+        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+
+        let mut Metadata = Metadata_type::Get_default(Type_type::Block_device, Time, User, Group)
+            .ok_or(Error_type::Invalid_parameter)?;
+        Metadata.Set_inode(Inode);
+
+        File_system.Set_metadata_from_path(Relative_path, &Metadata)?;
+
+        Ok(())
+    }
+
     pub fn Mount_static_device(
         &self,
         Task: Task_identifier_type,
-        Path: &'static impl AsRef<Path_type>,
+        Path: &'a impl AsRef<Path_type>,
         Device: Device_type,
     ) -> Result_type<()> {
         let File_systems = self.File_systems.read()?; // Get the file systems

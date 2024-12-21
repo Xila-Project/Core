@@ -10,7 +10,7 @@ use File_system::{
 };
 use Virtual_file_system::{File_type, Virtual_file_system_type};
 
-fn Initialize() -> (Task_identifier_type, Virtual_file_system_type) {
+fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>) {
     let Task_instance = Task::Initialize().expect("Failed to initialize task manager");
 
     unsafe {
