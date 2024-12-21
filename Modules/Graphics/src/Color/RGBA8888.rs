@@ -125,32 +125,32 @@ mod Tests {
         assert_eq!(Color.Get_red(), 0xFF);
         assert_eq!(Color.Get_green(), 0);
         assert_eq!(Color.Get_blue(), 0);
-        assert_eq!(Color.0, 0xFF00_0000);
-        assert_eq!(u32::from(Color), 0xFF00_0000);
+        assert_eq!(Color.0, 0x0000_00FF);
+        assert_eq!(u32::from(Color), 0x0000_00FF);
 
         let Color = Color_RGBA8888_type::New(0, 255, 0, 0);
         assert_eq!(Color.Get_alpha(), 0);
         assert_eq!(Color.Get_red(), 0);
         assert_eq!(Color.Get_green(), 0xFF);
         assert_eq!(Color.Get_blue(), 0);
-        assert_eq!(Color.0, 0x00FF_0000);
-        assert_eq!(u32::from(Color), 0x00FF_0000);
+        assert_eq!(Color.0, 0x0000_FF00);
+        assert_eq!(u32::from(Color), 0x0000_FF00);
 
         let Color = Color_RGBA8888_type::New(0, 0, 255, 0);
         assert_eq!(Color.Get_alpha(), 0);
         assert_eq!(Color.Get_red(), 0);
         assert_eq!(Color.Get_green(), 0);
         assert_eq!(Color.Get_blue(), 0xFF);
-        assert_eq!(Color.0, 0x0000_FF00);
-        assert_eq!(u32::from(Color), 0x0000_FF00);
+        assert_eq!(Color.0, 0x00FF_0000);
+        assert_eq!(u32::from(Color), 0x00FF_0000);
 
         let Color = Color_RGBA8888_type::New(0, 0, 0, 255);
         assert_eq!(Color.Get_alpha(), 0xFF);
         assert_eq!(Color.Get_red(), 0);
         assert_eq!(Color.Get_green(), 0);
         assert_eq!(Color.Get_blue(), 0);
-        assert_eq!(Color.0, 0x0000_00FF);
-        assert_eq!(u32::from(Color), 0x0000_00FF);
+        assert_eq!(Color.0, 0xFF00_0000);
+        assert_eq!(u32::from(Color), 0xFF00_0000);
 
         let Color = Color_RGBA8888_type::New(0, 0, 0, 0);
         assert_eq!(Color.Get_alpha(), 0);
