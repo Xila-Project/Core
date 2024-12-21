@@ -47,7 +47,7 @@ fn Integration_test() {
 
     const Buffer_size: usize = Get_minimal_buffer_size(&Resolution);
 
-    let (Screen_device, Pointer_device) = Window_screen::New(Resolution).unwrap();
+    let (Screen_device, Pointer_device, _) = Window_screen::New(Resolution).unwrap();
 
     let _Task = Task_instance.Get_current_task_identifier().unwrap();
 
