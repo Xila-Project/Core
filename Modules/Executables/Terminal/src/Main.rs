@@ -1,134 +1,73 @@
 use core::num::NonZeroUsize;
-use std::ffi::CStr;
+use std::{sync::Arc, time::Duration};
 
 use Executable::Standard_type;
-use Graphics::{
-    Event_code_type, Key_type, Window_type,
-    LVGL::{self, lv_indev_active},
-};
+use File_system::{Device_type, Flags_type, Mode_type, Unique_file_identifier_type};
+use Task::Task_identifier_type;
 
-use crate::Error::Result_type;
+use crate::{Error::Result_type, Terminal::Terminal_type};
 
-pub struct Terminal_type {
-    Window: Window_type,
-    Running: bool,
-    Buffer: String,
-    Display: *mut LVGL::lv_obj_t,
-    Input: *mut LVGL::lv_obj_t,
+fn Mount_and_open(
+    Task: Task_identifier_type,
+    Terminal: Arc<Terminal_type>,
+) -> Result_type<(
+    Unique_file_identifier_type,
+    Unique_file_identifier_type,
+    Unique_file_identifier_type,
+)> {
+    Virtual_file_system::Get_instance().Mount_device(
+        Task,
+        &"/Devices/Terminal",
+        Device_type::New(Terminal),
+    )?;
+
+    let Standard_in = Virtual_file_system::Get_instance().Open(
+        &"/Devices/Terminal",
+        Flags_type::New(Mode_type::Read_only, None, None),
+        Task,
+    )?;
+
+    let Standard_out = Virtual_file_system::Get_instance().Open(
+        &"/Devices/Terminal",
+        Mode_type::Write_only.into(),
+        Task,
+    )?;
+
+    let Standard_error =
+        Virtual_file_system::Get_instance().Duplicate_file_identifier(Standard_out, Task)?;
+
+    Ok((Standard_in, Standard_out, Standard_error))
 }
 
-impl Terminal_type {
-    pub fn New() -> Result_type<Self> {
-        let Window = Graphics::Get_instance().Create_window()?;
+fn Inner_main(Task: Task_identifier_type) -> Result_type<()> {
+    let Terminal = Terminal_type::New()?;
 
-        let _Lock = Graphics::Get_instance().Lock()?;
+    let Terminal = Arc::new(Terminal);
 
-        unsafe {
-            LVGL::lv_obj_set_flex_flow(
-                Window.Get_object(),
-                LVGL::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN,
-            );
-        }
+    let (Standard_in, Standard_out, Standard_error) = Mount_and_open(Task, Terminal.clone())?;
 
-        let Container = unsafe {
-            let Container = LVGL::lv_obj_create(Window.Get_object());
+    let Standard = Standard_type::New(
+        Standard_in,
+        Standard_out,
+        Standard_error,
+        Task::Get_instance().Get_current_task_identifier()?,
+        Virtual_file_system::Get_instance(),
+    );
 
-            LVGL::lv_obj_set_width(Container, LVGL::lv_pct(100));
-            LVGL::lv_obj_set_flex_grow(Container, 1);
+    Executable::Execute("/Shell", "".to_string(), Standard)?;
 
-            Container
-        };
-
-        let Buffer = String::with_capacity(80 * 24);
-
-        let Display = unsafe {
-            let Label = LVGL::lv_label_create(Container);
-
-            if Label.is_null() {
-                return Err(crate::Error::Error_type::Failed_to_create_object);
-            }
-
-            LVGL::lv_obj_set_width(Label, LVGL::lv_pct(100));
-            LVGL::lv_label_set_text_static(Label, Buffer.as_ptr() as *const i8);
-            LVGL::lv_obj_set_style_text_font(
-                Label,
-                &raw const LVGL::lv_font_unscii_8,
-                LVGL::LV_STATE_DEFAULT,
-            );
-
-            Label
-        };
-
-        let Input = unsafe {
-            let Input = LVGL::lv_textarea_create(Window.Get_object());
-
-            if Input.is_null() {
-                return Err(crate::Error::Error_type::Failed_to_create_object);
-            }
-
-            LVGL::lv_textarea_set_placeholder_text(Input, c"Enter your command ...".as_ptr());
-            LVGL::lv_obj_set_width(Input, LVGL::lv_pct(100));
-            LVGL::lv_textarea_set_one_line(Input, true);
-
-            Input
-        };
-
-        Ok(Self {
-            Buffer,
-            Window,
-            Running: true,
-            Display,
-            Input,
-        })
+    while Terminal.Event_handler()? {
+        Task::Manager_type::Sleep(Duration::from_millis(20));
     }
 
-    pub fn Event_handler(&mut self) {
-        while let Some(Event) = self.Window.Pop_event() {
-            match Event.Get_code() {
-                Event_code_type::Delete => self.Running = false,
-                Event_code_type::Key => {
-                    if let Some(Key_type::Character(Character)) = Event.Get_key() {
-                        if Character == b'\n' || Character == b'\r' {
-                            unsafe {
-                                let Text = LVGL::lv_textarea_get_text(self.Input);
-
-                                if !self.Buffer.is_empty() {
-                                    self.Buffer.remove(self.Buffer.len() - 1);
-                                }
-
-                                if let Ok(Text) = CStr::from_ptr(Text).to_str() {
-                                    self.Buffer += Text;
-                                    self.Buffer += "\n\0";
-                                    LVGL::lv_label_set_text(
-                                        self.Display,
-                                        self.Buffer.as_ptr() as *const i8,
-                                    );
-                                }
-
-                                LVGL::lv_textarea_set_text(self.Input, c"".as_ptr());
-                            }
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-    }
-
-    pub fn Main(&mut self, _: String) {
-        while self.Running {
-            self.Event_handler();
-        }
-    }
+    Ok(())
 }
 
-pub fn Main(Standard: Standard_type, Arguments: String) -> Result<(), NonZeroUsize> {
-    Terminal_type::New()
-        .map_err(|Error| {
-            Standard.Print_error(&Error.to_string());
-            NonZeroUsize::from(Error)
-        })?
-        .Main(Arguments);
+pub fn Main(Standard: Standard_type, _: String) -> Result<(), NonZeroUsize> {
+    if let Err(Error) = Inner_main(Standard.Get_task()) {
+        Standard.Print_error(&Error.to_string());
+        return Err(Error.into());
+    }
 
     Ok(())
 }

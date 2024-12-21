@@ -10,6 +10,7 @@ use Terminal::Terminal_executable_type;
 #[ignore]
 #[test]
 fn main() {
+    use Command_line_shell::Shell_executable_type;
     use Drivers::Native::Window_screen;
     use Graphics::{Get_minimal_buffer_size, Input_type_type, Point_type};
 
@@ -52,6 +53,10 @@ fn main() {
     Virtual_file_system::Initialize(Create_file_system!(File_system)).unwrap();
 
     let Task = Task_instance.Get_current_task_identifier().unwrap();
+
+    Virtual_file_system::Get_instance()
+        .Mount_static_device(Task, &"/Shell", Create_device!(Shell_executable_type))
+        .unwrap();
 
     Virtual_file_system::Get_instance()
         .Mount_static_device(Task, &"/Terminal", Create_device!(Terminal_executable_type))

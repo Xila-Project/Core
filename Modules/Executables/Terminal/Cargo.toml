@@ -17,6 +17,7 @@ Time = { path = "../../Time" }
 Drivers = { path = "../../Drivers" }
 Time = { path = "../../Time" }
 LittleFS = { path = "../../LittleFS" }
+Command_line_shell = { path = "../Shell/Command_line" }
 
 [[test]]
 name = "Integration_test"

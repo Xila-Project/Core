@@ -3,9 +3,10 @@
 #![allow(non_upper_case_globals)]
 
 mod Device;
-
+mod Executable;
 mod Main;
+mod Terminal;
 
 mod Error;
 
-pub use Device::*;
+pub use Executable::*;
