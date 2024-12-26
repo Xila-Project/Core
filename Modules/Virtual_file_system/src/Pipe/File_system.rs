@@ -278,13 +278,13 @@ impl File_system_type {
         }
 
         if Flags.Get_status().Get_non_blocking() {
-            return Ok((Pipe.Read_line(Buffer)?, Underlying_file.clone()));
+            return Ok((Pipe.Read_line(Buffer)?, *Underlying_file));
         }
 
         loop {
             // Wait for the pipe to be ready
             if let Ok(Size) = Pipe.Read_line(Buffer) {
-                return Ok((Size, Underlying_file.clone()));
+                return Ok((Size, *Underlying_file));
             }
 
             Task::Manager_type::Sleep(Duration::from_millis(1));
