@@ -97,6 +97,33 @@ pub trait File_system_traits: Send + Sync {
         Time_type: Time_type,
     ) -> Result_type<Size_type>;
 
+    fn Read_line(
+        &self,
+        File: Local_file_identifier_type,
+        Buffer: &mut String,
+        Time_type: Time_type,
+    ) -> Result_type<Size_type> {
+        loop {
+            let Current_buffer = &mut [0; 1];
+
+            let Size = self.Read(File, Current_buffer, Time_type)?;
+
+            if Size == 0 {
+                break;
+            }
+
+            let Byte = Current_buffer[0];
+
+            if Byte == b'\n' || Byte == b'\r' {
+                break;
+            }
+
+            Buffer.push(Byte as char);
+        }
+
+        Ok(Buffer.len().into())
+    }
+
     /// Write a file.
     ///
     /// # Errors
