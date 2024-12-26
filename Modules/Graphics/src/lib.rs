@@ -7,23 +7,23 @@ mod Color;
 mod Display;
 mod Draw_buffer;
 mod Error;
+mod Event;
 mod Input;
 mod Manager;
 mod Point;
-mod Pointer;
 mod Screen;
 mod Window;
+
+pub mod LVGL;
 
 pub use Area::*;
 pub use Color::*;
 pub use Display::*;
 pub use Draw_buffer::*;
 pub use Error::*;
+pub use Event::*;
 pub use Input::*;
 pub use Manager::*;
 pub use Point::*;
-pub use Pointer::*;
 pub use Screen::*;
 pub use Window::*;
-
-pub use lvgl_rust_sys as lvgl;

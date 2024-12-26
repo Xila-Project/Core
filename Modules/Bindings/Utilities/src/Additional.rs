@@ -12,15 +12,16 @@ pub fn Get() -> TokenStream {
 
         pub unsafe fn Window_create() -> *mut lv_obj_t {
             Graphics::Get_instance().Create_window().unwrap().Into_raw()
+
         }
 
-        pub unsafe fn Window_get_event_code(Window: *mut lv_obj_t) -> lv_event_code_t {
+        pub unsafe fn Window_get_event_code(Window: *mut lv_obj_t) -> u32 {
             let Window = Graphics::Window_type::From_raw(Window);
 
             let Code = if let Some(Event) = Window.Peek_event() {
-                Event.Code
+                Event.Get_code() as u32
             } else {
-                lv_event_code_t_LV_EVENT_ALL
+                Graphics::Event_code_type::All as u32
             };
 
             core::mem::forget(Window);
@@ -32,7 +33,7 @@ pub fn Get() -> TokenStream {
             let Window = Graphics::Window_type::From_raw(Window);
 
             let Target = if let Some(Event) = Window.Peek_event() {
-                Event.Target
+                Event.Get_target()
             } else {
                 core::ptr::null_mut()
             };

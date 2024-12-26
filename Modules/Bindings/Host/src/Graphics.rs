@@ -4,7 +4,7 @@ use std::{
     os::raw::c_void,
 };
 
-pub use Graphics::lvgl;
+pub use Graphics::LVGL;
 
 use Task::Task_identifier_type;
 use Virtual_machine::{
@@ -13,7 +13,7 @@ use Virtual_machine::{
 };
 
 mod Generated_bindings {
-    use super::{lvgl::*, Pointer_table_type, Task_identifier_type};
+    use super::{Pointer_table_type, Task_identifier_type, LVGL::*};
     use Virtual_machine::{Environment_type, WASM_pointer_type, WASM_usize_type};
 
     include!(concat!(env!("OUT_DIR"), "/Bindings.rs"));

@@ -4,7 +4,7 @@
 
 use Drivers::Native::{Time_driver_type, Window_screen};
 use File_system::{Create_device, Create_file_system, Memory_device_type};
-use Graphics::{lvgl, Get_recommended_buffer_size, Point_type};
+use Graphics::{Get_minimal_buffer_size, Point_type, LVGL};
 use Time::Duration_type;
 
 #[ignore]
@@ -45,23 +45,25 @@ fn Integration_test() {
 
     const Resolution: Point_type = Point_type::New(800, 480);
 
-    const Buffer_size: usize = Get_recommended_buffer_size(&Resolution);
+    const Buffer_size: usize = Get_minimal_buffer_size(&Resolution);
 
-    let (Screen_device, Pointer_device) = Window_screen::New(Resolution).unwrap();
+    let (Screen_device, Pointer_device, _) = Window_screen::New(Resolution).unwrap();
 
     let _Task = Task_instance.Get_current_task_identifier().unwrap();
 
-    Graphics::Initialize();
+    Graphics::Initialize(
+        Screen_device,
+        Pointer_device,
+        Graphics::Input_type_type::Pointer,
+        Buffer_size,
+        true,
+    );
 
     let Graphics_manager = Graphics::Get_instance();
 
-    let Display = Graphics_manager
-        .Create_display::<Buffer_size>(Screen_device, Pointer_device, false)
-        .unwrap();
+    let Window = Graphics_manager.Create_window().unwrap();
 
-    let Screen_object = Display.Get_object();
-
-    let _Calendar = unsafe { lvgl::lv_calendar_create(Screen_object) };
+    let _Calendar = unsafe { LVGL::lv_calendar_create(Window.Into_raw()) };
 
     let Standard_in = Virtual_file_system::Get_instance()
         .Open(

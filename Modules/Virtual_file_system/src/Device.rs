@@ -4,22 +4,28 @@ use Task::Task_identifier_type;
 
 use File_system::{
     Device_type, Error_type, File_identifier_type, Flags_type, Get_new_file_identifier,
-    Get_new_inode, Inode_type, Local_file_identifier_type, Mode_type, Path_type, Position_type,
-    Result_type, Size_type, Unique_file_identifier_type,
+    Get_new_inode, Inode_type, Local_file_identifier_type, Mode_type, Path_owned_type, Path_type,
+    Position_type, Result_type, Size_type, Unique_file_identifier_type,
 };
 
 type Open_device_inner_type = (Device_type, Flags_type, Unique_file_identifier_type);
 
-struct Inner_type {
-    pub Devices: BTreeMap<Inode_type, (&'static Path_type, Device_type)>,
+#[derive(Clone)]
+pub enum Internal_path_type<'a> {
+    Borrowed(&'a Path_type),
+    Owned(Path_owned_type),
+}
+
+struct Inner_type<'a> {
+    pub Devices: BTreeMap<Inode_type, Device_inner_type<'a>>,
     pub Open_devices: BTreeMap<Local_file_identifier_type, Open_device_inner_type>,
 }
 
-type Device_inner_type = (&'static Path_type, Device_type);
+type Device_inner_type<'a> = (Internal_path_type<'a>, Device_type);
 
-pub struct File_system_type(RwLock<Inner_type>);
+pub struct File_system_type<'a>(RwLock<Inner_type<'a>>);
 
-impl File_system_type {
+impl<'a> File_system_type<'a> {
     pub fn New() -> Self {
         Self(RwLock::new(Inner_type {
             Devices: BTreeMap::new(),
@@ -27,11 +33,11 @@ impl File_system_type {
         }))
     }
 
-    fn Borrow_mutable_inner_2_splitted(
-        Inner: &mut Inner_type,
+    fn Borrow_mutable_inner_2_splitted<'b>(
+        Inner: &'b mut Inner_type<'a>,
     ) -> (
-        &mut BTreeMap<Inode_type, Device_inner_type>,
-        &mut BTreeMap<Local_file_identifier_type, Open_device_inner_type>,
+        &'b mut BTreeMap<Inode_type, Device_inner_type<'a>>,
+        &'b mut BTreeMap<Local_file_identifier_type, Open_device_inner_type>,
     ) {
         (&mut Inner.Devices, &mut Inner.Open_devices)
     }
@@ -49,9 +55,9 @@ impl File_system_type {
             .2)
     }
 
-    pub fn Mount_static_device(
+    pub fn Mount_device(
         &self,
-        Path: &'static impl AsRef<Path_type>,
+        Path: Path_owned_type,
         Device: Device_type,
     ) -> Result_type<Inode_type> {
         let mut Inner = self.0.write()?;
@@ -60,32 +66,51 @@ impl File_system_type {
 
         let Inode = Get_new_inode(Devices)?;
 
-        Devices.insert(Inode, (Path.as_ref(), Device));
+        Devices.insert(Inode, (Internal_path_type::Owned(Path), Device));
 
         Ok(Inode)
     }
 
-    pub fn Get_devices_from_path(
+    pub fn Mount_static_device(
         &self,
-        Path: &'static Path_type,
-    ) -> Result_type<Vec<&'static Path_type>> {
-        if Path.Is_root() {
-            return Ok(self
-                .0
-                .read()?
-                .Devices
-                .values()
-                .map(|(Path, _)| *Path)
-                .collect());
-        }
+        Path: &'a impl AsRef<Path_type>,
+        Device: Device_type,
+    ) -> Result_type<Inode_type> {
+        let mut Inner = self.0.write()?;
 
+        let (Devices, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
+
+        let Inode = Get_new_inode(Devices)?;
+
+        Devices.insert(Inode, (Internal_path_type::Borrowed(Path.as_ref()), Device));
+
+        Ok(Inode)
+    }
+
+    pub fn Get_path_from_inode(&self, Inode: Inode_type) -> Result_type<Internal_path_type<'a>> {
+        Ok(self
+            .0
+            .read()?
+            .Devices
+            .get(&Inode)
+            .ok_or(Error_type::Invalid_identifier)?
+            .0
+            .clone())
+    }
+
+    pub fn Get_devices_from_path(&self, Path: &'static Path_type) -> Result_type<Vec<Inode_type>> {
         Ok(self
             .0
             .read()?
             .Devices
             .iter()
-            .filter(|(_, (Device_path, _))| Device_path.Strip_prefix(Path).is_some())
-            .map(|(_, (Device_path, _))| *Device_path)
+            .filter(|(_, (Device_path, _))| match Device_path {
+                Internal_path_type::Borrowed(Device_path) => {
+                    Device_path.Strip_prefix(Path).is_some()
+                }
+                Internal_path_type::Owned(Device_path) => Device_path.Strip_prefix(Path).is_some(),
+            })
+            .map(|(Inode, _)| *Inode)
             .collect())
     }
 
@@ -206,7 +231,7 @@ impl File_system_type {
         Ok(New_file)
     }
 
-    pub fn Remove(&self, Inode: Inode_type) -> Result_type<(&'static Path_type, Device_type)> {
+    pub fn Remove(&self, Inode: Inode_type) -> Result_type<Device_inner_type<'a>> {
         self.0
             .write()?
             .Devices
@@ -236,7 +261,41 @@ impl File_system_type {
 
         loop {
             // Wait for the pipe to be ready
-            if let Ok(Size) = Device.Read(Buffer) {
+            let Size = Device.Read(Buffer)?;
+
+            if Size != 0 {
+                return Ok((Size, *Underlying_file));
+            }
+
+            Task::Manager_type::Sleep(Duration::from_millis(1));
+        }
+    }
+
+    pub fn Read_line(
+        &self,
+        File: Local_file_identifier_type,
+        Buffer: &mut String,
+    ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
+        let Inner = self.0.read()?;
+
+        let (Device, Flags, Underlying_file) = Inner
+            .Open_devices
+            .get(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        if !Flags.Get_mode().Get_read() {
+            return Err(Error_type::Invalid_mode);
+        }
+
+        if Flags.Get_status().Get_non_blocking() {
+            return Ok((Device.Read_line(Buffer)?, *Underlying_file));
+        }
+
+        loop {
+            // Wait for the pipe to be ready
+            let Size = Device.Read_line(Buffer)?;
+
+            if Size != 0 {
                 return Ok((Size, *Underlying_file));
             }
 
