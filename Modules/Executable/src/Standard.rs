@@ -82,20 +82,7 @@ impl Standard_type {
     pub fn Read_line(&self, Buffer: &mut String) {
         Buffer.clear();
 
-        let mut Current_buffer = [0u8; 1];
-
-        loop {
-            let Read = self
-                .Virtual_file_system
-                .Read(self.Standard_in, &mut Current_buffer, self.Task)
-                .unwrap();
-
-            if (Read != 1) || (Current_buffer[0] == b'\n') {
-                break;
-            }
-
-            Buffer.push(Current_buffer[0] as char);
-        }
+        let _ = Virtual_file_system::Get_instance().Read_line(self.Standard_in, self.Task, Buffer);
     }
 
     pub fn Get_task(&self) -> Task_identifier_type {
