@@ -271,6 +271,38 @@ impl<'a> File_system_type<'a> {
         }
     }
 
+    pub fn Read_line(
+        &self,
+        File: Local_file_identifier_type,
+        Buffer: &mut String,
+    ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
+        let Inner = self.0.read()?;
+
+        let (Device, Flags, Underlying_file) = Inner
+            .Open_devices
+            .get(&File)
+            .ok_or(Error_type::Invalid_identifier)?;
+
+        if !Flags.Get_mode().Get_read() {
+            return Err(Error_type::Invalid_mode);
+        }
+
+        if Flags.Get_status().Get_non_blocking() {
+            return Ok((Device.Read_line(Buffer)?, *Underlying_file));
+        }
+
+        loop {
+            // Wait for the pipe to be ready
+            let Size = Device.Read_line(Buffer)?;
+
+            if Size != 0 {
+                return Ok((Size, *Underlying_file));
+            }
+
+            Task::Manager_type::Sleep(Duration::from_millis(1));
+        }
+    }
+
     pub fn Write(
         &self,
         File: Local_file_identifier_type,

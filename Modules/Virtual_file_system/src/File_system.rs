@@ -416,6 +416,55 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(Size)
     }
 
+    pub fn Read_line(
+        &self,
+        File: Unique_file_identifier_type,
+        Task: Task_identifier_type,
+        Buffer: &mut String,
+    ) -> Result_type<Size_type> {
+        let (File_system, Local_file_identifier) = File.Into_local_file_identifier(Task);
+
+        let Time = Time::Get_instance()
+            .Get_current_time()
+            .map_err(|_| Error_type::Time_error)?
+            .into();
+
+        let (Size, Underlying_file) = match File_system {
+            File_system_identifier_type::Pipe_file_system => self
+                .Pipe_file_system
+                .Read_line(Local_file_identifier, Buffer)?,
+            File_system_identifier_type::Device_file_system => {
+                let Result = self
+                    .Device_file_system
+                    .Read_line(Local_file_identifier, Buffer)?;
+                (Result.0, Some(Result.1))
+            }
+            _ => {
+                return self
+                    .File_systems
+                    .read()?
+                    .get(&File_system)
+                    .ok_or(Error_type::Invalid_identifier)?
+                    .Inner
+                    .Read_line(Local_file_identifier, Buffer, Time)
+            }
+        };
+
+        if let Some(Underlying_file) = Underlying_file {
+            let (File_system, Local_file_identifier) =
+                Underlying_file.Into_local_file_identifier(Task);
+
+            self.File_systems
+                .read()?
+                .get(&File_system)
+                .ok_or(Error_type::Invalid_identifier)?
+                .Inner
+                .Read_line(Local_file_identifier, Buffer, Time)?;
+        }
+
+        Ok(Size)
+    }
+
     pub fn Read_to_end(
         &self,
         File: Unique_file_identifier_type,

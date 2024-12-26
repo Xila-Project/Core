@@ -46,4 +46,26 @@ impl Pipe_type {
 
         Ok(Size_type::New(Length as u64))
     }
+
+    pub fn Read_line(&self, Data: &mut String) -> Result_type<Size_type> {
+        let mut Buffer = self.0.write()?;
+
+        let Length = Data.len().min(Buffer.len());
+
+        if Length == 0 {
+            return Err(Error_type::Ressource_busy);
+        }
+
+        for _ in 0..Length {
+            let Byte = Buffer.pop_front().unwrap();
+
+            if Byte == b'\n' {
+                break;
+            }
+
+            Data.push(Byte as char);
+        }
+
+        Ok(Size_type::New(Length as u64))
+    }
 }
