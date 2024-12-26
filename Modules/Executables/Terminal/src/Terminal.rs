@@ -18,6 +18,9 @@ unsafe impl Send for Terminal_type {}
 unsafe impl Sync for Terminal_type {}
 
 impl Terminal_type {
+    const Clear: &'static str = "\x1B[2J";
+    const Home: &'static str = "\x1B[H";
+
     pub fn New() -> Result_type<Self> {
         let _Lock = Graphics::Get_instance().Lock()?;
 
@@ -35,6 +38,7 @@ impl Terminal_type {
 
             LVGL::lv_obj_set_width(Container, LVGL::lv_pct(100));
             LVGL::lv_obj_set_flex_grow(Container, 1);
+            LVGL::lv_obj_set_scroll_snap_y(Container, LVGL::lv_scroll_snap_t_LV_SCROLL_SNAP_END);
 
             Container
         };
@@ -99,19 +103,61 @@ impl Terminal_type {
             Inner.Buffer.remove(Last_index);
         }
 
-        Inner.Buffer += Text;
+        let Start_index = if let Some(Last_clear) = Text.rfind(Self::Clear) {
+            Inner.Buffer.clear();
+            Last_clear + Self::Clear.len()
+        } else {
+            0
+        };
+
+        let Start_index = if let Some(Last_home) = Text.rfind(Self::Home) {
+            Inner.Buffer.clear();
+            Last_home + Self::Home.len()
+        } else {
+            Start_index
+        };
+
+        Inner.Buffer += &Text[Start_index..];
         Inner.Buffer += "\0";
 
         let _Lock = Graphics::Get_instance().Lock().unwrap();
 
         unsafe {
             LVGL::lv_label_set_text(Inner.Display, Inner.Buffer.as_ptr() as *const i8);
+            LVGL::lv_obj_scroll_to_view(Inner.Display, LVGL::lv_anim_enable_t_LV_ANIM_OFF);
         }
 
         Ok(())
     }
 
-    pub fn Read_input(&self, String: &mut [u8]) -> Result_type<usize> {
+    fn Print_line_internal(Inner: &mut Inner_type, Text: &str) -> Result_type<()> {
+        if !Inner.Buffer.is_empty() {
+            let Last_index = Inner.Buffer.len() - 1;
+
+            Inner.Buffer.remove(Last_index);
+        }
+
+        let Start_index = if let Some(Last_clear) = Text.rfind("\x1B[2J") {
+            Inner.Buffer.clear();
+            Last_clear + 4
+        } else {
+            0
+        };
+
+        Inner.Buffer += Text[Start_index..].trim();
+        Inner.Buffer += "\n\0";
+
+        let _Lock = Graphics::Get_instance().Lock().unwrap();
+
+        unsafe {
+            LVGL::lv_label_set_text(Inner.Display, Inner.Buffer.as_ptr() as *const i8);
+            LVGL::lv_obj_scroll_to_view(Inner.Display, LVGL::lv_anim_enable_t_LV_ANIM_OFF);
+        }
+
+        Ok(())
+    }
+
+    pub fn Read_input(&self, String: &mut String) -> Result_type<usize> {
         let mut Inner = self.0.write()?;
 
         if !Inner.Validated {
@@ -121,15 +167,12 @@ impl Terminal_type {
         let _Lock = Graphics::Get_instance().Lock()?;
 
         let Text = unsafe {
-            LVGL::lv_textarea_add_char(Inner.Input, '\n' as u32);
             let Text = LVGL::lv_textarea_get_text(Inner.Input);
 
             CStr::from_ptr(Text).to_str()?
         };
 
-        let Length = Text.len().min(String.len());
-
-        String[..Length].copy_from_slice(&Text.as_bytes()[..Length]);
+        String.push_str(Text);
 
         unsafe {
             LVGL::lv_textarea_set_text(Inner.Input, c"".as_ptr());
@@ -137,7 +180,7 @@ impl Terminal_type {
 
         Inner.Validated = false;
 
-        Ok(Length)
+        Ok(Text.len())
     }
 
     pub fn Event_handler(&self) -> Result_type<bool> {
@@ -163,7 +206,7 @@ impl Terminal_type {
 
                             drop(_Lock);
 
-                            Self::Print_internal(&mut Inner, Text)?;
+                            Self::Print_line_internal(&mut Inner, Text)?;
 
                             Inner.Validated = true;
                         }
