@@ -27,6 +27,9 @@ jobs:
         with:
           key: "Documentation"
 
+      - name: Setup | Install GCC multilib
+        run: sudo apt-get install gcc-multilib
+
       - name: Setup | Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
