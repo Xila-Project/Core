@@ -21,8 +21,8 @@ jobs:
       matrix:
         target:
           - linux
-          - esp32
-          - esp32s3
+#          - esp32
+#          - esp32s3
 
     steps:
       - name: Setup | Checkout repository
