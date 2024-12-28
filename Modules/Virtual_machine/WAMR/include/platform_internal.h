@@ -124,6 +124,8 @@ extern "C"
 
     uint64_t os_get_invalid_handle();
 
+    int os_getpagesize();
+
 #ifdef __cplusplus
 }
 #endif /* end of extern "C" */

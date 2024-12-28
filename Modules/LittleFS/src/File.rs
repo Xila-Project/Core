@@ -234,24 +234,6 @@ impl File_type {
         Ok(Metadata)
     }
 
-    pub fn Get_metadata_mutable(&mut self) -> Result_type<&mut Metadata_type> {
-        let Configuration = unsafe { self.0.File.cfg.read() };
-
-        if Configuration.attr_count == 0 {
-            return Err(Error_type::No_attribute);
-        }
-
-        let Attributes = unsafe { Configuration.attrs.read() };
-
-        if Attributes.size != size_of::<Metadata_type>() as u32 {
-            return Err(Error_type::No_attribute);
-        }
-
-        let Metadata = unsafe { &mut *(Attributes.buffer as *mut Metadata_type) };
-
-        Ok(Metadata)
-    }
-
     pub fn Get_mode(&self) -> Mode_type {
         self.0.Flags.Get_mode()
     }
