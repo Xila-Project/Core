@@ -60,4 +60,4 @@ jobs:
         run: Build_tool/target/release/Build_tool clippy ${{ matrix.target }} --all-features --workspace -- -D warnings
 
       - name: Run | Tests
-        run: Build_tool/target/release/Build_tool test ${{ matrix.target }} --all -- --include-ignored
+        run: Build_tool/target/release/Build_tool test ${{ matrix.target }} --all
