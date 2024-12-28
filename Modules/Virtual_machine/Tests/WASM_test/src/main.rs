@@ -97,6 +97,11 @@ fn Test_directory() {
     }
 }
 
+/// Allocate memory
+/// 
+/// # Safety
+/// 
+/// This function is unsafe because it may return an invalid pointer.
 #[no_mangle]
 pub unsafe extern "C" fn Allocate(Size: usize) -> *mut u8 {
     let Layout = std::alloc::Layout::from_size_align(Size, std::mem::size_of::<usize>()).unwrap();
@@ -104,6 +109,11 @@ pub unsafe extern "C" fn Allocate(Size: usize) -> *mut u8 {
     std::alloc::alloc(Layout)
 }
 
+/// Deallocate memory
+/// 
+/// # Safety
+/// 
+/// This function is unsafe because it may cause undefined behavior if the pointer is invalid.
 #[no_mangle]
 pub unsafe extern "C" fn Deallocate(Pointer: *mut u8, Size: usize) {
     let Layout = std::alloc::Layout::from_size_align(Size, std::mem::size_of::<usize>()).unwrap();
