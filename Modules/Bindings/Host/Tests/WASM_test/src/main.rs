@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
+#![allow(non_upper_case_globals)]
 
 use WASM_bindings::*;
 
@@ -11,7 +12,6 @@ fn main() {
     let mut Window = Xila_graphics_object_t::MAX;
     let mut Button = Xila_graphics_object_t::MAX;
     let mut Label = Xila_graphics_object_t::MAX;
-    let mut Deleted_label = Xila_graphics_object_t::MAX;
 
     unsafe {
         println!("Window : {:x}", Window);
@@ -25,7 +25,7 @@ fn main() {
         println!("Button : {:x}", Button);
 
         Xila_graphics_label_create(Button, &mut Label as *mut _);
-        Xila_graphics_label_set_text(Label, "Hello, world!\0".as_ptr() as *mut _);
+        Xila_graphics_label_set_text(Label, c"Hello, world!".as_ptr() as *mut _);
 
         println!("Label : {:x}", Label);
 
@@ -46,11 +46,13 @@ fn main() {
                         if Target == Button {
                             Xila_graphics_label_set_text(
                                 Label,
-                                "Button pressed!\0".as_ptr() as *mut _,
+                                c"Button pressed!".as_ptr() as *mut _,
                             );
                         }
                     }
-                    _ => {}
+                    Event => {
+                        println!("Event : {}", Event);
+                    }
                 }
 
                 Xila_graphics_window_next_event(Window);
