@@ -25,6 +25,7 @@ members = [
 exclude = [
     "Modules/Virtual_machine/Tests/WASM_test",
     "Modules/Bindings/Tests/WASM_test",
+    "Build_tool",
 ]
 
 [package]
