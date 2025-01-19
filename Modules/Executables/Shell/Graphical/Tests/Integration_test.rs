@@ -11,6 +11,7 @@ use Graphical_shell::Shell_executable_type;
 #[test]
 fn main() {
     use Drivers::Native::Window_screen;
+    use File_system::Permissions_type;
     use Graphics::{Get_minimal_buffer_size, Input_type_type, Point_type};
 
     // - Initialize the task manager.
@@ -55,6 +56,9 @@ fn main() {
 
     Virtual_file_system::Get_instance()
         .Mount_static_device(Task, &"/Shell", Create_device!(Shell_executable_type))
+        .unwrap();
+    Virtual_file_system::Get_instance()
+        .Set_permissions("/Shell", Permissions_type::All_full)
         .unwrap();
 
     Virtual_file_system::Get_instance()

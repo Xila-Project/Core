@@ -8,6 +8,7 @@ pub type Result_type<T> = Result<T, Error_type>;
 pub enum Error_type {
     Graphics(Graphics::Error_type) = 1,
     Failed_to_create_object,
+    Failed_to_set_environment_variable(Task::Error_type),
 }
 
 impl Error_type {
@@ -33,6 +34,9 @@ impl Display for Error_type {
         let String = match self {
             Error_type::Graphics(Error) => "Graphics: ".to_string() + &Error.to_string(),
             Error_type::Failed_to_create_object => "Failed to create window".to_string(),
+            Error_type::Failed_to_set_environment_variable(Error) => {
+                "Failed to set environment variable: ".to_string() + &Error.to_string()
+            }
         };
 
         write!(Formatter, "{}", String)
