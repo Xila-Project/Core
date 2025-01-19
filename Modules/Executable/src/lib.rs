@@ -10,10 +10,60 @@ pub use Error::*;
 pub use Read_data::*;
 pub use Standard::*;
 
-use Task::Join_handle_type;
+use Task::{Join_handle_type, Task_identifier_type};
+use Users::User_identifier_type;
 use Virtual_file_system::File_type;
 
-use File_system::Path_type;
+use File_system::{Path_type, Statistics_type};
+
+fn Is_execute_allowed(Statistics: &Statistics_type, User: User_identifier_type) -> bool {
+    // - Check if the file can executed by anyone
+    if Statistics.Get_permissions().Get_others().Get_execute() {
+        return true;
+    }
+
+    // - Check if the user is the owner and has the execute permission
+    let Is_root = User == Users::User_identifier_type::Root;
+
+    if (Statistics.Get_user() == User || Is_root)
+        && Statistics.Get_permissions().Get_user().Get_execute()
+    {
+        return true;
+    }
+
+    // - Check if the user is in the group
+    let Is_in_group = Users::Get_instance().Is_in_group(User, Statistics.Get_group());
+
+    // - Check if the user is in the group
+    if (Is_in_group || Is_root) && Statistics.Get_permissions().Get_group().Get_execute() {
+        return true;
+    }
+
+    false
+}
+
+fn Get_overridden_user(
+    Statistics: &Statistics_type,
+    Task: Task_identifier_type,
+) -> Result_type<Option<User_identifier_type>> {
+    if !Statistics
+        .Get_permissions()
+        .Get_special()
+        .Get_set_user_identifier()
+    {
+        return Ok(None);
+    }
+
+    let Current_user = Task::Get_instance().Get_user(Task)?;
+
+    let New_user = Statistics.Get_user();
+
+    if Current_user != Users::User_identifier_type::Root || New_user != Current_user {
+        return Err(Error_type::Permission_denied);
+    }
+
+    Ok(Some(New_user))
+}
 
 pub fn Execute<P: AsRef<Path_type>>(
     Path: P,
@@ -31,6 +81,14 @@ pub fn Execute<P: AsRef<Path_type>>(
         Task,
     )?;
 
+    // - Check the executable bit
+    if !Is_execute_allowed(&File.Get_statistics()?, Task_instance.Get_user(Task)?) {
+        return Err(Error_type::Permission_denied);
+    }
+
+    // - Check if the user can override the user identifier
+    let New_user = Get_overridden_user(&File.Get_statistics()?, Task)?;
+
     let File_name = Path
         .as_ref()
         .Get_file_name()
@@ -46,8 +104,12 @@ pub fn Execute<P: AsRef<Path_type>>(
     let Stack_size = Read_data.Get_stack_size();
 
     let (_, Join_handle) =
-        Task_instance.New_task(Task, None, File_name, Some(Stack_size), move || {
+        Task_instance.New_task(Task, File_name, Some(Stack_size), move || {
             let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+
+            if let Some(New_user) = New_user {
+                Task::Get_instance().Set_user(Task, New_user).unwrap();
+            }
 
             let Standard = Standard.Transfert(Task).unwrap();
 
@@ -58,4 +120,41 @@ pub fn Execute<P: AsRef<Path_type>>(
         })?;
 
     Ok(Join_handle)
+}
+
+#[cfg(test)]
+mod Tests {
+    use File_system::Time_type;
+
+    use super::*;
+
+    #[test]
+    fn Is_user_allowed_test() {
+        let Statistics = Statistics_type::New(
+            File_system::File_system_identifier_type::New(0),
+            File_system::Inode_type::New(0),
+            1,
+            0_usize.into(),
+            Time_type::New(0),
+            Time_type::New(0),
+            Time_type::New(0),
+            File_system::Type_type::File,
+            File_system::Permissions_type::From_octal(0o777).unwrap(),
+            Users::User_identifier_type::Root,
+            Users::Group_identifier_type::Root,
+        );
+
+        assert!(Is_execute_allowed(
+            &Statistics,
+            Users::User_identifier_type::Root
+        ));
+        assert!(Is_execute_allowed(
+            &Statistics,
+            Users::User_identifier_type::Root
+        ));
+        assert!(Is_execute_allowed(
+            &Statistics,
+            Users::User_identifier_type::Root
+        ));
+    }
 }
