@@ -71,18 +71,13 @@ impl Login_type {
 
     pub fn Event_handler(&mut self) {
         while let Some(Event) = self.Window.Pop_event() {
-            match Event.Get_code() {
-                Event_code_type::Clicked => {
-                    if Event.Get_target() == self.Button {
-                        self.User = Some(User_identifier_type::Root);
-                    }
-                }
-                _ => {}
+            if Event.Get_code() == Event_code_type::Clicked && Event.Get_target() == self.Button {
+                self.User = Some(User_identifier_type::Root);
             }
         }
     }
 
     pub fn Get_logged_user(&self) -> Option<User_identifier_type> {
-        None
+        self.User
     }
 }
