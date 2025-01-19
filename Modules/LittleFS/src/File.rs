@@ -211,6 +211,9 @@ impl File_type {
             Metadata.Get_modification_time(),
             Metadata.Get_access_time(),
             Metadata.Get_type(),
+            Metadata.Get_permissions(),
+            Metadata.Get_user(),
+            Metadata.Get_group(),
         );
 
         Ok(Statistics)
@@ -230,24 +233,6 @@ impl File_type {
         }
 
         let Metadata = unsafe { &*(Attributes.buffer as *const Metadata_type) };
-
-        Ok(Metadata)
-    }
-
-    pub fn Get_metadata_mutable(&mut self) -> Result_type<&mut Metadata_type> {
-        let Configuration = unsafe { self.0.File.cfg.read() };
-
-        if Configuration.attr_count == 0 {
-            return Err(Error_type::No_attribute);
-        }
-
-        let Attributes = unsafe { Configuration.attrs.read() };
-
-        if Attributes.size != size_of::<Metadata_type>() as u32 {
-            return Err(Error_type::No_attribute);
-        }
-
-        let Metadata = unsafe { &mut *(Attributes.buffer as *mut Metadata_type) };
 
         Ok(Metadata)
     }

@@ -4,7 +4,8 @@ use std::{collections::BTreeMap, ffi::CString, sync::RwLock};
 use File_system::{
     Device_type, Entry_type, File_identifier_type, File_system_identifier_type, File_system_traits,
     Flags_type, Get_new_file_identifier, Inode_type, Local_file_identifier_type, Metadata_type,
-    Mode_type, Path_type, Position_type, Size_type, Statistics_type, Time_type, Type_type,
+    Mode_type, Path_type, Permissions_type, Position_type, Size_type, Statistics_type, Time_type,
+    Type_type,
 };
 use Users::{Group_identifier_type, User_identifier_type};
 
@@ -143,7 +144,7 @@ impl File_system_type {
         Ok(())
     }
 
-    fn Borrow_mutable_inner_2_splited(
+    fn Borrow_mutable_inner_2_splitted(
         Inner_2: &mut Inner_type,
     ) -> (
         &mut littlefs::lfs_t,
@@ -336,7 +337,7 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<Size_type> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let File = Open_files
             .get_mut(&File)
@@ -353,7 +354,7 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<Size_type> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let File = Open_files
             .get_mut(&File)
@@ -388,7 +389,7 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<Size_type> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let File = Open_files
             .get_mut(&File)
@@ -400,7 +401,7 @@ impl File_system_traits for File_system_type {
     fn Flush(&self, File: Local_file_identifier_type) -> Result_type<()> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let File = Open_files
             .get_mut(&File)
@@ -413,7 +414,7 @@ impl File_system_traits for File_system_type {
         let mut Inner = self.Inner.write()?;
 
         let (File_system, Open_files, Open_directories) =
-            Self::Borrow_mutable_inner_2_splited(&mut Inner);
+            Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         // TODO : Find a way to get the metadata of the directories
         if Open_directories.get_mut(&File).is_some() {
@@ -428,6 +429,9 @@ impl File_system_traits for File_system_type {
                 Current_time,
                 Current_time,
                 Type_type::Directory,
+                Permissions_type::New_default(Type_type::Directory),
+                User_identifier_type::New(0),
+                Group_identifier_type::New(0),
             ))
         } else if let Some(File) = Open_files.get_mut(&File) {
             Ok(File.Get_statistics(File_system)?)
@@ -487,7 +491,7 @@ impl File_system_traits for File_system_type {
     fn Read_directory(&self, File: Local_file_identifier_type) -> Result_type<Option<Entry_type>> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let Directory = Open_directories
             .get_mut(&File)
@@ -503,7 +507,7 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<()> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let Directory = Open_directories
             .get_mut(&File)
@@ -515,7 +519,7 @@ impl File_system_traits for File_system_type {
     fn Rewind_directory(&self, File: Local_file_identifier_type) -> Result_type<()> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let Directory = Open_directories
             .get_mut(&File)
@@ -529,7 +533,7 @@ impl File_system_traits for File_system_type {
     fn Close_directory(&self, File: Local_file_identifier_type) -> Result_type<()> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let mut Directory = Open_directories
             .remove(&File)
@@ -563,7 +567,7 @@ impl File_system_traits for File_system_type {
     fn Get_position_directory(&self, File: Local_file_identifier_type) -> Result_type<Size_type> {
         let mut Inner = self.Inner.write()?;
 
-        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let Directory = Open_directories
             .get_mut(&File)
@@ -593,7 +597,7 @@ impl File_system_traits for File_system_type {
     fn Get_metadata(&self, File: Local_file_identifier_type) -> Result_type<Metadata_type> {
         let mut Inner = self.Inner.write()?;
 
-        let (_, Open_files, _) = Self::Borrow_mutable_inner_2_splited(&mut Inner);
+        let (_, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
         let File = Open_files
             .get_mut(&File)
