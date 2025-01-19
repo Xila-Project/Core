@@ -1,0 +1,11 @@
+[package]
+name = "Authentication"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+Virtual_file_system = { path = "../Virtual_file_system" }
+Users = { path = "../Users" }
+Task = { path = "../Task" }
+File_system = { path = "../File_system" }
+sha2 = { version = "0.10", features = ["asm"] }
