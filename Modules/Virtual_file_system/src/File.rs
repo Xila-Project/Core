@@ -115,7 +115,7 @@ impl<'a> File_type<'a> {
             .Read_to_end(self.Get_file_identifier(), self.Task, Buffer)
     }
 
-    pub fn Get_statistic(&self) -> Result_type<Statistics_type> {
+    pub fn Get_statistics(&self) -> Result_type<Statistics_type> {
         self.File_system
             .Get_statistics(self.Get_file_identifier(), self.Task)
     }

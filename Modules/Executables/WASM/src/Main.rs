@@ -45,7 +45,7 @@ pub fn Inner_main(Standard: &Standard_type, Arguments: String) -> Result<(), Err
     .map_err(|_| Error_type::Failed_to_open_file)?;
 
     let Size: usize = File
-        .Get_statistic()
+        .Get_statistics()
         .map_err(|_| Error_type::Failed_to_open_file)?
         .Get_size()
         .into();
