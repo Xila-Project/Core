@@ -1,6 +1,8 @@
+use Users::{Group_identifier_type, User_identifier_type};
+
 use crate::{File_system_identifier_type, Size_type, Time_type, Type_type};
 
-use super::Inode_type;
+use super::{Inode_type, Permissions_type};
 
 /// Statistics of a file.
 ///
@@ -27,6 +29,9 @@ pub struct Statistics_type {
     Last_modification: Time_type,
     Last_status_change: Time_type,
     Type: Type_type,
+    Permissions: Permissions_type,
+    User: User_identifier_type,
+    Group: Group_identifier_type,
 }
 
 impl Statistics_type {
@@ -40,6 +45,9 @@ impl Statistics_type {
         Last_modification: Time_type,
         Last_status_change: Time_type,
         Type: Type_type,
+        Permissions: Permissions_type,
+        User: User_identifier_type,
+        Group: Group_identifier_type,
     ) -> Self {
         Statistics_type {
             File_system,
@@ -50,6 +58,9 @@ impl Statistics_type {
             Last_modification,
             Last_status_change,
             Type,
+            Permissions,
+            User,
+            Group,
         }
     }
 
@@ -79,6 +90,22 @@ impl Statistics_type {
 
     pub const fn Get_last_status_change(&self) -> Time_type {
         self.Last_status_change
+    }
+
+    pub const fn Get_type(&self) -> Type_type {
+        self.Type
+    }
+
+    pub const fn Get_permissions(&self) -> Permissions_type {
+        self.Permissions
+    }
+
+    pub const fn Get_user(&self) -> User_identifier_type {
+        self.User
+    }
+
+    pub const fn Get_group(&self) -> Group_identifier_type {
+        self.Group
     }
 
     pub fn Set_file_system(&mut self, File_system: File_system_identifier_type) -> &mut Self {
@@ -118,6 +145,21 @@ impl Statistics_type {
 
     pub fn Set_last_status_change(&mut self, Last_status_change: Time_type) -> &mut Self {
         self.Last_status_change = Last_status_change;
+        self
+    }
+
+    pub fn Set_permissions(&mut self, Permissions: Permissions_type) -> &mut Self {
+        self.Permissions = Permissions;
+        self
+    }
+
+    pub fn Set_user(&mut self, User: User_identifier_type) -> &mut Self {
+        self.User = User;
+        self
+    }
+
+    pub fn Set_group(&mut self, Group: Group_identifier_type) -> &mut Self {
+        self.Group = Group;
         self
     }
 }
