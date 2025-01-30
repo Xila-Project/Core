@@ -23,11 +23,10 @@ fn Is_execute_allowed(Statistics: &Statistics_type, User: User_identifier_type) 
     }
 
     // - Check if the user is the owner and has the execute permission
-    let Is_root = User == Users::User_identifier_type::Root;
-
-    if (Statistics.Get_user() == User || Is_root)
-        && Statistics.Get_permissions().Get_user().Get_execute()
-    {
+    if User == User_identifier_type::Root {
+        return true;
+    }
+    if (Statistics.Get_user() == User) && Statistics.Get_permissions().Get_user().Get_execute() {
         return true;
     }
 
@@ -35,7 +34,7 @@ fn Is_execute_allowed(Statistics: &Statistics_type, User: User_identifier_type) 
     let Is_in_group = Users::Get_instance().Is_in_group(User, Statistics.Get_group());
 
     // - Check if the user is in the group
-    if (Is_in_group || Is_root) && Statistics.Get_permissions().Get_group().Get_execute() {
+    if (Is_in_group) && Statistics.Get_permissions().Get_group().Get_execute() {
         return true;
     }
 
