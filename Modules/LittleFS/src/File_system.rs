@@ -2,10 +2,10 @@ use core::mem::MaybeUninit;
 use std::{collections::BTreeMap, ffi::CString, sync::RwLock};
 
 use File_system::{
-    Device_type, Entry_type, File_identifier_type, File_system_identifier_type, File_system_traits,
-    Flags_type, Get_new_file_identifier, Inode_type, Local_file_identifier_type, Metadata_type,
-    Mode_type, Path_type, Permissions_type, Position_type, Size_type, Statistics_type, Time_type,
-    Type_type,
+    Device_type, Entry_type, File_identifier_inner_type, File_identifier_type,
+    File_system_identifier_type, File_system_traits, Flags_type, Get_new_file_identifier,
+    Inode_type, Local_file_identifier_type, Metadata_type, Mode_type, Path_type, Permissions_type,
+    Position_type, Size_type, Statistics_type, Time_type, Type_type,
 };
 use Users::{Group_identifier_type, User_identifier_type};
 
