@@ -59,12 +59,12 @@ impl Manager_type {
         Self(RwLock::new(Internal_manager_type { Users, Groups }))
     }
 
-    fn Get_new_group_identifier<T>(
-        Groups: &BTreeMap<Group_identifier_type, T>,
-    ) -> Result_type<Group_identifier_type> {
+    pub fn Get_new_group_identifier(&self) -> Result_type<Group_identifier_type> {
+        let Inner = self.0.read()?;
+
         let mut Identifier = Group_identifier_type::Minimum;
 
-        while Groups.contains_key(&Identifier) {
+        while Inner.Groups.contains_key(&Identifier) {
             Identifier += 1;
 
             if Identifier == Group_identifier_type::Maximum {
@@ -75,12 +75,12 @@ impl Manager_type {
         Ok(Identifier)
     }
 
-    fn Get_new_user_identifier(
-        Users: &BTreeMap<User_identifier_type, Internal_user_type>,
-    ) -> Result_type<User_identifier_type> {
+    pub fn Get_new_user_identifier(&self) -> Result_type<User_identifier_type> {
+        let Inner = self.0.read()?;
+
         let mut Identifier = User_identifier_type::Minimum;
 
-        while Users.contains_key(&Identifier) {
+        while Inner.Users.contains_key(&Identifier) {
             Identifier += 1;
 
             if Identifier == User_identifier_type::Maximum {
@@ -91,21 +91,30 @@ impl Manager_type {
         Ok(Identifier)
     }
 
-    pub fn Create_user(
+    pub fn Add_user(
         &self,
+        Identifier: User_identifier_type,
         Name: &str,
         Primary_group: Group_identifier_type,
-    ) -> Result_type<User_identifier_type> {
+    ) -> Result_type<()> {
         let mut Inner = self.0.write()?;
 
-        let Identifier = Self::Get_new_user_identifier(&Inner.Users)?;
+        // - Check if user identifier is unique
+        if Inner.Users.contains_key(&Identifier) {
+            return Err(Error_type::Duplicate_user_identifier);
+        }
 
+        // - Check if user name is unique
+        if Inner.Users.values().any(|User| User.Name == Name) {
+            return Err(Error_type::Duplicate_user_name);
+        }
+
+        // - Add user to the users map
         let User = Internal_user_type {
             Name: Name.to_string(),
             Primary_group,
         };
 
-        // - Add user to the users map
         if Inner.Users.insert(Identifier, User).is_some() {
             return Err(Error_type::Duplicate_user_identifier); // Shouldn't happen
         }
@@ -121,34 +130,37 @@ impl Manager_type {
             return Err(Error_type::Duplicate_user_identifier); // Shouldn't happen
         }
 
-        Ok(Identifier)
+        Ok(())
     }
 
-    pub fn Create_group(
+    pub fn Add_group(
         &self,
+        Identifier: Group_identifier_type,
         Name: &str,
-        Identifier: Option<Group_identifier_type>,
-    ) -> Result_type<Group_identifier_type> {
+        Users: &[User_identifier_type],
+    ) -> Result_type<()> {
         let mut Inner = self.0.write()?;
 
-        let Identifier = if let Some(Identifier) = Identifier {
-            if Inner.Groups.contains_key(&Identifier) {
-                return Err(Error_type::Duplicate_group_identifier);
-            }
-            Identifier
-        } else {
-            Self::Get_new_group_identifier(&Inner.Groups)?
-        };
+        // - Check if group identifier is unique
+        if Inner.Groups.contains_key(&Identifier) {
+            return Err(Error_type::Duplicate_group_identifier);
+        }
+
+        // - Check if group name is unique
+        if Inner.Groups.values().any(|Group| Group.Name == Name) {
+            return Err(Error_type::Duplicate_group_name);
+        }
 
         let Group = Internal_group_type {
             Name: Name.to_string(),
-            Users: BTreeSet::new(),
+            Users: BTreeSet::from_iter(Users.iter().cloned()),
         };
 
         if Inner.Groups.insert(Identifier, Group).is_some() {
             return Err(Error_type::Duplicate_group_identifier); // Shouldn't happen
         }
-        Ok(Identifier)
+
+        Ok(())
     }
 
     pub fn Is_root(Identifier: User_identifier_type) -> bool {
@@ -221,6 +233,17 @@ impl Manager_type {
         Ok(self.0.read()?.Groups.get(&Identifier).unwrap().Name.clone())
     }
 
+    pub fn Get_user_identifier(&self, Name: &str) -> Result_type<User_identifier_type> {
+        Ok(*self
+            .0
+            .read()?
+            .Users
+            .iter()
+            .find(|(_, User)| User.Name == Name)
+            .ok_or(Error_type::Invalid_user_identifier)?
+            .0)
+    }
+
     pub fn Get_group_users(
         &self,
         Identifier: Group_identifier_type,
@@ -274,20 +297,95 @@ mod Tests {
     fn Create_user() {
         let Manager = Manager_type::New();
         let User_name = "Alice";
-        let Result = Manager.Create_user(User_name, Group_identifier_type::Root);
-        assert!(Result.is_ok());
-        let User_id = Result.unwrap();
-        assert!(Manager.Exists_user(User_id).unwrap());
+        let Identifier = User_identifier_type::New(1000);
+        Manager
+            .Add_user(Identifier, User_name, Group_identifier_type::Root)
+            .unwrap();
+        assert!(Manager.Exists_user(Identifier).unwrap());
+    }
+
+    #[test]
+    fn Create_user_duplicate() {
+        let User_name_1 = "Alice";
+        let User_name_2 = "Bob";
+
+        let Identifier_1 = User_identifier_type::New(1000);
+        let Identifier_2 = User_identifier_type::New(1001);
+
+        // Same identifier
+        let Manager = Manager_type::New();
+
+        Manager
+            .Add_user(Identifier_1, User_name_1, Group_identifier_type::Root)
+            .unwrap();
+
+        let Result = Manager.Add_user(Identifier_1, User_name_2, Group_identifier_type::Root);
+        assert_eq!(Result, Err(Error_type::Duplicate_user_identifier));
+
+        // Same name
+        let Manager = Manager_type::New();
+
+        Manager
+            .Add_user(Identifier_1, User_name_1, Group_identifier_type::Root)
+            .unwrap();
+
+        let Result = Manager.Add_user(Identifier_2, User_name_1, Group_identifier_type::Root);
+        assert_eq!(Result, Err(Error_type::Duplicate_user_name));
+
+        // Same name and identifier
+        let Manager = Manager_type::New();
+
+        Manager
+            .Add_user(Identifier_1, User_name_1, Group_identifier_type::Root)
+            .unwrap();
+
+        Manager
+            .Add_user(Identifier_1, User_name_1, Group_identifier_type::Root)
+            .unwrap_err();
     }
 
     #[test]
     fn Create_group() {
         let Manager = Manager_type::New();
         let Group_name = "Developers";
-        let Result = Manager.Create_group(Group_name, None);
+        let Group_id = Group_identifier_type::New(1000);
+        let Result = Manager.Add_group(Group_id, Group_name, &[]);
         assert!(Result.is_ok());
-        let Group_id = Result.unwrap();
         assert!(Manager.Exists_group(Group_id).unwrap());
+    }
+
+    #[test]
+    fn Create_group_duplicate() {
+        let Group_name_1 = "Developers";
+        let Group_name_2 = "Testers";
+
+        let Group_id_1 = Group_identifier_type::New(1000);
+        let Group_id_2 = Group_identifier_type::New(1001);
+
+        // Same identifier
+        let Manager = Manager_type::New();
+
+        Manager.Add_group(Group_id_1, Group_name_1, &[]).unwrap();
+
+        let Result = Manager.Add_group(Group_id_1, Group_name_2, &[]);
+        assert_eq!(Result, Err(Error_type::Duplicate_group_identifier));
+
+        // Same name
+        let Manager = Manager_type::New();
+
+        Manager.Add_group(Group_id_1, Group_name_1, &[]).unwrap();
+
+        let Result = Manager.Add_group(Group_id_2, Group_name_1, &[]);
+        assert_eq!(Result, Err(Error_type::Duplicate_group_name));
+
+        // Same name and identifier
+        let Manager = Manager_type::New();
+
+        Manager.Add_group(Group_id_1, Group_name_1, &[]).unwrap();
+
+        Manager
+            .Add_group(Group_id_1, Group_name_1, &[])
+            .unwrap_err();
     }
 
     #[test]
@@ -300,13 +398,16 @@ mod Tests {
     fn Is_in_group() {
         let Manager = Manager_type::New();
         let User_name = "Bob";
-        let User_id = Manager
-            .Create_user(User_name, Group_identifier_type::Root)
+        let Identifier = User_identifier_type::New(1000);
+        Manager
+            .Add_user(Identifier, User_name, Group_identifier_type::Root)
             .unwrap();
         let Group_name = "Admins";
-        let Group_id = Manager.Create_group(Group_name, None).unwrap();
-        Manager.Add_to_group(User_id, Group_id).unwrap();
-        assert!(Manager.Is_in_group(User_id, Group_id));
+        let Group_id = Group_identifier_type::New(1000);
+
+        Manager.Add_group(Group_id, Group_name, &[]).unwrap();
+        Manager.Add_to_group(Identifier, Group_id).unwrap();
+        assert!(Manager.Is_in_group(Identifier, Group_id));
     }
 
     #[test]
@@ -314,16 +415,21 @@ mod Tests {
         let Manager = Manager_type::New();
 
         let User_name = "Charlie";
-        let User_id = Manager
-            .Create_user(User_name, Group_identifier_type::Root)
+        let Identifier = User_identifier_type::New(1000);
+        Manager
+            .Add_user(Identifier, User_name, Group_identifier_type::Root)
             .unwrap();
         let Group_name1 = "TeamA";
-        let Group_id1 = Manager.Create_group(Group_name1, None).unwrap();
+        let Group_id1 = Group_identifier_type::New(1000);
+
+        Manager.Add_group(Group_id1, Group_name1, &[]).unwrap();
         let Group_name2 = "TeamB";
-        let Group_id2 = Manager.Create_group(Group_name2, None).unwrap();
-        Manager.Add_to_group(User_id, Group_id1).unwrap();
-        Manager.Add_to_group(User_id, Group_id2).unwrap();
-        let Groups = Manager.Get_user_groups(User_id).unwrap();
+        let Group_id2 = Group_identifier_type::New(1001);
+
+        Manager.Add_group(Group_id2, Group_name2, &[]).unwrap();
+        Manager.Add_to_group(Identifier, Group_id1).unwrap();
+        Manager.Add_to_group(Identifier, Group_id2).unwrap();
+        let Groups = Manager.Get_user_groups(Identifier).unwrap();
         println!("{:?}", Groups);
         assert_eq!(Groups.len(), 3);
         assert!(
@@ -337,7 +443,8 @@ mod Tests {
     fn Get_group_name() {
         let Manager = Manager_type::New();
         let Group_name = "QA";
-        let Group_id = Manager.Create_group(Group_name, None).unwrap();
+        let Group_id = Group_identifier_type::New(1000);
+        Manager.Add_group(Group_id, Group_name, &[]).unwrap();
         let Retrieved_name = Manager.Get_group_name(Group_id).unwrap();
         assert_eq!(Group_name, Retrieved_name);
     }
@@ -346,25 +453,28 @@ mod Tests {
     fn Get_group_users() {
         let Manager = Manager_type::New();
         let User_name = "Dave";
-        let User_id = Manager
-            .Create_user(User_name, Group_identifier_type::Root)
+        let Identifier = User_identifier_type::New(1000);
+        Manager
+            .Add_user(Identifier, User_name, Group_identifier_type::Root)
             .unwrap();
         let Group_name = "Engineers";
-        let Group_id = Manager.Create_group(Group_name, None).unwrap();
-        Manager.Add_to_group(User_id, Group_id).unwrap();
+        let Group_id = Group_identifier_type::New(1000);
+        Manager.Add_group(Group_id, Group_name, &[]).unwrap();
+        Manager.Add_to_group(Identifier, Group_id).unwrap();
         let Users = Manager.Get_group_users(Group_id).unwrap();
         assert_eq!(Users.len(), 1);
-        assert!(Users.contains(&User_id));
+        assert!(Users.contains(&Identifier));
     }
 
     #[test]
     fn Get_user_name() {
         let Manager = Manager_type::New();
         let User_name = "Eve";
-        let User_id = Manager
-            .Create_user(User_name, Group_identifier_type::Root)
+        let Identifier = User_identifier_type::New(1000);
+        Manager
+            .Add_user(Identifier, User_name, Group_identifier_type::Root)
             .unwrap();
-        let Retrieved_name = Manager.Get_user_name(User_id).unwrap();
+        let Retrieved_name = Manager.Get_user_name(Identifier).unwrap();
         assert_eq!(User_name, Retrieved_name);
     }
 
