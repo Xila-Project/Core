@@ -159,9 +159,9 @@ impl File_system_type {
     }
 
     #[cfg(target_pointer_width = "64")]
-    const Directory_flag: u32 = 1 << 31;
+    const Directory_flag: File_identifier_inner_type = 1 << 31;
     #[cfg(target_pointer_width = "32")]
-    const Directory_flag: u32 = 1 << 15;
+    const Directory_flag: File_identifier_inner_type = 1 << 15;
 
     const Directory_minimum: File_identifier_type = File_identifier_type::New(Self::Directory_flag);
 

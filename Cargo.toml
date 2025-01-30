@@ -1,40 +1,10 @@
-[workspace]
-members = [
-    "Modules/File_system",
-    "Modules/Virtual_machine",
-    "Modules/Graphics",
-    "Modules/Task",
-    "Modules/Users",
-    "Modules/Drivers",
-    "Modules/Peripherals",
-    "Modules/Memory",
-    "Modules/Time",
-    "Modules/ABI",
-    "Modules/Virtual_file_system",
-    "Modules/LittleFS",
-    "Modules/Target",
-    "Modules/Bindings/Utilities",
-    "Modules/Bindings/Host",
-    "Modules/Bindings/WASM",
-    "Modules/Executables/Shell/Command_line",
-    "Modules/Executable",
-    "Modules/Executables/WASM",
-    "Modules/Executables/Shell/Graphical",
-    "Modules/Executables/Terminal", "Modules/Authentication",
-]
-exclude = [
-    "Modules/Virtual_machine/Tests/WASM_test",
-    "Modules/Bindings/Tests/WASM_test",
-]
-
 [package]
 name = "Xila"
 version = "0.1.0"
 authors = ["Alix ANNERAUD <alix@anneraud.fr>"]
 edition = "2021"
 resolver = "2"
-rust-version = "1.71"
-
+rust-version = "1.82.0"
 
 [dependencies]
 # - WASM
@@ -84,3 +54,34 @@ WASM = ["dep:WASM_bindings"]
 name = "Native"
 path = "Examples/Native.rs"
 required-features = ["Host"]
+
+[workspace]
+members = [
+    "Modules/File_system",
+    "Modules/Virtual_machine",
+    "Modules/Graphics",
+    "Modules/Task",
+    "Modules/Users",
+    "Modules/Drivers",
+    "Modules/Peripherals",
+    "Modules/Memory",
+    "Modules/Time",
+    "Modules/ABI",
+    "Modules/Virtual_file_system",
+    "Modules/LittleFS",
+    "Modules/Target",
+    "Modules/Bindings/Utilities",
+    "Modules/Bindings/Host",
+    "Modules/Bindings/WASM",
+    "Modules/Executables/Shell/Command_line",
+    "Modules/Executable",
+    "Modules/Executables/WASM",
+    "Modules/Executables/Shell/Graphical",
+    "Modules/Executables/Terminal",
+    "Modules/Authentication"
+]
+exclude = [
+    "Modules/Virtual_machine/Tests/WASM_test",
+    "Modules/Bindings/Tests/WASM_test",
+    "Build_tool",
+]

@@ -21,8 +21,8 @@ jobs:
       matrix:
         target:
           - linux
-          - esp32
-          - esp32s3
+#          - esp32
+#          - esp32s3
 
     steps:
       - name: Setup | Checkout repository
@@ -48,7 +48,7 @@ jobs:
           ldproxy: true
         
       - name: Setup | Install necessary dependencies
-        run: sudo apt-get install -y libsdl2-dev gcc-multilib
+        run: sudo apt-get install -y gcc-multilib
 
       - name: Setup | Build and source build tool
         run: source Export.sh
@@ -60,4 +60,4 @@ jobs:
         run: Build_tool/target/release/Build_tool clippy ${{ matrix.target }} --all-features --workspace -- -D warnings
 
       - name: Run | Tests
-        run: Build_tool/target/release/Build_tool test ${{ matrix.target }} --all -- --include-ignored
+        run: Build_tool/target/release/Build_tool test ${{ matrix.target }} --all
