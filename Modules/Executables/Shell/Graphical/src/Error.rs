@@ -11,6 +11,7 @@ pub enum Error_type {
     Failed_to_set_environment_variable(Task::Error_type),
     Invalid_UTF_8(core::str::Utf8Error),
     Authentication_failed(Authentication::Error_type),
+    Failed_to_set_task_user(Task::Error_type),
 }
 
 impl Error_type {
@@ -48,6 +49,9 @@ impl Display for Error_type {
             }
             Self::Authentication_failed(Error) => {
                 write!(Formatter, "Authentication failed: {}", Error)
+            }
+            Self::Failed_to_set_task_user(Error) => {
+                write!(Formatter, "Failed to set task user: {}", Error)
             }
         }
     }

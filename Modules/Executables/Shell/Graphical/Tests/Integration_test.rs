@@ -92,7 +92,7 @@ fn main() {
 
     Authentication::Create_group(
         Virtual_file_system::Get_instance(),
-        "users",
+        "alix_anneraud",
         Some(Group_identifier),
     )
     .unwrap();
