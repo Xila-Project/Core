@@ -211,6 +211,9 @@ impl File_type {
             Metadata.Get_modification_time(),
             Metadata.Get_access_time(),
             Metadata.Get_type(),
+            Metadata.Get_permissions(),
+            Metadata.Get_user(),
+            Metadata.Get_group(),
         );
 
         Ok(Statistics)

@@ -10,17 +10,19 @@ use crate::Type_type;
 /// # Examples
 ///
 /// ```rust
-/// use File_system::{Permissions_type, Permission_type};
+/// use File_system::{Permissions_type, Permission_type, Special_type};
 ///
 /// let user = Permission_type::New(true, false, false); // Read only
 /// let group = Permission_type::New(false, true, false); // Write only
 /// let others = Permission_type::New(false, false, true); // Execute only
+/// let special = Special_type::New(true, false, true); // Sticky and set user identifier
 ///
-/// let permissions = Permissions_type::New(user, group, others);
+/// let permissions = Permissions_type::New(user, group, others, special);
 ///
 /// assert_eq!(permissions.Get_user(), user);
 /// assert_eq!(permissions.Get_group(), group);
 /// assert_eq!(permissions.Get_others(), others);
+/// assert_eq!(permissions.Get_special(), special);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
@@ -41,26 +43,31 @@ impl Permissions_type {
         Permission_type::None,
         Permission_type::None,
         Permission_type::None,
+        Special_type::None,
     );
     pub const All_full: Self = Self::New(
         Permission_type::Full,
         Permission_type::Full,
         Permission_type::Full,
+        Special_type::None,
     );
     pub const All_read_write: Self = Self::New(
         Permission_type::Read_write,
         Permission_type::Read_write,
         Permission_type::Read_write,
+        Special_type::None,
     );
     pub const User_full: Self = Self::New(
         Permission_type::Full,
         Permission_type::None,
         Permission_type::None,
+        Special_type::None,
     );
     pub const User_read_write: Self = Self::New(
         Permission_type::Read_write,
         Permission_type::None,
         Permission_type::None,
+        Special_type::None,
     );
 
     /// Creates a new permission.
@@ -68,8 +75,14 @@ impl Permissions_type {
         User: Permission_type,
         Group: Permission_type,
         Others: Permission_type,
+        Special: Special_type,
     ) -> Self {
-        Self((User.To_unix() as u16) << 6 | (Group.To_unix() as u16) << 3 | Others.To_unix() as u16)
+        Self(
+            (Special.To_unix() as u16) << 9
+                | (User.To_unix() as u16) << 6
+                | (Group.To_unix() as u16) << 3
+                | Others.To_unix() as u16,
+        )
     }
 
     /// Creates a new permission with read access for user. No access for group and others.
@@ -79,26 +92,31 @@ impl Permissions_type {
                 Permission_type::Full,
                 Permission_type::Read_execute,
                 Permission_type::Read_execute,
+                Special_type::None,
             ),
             Type_type::File => Self::New(
                 Permission_type::Read_write,
                 Permission_type::Read_only,
                 Permission_type::Read_only,
+                Special_type::None,
             ),
             Type_type::Pipe => Self::New(
                 Permission_type::Read_write,
                 Permission_type::None,
                 Permission_type::None,
+                Special_type::None,
             ),
             Type_type::Block_device => Self::New(
                 Permission_type::Full,
                 Permission_type::Read_write,
                 Permission_type::Read_write,
+                Special_type::None,
             ),
             Type_type::Character_device => Self::New(
                 Permission_type::Read_write,
                 Permission_type::Read_write,
                 Permission_type::None,
+                Special_type::None,
             ),
             Type_type::Socket => Self::All_read_write,
             Type_type::Symbolic_link => Self::All_full,
@@ -107,25 +125,31 @@ impl Permissions_type {
 
     /// Sets the permission for the user.
     pub fn Set_user(mut self, User: Permission_type) -> Self {
-        self.0 = (self.0 & 0o077) | (User.To_unix() as u16) << 6;
+        self.0 = (self.0 & 0o7077) | (User.To_unix() as u16) << 6;
         self
     }
 
     /// Sets the permission for the group.
     pub fn Set_group(mut self, Group: Permission_type) -> Self {
-        self.0 = (self.0 & 0o707) | (Group.To_unix() as u16) << 3;
+        self.0 = (self.0 & 0o7707) | (Group.To_unix() as u16) << 3;
         self
     }
 
     /// Sets the permission for others.
     pub fn Set_others(mut self, Others: Permission_type) -> Self {
-        self.0 = (self.0 & 0o770) | Others.To_unix() as u16;
+        self.0 = (self.0 & 0o7770) | Others.To_unix() as u16;
+        self
+    }
+
+    /// Sets the special permissions.
+    pub fn Set_special(mut self, Special: Special_type) -> Self {
+        self.0 = (self.0 & 0o0777) | (Special.To_unix() as u16) << 9;
         self
     }
 
     /// Gets the permission for the user.
     pub fn Get_user(&self) -> Permission_type {
-        Permission_type::From_unix((self.0 >> 6) as u8).unwrap()
+        Permission_type::From_unix(((self.0 >> 6) & 0b111) as u8).unwrap()
     }
 
     /// Gets the permission for the group.
@@ -138,8 +162,13 @@ impl Permissions_type {
         Permission_type::From_unix((self.0 & 0b111) as u8).unwrap()
     }
 
+    /// Gets the special permissions.
+    pub fn Get_special(&self) -> Special_type {
+        Special_type::From_unix((self.0 >> 9) as u8).unwrap()
+    }
+
     /// Converts the permission to a Unix permission.
-    pub const fn From_unix(Unix: u16) -> Option<Self> {
+    pub const fn From_octal(Unix: u16) -> Option<Self> {
         if Unix > 0o777 {
             return None;
         }
@@ -150,6 +179,78 @@ impl Permissions_type {
     /// Converts the permission to a Unix permission.
     pub const fn To_unix(&self) -> u16 {
         self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)]
+pub struct Special_type(u8);
+
+impl fmt::Display for Special_type {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Sticky = if self.Get_sticky() { "t" } else { "-" };
+        let Set_gid = if self.Get_set_group_identifier() {
+            "u"
+        } else {
+            "-"
+        };
+        let Set_uid = if self.Get_set_user_identifier() {
+            "g"
+        } else {
+            "-"
+        };
+
+        write!(f, "{}{}{}", Sticky, Set_gid, Set_uid)
+    }
+}
+
+impl Special_type {
+    pub const None: Self = Self(0);
+    pub const Sticky: Self = Self(1);
+    pub const Set_user_identifier: Self = Self(2);
+    pub const Set_group_identifier: Self = Self(4);
+
+    pub fn New(Sticky: bool, Set_gid: bool, Set_uid: bool) -> Self {
+        Self((Sticky as u8) | (Set_gid as u8) << 1 | (Set_uid as u8) << 2)
+    }
+
+    pub fn Set_sticky(mut self, Sticky: bool) -> Self {
+        self.0 = (self.0 & 0b110) | Sticky as u8;
+        self
+    }
+
+    pub fn Set_set_group_identifier(mut self, Set_gid: bool) -> Self {
+        self.0 = (self.0 & 0b101) | (Set_gid as u8) << 1;
+        self
+    }
+
+    pub fn Set_set_user_identifier(mut self, Set_uid: bool) -> Self {
+        self.0 = (self.0 & 0b011) | (Set_uid as u8) << 2;
+        self
+    }
+
+    pub const fn Get_sticky(&self) -> bool {
+        self.0 & 0b001 != 0
+    }
+
+    pub const fn Get_set_group_identifier(&self) -> bool {
+        self.0 & 0b010 != 0
+    }
+
+    pub const fn Get_set_user_identifier(&self) -> bool {
+        self.0 & 0b100 != 0
+    }
+
+    pub const fn To_unix(&self) -> u8 {
+        self.0
+    }
+
+    pub fn From_unix(Unix: u8) -> Option<Self> {
+        if Unix > 0b111 {
+            return None;
+        }
+
+        Some(Self(Unix))
     }
 }
 
@@ -262,8 +363,9 @@ mod Tests {
         let user = Permission_type::New(true, false, false); // Read only
         let group = Permission_type::New(false, true, false); // Write only
         let others = Permission_type::New(false, false, true); // Execute only
-        let permissions = Permissions_type::New(user, group, others);
-        assert_eq!(permissions.0, 0b100_010_001);
+        let special = Special_type::New(true, false, true); // Sticky and set user identifier
+        let permissions = Permissions_type::New(user, group, others, special);
+        assert_eq!(permissions.0, 0b101_100_010_001);
     }
 
     #[test]
@@ -308,7 +410,7 @@ mod Tests {
 
     #[test]
     fn Test_permissions_type_from_unix() {
-        let Permissions = Permissions_type::From_unix(0b101_101_101).unwrap();
+        let Permissions = Permissions_type::From_octal(0b101_101_101).unwrap();
         assert_eq!(Permissions.Get_user().To_unix(), 5);
         assert_eq!(Permissions.Get_group().To_unix(), 5);
         assert_eq!(Permissions.Get_others().To_unix(), 5);
@@ -319,8 +421,9 @@ mod Tests {
         let User = Permission_type::New(true, false, true); // Read and execute
         let Group = Permission_type::New(true, true, false); // Read and write
         let Others = Permission_type::New(false, true, true); // Write and execute
-        let Permissions = Permissions_type::New(User, Group, Others);
-        assert_eq!(Permissions.To_unix(), 0b101_110_011);
+        let Special = Special_type::New(true, false, true); // Sticky and set user identifier
+        let Permissions = Permissions_type::New(User, Group, Others, Special);
+        assert_eq!(Permissions.To_unix(), 0b101_101_110_011);
     }
 
     #[test]

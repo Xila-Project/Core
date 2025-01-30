@@ -1,8 +1,10 @@
 pub mod Console;
 mod Drive_file;
+mod Random;
 pub mod Window_screen;
 
 pub use Drive_file::*;
+pub use Random::*;
 
 use Graphics::Point_type;
 use Task::Task_identifier_type;

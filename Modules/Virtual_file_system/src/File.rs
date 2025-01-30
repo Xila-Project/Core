@@ -3,8 +3,8 @@ use std::fmt::Debug;
 use Task::Task_identifier_type;
 
 use File_system::{
-    Flags_type, Path_type, Position_type, Result_type, Size_type, Statistics_type, Status_type,
-    Unique_file_identifier_type,
+    Error_type, Flags_type, Path_type, Position_type, Result_type, Size_type, Statistics_type,
+    Status_type, Unique_file_identifier_type,
 };
 
 use super::Virtual_file_system_type;
@@ -12,7 +12,7 @@ use super::Virtual_file_system_type;
 /// File structure.
 ///
 /// This structure is used to represent a file in the virtual file system.
-/// This is a wrapper around the virtual file system.
+/// This is a wrapper around the virtual file system file identifier.
 pub struct File_type<'a> {
     File_identifier: Unique_file_identifier_type,
     File_system: &'a Virtual_file_system_type<'a>,
@@ -34,8 +34,11 @@ impl<'a> File_type<'a> {
         File_system: &'a Virtual_file_system_type<'a>,
         Path: impl AsRef<Path_type>,
         Flags: Flags_type,
-        Task: Task_identifier_type,
     ) -> Result_type<Self> {
+        let Task = Task::Get_instance()
+            .Get_current_task_identifier()
+            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+
         let File_identifier = File_system.Open(&Path, Flags, Task)?;
 
         Ok(File_type {
@@ -115,7 +118,7 @@ impl<'a> File_type<'a> {
             .Read_to_end(self.Get_file_identifier(), self.Task, Buffer)
     }
 
-    pub fn Get_statistic(&self) -> Result_type<Statistics_type> {
+    pub fn Get_statistics(&self) -> Result_type<Statistics_type> {
         self.File_system
             .Get_statistics(self.Get_file_identifier(), self.Task)
     }

@@ -53,7 +53,6 @@ impl Task_type {
     pub fn New_child_task<T, F>(
         &self,
         Name: &str,
-        Owner: Option<User_identifier_type>,
         Stack_size: Option<usize>,
         Function: F,
     ) -> Result_type<(Task_type, Join_handle_type<T>)>
@@ -62,7 +61,7 @@ impl Task_type {
         F: FnOnce() -> T + Send + 'static,
     {
         let (Task_identifier, Join_handle) =
-            Get_instance().New_task(self.Identifier, Owner, Name, Stack_size, Function)?;
+            Get_instance().New_task(self.Identifier, Name, Stack_size, Function)?;
 
         Ok((Task_type::New(Task_identifier), Join_handle))
     }

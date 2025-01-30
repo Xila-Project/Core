@@ -46,7 +46,7 @@ fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>) {
 #[cfg(target_os = "linux")]
 #[test]
 fn Test_file() {
-    let (Task, Virtual_file_system) = Initialize();
+    let (_, Virtual_file_system) = Initialize();
 
     let File_path = "/file";
 
@@ -54,7 +54,6 @@ fn Test_file() {
         &Virtual_file_system,
         File_path,
         Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None),
-        Task,
     )
     .unwrap();
 
@@ -106,19 +105,13 @@ fn Test_named_pipe() {
         .Create_named_pipe(&Pipe_path, 512, Task)
         .unwrap();
 
-    let Pipe_read = File_type::Open(
-        &Virtual_file_system,
-        Pipe_path,
-        Mode_type::Read_only.into(),
-        Task,
-    )
-    .unwrap();
+    let Pipe_read =
+        File_type::Open(&Virtual_file_system, Pipe_path, Mode_type::Read_only.into()).unwrap();
 
     let Pipe_write = File_type::Open(
         &Virtual_file_system,
         Pipe_path,
         Mode_type::Write_only.into(),
-        Task,
     )
     .unwrap();
 
@@ -154,7 +147,6 @@ fn Test_device() {
         &Virtual_file_system,
         Device_path,
         Mode_type::Read_write.into(),
-        Task,
     )
     .unwrap();
 

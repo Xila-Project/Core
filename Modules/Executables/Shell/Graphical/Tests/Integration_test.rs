@@ -11,7 +11,9 @@ use Graphical_shell::Shell_executable_type;
 #[test]
 fn main() {
     use Drivers::Native::Window_screen;
+    use File_system::Permissions_type;
     use Graphics::{Get_minimal_buffer_size, Input_type_type, Point_type};
+    use Users::Group_identifier_type;
 
     // - Initialize the task manager.
     let Task_instance = Task::Initialize().unwrap();
@@ -56,12 +58,53 @@ fn main() {
     Virtual_file_system::Get_instance()
         .Mount_static_device(Task, &"/Shell", Create_device!(Shell_executable_type))
         .unwrap();
+    Virtual_file_system::Get_instance()
+        .Set_permissions("/Shell", Permissions_type::All_full)
+        .unwrap();
 
     Virtual_file_system::Get_instance()
         .Create_directory(&"/Devices", Task)
         .unwrap();
 
+    Virtual_file_system::Get_instance()
+        .Create_directory(&"/Xila", Task)
+        .unwrap();
+
+    Virtual_file_system::Get_instance()
+        .Create_directory(&"/Xila/Users", Task)
+        .unwrap();
+
+    Virtual_file_system::Get_instance()
+        .Create_directory(&"/Xila/Groups", Task)
+        .unwrap();
+
     Drivers::Native::Console::Mount_devices(Task, Virtual_file_system::Get_instance()).unwrap();
+
+    Virtual_file_system::Get_instance()
+        .Mount_static_device(
+            Task,
+            &"/Devices/Random",
+            Create_device!(Drivers::Native::Random_device_type),
+        )
+        .unwrap();
+
+    let Group_identifier = Group_identifier_type::New(1000);
+
+    Authentication::Create_group(
+        Virtual_file_system::Get_instance(),
+        "users",
+        Some(Group_identifier),
+    )
+    .unwrap();
+
+    Authentication::Create_user(
+        Virtual_file_system::Get_instance(),
+        "alix_anneraud",
+        "password",
+        Group_identifier,
+        None,
+    )
+    .unwrap();
 
     let Standard_in = Virtual_file_system::Get_instance()
         .Open(&"/Devices/Standard_in", Mode_type::Read_only.into(), Task)

@@ -9,6 +9,7 @@ pub enum Error_type {
     Task(Task::Error_type),
     Failed_to_get_main_function,
     Invalid_stack_size,
+    Permission_denied,
 }
 
 impl Display for Error_type {
@@ -20,6 +21,7 @@ impl Display for Error_type {
                 write!(Formatter, "Failed to get main function")
             }
             Error_type::Invalid_stack_size => write!(Formatter, "Invalid stack size"),
+            Error_type::Permission_denied => write!(Formatter, "Permission denied"),
         }
     }
 }

@@ -28,6 +28,7 @@ fn Integration_test() {
 
     let WASM_executable_path = "./Tests/WASM_test/target/wasm32-wasip1/release/WASM_test.wasm";
     let Destination = "/Test.wasm";
+
     Loader_type::New()
         .Add_file(WASM_executable_path, Destination)
         .Load(&mut File_system)
