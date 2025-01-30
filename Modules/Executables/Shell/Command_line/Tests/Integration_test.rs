@@ -5,6 +5,7 @@
 use Command_line_shell::Shell_executable_type;
 use Executable::Standard_type;
 use File_system::{Create_device, Create_file_system, Memory_device_type, Mode_type};
+use Users::Group_identifier_type;
 
 #[ignore]
 #[test]
@@ -32,6 +33,44 @@ fn Integration_test() {
     Virtual_file_system::Get_instance()
         .Create_directory(&"/Devices", Task)
         .unwrap();
+
+    Virtual_file_system::Get_instance()
+        .Create_directory(&"/Xila", Task)
+        .unwrap();
+
+    Virtual_file_system::Get_instance()
+        .Create_directory(&"/Xila/Users", Task)
+        .unwrap();
+
+    Virtual_file_system::Get_instance()
+        .Create_directory(&"/Xila/Groups", Task)
+        .unwrap();
+
+    Virtual_file_system::Get_instance()
+        .Mount_static_device(
+            Task,
+            &"/Devices/Random",
+            Create_device!(Drivers::Native::Random_device_type),
+        )
+        .unwrap();
+
+    let Group_identifier = Group_identifier_type::New(1000);
+
+    Authentication::Create_group(
+        Virtual_file_system::Get_instance(),
+        "alix_anneraud",
+        Some(Group_identifier),
+    )
+    .unwrap();
+
+    Authentication::Create_user(
+        Virtual_file_system::Get_instance(),
+        "alix_anneraud",
+        "password",
+        Group_identifier,
+        None,
+    )
+    .unwrap();
 
     Drivers::Native::Console::Mount_devices(Task, Virtual_file_system::Get_instance()).unwrap();
 
