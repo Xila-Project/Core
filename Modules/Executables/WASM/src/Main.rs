@@ -40,7 +40,6 @@ pub fn Inner_main(Standard: &Standard_type, Arguments: String) -> Result<(), Err
         Virtual_file_system::Get_instance(),
         &Path,
         Mode_type::Read_only.into(),
-        Standard.Get_task(),
     )
     .map_err(|_| Error_type::Failed_to_open_file)?;
 

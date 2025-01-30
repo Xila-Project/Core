@@ -11,6 +11,7 @@ Executable = { path = "../../Executable" }
 Task = { path = "../../Task" }
 Users = { path = "../../Users" }
 Virtual_machine = { path = "../../Virtual_machine" }
+Authentication = { path = "../../Authentication" }
 
 [dev-dependencies]
 Drivers = { path = "../../Drivers" }
