@@ -78,7 +78,6 @@ pub fn Execute<P: AsRef<Path_type>>(
         Virtual_file_system::Get_instance(),
         &Path,
         File_system::Mode_type::Read_write.into(),
-        Task,
     )?;
 
     // - Check the executable bit
