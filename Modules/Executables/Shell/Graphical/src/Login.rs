@@ -1,13 +1,16 @@
+use core::ffi::CStr;
+
 use Graphics::{Event_code_type, Window_type, LVGL};
 use Users::User_identifier_type;
 
-use crate::Error::Result_type;
+use crate::Error::{Error_type, Result_type};
 
 pub struct Login_type {
     Window: Window_type,
     User_name_text_area: *mut LVGL::lv_obj_t,
     Password_text_area: *mut LVGL::lv_obj_t,
     Button: *mut LVGL::lv_obj_t,
+    Error_label: *mut LVGL::lv_obj_t,
     User: Option<User_identifier_type>,
 }
 
@@ -45,8 +48,18 @@ impl Login_type {
 
             LVGL::lv_textarea_set_placeholder_text(Password_text_area, c"Password".as_ptr());
             LVGL::lv_textarea_set_one_line(Password_text_area, true);
+            LVGL::lv_textarea_set_password_mode(Password_text_area, true);
 
             Password_text_area
+        };
+
+        let Error_label = unsafe {
+            // - Create a label for the error
+            let Error_label = LVGL::lv_label_create(Window.Get_object());
+
+            LVGL::lv_label_set_text(Error_label, c"".as_ptr());
+
+            Error_label
         };
 
         let Button = unsafe {
@@ -65,14 +78,79 @@ impl Login_type {
             User_name_text_area,
             Password_text_area,
             Button,
+            Error_label,
             User: None,
         })
     }
 
+    pub fn Print_error(&mut self, Error: Error_type) {
+        let Error = Error.to_string();
+        let Error = Error.as_bytes();
+
+        unsafe {
+            let Error = CStr::from_bytes_with_nul_unchecked(Error);
+
+            LVGL::lv_label_set_text(self.Error_label, Error.as_ptr());
+        }
+    }
+
+    pub fn Clear_error(&mut self) {
+        unsafe {
+            LVGL::lv_label_set_text(self.Error_label, c"".as_ptr());
+        }
+    }
+
     pub fn Event_handler(&mut self) {
         while let Some(Event) = self.Window.Pop_event() {
-            if Event.Get_code() == Event_code_type::Clicked && Event.Get_target() == self.Button {
-                self.User = Some(User_identifier_type::Root);
+            // If we are typing the user name or the password
+            if Event.Get_code() == Event_code_type::Value_changed
+                && (Event.Get_target() == self.User_name_text_area
+                    || Event.Get_target() == self.Password_text_area)
+            {
+                self.Clear_error();
+            }
+            // If the "Login" button is clicked
+            else if Event.Get_code() == Event_code_type::Clicked
+                && Event.Get_target() == self.Button
+            {
+                unsafe {
+                    let User_name = LVGL::lv_textarea_get_text(self.User_name_text_area);
+                    let User_name = CStr::from_ptr(User_name);
+
+                    let User_name = match User_name.to_str().map_err(Error_type::Invalid_UTF_8) {
+                        Ok(User_name) => User_name,
+                        Err(Error) => {
+                            self.Print_error(Error);
+                            continue;
+                        }
+                    };
+
+                    let Password = LVGL::lv_textarea_get_text(self.Password_text_area);
+                    let Password = CStr::from_ptr(Password);
+                    let Password = match Password.to_str().map_err(Error_type::Invalid_UTF_8) {
+                        Ok(Password) => Password,
+                        Err(Error) => {
+                            self.Print_error(Error);
+                            continue;
+                        }
+                    };
+
+                    // - Check the user name and the password
+                    match Authentication::Authenticate_user(
+                        Virtual_file_system::Get_instance(),
+                        User_name,
+                        Password,
+                    )
+                    .map_err(Error_type::Authentication_failed)
+                    {
+                        Ok(User_identifier) => {
+                            self.User = Some(User_identifier);
+                        }
+                        Err(Error) => {
+                            self.Print_error(Error);
+                        }
+                    }
+                };
             }
         }
     }

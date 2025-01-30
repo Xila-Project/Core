@@ -12,6 +12,7 @@ Task = { path = "../../../Task" }
 Users = { path = "../../../Users" }
 Shared = { path = "../../../Shared" }
 Time = { path = "../../../Time" }
+Authentication = { path = "../../../Authentication" }
 
 [dev-dependencies]
 Drivers = { path = "../../../Drivers" }
