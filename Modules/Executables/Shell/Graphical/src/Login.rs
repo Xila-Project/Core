@@ -100,6 +100,44 @@ impl Login_type {
         }
     }
 
+    pub fn Authenticate(&mut self) -> Result_type<()> {
+        let (User_name, Password) = unsafe {
+            let User_name = LVGL::lv_textarea_get_text(self.User_name_text_area);
+            let User_name = CStr::from_ptr(User_name);
+
+            let User_name = User_name.to_str().map_err(Error_type::Invalid_UTF_8)?;
+
+            let Password = LVGL::lv_textarea_get_text(self.Password_text_area);
+            let Password = CStr::from_ptr(Password);
+            let Password = Password.to_str().map_err(Error_type::Invalid_UTF_8)?;
+
+            (User_name, Password)
+        };
+
+        // - Check the user name and the password
+        let User_identifier = Authentication::Authenticate_user(
+            Virtual_file_system::Get_instance(),
+            User_name,
+            Password,
+        )
+        .map_err(Error_type::Authentication_failed)?;
+
+        // - Set the user
+        let Task_manager = Task::Get_instance();
+
+        let Task = Task_manager
+            .Get_current_task_identifier()
+            .map_err(Error_type::Failed_to_set_task_user)?;
+
+        Task_manager
+            .Set_user(Task, User_identifier)
+            .map_err(Error_type::Failed_to_set_task_user)?;
+
+        self.User = Some(User_identifier);
+
+        Ok(())
+    }
+
     pub fn Event_handler(&mut self) {
         while let Some(Event) = self.Window.Pop_event() {
             // If we are typing the user name or the password
@@ -113,44 +151,11 @@ impl Login_type {
             else if Event.Get_code() == Event_code_type::Clicked
                 && Event.Get_target() == self.Button
             {
-                unsafe {
-                    let User_name = LVGL::lv_textarea_get_text(self.User_name_text_area);
-                    let User_name = CStr::from_ptr(User_name);
+                let Result = self.Authenticate();
 
-                    let User_name = match User_name.to_str().map_err(Error_type::Invalid_UTF_8) {
-                        Ok(User_name) => User_name,
-                        Err(Error) => {
-                            self.Print_error(Error);
-                            continue;
-                        }
-                    };
-
-                    let Password = LVGL::lv_textarea_get_text(self.Password_text_area);
-                    let Password = CStr::from_ptr(Password);
-                    let Password = match Password.to_str().map_err(Error_type::Invalid_UTF_8) {
-                        Ok(Password) => Password,
-                        Err(Error) => {
-                            self.Print_error(Error);
-                            continue;
-                        }
-                    };
-
-                    // - Check the user name and the password
-                    match Authentication::Authenticate_user(
-                        Virtual_file_system::Get_instance(),
-                        User_name,
-                        Password,
-                    )
-                    .map_err(Error_type::Authentication_failed)
-                    {
-                        Ok(User_identifier) => {
-                            self.User = Some(User_identifier);
-                        }
-                        Err(Error) => {
-                            self.Print_error(Error);
-                        }
-                    }
-                };
+                if let Err(Error) = Result {
+                    self.Print_error(Error);
+                }
             }
         }
     }

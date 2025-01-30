@@ -1,13 +1,14 @@
 use core::{fmt::Display, result::Result};
-use std::num::NonZeroUsize;
+use std::num::{NonZeroU16, NonZeroUsize};
 
 pub type Result_type<T> = Result<T, Error_type>;
 
 #[derive(Debug, Clone)]
 #[repr(u16)]
 pub enum Error_type {
-    Authentication_failed = 1,
-    Failed_to_set_environment_variable,
+    Authentication_failed(Authentication::Error_type) = 1,
+    Failed_to_set_task_user(Task::Error_type),
+    Failed_to_set_environment_variable(Task::Error_type),
     Failed_to_tokenize_command_line,
     Missing_file_name_after_redirect_out,
     Missing_file_name_after_redirect_in,
@@ -21,12 +22,23 @@ pub enum Error_type {
     Invalid_number_of_arguments,
 }
 
+impl Error_type {
+    pub fn Get_discriminant(&self) -> NonZeroU16 {
+        unsafe { *<*const _>::from(self).cast::<NonZeroU16>() }
+    }
+}
+
 impl Display for Error_type {
     fn fmt(&self, Formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
-            Error_type::Authentication_failed => write!(Formatter, "Authentication failed"),
-            Error_type::Failed_to_set_environment_variable => {
-                write!(Formatter, "Failed to set environment variable")
+            Error_type::Authentication_failed(Error) => {
+                write!(Formatter, "Authentication failed: {}", Error)
+            }
+            Error_type::Failed_to_set_task_user(Error) => {
+                write!(Formatter, "Failed to set task user: {}", Error)
+            }
+            Error_type::Failed_to_set_environment_variable(Error) => {
+                write!(Formatter, "Failed to set environment variable: {}", Error)
             }
             Error_type::Failed_to_tokenize_command_line => {
                 write!(Formatter, "Failed to tokenize command line")
@@ -59,6 +71,6 @@ impl Display for Error_type {
 
 impl From<Error_type> for NonZeroUsize {
     fn from(Error: Error_type) -> Self {
-        NonZeroUsize::new(Error as usize).unwrap()
+        Error.Get_discriminant().into()
     }
 }

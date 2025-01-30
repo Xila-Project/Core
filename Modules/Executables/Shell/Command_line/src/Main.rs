@@ -123,16 +123,11 @@ impl Shell_type {
         let User =
             match Task::Get_instance().Get_environment_variable(self.Standard.Get_task(), "User") {
                 Ok(User) => User.Get_value().to_string(),
-                Err(_) => match self.Authenticate() {
-                    Ok(User) => {
-                        Task::Get_instance()
-                            .Set_environment_variable(self.Standard.Get_task(), "User", &User)
-                            .map_err(|_| Error_type::Authentication_failed)?;
-
-                        User
+                Err(_) => loop {
+                    match self.Authenticate() {
+                        Ok(User) => break User,
+                        Err(Error) => self.Standard.Print_error_line(&Error.to_string()),
                     }
-
-                    Err(_) => return Err(Error_type::Authentication_failed)?,
                 },
             };
 
