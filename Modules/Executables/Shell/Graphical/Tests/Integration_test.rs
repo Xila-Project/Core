@@ -11,9 +11,11 @@ use Graphical_shell::Shell_executable_type;
 #[test]
 fn main() {
     use Drivers::Native::Window_screen;
-    use File_system::Permissions_type;
+    use File_system::{Flags_type, Open_type, Permissions_type};
     use Graphics::{Get_minimal_buffer_size, Input_type_type, Point_type};
+    use Terminal::Terminal_executable_type;
     use Users::Group_identifier_type;
+    use Virtual_file_system::File_type;
 
     // - Initialize the task manager.
     let Task_instance = Task::Initialize().unwrap();
@@ -55,27 +57,35 @@ fn main() {
 
     let Task = Task_instance.Get_current_task_identifier().unwrap();
 
-    Virtual_file_system::Get_instance()
-        .Mount_static_device(Task, &"/Shell", Create_device!(Shell_executable_type))
-        .unwrap();
-    Virtual_file_system::Get_instance()
-        .Set_permissions("/Shell", Permissions_type::All_full)
+    Virtual_file_system::Create_default_hierarchy(Virtual_file_system::Get_instance(), Task)
         .unwrap();
 
     Virtual_file_system::Get_instance()
-        .Create_directory(&"/Devices", Task)
+        .Mount_static_device(
+            Task,
+            &"/Binaries/Graphical_shell",
+            Create_device!(Shell_executable_type),
+        )
         .unwrap();
 
     Virtual_file_system::Get_instance()
-        .Create_directory(&"/Xila", Task)
+        .Mount_static_device(
+            Task,
+            &"/Binaries/Command_line_shell",
+            Create_device!(Shell_executable_type),
+        )
         .unwrap();
 
     Virtual_file_system::Get_instance()
-        .Create_directory(&"/Xila/Users", Task)
+        .Set_permissions("/Binaries/Command_line_shell", Permissions_type::Executable)
         .unwrap();
 
     Virtual_file_system::Get_instance()
-        .Create_directory(&"/Xila/Groups", Task)
+        .Create_directory(&"/Configuration/Graphical_shell", Task)
+        .unwrap();
+
+    Virtual_file_system::Get_instance()
+        .Create_directory(&"/Configuration/Graphical_shell/Shortcuts", Task)
         .unwrap();
 
     Drivers::Native::Console::Mount_devices(Task, Virtual_file_system::Get_instance()).unwrap();
@@ -87,6 +97,36 @@ fn main() {
             Create_device!(Drivers::Native::Random_device_type),
         )
         .unwrap();
+
+    Virtual_file_system::Get_instance()
+        .Mount_static_device(
+            Task,
+            &"/Devices/Null",
+            Create_device!(Drivers::Common::Null_device_type),
+        )
+        .unwrap();
+
+    Virtual_file_system::Get_instance()
+        .Mount_static_device(
+            Task,
+            &"/Binaries/Terminal",
+            Create_device!(Terminal_executable_type),
+        )
+        .unwrap();
+
+    Virtual_file_system::Get_instance()
+        .Set_permissions("/Binaries/Terminal", Permissions_type::Executable)
+        .unwrap();
+
+    // Write terminal shortcut.
+    File_type::Open(
+        Virtual_file_system::Get_instance(),
+        "/Configuration/Graphical_shell/Shortcuts/Terminal",
+        Flags_type::New(Mode_type::Write_only, Some(Open_type::Create), None),
+    )
+    .unwrap()
+    .Write(Terminal::Shortcut.as_bytes())
+    .unwrap();
 
     let Group_identifier = Group_identifier_type::New(1000);
 
@@ -138,7 +178,7 @@ fn main() {
         .Set_environment_variable(Task, "Host", "xila")
         .unwrap();
 
-    let Result = Executable::Execute("/Shell", "".to_string(), Standard)
+    let Result = Executable::Execute("/Binaries/Graphical_shell", "".to_string(), Standard)
         .unwrap()
         .Join()
         .unwrap();

@@ -1,3 +1,5 @@
+use std::ffi::CString;
+
 use Graphics::{Point_type, LVGL};
 
 use crate::Error::{Error_type, Result_type};
@@ -5,6 +7,7 @@ use crate::Error::{Error_type, Result_type};
 pub unsafe fn Create_icon(
     Parent: *mut LVGL::lv_obj_t,
     Name: &str,
+    Icon_string: &str,
     Size: Point_type,
 ) -> Result_type<*mut LVGL::lv_obj_t> {
     let Icon = LVGL::lv_button_create(Parent);
@@ -45,7 +48,7 @@ pub unsafe fn Create_icon(
         );
     }
 
-    LVGL::lv_label_set_text(Label, c"IC".as_ptr());
+    LVGL::lv_label_set_text(Label, CString::new(Icon_string).unwrap().as_ptr());
     LVGL::lv_obj_set_align(Label, LVGL::lv_align_t_LV_ALIGN_CENTER);
 
     Ok(Icon)

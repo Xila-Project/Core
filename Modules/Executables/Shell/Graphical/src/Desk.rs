@@ -1,9 +1,15 @@
+use std::collections::BTreeMap;
+
 use crate::{
     Error::{Error_type, Result_type},
     Icon::Create_icon,
+    Shortcut::{Shortcut_path, Shortcut_type},
 };
 
+use Executable::Standard_type;
+use File_system::Mode_type;
 use Graphics::{Color_type, Event_code_type, Point_type, Window_type, LVGL};
+use Virtual_file_system::Directory_type;
 
 pub struct Desk_type {
     Window: Window_type,
@@ -12,6 +18,7 @@ pub struct Desk_type {
     Desk_tile: *mut LVGL::lv_obj_t,
     Dock: *mut LVGL::lv_obj_t,
     Main_button: *mut LVGL::lv_obj_t,
+    Shortcuts: BTreeMap<*mut LVGL::lv_obj_t, String>,
 }
 
 impl Drop for Desk_type {
@@ -138,11 +145,13 @@ impl Desk_type {
         let Main_button = unsafe { Create_logo(Dock, 1, Color_type::White)? };
 
         // Create some fake icons
-        for i in 0..5 {
-            unsafe {
-                Create_icon(Dock, &format!("Icon {}", i), Self::Dock_icon_size)?;
-            }
-        }
+        // for i in 0..5 {
+        //     unsafe {
+        //         Create_icon(Dock, &format!("Icon {}", i), Self::Dock_icon_size)?;
+        //     }
+        // }
+
+        let Shortcuts = BTreeMap::new();
 
         Ok(Self {
             Window,
@@ -151,37 +160,116 @@ impl Desk_type {
             Tile_view,
             Dock,
             Main_button,
+            Shortcuts,
         })
     }
 
-    unsafe fn Create_drawer_interface(Drawer: *mut LVGL::lv_obj_t) -> Result_type<()> {
-        for i in 0..67 {
-            unsafe {
-                let Container = LVGL::lv_obj_create(Drawer);
+    unsafe fn Create_drawer_shortcut(
+        &mut self,
+        Entry_name: &str,
+        Name: &str,
+        Icon_string: &str,
+        Drawer: *mut LVGL::lv_obj_t,
+    ) -> Result_type<()> {
+        let Icon = unsafe {
+            let Container = LVGL::lv_obj_create(Drawer);
 
-                LVGL::lv_obj_set_size(Container, 12 * 8, 11 * 8);
-                LVGL::lv_obj_set_style_bg_opa(
-                    Container,
-                    LVGL::LV_OPA_0 as u8,
-                    LVGL::LV_STATE_DEFAULT,
-                );
-                LVGL::lv_obj_set_style_border_width(Container, 0, LVGL::LV_STATE_DEFAULT);
-                LVGL::lv_obj_set_flex_flow(Container, LVGL::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN);
-                LVGL::lv_obj_set_style_pad_all(Container, 0, LVGL::LV_STATE_DEFAULT);
-                LVGL::lv_obj_set_flex_align(
-                    Container,
-                    LVGL::lv_flex_align_t_LV_FLEX_ALIGN_SPACE_EVENLY,
-                    LVGL::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
-                    LVGL::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
-                );
+            LVGL::lv_obj_set_size(Container, 12 * 8, 11 * 8);
+            LVGL::lv_obj_set_style_bg_opa(Container, LVGL::LV_OPA_0 as u8, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_style_border_width(Container, 0, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_flex_flow(Container, LVGL::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN);
+            LVGL::lv_obj_set_style_pad_all(Container, 0, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_flex_align(
+                Container,
+                LVGL::lv_flex_align_t_LV_FLEX_ALIGN_SPACE_EVENLY,
+                LVGL::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+                LVGL::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+            );
 
-                Create_icon(Container, &format!("Icon {}", i), Self::Drawer_icon_size)?;
+            let Icon = Create_icon(Container, Name, Icon_string, Self::Drawer_icon_size)?;
 
-                let Label = LVGL::lv_label_create(Container);
+            let Label = LVGL::lv_label_create(Container);
 
-                LVGL::lv_label_set_text(Label, format!("Label {}\0", i).as_ptr() as *const i8)
+            LVGL::lv_label_set_text(Label, Name.as_ptr() as *const i8);
+
+            Icon
+        };
+
+        self.Shortcuts.insert(Icon, Entry_name.to_string());
+
+        Ok(())
+    }
+
+    unsafe fn Create_drawer_interface(&mut self, Drawer: *mut LVGL::lv_obj_t) -> Result_type<()> {
+        let Task = Task::Get_instance()
+            .Get_current_task_identifier()
+            .map_err(Error_type::Failed_to_get_current_task_identifier)?;
+
+        let Virtual_file_system = Virtual_file_system::Get_instance();
+
+        let _ = Virtual_file_system.Create_directory(&Shortcut_path, Task);
+
+        let mut Buffer: Vec<u8> = vec![];
+
+        let Shortcuts_directory = Directory_type::Open(Virtual_file_system, Shortcut_path)
+            .map_err(Error_type::Failed_to_read_shortcut_directory)?;
+
+        for Shortcut_entry in Shortcuts_directory {
+            println!("Shortcut: {}", Shortcut_entry.Get_name());
+
+            match Shortcut_type::Read(Shortcut_entry.Get_name(), &mut Buffer) {
+                Ok(Shortcut) => {
+                    self.Create_drawer_shortcut(
+                        Shortcut_entry.Get_name(),
+                        Shortcut.Get_name(),
+                        Shortcut.Get_icon_string(),
+                        Drawer,
+                    )?;
+                }
+                Err(Error) => {
+                    // ? : Log error ?
+                    println!("Failed to read shortcut. {}", Error);
+                    continue;
+                }
             }
         }
+
+        Ok(())
+    }
+
+    fn Execute_shortcut(&self, Shortcut_name: &str) -> Result_type<()> {
+        let Task = Task::Get_instance()
+            .Get_current_task_identifier()
+            .map_err(Error_type::Failed_to_get_current_task_identifier)?;
+
+        let mut Buffer = vec![];
+
+        let Shortcut = Shortcut_type::Read(Shortcut_name, &mut Buffer)?;
+
+        let Standard_in = Virtual_file_system::Get_instance()
+            .Open(&"/Devices/Null", Mode_type::Read_only.into(), Task)
+            .map_err(Error_type::Failed_to_open_standard_file)?;
+
+        let Standard_out = Virtual_file_system::Get_instance()
+            .Open(&"/Devices/Null", Mode_type::Write_only.into(), Task)
+            .map_err(Error_type::Failed_to_open_standard_file)?;
+
+        let Standard_err = Virtual_file_system::Get_instance()
+            .Open(&"/Devices/Null", Mode_type::Write_only.into(), Task)
+            .map_err(Error_type::Failed_to_open_standard_file)?;
+
+        Executable::Execute(
+            Shortcut.Get_command(),
+            Shortcut.Get_arguments().to_string(),
+            Standard_type::New(
+                Standard_in,
+                Standard_out,
+                Standard_err,
+                Task,
+                Virtual_file_system::Get_instance(),
+            ),
+        )
+        .map_err(Error_type::Failed_to_execute_shortcut)?;
 
         Ok(())
     }
@@ -206,8 +294,17 @@ impl Desk_type {
                             if LVGL::lv_tileview_get_tile_active(self.Tile_view) == self.Desk_tile {
                                 LVGL::lv_obj_clean(self.Drawer_tile);
                             } else if LVGL::lv_obj_get_child_count(self.Drawer_tile) == 0 {
-                                let _ = Self::Create_drawer_interface(self.Drawer_tile);
+                                let _ = self.Create_drawer_interface(self.Drawer_tile);
                             }
+                        }
+                    }
+                }
+                Event_code_type::Clicked => {
+                    let _Lock = Graphics::Get_instance().Lock().unwrap();
+
+                    if let Some(Shortcut_name) = self.Shortcuts.get(&Event.Get_target()) {
+                        if let Err(Error) = self.Execute_shortcut(Shortcut_name) {
+                            println!("Failed to execute shortcut. {}", Error);
                         }
                     }
                 }

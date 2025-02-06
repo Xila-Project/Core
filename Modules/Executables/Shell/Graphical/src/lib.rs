@@ -16,6 +16,7 @@ mod Icon;
 mod Layout;
 mod Login;
 mod Main;
+mod Shortcut;
 
 pub use Device::*;
 

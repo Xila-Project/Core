@@ -14,6 +14,7 @@ pub enum Error_type {
     Failed_to_get_new_user_identifier(Users::Error_type),
     Failed_to_create_user(Users::Error_type),
     Failed_to_write_user_file(File_system::Error_type),
+    Failed_to_create_users_directory(File_system::Error_type),
     Failed_to_read_group_directory(File_system::Error_type),
     Failed_to_get_group_file_path,
     Failed_to_open_group_file(File_system::Error_type),
@@ -23,6 +24,7 @@ pub enum Error_type {
     Failed_to_get_new_group_identifier(Users::Error_type),
     Failed_to_create_group(Users::Error_type),
     Failed_to_write_group_file(File_system::Error_type),
+    Failed_to_create_groups_directory(File_system::Error_type),
     Invalid_password,
     Failed_to_open_random_device(File_system::Error_type),
     Failed_to_read_random_device(File_system::Error_type),
@@ -57,6 +59,9 @@ impl Display for Error_type {
             Self::Failed_to_add_user(Error) => {
                 write!(Formatter, "Failed to add user: {}", Error)
             }
+            Self::Failed_to_create_users_directory(Error) => {
+                write!(Formatter, "Failed to create users directory: {}", Error)
+            }
             Self::Failed_to_read_group_directory(Error) => {
                 write!(Formatter, "Failed to read group directory: {}", Error)
             }
@@ -74,6 +79,9 @@ impl Display for Error_type {
             }
             Self::Failed_to_add_group(Error) => {
                 write!(Formatter, "Failed to add group: {}", Error)
+            }
+            Self::Failed_to_create_groups_directory(Error) => {
+                write!(Formatter, "Failed to create group directory: {}", Error)
             }
             Self::Invalid_password => {
                 write!(Formatter, "Invalid password")

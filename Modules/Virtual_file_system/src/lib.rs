@@ -7,9 +7,11 @@ mod Directory;
 mod Error;
 mod File;
 mod File_system;
+mod Hierarchy;
 mod Pipe;
 
 pub use Directory::*;
 pub use Error::*;
 pub use File::*;
 pub use File_system::*;
+pub use Hierarchy::*;

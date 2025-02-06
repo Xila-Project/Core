@@ -13,11 +13,14 @@ Users = { path = "../../../Users" }
 Shared = { path = "../../../Shared" }
 Time = { path = "../../../Time" }
 Authentication = { path = "../../../Authentication" }
+miniserde = "0.1"
+Command_line_shell = { path = "../Command_line" }
 
 [dev-dependencies]
 Drivers = { path = "../../../Drivers" }
 Time = { path = "../../../Time" }
 LittleFS = { path = "../../../LittleFS" }
+Terminal = { path = "../../Terminal" }
 
 [[test]]
 name = "Integration_test"

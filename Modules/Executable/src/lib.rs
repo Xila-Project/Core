@@ -64,8 +64,8 @@ fn Get_overridden_user(
     Ok(Some(New_user))
 }
 
-pub fn Execute<P: AsRef<Path_type>>(
-    Path: P,
+pub fn Execute(
+    Path: impl AsRef<Path_type>,
     Inputs: String,
     Standard: Standard_type,
 ) -> Result_type<Join_handle_type<isize>> {
