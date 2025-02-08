@@ -2,10 +2,12 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
+mod Device_trait;
 mod Error;
 mod Read_data;
 mod Standard;
 
+pub use Device_trait::*;
 pub use Error::*;
 pub use Read_data::*;
 pub use Standard::*;

@@ -48,7 +48,9 @@ pub unsafe fn Create_icon(
         );
     }
 
-    LVGL::lv_label_set_text(Label, CString::new(Icon_string).unwrap().as_ptr());
+    let Icon_string = CString::new(Icon_string).map_err(Error_type::Null_character_in_string)?;
+
+    LVGL::lv_label_set_text(Label, Icon_string.as_ptr());
     LVGL::lv_obj_set_align(Label, LVGL::lv_align_t_LV_ALIGN_CENTER);
 
     Ok(Icon)

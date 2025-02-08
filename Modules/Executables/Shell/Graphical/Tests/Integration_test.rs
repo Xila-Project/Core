@@ -13,8 +13,8 @@ fn main() {
     use Drivers::Native::Window_screen;
     use File_system::{Flags_type, Open_type, Permissions_type};
     use Graphics::{Get_minimal_buffer_size, Input_type_type, Point_type};
-    use Terminal::Terminal_executable_type;
     use Users::Group_identifier_type;
+
     use Virtual_file_system::File_type;
 
     // - Initialize the task manager.
@@ -106,27 +106,31 @@ fn main() {
         )
         .unwrap();
 
-    Virtual_file_system::Get_instance()
-        .Mount_static_device(
-            Task,
-            &"/Binaries/Terminal",
-            Create_device!(Terminal_executable_type),
+    // Add fake shortcuts.
+    for i in 0..20 {
+        File_type::Open(
+            Virtual_file_system::Get_instance(),
+            format!("/Configuration/Graphical_shell/Shortcuts/Test{}.json", i).as_str(),
+            Flags_type::New(Mode_type::Write_only, Some(Open_type::Create), None),
+        )
+        .unwrap()
+        .Write(
+            format!(
+                r#"
+    {{
+        "Name": "Test{}",
+        "Command": "/Binaries/?",
+        "Arguments": "",
+        "Terminal": false,
+        "Icon_string": "T!"
+    }}
+        "#,
+                i
+            )
+            .as_bytes(),
         )
         .unwrap();
-
-    Virtual_file_system::Get_instance()
-        .Set_permissions("/Binaries/Terminal", Permissions_type::Executable)
-        .unwrap();
-
-    // Write terminal shortcut.
-    File_type::Open(
-        Virtual_file_system::Get_instance(),
-        "/Configuration/Graphical_shell/Shortcuts/Terminal",
-        Flags_type::New(Mode_type::Write_only, Some(Open_type::Create), None),
-    )
-    .unwrap()
-    .Write(Terminal::Shortcut.as_bytes())
-    .unwrap();
+    }
 
     let Group_identifier = Group_identifier_type::New(1000);
 

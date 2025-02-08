@@ -24,6 +24,9 @@ Command_line_shell = { path = "Modules/Executables/Shell/Command_line", optional
 Executable = { path = "Modules/Executable", optional = true }
 File_system = { path = "Modules/File_system", optional = true }
 Host_bindings = { path = "Modules/Bindings/Host", optional = true }
+Graphical_shell = { path = "Modules/Executables/Shell/Graphical", optional = true }
+Terminal = { path = "Modules/Executables/Terminal", optional = true }
+Authentication = { path = "Modules/Authentication", optional = true }
 
 [build-dependencies]
 Target = { path = "Modules/Target", optional = true }
@@ -47,6 +50,9 @@ Host = [
     "dep:Executable",
     "dep:File_system",
     "dep:Host_bindings",
+    "dep:Graphical_shell",
+    "dep:Terminal",
+    "dep:Authentication",
 ]
 WASM = ["dep:WASM_bindings"]
 
@@ -78,7 +84,7 @@ members = [
     "Modules/Executables/WASM",
     "Modules/Executables/Shell/Graphical",
     "Modules/Executables/Terminal",
-    "Modules/Authentication"
+    "Modules/Authentication",
 ]
 exclude = [
     "Modules/Virtual_machine/Tests/WASM_test",

@@ -3,6 +3,8 @@ use std::num::NonZeroU8;
 
 pub type Result_type<T> = Result<T, Error_type>;
 
+extern crate alloc;
+
 #[derive(Debug, Clone)]
 #[repr(u8)]
 pub enum Error_type {
@@ -19,6 +21,9 @@ pub enum Error_type {
     Failed_to_read_shortcut_file(File_system::Error_type),
     Failed_to_open_standard_file(File_system::Error_type),
     Failed_to_execute_shortcut(Executable::Error_type),
+    Null_character_in_string(alloc::ffi::NulError),
+    Missing_arguments,
+    Failed_to_add_shortcut(File_system::Error_type),
 }
 
 impl Error_type {
@@ -84,6 +89,15 @@ impl Display for Error_type {
             }
             Self::Failed_to_execute_shortcut(Error) => {
                 write!(Formatter, "Failed to execute shortcut: {}", Error)
+            }
+            Self::Null_character_in_string(Error) => {
+                write!(Formatter, "Null character in string: {}", Error)
+            }
+            Self::Missing_arguments => {
+                write!(Formatter, "Missing arguments")
+            }
+            Self::Failed_to_add_shortcut(Error) => {
+                write!(Formatter, "Failed to add shortcut: {}", Error)
             }
         }
     }

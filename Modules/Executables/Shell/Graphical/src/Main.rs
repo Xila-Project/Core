@@ -2,10 +2,11 @@ use core::num::NonZeroUsize;
 use std::time::Duration;
 
 use Executable::Standard_type;
+use File_system::Path_type;
 
 use crate::{
     Desk::Desk_type, Error::Error_type, Home::Home_type, Layout::Layout_type, Login::Login_type,
-    Shell_type,
+    Shell_type, Shortcut::Shortcut_type,
 };
 
 pub fn Main(Standard: Standard_type, Arguments: String) -> Result<(), NonZeroUsize> {
@@ -28,7 +29,17 @@ impl Shell_type {
         }
     }
 
-    pub fn Main(&mut self, _: String) -> Result<(), NonZeroUsize> {
+    pub fn Main(&mut self, Arguments: String) -> Result<(), NonZeroUsize> {
+        let Arguments: Vec<&str> = Arguments.split_whitespace().collect();
+
+        if Arguments.first() == Some(&"add_shortcut") {
+            if Arguments.len() != 2 {
+                return Err(Error_type::Missing_arguments.into());
+            }
+
+            Shortcut_type::Add(Path_type::From_str(Arguments[1]))?;
+        }
+
         while self.Running {
             self.Layout.Loop();
 

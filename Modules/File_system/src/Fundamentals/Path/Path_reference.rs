@@ -13,6 +13,37 @@ impl Path_type {
     pub const Root: &'static Path_type = Self::From_str("/");
     pub const Empty: &'static Path_type = Self::From_str("");
 
+    /// Contains the OS core, including the kernel, init system, and critical drivers.
+    /// Prevents modification by regular users.
+    pub const System: &'static Path_type = Self::From_str("/System");
+
+    /// Stores system-wide settings in a structured format (e.g., JSON, TOML).
+    pub const Devices: &'static Path_type = Self::From_str("/Devices");
+
+    /// Hardware devices, symlinks for human-friendly names.
+    pub const Configuration: &'static Path_type = Self::From_str("/Configuration");
+
+    /// Contains the shared configurations between applications.
+    pub const Shared_configuration: &'static Path_type = Self::From_str("/Configuration/Shared");
+
+    /// Binaries data.
+    pub const Data: &'static Path_type = Self::From_str("/Data");
+
+    /// Shared data between binaries.
+    pub const Shared_data: &'static Path_type = Self::From_str("/Data/Shared");
+
+    /// Contains the system's binaries, including the shell and other executables.
+    pub const Binaries: &'static Path_type = Self::From_str("/Binaries");
+
+    /// Contains the user's data, including documents, downloads, and other files.
+    pub const Users: &'static Path_type = Self::From_str("/Users");
+
+    /// Contains temporary files, including logs and caches.
+    pub const Temporary: &'static Path_type = Self::From_str("/Temporary");
+
+    /// Contains logs, including system logs and application logs.
+    pub const Logs: &'static Path_type = Self::From_str("/Temporary/Logs");
+
     /// # Safety
     /// The caller must ensure that the string is a valid path string.
     pub const fn From_str(Path: &str) -> &Path_type {

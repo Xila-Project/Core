@@ -1,43 +1,66 @@
 /// Hierarchy of the file system.
-use File_system::{Path_type, Result_type};
+use File_system::{Error_type, Path_type, Result_type, Type_type};
 use Task::Task_identifier_type;
 
-use crate::Virtual_file_system_type;
-
-/// Contains the OS core, including the kernel, init system, and critical drivers.
-/// Prevents modification by regular users.
-pub const Xila_directory: &Path_type = Path_type::From_str("/Xila");
-
-/// Stores system-wide settings in a structured format (e.g., JSON, TOML).
-pub const Configuration_directory: &Path_type = Path_type::From_str("/Configuration");
-
-/// Hardware devices, symlinks for human-friendly names.
-pub const Devices_directory: &Path_type = Path_type::From_str("/Devices");
-
-/// Contains the system's binaries, including the shell and other executables.
-pub const Binaries_directory: &Path_type = Path_type::From_str("/Binaries");
-
-/// Contains the user's data, including documents, downloads, and other files.
-pub const Users_directory: &Path_type = Path_type::From_str("/Users");
-
-/// Contains temporary files, including logs and caches.
-pub const Temporary_directory: &Path_type = Path_type::From_str("/Temporary");
-
-/// Contains logs, including system logs and application logs.
-pub const Logs_directory: &Path_type = Path_type::From_str("/Temporary/Logs");
+use crate::{Directory_type, Virtual_file_system_type};
 
 /// Create the default hierarchy of the file system.
 pub fn Create_default_hierarchy(
     Virtual_file_system: &Virtual_file_system_type,
     Task: Task_identifier_type,
 ) -> Result_type<()> {
-    Virtual_file_system.Create_directory(&Xila_directory, Task)?;
-    Virtual_file_system.Create_directory(&Configuration_directory, Task)?;
-    Virtual_file_system.Create_directory(&Devices_directory, Task)?;
-    Virtual_file_system.Create_directory(&Binaries_directory, Task)?;
-    Virtual_file_system.Create_directory(&Users_directory, Task)?;
-    Virtual_file_system.Create_directory(&Temporary_directory, Task)?;
-    Virtual_file_system.Create_directory(&Logs_directory, Task)?;
+    Virtual_file_system.Create_directory(&Path_type::System, Task)?;
+    Virtual_file_system.Create_directory(&Path_type::Configuration, Task)?;
+    Virtual_file_system.Create_directory(&Path_type::Shared_configuration, Task)?;
+    Virtual_file_system.Create_directory(&Path_type::Devices, Task)?;
+    Virtual_file_system.Create_directory(&Path_type::Users, Task)?;
+    Virtual_file_system.Create_directory(&Path_type::Data, Task)?;
+    Virtual_file_system.Create_directory(&Path_type::Shared_data, Task)?;
+    Virtual_file_system.Create_directory(&Path_type::Binaries, Task)?;
+    Virtual_file_system.Create_directory(&Path_type::Temporary, Task)?;
+    Virtual_file_system.Create_directory(&Path_type::Logs, Task)?;
+
+    Ok(())
+}
+
+pub fn Clean_devices_in_directory<'a>(
+    Virtual_file_system: &'a Virtual_file_system_type<'a>,
+    Path: &Path_type,
+) -> Result_type<()> {
+    // For each entry in the directory.
+    for Entry in Directory_type::Open(Virtual_file_system, Path)? {
+        if Entry.Get_type() != Type_type::File {
+            continue;
+        }
+
+        let Entry_path = Path.Append(Entry.Get_name()).unwrap();
+
+        let Metadata = Virtual_file_system.Get_metadata_from_path(&Entry_path)?;
+
+        if Metadata.Get_type() != Type_type::Character_device
+            && Metadata.Get_type() != Type_type::Block_device
+        {
+            continue;
+        }
+
+        match Virtual_file_system.Remove(&Entry_path) {
+            Ok(_) | Err(Error_type::Invalid_identifier) => {
+                println!("Removed device: {}", Entry_path);
+            }
+
+            Err(Error) => {
+                return Err(Error);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+pub fn Clean_devices<'a>(Virtual_file_system: &'a Virtual_file_system_type<'a>) -> Result_type<()> {
+    Clean_devices_in_directory(Virtual_file_system, Path_type::Devices)?;
+
+    Clean_devices_in_directory(Virtual_file_system, Path_type::Binaries)?;
 
     Ok(())
 }

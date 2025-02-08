@@ -1,9 +1,24 @@
-use Executable::Read_data_type;
-use File_system::Device_trait;
+use Executable::{Device_executable_trait, Read_data_type};
+use File_system::{Create_device, Device_trait};
+use Task::Task_identifier_type;
+use Virtual_file_system::Virtual_file_system_type;
 
 use crate::Main;
 
 pub struct WASM_device_type;
+
+impl Device_executable_trait for WASM_device_type {
+    fn Mount<'a>(
+        Virtual_file_system: &'a Virtual_file_system_type<'a>,
+        Task: Task_identifier_type,
+    ) -> Result<(), String> {
+        Virtual_file_system
+            .Mount_static_device(Task, &"/Binaries/WASM", Create_device!(WASM_device_type))
+            .map_err(|Error| Error.to_string())?;
+
+        Ok(())
+    }
+}
 
 impl Device_trait for WASM_device_type {
     fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<File_system::Size_type> {

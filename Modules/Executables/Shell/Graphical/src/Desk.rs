@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, ffi::CString};
 
 use crate::{
     Error::{Error_type, Result_type},
@@ -7,7 +7,7 @@ use crate::{
 };
 
 use Executable::Standard_type;
-use File_system::Mode_type;
+use File_system::{Mode_type, Type_type};
 use Graphics::{Color_type, Event_code_type, Point_type, Window_type, LVGL};
 use Virtual_file_system::Directory_type;
 
@@ -190,7 +190,9 @@ impl Desk_type {
 
             let Label = LVGL::lv_label_create(Container);
 
-            LVGL::lv_label_set_text(Label, Name.as_ptr() as *const i8);
+            let Name = CString::new(Name).map_err(Error_type::Null_character_in_string)?;
+
+            LVGL::lv_label_set_text(Label, Name.as_ptr());
 
             Icon
         };
@@ -216,6 +218,14 @@ impl Desk_type {
 
         for Shortcut_entry in Shortcuts_directory {
             println!("Shortcut: {}", Shortcut_entry.Get_name());
+
+            if Shortcut_entry.Get_type() != Type_type::File {
+                continue;
+            }
+
+            if !Shortcut_entry.Get_name().ends_with(".json") {
+                continue;
+            }
 
             match Shortcut_type::Read(Shortcut_entry.Get_name(), &mut Buffer) {
                 Ok(Shortcut) => {

@@ -1,9 +1,28 @@
-use Executable::Read_data_type;
-use File_system::Device_trait;
+use Executable::{Device_executable_trait, Read_data_type};
+use File_system::{Create_device, Device_trait};
+use Task::Task_identifier_type;
+use Virtual_file_system::Virtual_file_system_type;
 
 use crate::Main::Main;
 
 pub struct Shell_executable_type;
+
+impl Device_executable_trait for Shell_executable_type {
+    fn Mount<'a>(
+        Virtual_file_system: &'a Virtual_file_system_type<'a>,
+        Task: Task_identifier_type,
+    ) -> Result<(), String> {
+        Virtual_file_system
+            .Mount_static_device(
+                Task,
+                &"/Binaries/Command_line_shell",
+                Create_device!(Shell_executable_type),
+            )
+            .map_err(|Error| Error.to_string())?;
+
+        Ok(())
+    }
+}
 
 impl Device_trait for Shell_executable_type {
     fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<File_system::Size_type> {

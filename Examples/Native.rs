@@ -2,10 +2,10 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 
-use Command_line_shell::Shell_executable_type;
+use Executable::Mount_static_executables;
 use Executable::Standard_type;
-use File_system::{Create_device, Create_file_system, Mode_type};
-use WASM::WASM_device_type;
+use File_system::{Create_device, Create_file_system};
+use Virtual_file_system::Mount_static_devices;
 
 fn main() {
     // - Initialize the system
@@ -18,13 +18,19 @@ fn main() {
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
     const Resolution: Graphics::Point_type = Graphics::Point_type::New(800, 600);
-    let (Screen, Pointer) = Drivers::Native::Window_screen::New(Resolution).unwrap();
+    let (Screen_device, Pointer_device, Keyboard_device) =
+        Drivers::Native::Window_screen::New(Resolution).unwrap();
     // - - Initialize the graphics manager
-    Graphics::Initialize();
-    // - - Add a screen
-    const Buffer_size: usize = Graphics::Get_recommended_buffer_size(&Resolution);
-    let _ = Graphics::Get_instance()
-        .Create_display::<Buffer_size>(Screen, Pointer, true)
+    Graphics::Initialize(
+        Screen_device,
+        Pointer_device,
+        Graphics::Input_type_type::Pointer,
+        Graphics::Get_minimal_buffer_size(&Resolution),
+        true,
+    );
+
+    Graphics::Get_instance()
+        .Add_input_device(Keyboard_device, Graphics::Input_type_type::Keypad)
         .unwrap();
 
     // - Initialize the file system
@@ -45,50 +51,88 @@ fn main() {
         }
     };
     // Initialize the virtual file system
-    Virtual_file_system::Initialize(Create_file_system!(File_system));
+    Virtual_file_system::Initialize(Create_file_system!(File_system)).unwrap();
 
     // - - Mount the devices
     let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
 
-    Virtual_file_system::Get_instance()
-        .Mount_static_device(Task, &"/Shell", Create_device!(Shell_executable_type))
-        .unwrap();
+    // - - Create the default system hierarchy
+    let _ =
+        Virtual_file_system::Create_default_hierarchy(Virtual_file_system::Get_instance(), Task);
 
-    Virtual_file_system::Get_instance()
-        .Mount_static_device(Task, &"/WASM", Create_device!(WASM_device_type))
-        .unwrap();
+    // - - Mount the devices
+    Virtual_file_system::Clean_devices(Virtual_file_system::Get_instance()).unwrap();
 
-    let _ = Virtual_file_system::Get_instance().Create_directory(&"/Devices", Task);
+    Mount_static_devices!(
+        Virtual_file_system::Get_instance(),
+        Task,
+        &[
+            (
+                &"/Devices/Standard_in",
+                Drivers::Native::Console::Standard_in_device_type
+            ),
+            (
+                &"/Devices/Standard_out",
+                Drivers::Native::Console::Standard_out_device_type
+            ),
+            (
+                &"/Devices/Standard_error",
+                Drivers::Native::Console::Standard_error_device_type
+            ),
+            (&"/Devices/Time", Drivers::Native::Time_driver_type),
+            (&"/Devices/Random", Drivers::Native::Random_device_type),
+            (&"/Devices/Null", Drivers::Common::Null_device_type)
+        ]
+    )
+    .unwrap();
 
-    Drivers::Native::Console::Mount_devices(Task, Virtual_file_system::Get_instance()).unwrap();
     // Initialize the virtual machine
     Virtual_machine::Initialize(&[&Host_bindings::Graphics_bindings]);
 
+    // Mount static executables
+
+    let Virtual_file_system = Virtual_file_system::Get_instance();
+
+    Mount_static_executables!(
+        Virtual_file_system,
+        Task,
+        &[
+            Graphical_shell::Shell_executable_type,
+            Command_line_shell::Shell_executable_type,
+            Terminal::Terminal_executable_type,
+            WASM::WASM_device_type
+        ]
+    )
+    .unwrap();
+
     // - Execute the shell
     // - - Open the standard input, output and error
-    let Standard_in = Virtual_file_system::Get_instance()
-        .Open(&"/Devices/Standard_in", Mode_type::Read_only.into(), Task)
-        .unwrap();
-
-    let Standard_out = Virtual_file_system::Get_instance()
-        .Open(&"/Devices/Standard_out", Mode_type::Write_only.into(), Task)
-        .unwrap();
-
-    let Standard_error = Virtual_file_system::Get_instance()
-        .Open(
-            &"/Devices/Standard_error",
-            Mode_type::Write_only.into(),
-            Task,
-        )
-        .unwrap();
-
-    let Standard = Standard_type::New(
-        Standard_in,
-        Standard_out,
-        Standard_error,
+    let Standard = Standard_type::Open(
+        &"/Devices/Standard_in",
+        &"/Devices/Standard_out",
+        &"/Devices/Standard_error",
         Task,
         Virtual_file_system::Get_instance(),
+    )
+    .unwrap();
+
+    // - - Create the default user
+    let Group_identifier = Users::Group_identifier_type::New(1000);
+
+    let _ = Authentication::Create_group(
+        Virtual_file_system::Get_instance(),
+        "alix_anneraud",
+        Some(Group_identifier),
     );
+
+    let _ = Authentication::Create_user(
+        Virtual_file_system::Get_instance(),
+        "alix_anneraud",
+        "password",
+        Group_identifier,
+        None,
+    );
+
     // - - Set the environment variables
     Task::Get_instance()
         .Set_environment_variable(Task, "Paths", "/")
@@ -98,7 +142,7 @@ fn main() {
         .Set_environment_variable(Task, "Host", "xila")
         .unwrap();
     // - - Execute the shell
-    let _ = Executable::Execute("/Shell", "".to_string(), Standard)
+    let _ = Executable::Execute("/Binaries/Graphical_shell", "".to_string(), Standard)
         .unwrap()
         .Join()
         .unwrap();
