@@ -111,13 +111,13 @@ fn Integration_test() {
     let _ =
         Environment_type::From_instance(&Instance).expect("Failed to get execution environment");
 
-    assert_eq!(Instance.Call_main(&vec![]).unwrap(), WasmValue::Void);
+    assert_eq!(Instance.Call_main(&vec![]).unwrap(), [WasmValue::Void]);
 
     assert_eq!(
         Instance
             .Call_export_function("GCD", &vec![WasmValue::I32(9), WasmValue::I32(27)])
             .unwrap(),
-        WasmValue::I32(9)
+        [WasmValue::I32(9)]
     );
 
     // Test allocation and deallocation
