@@ -1,4 +1,6 @@
-use File_system::{File_identifier_type, Size_type, Unique_file_identifier_type};
+use File_system::{
+    File_identifier_type, Mode_type, Path_type, Size_type, Unique_file_identifier_type,
+};
 use Task::Task_identifier_type;
 use Virtual_file_system::Virtual_file_system_type;
 
@@ -25,6 +27,31 @@ impl Drop for Standard_type {
 }
 
 impl Standard_type {
+    pub fn Open(
+        Standard_in: &impl AsRef<Path_type>,
+        Standard_out: &impl AsRef<Path_type>,
+        Standard_error: &impl AsRef<Path_type>,
+        Task: Task_identifier_type,
+        Virtual_file_system: &'static Virtual_file_system_type,
+    ) -> Result_type<Self> {
+        let Standard_in =
+            Virtual_file_system.Open(Standard_in, Mode_type::Read_only.into(), Task)?;
+
+        let Standard_out =
+            Virtual_file_system.Open(Standard_out, Mode_type::Write_only.into(), Task)?;
+
+        let Standard_error =
+            Virtual_file_system.Open(Standard_error, Mode_type::Write_only.into(), Task)?;
+
+        Ok(Self::New(
+            Standard_in,
+            Standard_out,
+            Standard_error,
+            Task,
+            Virtual_file_system,
+        ))
+    }
+
     pub fn New(
         Standard_in: Unique_file_identifier_type,
         Standard_out: Unique_file_identifier_type,

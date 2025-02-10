@@ -2,10 +2,11 @@ use core::num::NonZeroUsize;
 use std::time::Duration;
 
 use Executable::Standard_type;
+use File_system::Path_type;
 
 use crate::{
     Desk::Desk_type, Error::Error_type, Home::Home_type, Layout::Layout_type, Login::Login_type,
-    Shell_type,
+    Shell_type, Shortcut::Shortcut_type,
 };
 
 pub fn Main(Standard: Standard_type, Arguments: String) -> Result<(), NonZeroUsize> {
@@ -16,7 +17,7 @@ impl Shell_type {
     pub fn New(Standard: Standard_type) -> Self {
         let Layout = Layout_type::New().unwrap();
 
-        let Login = Login_type::New().unwrap();
+        let Login = Box::new(Login_type::New().unwrap());
 
         Self {
             _Standard: Standard,
@@ -28,7 +29,17 @@ impl Shell_type {
         }
     }
 
-    pub fn Main(&mut self, _: String) -> Result<(), NonZeroUsize> {
+    pub fn Main(&mut self, Arguments: String) -> Result<(), NonZeroUsize> {
+        let Arguments: Vec<&str> = Arguments.split_whitespace().collect();
+
+        if Arguments.first() == Some(&"add_shortcut") {
+            if Arguments.len() != 2 {
+                return Err(Error_type::Missing_arguments.into());
+            }
+
+            Shortcut_type::Add(Path_type::From_str(Arguments[1]))?;
+        }
+
         while self.Running {
             self.Layout.Loop();
 
@@ -46,10 +57,10 @@ impl Shell_type {
                         )
                         .map_err(Error_type::Failed_to_set_environment_variable)?;
 
-                    self.Desk = Some(Desk_type::New()?);
+                    self.Desk = Some(Box::new(Desk_type::New(self.Layout.Get_windows_parent())?));
 
                     if let Some(Desk) = &mut self.Desk {
-                        self._Home = Some(Home_type::New(Desk.Get_window_object())?);
+                        self._Home = Some(Box::new(Home_type::New(Desk.Get_window_object())?));
                     }
 
                     self.Login = None;

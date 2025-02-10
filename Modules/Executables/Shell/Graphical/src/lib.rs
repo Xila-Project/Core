@@ -16,6 +16,7 @@ mod Icon;
 mod Layout;
 mod Login;
 mod Main;
+mod Shortcut;
 
 pub use Device::*;
 
@@ -23,7 +24,7 @@ pub struct Shell_type {
     _Standard: Standard_type,
     Running: bool,
     Layout: Layout_type,
-    Desk: Option<Desk_type>,
-    _Home: Option<Home_type>,
-    Login: Option<Login_type>,
+    Desk: Option<Box<Desk_type>>,
+    _Home: Option<Box<Home_type>>,
+    Login: Option<Box<Login_type>>,
 }

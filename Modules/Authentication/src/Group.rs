@@ -4,7 +4,7 @@ use Users::{
     Group_identifier_inner_type, Group_identifier_type, User_identifier_inner_type,
     User_identifier_type,
 };
-use Virtual_file_system::{File_type, Virtual_file_system_type};
+use Virtual_file_system::{Directory_type, File_type, Virtual_file_system_type};
 
 use crate::{Error_type, Group_folder_path, Result_type};
 
@@ -103,6 +103,11 @@ pub fn Create_group<'a>(
         Group_name.to_string(),
         vec![],
     );
+
+    match Directory_type::Create(Virtual_file_system, Group_folder_path) {
+        Ok(_) | Err(File_system::Error_type::Already_exists) => {}
+        Err(Error) => Err(Error_type::Failed_to_create_groups_directory(Error))?,
+    };
 
     let Group_file_path = Get_group_file_path(Group_name)?;
 

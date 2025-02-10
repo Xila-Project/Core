@@ -11,9 +11,12 @@ use Graphical_shell::Shell_executable_type;
 #[test]
 fn main() {
     use Drivers::Native::Window_screen;
-    use File_system::Permissions_type;
+    use Executable::Mount_static_executables;
+    use File_system::{Flags_type, Open_type};
     use Graphics::{Get_minimal_buffer_size, Input_type_type, Point_type};
     use Users::Group_identifier_type;
+
+    use Virtual_file_system::{File_type, Mount_static_devices};
 
     // - Initialize the task manager.
     let Task_instance = Task::Initialize().unwrap();
@@ -55,38 +58,58 @@ fn main() {
 
     let Task = Task_instance.Get_current_task_identifier().unwrap();
 
-    Virtual_file_system::Get_instance()
-        .Mount_static_device(Task, &"/Shell", Create_device!(Shell_executable_type))
-        .unwrap();
-    Virtual_file_system::Get_instance()
-        .Set_permissions("/Shell", Permissions_type::All_full)
+    Virtual_file_system::Create_default_hierarchy(Virtual_file_system::Get_instance(), Task)
         .unwrap();
 
-    Virtual_file_system::Get_instance()
-        .Create_directory(&"/Devices", Task)
-        .unwrap();
+    Mount_static_executables!(
+        Virtual_file_system::Get_instance(),
+        Task,
+        &[(&"/Binaries/Graphical_shell", Shell_executable_type),]
+    )
+    .unwrap();
 
     Virtual_file_system::Get_instance()
-        .Create_directory(&"/Xila", Task)
-        .unwrap();
-
-    Virtual_file_system::Get_instance()
-        .Create_directory(&"/Xila/Users", Task)
-        .unwrap();
-
-    Virtual_file_system::Get_instance()
-        .Create_directory(&"/Xila/Groups", Task)
+        .Create_directory(&"/Configuration/Shared/Shortcuts", Task)
         .unwrap();
 
     Drivers::Native::Console::Mount_devices(Task, Virtual_file_system::Get_instance()).unwrap();
 
-    Virtual_file_system::Get_instance()
-        .Mount_static_device(
-            Task,
-            &"/Devices/Random",
-            Create_device!(Drivers::Native::Random_device_type),
+    Mount_static_devices!(
+        Virtual_file_system::Get_instance(),
+        Task,
+        &[
+            (&"/Devices/Random", Drivers::Native::Random_device_type),
+            (&"/Devices/Null", Drivers::Common::Null_device_type),
+        ]
+    )
+    .unwrap();
+
+    // Add fake shortcuts.
+    for i in 0..20 {
+        File_type::Open(
+            Virtual_file_system::Get_instance(),
+            format!("/Configuration/Shared/Shortcuts/Test{}.json", i).as_str(),
+            Flags_type::New(Mode_type::Write_only, Some(Open_type::Create), None),
+        )
+        .unwrap()
+        .Write(
+            format!(
+                r#"
+    {{
+        "Name": "Test{}",
+        "Command": "/Binaries/?",
+        "Arguments": "",
+        "Terminal": false,
+        "Icon_string": "T!",
+        "Icon_color": [255, 0, 0]
+    }}
+        "#,
+                i
+            )
+            .as_bytes(),
         )
         .unwrap();
+    }
 
     let Group_identifier = Group_identifier_type::New(1000);
 
@@ -106,29 +129,14 @@ fn main() {
     )
     .unwrap();
 
-    let Standard_in = Virtual_file_system::Get_instance()
-        .Open(&"/Devices/Standard_in", Mode_type::Read_only.into(), Task)
-        .unwrap();
-
-    let Standard_out = Virtual_file_system::Get_instance()
-        .Open(&"/Devices/Standard_out", Mode_type::Write_only.into(), Task)
-        .unwrap();
-
-    let Standard_error = Virtual_file_system::Get_instance()
-        .Open(
-            &"/Devices/Standard_error",
-            Mode_type::Write_only.into(),
-            Task,
-        )
-        .unwrap();
-
-    let Standard = Standard_type::New(
-        Standard_in,
-        Standard_out,
-        Standard_error,
+    let Standard = Standard_type::Open(
+        &"/Devices/Standard_in",
+        &"/Devices/Standard_out",
+        &"/Devices/Standard_error",
         Task,
         Virtual_file_system::Get_instance(),
-    );
+    )
+    .unwrap();
 
     Task_instance
         .Set_environment_variable(Task, "Paths", "/")
@@ -138,7 +146,7 @@ fn main() {
         .Set_environment_variable(Task, "Host", "xila")
         .unwrap();
 
-    let Result = Executable::Execute("/Shell", "".to_string(), Standard)
+    let Result = Executable::Execute("/Binaries/Graphical_shell", "".to_string(), Standard)
         .unwrap()
         .Join()
         .unwrap();

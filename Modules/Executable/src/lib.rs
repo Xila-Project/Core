@@ -2,10 +2,12 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
+mod Device_trait;
 mod Error;
 mod Read_data;
 mod Standard;
 
+pub use Device_trait::*;
 pub use Error::*;
 pub use Read_data::*;
 pub use Standard::*;
@@ -64,8 +66,8 @@ fn Get_overridden_user(
     Ok(Some(New_user))
 }
 
-pub fn Execute<P: AsRef<Path_type>>(
-    Path: P,
+pub fn Execute(
+    Path: impl AsRef<Path_type>,
     Inputs: String,
     Standard: Standard_type,
 ) -> Result_type<Join_handle_type<isize>> {

@@ -1,5 +1,5 @@
 use std::{ffi::CStr, sync::RwLock};
-use Graphics::{Event_code_type, Key_type, Window_type, LVGL};
+use Graphics::{Color_type, Event_code_type, Key_type, Window_type, LVGL};
 
 use crate::Error::Result_type;
 
@@ -24,9 +24,11 @@ impl Terminal_type {
     pub fn New() -> Result_type<Self> {
         let _Lock = Graphics::Get_instance().Lock()?;
 
-        let Window = Graphics::Get_instance().Create_window()?;
+        let mut Window = Graphics::Get_instance().Create_window()?;
 
         unsafe {
+            Window.Set_icon(">_", Color_type::Black);
+
             LVGL::lv_obj_set_flex_flow(
                 Window.Get_object(),
                 LVGL::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN,

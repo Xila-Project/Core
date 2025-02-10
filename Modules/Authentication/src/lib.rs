@@ -11,8 +11,8 @@ pub use Error::*;
 pub use Group::*;
 pub use User::*;
 
-const Users_folder_path: &str = "/Xila/Users";
-const Group_folder_path: &str = "/Xila/Groups";
+const Users_folder_path: &str = "/System/Users";
+const Group_folder_path: &str = "/System/Groups";
 const Random_device_path: &str = "/Devices/Random";
 
 pub fn Load_all_users_and_groups() -> Result_type<()> {

@@ -1,3 +1,4 @@
+use std::mem::forget;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::OnceLock;
@@ -9,6 +10,7 @@ use super::LVGL;
 
 use super::Point_type;
 
+use crate::Color_type;
 use crate::Display_type;
 use crate::Input_type;
 use crate::Input_type_type;
@@ -194,6 +196,59 @@ impl Manager_type {
         let Input = Input_type::New(Input_device, Input_device_type)?;
 
         Ok((Display, Input))
+    }
+
+    pub fn Get_window_count(&self) -> Result_type<usize> {
+        let Window_parent = self.Inner.read()?.Window_parent;
+        unsafe { Ok(LVGL::lv_obj_get_child_count(Window_parent) as usize) }
+    }
+
+    pub fn Get_window_icon(&self, Index: usize) -> Result_type<(String, Color_type)> {
+        let Window_parent = self.Inner.read()?.Window_parent;
+
+        let Window = unsafe {
+            let Child = LVGL::lv_obj_get_child(Window_parent, Index as i32);
+
+            Window_type::From_raw(Child)
+        };
+
+        let Icon = Window.Get_icon();
+
+        let Icon = (Icon.0.to_string(), Icon.1);
+
+        forget(Window);
+
+        Ok(Icon)
+    }
+
+    pub fn Get_window_identifier(&self, Index: usize) -> Result_type<usize> {
+        let Window_parent = self.Inner.read()?.Window_parent;
+
+        let Window = unsafe { LVGL::lv_obj_get_child(Window_parent, Index as i32) as usize };
+
+        Ok(Window)
+    }
+
+    pub fn Maximize_window(&self, Identifier: usize) -> Result_type<()> {
+        let Window_count = self.Get_window_count()?;
+
+        let Window_parent = self.Inner.read()?.Window_parent;
+
+        let Found = (0..Window_count).find(|Index| unsafe {
+            let Child = LVGL::lv_obj_get_child(Window_parent, *Index as i32);
+
+            Child == Identifier as *mut LVGL::lv_obj_t
+        });
+
+        if Found.is_some() {
+            unsafe {
+                LVGL::lv_obj_move_foreground(Identifier as *mut LVGL::lv_obj_t);
+            }
+
+            Ok(())
+        } else {
+            Err(Error_type::Invalid_window_identifier)
+        }
     }
 
     pub fn Lock(&self) -> Result_type<MutexGuard<'_, ()>> {

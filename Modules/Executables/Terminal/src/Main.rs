@@ -54,7 +54,7 @@ fn Inner_main(Task: Task_identifier_type) -> Result_type<()> {
         Virtual_file_system::Get_instance(),
     );
 
-    Executable::Execute("/Shell", "".to_string(), Standard)?;
+    Executable::Execute("/Binaries/Command_line_shell", "".to_string(), Standard)?;
 
     while Terminal.Event_handler()? {
         Task::Manager_type::Sleep(Duration::from_millis(20));

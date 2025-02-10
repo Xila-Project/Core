@@ -76,11 +76,7 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics(
     File: Unique_file_identifier_type,
     Statistics: *mut Statistics_type,
 ) -> u32 {
-    println!("Getting file statistics : {:?}", File);
-
     Into_u32(move || {
-        println!("Getting file statistics : {:?}", File);
-
         let Task_identifier = Get_task_manager_instance()
             .Get_current_task_identifier()
             .map_err(|_| Error_type::Failed_to_get_task_informations)?;
@@ -91,8 +87,6 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics(
         *Statistics = Get_file_system_instance()
             .Get_statistics(File, Task_identifier)
             .expect("Failed to get file statistics.");
-
-        println!("Statistics : {:?}", *Statistics);
 
         Ok(())
     })

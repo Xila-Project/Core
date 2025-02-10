@@ -25,6 +25,17 @@ impl Debug for Directory_type<'_> {
 }
 
 impl Directory_type<'_> {
+    pub fn Create<'a>(
+        Virtual_file_system: &'a Virtual_file_system_type<'a>,
+        Path: impl AsRef<Path_type>,
+    ) -> Result_type<()> {
+        let Task = Task::Get_instance()
+            .Get_current_task_identifier()
+            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+
+        Virtual_file_system.Create_directory(&Path, Task)
+    }
+
     pub fn Open<'a>(
         Virtual_file_system: &'a Virtual_file_system_type<'a>,
         Path: impl AsRef<Path_type>,

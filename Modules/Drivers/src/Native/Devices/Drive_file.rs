@@ -85,7 +85,7 @@ mod Tests {
 
     #[test]
     fn Test_read_write() {
-        let File = File_drive_device_type::New(&"./Test");
+        let File = File_drive_device_type::New(&"./Test.img");
 
         let Data = [1, 2, 3, 4, 5];
 

@@ -69,6 +69,12 @@ impl Permissions_type {
         Permission_type::None,
         Special_type::None,
     );
+    pub const Executable: Self = Self::New(
+        Permission_type::Full,
+        Permission_type::Read_execute,
+        Permission_type::Read_execute,
+        Special_type::None,
+    );
 
     /// Creates a new permission.
     pub const fn New(

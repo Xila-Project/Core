@@ -9,4 +9,4 @@ Users = { path = "../Users" }
 Task = { path = "../Task" }
 File_system = { path = "../File_system" }
 sha2 = { version = "0.10", features = ["asm"] }
-miniserde = "0.1.41"
+miniserde = "0.1"
