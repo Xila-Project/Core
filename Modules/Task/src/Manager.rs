@@ -22,6 +22,8 @@ struct Task_internal_type {
     Group: Group_identifier_type,
     /// Environment variables of the task.
     Environment_variables: Vec<Environment_variable_type>,
+    /// Signals
+    Signals: Signal_accumulator_type,
 }
 
 static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
@@ -73,6 +75,7 @@ impl Manager_type {
             User: User_identifier_type::Root,
             Group: Group_identifier_type::Root,
             Environment_variables: vec![],
+            Signals: Signal_accumulator_type::New(),
         };
 
         Self::Register_task_internal(Task_identifier, Task_internal, &mut Inner.Tasks)
@@ -108,6 +111,7 @@ impl Manager_type {
             User: User_identifier_type::Root,
             Group: Group_identifier_type::Root,
             Environment_variables: vec![],
+            Signals: Signal_accumulator_type::New(),
         };
 
         if Inner
@@ -329,6 +333,7 @@ impl Manager_type {
                 User,
                 Group,
                 Environment_variables,
+                Signals: Signal_accumulator_type::New(),
             },
             &mut self.0.write()?.Tasks,
         )?;
@@ -551,6 +556,34 @@ impl Manager_type {
 
         Ok(())
     }
+
+    pub fn Pop_signal(
+        &self,
+        Task_identifier: Task_identifier_type,
+    ) -> Result_type<Option<Signal_type>> {
+        Ok(self
+            .0
+            .write()?
+            .Tasks
+            .get_mut(&Task_identifier)
+            .ok_or(Error_type::Invalid_task_identifier)?
+            .Signals
+            .Pop())
+    }
+
+    pub fn Peek_signal(
+        &self,
+        Task_identifier: Task_identifier_type,
+    ) -> Result_type<Option<Signal_type>> {
+        Ok(self
+            .0
+            .write()?
+            .Tasks
+            .get_mut(&Task_identifier)
+            .ok_or(Error_type::Invalid_task_identifier)?
+            .Signals
+            .Peek())
+    }
 }
 
 #[cfg(test)]
@@ -583,6 +616,8 @@ mod Tests {
         Test_set_user(Manager);
         println!("Run test : Test_set_group");
         Test_set_group(Manager);
+        println!("Run test : Test_signal");
+        Test_signal(Manager);
     }
 
     fn Test_get_task_name(Manager: &Manager_type) {
@@ -665,6 +700,9 @@ mod Tests {
                 let _ = Get_instance()
                     .New_task(Task, "Task 3", None, move || {
                         let Task = Get_instance().Get_current_task_identifier().unwrap();
+
+                        Get_instance().Set_user(Task, User_identifier).unwrap();
+                        Get_instance().Set_group(Task, Group_identifier).unwrap();
 
                         assert_eq!(Get_instance().Get_user(Task).unwrap(), User_identifier);
                         assert_eq!(Get_instance().Get_group(Task).unwrap(), Group_identifier);
@@ -755,5 +793,47 @@ mod Tests {
         Manager.Set_group(Task, Group).unwrap();
 
         assert_eq!(Manager.Get_group(Task).unwrap(), Group);
+    }
+
+    fn Test_signal(Manager: &Manager_type) {
+        let Task = Manager.Get_current_task_identifier().unwrap();
+
+        let _ = Manager
+            .New_task(Task, "Task with signal", None, || {
+                let Task = Get_instance().Get_current_task_identifier().unwrap();
+
+                Manager_type::Sleep(Duration::from_millis(10));
+
+                assert_eq!(
+                    Get_instance().Peek_signal(Task).unwrap(),
+                    Some(Signal_type::Hangup)
+                );
+
+                assert_eq!(
+                    Get_instance().Pop_signal(Task).unwrap(),
+                    Some(Signal_type::Kill)
+                );
+            })
+            .unwrap();
+
+        Get_instance()
+            .0
+            .write()
+            .unwrap()
+            .Tasks
+            .get_mut(&Task)
+            .unwrap()
+            .Signals
+            .Send(Signal_type::Kill);
+
+        Get_instance()
+            .0
+            .write()
+            .unwrap()
+            .Tasks
+            .get_mut(&Task)
+            .unwrap()
+            .Signals
+            .Send(Signal_type::Hangup);
     }
 }
