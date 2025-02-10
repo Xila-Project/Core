@@ -417,6 +417,11 @@ impl Desk_type {
                     }
                     // If the target is a dock icon, move the window to the foreground
                     else if unsafe { LVGL::lv_obj_get_parent(Event.Get_target()) == self.Dock } {
+                        // Ignore the main button
+                        if Event.Get_target() == self.Main_button {
+                            continue;
+                        }
+
                         let Window_identifier =
                             unsafe { LVGL::lv_obj_get_user_data(Event.Get_target()) as usize };
 
