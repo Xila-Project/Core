@@ -10,6 +10,7 @@ extern crate alloc;
 pub enum Error_type {
     Graphics(Graphics::Error_type) = 1,
     Failed_to_create_object,
+    Failed_to_get_child,
     Failed_to_set_environment_variable(Task::Error_type),
     Invalid_UTF_8(core::str::Utf8Error),
     Authentication_failed(Authentication::Error_type),
@@ -52,6 +53,9 @@ impl Display for Error_type {
             }
             Self::Failed_to_create_object => {
                 write!(Formatter, "Failed to create object")
+            }
+            Self::Failed_to_get_child => {
+                write!(Formatter, "Failed to get child")
             }
             Self::Failed_to_set_environment_variable(Error) => {
                 write!(Formatter, "Failed to set environment variable: {}", Error)

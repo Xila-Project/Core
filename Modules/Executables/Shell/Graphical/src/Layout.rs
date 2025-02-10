@@ -4,13 +4,19 @@ use Shared::Unix_to_human_time;
 use crate::Error::{Error_type, Result_type};
 
 pub struct Layout_type {
-    pub _Window: *mut LVGL::lv_obj_t,
+    Window: *mut LVGL::lv_obj_t,
     _Header: *mut LVGL::lv_obj_t,
     _Body: *mut LVGL::lv_obj_t,
     Clock: *mut LVGL::lv_obj_t,
     Clock_string: String,
     _Battery: *mut LVGL::lv_obj_t,
     _WiFi: *mut LVGL::lv_obj_t,
+}
+
+impl Drop for Layout_type {
+    fn drop(&mut self) {
+        unsafe { LVGL::lv_obj_delete(self.Window) }
+    }
 }
 
 impl Layout_type {
@@ -36,6 +42,10 @@ impl Layout_type {
                 }
             }
         }
+    }
+
+    pub fn Get_windows_parent(&self) -> *mut LVGL::lv_obj_t {
+        self.Window
     }
 
     pub fn New() -> Result_type<Self> {
@@ -148,7 +158,7 @@ impl Layout_type {
         Graphics::Get_instance().Set_window_parent(Body)?;
 
         Ok(Self {
-            _Window: Window,
+            Window,
             _Header: Header,
             _Body: Body,
             Clock,

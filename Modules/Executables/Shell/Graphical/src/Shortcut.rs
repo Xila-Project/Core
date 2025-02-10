@@ -1,12 +1,13 @@
-use miniserde::Deserialize;
+use miniserde::{Deserialize, Serialize};
 use File_system::{Mode_type, Path_type};
+use Graphics::Color_type;
 use Virtual_file_system::File_type;
 
 use crate::Error::{Error_type, Result_type};
 
 pub const Shortcut_path: &Path_type = Path_type::From_str("/Configuration/Shared/Shortcuts");
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Shortcut_type {
     Name: String,
     Command: String,
@@ -14,6 +15,7 @@ pub struct Shortcut_type {
     _Terminal: bool,
     Arguments: String,
     Icon_string: String,
+    Icon_color: [u8; 3],
 }
 
 impl Shortcut_type {
@@ -82,7 +84,11 @@ impl Shortcut_type {
         &self.Arguments
     }
 
-    pub fn Is_terminal(&self) -> bool {
-        self._Terminal
+    pub fn Get_icon_color(&self) -> Color_type {
+        Color_type::New(self.Icon_color[0], self.Icon_color[1], self.Icon_color[2])
     }
+
+    // pub fn Is_terminal(&self) -> bool {
+    //     self._Terminal
+    // }
 }

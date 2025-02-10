@@ -35,7 +35,7 @@ fn main() {
 
     // - Initialize the file system
     // Create a memory device
-    let Drive = Create_device!(Drivers::Native::File_drive_device_type::New(&"./Drive"));
+    let Drive = Create_device!(Drivers::Native::File_drive_device_type::New(&"./Drive.img"));
     // Mount the file system
     let File_system = match LittleFS::File_system_type::New(Drive.clone(), 256) {
         Ok(File_system) => File_system,
@@ -97,10 +97,20 @@ fn main() {
         Virtual_file_system,
         Task,
         &[
-            Graphical_shell::Shell_executable_type,
-            Command_line_shell::Shell_executable_type,
-            Terminal::Terminal_executable_type,
-            WASM::WASM_device_type
+            (
+                &"/Binaries/Graphical_shell",
+                Graphical_shell::Shell_executable_type
+            ),
+            (
+                &"/Binaries/Command_line_shell",
+                Command_line_shell::Shell_executable_type
+            ),
+            (
+                &"/Binaries/Terminal",
+                Terminal::Terminal_executable_type::New(Virtual_file_system::Get_instance(), Task)
+                    .unwrap()
+            ),
+            (&"/Binaries/WASM", WASM::WASM_device_type)
         ]
     )
     .unwrap();

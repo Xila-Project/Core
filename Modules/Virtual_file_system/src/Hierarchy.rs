@@ -44,10 +44,7 @@ pub fn Clean_devices_in_directory<'a>(
         }
 
         match Virtual_file_system.Remove(&Entry_path) {
-            Ok(_) | Err(Error_type::Invalid_identifier) => {
-                println!("Removed device: {}", Entry_path);
-            }
-
+            Ok(_) | Err(Error_type::Invalid_identifier) => {}
             Err(Error) => {
                 return Err(Error);
             }

@@ -1,12 +1,12 @@
 use std::ffi::CString;
 
-use Graphics::{Point_type, LVGL};
+use Graphics::{Color_type, Point_type, LVGL};
 
 use crate::Error::{Error_type, Result_type};
 
 pub unsafe fn Create_icon(
     Parent: *mut LVGL::lv_obj_t,
-    Name: &str,
+    Icon_color: Color_type,
     Icon_string: &str,
     Size: Point_type,
 ) -> Result_type<*mut LVGL::lv_obj_t> {
@@ -24,9 +24,7 @@ pub unsafe fn Create_icon(
 
     LVGL::lv_obj_set_style_radius(Icon, Radius, LVGL::LV_STATE_DEFAULT);
 
-    let Color = Get_color_from_name(Name);
-
-    LVGL::lv_obj_set_style_bg_color(Icon, Color, LVGL::LV_STATE_DEFAULT);
+    LVGL::lv_obj_set_style_bg_color(Icon, Icon_color.Into_LVGL_color(), LVGL::LV_STATE_DEFAULT);
 
     let Label = LVGL::lv_label_create(Icon);
 
@@ -54,17 +52,4 @@ pub unsafe fn Create_icon(
     LVGL::lv_obj_set_align(Label, LVGL::lv_align_t_LV_ALIGN_CENTER);
 
     Ok(Icon)
-}
-
-fn Get_color_from_name(Name: &str) -> LVGL::lv_color_t {
-    let RGB: [u8; 3] = Name
-        .chars()
-        .enumerate()
-        .fold([0_u8; 3], |mut RGB, (Index, Byte)| {
-            RGB[Index % 3] = RGB[Index % 3].wrapping_add(Byte as u8);
-
-            RGB
-        });
-
-    unsafe { LVGL::lv_color_make(RGB[0], RGB[1], RGB[2]) }
 }

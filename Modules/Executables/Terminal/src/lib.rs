@@ -17,5 +17,6 @@ pub const Shortcut: &str = r#"
     "Command": "/Binaries/Terminal",
     "Arguments": "",
     "Terminal": false,
-    "Icon_string": ">_"
+    "Icon_string": ">_",
+    "Icon_color": [0, 0, 0]
 }"#;

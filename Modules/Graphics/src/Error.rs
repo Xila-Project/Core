@@ -18,6 +18,7 @@ pub enum Error_type {
     Not_registered,
     Not_available,
     Failed_to_create_object,
+    Invalid_window_identifier,
 }
 
 impl Display for Error_type {
@@ -35,6 +36,7 @@ impl Display for Error_type {
             Error_type::Not_registered => "Not registered",
             Error_type::Not_available => "Not available",
             Error_type::Failed_to_create_object => "Failed to create object",
+            Error_type::Invalid_window_identifier => "Invalid window identifier",
         };
 
         write!(Formatter, "{}", String)

@@ -1,5 +1,5 @@
-use Executable::{Device_executable_trait, Read_data_type};
-use File_system::{Create_device, Device_trait, Flags_type, Mode_type, Open_type};
+use Executable::Read_data_type;
+use File_system::{Device_trait, Flags_type, Mode_type, Open_type};
 use Task::Task_identifier_type;
 use Virtual_file_system::{File_type, Virtual_file_system_type};
 
@@ -21,13 +21,10 @@ impl Terminal_executable_type {
         ) {
             Ok(File) => File,
             Err(File_system::Error_type::Already_exists) => {
-                println!("The Terminal shortcut already exists");
                 return Ok(Self);
             }
             Err(Error) => Err(Error.to_string())?,
         };
-
-        println!("Writing the Terminal shortcut");
 
         File.Write(crate::Shortcut.as_bytes())
             .map_err(|Error| Error.to_string())?;

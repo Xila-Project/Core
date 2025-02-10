@@ -17,7 +17,7 @@ impl Shell_type {
     pub fn New(Standard: Standard_type) -> Self {
         let Layout = Layout_type::New().unwrap();
 
-        let Login = Login_type::New().unwrap();
+        let Login = Box::new(Login_type::New().unwrap());
 
         Self {
             _Standard: Standard,
@@ -57,10 +57,10 @@ impl Shell_type {
                         )
                         .map_err(Error_type::Failed_to_set_environment_variable)?;
 
-                    self.Desk = Some(Desk_type::New()?);
+                    self.Desk = Some(Box::new(Desk_type::New(self.Layout.Get_windows_parent())?));
 
                     if let Some(Desk) = &mut self.Desk {
-                        self._Home = Some(Home_type::New(Desk.Get_window_object())?);
+                        self._Home = Some(Box::new(Home_type::New(Desk.Get_window_object())?));
                     }
 
                     self.Login = None;
