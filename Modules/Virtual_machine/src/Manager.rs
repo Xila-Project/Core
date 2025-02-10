@@ -109,7 +109,7 @@ impl Manager_type {
         Standard_in: Unique_file_identifier_type,
         Standard_out: Unique_file_identifier_type,
         Standard_error: Unique_file_identifier_type,
-    ) -> Result_type<WasmValue> {
+    ) -> Result_type<Vec<WasmValue>> {
         let Module = Module_type::From_buffer(
             &self.Runtime,
             Buffer,

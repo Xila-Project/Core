@@ -102,7 +102,7 @@ impl<'module> Instance_type<'module> {
         &self,
         Name: &str,
         Parameters: &Vec<WasmValue>,
-    ) -> Result_type<WasmValue> {
+    ) -> Result_type<Vec<WasmValue>> {
         if Parameters.is_empty() {
             Ok(
                 Function::find_export_func(self.Get_inner_reference(), Name)?
@@ -116,15 +116,15 @@ impl<'module> Instance_type<'module> {
         }
     }
 
-    pub fn Call_main(&self, Parameters: &Vec<WasmValue>) -> Result_type<WasmValue> {
+    pub fn Call_main(&self, Parameters: &Vec<WasmValue>) -> Result_type<Vec<WasmValue>> {
         self.Call_export_function("_start", Parameters)
     }
 
     pub fn Allocate<T>(&mut self, Size: usize) -> Result_type<*mut T> {
         let Result = self.Call_export_function("Allocate", &vec![WasmValue::I32(Size as i32)])?;
 
-        if let WasmValue::I32(Pointer) = Result {
-            let Pointer = unsafe { self.Convert_to_native_pointer(Pointer as u32) };
+        if let Some(WasmValue::I32(Pointer)) = Result.first() {
+            let Pointer = unsafe { self.Convert_to_native_pointer(*Pointer as u32) };
 
             Ok(Pointer)
         } else {
