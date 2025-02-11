@@ -5,7 +5,7 @@ use crate::Type_type;
 /// Represents the permissions of a file or directory.
 ///
 /// The permissions are divided into three groups: user, group, and others.
-/// Each group has three permissions: [`Permission_type::Read`], [`Permission_type::Write`], and [`Permission_type::Execute`].
+/// Each group has three permissions: read, write, and execute.
 ///
 /// # Examples
 ///

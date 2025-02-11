@@ -37,7 +37,7 @@ impl From<Task_identifier_type> for Task_identifier_inner_type {
     }
 }
 
-/// A wrapper for individual tasks that are managed by [Manager_type].
+/// A wrapper for individual tasks that are managed by [crate::Manager_type].
 pub struct Task_type {
     /// The identifier of the task.
     Identifier: Task_identifier_type,
