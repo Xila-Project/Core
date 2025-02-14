@@ -26,11 +26,10 @@ fn Integration_test() {
     let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
     LittleFS::File_system_type::Format(Memory_device.clone(), 512).unwrap();
 
-    Virtual_file_system::Initialize(Create_file_system!(LittleFS::File_system_type::New(
-        Memory_device,
-        256
+    Virtual_file_system::Initialize(
+        Create_file_system!(LittleFS::File_system_type::New(Memory_device, 256).unwrap()),
+        None,
     )
-    .unwrap()))
     .unwrap();
 
     Virtual_file_system::Get_instance()

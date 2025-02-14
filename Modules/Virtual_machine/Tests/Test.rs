@@ -39,7 +39,7 @@ fn Integration_test() {
     LittleFS::File_system_type::Format(Device.clone(), 512).unwrap();
     let File_system = Create_file_system!(LittleFS::File_system_type::New(Device, 256).unwrap());
 
-    Virtual_file_system::Initialize(File_system).unwrap();
+    Virtual_file_system::Initialize(File_system, None).unwrap();
 
     // Set environment variables
     let Task = Task_instance.Get_current_task_identifier().unwrap();
