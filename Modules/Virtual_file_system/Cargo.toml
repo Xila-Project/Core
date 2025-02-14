@@ -8,6 +8,7 @@ File_system = { path = "../File_system" }
 Task = { path = "../Task" }
 Users = { path = "../Users" }
 Time = { path = "../Time" }
+Network = { path = "../Network" }
 
 [dev-dependencies]
 Drivers = { path = "../Drivers" }

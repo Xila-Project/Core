@@ -37,6 +37,7 @@ fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>) {
         Users::Get_instance(),
         Time::Get_instance(),
         Create_file_system!(File_system),
+        None,
     )
     .unwrap();
 
