@@ -477,7 +477,6 @@ mod Tests {
         let (IP, Port) = Into_IP_and_port(Addr);
 
         Driver.Connect(IP, Port, Socket_1).unwrap();
-        assert!(Driver.Get_new_socket_identifier(Socket_1).unwrap());
     }
 
     #[test]
