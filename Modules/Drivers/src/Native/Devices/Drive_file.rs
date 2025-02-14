@@ -102,7 +102,7 @@ mod Tests {
 
     #[test]
     fn Test_read_write_at_position() {
-        let File = File_drive_device_type::New(&"./Test");
+        let File = File_drive_device_type::New(&"./Test.img");
 
         File.Set_position(&File_system::Position_type::Start(10))
             .unwrap();
