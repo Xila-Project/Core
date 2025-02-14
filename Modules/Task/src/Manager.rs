@@ -3,11 +3,14 @@
 use super::*;
 // - - External
 // - - - Standard library
-use std::{
-    collections::BTreeMap,
-    sync::{OnceLock, RwLock},
-    time::Duration,
-};
+
+extern crate alloc;
+
+use alloc::collections::BTreeMap;
+
+use std::sync::{OnceLock, RwLock};
+
+use core::time::Duration;
 use Users::{Group_identifier_type, User_identifier_type};
 
 /// Internal representation of a task.
@@ -283,7 +286,7 @@ impl Manager_type {
     }
 
     /// Sleep the current thread for a given duration.
-    pub fn Sleep(Duration: std::time::Duration) {
+    pub fn Sleep(Duration: Duration) {
         Thread_wrapper_type::Sleep(Duration);
     }
 
