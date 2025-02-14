@@ -183,7 +183,7 @@ impl Permissions_type {
     }
 
     /// Converts the permission to a Unix permission.
-    pub const fn To_unix(&self) -> u16 {
+    pub const fn As_u16(&self) -> u16 {
         self.0
     }
 }
@@ -429,7 +429,7 @@ mod Tests {
         let Others = Permission_type::New(false, true, true); // Write and execute
         let Special = Special_type::New(true, false, true); // Sticky and set user identifier
         let Permissions = Permissions_type::New(User, Group, Others, Special);
-        assert_eq!(Permissions.To_unix(), 0b101_101_110_011);
+        assert_eq!(Permissions.As_u16(), 0b101_101_110_011);
     }
 
     #[test]

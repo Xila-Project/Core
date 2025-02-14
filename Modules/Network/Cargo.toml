@@ -1,0 +1,8 @@
+[package]
+name = "Network"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+File_system = { path = "../File_system" }
+Time = { path = "../Time" }

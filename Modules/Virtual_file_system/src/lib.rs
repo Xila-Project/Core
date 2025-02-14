@@ -9,12 +9,14 @@ mod File;
 mod File_system;
 mod Hierarchy;
 mod Pipe;
+mod Socket;
 
 pub use Directory::*;
 pub use Error::*;
 pub use File::*;
 pub use File_system::*;
 pub use Hierarchy::*;
+pub use Socket::Socket_address_type;
 
 #[macro_export]
 macro_rules! Mount_static_devices {

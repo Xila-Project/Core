@@ -138,9 +138,9 @@ pub fn Create_user<'a>(
 
     // - Write user file.
     let User = User_type::New(
-        User_identifier.Into_inner(),
+        User_identifier.As_u16(),
         User_name.to_string(),
-        Primary_group.Into_inner(),
+        Primary_group.As_u16(),
         Hash,
         Salt,
     );

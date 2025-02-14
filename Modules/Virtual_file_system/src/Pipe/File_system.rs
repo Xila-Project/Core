@@ -226,7 +226,7 @@ impl File_system_type {
             .write()?
             .Named_pipes
             .remove(&Inode)
-            .ok_or(Error_type::Invalid_identifier)?;
+            .ok_or(Error_type::Invalid_inode)?;
 
         Ok(())
     }

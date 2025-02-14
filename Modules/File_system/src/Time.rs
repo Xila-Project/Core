@@ -12,6 +12,10 @@ impl Time_type {
     pub const fn New(Seconds: u64) -> Self {
         Self { Seconds }
     }
+
+    pub const fn As_u64(self) -> u64 {
+        self.Seconds
+    }
 }
 
 impl From<Duration_type> for Time_type {

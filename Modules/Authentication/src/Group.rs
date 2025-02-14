@@ -98,11 +98,7 @@ pub fn Create_group<'a>(
         .map_err(Error_type::Failed_to_add_group)?;
 
     // - Write group file.
-    let Group = Group_type::New(
-        Group_identifier.Into_inner(),
-        Group_name.to_string(),
-        vec![],
-    );
+    let Group = Group_type::New(Group_identifier.As_u16(), Group_name.to_string(), vec![]);
 
     match Directory_type::Create(Virtual_file_system, Group_folder_path) {
         Ok(_) | Err(File_system::Error_type::Already_exists) => {}

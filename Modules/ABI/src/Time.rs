@@ -1,5 +1,7 @@
 use Time::Get_instance;
 
+pub type Xila_time_type = u64;
+
 /// Retrieve the current time since the system startup in microseconds.
 ///
 /// # Returns

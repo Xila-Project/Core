@@ -57,7 +57,7 @@ impl Unique_file_identifier_type {
     const File_system_identifier_position: u8 = File_identifier_type::Size_bits;
 
     pub const fn New(File_system: File_system_identifier_type, File: File_identifier_type) -> Self {
-        let File_system_identifier = File_system.Into_inner();
+        let File_system_identifier = File_system.As_inner();
         let File_identifier = File.Into_inner();
 
         Self(
@@ -90,6 +90,11 @@ impl Unique_file_identifier_type {
 
     pub const fn Into_inner(self) -> usize {
         self.0
+    }
+
+    /// This function is shouldn't be used because it doesn't check the validity of the file identifier.
+    pub const fn From_raw(Inner: usize) -> Self {
+        Self(Inner)
     }
 }
 

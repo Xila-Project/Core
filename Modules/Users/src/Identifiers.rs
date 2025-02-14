@@ -16,7 +16,7 @@ impl User_identifier_type {
         Self(Identifier)
     }
 
-    pub const fn Into_inner(self) -> User_identifier_inner_type {
+    pub const fn As_u16(self) -> User_identifier_inner_type {
         self.0
     }
 }
@@ -42,7 +42,7 @@ impl From<User_identifier_inner_type> for User_identifier_type {
 }
 impl From<User_identifier_type> for User_identifier_inner_type {
     fn from(Value: User_identifier_type) -> Self {
-        Value.Into_inner()
+        Value.As_u16()
     }
 }
 
@@ -62,7 +62,7 @@ impl Group_identifier_type {
         Self(Identifier)
     }
 
-    pub const fn Into_inner(self) -> Group_identifier_inner_type {
+    pub const fn As_u16(self) -> Group_identifier_inner_type {
         self.0
     }
 }
@@ -74,7 +74,7 @@ impl From<Group_identifier_inner_type> for Group_identifier_type {
 }
 impl From<Group_identifier_type> for Group_identifier_inner_type {
     fn from(Value: Group_identifier_type) -> Self {
-        Value.Into_inner()
+        Value.As_u16()
     }
 }
 

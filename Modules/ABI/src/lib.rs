@@ -6,8 +6,10 @@ mod File_system;
 mod Memory;
 mod Task;
 mod Time;
+mod User;
 
 pub use File_system::*;
 pub use Memory::*;
 pub use Task::*;
 pub use Time::*;
+pub use User::*;

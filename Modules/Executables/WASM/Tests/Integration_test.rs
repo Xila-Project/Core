@@ -34,7 +34,7 @@ fn Integration_test() {
         .Load(&mut File_system)
         .unwrap();
 
-    Virtual_file_system::Initialize(Create_file_system!(File_system)).unwrap();
+    Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
 
     let Task = Task_instance.Get_current_task_identifier().unwrap();
 

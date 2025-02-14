@@ -35,21 +35,18 @@ impl Shell_type {
         let User = match Users::Get_instance().Get_user_name(Metadata.Get_user()) {
             Ok(User) => User,
             Err(_) => {
-                format!("{}", Metadata.Get_user().Into_inner())
+                format!("{}", Metadata.Get_user().As_u16())
             }
         };
 
         let Group = match Users::Get_instance().Get_group_name(Metadata.Get_group()) {
             Ok(Group) => Group,
             Err(_) => {
-                format!("{}", Metadata.Get_group().Into_inner())
+                format!("{}", Metadata.Get_group().As_u16())
             }
         };
 
-        let Inode = Metadata
-            .Get_inode()
-            .unwrap_or(Inode_type::New(0))
-            .Into_inner();
+        let Inode = Metadata.Get_inode().unwrap_or(Inode_type::New(0)).As_u64();
 
         self.Standard.Print_line(&format!(
             r#"Type: {} - Inode : {}

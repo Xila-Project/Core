@@ -9,3 +9,4 @@ File_system = { path = "../File_system" }
 Task = { path = "../Task" }
 Time = { path = "../Time" }
 Memory = { path = "../Memory" }
+Network = { path = "../Network" }

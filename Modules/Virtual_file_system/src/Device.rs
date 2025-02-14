@@ -236,7 +236,7 @@ impl<'a> File_system_type<'a> {
             .write()?
             .Devices
             .remove(&Inode)
-            .ok_or(Error_type::Invalid_identifier)
+            .ok_or(Error_type::Invalid_inode)
     }
 
     pub fn Read(

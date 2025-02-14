@@ -1,12 +1,14 @@
 use std::sync::OnceLock;
 use std::{collections::BTreeMap, sync::RwLock};
 
+use Network::{IP_type, Network_socket_driver_trait, Port_type, Protocol_type};
 use Task::Task_identifier_type;
+use Time::Duration_type;
 use Users::{Group_identifier_type, User_identifier_type};
 
 use File_system::{
-    Device_type, Entry_type, File_identifier_type, Metadata_type, Mode_type, Open_type,
-    Statistics_type, Time_type, Type_type,
+    Device_type, Entry_type, File_identifier_type, Local_file_identifier_type, Metadata_type,
+    Mode_type, Open_type, Statistics_type, Time_type, Type_type,
 };
 
 use File_system::{
@@ -16,7 +18,7 @@ use File_system::{
 };
 
 use crate::Device::Internal_path_type;
-use crate::{Device, Pipe};
+use crate::{Device, Pipe, Socket_address_type};
 
 struct Internal_file_system_type {
     pub Mount_point: Path_owned_type,
@@ -31,13 +33,17 @@ struct Internal_file_system_type {
 /// It is a pragmatic choice for efficiency in embedded systems contexts (avoid using Arc).
 static Virtual_file_system_instance: OnceLock<Virtual_file_system_type> = OnceLock::new();
 
-pub fn Initialize(Root_file_system: Box<dyn File_system_traits>) -> Result<(), crate::Error_type> {
+pub fn Initialize(
+    Root_file_system: Box<dyn File_system_traits>,
+    Network_socket_driver: Option<&'static dyn Network_socket_driver_trait>,
+) -> Result<(), crate::Error_type> {
     Virtual_file_system_instance
         .set(Virtual_file_system_type::New(
             Task::Get_instance(),
             Users::Get_instance(),
             Time::Get_instance(),
             Root_file_system,
+            Network_socket_driver,
         )?)
         .map_err(|_| crate::Error_type::Already_initialized)
 }
@@ -62,6 +68,8 @@ pub struct Virtual_file_system_type<'a> {
     Device_file_system: Device::File_system_type<'a>,
     /// Pipes.
     Pipe_file_system: Pipe::File_system_type,
+    /// Network sockets.
+    Network_socket_driver: Option<&'a dyn Network_socket_driver_trait>,
 }
 
 impl<'a> Virtual_file_system_type<'a> {
@@ -74,6 +82,7 @@ impl<'a> Virtual_file_system_type<'a> {
         _: &'static Users::Manager_type,
         _: &'static Time::Manager_type,
         Root_file_system: Box<dyn File_system_traits>,
+        Network_socket_driver: Option<&'a dyn Network_socket_driver_trait>,
     ) -> Result_type<Self> {
         let mut File_systems = BTreeMap::new();
 
@@ -92,6 +101,7 @@ impl<'a> Virtual_file_system_type<'a> {
             File_systems: RwLock::new(File_systems),
             Device_file_system: Device::File_system_type::New(),
             Pipe_file_system: Pipe::File_system_type::New(),
+            Network_socket_driver,
         })
     }
 
@@ -333,37 +343,47 @@ impl<'a> Virtual_file_system_type<'a> {
         &self,
         File: Unique_file_identifier_type,
         Task: Task_identifier_type,
-    ) -> Result_type<()> {
+    ) -> crate::Result_type<()> {
         let (File_system, Local_file) = File.Into_local_file_identifier(Task);
 
         let Underlying_file = match File_system {
             File_system_identifier_type::Pipe_file_system => {
-                self.Pipe_file_system.Close(Local_file)?
+                match self.Pipe_file_system.Close(Local_file)? {
+                    Some(Underlying_file) => Underlying_file,
+                    None => return Ok(()),
+                }
             }
             File_system_identifier_type::Device_file_system => {
-                Some(self.Device_file_system.Close(Local_file)?)
+                self.Device_file_system.Close(Local_file)?
+            }
+            File_system_identifier_type::Network_socket_file_system => {
+                self.Network_socket_driver
+                    .ok_or(Error_type::Unsupported_operation)?
+                    .Close(Local_file)?;
+
+                return Ok(());
             }
             _ => {
-                return self
-                    .File_systems
+                self.File_systems
                     .read()?
                     .get(&File_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .Inner
-                    .Close(Local_file)
+                    .Close(Local_file)?;
+
+                return Ok(());
             }
         };
 
-        if let Some(Underlying_file) = Underlying_file {
-            let (File_system, Local_file) = Underlying_file.Into_local_file_identifier(Task);
+        // - If there is an underlying file (some pipe and devices), close it too.
+        let (File_system, Local_file) = Underlying_file.Into_local_file_identifier(Task);
 
-            self.File_systems
-                .read()?
-                .get(&File_system)
-                .ok_or(Error_type::Invalid_identifier)?
-                .Inner
-                .Close(Local_file)?;
-        }
+        self.File_systems
+            .read()?
+            .get(&File_system)
+            .ok_or(Error_type::Invalid_identifier)?
+            .Inner
+            .Close(Local_file)?;
 
         Ok(())
     }
@@ -826,23 +846,32 @@ impl<'a> Virtual_file_system_type<'a> {
         match Metadata.Get_type() {
             Type_type::Pipe => {
                 if let Some(Inode) = Metadata.Get_inode() {
-                    self.Pipe_file_system.Remove(Inode)?;
-                } else {
-                    return Err(Error_type::Corrupted);
+                    match self.Pipe_file_system.Remove(Inode) {
+                        Ok(_) | Err(Error_type::Invalid_inode) => (),
+                        Err(Error) => {
+                            return Err(Error);
+                        }
+                    }
                 }
             }
             Type_type::Block_device => {
                 if let Some(Inode) = Metadata.Get_inode() {
-                    self.Device_file_system.Remove(Inode)?;
-                } else {
-                    return Err(Error_type::Corrupted);
+                    match self.Device_file_system.Remove(Inode) {
+                        Ok(_) | Err(Error_type::Invalid_inode) => (),
+                        Err(Error) => {
+                            return Err(Error);
+                        }
+                    }
                 }
             }
             Type_type::Character_device => {
                 if let Some(Inode) = Metadata.Get_inode() {
-                    self.Device_file_system.Remove(Inode)?;
-                } else {
-                    return Err(Error_type::Corrupted);
+                    match self.Device_file_system.Remove(Inode) {
+                        Ok(_) | Err(Error_type::Invalid_inode) => (),
+                        Err(Error) => {
+                            return Err(Error);
+                        }
+                    }
                 }
             }
 
@@ -1315,6 +1344,272 @@ impl<'a> Virtual_file_system_type<'a> {
         let (_, File_system, Relative_path) = Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
         File_system.Get_metadata_from_path(Relative_path)
+    }
+
+    pub fn Send(
+        &self,
+        Task: Task_identifier_type,
+        Socket: Unique_file_identifier_type,
+        Data: &[u8],
+    ) -> crate::Result_type<()> {
+        let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
+
+        match File_system {
+            File_system_identifier_type::Network_socket_file_system => self
+                .Network_socket_driver
+                .ok_or(crate::Error_type::Unavailable_driver)?
+                .Send(Socket, Data)?,
+            _ => Err(crate::Error_type::Invalid_file_system)?,
+        }
+
+        Ok(())
+    }
+
+    pub fn Receive(
+        &self,
+        Task: Task_identifier_type,
+        Socket: Unique_file_identifier_type,
+        Data: &mut [u8],
+    ) -> crate::Result_type<usize> {
+        let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
+
+        match File_system {
+            File_system_identifier_type::Network_socket_file_system => Ok(self
+                .Network_socket_driver
+                .ok_or(crate::Error_type::Unavailable_driver)?
+                .Receive(Socket, Data)?),
+            _ => Err(crate::Error_type::Invalid_file_system)?,
+        }
+    }
+
+    pub fn Send_to(
+        &self,
+        Task: Task_identifier_type,
+        Socket: Unique_file_identifier_type,
+        Data: &[u8],
+        Address: Socket_address_type,
+    ) -> crate::Result_type<()> {
+        let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
+
+        match File_system {
+            File_system_identifier_type::Network_socket_file_system => {
+                let (IP, Port) = Address
+                    .Into_IP_and_port()
+                    .ok_or(crate::Error_type::Invalid_parameter)?;
+
+                self.Network_socket_driver
+                    .ok_or(crate::Error_type::Unavailable_driver)?
+                    .Send_to(Socket, Data, IP, Port)?
+            }
+            _ => Err(crate::Error_type::Invalid_file_system)?,
+        }
+
+        Ok(())
+    }
+
+    pub fn Receive_from(
+        &self,
+        Task: Task_identifier_type,
+        Socket: Unique_file_identifier_type,
+        Data: &mut [u8],
+    ) -> crate::Result_type<(usize, Socket_address_type)> {
+        let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
+
+        match File_system {
+            File_system_identifier_type::Network_socket_file_system => {
+                let (Size, IP, Port) = self
+                    .Network_socket_driver
+                    .ok_or(crate::Error_type::Unavailable_driver)?
+                    .Receive_from(Socket, Data)?;
+
+                Ok((Size, Socket_address_type::From_IP_and_port(IP, Port)))
+            }
+            _ => Err(crate::Error_type::Invalid_file_system)?,
+        }
+    }
+
+    fn New_file_identifier(
+        &self,
+        File_system: File_system_identifier_type,
+        Task: Task_identifier_type,
+    ) -> crate::Result_type<Local_file_identifier_type> {
+        let Iterator = Local_file_identifier_type::Get_minimum(Task).into_iter();
+
+        match File_system {
+            File_system_identifier_type::Network_socket_file_system => Ok(self
+                .Network_socket_driver
+                .ok_or(crate::Error_type::Unavailable_driver)?
+                .Get_new_socket_identifier(Iterator)?
+                .ok_or(crate::Error_type::Too_many_open_files)?),
+            _ => Err(crate::Error_type::Invalid_file_system)?,
+        }
+    }
+
+    pub fn Bind(
+        &self,
+        Task: Task_identifier_type,
+        Address: Socket_address_type,
+        Protocol: Protocol_type,
+    ) -> crate::Result_type<Unique_file_identifier_type> {
+        let File_system = match Address {
+            Socket_address_type::IPv4(_, _) | Socket_address_type::IPv6(_, _) => {
+                File_system_identifier_type::Network_socket_file_system
+            }
+            Socket_address_type::Local(_) => {
+                todo!()
+            }
+        };
+
+        let New_socket = self.New_file_identifier(File_system, Task)?;
+
+        match File_system {
+            File_system_identifier_type::Network_socket_file_system => {
+                let (IP, Port) = if let Some((IP_type, Port)) = Address.Into_IP_and_port() {
+                    (IP_type, Port)
+                } else {
+                    unreachable!()
+                };
+
+                self.Network_socket_driver
+                    .ok_or(crate::Error_type::Unavailable_driver)?
+                    .Bind(IP, Port, Protocol, New_socket)?
+            }
+            _ => return Err(crate::Error_type::Invalid_file_system),
+        }
+
+        let (_, New_socket) = New_socket.Into_unique_file_identifier(File_system);
+
+        Ok(New_socket)
+    }
+
+    pub fn Connect(
+        &self,
+        Task: Task_identifier_type,
+        Address: Socket_address_type,
+    ) -> crate::Result_type<Unique_file_identifier_type> {
+        let File_system = match Address {
+            Socket_address_type::IPv4(_, _) | Socket_address_type::IPv6(_, _) => {
+                File_system_identifier_type::Network_socket_file_system
+            }
+            Socket_address_type::Local(_) => {
+                todo!()
+            }
+        };
+
+        let New_socket = self.New_file_identifier(File_system, Task)?;
+
+        match File_system {
+            File_system_identifier_type::Network_socket_file_system => {
+                let (IP, Port) = if let Some((IP_type, Port)) = Address.Into_IP_and_port() {
+                    (IP_type, Port)
+                } else {
+                    unreachable!()
+                };
+
+                self.Network_socket_driver
+                    .ok_or(crate::Error_type::Unavailable_driver)?
+                    .Connect(IP, Port, New_socket)?
+            }
+            _ => return Err(crate::Error_type::Invalid_file_system),
+        }
+
+        let (_, New_socket) = New_socket.Into_unique_file_identifier(File_system);
+
+        Ok(New_socket)
+    }
+
+    pub fn Accept(
+        &self,
+        Task: Task_identifier_type,
+        Socket: Unique_file_identifier_type,
+    ) -> crate::Result_type<(Unique_file_identifier_type, Option<(IP_type, Port_type)>)> {
+        let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
+
+        match File_system {
+            File_system_identifier_type::Network_socket_file_system => {
+                let New_socket = self.New_file_identifier(File_system, Task)?;
+
+                let (IP, Port) = self
+                    .Network_socket_driver
+                    .ok_or(crate::Error_type::Unavailable_driver)?
+                    .Accept(Socket, New_socket)?;
+
+                let (_, New_socket) = New_socket.Into_unique_file_identifier(File_system);
+
+                Ok((New_socket, Some((IP, Port))))
+            }
+            _ => Err(crate::Error_type::Invalid_file_system),
+        }
+    }
+
+    pub fn Set_send_timeout(
+        &self,
+        Task: Task_identifier_type,
+        Socket: Unique_file_identifier_type,
+        Timeout: Duration_type,
+    ) -> crate::Result_type<()> {
+        let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
+
+        match File_system {
+            File_system_identifier_type::Network_socket_file_system => self
+                .Network_socket_driver
+                .ok_or(crate::Error_type::Unavailable_driver)?
+                .Set_send_timeout(Socket, Timeout)?,
+            _ => return Err(crate::Error_type::Invalid_file_system),
+        }
+
+        Ok(())
+    }
+
+    pub fn Set_receive_timeout(
+        &self,
+        Task: Task_identifier_type,
+        Socket: Unique_file_identifier_type,
+        Timeout: Duration_type,
+    ) -> crate::Result_type<()> {
+        let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
+
+        match File_system {
+            File_system_identifier_type::Network_socket_file_system => self
+                .Network_socket_driver
+                .ok_or(crate::Error_type::Unavailable_driver)?
+                .Set_receive_timeout(Socket, Timeout)?,
+            _ => return Err(crate::Error_type::Invalid_file_system),
+        }
+
+        Ok(())
+    }
+
+    pub fn Get_send_timeout(
+        &self,
+        Task: Task_identifier_type,
+        Socket: Unique_file_identifier_type,
+    ) -> crate::Result_type<Option<Duration_type>> {
+        let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
+
+        match File_system {
+            File_system_identifier_type::Network_socket_file_system => Ok(self
+                .Network_socket_driver
+                .ok_or(crate::Error_type::Unavailable_driver)?
+                .Get_send_timeout(Socket)?),
+            _ => Err(crate::Error_type::Invalid_file_system),
+        }
+    }
+
+    pub fn Get_receive_timeout(
+        &self,
+        Task: Task_identifier_type,
+        Socket: Unique_file_identifier_type,
+    ) -> crate::Result_type<Option<Duration_type>> {
+        let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
+
+        match File_system {
+            File_system_identifier_type::Network_socket_file_system => Ok(self
+                .Network_socket_driver
+                .ok_or(crate::Error_type::Unavailable_driver)?
+                .Get_receive_timeout(Socket)?),
+            _ => Err(crate::Error_type::Invalid_file_system),
+        }
     }
 }
 
