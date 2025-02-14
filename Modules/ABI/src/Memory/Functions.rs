@@ -1,14 +1,17 @@
 #![allow(dead_code)]
 
-use core::alloc::Layout;
-use core::{ffi::c_void, mem::size_of};
-use std::alloc::{alloc, dealloc, realloc};
-use std::collections::BTreeMap;
+extern crate alloc;
 
-use std::ptr::NonNull;
+use alloc::alloc::{alloc, dealloc, realloc};
+use alloc::collections::BTreeMap;
+use core::alloc::Layout;
+use core::{ffi::c_void, mem::size_of, ptr::NonNull};
+
 use std::sync::RwLock;
 
-use Memory::{Allocator, Flags_type, Layout_type, Memory_allocator_trait, Protection_type};
+use Memory::{Allocator, Layout_type, Memory_allocator_trait};
+
+use super::{Xila_memory_flags_type, Xila_memory_protection_type};
 
 // - Memory
 
@@ -83,22 +86,6 @@ pub extern "C" fn Xila_memory_reallocate(Pointer: *mut c_void, Size: usize) -> *
     Xila_memory_allocate(Size)
 }
 
-#[no_mangle]
-pub static Xila_memory_protection_read: u8 = Protection_type::Read_bit;
-#[no_mangle]
-pub static Xila_memory_protection_write: u8 = Protection_type::Write_bit;
-#[no_mangle]
-pub static Xila_memory_protection_execute: u8 = Protection_type::Execute_bit;
-
-#[no_mangle]
-pub static Xila_memory_flag_anonymous: u8 = Flags_type::Anonymous_bit;
-#[no_mangle]
-pub static Xila_memory_flag_fixed: u8 = Flags_type::Fixed_bit;
-#[no_mangle]
-pub static Xila_memory_flag_private: u8 = Flags_type::Private_bit;
-#[no_mangle]
-pub static Xila_memory_flag_address_32_bits: u8 = Flags_type::Address_32_bits;
-
 /// This function is used to allocate a memory region.
 ///
 /// # Safety
@@ -113,8 +100,8 @@ pub unsafe extern "C" fn Xila_memory_allocate_custom(
     Hint_address: *mut c_void,
     Size: usize,
     Alignment: u8,
-    Protection: Protection_type,
-    Flags: Flags_type,
+    Protection: Xila_memory_protection_type,
+    Flags: Xila_memory_flags_type,
 ) -> *mut c_void {
     println!(
         "Allocating memory custom : {:?} : {} : {} : {:?} : {:?}",
@@ -129,7 +116,9 @@ pub unsafe extern "C" fn Xila_memory_allocate_custom(
 
     let Layout = Layout_type::New(Size, Alignment);
 
-    let Pointer = Allocator.Allocate_custom(Hint_address, Layout, Protection, Flags);
+    let Flags = Memory::Flags_type::From_u8(Flags);
+
+    let Pointer = Allocator.Allocate_custom(Hint_address, Layout, Protection.into(), Flags);
 
     println!("Allocated memory custom : {:?}", Pointer);
 
@@ -174,7 +163,7 @@ pub unsafe extern "C" fn Xila_memory_deallocate_custom(
 pub unsafe extern "C" fn Xila_memory_protect(
     Pointer: *mut c_void,
     Length: usize,
-    Protection: Protection_type,
+    Protection: Xila_memory_protection_type,
 ) -> bool {
     println!(
         "Protecting memory : {:p} : {} : {:?}",
@@ -183,6 +172,8 @@ pub unsafe extern "C" fn Xila_memory_protect(
 
     let Pointer =
         NonNull::new(Pointer as *mut u8).expect("Failed to protect memory, pointer is null");
+
+    let Protection = Memory::Protection_type::From_u8(Protection);
 
     Allocator.Protect(Pointer, Length, Protection)
 }

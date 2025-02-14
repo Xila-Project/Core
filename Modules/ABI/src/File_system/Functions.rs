@@ -1,65 +1,36 @@
 /// This module implements the POSIX like file system C ABI.
-use std::{
+extern crate alloc;
+
+use core::{
     cmp::min,
-    ffi::{c_char, CStr, CString},
+    ffi::{c_char, CStr},
     num::NonZeroU32,
-    ptr::{copy_nonoverlapping, null_mut},
+    ptr::copy_nonoverlapping,
 };
 
 use File_system::{
-    Error_type, File_identifier_type, Flags_type, Inode_type, Mode_type, Open_type, Position_type,
-    Result_type, Size_type, Statistics_type, Status_type, Type_type, Unique_file_identifier_type,
-    Whence_type,
+    Error_type, File_identifier_type, Flags_type, Mode_type, Open_type, Status_type,
 };
 
 use Task::Get_instance as Get_task_manager_instance;
 use Virtual_file_system::Get_instance as Get_file_system_instance;
 
-#[no_mangle]
-pub static Xila_file_system_mode_read_mask: u8 = Mode_type::Read_bit;
-#[no_mangle]
-pub static Xila_file_system_mode_write_mask: u8 = Mode_type::Write_bit;
+use crate::Into_position;
 
-#[no_mangle]
-pub static Xila_file_system_open_create_mask: u8 = Open_type::Create_mask;
-#[no_mangle]
-pub static Xila_file_system_open_create_only_mask: u8 = Open_type::Exclusive_mask;
-#[no_mangle]
-pub static Xila_file_system_open_truncate_mask: u8 = Open_type::Truncate_mask;
-
-#[no_mangle]
-pub static Xila_file_system_status_append_mask: u8 = Status_type::Append_bit;
-#[no_mangle]
-pub static Xila_file_system_status_non_blocking_mask: u8 = Status_type::Non_blocking_bit;
-#[no_mangle]
-pub static Xila_file_system_status_synchronous_mask: u8 = Status_type::Synchronous_bit;
-#[no_mangle]
-pub static Xila_file_system_status_synchronous_data_only_mask: u8 =
-    Status_type::Synchronous_data_only_bit;
+use super::{
+    Whence_type, Xila_mode_type, Xila_open_type, Xila_size_type, Xila_statistics_type,
+    Xila_status_type, Xila_unique_file_identifier_type,
+};
 
 /// This function is used to convert a function returning a Result into a u32.
-fn Into_u32<F>(Function: F) -> u32
+pub fn Into_u32<F>(Function: F) -> u32
 where
-    F: FnOnce() -> Result_type<()>,
+    F: FnOnce() -> Result<(), NonZeroU32>,
 {
     match Function() {
         Ok(()) => 0,
-        Err(Error) => NonZeroU32::from(Error).get(),
+        Err(Error) => Error.get(),
     }
-}
-
-fn Statistics_from_mutable_pointer(
-    Pointer: *mut Statistics_type,
-) -> Option<&'static mut Statistics_type> {
-    if Pointer.is_null() {
-        return None;
-    }
-
-    if Pointer as usize % std::mem::align_of::<Statistics_type>() != 0 {
-        return None;
-    }
-
-    Some(unsafe { &mut *Pointer })
 }
 
 /// This function is used to open a file.
@@ -73,20 +44,24 @@ fn Statistics_from_mutable_pointer(
 /// This function may return an error if the file system fails to open the file.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_get_statistics(
-    File: Unique_file_identifier_type,
-    Statistics: *mut Statistics_type,
+    File: Xila_unique_file_identifier_type,
+    Statistics: *mut Xila_statistics_type,
 ) -> u32 {
     Into_u32(move || {
         let Task_identifier = Get_task_manager_instance()
             .Get_current_task_identifier()
             .map_err(|_| Error_type::Failed_to_get_task_informations)?;
 
-        let Statistics =
-            Statistics_from_mutable_pointer(Statistics).ok_or(Error_type::Invalid_parameter)?;
+        let Statistics = Xila_statistics_type::From_mutable_pointer(Statistics)
+            .ok_or(Error_type::Invalid_parameter)?;
 
-        *Statistics = Get_file_system_instance()
-            .Get_statistics(File, Task_identifier)
-            .expect("Failed to get file statistics.");
+        let File = File_system::Unique_file_identifier_type::From_raw(File);
+
+        *Statistics = Xila_statistics_type::From_statistics(
+            Get_file_system_instance()
+                .Get_statistics(File, Task_identifier)
+                .expect("Failed to get file statistics."),
+        );
 
         Ok(())
     })
@@ -103,8 +78,8 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics(
 /// This function may return an error if the file system fails to get the access mode of the file.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_get_access_mode(
-    File: Unique_file_identifier_type,
-    Mode: *mut Mode_type,
+    File: Xila_unique_file_identifier_type,
+    Mode: *mut Xila_mode_type,
 ) -> u32 {
     println!("Getting file access mode : {:?}", File);
 
@@ -114,10 +89,16 @@ pub unsafe extern "C" fn Xila_file_system_get_access_mode(
             .map_err(|_| Error_type::Failed_to_get_task_informations)?;
 
         if Mode.is_null() {
-            return Err(Error_type::Invalid_parameter);
+            Err(Error_type::Invalid_parameter)?;
         }
 
-        Mode.write(Get_file_system_instance().Get_mode(File, Task_identifier)?);
+        let File = File_system::Unique_file_identifier_type::From_raw(File);
+
+        Mode.write(
+            Get_file_system_instance()
+                .Get_mode(File, Task_identifier)?
+                .As_u8(),
+        );
 
         Ok(())
     })
@@ -130,11 +111,13 @@ pub unsafe extern "C" fn Xila_file_system_get_access_mode(
 /// This function may return an error if the file system fails to close the file.
 ///
 #[no_mangle]
-pub extern "C" fn Xila_file_system_close(File: Unique_file_identifier_type) -> u32 {
+pub extern "C" fn Xila_file_system_close(File: Xila_unique_file_identifier_type) -> u32 {
     Into_u32(move || {
         let Task_identifier = Get_task_manager_instance()
             .Get_current_task_identifier()
             .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+
+        let File = File_system::Unique_file_identifier_type::From_raw(File);
 
         Get_file_system_instance().Close(File, Task_identifier)?;
 
@@ -155,7 +138,7 @@ pub extern "C" fn Xila_file_system_close(File: Unique_file_identifier_type) -> u
 /// # Example
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_write_vectored(
-    File: Unique_file_identifier_type,
+    File: Xila_unique_file_identifier_type,
     Buffers: *const *const u8,
     Buffers_length: *const usize,
     Buffer_count: usize,
@@ -173,6 +156,8 @@ pub unsafe extern "C" fn Xila_file_system_write_vectored(
 
         for (Buffer, Length) in Buffers.iter().zip(Buffers_length.iter()) {
             let Buffer_slice = std::slice::from_raw_parts(*Buffer, *Length);
+
+            let File = File_system::Unique_file_identifier_type::From_raw(File);
 
             Current_written += usize::from(Get_file_system_instance().Write(
                 File,
@@ -200,7 +185,7 @@ pub unsafe extern "C" fn Xila_file_system_write_vectored(
 /// This function may return an error if the file system fails to open the file.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_read_vectored(
-    File: Unique_file_identifier_type,
+    File: Xila_unique_file_identifier_type,
     Buffers: *mut *mut u8,
     Buffers_length: *mut usize,
     Buffer_count: usize,
@@ -218,6 +203,8 @@ pub unsafe extern "C" fn Xila_file_system_read_vectored(
 
         for (Buffer_pointer, Buffer_length) in Buffers.iter_mut().zip(Buffers_length.iter_mut()) {
             let Buffer = std::slice::from_raw_parts_mut(*Buffer_pointer, *Buffer_length);
+
+            let File = File_system::Unique_file_identifier_type::From_raw(File);
 
             let Read = Get_file_system_instance().Read(File, Buffer, Task_identifier)?;
 
@@ -243,7 +230,7 @@ pub unsafe extern "C" fn Xila_file_system_read_vectored(
 /// This function may return an error if the file system fails to open the file.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_is_a_terminal(
-    File: Unique_file_identifier_type,
+    File: Xila_unique_file_identifier_type,
     Is_a_terminal: *mut bool,
 ) -> u32 {
     Into_u32(move || {
@@ -252,8 +239,10 @@ pub unsafe extern "C" fn Xila_file_system_is_a_terminal(
             .map_err(|_| Error_type::Failed_to_get_task_informations)?;
 
         if Is_a_terminal.is_null() {
-            return Err(Error_type::Invalid_parameter);
+            Err(Error_type::Invalid_parameter)?;
         }
+
+        let File = File_system::Unique_file_identifier_type::From_raw(File);
 
         *Is_a_terminal = Get_file_system_instance().Is_a_terminal(File, Task_identifier)?;
 
@@ -262,7 +251,9 @@ pub unsafe extern "C" fn Xila_file_system_is_a_terminal(
 }
 
 #[no_mangle]
-pub extern "C" fn Xila_file_system_is_stdin(File: Unique_file_identifier_type) -> bool {
+pub extern "C" fn Xila_file_system_is_stdin(File: Xila_unique_file_identifier_type) -> bool {
+    let File = File_system::Unique_file_identifier_type::From_raw(File);
+
     let (_, File) = File.Split();
 
     println!(
@@ -275,7 +266,9 @@ pub extern "C" fn Xila_file_system_is_stdin(File: Unique_file_identifier_type) -
 }
 
 #[no_mangle]
-pub extern "C" fn Xila_file_system_is_stderr(File: Unique_file_identifier_type) -> bool {
+pub extern "C" fn Xila_file_system_is_stderr(File: Xila_unique_file_identifier_type) -> bool {
+    let File = File_system::Unique_file_identifier_type::From_raw(File);
+
     let (_, File) = File.Split();
 
     println!(
@@ -288,7 +281,9 @@ pub extern "C" fn Xila_file_system_is_stderr(File: Unique_file_identifier_type) 
 }
 
 #[no_mangle]
-pub extern "C" fn Xila_file_system_is_stdout(File: Unique_file_identifier_type) -> bool {
+pub extern "C" fn Xila_file_system_is_stdout(File: Xila_unique_file_identifier_type) -> bool {
+    let File = File_system::Unique_file_identifier_type::From_raw(File);
+
     let (_, File) = File.Split();
 
     println!(
@@ -308,15 +303,19 @@ pub extern "C" fn Xila_file_system_is_stdout(File: Unique_file_identifier_type) 
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_open(
     Path: *const i8,
-    Mode: Mode_type,
-    Open: Open_type,
-    Status: Status_type,
-    File: *mut Unique_file_identifier_type,
+    Mode: Xila_mode_type,
+    Open: Xila_open_type,
+    Status: Xila_status_type,
+    File: *mut Xila_unique_file_identifier_type,
 ) -> u32 {
     Into_u32(move || {
         let Path = std::ffi::CStr::from_ptr(Path)
             .to_str()
             .map_err(|_| Error_type::Invalid_parameter)?;
+
+        let Mode = Mode_type::From_u8(Mode);
+        let Open = Open_type::From_u8(Open);
+        let Status = Status_type::From_u8(Status);
 
         let Flags = Flags_type::New(Mode, Some(Open), Some(Status));
 
@@ -328,7 +327,8 @@ pub unsafe extern "C" fn Xila_file_system_open(
 
         *File = Get_file_system_instance()
             .Open(&Path, Flags, Task)
-            .expect("Failed to open file");
+            .expect("Failed to open file")
+            .Into_inner();
 
         Ok(())
     })
@@ -363,104 +363,14 @@ pub unsafe extern "C" fn Xila_file_system_resolve_path(
     })
 }
 
-/// This function is used to open a directory.
-///
-/// # Safety
-///
-/// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_file_system_open_directory(
-    Path: *const c_char,
-    Directory: *mut Unique_file_identifier_type,
-) -> u32 {
-    Into_u32(move || {
-        let Path = CStr::from_ptr(Path)
-            .to_str()
-            .map_err(|_| Error_type::Invalid_parameter)?;
-
-        println!("Opening directory : {:?}", Path);
-
-        let Task = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
-
-        *Directory = Get_file_system_instance()
-            .Open_directory(&Path, Task)
-            .expect("Failed to open directory");
-
-        println!("Directory : {:?}", *Directory);
-
-        Ok(())
-    })
-}
-
-/// This function is used to read a directory.
-///
-/// # Safety
-///
-/// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
-pub unsafe extern "C" fn Xila_file_system_read_directory(
-    File: Unique_file_identifier_type,
-    Entry_name: *mut *mut i8,
-    Entry_type: *mut Type_type,
-    Entry_size: *mut Size_type,
-    Entry_inode: *mut Inode_type,
-) -> u32 {
-    println!("Reading directory : {:?}", File);
-
+pub extern "C" fn Xila_file_system_flush(File: Xila_unique_file_identifier_type, _: bool) -> u32 {
     Into_u32(move || {
         let Task = Get_task_manager_instance()
             .Get_current_task_identifier()
             .map_err(|_| Error_type::Failed_to_get_task_informations)?;
 
-        let Entry = Get_file_system_instance().Read_directory(File, Task)?;
-
-        if let Some(Entry) = Entry {
-            *Entry_name = CString::new(Entry.Get_name().as_str()).unwrap().into_raw();
-            *Entry_type = Entry.Get_type();
-            *Entry_size = Entry.Get_size();
-            *Entry_inode = Entry.Get_inode();
-        } else {
-            *Entry_name = null_mut();
-        }
-
-        Ok(())
-    })
-}
-
-#[no_mangle]
-pub extern "C" fn Xila_file_system_close_directory(Directory: Unique_file_identifier_type) -> u32 {
-    Into_u32(move || {
-        let Task = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
-
-        Get_file_system_instance().Close_directory(Directory, Task)?;
-
-        Ok(())
-    })
-}
-
-#[no_mangle]
-pub extern "C" fn Xila_file_system_rewind_directory(Directory: Unique_file_identifier_type) -> u32 {
-    Into_u32(move || {
-        let Task = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
-
-        Get_file_system_instance().Rewind_directory(Directory, Task)?;
-
-        Ok(())
-    })
-}
-
-#[no_mangle]
-pub extern "C" fn Xila_file_system_flush(File: Unique_file_identifier_type, _: bool) -> u32 {
-    Into_u32(move || {
-        let Task = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let File = File_system::Unique_file_identifier_type::From_raw(File);
 
         Get_file_system_instance().Flush(File, Task)?;
 
@@ -470,7 +380,7 @@ pub extern "C" fn Xila_file_system_flush(File: Unique_file_identifier_type, _: b
 
 #[no_mangle]
 pub extern "C" fn Xila_file_system_read_link_at(
-    _Directory: Unique_file_identifier_type,
+    _Directory: Xila_unique_file_identifier_type,
     _Path: *mut i8,
     _Size: usize,
     _Used: *mut usize,
@@ -485,24 +395,28 @@ pub extern "C" fn Xila_file_system_read_link_at(
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_set_position(
-    File: Unique_file_identifier_type,
+    File: Xila_unique_file_identifier_type,
     Offset: i64,
     Whence: Whence_type,
-    Position: *mut Size_type,
+    Position: *mut Xila_size_type,
 ) -> u32 {
     Into_u32(move || {
         let Task = Get_task_manager_instance()
             .Get_current_task_identifier()
             .map_err(|_| Error_type::Failed_to_get_task_informations)?;
 
-        let Current_position = Position_type::From_whence(Whence, Offset);
+        let Current_position = Into_position(Whence, Offset);
 
         println!(
             "Setting position : {:?} : {:?} : {:?}",
             File, Current_position, Position
         );
 
-        *Position = Get_file_system_instance().Set_position(File, &Current_position, Task)?;
+        let File = File_system::Unique_file_identifier_type::From_raw(File);
+
+        *Position = Get_file_system_instance()
+            .Set_position(File, &Current_position, Task)?
+            .As_u64();
 
         Ok(())
     })

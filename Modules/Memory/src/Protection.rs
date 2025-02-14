@@ -68,6 +68,14 @@ impl Protection_type {
     pub const fn Get_execute(&self) -> bool {
         self.Get_bits(Self::Execute_bit)
     }
+
+    pub const fn As_u8(&self) -> u8 {
+        self.0
+    }
+
+    pub const fn From_u8(Value: u8) -> Self {
+        Self(Value)
+    }
 }
 
 impl From<Protection_type> for u8 {

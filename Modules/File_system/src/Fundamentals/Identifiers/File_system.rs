@@ -22,8 +22,12 @@ pub struct File_system_identifier_type(File_system_identifier_inner_type);
 impl File_system_identifier_type {
     pub const Pipe_file_system: File_system_identifier_type = File_system_identifier_type::New(0);
     pub const Device_file_system: File_system_identifier_type = File_system_identifier_type::New(1);
+    pub const Network_socket_file_system: File_system_identifier_type =
+        File_system_identifier_type::New(2);
+    pub const Local_socket_file_system: File_system_identifier_type =
+        File_system_identifier_type::New(3);
 
-    pub const Minimum: File_system_identifier_type = File_system_identifier_type::New(2);
+    pub const Minimum: File_system_identifier_type = File_system_identifier_type::New(4);
     pub const Maximum: File_system_identifier_type =
         File_system_identifier_type::New(File_system_identifier_inner_type::MAX);
 
@@ -31,7 +35,7 @@ impl File_system_identifier_type {
         Self(Identifier)
     }
 
-    pub const fn Into_inner(self) -> File_system_identifier_inner_type {
+    pub const fn As_inner(self) -> File_system_identifier_inner_type {
         self.0
     }
 }

@@ -76,6 +76,14 @@ impl Mode_type {
     pub const fn Get_write(&self) -> bool {
         self.Get_bit(Self::Write_bit)
     }
+
+    pub const fn From_u8(Value: u8) -> Self {
+        Self(Value)
+    }
+
+    pub const fn As_u8(&self) -> u8 {
+        self.0
+    }
 }
 
 impl Debug for Mode_type {
@@ -166,6 +174,10 @@ impl Open_type {
 
     pub const fn Set_truncate(self, Value: bool) -> Self {
         self.Set_bit(Self::Truncate_mask, Value)
+    }
+
+    pub const fn From_u8(Value: u8) -> Self {
+        Self(Value)
     }
 }
 
@@ -278,6 +290,10 @@ impl Status_type {
 
     pub const fn Get_synchronous_data_only(&self) -> bool {
         self.Get_bit(Self::Synchronous_data_only_bit)
+    }
+
+    pub const fn From_u8(Value: u8) -> Self {
+        Self(Value)
     }
 }
 

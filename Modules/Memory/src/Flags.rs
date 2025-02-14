@@ -78,6 +78,14 @@ impl Flags_type {
     pub const fn Get_address_32_bits(&self) -> bool {
         self.Get_bits(Self::Address_32_bits)
     }
+
+    pub fn From_u8(Flags: u8) -> Self {
+        Self(Flags)
+    }
+
+    pub const fn As_u8(&self) -> u8 {
+        self.0
+    }
 }
 
 impl From<Flags_type> for u8 {

@@ -15,7 +15,7 @@ impl Inode_type {
         Inode_type(Item)
     }
 
-    pub const fn Into_inner(self) -> u64 {
+    pub const fn As_u64(self) -> u64 {
         self.0
     }
 }

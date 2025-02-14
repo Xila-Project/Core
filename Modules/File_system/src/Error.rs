@@ -44,7 +44,14 @@ pub enum Error_type {
     No_memory,
     No_space_left,
     Time_error,
+    Invalid_inode,
     Other,
+}
+
+impl Error_type {
+    pub fn Get_discriminant(&self) -> NonZeroU32 {
+        unsafe { NonZeroU32::new_unchecked(*self as u32) }
+    }
 }
 
 #[cfg(feature = "std")]
@@ -90,7 +97,7 @@ impl<T> From<PoisonError<T>> for Error_type {
 
 impl From<Error_type> for NonZeroU32 {
     fn from(Error: Error_type) -> Self {
-        unsafe { NonZeroU32::new_unchecked(Error as u32) }
+        Error.Get_discriminant()
     }
 }
 
@@ -140,6 +147,7 @@ impl Display for Error_type {
             Error_type::No_memory => "No memory",
             Error_type::No_space_left => "No space left",
             Error_type::Time_error => "Time error",
+            Error_type::Invalid_inode => "Invalid inode",
             Error_type::Other => "Other",
         };
 

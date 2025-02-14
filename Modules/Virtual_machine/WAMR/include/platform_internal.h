@@ -34,8 +34,10 @@ extern "C"
 #define BH_PLATFORM_XILA
 #endif
 
+#define bh_socket_t size_t
+
 #ifndef PATH_MAX
-    #define PATH_MAX 256
+#define PATH_MAX 256
 #endif
 
     typedef uint32_t korp_tid;
