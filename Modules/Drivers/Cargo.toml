@@ -14,15 +14,18 @@ Shared = { path = "../Shared" }
 paste = "1.0.15"
 quote = "1.0.36"
 Peripherals = { path = "../Peripherals" }
+Network = { path = "../Network", optional = true }
 
 [features]
+Network = ["dep:Network"]
+Std = []
 File_system = []
 Graphics = []
 Time = []
 Random = []
 
 
-All = ["File_system", "Graphics", "Time"]
+All = ["File_system", "Graphics", "Time", "Network"]
 
 default = ["std", "binstart", "All"]
 std = ["alloc", "esp-idf-sys/std"]
