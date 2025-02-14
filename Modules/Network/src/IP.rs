@@ -1,9 +1,12 @@
 use core::fmt::Display;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(transparent)]
 pub struct IPv4_type([u8; 4]);
 
 impl IPv4_type {
+    pub const Localhost: Self = Self([127, 0, 0, 1]);
+
     pub const fn New(value: [u8; 4]) -> Self {
         Self(value)
     }
@@ -98,27 +101,30 @@ impl Display for IPv6_type {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[repr(transparent)]
-pub struct Port_type(u16);
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum IP_type {
+    IPv4(IPv4_type),
+    IPv6(IPv6_type),
+}
 
-impl Port_type {
-    pub const fn New(value: u16) -> Self {
-        Self(value)
-    }
-
-    pub const fn Into_inner(self) -> u16 {
-        self.0
-    }
-
-    pub const fn From_inner(value: u16) -> Self {
-        Self(value)
+impl Display for IP_type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IP_type::IPv4(Value) => write!(f, "{}", Value),
+            IP_type::IPv6(Value) => write!(f, "{}", Value),
+        }
     }
 }
 
-impl Display for Port_type {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+impl From<IPv4_type> for IP_type {
+    fn from(value: IPv4_type) -> Self {
+        Self::IPv4(value)
+    }
+}
+
+impl From<IPv6_type> for IP_type {
+    fn from(value: IPv6_type) -> Self {
+        Self::IPv6(value)
     }
 }
 
