@@ -1,5 +1,6 @@
 #include "../../../ABI/include/Xila.h"
-#include "Internal.h"
+#include "../include/Internal.h"
+#include "platform_internal.h"
 
 /***************************************************
  *                                                 *
@@ -32,7 +33,7 @@
 int os_thread_create(korp_tid *p_tid, thread_start_routine_t start, void *arg,
                      unsigned int stack_size)
 {
-    return Xila_thread_create(p_tid, start, arg, stack_size);
+    return Xila_thread_create(start, arg, stack_size, p_tid);
 }
 
 /**
@@ -49,7 +50,7 @@ int os_thread_create(korp_tid *p_tid, thread_start_routine_t start, void *arg,
 int os_thread_create_with_prio(korp_tid *p_tid, thread_start_routine_t start,
                                void *arg, unsigned int stack_size, int prio)
 {
-    return Xila_thread_create_with_priority(p_tid, start, arg, stack_size, prio);
+    return Xila_thread_create(start, arg, stack_size, p_tid);
 }
 
 /**
@@ -62,7 +63,7 @@ int os_thread_create_with_prio(korp_tid *p_tid, thread_start_routine_t start,
  */
 int os_thread_join(korp_tid thread, void **retval)
 {
-    return Xila_thread_join(thread, retval);
+    return Xila_thread_join(thread);
 }
 
 /**
@@ -84,7 +85,7 @@ int os_thread_detach(korp_tid Thread)
  */
 void os_thread_exit(void *retval)
 {
-    Xila_thread_exit(retval);
+    Xila_thread_exit();
 }
 
 /* Try to define os_atomic_thread_fence if it isn't defined in
@@ -155,7 +156,9 @@ void os_thread_exit(void *retval)
  */
 int os_usleep(uint32 usec)
 {
-    return Xila_sleep_microsecond(usec);
+    Xila_thread_sleep_exact(usec);
+
+    return 0;
 }
 
 /**
@@ -182,7 +185,7 @@ int os_recursive_mutex_init(korp_mutex *mutex)
  */
 int os_cond_init(korp_cond *cond)
 {
-    return Xila_initialize_condition_variable(cond);
+    return Xila_condition_variable_new(cond);
 }
 
 /**
@@ -194,7 +197,7 @@ int os_cond_init(korp_cond *cond)
  */
 int os_cond_destroy(korp_cond *cond)
 {
-    return Xila_destroy_condition_variable(cond);
+    return Xila_condition_variable_remove(cond);
 }
 
 /**
@@ -207,7 +210,7 @@ int os_cond_destroy(korp_cond *cond)
  */
 int os_cond_wait(korp_cond *cond, korp_mutex *mutex)
 {
-    return Xila_wait_condition_variable(cond, mutex);
+    return Xila_condition_variable_wait(cond, mutex);
 }
 
 /**
@@ -221,7 +224,7 @@ int os_cond_wait(korp_cond *cond, korp_mutex *mutex)
  */
 int os_cond_reltimedwait(korp_cond *cond, korp_mutex *mutex, uint64 useconds)
 {
-    return Xila_wait_condition_variable_with_timeout(cond, mutex, useconds);
+    return Xila_condition_variable_try_wait(cond, mutex, useconds);
 }
 
 /**
@@ -233,7 +236,7 @@ int os_cond_reltimedwait(korp_cond *cond, korp_mutex *mutex, uint64 useconds)
  */
 int os_cond_signal(korp_cond *cond)
 {
-    return Xila_signal_condition_variable(cond);
+    return Xila_condition_variable_signal(cond);
 }
 
 /**
@@ -245,7 +248,7 @@ int os_cond_signal(korp_cond *cond)
  */
 int os_cond_broadcast(korp_cond *cond)
 {
-    return Xila_broadcast_condition_variable(cond);
+    return Xila_condition_variable_broadcast(cond);
 }
 
 /**
@@ -324,7 +327,7 @@ int os_rwlock_destroy(korp_rwlock *lock)
 korp_sem *
 os_sem_open(const char *name, int oflags, int mode, int val)
 {
-    return Xila_open_semaphore(name, oflags, mode, val);
+    return Xila_semaphore_open(name, oflags, mode, val);
 }
 
 /**
@@ -338,7 +341,7 @@ os_sem_open(const char *name, int oflags, int mode, int val)
  */
 int os_sem_close(korp_sem *sem)
 {
-    return Xila_close_semaphore(sem);
+    return Xila_semaphore_close(sem);
 }
 
 /**
@@ -354,7 +357,7 @@ int os_sem_close(korp_sem *sem)
  */
 int os_sem_wait(korp_sem *sem)
 {
-    return Xila_wait_semaphore(sem);
+    return Xila_semaphore_wait(sem);
 }
 
 /**
@@ -366,7 +369,7 @@ int os_sem_wait(korp_sem *sem)
  */
 int os_sem_trywait(korp_sem *sem)
 {
-    return Xila_try_wait_semaphore(sem);
+    return Xila_semaphore_try_wait(sem);
 }
 
 /**
@@ -379,7 +382,7 @@ int os_sem_trywait(korp_sem *sem)
  */
 int os_sem_post(korp_sem *sem)
 {
-    return Xila_post_semaphore(sem);
+    return Xila_semaphore_post(sem);
 }
 
 /**
@@ -390,7 +393,7 @@ int os_sem_post(korp_sem *sem)
  */
 int os_sem_getvalue(korp_sem *sem, int *sval)
 {
-    return Xila_get_semaphore_value(sem);
+    return Xila_semaphore_get_value(sem, sval);
 }
 
 /**
@@ -405,7 +408,7 @@ int os_sem_getvalue(korp_sem *sem, int *sval)
  */
 int os_sem_unlink(const char *name)
 {
-    return Xila_unlink_semaphore(name);
+    return Xila_semaphore_remove(name);
 }
 
 /**
@@ -413,7 +416,7 @@ int os_sem_unlink(const char *name)
  */
 int os_blocking_op_init()
 {
-    return Xila_initialize_blocking_operation();
+    return 0;
 }
 
 /**
@@ -421,7 +424,7 @@ int os_blocking_op_init()
  */
 void os_begin_blocking_op()
 {
-    Xila_begin_blocking_operation();
+    Xila_thread_begin_blocking_operation();
 }
 
 /**
@@ -429,7 +432,7 @@ void os_begin_blocking_op()
  */
 void os_end_blocking_op()
 {
-    Xila_end_blocking_operation();
+    Xila_thread_end_blocking_operation();
 }
 
 /**
@@ -441,7 +444,7 @@ void os_end_blocking_op()
  */
 int os_wakeup_blocking_op(korp_tid tid)
 {
-    return Xila_wakeup_blocking_operation(tid);
+    return Xila_thread_wake_up(tid);
 }
 
 /****************************************************
@@ -467,7 +470,7 @@ int os_wakeup_blocking_op(korp_tid tid)
  */
 int os_socket_create(bh_socket_t *sock, bool is_ipv4, bool is_tcp)
 {
-    return Xila_socket_create(sock, is_ipv4, is_tcp);
+    return -1;
 }
 
 /**
@@ -483,10 +486,7 @@ int os_socket_create(bh_socket_t *sock, bool is_ipv4, bool is_tcp)
  */
 int os_socket_bind(bh_socket_t socket, const char *addr, int *port)
 {
-    uint16_t Port = *port;
-    int Result = Xila_socket_bind(socket, addr, &Port);
-    *port = Port;
-    return Result;
+    return -1;
 }
 
 /**
@@ -499,7 +499,7 @@ int os_socket_bind(bh_socket_t socket, const char *addr, int *port)
  */
 int os_socket_settimeout(bh_socket_t socket, uint64 timeout_us)
 {
-    return Xila_socket_set_timeout(socket, timeout_us);
+    return -1;
 }
 
 /**
@@ -512,7 +512,7 @@ int os_socket_settimeout(bh_socket_t socket, uint64 timeout_us)
  */
 int os_socket_listen(bh_socket_t socket, int max_client)
 {
-    return Xila_socket_listen(socket, max_client);
+    return -1;
 }
 
 /**
@@ -531,10 +531,7 @@ int os_socket_listen(bh_socket_t socket, int max_client)
 int os_socket_accept(bh_socket_t server_sock, bh_socket_t *sock, void *addr,
                      unsigned int *addrlen)
 {
-    size_t Address_length = *addrlen;
-    int Result = Xila_socket_accept(server_sock, sock, addr, &Address_length);
-    *addrlen = Address_length;
-    return Result;
+    return -1;
 }
 
 /**
@@ -547,7 +544,7 @@ int os_socket_accept(bh_socket_t server_sock, bh_socket_t *sock, void *addr,
  */
 int os_socket_connect(bh_socket_t socket, const char *addr, int port)
 {
-    return Xila_socket_connect(socket, addr, port);
+    return -1;
 }
 
 /**
@@ -562,7 +559,7 @@ int os_socket_connect(bh_socket_t socket, const char *addr, int port)
  */
 int os_socket_recv(bh_socket_t socket, void *buf, unsigned int len)
 {
-    return Xila_socket_receive(socket, buf, len);
+    return -1;
 }
 
 /**
@@ -580,7 +577,7 @@ int os_socket_recv(bh_socket_t socket, void *buf, unsigned int len)
 int os_socket_recv_from(bh_socket_t socket, void *buf, unsigned int len, int flags,
                         bh_sockaddr_t *src_addr)
 {
-    return Xila_socket_receive_from(socket, buf, len, flags, src_addr);
+    return -1;
 }
 
 /**
@@ -594,7 +591,7 @@ int os_socket_recv_from(bh_socket_t socket, void *buf, unsigned int len, int fla
  */
 int os_socket_send(bh_socket_t socket, const void *buf, unsigned int len)
 {
-    return Xila_socket_send(socket, buf, len);
+    return -1;
 }
 
 /**
@@ -612,7 +609,7 @@ int os_socket_send_to(bh_socket_t socket, const void *buf, unsigned int len,
                       int flags, const bh_sockaddr_t *dest_addr)
 {
 
-    return Xila_socket_send_to(socket, buf, len, flags, dest_addr);
+    return -1;
 }
 
 /**
@@ -624,7 +621,7 @@ int os_socket_send_to(bh_socket_t socket, const void *buf, unsigned int len,
  */
 int os_socket_close(bh_socket_t socket)
 {
-    return Xila_socket_close(socket);
+    return -1;
 }
 
 /**
@@ -637,7 +634,7 @@ int os_socket_close(bh_socket_t socket)
 __wasi_errno_t
 os_socket_shutdown(bh_socket_t socket)
 {
-    return Xila_socket_shutdown(socket);
+    return -1;
 }
 
 /**
@@ -657,7 +654,7 @@ os_socket_shutdown(bh_socket_t socket)
  */
 int os_socket_inet_network(bool is_ipv4, const char *cp, bh_ip_addr_buffer_t *out)
 {
-    return Xila_socket_inet_network(is_ipv4, cp, out);
+    return -1;
 }
 
 /**
@@ -687,8 +684,7 @@ int os_socket_addr_resolve(const char *host, const char *service,
                            bh_addr_info_t *addr_info, size_t addr_info_size,
                            size_t *max_info_size)
 {
-    return Xila_socket_address_resolve(host, service, hint_is_tcp, hint_is_ipv4,
-                                       addr_info, addr_info_size, max_info_size);
+    return -1;
 }
 
 /**
@@ -702,7 +698,7 @@ int os_socket_addr_resolve(const char *host, const char *service,
  */
 int os_socket_addr_local(bh_socket_t socket, bh_sockaddr_t *sockaddr)
 {
-    return Xila_socket_address_local(socket, sockaddr);
+    return -1;
 }
 
 /**
@@ -716,7 +712,7 @@ int os_socket_addr_local(bh_socket_t socket, bh_sockaddr_t *sockaddr)
  */
 int os_socket_addr_remote(bh_socket_t socket, bh_sockaddr_t *sockaddr)
 {
-    return Xila_socket_address_remote(socket, sockaddr);
+    return -1;
 }
 
 /**
@@ -729,7 +725,7 @@ int os_socket_addr_remote(bh_socket_t socket, bh_sockaddr_t *sockaddr)
  */
 int os_socket_set_send_buf_size(bh_socket_t socket, size_t bufsiz)
 {
-    return Xila_socket_set_send_buffer_size(socket, bufsiz);
+    return -1;
 }
 
 /**
@@ -742,7 +738,7 @@ int os_socket_set_send_buf_size(bh_socket_t socket, size_t bufsiz)
  */
 int os_socket_get_send_buf_size(bh_socket_t socket, size_t *bufsiz)
 {
-    return Xila_socket_get_send_buffer_size(socket, bufsiz);
+    return -1;
 }
 
 /**
@@ -755,7 +751,7 @@ int os_socket_get_send_buf_size(bh_socket_t socket, size_t *bufsiz)
  */
 int os_socket_set_recv_buf_size(bh_socket_t socket, size_t bufsiz)
 {
-    return Xila_socket_set_receive_buffer_size(socket, bufsiz);
+    return -1;
 }
 
 /**
@@ -768,7 +764,7 @@ int os_socket_set_recv_buf_size(bh_socket_t socket, size_t bufsiz)
  */
 int os_socket_get_recv_buf_size(bh_socket_t socket, size_t *bufsiz)
 {
-    return Xila_socket_get_receive_buffer_size(socket, bufsiz);
+    return -1;
 }
 
 /**
@@ -781,7 +777,7 @@ int os_socket_get_recv_buf_size(bh_socket_t socket, size_t *bufsiz)
  */
 int os_socket_set_keep_alive(bh_socket_t socket, bool is_enabled)
 {
-    return Xila_socket_set_keep_alive(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -795,7 +791,7 @@ int os_socket_set_keep_alive(bh_socket_t socket, bool is_enabled)
  */
 int os_socket_get_keep_alive(bh_socket_t socket, bool *is_enabled)
 {
-    return Xila_socket_get_keep_alive(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -808,7 +804,7 @@ int os_socket_get_keep_alive(bh_socket_t socket, bool *is_enabled)
  */
 int os_socket_set_send_timeout(bh_socket_t socket, uint64 timeout_us)
 {
-    return Xila_socket_set_send_timeout(socket, timeout_us);
+    return -1;
 }
 
 /**
@@ -821,7 +817,7 @@ int os_socket_set_send_timeout(bh_socket_t socket, uint64 timeout_us)
  */
 int os_socket_get_send_timeout(bh_socket_t socket, uint64 *timeout_us)
 {
-    return Xila_socket_get_send_timeout(socket, timeout_us);
+    return -1;
 }
 
 /**
@@ -834,7 +830,7 @@ int os_socket_get_send_timeout(bh_socket_t socket, uint64 *timeout_us)
  */
 int os_socket_set_recv_timeout(bh_socket_t socket, uint64 timeout_us)
 {
-    return Xila_socket_set_receive_timeout(socket, timeout_us);
+    return -1;
 }
 
 /**
@@ -847,7 +843,7 @@ int os_socket_set_recv_timeout(bh_socket_t socket, uint64 timeout_us)
  */
 int os_socket_get_recv_timeout(bh_socket_t socket, uint64 *timeout_us)
 {
-    return Xila_socket_get_receive_timeout(socket, timeout_us);
+    return -1;
 }
 
 /**
@@ -860,7 +856,7 @@ int os_socket_get_recv_timeout(bh_socket_t socket, uint64 *timeout_us)
  */
 int os_socket_set_reuse_addr(bh_socket_t socket, bool is_enabled)
 {
-    return Xila_socket_set_reuse_address(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -873,7 +869,7 @@ int os_socket_set_reuse_addr(bh_socket_t socket, bool is_enabled)
  */
 int os_socket_get_reuse_addr(bh_socket_t socket, bool *is_enabled)
 {
-    return Xila_socket_get_reuse_address(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -886,7 +882,7 @@ int os_socket_get_reuse_addr(bh_socket_t socket, bool *is_enabled)
  */
 int os_socket_set_reuse_port(bh_socket_t socket, bool is_enabled)
 {
-    return Xila_socket_set_reuse_port(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -899,7 +895,7 @@ int os_socket_set_reuse_port(bh_socket_t socket, bool is_enabled)
  */
 int os_socket_get_reuse_port(bh_socket_t socket, bool *is_enabled)
 {
-    return Xila_socket_get_reuse_port(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -912,7 +908,7 @@ int os_socket_get_reuse_port(bh_socket_t socket, bool *is_enabled)
  */
 int os_socket_set_linger(bh_socket_t socket, bool is_enabled, int linger_s)
 {
-    return Xila_socket_set_linger(socket, is_enabled, linger_s);
+    return -1;
 }
 
 /**
@@ -925,10 +921,7 @@ int os_socket_set_linger(bh_socket_t socket, bool is_enabled, int linger_s)
  */
 int os_socket_get_linger(bh_socket_t socket, bool *is_enabled, int *linger_s)
 {
-    uint64_t Time = *linger_s;
-    int Result = Xila_socket_get_linger(socket, is_enabled, &Time);
-    *linger_s = Time;
-    return Result;
+    return -1;
 }
 
 /**
@@ -944,7 +937,7 @@ int os_socket_get_linger(bh_socket_t socket, bool *is_enabled, int *linger_s)
  */
 int os_socket_set_tcp_no_delay(bh_socket_t socket, bool is_enabled)
 {
-    return Xila_socket_set_tcp_no_delay(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -960,7 +953,7 @@ int os_socket_set_tcp_no_delay(bh_socket_t socket, bool is_enabled)
  */
 int os_socket_get_tcp_no_delay(bh_socket_t socket, bool *is_enabled)
 {
-    return Xila_socket_get_tcp_no_delay(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -975,7 +968,7 @@ int os_socket_get_tcp_no_delay(bh_socket_t socket, bool *is_enabled)
  */
 int os_socket_set_tcp_quick_ack(bh_socket_t socket, bool is_enabled)
 {
-    return Xila_socket_set_tcp_quick_ack(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -990,7 +983,7 @@ int os_socket_set_tcp_quick_ack(bh_socket_t socket, bool is_enabled)
  */
 int os_socket_get_tcp_quick_ack(bh_socket_t socket, bool *is_enabled)
 {
-    return Xila_socket_get_tcp_quick_ack(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -1004,7 +997,7 @@ int os_socket_get_tcp_quick_ack(bh_socket_t socket, bool *is_enabled)
  */
 int os_socket_set_tcp_keep_idle(bh_socket_t socket, uint32_t time_s)
 {
-    return Xila_socket_set_tcp_keep_idle(socket, time_s);
+    return -1;
 }
 
 /**
@@ -1018,7 +1011,7 @@ int os_socket_set_tcp_keep_idle(bh_socket_t socket, uint32_t time_s)
  */
 int os_socket_get_tcp_keep_idle(bh_socket_t socket, uint32_t *time_s)
 {
-    return Xila_socket_get_tcp_keep_idle(socket, time_s);
+    return -1;
 }
 
 /**
@@ -1031,7 +1024,7 @@ int os_socket_get_tcp_keep_idle(bh_socket_t socket, uint32_t *time_s)
  */
 int os_socket_set_tcp_keep_intvl(bh_socket_t socket, uint32_t time_s)
 {
-    return Xila_socket_set_tcp_keep_interval(socket, time_s);
+    return -1;
 }
 
 /**
@@ -1044,7 +1037,7 @@ int os_socket_set_tcp_keep_intvl(bh_socket_t socket, uint32_t time_s)
  */
 int os_socket_get_tcp_keep_intvl(bh_socket_t socket, uint32_t *time_s)
 {
-    return Xila_socket_get_tcp_keep_interval(socket, time_s);
+    return -1;
 }
 
 /**
@@ -1057,7 +1050,7 @@ int os_socket_get_tcp_keep_intvl(bh_socket_t socket, uint32_t *time_s)
  */
 int os_socket_set_tcp_fastopen_connect(bh_socket_t socket, bool is_enabled)
 {
-    return Xila_socket_set_tcp_fast_open_connect(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -1070,7 +1063,7 @@ int os_socket_set_tcp_fastopen_connect(bh_socket_t socket, bool is_enabled)
  */
 int os_socket_get_tcp_fastopen_connect(bh_socket_t socket, bool *is_enabled)
 {
-    return Xila_socket_get_tcp_fast_open_connect(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -1084,7 +1077,7 @@ int os_socket_get_tcp_fastopen_connect(bh_socket_t socket, bool *is_enabled)
  */
 int os_socket_set_ip_multicast_loop(bh_socket_t socket, bool ipv6, bool is_enabled)
 {
-    return Xila_socket_set_ip_multicast_loop(socket, ipv6, is_enabled);
+    return -1;
 }
 
 /**
@@ -1099,7 +1092,7 @@ int os_socket_set_ip_multicast_loop(bh_socket_t socket, bool ipv6, bool is_enabl
 int os_socket_get_ip_multicast_loop(bh_socket_t socket, bool ipv6,
                                     bool *is_enabled)
 {
-    return Xila_socket_get_ip_multicast_loop(socket, ipv6, is_enabled);
+    return -1;
 }
 
 /**
@@ -1116,7 +1109,7 @@ int os_socket_set_ip_add_membership(bh_socket_t socket,
                                     bh_ip_addr_buffer_t *imr_multiaddr,
                                     uint32_t imr_interface, bool is_ipv6)
 {
-    return Xila_socket_set_ip_address_membership(socket, imr_multiaddr, imr_interface, is_ipv6);
+    return -1;
 }
 
 /**
@@ -1133,7 +1126,7 @@ int os_socket_set_ip_drop_membership(bh_socket_t socket,
                                      bh_ip_addr_buffer_t *imr_multiaddr,
                                      uint32_t imr_interface, bool is_ipv6)
 {
-    return Xila_socket_drop_ip_address_membership(socket, imr_multiaddr, imr_interface, is_ipv6);
+    return -1;
 }
 
 /**
@@ -1146,7 +1139,7 @@ int os_socket_set_ip_drop_membership(bh_socket_t socket,
  */
 int os_socket_set_ip_ttl(bh_socket_t socket, uint8_t ttl_s)
 {
-    return Xila_socket_set_ip_time_to_live(socket, ttl_s);
+    return -1;
 }
 
 /**
@@ -1159,7 +1152,7 @@ int os_socket_set_ip_ttl(bh_socket_t socket, uint8_t ttl_s)
  */
 int os_socket_get_ip_ttl(bh_socket_t socket, uint8_t *ttl_s)
 {
-    return Xila_socket_get_ip_time_to_live(socket, ttl_s);
+    return -1;
 }
 
 /**
@@ -1172,7 +1165,7 @@ int os_socket_get_ip_ttl(bh_socket_t socket, uint8_t *ttl_s)
  */
 int os_socket_set_ip_multicast_ttl(bh_socket_t socket, uint8_t ttl_s)
 {
-    return Xila_socket_set_ip_multicast_time_to_live(socket, ttl_s);
+    return -1;
 }
 
 /**
@@ -1185,7 +1178,7 @@ int os_socket_set_ip_multicast_ttl(bh_socket_t socket, uint8_t ttl_s)
  */
 int os_socket_get_ip_multicast_ttl(bh_socket_t socket, uint8_t *ttl_s)
 {
-    return Xila_socket_get_ip_multicast_time_to_live(socket, ttl_s);
+    return -1;
 }
 
 /**
@@ -1198,7 +1191,7 @@ int os_socket_get_ip_multicast_ttl(bh_socket_t socket, uint8_t *ttl_s)
  */
 int os_socket_set_ipv6_only(bh_socket_t socket, bool is_enabled)
 {
-    return Xila_socket_set_ipv6_only(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -1211,7 +1204,7 @@ int os_socket_set_ipv6_only(bh_socket_t socket, bool is_enabled)
  */
 int os_socket_get_ipv6_only(bh_socket_t socket, bool *is_enabled)
 {
-    return Xila_socket_get_ipv6_only(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -1226,7 +1219,7 @@ int os_socket_get_ipv6_only(bh_socket_t socket, bool *is_enabled)
  */
 int os_socket_set_broadcast(bh_socket_t socket, bool is_enabled)
 {
-    return Xila_socket_set_broadcast(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -1241,7 +1234,7 @@ int os_socket_set_broadcast(bh_socket_t socket, bool is_enabled)
  */
 int os_socket_get_broadcast(bh_socket_t socket, bool *is_enabled)
 {
-    return Xila_socket_get_broadcast(socket, is_enabled);
+    return -1;
 }
 
 /**
@@ -1256,7 +1249,7 @@ int os_socket_get_broadcast(bh_socket_t socket, bool *is_enabled)
  */
 int os_dumps_proc_mem_info(char *out, unsigned int size)
 {
-    return Xila_dumps_memory_informations(out, size);
+    return -1;
 }
 
 /****************************************************
@@ -1311,7 +1304,7 @@ os_fstat(os_file_handle handle, struct __wasi_filestat_t *buf)
 {
     Xila_file_system_statistics_type Statistics;
 
-    File_system_result_type Result = Xila_file_system_get_statistics(handle, &Statistics);
+    Xila_file_system_result_type Result = Xila_file_system_get_statistics(handle, &Statistics);
 
     if (Result == 0)
         Into_WASI_file_statistics(&Statistics, buf);
@@ -1332,7 +1325,13 @@ __wasi_errno_t
 os_fstatat(os_file_handle handle, const char *path,
            struct __wasi_filestat_t *buf, __wasi_lookupflags_t lookup_flags)
 {
-    return Xila_get_file_statistics_at(handle, path, buf, lookup_flags);
+    bool Follow = lookup_flags & __WASI_LOOKUP_SYMLINK_FOLLOW;
+
+    Xila_file_system_statistics_type Statistics;
+
+    Xila_file_system_result_type Result = Xila_file_system_get_statistics_from_path(path, &Statistics, Follow);
+
+    return Into_WASI_Error(Result);
 }
 
 /**
@@ -1345,7 +1344,7 @@ os_fstatat(os_file_handle handle, const char *path,
 __wasi_errno_t
 os_file_get_fdflags(os_file_handle handle, __wasi_fdflags_t *flags)
 {
-    return Xila_get_file_flags(handle, flags);
+    return Xila_file_system_get_flags(handle, flags);
 }
 
 /**
@@ -1358,7 +1357,7 @@ os_file_get_fdflags(os_file_handle handle, __wasi_fdflags_t *flags)
 __wasi_errno_t
 os_file_set_fdflags(os_file_handle handle, __wasi_fdflags_t flags)
 {
-    return Xila_set_file_flags(handle, flags);
+    return Xila_file_system_set_flags(handle, flags);
 }
 
 /**
@@ -1396,7 +1395,7 @@ os_open_preopendir(const char *path, os_file_handle *out)
 
     printf("Open preopendir: %s\n", path);
 
-    File_system_error_type Result = Xila_file_system_open_directory(path, out);
+    Xila_file_system_result_type Result = Xila_file_system_open_directory(path, out);
 
     return Into_WASI_Error(Result);
 }
@@ -1469,7 +1468,7 @@ os_file_get_access_mode(os_file_handle handle,
 {
     uint8_t Mode;
 
-    File_system_result_type Result = Xila_file_system_get_access_mode(handle, &Mode);
+    Xila_file_system_result_type Result = Xila_file_system_get_access_mode(handle, &Mode);
 
     if (Result == 0)
     {
@@ -1489,7 +1488,7 @@ os_file_get_access_mode(os_file_handle handle,
 __wasi_errno_t
 os_close(os_file_handle handle, bool is_stdio)
 {
-    return Xila_file_system_close(handle);
+    return Into_WASI_Error(Xila_file_system_close(handle));
 }
 
 /**
@@ -1505,7 +1504,18 @@ __wasi_errno_t
 os_preadv(os_file_handle handle, const struct __wasi_iovec_t *iov, int iovcnt,
           __wasi_filesize_t offset, size_t *nread)
 {
-    return Xila_positioned_read_vectored(handle, iov, iovcnt, offset, nread);
+    uint8_t *Buffers[iovcnt];
+    size_t Lengths[iovcnt];
+
+    for (int i = 0; i < iovcnt; i++)
+    {
+        Buffers[i] = iov[i].buf;
+        Lengths[i] = iov[i].buf_len;
+    }
+
+    Xila_file_system_result_type Result = Xila_file_system_read_at_position_vectored(handle, Buffers, Lengths, iovcnt, offset, nread);
+
+    return Into_WASI_Error(Result);
 }
 
 /**
@@ -1521,7 +1531,18 @@ __wasi_errno_t
 os_pwritev(os_file_handle handle, const struct __wasi_ciovec_t *iov, int iovcnt,
            __wasi_filesize_t offset, size_t *nwritten)
 {
-    return Xila_positioned_write_vectored(handle, iov, iovcnt, offset, nwritten);
+    const uint8_t *Buffers[iovcnt];
+    size_t Lengths[iovcnt];
+
+    for (int i = 0; i < iovcnt; i++)
+    {
+        Buffers[i] = iov[i].buf;
+        Lengths[i] = iov[i].buf_len;
+    }
+
+    Xila_file_system_result_type Result = Xila_file_system_write_at_position_vectored(handle, Buffers, Lengths, iovcnt, offset, nwritten);
+
+    return Into_WASI_Error(Result);
 }
 
 /**
@@ -1536,7 +1557,7 @@ __wasi_errno_t
 os_readv(os_file_handle handle, const struct __wasi_iovec_t *iov, int iovcnt,
          size_t *nread)
 {
-    void *Buffers[iovcnt];
+    uint8_t *Buffers[iovcnt];
     size_t Lengths[iovcnt];
 
     for (int i = 0; i < iovcnt; i++)
@@ -1560,7 +1581,7 @@ __wasi_errno_t
 os_writev(os_file_handle handle, const struct __wasi_ciovec_t *iov, int iovcnt,
           size_t *nwritten)
 {
-    const void *Buffers[iovcnt];
+    const uint8_t *Buffers[iovcnt];
     size_t Lengths[iovcnt];
 
     for (int i = 0; i < iovcnt; i++)
@@ -1584,7 +1605,7 @@ __wasi_errno_t
 os_fallocate(os_file_handle handle, __wasi_filesize_t offset,
              __wasi_filesize_t length)
 {
-    return Xila_allocate_file(handle, offset, length);
+    return Xila_file_system_allocate(handle, offset, length);
 }
 
 /**
@@ -1596,7 +1617,7 @@ os_fallocate(os_file_handle handle, __wasi_filesize_t offset,
 __wasi_errno_t
 os_ftruncate(os_file_handle handle, __wasi_filesize_t size)
 {
-    return Xila_truncate_file(handle, size);
+    return Xila_file_system_truncate(handle, size);
 }
 
 /**
@@ -1612,7 +1633,7 @@ __wasi_errno_t
 os_futimens(os_file_handle handle, __wasi_timestamp_t access_time,
             __wasi_timestamp_t modification_time, __wasi_fstflags_t fstflags)
 {
-    return Xila_set_file_times(handle, access_time, modification_time, fstflags);
+    return Xila_file_system_set_times(handle, access_time, modification_time, fstflags);
 }
 
 /**
@@ -1632,8 +1653,10 @@ os_utimensat(os_file_handle handle, const char *path,
              __wasi_timestamp_t modification_time, __wasi_fstflags_t fstflags,
              __wasi_lookupflags_t lookup_flags)
 {
-    return Xila_set_file_times_at(handle, path, access_time, modification_time,
-                                  fstflags, lookup_flags);
+    bool Follow = lookup_flags & __WASI_LOOKUP_SYMLINK_FOLLOW;
+
+    return Xila_file_system_set_times_from_path(path, access_time, modification_time,
+                                                (uint8_t)fstflags, Follow);
 }
 
 /**
@@ -1669,11 +1692,8 @@ os_linkat(os_file_handle from_handle, const char *from_path,
           os_file_handle to_handle, const char *to_path,
           __wasi_lookupflags_t lookup_flags)
 {
-    bool follow = lookup_flags & __WASI_LOOKUP_SYMLINK_FOLLOW;
-
     return Into_WASI_Error(
-        Xila_create_link_at(from_handle, from_path, to_handle, to_path,
-                            follow));
+        Xila_file_system_link(from_path, to_path));
 }
 
 /**
@@ -1686,7 +1706,7 @@ os_linkat(os_file_handle from_handle, const char *from_path,
 __wasi_errno_t
 os_symlinkat(const char *old_path, os_file_handle handle, const char *new_path)
 {
-    return Into_WASI_Error(Xila_create_symbolic_link_at(old_path, handle, new_path));
+    return Into_WASI_Error(Xila_file_system_create_symbolic_link_at(handle, old_path, new_path));
 }
 
 /**
@@ -1752,7 +1772,7 @@ os_renameat(os_file_handle old_handle, const char *old_path,
 __wasi_errno_t
 os_unlinkat(os_file_handle handle, const char *path, bool is_dir)
 {
-    return Xila_unlink_at(handle, path, is_dir);
+    return Xila_file_system_remove(path);
 }
 
 /**
@@ -1788,9 +1808,7 @@ __wasi_errno_t
 os_fadvise(os_file_handle handle, __wasi_filesize_t offset,
            __wasi_filesize_t length, __wasi_advice_t advice)
 {
-    printf("os_fadvise\n");
-
-    return Xila_get_advisory_information(handle, offset, length, advice);
+    return Xila_file_system_advise(handle, offset, length, advice);
 }
 
 /**
@@ -1803,7 +1821,16 @@ os_fadvise(os_file_handle handle, __wasi_filesize_t offset,
 __wasi_errno_t
 os_isatty(os_file_handle handle)
 {
-    return Xila_file_system_is_a_terminal(handle);
+    bool Is_Terminal = false;
+
+    Xila_file_system_result_type Result = Xila_file_system_is_a_terminal(handle, &Is_Terminal);
+
+    if (Is_Terminal)
+    {
+        return __WASI_ESUCCESS;
+    }
+
+    return Into_WASI_Error(Result);
 }
 
 /**
@@ -1886,7 +1913,9 @@ os_rewinddir(os_dir_stream dir_stream)
 __wasi_errno_t
 os_seekdir(os_dir_stream dir_stream, __wasi_dircookie_t position)
 {
-    return Into_WASI_Error(Xila_file_system_set_directory_position(dir_stream, position));
+    Xila_file_system_result_type Result = Xila_file_system_directory_set_position(dir_stream, position);
+
+    return Into_WASI_Error(Result);
 }
 
 /**
@@ -1902,9 +1931,9 @@ __wasi_errno_t os_readdir(os_dir_stream dir_stream, __wasi_dirent_t *entry, cons
 {
     Xila_file_system_size_type Size = 0;
     Xila_file_system_inode_type Inode = 0;
-    Xila_file_system_type_type Type = 0;
+    Xila_file_type_type Type = 0;
 
-    File_system_result_type Result = Xila_file_system_read_directory(dir_stream, d_name, &Type, &Size, &Inode);
+    Xila_file_system_result_type Result = Xila_file_system_read_directory(dir_stream, d_name, &Type, &Size, &Inode);
 
     if ((*d_name) != NULL)
     {
@@ -1974,7 +2003,7 @@ char *os_realpath(const char *path, char *resolved_path)
 {
     printf("Resolve path: %s\n", path);
 
-    // File_system_result_type Result = Xila_file_system_resolve_path(path, resolved_path, PATH_MAX);
+    // Xila_file_system_result_type Result = Xila_file_system_resolve_path(path, resolved_path, PATH_MAX);
 
     // printf("os_realpath: %s - %u\n", resolved_path, Result);
 
@@ -2007,8 +2036,7 @@ char *os_realpath(const char *path, char *resolved_path)
  */
 __wasi_errno_t os_clock_res_get(__wasi_clockid_t clock_id, __wasi_timestamp_t *resolution)
 {
-    *resolution = Xila_get_clock_resolution(clock_id);
-    return __WASI_ESUCCESS;
+    return Xila_time_get_resolution(clock_id, resolution);
 }
 
 /**
@@ -2022,8 +2050,7 @@ __wasi_errno_t os_clock_res_get(__wasi_clockid_t clock_id, __wasi_timestamp_t *r
 __wasi_errno_t os_clock_time_get(__wasi_clockid_t clock_id, __wasi_timestamp_t precision,
                                  __wasi_timestamp_t *time)
 {
-    *time = Xila_get_clock_time(clock_id, precision);
-    return __WASI_ESUCCESS;
+    return Xila_time_get_time(clock_id, precision, time);
 }
 
 bool os_is_stdin_handle(os_file_handle fd)

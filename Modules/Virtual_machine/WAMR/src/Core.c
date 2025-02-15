@@ -89,7 +89,7 @@ uint64 os_time_get_boot_us(void)
  */
 uint64 os_time_thread_cputime_us(void)
 {
-    return Xila_get_cpu_time_microseconds();
+    return Xila_time_get_cpu();
 }
 
 /**
@@ -108,7 +108,7 @@ korp_tid os_self_thread(void)
  */
 uint8 *os_thread_get_stack_boundary(void)
 {
-    return Xila_get_thread_stack_boundary();
+    return Xila_thread_get_stack_boundary();
 }
 
 /**
@@ -179,9 +179,9 @@ Xila_memory_protection_type To_xila_memory_protection(int prot)
     return Xila_protection;
 }
 
-Xila_memory_flag_type To_xila_memory_flags(int flags)
+Xila_memory_flags_type To_xila_memory_flags(int flags)
 {
-    Xila_memory_flag_type Xila_flags = Xila_memory_flag_anonymous | Xila_memory_flag_private;
+    Xila_memory_flags_type Xila_flags = Xila_memory_flag_anonymous | Xila_memory_flag_private;
 
     if (flags & MMAP_MAP_FIXED)
         Xila_flags |= Xila_memory_flag_fixed;
@@ -196,7 +196,7 @@ void *os_mmap(void *hint, size_t size, int prot, int flags, os_file_handle file)
 {
     Xila_memory_protection_type Xila_protection = To_xila_memory_protection(prot);
 
-    Xila_memory_flag_type Xila_flags = To_xila_memory_flags(flags);
+    Xila_memory_flags_type Xila_flags = To_xila_memory_flags(flags);
 
     return Xila_memory_allocate_custom(hint, size, 8, Xila_protection, Xila_flags);
 }
@@ -238,7 +238,7 @@ os_get_dbus_mirror(void *ibus);
  */
 void os_dcache_flush(void)
 {
-    Xila_flush_data_cache();
+    Xila_memory_flush_data_cache();
 }
 
 /**
@@ -246,5 +246,5 @@ void os_dcache_flush(void)
  */
 void os_icache_flush(void *start, size_t len)
 {
-    Xila_flush_instruction_cache(start, len);
+    Xila_memory_flush_instruction_cache(start, len);
 }

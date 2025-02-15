@@ -15,15 +15,16 @@ use File_system::{
 use Task::Get_instance as Get_task_manager_instance;
 use Virtual_file_system::Get_instance as Get_file_system_instance;
 
-use crate::Into_position;
+use crate::{Into_position, Xila_time_type};
 
 use super::{
-    Whence_type, Xila_mode_type, Xila_open_type, Xila_size_type, Xila_statistics_type,
-    Xila_status_type, Xila_unique_file_identifier_type,
+    Xila_file_system_mode_type, Xila_file_system_open_type, Xila_file_system_result_type,
+    Xila_file_system_size_type, Xila_file_system_statistics_type, Xila_file_system_status_type,
+    Xila_file_system_whence_type, Xila_unique_file_identifier_type,
 };
 
 /// This function is used to convert a function returning a Result into a u32.
-pub fn Into_u32<F>(Function: F) -> u32
+pub fn Into_u32<F>(Function: F) -> Xila_file_system_result_type
 where
     F: FnOnce() -> Result<(), NonZeroU32>,
 {
@@ -45,19 +46,19 @@ where
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_get_statistics(
     File: Xila_unique_file_identifier_type,
-    Statistics: *mut Xila_statistics_type,
-) -> u32 {
+    Statistics: *mut Xila_file_system_statistics_type,
+) -> Xila_file_system_result_type {
     Into_u32(move || {
         let Task_identifier = Get_task_manager_instance()
             .Get_current_task_identifier()
             .map_err(|_| Error_type::Failed_to_get_task_informations)?;
 
-        let Statistics = Xila_statistics_type::From_mutable_pointer(Statistics)
+        let Statistics = Xila_file_system_statistics_type::From_mutable_pointer(Statistics)
             .ok_or(Error_type::Invalid_parameter)?;
 
         let File = File_system::Unique_file_identifier_type::From_raw(File);
 
-        *Statistics = Xila_statistics_type::From_statistics(
+        *Statistics = Xila_file_system_statistics_type::From_statistics(
             Get_file_system_instance()
                 .Get_statistics(File, Task_identifier)
                 .expect("Failed to get file statistics."),
@@ -65,6 +66,16 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics(
 
         Ok(())
     })
+}
+
+/// This function is used to get the statistics of a file from its path.
+#[no_mangle]
+pub extern "C" fn Xila_file_system_get_statistics_from_path(
+    _Path: *const c_char,
+    _Statistics: *mut Xila_file_system_statistics_type,
+    _Follow: bool,
+) -> Xila_file_system_result_type {
+    todo!()
 }
 
 /// This function is used to get the access mode of a file.
@@ -79,8 +90,8 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics(
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_get_access_mode(
     File: Xila_unique_file_identifier_type,
-    Mode: *mut Xila_mode_type,
-) -> u32 {
+    Mode: *mut Xila_file_system_mode_type,
+) -> Xila_file_system_result_type {
     println!("Getting file access mode : {:?}", File);
 
     Into_u32(move || {
@@ -111,7 +122,9 @@ pub unsafe extern "C" fn Xila_file_system_get_access_mode(
 /// This function may return an error if the file system fails to close the file.
 ///
 #[no_mangle]
-pub extern "C" fn Xila_file_system_close(File: Xila_unique_file_identifier_type) -> u32 {
+pub extern "C" fn Xila_file_system_close(
+    File: Xila_unique_file_identifier_type,
+) -> Xila_file_system_result_type {
     Into_u32(move || {
         let Task_identifier = Get_task_manager_instance()
             .Get_current_task_identifier()
@@ -143,7 +156,7 @@ pub unsafe extern "C" fn Xila_file_system_write_vectored(
     Buffers_length: *const usize,
     Buffer_count: usize,
     Written: *mut usize,
-) -> u32 {
+) -> Xila_file_system_result_type {
     Into_u32(move || {
         let Task_identifier = Get_task_manager_instance()
             .Get_current_task_identifier()
@@ -154,10 +167,10 @@ pub unsafe extern "C" fn Xila_file_system_write_vectored(
 
         let mut Current_written = 0;
 
+        let File = File_system::Unique_file_identifier_type::From_raw(File);
+
         for (Buffer, Length) in Buffers.iter().zip(Buffers_length.iter()) {
             let Buffer_slice = std::slice::from_raw_parts(*Buffer, *Length);
-
-            let File = File_system::Unique_file_identifier_type::From_raw(File);
 
             Current_written += usize::from(Get_file_system_instance().Write(
                 File,
@@ -190,7 +203,7 @@ pub unsafe extern "C" fn Xila_file_system_read_vectored(
     Buffers_length: *mut usize,
     Buffer_count: usize,
     Read: *mut usize,
-) -> u32 {
+) -> Xila_file_system_result_type {
     Into_u32(move || {
         let Task_identifier = Get_task_manager_instance()
             .Get_current_task_identifier()
@@ -201,10 +214,10 @@ pub unsafe extern "C" fn Xila_file_system_read_vectored(
 
         let mut Current_read = 0;
 
+        let File = File_system::Unique_file_identifier_type::From_raw(File);
+
         for (Buffer_pointer, Buffer_length) in Buffers.iter_mut().zip(Buffers_length.iter_mut()) {
             let Buffer = std::slice::from_raw_parts_mut(*Buffer_pointer, *Buffer_length);
-
-            let File = File_system::Unique_file_identifier_type::From_raw(File);
 
             let Read = Get_file_system_instance().Read(File, Buffer, Task_identifier)?;
 
@@ -213,6 +226,106 @@ pub unsafe extern "C" fn Xila_file_system_read_vectored(
 
         if !Read.is_null() {
             *Read = Current_read;
+        }
+
+        Ok(())
+    })
+}
+
+/// This function is used to perform a read operation on a file at a specific position.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+#[no_mangle]
+pub unsafe extern "C" fn Xila_file_system_read_at_position_vectored(
+    File: Xila_unique_file_identifier_type,
+    Buffers: *mut *mut u8,
+    Buffers_length: *mut usize,
+    Buffer_count: usize,
+    Position: u64,
+    Read: *mut usize,
+) -> Xila_file_system_result_type {
+    Into_u32(move || {
+        let Task_identifier = Get_task_manager_instance()
+            .Get_current_task_identifier()
+            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+
+        let Buffers = std::slice::from_raw_parts_mut(Buffers, Buffer_count);
+        let Buffers_length = std::slice::from_raw_parts_mut(Buffers_length, Buffer_count);
+
+        let mut Current_read = 0;
+
+        let File: File_system::Unique_file_identifier_type =
+            File_system::Unique_file_identifier_type::From_raw(File);
+
+        Get_file_system_instance().Set_position(
+            File,
+            &File_system::Position_type::Start(Position),
+            Task_identifier,
+        )?;
+
+        for (Buffer_pointer, Buffer_length) in Buffers.iter_mut().zip(Buffers_length.iter_mut()) {
+            let Buffer = std::slice::from_raw_parts_mut(*Buffer_pointer, *Buffer_length);
+
+            let Read = Get_file_system_instance().Read(File, Buffer, Task_identifier)?;
+
+            Current_read += usize::from(Read);
+        }
+
+        if !Read.is_null() {
+            *Read = Current_read;
+        }
+
+        Ok(())
+    })
+}
+
+/// This function is used to perform a write operation on a file at a specific position.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+#[no_mangle]
+pub unsafe extern "C" fn Xila_file_system_write_at_position_vectored(
+    File: Xila_unique_file_identifier_type,
+    Buffers: *const *const u8,
+    Buffers_length: *const usize,
+    Buffer_count: usize,
+    Position: u64,
+    Written: *mut usize,
+) -> Xila_file_system_result_type {
+    Into_u32(move || {
+        let Task_identifier = Get_task_manager_instance()
+            .Get_current_task_identifier()
+            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+
+        let Buffers = std::slice::from_raw_parts(Buffers, Buffer_count);
+        let Buffers_length = std::slice::from_raw_parts(Buffers_length, Buffer_count);
+
+        let mut Current_written = 0;
+
+        let File: File_system::Unique_file_identifier_type =
+            File_system::Unique_file_identifier_type::From_raw(File);
+
+        Get_file_system_instance().Set_position(
+            File,
+            &File_system::Position_type::Start(Position),
+            Task_identifier,
+        )?;
+
+        for (Buffer, Length) in Buffers.iter().zip(Buffers_length.iter()) {
+            let Buffer_slice = std::slice::from_raw_parts(*Buffer, *Length);
+
+            Current_written += usize::from(Get_file_system_instance().Write(
+                File,
+                Buffer_slice,
+                Task_identifier,
+            )?);
+        }
+
+        if !Written.is_null() {
+            *Written = Current_written;
         }
 
         Ok(())
@@ -232,7 +345,7 @@ pub unsafe extern "C" fn Xila_file_system_read_vectored(
 pub unsafe extern "C" fn Xila_file_system_is_a_terminal(
     File: Xila_unique_file_identifier_type,
     Is_a_terminal: *mut bool,
-) -> u32 {
+) -> Xila_file_system_result_type {
     Into_u32(move || {
         let Task_identifier = Get_task_manager_instance()
             .Get_current_task_identifier()
@@ -302,12 +415,12 @@ pub extern "C" fn Xila_file_system_is_stdout(File: Xila_unique_file_identifier_t
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_open(
-    Path: *const i8,
-    Mode: Xila_mode_type,
-    Open: Xila_open_type,
-    Status: Xila_status_type,
+    Path: *const c_char,
+    Mode: Xila_file_system_mode_type,
+    Open: Xila_file_system_open_type,
+    Status: Xila_file_system_status_type,
     File: *mut Xila_unique_file_identifier_type,
-) -> u32 {
+) -> Xila_file_system_result_type {
     Into_u32(move || {
         let Path = std::ffi::CStr::from_ptr(Path)
             .to_str()
@@ -334,6 +447,27 @@ pub unsafe extern "C" fn Xila_file_system_open(
     })
 }
 
+#[no_mangle]
+pub extern "C" fn Xila_file_system_set_flags(
+    _File: Xila_unique_file_identifier_type,
+    _Status: Xila_file_system_status_type,
+) -> Xila_file_system_result_type {
+    todo!()
+}
+
+/// This function is used to get the flags of a file.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+#[no_mangle]
+pub unsafe extern "C" fn Xila_file_system_get_flags(
+    _File: Xila_unique_file_identifier_type,
+    _Status: *mut Xila_file_system_status_type,
+) -> Xila_file_system_result_type {
+    todo!()
+}
+
 /// This function is used to convert a path to a resolved path (i.e. a path without symbolic links or relative paths).
 ///
 /// # Safety
@@ -344,7 +478,7 @@ pub unsafe extern "C" fn Xila_file_system_resolve_path(
     Path: *const i8,
     Resolved_path: *mut u8,
     Resolved_path_size: usize,
-) -> u32 {
+) -> Xila_file_system_result_type {
     Into_u32(move || {
         let Path = std::ffi::CStr::from_ptr(Path)
             .to_str()
@@ -364,7 +498,10 @@ pub unsafe extern "C" fn Xila_file_system_resolve_path(
 }
 
 #[no_mangle]
-pub extern "C" fn Xila_file_system_flush(File: Xila_unique_file_identifier_type, _: bool) -> u32 {
+pub extern "C" fn Xila_file_system_flush(
+    File: Xila_unique_file_identifier_type,
+    _: bool,
+) -> Xila_file_system_result_type {
     Into_u32(move || {
         let Task = Get_task_manager_instance()
             .Get_current_task_identifier()
@@ -379,12 +516,21 @@ pub extern "C" fn Xila_file_system_flush(File: Xila_unique_file_identifier_type,
 }
 
 #[no_mangle]
+pub extern "C" fn Xila_file_system_create_symbolic_link_at(
+    _: Xila_unique_file_identifier_type,
+    _: *const c_char,
+    _: *const c_char,
+) -> Xila_file_system_result_type {
+    todo!()
+}
+
+#[no_mangle]
 pub extern "C" fn Xila_file_system_read_link_at(
     _Directory: Xila_unique_file_identifier_type,
     _Path: *mut i8,
     _Size: usize,
     _Used: *mut usize,
-) -> u32 {
+) -> Xila_file_system_result_type {
     todo!()
 }
 
@@ -397,9 +543,9 @@ pub extern "C" fn Xila_file_system_read_link_at(
 pub unsafe extern "C" fn Xila_file_system_set_position(
     File: Xila_unique_file_identifier_type,
     Offset: i64,
-    Whence: Whence_type,
-    Position: *mut Xila_size_type,
-) -> u32 {
+    Whence: Xila_file_system_whence_type,
+    Position: *mut Xila_file_system_size_type,
+) -> Xila_file_system_result_type {
     Into_u32(move || {
         let Task = Get_task_manager_instance()
             .Get_current_task_identifier()
@@ -428,7 +574,9 @@ pub unsafe extern "C" fn Xila_file_system_set_position(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_file_system_create_directory(Path: *const c_char) -> u32 {
+pub unsafe extern "C" fn Xila_file_system_create_directory(
+    Path: *const c_char,
+) -> Xila_file_system_result_type {
     Into_u32(move || {
         let Path = CStr::from_ptr(Path)
             .to_str()
@@ -455,7 +603,7 @@ pub unsafe extern "C" fn Xila_file_system_create_directory(Path: *const c_char) 
 pub unsafe extern "C" fn Xila_file_system_rename(
     Old_path: *const c_char,
     New_path: *const c_char,
-) -> u32 {
+) -> Xila_file_system_result_type {
     Into_u32(move || {
         let Old_path = CStr::from_ptr(Old_path)
             .to_str()
@@ -471,4 +619,100 @@ pub unsafe extern "C" fn Xila_file_system_rename(
 
         Ok(())
     })
+}
+
+#[no_mangle]
+pub extern "C" fn Xila_file_system_set_times(
+    _: Xila_unique_file_identifier_type,
+    _: Xila_time_type,
+    _: Xila_time_type,
+    _: u8,
+) -> Xila_file_system_result_type {
+    todo!()
+}
+
+/// This function is used to set access and modification times of a file.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+#[no_mangle]
+pub unsafe extern "C" fn Xila_file_system_set_times_from_path(
+    _Path: *const c_char,
+    _Access: Xila_time_type,
+    _Modification: Xila_time_type,
+    _Flags: u8,
+    _Follow: bool,
+) -> Xila_file_system_result_type {
+    todo!()
+}
+
+/// This function is used to remove a file.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+#[no_mangle]
+pub unsafe extern "C" fn Xila_file_system_remove(
+    _Path: *const c_char,
+) -> Xila_file_system_result_type {
+    Into_u32(|| {
+        let Path = CStr::from_ptr(_Path)
+            .to_str()
+            .map_err(|_| Error_type::Invalid_parameter)?;
+
+        Get_file_system_instance().Remove(Path)?;
+
+        Ok(())
+    })
+}
+
+/// This function is used to truncate a file.
+#[no_mangle]
+pub extern "C" fn Xila_file_system_truncate(
+    _File: Xila_unique_file_identifier_type,
+    _Length: Xila_file_system_size_type,
+) -> Xila_file_system_result_type {
+    Into_u32(move || {
+        let _Task = Get_task_manager_instance()
+            .Get_current_task_identifier()
+            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+
+        let _File = File_system::Unique_file_identifier_type::From_raw(_File);
+
+        todo!();
+    })
+}
+
+/// This function is used to create a symbolic link.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+#[no_mangle]
+pub unsafe extern "C" fn Xila_file_system_link(
+    _Path: *const c_char,
+    _Link: *const c_char,
+) -> Xila_file_system_result_type {
+    todo!()
+}
+
+/// This function is used to advice the file system about the access pattern of a file.
+#[no_mangle]
+pub extern "C" fn Xila_file_system_advise(
+    _File: Xila_unique_file_identifier_type,
+    _Offset: Xila_file_system_size_type,
+    _Length: Xila_file_system_size_type,
+    _Advice: u8,
+) -> Xila_file_system_result_type {
+    todo!()
+}
+
+#[no_mangle]
+pub extern "C" fn Xila_file_system_allocate(
+    _File: Xila_unique_file_identifier_type,
+    _Offset: Xila_file_system_size_type,
+    _Length: Xila_file_system_size_type,
+) -> Xila_file_system_result_type {
+    todo!()
 }

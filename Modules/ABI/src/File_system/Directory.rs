@@ -12,7 +12,8 @@ use Task::Get_instance as Get_task_manager_instance;
 use Virtual_file_system::Get_instance as Get_file_system_instance;
 
 use super::{
-    Into_u32, Xila_inode_type, Xila_size_type, Xila_type_type, Xila_unique_file_identifier_type,
+    Into_u32, Xila_file_system_inode_type, Xila_file_system_size_type, Xila_file_type_type,
+    Xila_unique_file_identifier_type,
 };
 
 /// This function is used to open a directory.
@@ -55,10 +56,10 @@ pub unsafe extern "C" fn Xila_file_system_open_directory(
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_read_directory(
     File: Xila_unique_file_identifier_type,
-    Entry_name: *mut *mut i8,
-    Entry_type: *mut Xila_type_type,
-    Entry_size: *mut Xila_size_type,
-    Entry_inode: *mut Xila_inode_type,
+    Entry_name: *mut *const c_char,
+    Entry_type: *mut Xila_file_type_type,
+    Entry_size: *mut Xila_file_system_size_type,
+    Entry_inode: *mut Xila_file_system_inode_type,
 ) -> u32 {
     println!("Reading directory : {:?}", File);
 
@@ -113,6 +114,24 @@ pub extern "C" fn Xila_file_system_rewind_directory(
         let Directory = File_system::Unique_file_identifier_type::From_raw(Directory);
 
         Get_file_system_instance().Rewind_directory(Directory, Task)?;
+
+        Ok(())
+    })
+}
+
+#[no_mangle]
+pub extern "C" fn Xila_file_system_directory_set_position(
+    Directory: Xila_unique_file_identifier_type,
+    Offset: Xila_file_system_size_type,
+) -> u32 {
+    Into_u32(move || {
+        let Task = Get_task_manager_instance()
+            .Get_current_task_identifier()
+            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+
+        let Directory = File_system::Unique_file_identifier_type::From_raw(Directory);
+
+        Get_file_system_instance().Set_position_directory(Directory, Offset.into(), Task)?;
 
         Ok(())
     })

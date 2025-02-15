@@ -6,6 +6,8 @@
 #ifndef _XILA_PLATFORM_INTERNAL_H
 #define _XILA_PLATFORM_INTERNAL_H
 
+#include "../../../ABI/include/Xila.h"
+
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -40,7 +42,7 @@ extern "C"
 #define PATH_MAX 256
 #endif
 
-    typedef uint32_t korp_tid;
+    typedef size_t korp_tid;
 
     struct Raw_mutex_type
     {
@@ -58,7 +60,8 @@ extern "C"
     } __attribute__((aligned(8)));
 
     typedef struct Raw_rwlock_type korp_rwlock;
-    typedef unsigned int korp_sem;
+
+    typedef struct Xila_semaphore_type korp_sem;
 
     // #define OS_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 
