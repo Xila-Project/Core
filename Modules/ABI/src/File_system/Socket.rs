@@ -1,4 +1,4 @@
-use super::{Into_u32, Xila_unique_file_identifier_type};
+use super::{Into_u32, Xila_file_system_result_type, Xila_unique_file_identifier_type};
 use Task::Get_instance as Get_task_manager_instance;
 use Virtual_file_system::{Error_type, Get_instance as Get_file_system_instance};
 
@@ -12,7 +12,7 @@ pub unsafe extern "C" fn Xila_file_system_send(
     Socket: Xila_unique_file_identifier_type,
     Buffer: *const u8,
     Size: usize,
-) -> u32 {
+) -> Xila_file_system_result_type {
     Into_u32(|| {
         let Task = Get_task_manager_instance()
             .Get_current_task_identifier()
@@ -46,7 +46,7 @@ pub unsafe extern "C" fn Xila_file_system_receive(
     Socket: Xila_unique_file_identifier_type,
     Buffer: *mut u8,
     Size: usize,
-) -> u32 {
+) -> Xila_file_system_result_type {
     Into_u32(|| {
         let Task = Get_task_manager_instance()
             .Get_current_task_identifier()

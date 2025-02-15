@@ -36,5 +36,5 @@ pub trait Memory_allocator_trait {
 
     fn Flush_data_cache(&self) {}
 
-    fn Flush_instruction_cache(_Address: NonNull<u8>, _Size: usize) {}
+    fn Flush_instruction_cache(&self, _Address: NonNull<u8>, _Size: usize) {}
 }

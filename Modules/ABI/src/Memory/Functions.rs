@@ -184,3 +184,19 @@ pub extern "C" fn Xila_memory_get_page_size() -> usize {
 
     Allocator.Get_page_size()
 }
+
+#[no_mangle]
+pub extern "C" fn Xila_memory_flush_data_cache() {
+    println!("Flushing data cache");
+
+    Allocator.Flush_data_cache()
+}
+
+#[no_mangle]
+pub extern "C" fn Xila_memory_flush_instruction_cache(_Address: *mut c_void, _Size: usize) {
+    println!("Flushing instruction cache");
+
+    let Address = NonNull::new(_Address as *mut u8).expect("Failed to flush instruction cache");
+
+    Allocator.Flush_instruction_cache(Address, _Size)
+}

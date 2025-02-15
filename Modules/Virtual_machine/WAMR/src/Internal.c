@@ -1,47 +1,49 @@
 #include "../../../ABI/include/Xila.h"
 
+#include "platform_api_extension.h"
+#include "platform_wasi_types.h"
+#include "platform_common.h"
+
 Xila_file_system_whence_type Into_Xila_whence(__wasi_whence_t Whence)
 {
     switch (Whence)
     {
     case __WASI_WHENCE_CUR:
-        return Xila_file_system_whence_current;
+        return Xila_file_system_whence_type_Current;
     case __WASI_WHENCE_END:
-        return Xila_file_system_whence_end;
+        return Xila_file_system_whence_type_End;
     default:
-        return Xila_file_system_whence_start;
+        return Xila_file_system_whence_type_Start;
     }
 }
 
-__wasi_errno_t Into_WASI_Error(File_system_result_type Error)
+__wasi_errno_t Into_WASI_Error(Xila_file_system_result_type Error)
 {
     switch (Error)
     {
     case 0:
         return __WASI_ESUCCESS;
-    case Not_found:
-        return __WASI_ENOENT;
     default:
         return Error;
         break;
     }
 }
 
-__wasi_filetype_t Into_WASI_file_type(Xila_file_system_type_type Type)
+__wasi_filetype_t Into_WASI_file_type(Xila_file_type_type Type)
 {
     switch (Type)
     {
-    case Xila_file_system_type_file:
+    case Xila_file_type_type_File:
         return __WASI_FILETYPE_REGULAR_FILE;
-    case Xila_file_system_type_directory:
+    case Xila_file_type_type_Directory:
         return __WASI_FILETYPE_DIRECTORY;
-    case Xila_file_system_type_symbolic_link:
+    case Xila_file_type_type_Symbolic_link:
         return __WASI_FILETYPE_SYMBOLIC_LINK;
-    case Xila_file_system_type_character_device:
+    case Xila_file_type_type_Character_device:
         return __WASI_FILETYPE_CHARACTER_DEVICE;
-    case Xila_file_system_type_block_device:
+    case Xila_file_type_type_Block_device:
         return __WASI_FILETYPE_BLOCK_DEVICE;
-    case Xila_file_system_type_socket:
+    case Xila_file_type_type_Socket:
         return __WASI_FILETYPE_SOCKET_DGRAM;
     default:
         return __WASI_FILETYPE_UNKNOWN;
