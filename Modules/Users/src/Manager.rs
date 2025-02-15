@@ -1,24 +1,9 @@
 use super::*;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    sync::{OnceLock, RwLock},
+    sync::RwLock,
     vec::Vec,
 };
-
-static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
-
-pub fn Initialize() -> Result_type<()> {
-    Manager_instance
-        .set(Manager_type::New())
-        .map_err(|_| Error_type::Already_initialized)
-}
-
-pub fn Get_instance() -> &'static Manager_type {
-    Manager_instance
-        .get()
-        .expect("Users manager not initialized")
-}
-
 struct Internal_user_type {
     pub Name: String,
     pub Primary_group: Group_identifier_type,

@@ -6,6 +6,7 @@ use Drivers::Native::{Time_driver_type, Window_screen};
 use File_system::{Create_device, Create_file_system, Memory_device_type};
 use Graphics::{Get_minimal_buffer_size, Point_type, LVGL};
 use Time::Duration_type;
+use Virtual_file_system::Virtual_file_system_type;
 
 #[ignore]
 #[test]
@@ -25,6 +26,14 @@ fn Integration_test() {
 
     let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
     LittleFS::File_system_type::Format(Memory_device.clone(), 512).unwrap();
+
+    let Virtual_file_system = Virtual_file_system_type::New(
+        Task_manager,
+        User_manager,
+        Time_manager,
+        Root_file_system,
+        None,
+    );
 
     Virtual_file_system::Initialize(
         Create_file_system!(LittleFS::File_system_type::New(Memory_device, 256).unwrap()),

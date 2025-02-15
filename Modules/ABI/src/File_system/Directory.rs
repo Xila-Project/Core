@@ -9,7 +9,6 @@ use core::{
 
 use File_system::Error_type;
 use Task::Get_instance as Get_task_manager_instance;
-use Virtual_file_system::Get_instance as Get_file_system_instance;
 
 use super::{
     Into_u32, Xila_file_system_inode_type, Xila_file_system_size_type, Xila_file_type_type,

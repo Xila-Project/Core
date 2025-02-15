@@ -8,22 +8,6 @@ use File_system::Unique_file_identifier_type;
 
 use crate::{Error_type, Instance_type, Module_type, Registrable_trait, Result_type, Runtime_type};
 
-static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
-
-pub fn Initialize(Registrables: &[&dyn Registrable_trait]) -> &'static Manager_type {
-    Manager_instance.get_or_init(|| {
-        Manager_type::New(Registrables).expect("Cannot create virtual machine manager")
-    });
-
-    Get_instance()
-}
-
-pub fn Get_instance() -> &'static Manager_type {
-    Manager_instance
-        .get()
-        .expect("Cannot get virtual machine manager instance before initialization")
-}
-
 pub struct Manager_type {
     Runtime: Runtime_type,
 }

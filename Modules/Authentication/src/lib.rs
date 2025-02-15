@@ -10,19 +10,19 @@ mod User;
 pub use Error::*;
 pub use Group::*;
 pub use User::*;
+use Virtual_file_system::Virtual_file_system_type;
 
 const Users_folder_path: &str = "/System/Users";
 const Group_folder_path: &str = "/System/Groups";
 const Random_device_path: &str = "/Devices/Random";
 
-pub fn Load_all_users_and_groups() -> Result_type<()> {
+pub fn Load_all_users_and_groups<'a>(
+    Virtual_file_system: &'a Virtual_file_system_type<'a>,
+    Users_manager: &'a Users::Manager_type,
+) -> Result_type<()> {
     use Group::Read_group_file;
     use User::Read_user_file;
     use Virtual_file_system::Directory_type;
-    // Open Xila users folder.
-    let Virtual_file_system = Virtual_file_system::Get_instance();
-
-    let Users_manager = Users::Get_instance();
 
     let mut Buffer: Vec<u8> = vec![];
 

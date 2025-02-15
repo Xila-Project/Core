@@ -14,7 +14,7 @@ pub use Standard::*;
 
 use Task::{Join_handle_type, Task_identifier_type};
 use Users::User_identifier_type;
-use Virtual_file_system::File_type;
+use Virtual_file_system::{File_type, Virtual_file_system_type};
 
 use File_system::{Path_type, Statistics_type};
 
@@ -66,7 +66,8 @@ fn Get_overridden_user(
     Ok(Some(New_user))
 }
 
-pub fn Execute(
+pub fn Execute<'a>(
+    Virtual_file_system: &'a Virtual_file_system_type<'a>,
     Path: impl AsRef<Path_type>,
     Inputs: String,
     Standard: Standard_type,
@@ -76,7 +77,7 @@ pub fn Execute(
     let Task = Task_instance.Get_current_task_identifier()?;
 
     let File = File_type::Open(
-        Virtual_file_system::Get_instance(),
+        Virtual_file_system,
         &Path,
         File_system::Mode_type::Read_write.into(),
     )?;

@@ -25,43 +25,16 @@ struct Internal_file_system_type {
     pub Inner: Box<dyn File_system_traits>,
 }
 
-/// Instance of the virtual file system.
-///
-/// # Safety
-/// I know, it is not safe to use mutable static variables.
-/// It is thread safe (after initialization) because it is only read after initialization.
-/// It is a pragmatic choice for efficiency in embedded systems contexts (avoid using Arc).
-static Virtual_file_system_instance: OnceLock<Virtual_file_system_type> = OnceLock::new();
-
-pub fn Initialize(
-    Root_file_system: Box<dyn File_system_traits>,
-    Network_socket_driver: Option<&'static dyn Network_socket_driver_trait>,
-) -> Result<(), crate::Error_type> {
-    Virtual_file_system_instance
-        .set(Virtual_file_system_type::New(
-            Task::Get_instance(),
-            Users::Get_instance(),
-            Time::Get_instance(),
-            Root_file_system,
-            Network_socket_driver,
-        )?)
-        .map_err(|_| crate::Error_type::Already_initialized)
-}
-
-pub fn Get_instance() -> &'static Virtual_file_system_type<'static> {
-    Virtual_file_system_instance
-        .get()
-        .expect("Virtual file system not initialized")
-}
-
-pub fn Uninitialize() {
-    Get_instance().Uninitialize();
-}
-
 /// The virtual file system.
 ///
 /// It is a singleton.
 pub struct Virtual_file_system_type<'a> {
+    /// Task manager.
+    Task_manager: &'a Task::Manager_type,
+    /// User manager.
+    User_manager: &'a Users::Manager_type,
+    /// Time manager.
+    Time_manager: &'a Time::Manager_type,
     /// Mounted file systems.
     File_systems: RwLock<BTreeMap<File_system_identifier_type, Internal_file_system_type>>,
     /// Devices.
@@ -78,9 +51,9 @@ impl<'a> Virtual_file_system_type<'a> {
     pub const Standard_error_file_identifier: File_identifier_type = File_identifier_type::New(2);
 
     pub fn New(
-        _: &'static Task::Manager_type,
-        _: &'static Users::Manager_type,
-        _: &'static Time::Manager_type,
+        Task_manager: &'a Task::Manager_type,
+        User_manager: &'a Users::Manager_type,
+        Time_manager: &'a Time::Manager_type,
         Root_file_system: Box<dyn File_system_traits>,
         Network_socket_driver: Option<&'a dyn Network_socket_driver_trait>,
     ) -> Result_type<Self> {
@@ -98,6 +71,9 @@ impl<'a> Virtual_file_system_type<'a> {
         );
 
         Ok(Self {
+            Task_manager,
+            User_manager,
+            Time_manager,
             File_systems: RwLock::new(File_systems),
             Device_file_system: Device::File_system_type::New(),
             Pipe_file_system: Pipe::File_system_type::New(),

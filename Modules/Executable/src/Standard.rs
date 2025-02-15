@@ -6,15 +6,15 @@ use Virtual_file_system::Virtual_file_system_type;
 
 use crate::Result_type;
 
-pub struct Standard_type {
+pub struct Standard_type<'a> {
     Standard_in: Unique_file_identifier_type,
     Standard_out: Unique_file_identifier_type,
     Standard_error: Unique_file_identifier_type,
     Task: Task_identifier_type,
-    Virtual_file_system: &'static Virtual_file_system_type<'static>,
+    Virtual_file_system: &'a Virtual_file_system_type<'a>,
 }
 
-impl Drop for Standard_type {
+impl Drop for Standard_type<'_> {
     fn drop(&mut self) {
         let _ = self.Virtual_file_system.Close(self.Standard_in, self.Task);
 
@@ -26,13 +26,13 @@ impl Drop for Standard_type {
     }
 }
 
-impl Standard_type {
+impl<'a> Standard_type<'a> {
     pub fn Open(
         Standard_in: &impl AsRef<Path_type>,
         Standard_out: &impl AsRef<Path_type>,
         Standard_error: &impl AsRef<Path_type>,
         Task: Task_identifier_type,
-        Virtual_file_system: &'static Virtual_file_system_type,
+        Virtual_file_system: &'a Virtual_file_system_type<'a>,
     ) -> Result_type<Self> {
         let Standard_in =
             Virtual_file_system.Open(Standard_in, Mode_type::Read_only.into(), Task)?;
@@ -109,7 +109,9 @@ impl Standard_type {
     pub fn Read_line(&self, Buffer: &mut String) {
         Buffer.clear();
 
-        let _ = Virtual_file_system::Get_instance().Read_line(self.Standard_in, self.Task, Buffer);
+        let _ = self
+            .Virtual_file_system
+            .Read_line(self.Standard_in, self.Task, Buffer);
     }
 
     pub fn Get_task(&self) -> Task_identifier_type {

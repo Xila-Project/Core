@@ -1,11 +1,13 @@
 use File_system::Mode_type;
-use Virtual_file_system::File_type;
+use Virtual_file_system::{File_type, Virtual_file_system_type};
 
 use crate::{Error_type, Random_device_path, Result_type};
 
-pub fn Generate_salt() -> Result_type<String> {
+pub fn Generate_salt<'a>(
+    Virtual_file_system: &'a Virtual_file_system_type<'a>,
+) -> Result_type<String> {
     let Random_file = File_type::Open(
-        Virtual_file_system::Get_instance(),
+        Virtual_file_system,
         Random_device_path,
         Mode_type::Read_only.into(),
     )

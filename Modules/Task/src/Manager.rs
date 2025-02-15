@@ -29,24 +29,6 @@ struct Task_internal_type {
     Signals: Signal_accumulator_type,
 }
 
-static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
-
-pub fn Initialize() -> Result_type<&'static Manager_type> {
-    Manager_instance.get_or_init(Manager_type::New);
-
-    Ok(Get_instance())
-}
-
-pub fn Get_instance() -> &'static Manager_type {
-    Manager_instance
-        .get()
-        .expect("Cannot get Task manager instance before initialization")
-}
-
-pub fn Is_initialized() -> bool {
-    Manager_instance.get().is_some()
-}
-
 struct Inner_manager_type {
     /// A map of all tasks managed by the Get_instance().unwrap().
     Tasks: BTreeMap<Task_identifier_type, Task_internal_type>,
@@ -217,6 +199,7 @@ impl Manager_type {
     }
 
     pub fn New_thread_internal<T, F>(
+        &self,
         Parent_task_identifier: Task_identifier_type,
         Name: &str,
         Stack_size: Option<usize>,
@@ -228,11 +211,11 @@ impl Manager_type {
         F: FnOnce() -> T + Send + 'static,
     {
         let Closure = move || {
-            let Thread_identifier = Get_instance().Get_current_thread_identifier();
+            let Thread_identifier = self.Get_current_thread_identifier();
 
             if Main_thread {
                 // Wait for the task to be registered
-                while !Get_instance()
+                while !self
                     .0
                     .read()
                     .expect("Failed to acquire read lock")
@@ -244,15 +227,13 @@ impl Manager_type {
             }
 
             // The thread registers itself
-            Get_instance()
-                .Register_thread(Parent_task_identifier, Thread_identifier)
+            self.Register_thread(Parent_task_identifier, Thread_identifier)
                 .expect("Failed to register thread");
 
             let Result = Function();
 
             // The thread unregister itself upon termination
-            Get_instance()
-                .Unregister_thread(Parent_task_identifier, Thread_identifier)
+            self.Unregister_thread(Parent_task_identifier, Thread_identifier)
                 .expect("Failed to unregister thread");
 
             Result
@@ -282,7 +263,7 @@ impl Manager_type {
             return Err(Error_type::Invalid_task_identifier);
         }
 
-        Self::New_thread_internal(Parent_task_identifier, Name, Stack_size, Function, false)
+        self.New_thread_internal(Parent_task_identifier, Name, Stack_size, Function, false)
     }
 
     /// Sleep the current thread for a given duration.
@@ -326,7 +307,7 @@ impl Manager_type {
 
         // Create a new thread for the task
         let Join_handle =
-            Self::New_thread_internal(Child_task_identifier, Name, Stack_size, Function, true)?;
+            self.New_thread_internal(Child_task_identifier, Name, Stack_size, Function, true)?;
 
         Self::Register_task_internal(
             Child_task_identifier,
@@ -594,81 +575,58 @@ mod Tests {
     use super::*;
 
     #[test]
-    fn Test_task_manager() {
-        let Manager = Initialize().expect("Failed to initialize task manager");
+    fn Test_get_task_name() {
+        let Manager_instance = Manager_type::New();
+        let Manager = Manager_instance;
 
-        // Run test sequentially since the instance is shared
-
-        println!("Run test : Test_get_task_name");
-        Test_get_task_name(Manager);
-        println!("Run test : Test_new_task");
-        Test_new_task(Manager);
-        println!("Run test : Test_get_owner");
-        Test_get_owner(Manager);
-        println!("Run test : Test_get_current_task_identifier");
-        Test_get_current_task_identifier(Manager);
-        println!("Run test : Test_task_owner_inheritance");
-        Test_task_owner_inheritance(Manager);
-        println!("Run test : Test_environment_variables");
-        Test_environment_variables(Manager);
-        println!("Run test : Test_environment_variable_inheritance");
-        Test_environment_variable_inheritance(Manager);
-        println!("Run test : Test_join_handle");
-        Test_join_handle(Manager);
-        println!("Run test : Test_set_user");
-        Test_set_user(Manager);
-        println!("Run test : Test_set_group");
-        Test_set_group(Manager);
-        println!("Run test : Test_signal");
-        Test_signal(Manager);
-    }
-
-    fn Test_get_task_name(Manager: &Manager_type) {
         let Task_name = "Test Task";
         let Task = Manager.Get_current_task_identifier().unwrap();
 
-        let _ = Manager
-            .New_task(Task, Task_name, None, move || {
-                let Task = Get_instance().Get_current_task_identifier().unwrap();
+        std::thread::scope(|s| {
+            let _ = Manager
+                .New_task(Task, Task_name, None, || {
+                    let Task = Manager.Get_current_task_identifier().unwrap();
 
-                assert_eq!(Get_instance().Get_task_name(Task).unwrap(), Task_name);
-            })
-            .unwrap();
+                    assert_eq!(Manager.Get_task_name(Task).unwrap(), Task_name);
+                })
+                .unwrap();
+        });
     }
 
-    fn Test_new_task(Manager: &Manager_type) {
+    #[test]
+    fn Test_new_task() {
         let Task_name = "Child Task";
         let Task = Manager.Get_current_task_identifier().unwrap();
 
         let _ = Manager.New_task(Task, Task_name, None, || {}).unwrap();
     }
 
-    fn Test_get_owner(Manager: &Manager_type) {
+    #[test]
+    fn Test_get_owner() {
         let Task = Manager.Get_current_task_identifier().unwrap();
 
+        assert_eq!(Manager.Get_user(Task).unwrap(), User_identifier_type::Root);
         assert_eq!(
-            Get_instance().Get_user(Task).unwrap(),
-            User_identifier_type::Root
-        );
-        assert_eq!(
-            Get_instance().Get_group(Task).unwrap(),
+            Manager.Get_group(Task).unwrap(),
             Group_identifier_type::Root
         );
     }
 
-    fn Test_get_current_task_identifier(Manager: &Manager_type) {
+    #[test]
+    fn Test_get_current_task_identifier() {
         let Task = Manager.Get_current_task_identifier().unwrap();
 
         let (_, Join_handle) = Manager
             .New_task(Task, "Current Task", None, move || {
-                let _ = Get_instance().Get_current_task_identifier().unwrap();
+                let _ = Manager.Get_current_task_identifier().unwrap();
             })
             .unwrap();
 
         Join_handle.Join().unwrap();
     }
 
-    fn Test_task_owner_inheritance(Manager: &Manager_type) {
+    #[test]
+    fn Test_task_owner_inheritance() {
         let Task = Manager.Get_current_task_identifier().unwrap();
         let User_identifier = User_identifier_type::New(123); // Assuming User_identifier_type is i32 for example
         let Group_identifier = Group_identifier_type::New(456); // Assuming Group_identifier_type is i32 for example
@@ -678,19 +636,19 @@ mod Tests {
 
         let _ = Manager
             .New_task(Task, "Task 1", None, move || {
-                let Task = Get_instance().Get_current_task_identifier().unwrap();
+                let Task = Manager.Get_current_task_identifier().unwrap();
 
-                assert_eq!(Get_instance().Get_user(Task).unwrap(), User_identifier);
+                assert_eq!(Manager.Get_user(Task).unwrap(), User_identifier);
 
                 // - Inherit owner
-                let _ = Get_instance()
+                let _ = Manager
                     .New_task(Task, "Task 2", None, move || {
-                        let Task = Get_instance().Get_current_task_identifier().unwrap();
+                        let Task = Manager.Get_current_task_identifier().unwrap();
 
-                        assert_eq!(Get_instance().Get_user(Task).unwrap(), User_identifier);
-                        assert_eq!(Get_instance().Get_group(Task).unwrap(), Group_identifier);
+                        assert_eq!(Manager.Get_user(Task).unwrap(), User_identifier);
+                        assert_eq!(Manager.Get_group(Task).unwrap(), Group_identifier);
 
-                        assert_eq!(Get_instance().Get_task_name(Task).unwrap(), "Task 2");
+                        assert_eq!(Manager.Get_task_name(Task).unwrap(), "Task 2");
 
                         Manager_type::Sleep(std::time::Duration::from_secs(1));
                     })
@@ -700,24 +658,25 @@ mod Tests {
                 let Group_identifier = Group_identifier_type::New(4242); // Assuming Group_identifier_type is i32 for example
 
                 // - Overwrite owner
-                let _ = Get_instance()
+                let _ = Manager
                     .New_task(Task, "Task 3", None, move || {
-                        let Task = Get_instance().Get_current_task_identifier().unwrap();
+                        let Task = Manager.Get_current_task_identifier().unwrap();
 
-                        Get_instance().Set_user(Task, User_identifier).unwrap();
-                        Get_instance().Set_group(Task, Group_identifier).unwrap();
+                        Manager.Set_user(Task, User_identifier).unwrap();
+                        Manager.Set_group(Task, Group_identifier).unwrap();
 
-                        assert_eq!(Get_instance().Get_user(Task).unwrap(), User_identifier);
-                        assert_eq!(Get_instance().Get_group(Task).unwrap(), Group_identifier);
+                        assert_eq!(Manager.Get_user(Task).unwrap(), User_identifier);
+                        assert_eq!(Manager.Get_group(Task).unwrap(), Group_identifier);
 
-                        assert_eq!(Get_instance().Get_task_name(Task).unwrap(), "Task 3");
+                        assert_eq!(Manager.Get_task_name(Task).unwrap(), "Task 3");
                     })
                     .unwrap();
             })
             .unwrap();
     }
 
-    fn Test_environment_variables(Manager: &Manager_type) {
+    #[test]
+    fn Test_environment_variables() {
         let Task_identifier = Manager.Get_current_task_identifier().unwrap();
         let Name = "Key";
         let Value = "Value";
@@ -740,23 +699,24 @@ mod Tests {
             .is_err());
     }
 
-    fn Test_environment_variable_inheritance(Manager: &Manager_type) {
+    #[test]
+    fn Test_environment_variable_inheritance() {
         let Task = Manager.Get_current_task_identifier().unwrap();
 
         let _ = Manager
             .New_task(Task, "Child Task", None, move || {
-                let Current_task = Get_instance().Get_current_task_identifier().unwrap();
+                let Current_task = Manager.Get_current_task_identifier().unwrap();
 
-                Get_instance()
+                Manager
                     .Set_environment_variable(Task, "Key", "Value")
                     .unwrap();
 
-                let _ = Get_instance()
+                let _ = Manager
                     .New_task(Current_task, "Grandchild Task", None, || {
-                        let Current_task = Get_instance().Get_current_task_identifier().unwrap();
+                        let Current_task = Manager.Get_current_task_identifier().unwrap();
 
                         assert_eq!(
-                            Get_instance()
+                            Manager
                                 .Get_environment_variable(Current_task, "Key")
                                 .unwrap()
                                 .Get_value(),
@@ -768,7 +728,8 @@ mod Tests {
             .unwrap();
     }
 
-    fn Test_join_handle(Manager: &Manager_type) {
+    #[test]
+    fn Test_join_handle() {
         let Task = Manager.Get_current_task_identifier().unwrap();
 
         let (_, Join_handle) = Manager
@@ -778,7 +739,8 @@ mod Tests {
         assert_eq!(Result.unwrap(), 42);
     }
 
-    fn Test_set_user(Manager: &Manager_type) {
+    #[test]
+    fn Test_set_user() {
         let Task = Manager.Get_current_task_identifier().unwrap();
 
         let User = User_identifier_type::New(123); // Assuming User_identifier_type is i32 for example
@@ -788,7 +750,8 @@ mod Tests {
         assert_eq!(Manager.Get_user(Task).unwrap(), User);
     }
 
-    fn Test_set_group(Manager: &Manager_type) {
+    #[test]
+    fn Test_set_group() {
         let Task = Manager.Get_current_task_identifier().unwrap();
 
         let Group = Group_identifier_type::New(456); // Assuming Group_identifier_type is i32 for example
@@ -798,28 +761,26 @@ mod Tests {
         assert_eq!(Manager.Get_group(Task).unwrap(), Group);
     }
 
-    fn Test_signal(Manager: &Manager_type) {
+    #[test]
+    fn Test_signal() {
         let Task = Manager.Get_current_task_identifier().unwrap();
 
         let _ = Manager
             .New_task(Task, "Task with signal", None, || {
-                let Task = Get_instance().Get_current_task_identifier().unwrap();
+                let Task = Manager.Get_current_task_identifier().unwrap();
 
                 Manager_type::Sleep(Duration::from_millis(10));
 
                 assert_eq!(
-                    Get_instance().Peek_signal(Task).unwrap(),
+                    Manager.Peek_signal(Task).unwrap(),
                     Some(Signal_type::Hangup)
                 );
 
-                assert_eq!(
-                    Get_instance().Pop_signal(Task).unwrap(),
-                    Some(Signal_type::Kill)
-                );
+                assert_eq!(Manager.Pop_signal(Task).unwrap(), Some(Signal_type::Kill));
             })
             .unwrap();
 
-        Get_instance()
+        Manager
             .0
             .write()
             .unwrap()
@@ -829,7 +790,7 @@ mod Tests {
             .Signals
             .Send(Signal_type::Kill);
 
-        Get_instance()
+        Manager
             .0
             .write()
             .unwrap()

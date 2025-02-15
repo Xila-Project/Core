@@ -5,18 +5,6 @@ use Shared::Duration_type;
 
 use crate::{Error_type, Result_type};
 
-pub static Manager: OnceLock<Manager_type> = OnceLock::new();
-
-pub fn Get_instance() -> &'static Manager_type {
-    Manager.get().expect("Time manager is not initialized")
-}
-
-pub fn Initialize(Driver: Device_type) -> Result_type<&'static Manager_type> {
-    Manager.get_or_init(|| Manager_type::New(Driver).expect("Failed to initialize time manager"));
-
-    Ok(Get_instance())
-}
-
 pub struct Manager_type {
     Device: Device_type,
     Start_time: Duration_type,

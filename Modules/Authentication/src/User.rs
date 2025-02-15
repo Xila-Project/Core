@@ -132,7 +132,7 @@ pub fn Create_user<'a>(
         .map_err(Error_type::Failed_to_create_user)?;
 
     // - Hash password.
-    let Salt = Generate_salt()?;
+    let Salt = Generate_salt(Virtual_file_system)?;
 
     let Hash = Hash_password(Password, &Salt);
 
@@ -176,7 +176,7 @@ pub fn Change_user_password<'a>(
     User_name: &str,
     New_password: &str,
 ) -> Result_type<()> {
-    let Salt = Generate_salt()?;
+    let Salt = Generate_salt(Virtual_file_system)?;
 
     let Hash = Hash_password(New_password, &Salt);
 
