@@ -85,7 +85,7 @@ members = [
     "Modules/Executables/Shell/Graphical",
     "Modules/Executables/Terminal",
     "Modules/Authentication",
-    "Modules/Network",
+    "Modules/Network", "Modules/New-task",
 ]
 exclude = [
     "Modules/Virtual_machine/Tests/WASM_test",
