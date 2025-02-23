@@ -19,6 +19,7 @@ pub enum Error_type {
     Invalid_environment_variable,
     Too_many_tasks,
     Already_initialized,
+    Already_set,
     Not_initialized,
 }
 

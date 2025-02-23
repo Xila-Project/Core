@@ -7,7 +7,6 @@ mod Error;
 mod Manager;
 mod Signal;
 mod Task;
-mod Thread;
 
 pub mod Raw_mutex;
 pub mod Raw_rwlock;
@@ -18,5 +17,3 @@ pub use Manager::*;
 pub use Signal::*;
 
 pub use Task::*;
-use Thread::*;
-pub use Thread::{Join_handle_type, Thread_identifier_type};

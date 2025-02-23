@@ -7,16 +7,35 @@ use super::*;
 extern crate alloc;
 
 use alloc::collections::BTreeMap;
+use embassy_executor::{
+    raw::{task_from_waker, TaskPool},
+    SendSpawner,
+};
+use embassy_futures::yield_now;
+use embassy_sync::waitqueue::WakerRegistration;
+use embassy_time::Timer;
+use smol_str::SmolStr;
 
+use core::{
+    future::{poll_fn, Future},
+    ptr::NonNull,
+    task::{Poll, Waker},
+};
+
+use core::{slice, time::Duration};
 use std::sync::{OnceLock, RwLock};
-
-use core::time::Duration;
 use Users::{Group_identifier_type, User_identifier_type};
 
 /// Internal representation of a task.
-struct Task_internal_type {
-    /// The thread that runs the task.
-    Main_thread: Thread_wrapper_type,
+struct Metadata_type {
+    /// Internal identifier of the task.
+    Internal_identifier: usize,
+    /// Name of the task.
+    Name: SmolStr,
+    /// Result
+    Waker: WakerRegistration,
+
+    Result: Option<usize>,
     /// The children of the task.
     Parent: Task_identifier_type,
     /// The identifier of the user that owns the task.
@@ -47,15 +66,14 @@ pub fn Is_initialized() -> bool {
     Manager_instance.get().is_some()
 }
 
-struct Inner_manager_type {
-    /// A map of all tasks managed by the Get_instance().unwrap().
-    Tasks: BTreeMap<Task_identifier_type, Task_internal_type>,
-    /// A map of all threads and their parent task.
-    Threads: BTreeMap<Thread_identifier_type, Task_identifier_type>,
+struct Inner_type {
+    Tasks: BTreeMap<Task_identifier_type, Metadata_type>,
+    Identifiers: BTreeMap<usize, Task_identifier_type>,
+    Spawners: Vec<SendSpawner>,
 }
 
 /// A manager for tasks.
-pub struct Manager_type(RwLock<Inner_manager_type>);
+pub struct Manager_type(RwLock<Inner_type>);
 
 impl Manager_type {
     pub const Root_task_identifier: Task_identifier_type = Task_identifier_type::New(0);
@@ -63,76 +81,17 @@ impl Manager_type {
     /// Create a new task manager instance,
     /// create a root task and register current thread as the root task main thread.
     fn New() -> Self {
-        let Manager = Manager_type(RwLock::new(Inner_manager_type {
+        let Manager = Manager_type(RwLock::new(Inner_type {
             Tasks: BTreeMap::new(),
-            Threads: BTreeMap::new(),
+            Identifiers: BTreeMap::new(),
+            Spawners: Vec::new(),
         }));
 
-        let mut Inner = Manager.0.write().expect("Failed to acquire write lock");
-
-        // Create root task which is its own parent
-        let Task_identifier = Self::Root_task_identifier;
-        let Task_internal = Task_internal_type {
-            Main_thread: Thread_wrapper_type::Get_current(),
-            Parent: Task_identifier,
-            User: User_identifier_type::Root,
-            Group: Group_identifier_type::Root,
-            Environment_variables: vec![],
-            Signals: Signal_accumulator_type::New(),
-        };
-
-        Self::Register_task_internal(Task_identifier, Task_internal, &mut Inner.Tasks)
-            .expect("Failed to register root task");
-
-        drop(Inner); // Release write lock
-
-        // Add current thread to tasks as root
-        let Thread_identifier = Manager.Get_current_thread_identifier();
         Manager
-            .Register_thread(Task_identifier, Thread_identifier)
-            .expect("Failed to register root thread");
-
-        Manager
-    }
-
-    /// Register the current thread as a task.
-    ///
-    /// This function should ONLY be called for testing purposes.
-    ///
-    /// # Safety
-    ///
-    /// This function is unsafe because it can lead to undefined behavior if the current thread is already registered.
-    pub unsafe fn Register_task(&self) -> Result_type<()> {
-        let mut Inner = self.0.write()?;
-
-        let Task_identifier = Self::Get_new_task_identifier(&Inner.Tasks)?;
-
-        // Create root task which is its own parent
-        let Task_internal = Task_internal_type {
-            Main_thread: Thread_wrapper_type::Get_current(),
-            Parent: Self::Root_task_identifier,
-            User: User_identifier_type::Root,
-            Group: Group_identifier_type::Root,
-            Environment_variables: vec![],
-            Signals: Signal_accumulator_type::New(),
-        };
-
-        if Inner
-            .Threads
-            .insert(
-                Thread_wrapper_type::Get_current().Get_identifier(),
-                Task_identifier,
-            )
-            .is_some()
-        {
-            return Err(Error_type::Thread_already_registered);
-        }
-
-        Self::Register_task_internal(Task_identifier, Task_internal, &mut Inner.Tasks)
     }
 
     fn Get_new_task_identifier(
-        Tasks: &BTreeMap<Task_identifier_type, Task_internal_type>,
+        Tasks: &BTreeMap<Task_identifier_type, Metadata_type>,
     ) -> Result_type<Task_identifier_type> {
         (0..Task_identifier_type::Maximum)
             .map(Task_identifier_type::from)
@@ -140,212 +99,172 @@ impl Manager_type {
             .ok_or(Error_type::Too_many_tasks)
     }
 
-    pub fn Get_thread_name(&self) -> Option<String> {
-        Some(Thread_wrapper_type::Get_current().Get_name()?.to_owned())
-    }
-
     /// # Arguments
     /// * `Task_identifier` - The identifier of the task.
-    pub fn Get_task_name(&self, Task_identifier: Task_identifier_type) -> Result_type<String> {
+    pub fn Get_name(&self, Task_identifier: Task_identifier_type) -> Result_type<String> {
         Ok(self
             .0
             .read()?
             .Tasks
             .get(&Task_identifier)
             .ok_or(Error_type::Invalid_task_identifier)?
-            .Main_thread
-            .Get_name()
-            .ok_or(Error_type::Invalid_task_identifier)?
+            .Name
+            .as_str()
             .to_string())
+    }
+
+    pub async fn Join(&self, Task_identifier: Task_identifier_type) -> Result_type<usize> {
+        let mut Task = self
+            .0
+            .write()?
+            .Tasks
+            .get_mut(&Task_identifier)
+            .ok_or(Error_type::Invalid_task_identifier)?;
+
+        if Task.Waker.occupied() {
+            return Err(Error_type::Already_set);
+        }
+
+        poll_fn(|Context| {
+            Task.Waker.register(Context.waker());
+        })
+        .await
+        .map_err(|_| Error_type::Poisoned_lock)
+    }
+
+    /// Spawn task
+    async fn Spawn<Function_type, Future_type>(
+        &'static self,
+        Parent_task: Task_identifier_type,
+        Function: Function_type,
+        Name: &str,
+    ) -> Result_type<()>
+    where
+        Function_type: FnOnce(Task_identifier_type) -> Future_type + 'static + Send,
+        Future_type: Future<Output = usize> + 'static + Send,
+    {
+        let Inner = self.0.read()?;
+
+        // - Get parent task information if any (inheritance)
+        let (Parent_task_identifier, Parent_environment_variables, User, Group) =
+            if Inner.Tasks.len() > 0 {
+                let Parent_environment_variables = Inner
+                    .Tasks
+                    .get(&Parent_task)
+                    .ok_or(Error_type::Invalid_task_identifier)?
+                    .Environment_variables
+                    .clone();
+
+                let User = Inner
+                    .Tasks
+                    .get(&Parent_task)
+                    .ok_or(Error_type::Invalid_task_identifier)?
+                    .User;
+
+                let Group = Inner
+                    .Tasks
+                    .get(&Parent_task)
+                    .ok_or(Error_type::Invalid_task_identifier)?
+                    .Group;
+
+                (Parent_task, Parent_environment_variables, User, Group)
+            } else {
+                (
+                    Self::Root_task_identifier, // Root task is its own parent
+                    Vec::new(),
+                    User_identifier_type::Root,
+                    Group_identifier_type::Root,
+                )
+            };
+
+        drop(Inner); // Unlock the read lock
+
+        let Pool = Box::new(TaskPool::<_, 1>::new());
+
+        let Pool = Box::leak(Pool);
+
+        let Name = SmolStr::new_inline(Name);
+
+        let Token = Pool.spawn(async move || {
+            let Internal_identifier = Self::Get_current_internal_identifier().await;
+
+            let Metadata = Metadata_type {
+                Internal_identifier,
+                Name,
+                Waker: WakerRegistration::new(),
+                Result: None,
+                Parent: Parent_task_identifier,
+                User,
+                Group,
+                Environment_variables: Parent_environment_variables,
+                Signals: Signal_accumulator_type::New(),
+            };
+
+            let Child_taks = Self::Get_new_task_identifier(
+                &self
+                    .0
+                    .read()
+                    .expect("Failed to get new task identifier")
+                    .Tasks,
+            )
+            .expect("Failed to get new task identifier");
+
+            self.Register(Child_taks, Metadata)
+                .expect("Failed to register task");
+
+            let Future = Function(Child_taks).await;
+
+            self.Unregister(Child_taks)
+                .await
+                .expect("Failed to unregister task");
+        });
+
+        self.0
+            .read()?
+            .Spawners
+            .first()
+            .unwrap()
+            .spawn(Token)
+            .expect("Failed to spawn task");
+
+        Ok(())
     }
 
     /// Register a task with its parent task.
     ///
     /// This function check if the task identifier is not already used,
     /// however it doesn't check if the parent task exists.
-    fn Register_task_internal(
-        Task_identifier: Task_identifier_type,
-        Task_internal: Task_internal_type,
-        Tasks: &mut BTreeMap<Task_identifier_type, Task_internal_type>,
-    ) -> Result_type<()> {
-        if Tasks.insert(Task_identifier, Task_internal).is_some() {
-            return Err(Error_type::Invalid_task_identifier);
-        }
-
-        Ok(())
-    }
-
-    fn Register_thread(
+    fn Register(
         &self,
         Task_identifier: Task_identifier_type,
-        Thread_identifier: Thread_identifier_type,
+        Task_internal: Metadata_type,
     ) -> Result_type<()> {
-        self.0
+        if self
+            .0
             .write()?
-            .Threads
-            .insert(Thread_identifier, Task_identifier);
-
-        Ok(())
-    }
-
-    fn Unregister_thread(
-        &self,
-        Task_identifier: Task_identifier_type,
-        Thread_identifier: Thread_identifier_type,
-    ) -> Result_type<()> {
-        let mut Inner = self.0.write()?;
-
-        // Remove the thread
-        if Inner.Threads.remove(&Thread_identifier).is_none() {
-            return Err(Error_type::Thread_not_registered);
-        }
-
-        // If this is the task main thread
-        if Inner
             .Tasks
-            .get(&Task_identifier)
-            .unwrap()
-            .Main_thread
-            .Get_identifier()
-            == Thread_identifier
+            .insert(Task_identifier, Task_internal)
+            .is_some()
         {
-            // Unregister the task
-            Self::Unregister_task(Task_identifier, &mut Inner)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn New_thread_internal<T, F>(
-        Parent_task_identifier: Task_identifier_type,
-        Name: &str,
-        Stack_size: Option<usize>,
-        Function: F,
-        Main_thread: bool,
-    ) -> Result_type<Join_handle_type<T>>
-    where
-        T: Send + 'static,
-        F: FnOnce() -> T + Send + 'static,
-    {
-        let Closure = move || {
-            let Thread_identifier = Get_instance().Get_current_thread_identifier();
-
-            if Main_thread {
-                // Wait for the task to be registered
-                while !Get_instance()
-                    .0
-                    .read()
-                    .expect("Failed to acquire read lock")
-                    .Tasks
-                    .contains_key(&Parent_task_identifier)
-                {
-                    Self::Sleep(Duration::from_millis(10));
-                }
-            }
-
-            // The thread registers itself
-            Get_instance()
-                .Register_thread(Parent_task_identifier, Thread_identifier)
-                .expect("Failed to register thread");
-
-            let Result = Function();
-
-            // The thread unregister itself upon termination
-            Get_instance()
-                .Unregister_thread(Parent_task_identifier, Thread_identifier)
-                .expect("Failed to unregister thread");
-
-            Result
-        };
-
-        let Join_handle = Thread_wrapper_type::Spawn(Name, Stack_size, Closure)?;
-
-        Ok(Join_handle)
-    }
-
-    /// Create a new thread, returns the identifier of the thread.
-    ///
-    /// This function checks if the parent task exists.
-    pub fn New_thread<T, F>(
-        &self,
-        Parent_task_identifier: Task_identifier_type,
-        Name: &str,
-        Stack_size: Option<usize>,
-        Function: F,
-    ) -> Result_type<Join_handle_type<T>>
-    where
-        T: Send + 'static,
-        F: FnOnce() -> T + Send + 'static,
-    {
-        // Check if the parent task exists
-        if !self.0.read()?.Tasks.contains_key(&Parent_task_identifier) {
             return Err(Error_type::Invalid_task_identifier);
         }
 
-        Self::New_thread_internal(Parent_task_identifier, Name, Stack_size, Function, false)
+        Ok(())
+    }
+
+    pub async fn Yield() {
+        yield_now().await;
     }
 
     /// Sleep the current thread for a given duration.
-    pub fn Sleep(Duration: Duration) {
-        Thread_wrapper_type::Sleep(Duration);
-    }
+    pub async fn Sleep(Duration: Duration) {
+        let Nano_seconds = Duration.as_nanos();
 
-    /// Create a new child task, returns the identifier of the child task.
-    /// # Arguments
-    /// * `Parent_task_identifier` - The identifier of the parent task, if None, the current task is used.
-    /// * `Owner` - The identifier of the user that owns the task, if None, the parent task owner is used.
-    /// * `Name` - The human readable name of the task.
-    /// * `Stack_size` - The size of the stack of the task.
-    /// * `Function` - The function that the task will execute.
-    ///
-    pub fn New_task<T, F>(
-        &self,
-        Parent_task_identifier: Task_identifier_type,
-        Name: &str,
-        Stack_size: Option<usize>,
-        Function: F,
-    ) -> Result_type<(Task_identifier_type, Join_handle_type<T>)>
-    where
-        T: Send + 'static,
-        F: FnOnce() -> T + Send + 'static,
-    {
-        let Inner = self.0.read()?;
-
-        let Parent_task = Inner
-            .Tasks
-            .get(&Parent_task_identifier)
-            .ok_or(Error_type::Invalid_task_identifier)?;
-
-        let Environment_variables = Parent_task.Environment_variables.clone();
-        let User = Parent_task.User;
-        let Group = Parent_task.Group;
-
-        let Child_task_identifier = Self::Get_new_task_identifier(&Inner.Tasks)?;
-
-        drop(Inner); // Release read lock to avoid deadlock
-
-        // Create a new thread for the task
-        let Join_handle =
-            Self::New_thread_internal(Child_task_identifier, Name, Stack_size, Function, true)?;
-
-        Self::Register_task_internal(
-            Child_task_identifier,
-            Task_internal_type {
-                Main_thread: Join_handle.Get_thread_wrapper(),
-                Parent: Parent_task_identifier,
-                User,
-                Group,
-                Environment_variables,
-                Signals: Signal_accumulator_type::New(),
-            },
-            &mut self.0.write()?.Tasks,
-        )?;
-
-        Ok((Child_task_identifier, Join_handle))
+        Timer::after(embassy_time::Duration::from_nanos(Nano_seconds as u64)).await
     }
 
     /// Get the children tasks of a task.
-    pub fn Get_child_tasks(
+    pub fn Get_children(
         &self,
         Task_identifier: Task_identifier_type,
     ) -> Result_type<Vec<Task_identifier_type>> {
@@ -360,7 +279,7 @@ impl Manager_type {
     }
 
     /// Get the parent task of a task.
-    pub fn Get_parent_task(
+    pub fn Get_parent(
         &self,
         Task_identifier: Task_identifier_type,
     ) -> Result_type<Task_identifier_type> {
@@ -403,21 +322,6 @@ impl Manager_type {
         Ok(())
     }
 
-    /// Get the children threads of a task.
-    pub fn Get_children_threads(
-        &self,
-        Task_identifier: Task_identifier_type,
-    ) -> Result_type<Vec<Thread_identifier_type>> {
-        Ok(self
-            .0
-            .read()?
-            .Threads
-            .iter()
-            .filter(|(_, Parent)| **Parent == Task_identifier)
-            .map(|(Identifier, _)| *Identifier)
-            .collect())
-    }
-
     /// Get user identifier of the owner of a task.
     pub fn Get_user(
         &self,
@@ -448,22 +352,11 @@ impl Manager_type {
 
     /// Unregister task.
     ///
-    /// If the task has children thread, wait for them to terminate.
     /// If the task has children tasks, the root task adopts them.
-    fn Unregister_task(
-        Task_identifier: Task_identifier_type,
-        Inner: &mut Inner_manager_type,
-    ) -> Result_type<()> {
-        // - Wait for all child threads to terminate
-        while Inner
-            .Threads
-            .iter()
-            .any(|(_, Task)| *Task == Task_identifier)
-        {
-            Self::Sleep(Duration::from_millis(100));
-        }
-
+    async fn Unregister(&self, Task_identifier: Task_identifier_type) -> Result_type<()> {
         // - Root task adopts all children of the task
+        let mut Inner = self.0.write()?;
+
         Inner.Tasks.iter_mut().for_each(|(_, Task)| {
             if Task.Parent == Task_identifier {
                 Task.Parent = Self::Root_task_identifier;
@@ -478,19 +371,29 @@ impl Manager_type {
         Ok(())
     }
 
-    pub fn Get_current_thread_identifier(&self) -> Thread_identifier_type {
-        Thread_wrapper_type::Get_current().Get_identifier()
+    async fn Get_current_internal_identifier() -> usize {
+        poll_fn(|Context| {
+            let Task_reference = task_from_waker(Context.waker());
+
+            let Inner: NonNull<u8> = unsafe { core::mem::transmute(Task_reference) };
+
+            let Identifier = Inner.as_ptr() as usize;
+
+            Poll::Ready(Identifier)
+        })
+        .await
     }
 
-    pub fn Get_current_task_identifier(&self) -> Result_type<Task_identifier_type> {
-        let Current_thread = self.Get_current_thread_identifier();
+    pub async fn Get_current_task_identifier(&self) -> Task_identifier_type {
+        let Internal_identifier = Self::Get_current_internal_identifier().await;
 
-        self.0
-            .read()?
-            .Threads
-            .get(&Current_thread)
-            .cloned()
-            .ok_or(Error_type::Thread_not_registered)
+        *self
+            .0
+            .read()
+            .expect("Failed to get task identifier")
+            .Identifiers
+            .get(&Internal_identifier)
+            .expect("Failed to get task identifier")
     }
 
     pub fn Get_environment_variable(
@@ -601,8 +504,8 @@ mod Tests {
 
         println!("Run test : Test_get_task_name");
         Test_get_task_name(Manager);
-        println!("Run test : Test_new_task");
-        Test_new_task(Manager);
+        println!("Run test : Test_Spawn");
+        Test_Spawn(Manager);
         println!("Run test : Test_get_owner");
         Test_get_owner(Manager);
         println!("Run test : Test_get_current_task_identifier");
@@ -625,10 +528,10 @@ mod Tests {
 
     fn Test_get_task_name(Manager: &Manager_type) {
         let Task_name = "Test Task";
-        let Task = Manager.Get_current_task_identifier().unwrap();
+        let Task = Manager.Get_current_task_identifier().await.unwrap();
 
         let _ = Manager
-            .New_task(Task, Task_name, None, move || {
+            .Spawn(Task, Task_name, move || {
                 let Task = Get_instance().Get_current_task_identifier().unwrap();
 
                 assert_eq!(Get_instance().Get_task_name(Task).unwrap(), Task_name);
@@ -636,11 +539,11 @@ mod Tests {
             .unwrap();
     }
 
-    fn Test_new_task(Manager: &Manager_type) {
+    fn Test_Spawn(Manager: &Manager_type) {
         let Task_name = "Child Task";
         let Task = Manager.Get_current_task_identifier().unwrap();
 
-        let _ = Manager.New_task(Task, Task_name, None, || {}).unwrap();
+        let _ = Manager.Spawn(Task, Task_name, || {}).unwrap();
     }
 
     fn Test_get_owner(Manager: &Manager_type) {
@@ -660,7 +563,7 @@ mod Tests {
         let Task = Manager.Get_current_task_identifier().unwrap();
 
         let (_, Join_handle) = Manager
-            .New_task(Task, "Current Task", None, move || {
+            .Spawn(Task, "Current Task", move || {
                 let _ = Get_instance().Get_current_task_identifier().unwrap();
             })
             .unwrap();
@@ -677,14 +580,14 @@ mod Tests {
         Manager.Set_group(Task, Group_identifier).unwrap();
 
         let _ = Manager
-            .New_task(Task, "Task 1", None, move || {
+            .Spawn(Task, "Task 1", move || {
                 let Task = Get_instance().Get_current_task_identifier().unwrap();
 
                 assert_eq!(Get_instance().Get_user(Task).unwrap(), User_identifier);
 
                 // - Inherit owner
                 let _ = Get_instance()
-                    .New_task(Task, "Task 2", None, move || {
+                    .Spawn(Task, "Task 2", move || {
                         let Task = Get_instance().Get_current_task_identifier().unwrap();
 
                         assert_eq!(Get_instance().Get_user(Task).unwrap(), User_identifier);
@@ -701,7 +604,7 @@ mod Tests {
 
                 // - Overwrite owner
                 let _ = Get_instance()
-                    .New_task(Task, "Task 3", None, move || {
+                    .Spawn(Task, "Task 3", move || {
                         let Task = Get_instance().Get_current_task_identifier().unwrap();
 
                         Get_instance().Set_user(Task, User_identifier).unwrap();
@@ -744,7 +647,7 @@ mod Tests {
         let Task = Manager.Get_current_task_identifier().unwrap();
 
         let _ = Manager
-            .New_task(Task, "Child Task", None, move || {
+            .Spawn(Task, "Child Task", move || {
                 let Current_task = Get_instance().Get_current_task_identifier().unwrap();
 
                 Get_instance()
@@ -752,7 +655,7 @@ mod Tests {
                     .unwrap();
 
                 let _ = Get_instance()
-                    .New_task(Current_task, "Grandchild Task", None, || {
+                    .Spawn(Current_task, "Grandchild Task", || {
                         let Current_task = Get_instance().Get_current_task_identifier().unwrap();
 
                         assert_eq!(
@@ -771,9 +674,7 @@ mod Tests {
     fn Test_join_handle(Manager: &Manager_type) {
         let Task = Manager.Get_current_task_identifier().unwrap();
 
-        let (_, Join_handle) = Manager
-            .New_task(Task, "Task with join handle", None, || 42)
-            .unwrap();
+        let (_, Join_handle) = Manager.Spawn(Task, "Task with join handle", || 42).unwrap();
         let Result = Join_handle.Join();
         assert_eq!(Result.unwrap(), 42);
     }
@@ -802,7 +703,7 @@ mod Tests {
         let Task = Manager.Get_current_task_identifier().unwrap();
 
         let _ = Manager
-            .New_task(Task, "Task with signal", None, || {
+            .Spawn(Task, "Task with signal", || {
                 let Task = Get_instance().Get_current_task_identifier().unwrap();
 
                 Manager_type::Sleep(Duration::from_millis(10));
@@ -820,7 +721,7 @@ mod Tests {
             .unwrap();
 
         Get_instance()
-            .0
+            .Tasks
             .write()
             .unwrap()
             .Tasks
@@ -830,7 +731,7 @@ mod Tests {
             .Send(Signal_type::Kill);
 
         Get_instance()
-            .0
+            .Tasks
             .write()
             .unwrap()
             .Tasks

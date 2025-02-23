@@ -5,7 +5,8 @@ edition = "2021"
 
 build = "Build.rs"
 
-
+[dependencies]
+portable-atomic = { version = "1.10.0", default-features = false }
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
 libc = "0.2.155"
 

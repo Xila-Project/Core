@@ -6,6 +6,7 @@
 mod Espressif;
 mod Flags;
 mod Layout;
+mod Linked_list_allocator;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 mod Native;
 
