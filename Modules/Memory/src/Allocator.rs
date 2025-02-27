@@ -1,135 +1,19 @@
-#[cfg(feature = "nightly")]
-use core::alloc::{AllocError, Allocator};
 use core::{
     alloc::{GlobalAlloc, Layout},
-    cell::RefCell,
-    fmt::Display,
+    cell::{OnceCell, RefCell},
     mem::MaybeUninit,
-    ptr::{self, NonNull},
+    ptr::NonNull,
 };
 
 use critical_section::Mutex;
 use linked_list_allocator::Heap;
 
-use crate::{Capabilities_type, Region_statistics_type};
+use crate::{Capabilities_type, Region_statistics_type, Statistics_type};
 
 /// The global allocator instance
 #[global_allocator]
-pub static HEAP: Allocator_type = Allocator_type::empty();
+pub static Allocator: Allocator_type = Allocator_type::New();
 
-const NON_REGION: Option<Region_type> = None;
-
-pub struct Region_type {
-    Heap: RefCell<Heap>,
-    Capabilities: Capabilities_type,
-}
-
-impl Region_type {
-    pub unsafe fn New(
-        Memory: &'static mut [MaybeUninit<u8>],
-        Capabilities: Capabilities_type,
-    ) -> Self {
-        let mut Heap = Heap::empty();
-        Heap.init_from_slice(Memory);
-
-        Self { Heap, Capabilities }
-    }
-
-    pub const fn Get_capabilities(&self) -> Capabilities_type {
-        self.Capabilities
-    }
-
-    /// Return stats for the current memory region
-    pub fn Get_statistics(&self) -> Region_statistics_type {
-        Region_statistics_type {
-            Size: self.Heap.size(),
-            Used: self.Heap.used(),
-            Free: self.Heap.free(),
-        }
-    }
-}
-
-/// Stats for a heap allocator
-///
-/// Enable the "Debug" feature if you want collect additional heap
-/// informations at the cost of extra cpu time during every alloc/dealloc.
-#[derive(Debug)]
-pub struct HeapStats {
-    /// Granular stats for all the configured memory regions.
-    region_stats: [Option<Region_statistics_type>; 3],
-
-    /// Total size of all combined heap regions in bytes.
-    size: usize,
-
-    /// Current usage of the heap across all configured regions in bytes.
-    current_usage: usize,
-
-    /// Estimation of the max used heap in bytes.
-    #[cfg(feature = "Debug")]
-    max_usage: usize,
-
-    /// Estimation of the total allocated bytes since initialization.
-    #[cfg(feature = "Debug")]
-    total_allocated: usize,
-
-    /// Estimation of the total freed bytes since initialization.
-    #[cfg(feature = "Debug")]
-    total_freed: usize,
-}
-
-impl Display for HeapStats {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        writeln!(f, "HEAP INFO")?;
-        writeln!(f, "Size: {}", self.size)?;
-        writeln!(f, "Current usage: {}", self.current_usage)?;
-        #[cfg(feature = "Debug")]
-        {
-            writeln!(f, "Max usage: {}", self.max_usage)?;
-            writeln!(f, "Total freed: {}", self.total_freed)?;
-            writeln!(f, "Total allocated: {}", self.total_allocated)?;
-        }
-        writeln!(f, "Memory Layout: ")?;
-        for region in self.region_stats.iter() {
-            if let Some(region) = region.as_ref() {
-                region.fmt(f)?;
-                writeln!(f)?;
-            } else {
-                // Display unused memory regions
-                write!(f, "Unused   | ")?;
-                write_bar(f, 0)?;
-                writeln!(f, " |")?;
-            }
-        }
-        Ok(())
-    }
-}
-
-#[cfg(feature = "defmt")]
-impl defmt::Format for HeapStats {
-    fn format(&self, fmt: defmt::Formatter<'_>) {
-        defmt::write!(fmt, "HEAP INFO\n");
-        defmt::write!(fmt, "Size: {}\n", self.size);
-        defmt::write!(fmt, "Current usage: {}\n", self.current_usage);
-        #[cfg(feature = "Debug")]
-        {
-            defmt::write!(fmt, "Max usage: {}\n", self.max_usage);
-            defmt::write!(fmt, "Total freed: {}\n", self.total_freed);
-            defmt::write!(fmt, "Total allocated: {}\n", self.total_allocated);
-        }
-        defmt::write!(fmt, "Memory Layout:\n");
-        for region in self.region_stats.iter() {
-            if let Some(region) = region.as_ref() {
-                defmt::write!(fmt, "{}\n", region);
-            } else {
-                defmt::write!(fmt, "Unused   | ");
-                write_bar_defmt(fmt, 0);
-                defmt::write!(fmt, " |\n");
-            }
-        }
-    }
-}
-
-/// Internal stats to keep track across multiple regions.
 #[cfg(feature = "Debug")]
 struct InternalHeapStats {
     max_usage: usize,
@@ -137,21 +21,28 @@ struct InternalHeapStats {
     total_freed: usize,
 }
 
+pub const Number_of_regions: usize = 5;
+
+struct Region_type {
+    pub Heap: Heap,
+    pub Capabilities: Capabilities_type,
+}
+
 /// A memory allocator
 ///
 /// In addition to what Rust's memory allocator can do it allows to allocate
 /// memory in regions satisfying specific needs.
 pub struct Allocator_type<'a> {
-    Regions: Mutex<&'a [Region_type]>,
+    Regions: Mutex<&'a [RefCell<Region_type>]>,
     #[cfg(feature = "Debug")]
     internal_heap_stats: Mutex<RefCell<InternalHeapStats>>,
 }
 
-impl<'a> Allocator_type<'a> {
+impl Allocator_type {
     /// Create a new allocator
-    pub const fn New(Regions: &'a [Region_type]) -> Self {
+    pub const fn New() -> Self {
         Self {
-            Regions: Mutex::new(Regions),
+            Regions: Mutex::new(RefCell::new([None, None, None, None, None])),
             #[cfg(feature = "Debug")]
             internal_heap_stats: Mutex::const_new(RefCell::new(InternalHeapStats {
                 max_usage: 0,
@@ -161,28 +52,70 @@ impl<'a> Allocator_type<'a> {
         }
     }
 
-    /// Returns an estimate of the amount of bytes in use in all memory regions.
-    pub fn used(&self) -> usize {
-        critical_section::with(|cs| {
-            let regions = self.Regions.borrow_ref(cs);
-            let mut used = 0;
-            for region in regions.iter() {
-                if let Some(region) = region.as_ref() {
-                    used += region.Heap.used();
-                }
-            }
-            used
+    pub fn Add_region(
+        &self,
+        Memory: &'static mut MaybeUninit<[u8]>,
+        Capabilities: Capabilities_type,
+    ) -> bool {
+        critical_section::with(|Critical_section| {
+            self.Regions
+                .borrow_ref_mut(Critical_section)
+                .iter_mut()
+                .find(|Region| Region.is_none())
+                .map(|Region| {
+                    let Heap = Heap::new(heap_bottom, heap_size) * Region = Some(Region_type {
+                        Heap: Heap::new(Heap.as_mut_ptr() as *mut u8, Heap.len()),
+                        Capabilities,
+                    });
+                })
+                .is_some()
         })
     }
 
-    pub fn stats(&self) -> HeapStats {
+    /// Returns an estimate of the amount of bytes in use in all memory regions.
+    pub fn Get_used(&self) -> usize {
+        critical_section::with(|Critical_section| {
+            self.Regions
+                .borrow_ref(Critical_section)
+                .iter()
+                .filter_map(|Region| Region.as_ref())
+                .map(|Region| Region.Get_used())
+                .sum()
+        })
+    }
+
+    /// Returns an estimate of the amount of bytes available in all memory regions.
+    pub fn Get_free(&self) -> usize {
+        critical_section::with(|Critical_section| {
+            self.Regions
+                .borrow_ref(Critical_section)
+                .iter()
+                .filter_map(|Region| Region.as_ref())
+                .map(|Region| Region.Get_free())
+                .sum()
+        })
+    }
+
+    /// Returns an estimate of the total amount of bytes in all memory regions.
+    pub fn Get_size(&self) -> usize {
+        critical_section::with(|Critical_section| {
+            self.Regions
+                .borrow_ref(Critical_section)
+                .iter()
+                .filter_map(|Region| Region.as_ref())
+                .map(|Region| Region.Get_size())
+                .sum()
+        })
+    }
+
+    pub fn Get_statistics(&self) -> Statistics_type {
         const EMPTY_REGION_STAT: Option<Region_statistics_type> = None;
         let mut region_stats: [Option<Region_statistics_type>; 3] = [EMPTY_REGION_STAT; 3];
 
-        critical_section::with(|cs| {
+        critical_section::with(|Critical_section| {
             let mut used = 0;
             let mut free = 0;
-            let regions = self.Regions.borrow_ref(cs);
+            let regions = self.Regions.borrow_ref(Critical_section);
             for (id, region) in regions.iter().enumerate() {
                 if let Some(region) = region.as_ref() {
                     let stats = region.stats();
@@ -246,21 +179,23 @@ impl<'a> Allocator_type<'a> {
         critical_section::with(|Critical_section| {
             #[cfg(feature = "Debug")]
             let before = self.used();
-            let mut Regions = self.Regions.borrow(Critical_section);
-            let mut Iterate = (*Regions)
-                .iter_mut()
-                .filter(|Region| Region.Capabilities.Is_superset_of(capabilities));
 
-            let Result = loop {
-                if let Some(region) = Iterate.next() {
-                    let res = region.Heap.allocate_first_fit(layout);
-                    if let Ok(res) = res {
-                        break Some(res);
+            let Result = self
+                .Regions
+                .borrow_ref_mut(Critical_section)
+                .iter_mut()
+                .find_map(|Region| {
+                    if Region.is_none() {
+                        return None;
                     }
-                } else {
-                    break None;
-                }
-            };
+
+                    let Region = Region.as_mut().unwrap();
+                    if Region.Get_capabilities().is_superset(capabilities) {
+                        Region.Allocate(layout)
+                    } else {
+                        None
+                    }
+                });
 
             Result.map(|Allocation| {
                 #[cfg(feature = "Debug")]
@@ -320,16 +255,16 @@ unsafe impl<'a> GlobalAlloc for Allocator_type<'a> {
     }
 }
 
-#[cfg(feature = "nightly")]
-unsafe impl Allocator for Allocator_type {
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+#[cfg(feature = "Nightly")]
+unsafe impl core::alloc::Allocator for Allocator_type {
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, core::alloc::AllocError> {
         let raw_ptr = unsafe { self.alloc(layout) };
 
         if raw_ptr.is_null() {
-            return Err(AllocError);
+            return Err(core::alloc::AllocError);
         }
 
-        let ptr = NonNull::new(raw_ptr).ok_or(AllocError)?;
+        let ptr = NonNull::new(raw_ptr).ok_or(core::alloc::AllocError)?;
         Ok(NonNull::slice_from_raw_parts(ptr, layout.size()))
     }
 

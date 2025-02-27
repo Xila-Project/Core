@@ -7,6 +7,7 @@ mod Allocator;
 mod Cache;
 mod Capability;
 mod Protection;
+mod Region;
 mod Statistics;
 
 pub use Allocator::*;

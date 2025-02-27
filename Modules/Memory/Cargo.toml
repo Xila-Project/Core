@@ -14,3 +14,4 @@ critical-section = "1.2"
 
 [features]
 Debug = []
+Nightly = []
