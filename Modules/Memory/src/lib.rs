@@ -1,25 +1,18 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
+#![no_std]
 
-#[cfg(target_os = "espidf")]
-mod Espressif;
-mod Flags;
-mod Layout;
-mod Linked_list_allocator;
-#[cfg(any(target_os = "linux", target_os = "macos"))]
-mod Native;
-
+mod Allocator;
+mod Cache;
+mod Capability;
 mod Protection;
-mod Trait;
+mod Statistics;
 
-pub use Flags::*;
-pub use Layout::*;
+pub use Allocator::*;
+pub use Cache::*;
+pub use Capability::*;
 pub use Protection::*;
-pub use Trait::*;
+pub use Statistics::*;
 
-#[cfg(target_os = "espidf")]
-pub static Allocator: Espressif::Memory_allocator_type = Espressif::Memory_allocator_type::New();
-
-#[cfg(any(target_os = "linux", target_os = "macos"))]
-pub static Allocator: Native::Memory_allocator_type = Native::Memory_allocator_type::New();
+pub type Layout_type = core::alloc::Layout;

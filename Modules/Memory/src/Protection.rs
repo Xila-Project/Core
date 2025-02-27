@@ -1,11 +1,11 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Protection_type(u8);
 
 impl Debug for Protection_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Formatter
             .debug_struct("Protection_type")
             .field("Read", &self.Get_read())
@@ -88,4 +88,8 @@ impl From<u8> for Protection_type {
     fn from(Protection: u8) -> Self {
         Self(Protection)
     }
+}
+
+trait Protection_trait {
+    fn Set_protection(&self, Address: *mut u8, Size: usize, Protection: Protection_type) -> bool;
 }
