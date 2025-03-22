@@ -13,5 +13,6 @@ linked_list_allocator = { version = "0.10", default-features = false, features =
 critical-section = "1.2"
 
 [features]
+default = ["Debug"]
 Debug = []
 Nightly = []

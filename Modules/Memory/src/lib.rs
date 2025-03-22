@@ -7,13 +7,14 @@ mod Allocator;
 mod Cache;
 mod Capability;
 mod Protection;
-mod Region;
+mod Region_allocator;
 mod Statistics;
 
 pub use Allocator::*;
 pub use Cache::*;
 pub use Capability::*;
 pub use Protection::*;
+pub use Region_allocator::*;
 pub use Statistics::*;
 
 pub type Layout_type = core::alloc::Layout;
