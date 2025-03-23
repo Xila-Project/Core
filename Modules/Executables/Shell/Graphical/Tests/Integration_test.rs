@@ -79,7 +79,7 @@ fn main() {
         Task,
         &[
             (&"/Devices/Random", Drivers::Native::Random_device_type),
-            (&"/Devices/Null", Drivers::Common::Null_device_type),
+            (&"/Devices/Null", Drivers::Core::Null_device_type),
         ]
     )
     .unwrap();
