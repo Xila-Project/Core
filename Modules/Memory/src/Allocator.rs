@@ -49,15 +49,9 @@ pub trait Allocator_trait {
     /// - The memory is not deallocated multiple times
     unsafe fn Deallocate(&self, Pointer: NonNull<u8>, Layout: Layout_type);
 
-    /// Returns statistics about the current state of the allocator.
-    ///
-    /// # Returns
-    /// Statistics about memory usage, such as allocated bytes, free space, etc.
-    ///
-    /// # Safety
-    /// This function is unsafe because it may need to access internal allocator
-    /// state that could be concurrently modified by other threads.
-    unsafe fn Get_statistics(&self) -> Statistics_type;
+    unsafe fn Get_used(&self) -> usize;
+
+    unsafe fn Get_free(&self) -> usize;
 }
 
 /// A wrapper type that adapts any type implementing `Allocator_trait` to the standard
