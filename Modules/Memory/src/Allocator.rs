@@ -93,14 +93,16 @@ unsafe impl<T: Allocator_trait> GlobalAlloc for Allocator_type<T> {
 /// to set up the global allocator in applications using Xila memory management.
 ///
 /// # Example
-/// ```rust
-/// use Memory::{Instantiate_allocator, my_allocator};
+/// ```rust,ignore
+/// use Memory::{Instantiate_allocator};
+///
+/// struct My_allocator;
 ///
 /// // Create a custom allocator instance
-/// let custom_allocator = my_allocator::new();
+/// let Custom_allocator = My_allocator::new();
 ///
 /// // Set it as the global allocator
-/// Instantiate_allocator!(custom_allocator);
+/// Instantiate_allocator!(Custom_allocator);
 /// ```
 #[macro_export]
 macro_rules! Instantiate_allocator {

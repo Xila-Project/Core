@@ -4,18 +4,18 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-File_system = { path = "../File_system" }
-Virtual_file_system = { path = "../Virtual_file_system" }
-Task = { path = "../Task" }
-Users = { path = "../Users" }
-Graphics = { path = "../Graphics" }
-Time = { path = "../Time" }
-Shared = { path = "../Shared" }
 paste = "1.0.15"
 quote = "1.0.36"
-Peripherals = { path = "../Peripherals" }
-Network = { path = "../Network", optional = true }
-Memory = { path = "../Memory" }
+#File_system = { path = "../File_system", optional = true }
+#Virtual_file_system = { path = "../Virtual_file_system" , optional = true}
+#Task = { path = "../Task", optional = true }
+#Users = { path = "../Users" , optional = true}
+#Graphics = { path = "../Graphics", optional = true }
+#Time = { path = "../Time", optional = true }
+#Shared = { path = "../Shared", optional = true }
+#Peripherals = { path = "../Peripherals", optional = true }
+#Network = { path = "../Network", optional = true }
+Memory = { path = "../Memory", optional = true }
 linked_list_allocator = { version = "0.10", default-features = false, features = [
     "const_mut_refs",
 ] }
@@ -23,17 +23,18 @@ libc = { version = "0.2", optional = true }
 embassy-sync = { version = "0.6.2" }
 
 [features]
-Network = ["dep:Network"]
-Std = []
-File_system = []
-Graphics = []
-Time = []
-Random = []
+#Network = ["dep:Network"]
+#Std = []
+#File_system = ["dep:File_system"]
+#Graphics = ["dep:Graphics"]
+#Time = ["dep:Time"]
+#Random = []
+Memory = ["dep:libc", "dep:Memory"]
 
 
-All = ["File_system", "Graphics", "Time", "Network"]
+#All = ["File_system", "Graphics", "Time", "Network", "Memory"]
 
-default = ["std", "binstart", "All"]
+default = ["std", "binstart"]
 std = ["alloc", "esp-idf-sys/std"]
 alloc = []
 nightly = []
@@ -67,7 +68,7 @@ display-interface-spi = "0.4.1"
 embedded-graphics = "0.7.1"
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
-Graphics = { path = "../Graphics", features = ["RGB565"] }
+#Graphics = { path = "../Graphics", features = ["RGB565"] }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
 pixels = "0.14"

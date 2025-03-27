@@ -1,4 +1,4 @@
-use core::{
+/* use core::{
     alloc::{GlobalAlloc, Layout},
     cell::{Ref, RefCell},
     ptr::NonNull,
@@ -230,3 +230,4 @@ unsafe impl core::alloc::Allocator for Region_allocator_type {
         self.dealloc(ptr.as_ptr(), layout);
     }
 }
+*/

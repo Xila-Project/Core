@@ -1,6 +1,6 @@
 use Users::User_identifier_type;
 
-use crate::{Environment_variable_type, Get_instance, Join_handle_type, Result_type};
+use crate::{Environment_variable_type, Get_instance, Result_type};
 
 #[cfg(target_pointer_width = "32")]
 pub type Task_identifier_inner_type = u16;
