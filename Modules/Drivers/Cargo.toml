@@ -16,6 +16,7 @@ quote = "1.0.36"
 #Peripherals = { path = "../Peripherals", optional = true }
 #Network = { path = "../Network", optional = true }
 Memory = { path = "../Memory", optional = true }
+Synchronization = { path = "../Synchronization", optional = true }
 linked_list_allocator = { version = "0.10", default-features = false, features = [
     "const_mut_refs",
 ] }
@@ -29,7 +30,7 @@ embassy-sync = { version = "0.6.2" }
 #Graphics = ["dep:Graphics"]
 #Time = ["dep:Time"]
 #Random = []
-Memory = ["dep:libc", "dep:Memory"]
+Memory = ["dep:libc", "dep:Memory", "dep:Synchronization"]
 
 
 #All = ["File_system", "Graphics", "Time", "Network", "Memory"]

@@ -1,0 +1,7 @@
+[package]
+name = "Synchronization"
+version = "0.1.0"
+edition = "2024"
+
+[target.'cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))'.dependencies]
+embassy-sync = { version = "0.6.2", features = ["std"] }

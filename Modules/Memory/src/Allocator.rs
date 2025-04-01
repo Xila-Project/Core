@@ -1,6 +1,6 @@
 use core::{alloc::GlobalAlloc, ptr::NonNull};
 
-use crate::{Capabilities_type, Layout_type, Statistics_type};
+use crate::{Capabilities_type, Layout_type};
 
 /// Trait that defines the interface for memory allocators in the Xila system.
 ///

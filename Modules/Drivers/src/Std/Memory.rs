@@ -6,7 +6,6 @@ use core::{
     ptr::{null_mut, NonNull},
 };
 
-use embassy_sync::blocking_mutex::{CriticalSectionMutex, Mutex};
 use libc::{
     mmap, mprotect, mremap, munmap, sysconf, MAP_32BIT, MAP_ANONYMOUS, MAP_FAILED, MAP_FIXED,
     MAP_PRIVATE, MREMAP_MAYMOVE, PROT_EXEC, PROT_NONE, PROT_READ, PROT_WRITE, _SC_PAGE_SIZE,
@@ -16,6 +15,7 @@ use Memory::{
     Allocator_trait, Capabilities_type, Layout_type, Protection_trait, Protection_type,
     Statistics_type,
 };
+use Synchronization::blocking_mutex::{CriticalSectionMutex, Mutex};
 
 // Initial heap size and growth constants
 const INITIAL_HEAP_SIZE: usize = 1024 * 1024; // 1MB
@@ -37,12 +37,12 @@ impl Memory_manager_type {
             Regions: Mutex::new(RefCell::new([
                 Region_type {
                     Heap: Heap::empty(),
-                    Capabilities: Capabilities_type::New(true, false),
+                    Capabilities: Capabilities_type::New(false, false),
                     Slice: &mut [],
                 },
                 Region_type {
                     Heap: Heap::empty(),
-                    Capabilities: Capabilities_type::New(false, false),
+                    Capabilities: Capabilities_type::New(true, false),
                     Slice: &mut [],
                 },
             ])),
@@ -60,14 +60,14 @@ impl Allocator_trait for Memory_manager_type {
             for Region in Regions.borrow_mut().iter_mut() {
                 if Region.Capabilities.Is_superset_of(Capabilities) {
                     let Result = Region.Heap.allocate_first_fit(Layout);
-                    if let Ok(Pointer) = Pointer {
+                    if let Ok(Pointer) = Result {
                         return Some(Pointer);
                     } else {
                         // Try to expand the region if allocation fails
                         let Tried_size = Layout.size();
                         if Expand(Region, Tried_size) {
                             let Pointer = Region.Heap.allocate_first_fit(Layout);
-                            if Pointer.is_some() {
+                            if let Ok(Pointer) = Pointer {
                                 return Some(Pointer);
                             }
                         }
@@ -96,11 +96,25 @@ impl Allocator_trait for Memory_manager_type {
     }
 
     unsafe fn Get_used(&self) -> usize {
-        self.Regions.iter().map(|region| region.Heap.used()).sum()
+        self.Regions.lock(|Regions| {
+            let Regions = Regions.borrow();
+            let mut Used = 0;
+            for Region in Regions.iter() {
+                Used += Region.Heap.used();
+            }
+            Used
+        })
     }
 
     unsafe fn Get_free(&self) -> usize {
-        self.Regions.iter().map(|region| region.Heap.free()).sum()
+        self.Regions.lock(|Regions| {
+            let Regions = Regions.borrow();
+            let mut Free = 0;
+            for Region in Regions.iter() {
+                Free += Region.Heap.free();
+            }
+            Free
+        })
     }
 }
 
@@ -118,21 +132,23 @@ unsafe fn Is_slice_within_region(
 
 unsafe fn Expand(Region: &mut Region_type, Tried_size: usize) -> bool {
     let Page_size = Get_page_size();
+    // If the region is empty, allocate a new one
     if Region.Slice.len() == 0 {
-        // If the region is empty, allocate a new one
-        let Size = Round_page_size(Tried_size, Page_size);
-        let Slice = Region.Slice;
-
-        Region.Slice = Map(Page_size, Region.Capabilities);
-        Region.Heap.init_from_slice(Slice);
+        let Size = Round_page_size(Tried_size.max(INITIAL_HEAP_SIZE), Page_size);
+        let New_slice = Map(Size, Region.Capabilities);
+        let New_size = New_slice.len();
+        Region
+            .Heap
+            .init(New_slice.as_mut_ptr() as *mut u8, New_size);
+        Region.Slice = New_slice;
         return true;
     }
-
+    // If the region is not empty, try to expand it
     let Region_old_size = Region.Slice.len();
     let New_size = Region_old_size + Tried_size;
     let New_size = Round_page_size(New_size, Page_size);
 
-    let New_slice = Remap(Region.Slice, New_size);
+    let New_slice = Remap(&mut Region.Slice, New_size);
 
     let Difference = New_size - Region_old_size;
 
@@ -175,28 +191,25 @@ unsafe fn Map(size: usize, Capabilities: Capabilities_type) -> &'static mut [May
     std::slice::from_raw_parts_mut(Pointer as *mut MaybeUninit<u8>, Size)
 }
 
-unsafe fn Remap(
-    Old_slice: &'static mut [MaybeUninit<u8>],
-    New_size: usize,
-) -> &'static mut [MaybeUninit<u8>] {
+unsafe fn Remap(Slice: &mut &'static mut [MaybeUninit<u8>], New_size: usize) {
     let Page_size = Get_page_size();
     let New_size = Round_page_size(New_size, Page_size);
 
-    let Old_size = Old_slice.len();
+    let Old_size = Slice.len();
 
     let Pointer = mremap(
-        Old_slice.as_mut_ptr() as *mut c_void,
+        Slice.as_mut_ptr() as *mut c_void,
         Old_size,
         New_size,
         0, // We don't want to move the memory
-        null_mut(),
+        null_mut::<u8>(),
     );
 
     if Pointer == MAP_FAILED {
         panic!("Failed to reallocate memory");
     }
 
-    std::slice::from_raw_parts_mut(Pointer as *mut MaybeUninit<u8>, New_size)
+    *Slice = std::slice::from_raw_parts_mut(Pointer as *mut MaybeUninit<u8>, New_size);
 }
 
 unsafe fn Unmap(Pointer: *mut MaybeUninit<u8>, Size: usize) {
@@ -204,135 +217,157 @@ unsafe fn Unmap(Pointer: *mut MaybeUninit<u8>, Size: usize) {
 }
 
 #[cfg(test)]
-mod tests {
+mod Tests {
     use super::*;
     use core::ptr::NonNull;
 
     #[test]
-    fn test_memory_manager_initialization() {
+    fn Test_memory_manager_initialization() {
         unsafe {
-            let manager = Memory_manager_type::New();
+            let Manager = Memory_manager_type::New();
+
+            // Perform an initial allocation to trigger initialization
+            let Layout = Layout_type::from(Layout::from_size_align(128, 8).unwrap());
+            let Capabilities = Capabilities_type::New(false, false);
+            let Allocation = Manager.Allocate(Capabilities, Layout);
+            assert!(Allocation.is_some());
+            if let Some(Pointer) = Allocation {
+                // Deallocate the memory
+                Manager.Deallocate(Pointer, Layout);
+            }
+
+            let Capabilities = Capabilities_type::New(true, false);
+            let Allocation = Manager.Allocate(Capabilities, Layout);
+            assert!(Allocation.is_some());
+            if let Some(Pointer) = Allocation {
+                // Deallocate the memory
+                Manager.Deallocate(Pointer, Layout);
+            }
 
             // Check that regions are initialized
-            manager.Regions.lock(|regions| {
-                let regions = regions.borrow();
-                assert!(regions[0].Slice.len() > 0);
-                assert!(regions[1].Slice.len() > 0);
-                assert!(regions[0].Capabilities.Get_executable());
-                assert!(!regions[1].Capabilities.Get_executable());
+            Manager.Regions.lock(|Regions| {
+                let Regions_reference = Regions.borrow();
+                assert!(Regions_reference[0].Slice.len() > 0);
+                assert!(Regions_reference[1].Slice.len() > 0);
+                assert!(!Regions_reference[0].Capabilities.Get_executable());
+                assert!(Regions_reference[1].Capabilities.Get_executable());
             });
         }
     }
 
     #[test]
-    fn test_allocate_deallocate() {
+    fn Test_allocate_deallocate() {
         unsafe {
-            let mut manager = Memory_manager_type::New();
+            let mut Manager = Memory_manager_type::New();
 
             // Allocate some memory
-            let layout = Layout_type::from(Layout::from_size_align(128, 8).unwrap());
-            let capabilities = Capabilities_type::New(false, false);
+            let Layout = Layout_type::from(Layout::from_size_align(128, 8).unwrap());
+            let Capabilities = Capabilities_type::New(false, false);
 
-            let allocation = manager.Allocate(capabilities, layout);
-            assert!(allocation.is_some());
+            let Allocation = Manager.Allocate(Capabilities, Layout);
+            assert!(Allocation.is_some());
 
             // Deallocate the memory
-            if let Some(ptr) = allocation {
-                manager.Deallocate(ptr, layout);
+            if let Some(Pointer) = Allocation {
+                Manager.Deallocate(Pointer, Layout);
             }
         }
     }
 
     #[test]
-    fn test_executable_memory() {
+    fn Test_executable_memory() {
         unsafe {
-            let mut manager = Memory_manager_type::New();
+            let mut Manager = Memory_manager_type::New();
 
             // Allocate some executable memory
-            let layout = Layout_type::from(Layout::from_size_align(128, 8).unwrap());
-            let capabilities = Capabilities_type::New(true, false);
+            let Layout = Layout_type::from(Layout::from_size_align(128, 8).unwrap());
+            let Capabilities = Capabilities_type::New(true, false);
 
-            let allocation = manager.Allocate(capabilities, layout);
-            assert!(allocation.is_some());
+            let Allocation = Manager.Allocate(Capabilities, Layout);
+            assert!(Allocation.is_some());
 
             // Deallocate the memory
-            if let Some(ptr) = allocation {
-                manager.Deallocate(ptr, layout);
+            if let Some(Pointer) = Allocation {
+                Manager.Deallocate(Pointer, Layout);
             }
         }
     }
 
     #[test]
-    fn test_memory_expansion() {
+    fn Test_memory_expansion() {
         unsafe {
-            let mut manager = Memory_manager_type::New();
+            let mut Manager = Memory_manager_type::New();
 
             // Allocate a chunk of memory close to the region size
             // to trigger expansion
-            let page_size = Get_page_size();
-            let layout = Layout_type::from(Layout::from_size_align(page_size - 64, 8).unwrap());
-            let capabilities = Capabilities_type::New(false, false);
+            let Page_size = Get_page_size();
+            let Layout = Layout_type::from(Layout::from_size_align(Page_size - 64, 8).unwrap());
+            let Capabilities = Capabilities_type::New(false, false);
 
-            let allocation1 = manager.Allocate(capabilities, layout);
-            assert!(allocation1.is_some());
+            let Allocation1 = Manager.Allocate(Capabilities, Layout);
+            assert!(Allocation1.is_some());
 
             // Try another allocation that should trigger expansion
-            let allocation2 = manager.Allocate(capabilities, layout);
-            assert!(allocation2.is_some());
+            let Allocation2 = Manager.Allocate(Capabilities, Layout);
+            assert!(Allocation2.is_some());
 
             // Deallocate everything
-            if let Some(ptr) = allocation1 {
-                manager.Deallocate(ptr, layout);
+            if let Some(Pointer) = Allocation1 {
+                Manager.Deallocate(Pointer, Layout);
             }
-            if let Some(ptr) = allocation2 {
-                manager.Deallocate(ptr, layout);
+            if let Some(Pointer) = Allocation2 {
+                Manager.Deallocate(Pointer, Layout);
             }
         }
     }
 
     #[test]
-    fn test_is_slice_within_region() {
+    fn Test_is_slice_within_region() {
         unsafe {
-            let mut manager = Memory_manager_type::New();
+            let mut Manager = Memory_manager_type::New();
 
             // Allocate some memory
-            let layout = Layout_type::from(Layout::from_size_align(128, 8).unwrap());
-            let capabilities = Capabilities_type::New(false, false);
+            let Layout = Layout_type::from(Layout::from_size_align(128, 8).unwrap());
+            let Capabilities = Capabilities_type::New(false, false);
 
-            let allocation = manager.Allocate(capabilities, layout);
-            assert!(allocation.is_some());
+            let Allocation = Manager.Allocate(Capabilities, Layout);
+            assert!(Allocation.is_some());
 
-            manager.Regions.lock(|regions| {
-                let regions_ref = regions.borrow();
-                if let Some(ptr) = allocation {
+            Manager.Regions.lock(|Regions| {
+                let Regions_reference = Regions.borrow();
+                if let Some(Pointer) = Allocation {
                     // Check that the pointer is within the region
-                    assert!(Is_slice_within_region(&regions_ref[1], ptr, layout));
+                    assert!(Is_slice_within_region(
+                        &Regions_reference[0],
+                        Pointer,
+                        Layout
+                    ));
 
                     // Create a pointer outside the region
-                    let invalid_ptr = NonNull::new(std::ptr::null_mut::<u8>()).unwrap();
+                    let Invalid_pointer = NonNull::new(0xdeadbeef as *mut u8).unwrap();
                     assert!(!Is_slice_within_region(
-                        &regions_ref[1],
-                        invalid_ptr,
-                        layout
+                        &Regions_reference[0],
+                        Invalid_pointer,
+                        Layout
                     ));
                 }
             });
 
             // Deallocate
-            if let Some(ptr) = allocation {
-                manager.Deallocate(ptr, layout);
+            if let Some(Pointer) = Allocation {
+                Manager.Deallocate(Pointer, Layout);
             }
         }
     }
 
     #[test]
-    fn test_page_size_rounding() {
-        let page_size = Get_page_size();
+    fn Test_page_size_rounding() {
+        let Page_size = Get_page_size();
 
         // Test various sizes
-        assert_eq!(Round_page_size(1, page_size), page_size);
-        assert_eq!(Round_page_size(page_size, page_size), page_size);
-        assert_eq!(Round_page_size(page_size + 1, page_size), page_size * 2);
-        assert_eq!(Round_page_size(page_size * 2, page_size), page_size * 2);
+        assert_eq!(Round_page_size(1, Page_size), Page_size);
+        assert_eq!(Round_page_size(Page_size, Page_size), Page_size);
+        assert_eq!(Round_page_size(Page_size + 1, Page_size), Page_size * 2);
+        assert_eq!(Round_page_size(Page_size * 2, Page_size), Page_size * 2);
     }
 }
