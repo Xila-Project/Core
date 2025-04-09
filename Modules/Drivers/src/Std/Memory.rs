@@ -8,7 +8,8 @@ use core::{
 
 use libc::{
     mmap, mprotect, mremap, munmap, sysconf, MAP_32BIT, MAP_ANONYMOUS, MAP_FAILED, MAP_FIXED,
-    MAP_PRIVATE, MREMAP_MAYMOVE, PROT_EXEC, PROT_NONE, PROT_READ, PROT_WRITE, _SC_PAGE_SIZE,
+    MAP_PRIVATE, MREMAP_FIXED, MREMAP_MAYMOVE, PROT_EXEC, PROT_NONE, PROT_READ, PROT_WRITE,
+    _SC_PAGE_SIZE,
 };
 use linked_list_allocator::Heap;
 use Memory::{
@@ -19,7 +20,6 @@ use Synchronization::blocking_mutex::{CriticalSectionMutex, Mutex};
 
 // Initial heap size and growth constants
 const INITIAL_HEAP_SIZE: usize = 1024 * 1024; // 1MB
-const HEAP_GROWTH_FACTOR: usize = 2;
 
 struct Region_type {
     pub Heap: Heap,
@@ -125,9 +125,11 @@ unsafe fn Is_slice_within_region(
 ) -> bool {
     let Start = Region.Slice.as_ptr() as usize;
     let End = Start + Region.Slice.len();
-    let Pointer = Pointer.as_ptr() as usize;
+    let Pointer_start = Pointer.as_ptr() as usize;
+    let Pointer_end = Pointer_start + Layout.size();
 
-    (Start..End).contains(&Pointer) && (Start..End).contains(&(Pointer + Layout.size()))
+    // Check if the pointer range is completely contained within the region
+    Pointer_start >= Start && Pointer_end <= End
 }
 
 unsafe fn Expand(Region: &mut Region_type, Tried_size: usize) -> bool {
@@ -148,7 +150,7 @@ unsafe fn Expand(Region: &mut Region_type, Tried_size: usize) -> bool {
     let New_size = Region_old_size + Tried_size;
     let New_size = Round_page_size(New_size, Page_size);
 
-    let New_slice = Remap(&mut Region.Slice, New_size);
+    Remap(&mut Region.Slice, New_size);
 
     let Difference = New_size - Region_old_size;
 
@@ -197,19 +199,15 @@ unsafe fn Remap(Slice: &mut &'static mut [MaybeUninit<u8>], New_size: usize) {
 
     let Old_size = Slice.len();
 
-    let Pointer = mremap(
-        Slice.as_mut_ptr() as *mut c_void,
-        Old_size,
-        New_size,
-        0, // We don't want to move the memory
-        null_mut::<u8>(),
-    );
+    let Pointer = mremap(Slice.as_mut_ptr() as *mut c_void, Old_size, New_size, 0);
 
     if Pointer == MAP_FAILED {
         panic!("Failed to reallocate memory");
     }
 
-    *Slice = std::slice::from_raw_parts_mut(Pointer as *mut MaybeUninit<u8>, New_size);
+    //panic!("Reallocated memory from {} to {} bytes", Old_size, New_size);
+
+    *Slice = std::slice::from_raw_parts_mut(Slice.as_mut_ptr(), New_size);
 }
 
 unsafe fn Unmap(Pointer: *mut MaybeUninit<u8>, Size: usize) {
@@ -244,6 +242,31 @@ mod Tests {
         // Deallocate the memory
         unsafe {
             dealloc(Pointer, Layout);
+        }
+    }
+
+    #[test]
+    fn Test_get_used_free() {
+        unsafe {
+            let Manager = Memory_manager_type::New();
+
+            // Allocate some memory
+            let Layout = Layout_type::from_size_align(128, 8).unwrap();
+            let Capabilities = Capabilities_type::New(false, false);
+
+            let Allocation = Manager.Allocate(Capabilities, Layout);
+            assert!(Allocation.is_some());
+
+            // Check used and free memory
+            let Used = Manager.Get_used();
+            let Free = Manager.Get_free();
+            assert_eq!(Used, Layout.size());
+            assert_eq!(Free, INITIAL_HEAP_SIZE - Layout.size());
+
+            // Deallocate the memory
+            if let Some(Pointer) = Allocation {
+                Manager.Deallocate(Pointer, Layout);
+            }
         }
     }
 
@@ -327,7 +350,7 @@ mod Tests {
             // Allocate a chunk of memory close to the region size
             // to trigger expansion
             let Page_size = Get_page_size();
-            let Layout = Layout_type::from(Layout::from_size_align(Page_size - 64, 8).unwrap());
+            let Layout = Layout_type::from_size_align(INITIAL_HEAP_SIZE, 8).unwrap();
             let Capabilities = Capabilities_type::New(false, false);
 
             let Allocation1 = Manager.Allocate(Capabilities, Layout);
