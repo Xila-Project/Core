@@ -12,7 +12,7 @@ use libc::{
 };
 use linked_list_allocator::Heap;
 use Memory::{
-    Allocator_trait, Capabilities_type, Layout_type, Protection_trait, Protection_type,
+    Capabilities_type, Layout_type, Manager_trait, Protection_trait, Protection_type,
     Statistics_type,
 };
 use Synchronization::blocking_mutex::{CriticalSectionMutex, Mutex};
@@ -50,7 +50,7 @@ impl Memory_manager_type {
     }
 }
 
-impl Allocator_trait for Memory_manager_type {
+impl Manager_trait for Memory_manager_type {
     unsafe fn Allocate(
         &self,
         Capabilities: Capabilities_type,
@@ -219,7 +219,33 @@ unsafe fn Unmap(Pointer: *mut MaybeUninit<u8>, Size: usize) {
 #[cfg(test)]
 mod Tests {
     use super::*;
+    extern crate alloc;
+    use alloc::alloc::{alloc, dealloc};
     use core::ptr::NonNull;
+    use Memory::Allocator_type;
+
+    #[test]
+    fn Test_global_allocator() {
+        #[global_allocator]
+        static ALLOCATOR: Allocator_type<Memory_manager_type> =
+            Allocator_type::New(Memory_manager_type::New());
+
+        // Allocate some memory using the global allocator
+        let Layout = Layout::from_size_align(128, 8).unwrap();
+        let Pointer = unsafe { alloc(Layout) };
+
+        assert!(!Pointer.is_null());
+        // Use the allocated memory (e.g., write to it)
+        unsafe {
+            *(Pointer as *mut u8) = 42;
+            assert_eq!(*(Pointer as *mut u8), 42);
+        }
+
+        // Deallocate the memory
+        unsafe {
+            dealloc(Pointer, Layout);
+        }
+    }
 
     #[test]
     fn Test_memory_manager_initialization() {

@@ -15,7 +15,7 @@ use crate::{Capabilities_type, Layout_type};
 /// - Deallocating memory that wasn't allocated with the same allocator
 /// - Using memory after it has been deallocated
 /// - Deallocating the same memory multiple times
-pub trait Allocator_trait {
+pub trait Manager_trait {
     /// Allocates memory with the specified capabilities and layout.
     ///
     /// # Parameters
@@ -49,8 +49,24 @@ pub trait Allocator_trait {
     /// - The memory is not deallocated multiple times
     unsafe fn Deallocate(&self, Pointer: NonNull<u8>, Layout: Layout_type);
 
+    /// Returns the amount of memory currently used in this allocator.
+    ///
+    /// # Returns
+    /// The number of bytes currently allocated.
+    ///
+    /// # Safety
+    /// This function is unsafe because it may rely on internal allocator state
+    /// that could be concurrently modified by other threads.
     unsafe fn Get_used(&self) -> usize;
 
+    /// Returns the amount of memory currently available in this allocator.
+    ///
+    /// # Returns
+    /// The number of bytes available for allocation.
+    ///
+    /// # Safety
+    /// This function is unsafe because it may rely on internal allocator state
+    /// that could be concurrently modified by other threads.
     unsafe fn Get_free(&self) -> usize;
 }
 
@@ -59,7 +75,20 @@ pub trait Allocator_trait {
 ///
 /// This enables custom allocators that implement the Xila-specific `Allocator_trait`
 /// to be used as the global memory allocator for Rust's allocation system.
-pub struct Allocator_type<T: Allocator_trait>(T);
+pub struct Allocator_type<T: Manager_trait>(T);
+
+impl<T: Manager_trait> Allocator_type<T> {
+    /// Creates a new instance of `Allocator_type` wrapping the provided allocator.
+    ///
+    /// # Parameters
+    /// * `Allocator` - The allocator to wrap
+    ///
+    /// # Returns
+    /// A new instance of `Allocator_type` containing the provided allocator.
+    pub const fn New(Allocator: T) -> Self {
+        Allocator_type(Allocator)
+    }
+}
 
 /// Implementation of the standard library's `GlobalAlloc` trait for any wrapped
 /// type that implements `Allocator_trait`.
@@ -71,7 +100,7 @@ pub struct Allocator_type<T: Allocator_trait>(T);
 /// The implementation upholds the safety guarantees required by `GlobalAlloc`:
 /// - Memory is properly aligned according to the layout
 /// - Deallocation uses the same layout that was used for allocation
-unsafe impl<T: Allocator_trait> GlobalAlloc for Allocator_type<T> {
+unsafe impl<T: Manager_trait> GlobalAlloc for Allocator_type<T> {
     unsafe fn alloc(&self, Layout: core::alloc::Layout) -> *mut u8 {
         self.0
             .Allocate(Capabilities_type::default(), Layout_type::from(Layout))
@@ -105,9 +134,9 @@ unsafe impl<T: Allocator_trait> GlobalAlloc for Allocator_type<T> {
 /// Instantiate_allocator!(Custom_allocator);
 /// ```
 #[macro_export]
-macro_rules! Instantiate_allocator {
+macro_rules! Instantiate_global_allocator {
     ($Allocator:expr) => {
         #[global_allocator]
-        static ALLOCATOR: $crate::Allocator_type<_> = $crate::Allocator_type($Allocator);
+        static ALLOCATOR: $crate::Allocator_type = $crate::Allocator_type($Allocator);
     };
 }
