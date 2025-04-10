@@ -326,7 +326,7 @@ mod Tests {
     #[test]
     fn Test_executable_memory() {
         unsafe {
-            let mut Manager = Memory_manager_type::New();
+            let Manager = Memory_manager_type::New();
 
             // Allocate some executable memory
             let Layout = Layout_type::from(Layout::from_size_align(128, 8).unwrap());
@@ -345,7 +345,7 @@ mod Tests {
     #[test]
     fn Test_memory_expansion() {
         unsafe {
-            let mut Manager = Memory_manager_type::New();
+            let Manager = Memory_manager_type::New();
 
             // Allocate a chunk of memory close to the region size
             // to trigger expansion
