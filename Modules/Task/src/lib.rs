@@ -8,9 +8,6 @@ mod Manager;
 mod Signal;
 mod Task;
 
-pub mod Raw_mutex;
-pub mod Raw_rwlock;
-
 pub use Environment_variable::*;
 pub use Error::*;
 pub use Manager::*;

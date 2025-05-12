@@ -12,18 +12,20 @@ use embassy_executor::{
     SendSpawner,
 };
 use embassy_futures::yield_now;
-use embassy_sync::waitqueue::WakerRegistration;
 use embassy_time::Timer;
 use smol_str::SmolStr;
+use Synchronization::{
+    blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal, waitqueue::WakerRegistration,
+};
 
 use core::{
     future::{poll_fn, Future},
     ptr::NonNull,
-    task::{Poll, Waker},
+    task::Poll,
 };
 
-use core::{slice, time::Duration};
-use std::sync::{OnceLock, RwLock};
+use core::time::Duration;
+use std::sync::{Arc, OnceLock, RwLock};
 use Users::{Group_identifier_type, User_identifier_type};
 
 /// Internal representation of a task.
@@ -32,10 +34,6 @@ struct Metadata_type {
     Internal_identifier: usize,
     /// Name of the task.
     Name: SmolStr,
-    /// Result
-    Waker: WakerRegistration,
-
-    Result: Option<usize>,
     /// The children of the task.
     Parent: Task_identifier_type,
     /// The identifier of the user that owns the task.
@@ -113,32 +111,13 @@ impl Manager_type {
             .to_string())
     }
 
-    pub async fn Join(&self, Task_identifier: Task_identifier_type) -> Result_type<usize> {
-        let mut Task = self
-            .0
-            .write()?
-            .Tasks
-            .get_mut(&Task_identifier)
-            .ok_or(Error_type::Invalid_task_identifier)?;
-
-        if Task.Waker.occupied() {
-            return Err(Error_type::Already_set);
-        }
-
-        poll_fn(|Context| {
-            Task.Waker.register(Context.waker());
-        })
-        .await
-        .map_err(|_| Error_type::Poisoned_lock)
-    }
-
     /// Spawn task
-    async fn Spawn<Function_type, Future_type>(
+    pub async fn Spawn<Function_type, Future_type>(
         &'static self,
         Parent_task: Task_identifier_type,
-        Function: Function_type,
         Name: &str,
-    ) -> Result_type<()>
+        Function: Function_type,
+    ) -> Result_type<JoinHandle<usize>>
     where
         Function_type: FnOnce(Task_identifier_type) -> Future_type + 'static + Send,
         Future_type: Future<Output = usize> + 'static + Send,
@@ -185,14 +164,15 @@ impl Manager_type {
 
         let Name = SmolStr::new_inline(Name);
 
+        let signal = Arc::new(Signal::new());
+        let return_signal = signal.clone();
+
         let Token = Pool.spawn(async move || {
             let Internal_identifier = Self::Get_current_internal_identifier().await;
 
             let Metadata = Metadata_type {
                 Internal_identifier,
                 Name,
-                Waker: WakerRegistration::new(),
-                Result: None,
                 Parent: Parent_task_identifier,
                 User,
                 Group,
@@ -200,7 +180,7 @@ impl Manager_type {
                 Signals: Signal_accumulator_type::New(),
             };
 
-            let Child_taks = Self::Get_new_task_identifier(
+            let Child_task = Self::Get_new_task_identifier(
                 &self
                     .0
                     .read()
@@ -209,14 +189,18 @@ impl Manager_type {
             )
             .expect("Failed to get new task identifier");
 
-            self.Register(Child_taks, Metadata)
+            self.Register(Child_task, Metadata)
                 .expect("Failed to register task");
 
-            let Future = Function(Child_taks).await;
+            let Result = Function(Child_task).await;
 
-            self.Unregister(Child_taks)
+            self.Unregister(Child_task)
                 .await
                 .expect("Failed to unregister task");
+
+            signal.signal(Some(Result));
+
+            Result
         });
 
         self.0
@@ -227,7 +211,7 @@ impl Manager_type {
             .spawn(Token)
             .expect("Failed to spawn task");
 
-        Ok(())
+        Ok(JoinHandle::new(Parent_task, return_signal))
     }
 
     /// Register a task with its parent task.
@@ -353,7 +337,10 @@ impl Manager_type {
     /// Unregister task.
     ///
     /// If the task has children tasks, the root task adopts them.
-    async fn Unregister(&self, Task_identifier: Task_identifier_type) -> Result_type<()> {
+    async fn Unregister(
+        &self,
+        Task_identifier: Task_identifier_type,
+    ) -> Result_type<Metadata_type> {
         // - Root task adopts all children of the task
         let mut Inner = self.0.write()?;
 
@@ -364,11 +351,10 @@ impl Manager_type {
         });
 
         // - Remove the task
-        if Inner.Tasks.remove(&Task_identifier).is_none() {
-            return Err(Error_type::Invalid_task_identifier);
-        }
-
-        Ok(())
+        Inner
+            .Tasks
+            .remove(&Task_identifier)
+            .ok_or(Error_type::Invalid_task_identifier)
     }
 
     async fn Get_current_internal_identifier() -> usize {
@@ -489,6 +475,28 @@ impl Manager_type {
             .ok_or(Error_type::Invalid_task_identifier)?
             .Signals
             .Peek())
+    }
+}
+
+/// A handle to a spawned task that can be used to join it.
+pub struct JoinHandle<T> {
+    signal: Arc<Signal<CriticalSectionRawMutex, Option<T>>>,
+    task_id: Task_identifier_type,
+}
+
+impl<T> JoinHandle<T> {
+    fn new(task_id: Task_identifier_type, signal: Arc<Signal<Option<T>>>) -> Self {
+        Self { signal, task_id }
+    }
+
+    /// Wait for the task to complete and get its return value.
+    pub async fn join(self) -> T {
+        self.signal.wait().await.unwrap()
+    }
+
+    /// Get the task identifier.
+    pub fn task_id(&self) -> Task_identifier_type {
+        self.task_id
     }
 }
 

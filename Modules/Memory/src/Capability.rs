@@ -1,13 +1,7 @@
 use core::fmt::Display;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct Capabilities_type(u8);
-
-impl Default for Capabilities_type {
-    fn default() -> Self {
-        Capabilities_type(0)
-    }
-}
 
 impl Capabilities_type {
     const Executable_flag: u8 = 1 << 0;

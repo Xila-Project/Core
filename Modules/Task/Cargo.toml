@@ -9,4 +9,4 @@ embassy-executor = { version = "0.7" }
 embassy-time = { version = "0.4.0" }
 embassy-futures = { version = "0.1.1" }
 smol_str = { version = "0.3" }
-embassy-sync = { version = "0.6.2" }
+Synchronization = { path = "../Synchronization" }
