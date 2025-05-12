@@ -92,3 +92,6 @@ exclude = [
     "Modules/Bindings/Tests/WASM_test",
     "Build_tool",
 ]
+
+[patch.crates-io]
+embassy-sync = { git = "https://github.com/embassy-rs/embassy.git", branch = "main" }
