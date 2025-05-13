@@ -16,7 +16,6 @@ use embassy_time::Timer;
 use smol_str::SmolStr;
 use Synchronization::{
     blocking_mutex::raw::CriticalSectionRawMutex, once_lock::OnceLock, rwlock::RwLock,
-    signal::Signal, waitqueue::WakerRegistration, Arc,
 };
 
 use core::{
@@ -49,7 +48,7 @@ struct Metadata_type {
 static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
 
 pub fn Initialize() -> &'static Manager_type {
-    return Manager_instance.get_or_init(Manager_type::New);
+    Manager_instance.get_or_init(Manager_type::New)
 }
 
 pub async fn Get_instance() -> &'static Manager_type {
@@ -71,13 +70,11 @@ impl Manager_type {
     /// Create a new task manager instance,
     /// create a root task and register current thread as the root task main thread.
     fn New() -> Self {
-        let Manager = Manager_type(RwLock::new(Inner_type {
+        Manager_type(RwLock::new(Inner_type {
             Tasks: BTreeMap::new(),
             Identifiers: BTreeMap::new(),
             Spawners: Vec::new(),
-        }));
-
-        Manager
+        }))
     }
 
     fn Get_new_task_identifier(
@@ -116,78 +113,124 @@ impl Manager_type {
         Future_type: Future<Output = Return_type> + 'static + Send,
         Return_type: 'static + Send,
     {
-        let Inner = self.0.read().await;
+        // Static function to create and execute tasks
+        // This function is outside the closure that captures SpawnToken,
+        // so it can be called safely from nested tasks
+        async fn Create_and_run_task<R, Func, Fut>(
+            Manager: &'static Manager_type,
+            Parent_task_identifier: Task_identifier_type,
+            name: &str,
+            Function: Func,
+        ) -> Result_type<Join_handle_type<R>>
+        where
+            Func: FnOnce(Task_identifier_type) -> Fut + 'static + Send,
+            Fut: Future<Output = R> + 'static + Send,
+            R: 'static + Send,
+        {
+            let Inner = Manager.0.read().await;
 
-        // - Get parent task information if any (inheritance)
-        let (Parent_task_identifier, Parent_environment_variables, User, Group) =
-            if Inner.Tasks.len() > 0 {
-                let Task = Inner
-                    .Tasks
-                    .get(&Parent_task)
-                    .ok_or(Error_type::Invalid_task_identifier)?;
+            // - Get parent task information if any (inheritance)
+            let (Parent_task_identifier, Parent_environment_variables, User, Group) =
+                if Inner.Tasks.is_empty() {
+                    (
+                        Manager_type::Root_task_identifier, // Root task is its own parent
+                        Vec::new(),
+                        User_identifier_type::Root,
+                        Group_identifier_type::Root,
+                    )
+                } else {
+                    let task = Inner
+                        .Tasks
+                        .get(&Parent_task_identifier)
+                        .ok_or(Error_type::Invalid_task_identifier)?;
 
-                (
-                    Parent_task,
-                    Task.Environment_variables.clone(),
-                    Task.User,
-                    Task.Group,
+                    (
+                        Parent_task_identifier,
+                        task.Environment_variables.clone(),
+                        task.User,
+                        task.Group,
+                    )
+                };
+
+            drop(Inner); // Unlock the read lock
+
+            let Name = SmolStr::new_inline(name);
+            let (Join_handle_parent, Join_handle_child) = Join_handle_type::New();
+
+            let Pool = Box::new(TaskPool::<_, 1>::new());
+            let Pool = Box::leak(Pool);
+
+            async fn Run_task<
+                R: 'static + Send,
+                Fut: Future<Output = R> + 'static + Send,
+                F: FnOnce(Task_identifier_type) -> Fut + 'static + Send,
+            >(
+                parent_task_identifier: Task_identifier_type,
+                name: SmolStr,
+                user: User_identifier_type,
+                group: Group_identifier_type,
+                environment_variables: Vec<Environment_variable_type>,
+                Function: F,
+                join_handle_child: Join_handle_type<R>,
+            ) {
+                let Manager = Get_instance().await;
+
+                let Internal_identifier = Manager_type::Get_current_internal_identifier().await;
+
+                let Metadata = Metadata_type {
+                    Internal_identifier,
+                    Name: name,
+                    Parent: parent_task_identifier,
+                    User: user,
+                    Group: group,
+                    Environment_variables: environment_variables,
+                    Signals: Signal_accumulator_type::New(),
+                };
+
+                let Child_task =
+                    Manager_type::Get_new_task_identifier(&Manager.0.read().await.Tasks)
+                        .expect("Failed to get new task identifier");
+
+                Manager.Register(Child_task, Metadata).await.unwrap();
+
+                let Result = Function(Child_task).await;
+
+                Manager
+                    .Unregister(Child_task)
+                    .await
+                    .expect("Failed to unregister task");
+
+                join_handle_child.Signal(Result);
+            }
+
+            let Token = Pool.spawn(async move || {
+                Run_task(
+                    Parent_task_identifier,
+                    Name,
+                    User,
+                    Group,
+                    Parent_environment_variables,
+                    Function,
+                    Join_handle_child,
                 )
-            } else {
-                (
-                    Self::Root_task_identifier, // Root task is its own parent
-                    Vec::new(),
-                    User_identifier_type::Root,
-                    Group_identifier_type::Root,
-                )
-            };
+                .await;
+            });
 
-        drop(Inner); // Unlock the read lock
-
-        let Pool = Box::new(TaskPool::<_, 1>::new());
-
-        let Pool = Box::leak(Pool);
-
-        let Name = SmolStr::new_inline(Name);
-
-        let (Join_handle_parent, Join_handle_child) = Join_handle_type::New();
-
-        let Token = Pool.spawn(async move || {
-            let Internal_identifier = Self::Get_current_internal_identifier().await;
-
-            let Metadata = Metadata_type {
-                Internal_identifier,
-                Name,
-                Parent: Parent_task_identifier,
-                User,
-                Group,
-                Environment_variables: Parent_environment_variables,
-                Signals: Signal_accumulator_type::New(),
-            };
-
-            let Child_task = Self::Get_new_task_identifier(&self.0.read().await.Tasks)
-                .expect("Failed to get new task identifier");
-
-            self.Register(Child_task, Metadata).await.unwrap();
-
-            let Result = Function(Child_task).await;
-
-            self.Unregister(Child_task)
+            Manager
+                .0
+                .read()
                 .await
-                .expect("Failed to unregister task");
+                .Spawners
+                .first()
+                .unwrap()
+                .spawn(Token)
+                .expect("Failed to spawn task");
 
-            Join_handle_child.Signal(Result);
-        });
+            Ok(Join_handle_parent)
+        }
 
-        self.0
-            .read()
-            .await
-            .Spawners
-            .first()
-            .unwrap()
-            .spawn(Token)
-            .expect("Failed to spawn task");
-
-        Ok(Join_handle_parent)
+        // Call the helper function with all our parameters
+        Create_and_run_task(self, Parent_task, Name, Function).await
     }
 
     /// Register a task with its parent task.
@@ -469,36 +512,38 @@ impl Manager_type {
 
 #[cfg(test)]
 mod Tests {
+    use embassy_executor::Executor;
+
     use super::*;
 
-    #[tokio::test]
+    #[test]
     async fn Test_task_manager() {
         let Manager = Initialize();
 
         // Run test sequentially since the instance is shared
 
         println!("Run test : Test_get_task_name");
-        Test_get_task_name(Manager);
+        Test_get_task_name(Manager).await;
         println!("Run test : Test_Spawn");
-        Test_spawn(Manager);
+        Test_spawn(Manager).await;
         println!("Run test : Test_get_owner");
-        Test_get_owner(Manager);
+        Test_get_owner(Manager).await;
         println!("Run test : Test_get_current_task_identifier");
-        Test_get_current_task_identifier(Manager);
+        Test_get_current_task_identifier(Manager).await;
         println!("Run test : Test_task_owner_inheritance");
-        Test_task_owner_inheritance(Manager);
+        Test_task_owner_inheritance(Manager).await;
         println!("Run test : Test_environment_variables");
-        Test_environment_variables(Manager);
+        Test_environment_variables(Manager).await;
         println!("Run test : Test_environment_variable_inheritance");
-        Test_environment_variable_inheritance(Manager);
+        Test_environment_variable_inheritance(Manager).await;
         println!("Run test : Test_join_handle");
-        Test_join_handle(Manager);
+        Test_join_handle(Manager).await;
         println!("Run test : Test_set_user");
-        Test_set_user(Manager);
+        Test_set_user(Manager).await;
         println!("Run test : Test_set_group");
-        Test_set_group(Manager);
+        Test_set_group(Manager).await;
         println!("Run test : Test_signal");
-        Test_signal(Manager);
+        Test_signal(Manager).await;
     }
 
     async fn Test_get_task_name(Manager: &'static Manager_type) {
@@ -556,87 +601,37 @@ mod Tests {
 
     async fn Test_task_owner_inheritance(Manager: &'static Manager_type) {
         let Task = Manager.Get_current_task_identifier().await;
-        let User_identifier = User_identifier_type::New(123); // Assuming User_identifier_type is i32 for example
-        let Group_identifier = Group_identifier_type::New(456); // Assuming Group_identifier_type is i32 for example
+        let User_identifier = User_identifier_type::New(123);
+        let Group_identifier = Group_identifier_type::New(456);
 
         Manager.Set_user(Task, User_identifier).await.unwrap();
         Manager.Set_group(Task, Group_identifier).await.unwrap();
 
-        let _ = Manager
+        // Spawn first task that verifies inheritance
+        let Task_1 = Manager
             .Spawn(Task, "Task 1", async move |Task_1| {
                 assert_eq!(
                     Get_instance().await.Get_user(Task_1).await.unwrap(),
                     User_identifier
                 );
 
-                let _ = Get_instance()
-                    .await
-                    .Spawn(Task_1, "Task 2", async move |Task_2| {})
-                    .await
-                    .unwrap()
-                    .Join()
-                    .await;
-
-                /*
-                // - Inherit owner
-                let _ = Get_instance()
-                    .await
-                    .Spawn(Task_1, "Task 2", async move |Task_2| {
-                        assert_eq!(
-                            Get_instance().await.Get_user(Task_2).await.unwrap(),
-                            User_identifier
-                        );
-                        assert_eq!(
-                            Get_instance().await.Get_group(Task_2).await.unwrap(),
-                            Group_identifier
-                        );
-
-                        assert_eq!(Get_instance().await.Get_name(Task_2).await.unwrap(), "Task 2");
-
-                        Manager_type::Sleep(std::time::Duration::from_secs(1)).await;
-                    })
-                    .await
-                    .unwrap()
-                    .Join()
-                    .await;
-
-                let User_identifier = User_identifier_type::New(6969); // Assuming User_identifier_type is i32 for example
-                let Group_identifier = Group_identifier_type::New(4242); // Assuming Group_identifier_type is i32 for example
-
-                // - Overwrite owner
-                let _ = Get_instance()
-                    .await
-                    .Spawn(Task_1, "Task 3", async move |Task_3| {
-                        Get_instance()
-                            .await
-                            .Set_user(Task_3, User_identifier)
-                            .await
-                            .unwrap();
-                        Get_instance()
-                            .await
-                            .Set_group(Task_3, Group_identifier)
-                            .await
-                            .unwrap();
-
-                        assert_eq!(
-                            Get_instance().await.Get_user(Task_3).await.unwrap(),
-                            User_identifier
-                        );
-                        assert_eq!(
-                            Get_instance().await.Get_group(Task_3).await.unwrap(),
-                            Group_identifier
-                        );
-
-                        assert_eq!(Get_instance().await.Get_name(Task_3).await.unwrap(), "Task 3");
-                    })
-                    .await
-                    .unwrap()
-                    .Join()
-                    .await;
-                */
+                // Return the task ID
+                Task_1
             })
             .await
-            .unwrap();
+            .unwrap()
+            .Join()
+            .await;
+
+        // Spawn second task as a child of the first task
+        let _ = Manager
+            .Spawn(Task_1, "Task 2", async move |_| {
+                // This task has no nested calls to Spawn
+            })
+            .await
+            .unwrap()
+            .Join()
+            .await;
     }
 
     async fn Test_environment_variables(Manager: &Manager_type) {
@@ -669,32 +664,41 @@ mod Tests {
     async fn Test_environment_variable_inheritance(Manager: &'static Manager_type) {
         let Task = Manager.Get_current_task_identifier().await;
 
-        let _ = Manager
+        // First spawn the parent task
+        let Child_task = Manager
             .Spawn(Task, "Child Task", async move |Task| {
+                // Set the environment variable
                 Get_instance()
                     .await
                     .Set_environment_variable(Task, "Key", "Value")
                     .await
                     .unwrap();
 
-                let _ = Get_instance()
-                    .await
-                    .Spawn(Task, "Grand child Task", async move |Task| {
-                        assert_eq!(
-                            Get_instance()
-                                .await
-                                .Get_environment_variable(Task, "Key")
-                                .await
-                                .unwrap()
-                                .Get_value(),
-                            "Value"
-                        );
-                    })
-                    .await
-                    .unwrap();
+                // Return the task ID so we can use it to spawn the child
+                Task
             })
             .await
-            .unwrap();
+            .unwrap()
+            .Join()
+            .await;
+
+        // Then spawn the grandchild task with the returned task ID
+        let _ = Manager
+            .Spawn(Child_task, "Grand child Task", async move |Task| {
+                assert_eq!(
+                    Get_instance()
+                        .await
+                        .Get_environment_variable(Task, "Key")
+                        .await
+                        .unwrap()
+                        .Get_value(),
+                    "Value"
+                );
+            })
+            .await
+            .unwrap()
+            .Join()
+            .await;
     }
 
     async fn Test_join_handle(Manager: &'static Manager_type) {
