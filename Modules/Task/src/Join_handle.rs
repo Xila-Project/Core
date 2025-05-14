@@ -1,7 +1,10 @@
+extern crate alloc;
+
+use alloc::sync::Arc;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
-use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal, Arc};
+use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 
 pub struct Join_handle_type<T>(Arc<Signal<CriticalSectionRawMutex, T>>);
 

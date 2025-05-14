@@ -3,4 +3,3 @@
 #![allow(non_upper_case_globals)]
 
 pub use embassy_sync::*;
-pub use portable_atomic_util::*;

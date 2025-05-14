@@ -95,3 +95,4 @@ exclude = [
 
 [patch.crates-io]
 embassy-sync = { git = "https://github.com/embassy-rs/embassy.git", branch = "main" }
+embassy-executor = { path = "../embassy/embassy-executor" }
