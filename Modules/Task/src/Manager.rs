@@ -52,8 +52,8 @@ pub fn Initialize() -> &'static Manager_type {
     Manager_instance.get_or_init(Manager_type::New)
 }
 
-pub async fn Get_instance() -> &'static Manager_type {
-    Manager_instance.get().await
+pub fn Get_instance() -> &'static Manager_type {
+    Manager_instance.try_get().expect("Manager not initialized")
 }
 
 struct Inner_type {
@@ -76,6 +76,12 @@ impl Manager_type {
             Identifiers: BTreeMap::new(),
             Spawners: Vec::new(),
         }))
+    }
+
+    pub fn Register_spawner(&'static self, Spawner: SendSpawner) {
+        let mut Inner = embassy_futures::block_on(self.0.write());
+
+        Inner.Spawners.push(Spawner);
     }
 
     fn Get_new_task_identifier(
@@ -103,30 +109,29 @@ impl Manager_type {
     }
 
     /// Spawn task
-    pub async fn Spawn<Function_type, Future_type, Return_type>(
+    pub fn Spawn<Function_type, Future_type, Return_type>(
         &'static self,
         Parent_task: Task_identifier_type,
         Name: &str,
         Function: Function_type,
-    ) -> Result_type<Join_handle_type<Return_type>>
+    ) -> Result_type<(Join_handle_type<Return_type>, Task_identifier_type)>
     where
         Function_type: FnOnce(Task_identifier_type) -> Future_type + 'static + Send,
         Future_type: Future<Output = Return_type> + 'static + Send,
-        Return_type: 'static + Send,
+        Return_type: 'static,
     {
         // Static function to create and execute tasks
         // This function is outside the closure that captures SpawnToken,
         // so it can be called safely from nested tasks
-        async fn Create_and_run_task<R, Func, Fut>(
+        async fn Create_and_run_task<R: 'static, Func, Fut>(
             Manager: &'static Manager_type,
             Parent_task_identifier: Task_identifier_type,
             name: &str,
             Function: Func,
-        ) -> Result_type<Join_handle_type<R>>
+        ) -> Result_type<(Join_handle_type<R>, Task_identifier_type)>
         where
             Func: FnOnce(Task_identifier_type) -> Fut + 'static + Send,
             Fut: Future<Output = R> + 'static + Send,
-            R: 'static + Send,
         {
             let Inner = Manager.0.read().await;
 
@@ -153,6 +158,9 @@ impl Manager_type {
                     )
                 };
 
+            let Child_task = Manager_type::Get_new_task_identifier(&Inner.Tasks)
+                .expect("Failed to get new task identifier");
+
             drop(Inner); // Unlock the read lock
 
             let Name = SmolStr::new_inline(name);
@@ -161,60 +169,33 @@ impl Manager_type {
             let Pool = Box::new(TaskPool::<_, 1>::new());
             let Pool = Box::leak(Pool);
 
-            async fn Run_task<
-                R: 'static + Send,
-                Fut: Future<Output = R> + 'static + Send,
-                F: FnOnce(Task_identifier_type) -> Fut + 'static + Send,
-            >(
-                parent_task_identifier: Task_identifier_type,
-                name: SmolStr,
-                user: User_identifier_type,
-                group: Group_identifier_type,
-                environment_variables: Vec<Environment_variable_type>,
-                Function: F,
-                join_handle_child: Join_handle_type<R>,
-            ) {
-                let Manager = Get_instance().await;
+            let Token = Pool.spawn(async move || {
+                let Manager = Get_instance();
 
                 let Internal_identifier = Manager_type::Get_current_internal_identifier().await;
 
                 let Metadata = Metadata_type {
                     Internal_identifier,
-                    Name: name,
-                    Parent: parent_task_identifier,
-                    User: user,
-                    Group: group,
-                    Environment_variables: environment_variables,
+                    Name,
+                    Parent: Parent_task_identifier,
+                    User,
+                    Group,
+                    Environment_variables: Parent_environment_variables,
                     Signals: Signal_accumulator_type::New(),
                 };
 
-                let Child_task =
-                    Manager_type::Get_new_task_identifier(&Manager.0.read().await.Tasks)
-                        .expect("Failed to get new task identifier");
-
-                Manager.Register(Child_task, Metadata).await.unwrap();
+                Manager
+                    .Register(Child_task, Metadata)
+                    .await
+                    .expect("Failed to register task");
 
                 let Result = Function(Child_task).await;
 
                 Manager
                     .Unregister(Child_task)
-                    .await
                     .expect("Failed to unregister task");
 
-                join_handle_child.Signal(Result);
-            }
-
-            let Token = Pool.spawn(async move || {
-                Run_task(
-                    Parent_task_identifier,
-                    Name,
-                    User,
-                    Group,
-                    Parent_environment_variables,
-                    Function,
-                    Join_handle_child,
-                )
-                .await;
+                Join_handle_child.Signal(Result);
             });
 
             Manager
@@ -227,11 +208,11 @@ impl Manager_type {
                 .spawn(Token)
                 .expect("Failed to spawn task");
 
-            Ok(Join_handle_parent)
+            Ok((Join_handle_parent, Child_task))
         }
 
         // Call the helper function with all our parameters
-        Create_and_run_task(self, Parent_task, Name, Function).await
+        embassy_futures::block_on(Create_and_run_task(self, Parent_task, Name, Function))
     }
 
     /// Register a task with its parent task.
@@ -243,6 +224,17 @@ impl Manager_type {
         Task_identifier: Task_identifier_type,
         Task_internal: Metadata_type,
     ) -> Result_type<()> {
+        if self
+            .0
+            .write()
+            .await
+            .Identifiers
+            .insert(Task_internal.Internal_identifier, Task_identifier)
+            .is_some()
+        {
+            return Err(Error_type::Invalid_task_identifier);
+        }
+
         if self
             .0
             .write()
@@ -364,12 +356,9 @@ impl Manager_type {
     /// Unregister task.
     ///
     /// If the task has children tasks, the root task adopts them.
-    async fn Unregister(
-        &self,
-        Task_identifier: Task_identifier_type,
-    ) -> Result_type<Metadata_type> {
+    fn Unregister(&self, Task_identifier: Task_identifier_type) -> Result_type<Metadata_type> {
         // - Root task adopts all children of the task
-        let mut Inner = self.0.write().await;
+        let mut Inner = embassy_futures::block_on(self.0.write());
 
         Inner.Tasks.iter_mut().for_each(|(_, Task)| {
             if Task.Parent == Task_identifier {
@@ -513,17 +502,17 @@ impl Manager_type {
 
 #[cfg(test)]
 mod Tests {
-    use embassy_executor::Executor;
 
     use super::*;
 
-    #[test]
+    #[crate::Test]
     async fn Test_task_manager() {
         let Manager = Initialize();
 
         // Run test sequentially since the instance is shared
 
         println!("Run test : Test_get_task_name");
+
         Test_get_task_name(Manager).await;
         println!("Run test : Test_Spawn");
         Test_spawn(Manager).await;
@@ -553,13 +542,10 @@ mod Tests {
 
         let _ = Manager
             .Spawn(Task, Task_name, async move |Task| {
-                assert_eq!(
-                    Get_instance().await.Get_name(Task).await.unwrap(),
-                    Task_name
-                );
+                assert_eq!(Get_instance().Get_name(Task).await.unwrap(), Task_name);
             })
-            .await
             .unwrap()
+            .0
             .Join()
             .await;
     }
@@ -568,18 +554,18 @@ mod Tests {
         let Task_name = "Child Task";
         let Task = Manager.Get_current_task_identifier().await;
 
-        let _ = Manager.Spawn(Task, Task_name, async |_| {}).await.unwrap();
+        let _ = Manager.Spawn(Task, Task_name, async |_| {}).unwrap();
     }
 
     async fn Test_get_owner(Manager: &Manager_type) {
         let Task = Manager.Get_current_task_identifier().await;
 
         assert_eq!(
-            Get_instance().await.Get_user(Task).await.unwrap(),
+            Get_instance().Get_user(Task).await.unwrap(),
             User_identifier_type::Root
         );
         assert_eq!(
-            Get_instance().await.Get_group(Task).await.unwrap(),
+            Get_instance().Get_group(Task).await.unwrap(),
             Group_identifier_type::Root
         );
     }
@@ -589,13 +575,10 @@ mod Tests {
 
         Manager
             .Spawn(Task, "Current Task", async move |Task| {
-                assert_eq!(
-                    Get_instance().await.Get_current_task_identifier().await,
-                    Task
-                );
+                assert_eq!(Get_instance().Get_current_task_identifier().await, Task);
             })
-            .await
             .unwrap()
+            .0
             .Join()
             .await;
     }
@@ -609,28 +592,40 @@ mod Tests {
         Manager.Set_group(Task, Group_identifier).await.unwrap();
 
         // Spawn first task that verifies inheritance
-        let Task_1 = Manager
+        Manager
             .Spawn(Task, "Task 1", async move |Task_1| {
                 assert_eq!(
-                    Get_instance().await.Get_user(Task_1).await.unwrap(),
+                    Get_instance().Get_user(Task_1).await.unwrap(),
                     User_identifier
                 );
+                assert_eq!(
+                    Get_instance().Get_group(Task_1).await.unwrap(),
+                    Group_identifier
+                );
 
+                // Spawn second task as a child of the first task
+                let _ = Manager
+                    .Spawn(Task_1, "Task 2", async move |_| {
+                        // Verify that the child task inherits the user and group
+                        assert_eq!(
+                            Get_instance().Get_user(Task_1).await.unwrap(),
+                            User_identifier
+                        );
+                        assert_eq!(
+                            Get_instance().Get_group(Task_1).await.unwrap(),
+                            Group_identifier
+                        );
+                        // This task has no nested calls to Spawn
+                    })
+                    .unwrap()
+                    .0
+                    .Join()
+                    .await;
                 // Return the task ID
                 Task_1
             })
-            .await
             .unwrap()
-            .Join()
-            .await;
-
-        // Spawn second task as a child of the first task
-        let _ = Manager
-            .Spawn(Task_1, "Task 2", async move |_| {
-                // This task has no nested calls to Spawn
-            })
-            .await
-            .unwrap()
+            .0
             .Join()
             .await;
     }
@@ -666,38 +661,36 @@ mod Tests {
         let Task = Manager.Get_current_task_identifier().await;
 
         // First spawn the parent task
-        let Child_task = Manager
+        let _ = Manager
             .Spawn(Task, "Child Task", async move |Task| {
                 // Set the environment variable
                 Get_instance()
-                    .await
                     .Set_environment_variable(Task, "Key", "Value")
                     .await
                     .unwrap();
 
+                // Then spawn the grandchild task with the returned task ID
+                let _ = Manager
+                    .Spawn(Task, "Grand child Task", async move |Task| {
+                        assert_eq!(
+                            Get_instance()
+                                .Get_environment_variable(Task, "Key")
+                                .await
+                                .unwrap()
+                                .Get_value(),
+                            "Value"
+                        );
+                    })
+                    .unwrap()
+                    .0
+                    .Join()
+                    .await;
+
                 // Return the task ID so we can use it to spawn the child
                 Task
             })
-            .await
             .unwrap()
-            .Join()
-            .await;
-
-        // Then spawn the grandchild task with the returned task ID
-        let _ = Manager
-            .Spawn(Child_task, "Grand child Task", async move |Task| {
-                assert_eq!(
-                    Get_instance()
-                        .await
-                        .Get_environment_variable(Task, "Key")
-                        .await
-                        .unwrap()
-                        .Get_value(),
-                    "Value"
-                );
-            })
-            .await
-            .unwrap()
+            .0
             .Join()
             .await;
     }
@@ -707,10 +700,9 @@ mod Tests {
 
         let Join_handle = Manager
             .Spawn(Task, "Task with join handle", async |_| 42)
-            .await
             .unwrap();
 
-        assert_eq!(Join_handle.Join().await, 42);
+        assert_eq!(Join_handle.0.Join().await, 42);
     }
 
     async fn Test_set_user(Manager: &'static Manager_type) {
@@ -736,45 +728,55 @@ mod Tests {
     async fn Test_signal(Manager: &'static Manager_type) {
         let Task = Manager.Get_current_task_identifier().await;
 
-        let _ = Manager
-            .Spawn(Task, "Task with signal", async |_| {
-                let Task = Get_instance().await.Get_current_task_identifier().await;
-
-                Manager_type::Sleep(Duration::from_millis(10));
+        let (Child_handle, Child_identifier) = Manager
+            .Spawn(Task, "Task with signal", async |Task| {
+                Manager_type::Sleep(Duration::from_millis(10)).await; // Allow the parent task to set signals
 
                 assert_eq!(
-                    Get_instance().await.Peek_signal(Task).await.unwrap(),
+                    Get_instance().Peek_signal(Task).await.unwrap(),
                     Some(Signal_type::Hangup)
                 );
 
                 assert_eq!(
-                    Get_instance().await.Pop_signal(Task).await.unwrap(),
+                    Get_instance().Pop_signal(Task).await.unwrap(),
+                    Some(Signal_type::Hangup)
+                );
+
+                assert_eq!(
+                    Get_instance().Peek_signal(Task).await.unwrap(),
+                    Some(Signal_type::Kill)
+                );
+
+                assert_eq!(
+                    Get_instance().Pop_signal(Task).await.unwrap(),
                     Some(Signal_type::Kill)
                 );
             })
-            .await
             .unwrap();
 
+        Manager_type::Sleep(Duration::from_millis(10)).await; // Allow the child task to start
+
         Get_instance()
-            .await
             .0
             .write()
             .await
             .Tasks
-            .get_mut(&Task)
+            .get_mut(&Child_identifier)
             .unwrap()
             .Signals
             .Send(Signal_type::Kill);
 
         Get_instance()
-            .await
             .0
             .write()
             .await
             .Tasks
-            .get_mut(&Task)
+            .get_mut(&Child_identifier)
             .unwrap()
             .Signals
             .Send(Signal_type::Hangup);
+
+        // Wait for the task to finish
+        Child_handle.Join().await;
     }
 }

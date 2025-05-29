@@ -85,7 +85,9 @@ members = [
     "Modules/Executables/Shell/Graphical",
     "Modules/Executables/Terminal",
     "Modules/Authentication",
-    "Modules/Network", "Modules/Synchronization", 
+    "Modules/Network",
+    "Modules/Synchronization",
+    "Modules/Task/Task_macros",
 ]
 exclude = [
     "Modules/Virtual_machine/Tests/WASM_test",
@@ -95,4 +97,3 @@ exclude = [
 
 [patch.crates-io]
 embassy-sync = { git = "https://github.com/embassy-rs/embassy.git", branch = "main" }
-embassy-executor = { path = "../embassy/embassy-executor" }

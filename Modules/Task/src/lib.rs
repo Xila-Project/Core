@@ -15,3 +15,4 @@ pub use Join_handle::*;
 pub use Manager::*;
 pub use Signal::*;
 pub use Task::*;
+pub use Task_macros::Test;
