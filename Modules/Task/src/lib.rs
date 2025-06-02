@@ -4,6 +4,7 @@
 
 mod Environment_variable;
 mod Error;
+mod Executor;
 mod Join_handle;
 mod Manager;
 mod Signal;
@@ -11,6 +12,7 @@ mod Task;
 
 pub use Environment_variable::*;
 pub use Error::*;
+pub use Executor::*;
 pub use Join_handle::*;
 pub use Manager::*;
 pub use Signal::*;

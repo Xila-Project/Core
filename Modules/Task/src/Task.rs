@@ -9,6 +9,7 @@ pub struct Task_identifier_type(Task_identifier_inner_type);
 
 impl Task_identifier_type {
     pub const Maximum: Task_identifier_inner_type = Task_identifier_inner_type::MAX;
+    pub const Minimum: Task_identifier_inner_type = Task_identifier_inner_type::MIN;
 }
 
 impl Task_identifier_type {
@@ -30,5 +31,11 @@ impl From<Task_identifier_inner_type> for Task_identifier_type {
 impl From<Task_identifier_type> for Task_identifier_inner_type {
     fn from(Value: Task_identifier_type) -> Self {
         Value.0
+    }
+}
+
+impl PartialEq<Task_identifier_inner_type> for Task_identifier_type {
+    fn eq(&self, other: &Task_identifier_inner_type) -> bool {
+        self.0 == *other
     }
 }

@@ -10,6 +10,7 @@ pub type Result_type<T> = std::result::Result<T, Error_type>;
 #[repr(C)]
 pub enum Error_type {
     Invalid_task_identifier,
+    Invalid_spawner_identifier,
     Thread_not_registered,
     Thread_already_registered,
     Failed_to_create_thread,
@@ -18,9 +19,11 @@ pub enum Error_type {
     Poisoned_lock,
     Invalid_environment_variable,
     Too_many_tasks,
+    Too_many_spawners,
     Already_initialized,
     Already_set,
     Not_initialized,
+    No_spawner_available,
 }
 
 impl fmt::Display for Error_type {
