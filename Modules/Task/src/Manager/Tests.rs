@@ -738,7 +738,7 @@ async fn Test_register_multiple_spawners() {
 }
 
 //#[Test(crate)]
-async fn Test_spawner_load_balancing() {
+async fn _Test_spawner_load_balancing() {
     let Manager = Initialize();
 
     // Test the load balancing behavior by checking how tasks are distributed

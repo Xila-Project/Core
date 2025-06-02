@@ -130,7 +130,7 @@ pub fn Test(args: TokenStream, input: TokenStream) -> TokenStream {
                         __Spawner = Manager.Register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
-                    ::embassy_futures::block_on(async move {
+                    ::Futures::block_on(async move {
                         Manager.Spawn(
                             #Task_path::Manager_type::Root_task_identifier,
                             #Function_name_string,
