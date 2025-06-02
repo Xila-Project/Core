@@ -1,4 +1,4 @@
-use std::{
+use core::{
     collections::{BTreeMap, VecDeque},
     sync::{Arc, RwLock},
 };

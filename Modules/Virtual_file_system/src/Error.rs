@@ -1,4 +1,4 @@
-use std::{num::NonZeroU32, sync::PoisonError};
+use core::num::NonZeroU32;
 
 pub type Result_type<T> = Result<T, Error_type>;
 
@@ -33,12 +33,6 @@ impl From<Error_type> for NonZeroU32 {
         };
 
         Discriminant.saturating_add(Offset)
-    }
-}
-
-impl<T> From<PoisonError<T>> for Error_type {
-    fn from(_: PoisonError<T>) -> Self {
-        Self::Poisonned_lock
     }
 }
 

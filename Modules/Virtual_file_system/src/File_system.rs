@@ -1,5 +1,10 @@
-use std::sync::OnceLock;
-use std::{collections::BTreeMap, sync::RwLock};
+extern crate alloc;
+
+use Synchronization::{
+    blocking_mutex::raw::CriticalSectionRawMutex, once_lock::OnceLock, rwlock::RwLock,
+};
+
+use alloc::collections::BTreeMap;
 
 use Network::{IP_type, Network_socket_driver_trait, Port_type, Protocol_type};
 use Task::Task_identifier_type;
@@ -33,29 +38,26 @@ struct Internal_file_system_type {
 /// It is a pragmatic choice for efficiency in embedded systems contexts (avoid using Arc).
 static Virtual_file_system_instance: OnceLock<Virtual_file_system_type> = OnceLock::new();
 
-pub fn Initialize(
+pub async fn Initialize(
     Root_file_system: Box<dyn File_system_traits>,
     Network_socket_driver: Option<&'static dyn Network_socket_driver_trait>,
-) -> Result<(), crate::Error_type> {
-    Virtual_file_system_instance
-        .set(Virtual_file_system_type::New(
-            Task::Get_instance(),
-            Users::Get_instance(),
-            Time::Get_instance(),
-            Root_file_system,
-            Network_socket_driver,
-        )?)
-        .map_err(|_| crate::Error_type::Already_initialized)
+) -> Result<&'static Virtual_file_system_type<'static>, crate::Error_type> {
+    let Virtual_file_system = Virtual_file_system_type::New(
+        Task::Get_instance(),
+        Users::Get_instance(),
+        Time::Get_instance(),
+        Root_file_system,
+        Network_socket_driver,
+    )
+    .await?;
+
+    Ok(Virtual_file_system_instance.get_or_init(|| Virtual_file_system))
 }
 
-pub fn Get_instance() -> &'static Virtual_file_system_type<'static> {
+pub async fn Get_instance() -> &'static Virtual_file_system_type<'static> {
     Virtual_file_system_instance
-        .get()
+        .try_get()
         .expect("Virtual file system not initialized")
-}
-
-pub fn Uninitialize() {
-    Get_instance().Uninitialize();
 }
 
 /// The virtual file system.
@@ -63,7 +65,10 @@ pub fn Uninitialize() {
 /// It is a singleton.
 pub struct Virtual_file_system_type<'a> {
     /// Mounted file systems.
-    File_systems: RwLock<BTreeMap<File_system_identifier_type, Internal_file_system_type>>,
+    File_systems: RwLock<
+        CriticalSectionRawMutex,
+        BTreeMap<File_system_identifier_type, Internal_file_system_type>,
+    >,
     /// Devices.
     Device_file_system: Device::File_system_type<'a>,
     /// Pipes.
@@ -77,7 +82,7 @@ impl<'a> Virtual_file_system_type<'a> {
     pub const Standard_output_file_identifier: File_identifier_type = File_identifier_type::New(1);
     pub const Standard_error_file_identifier: File_identifier_type = File_identifier_type::New(2);
 
-    pub fn New(
+    pub async fn New(
         _: &'static Task::Manager_type,
         _: &'static Users::Manager_type,
         _: &'static Time::Manager_type,
@@ -100,24 +105,25 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(Self {
             File_systems: RwLock::new(File_systems),
             Device_file_system: Device::File_system_type::New(),
-            Pipe_file_system: Pipe::File_system_type::New(),
+            Pipe_file_system: Pipe::File_system_type::New().await,
             Network_socket_driver,
         })
     }
 
-    pub fn Uninitialize(&self) {
+    pub async fn Uninitialize(&self) {
         if let Ok(Inodes) = self
             .Device_file_system
             .Get_devices_from_path(Path_type::Root)
+            .await
         {
             for Inode in Inodes {
-                if let Ok(Path) = self.Device_file_system.Get_path_from_inode(Inode) {
+                if let Ok(Path) = self.Device_file_system.Get_path_from_inode(Inode).await {
                     match Path {
                         Internal_path_type::Owned(Path) => {
-                            let _ = self.Remove(Path);
+                            let _ = self.Remove(Path).await;
                         }
                         Internal_path_type::Borrowed(Path) => {
-                            let _ = self.Remove(Path);
+                            let _ = self.Remove(Path).await;
                         }
                     }
                 }
@@ -147,7 +153,7 @@ impl<'a> Virtual_file_system_type<'a> {
     }
 
     /// Mount a file system at a given mount point.
-    pub fn Mount_file_system(
+    pub async fn Mount_file_system(
         &self,
         File_system: Box<dyn File_system_traits>,
         Path: impl AsRef<Path_type>,
@@ -163,7 +169,7 @@ impl<'a> Virtual_file_system_type<'a> {
             return Err(Error_type::Invalid_path);
         }
 
-        let mut File_systems = self.File_systems.write()?; // Get the file systems
+        let mut File_systems = self.File_systems.write().await; // Get the file systems
 
         // Create a directory in the underlying file system
         let (_, Parent_file_system, Relative_path) =
@@ -174,7 +180,7 @@ impl<'a> Virtual_file_system_type<'a> {
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let User = Task::Get_instance().Get_user(Task)?;
+        let User = Task::Get_instance().Get_user(Task).await?;
 
         let Group = Users::Get_instance().Get_user_primary_group(User)?;
 
@@ -195,7 +201,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(File_system_identifier)
     }
 
-    pub fn Unmount_file_system(
+    pub async fn Unmount_file_system(
         &self,
         Path: impl AsRef<Path_type>,
         Task: Task_identifier_type,
@@ -206,7 +212,7 @@ impl<'a> Virtual_file_system_type<'a> {
             return Err(Error_type::Invalid_path);
         }
 
-        let mut File_systems = self.File_systems.write()?; // Get the file systems
+        let mut File_systems = self.File_systems.write().await; // Get the file systems
 
         let File_system_identifier = {
             let (File_system_identifier, _, Relative_path) =
@@ -278,13 +284,13 @@ impl<'a> Virtual_file_system_type<'a> {
         ))
     }
 
-    pub fn Open(
+    pub async fn Open(
         &self,
         Path: &impl AsRef<Path_type>,
         Flags: Flags_type,
         Task: Task_identifier_type,
     ) -> Result_type<Unique_file_identifier_type> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
+        let File_systems = self.File_systems.read().await; // Get the file systems
 
         let (File_system_identifier, File_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
@@ -294,7 +300,7 @@ impl<'a> Virtual_file_system_type<'a> {
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let User = Task::Get_instance().Get_user(Task)?;
+        let User = Task::Get_instance().Get_user(Task).await?;
 
         let Group = Users::Get_instance().Get_user_primary_group(User)?;
 
@@ -307,9 +313,10 @@ impl<'a> Virtual_file_system_type<'a> {
         let Unique_file = match Metadata.Get_type() {
             Type_type::Character_device | Type_type::Block_device => {
                 if let Some(Inode) = Metadata.Get_inode() {
-                    let Local_file =
-                        self.Device_file_system
-                            .Open(Inode, Task, Flags, Unique_file)?;
+                    let Local_file = self
+                        .Device_file_system
+                        .Open(Inode, Task, Flags, Unique_file)
+                        .await?;
 
                     Local_file
                         .Into_unique_file_identifier(
@@ -324,7 +331,8 @@ impl<'a> Virtual_file_system_type<'a> {
                 if let Some(Inode) = Metadata.Get_inode() {
                     let Local_file = self
                         .Pipe_file_system
-                        .Open(Inode, Task, Flags, Unique_file)?;
+                        .Open(Inode, Task, Flags, Unique_file)
+                        .await?;
 
                     Local_file
                         .Into_unique_file_identifier(File_system_identifier_type::Pipe_file_system)
@@ -339,7 +347,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(Unique_file)
     }
 
-    pub fn Close(
+    pub async fn Close(
         &self,
         File: Unique_file_identifier_type,
         Task: Task_identifier_type,
@@ -348,13 +356,13 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let Underlying_file = match File_system {
             File_system_identifier_type::Pipe_file_system => {
-                match self.Pipe_file_system.Close(Local_file)? {
+                match self.Pipe_file_system.Close(Local_file).await? {
                     Some(Underlying_file) => Underlying_file,
                     None => return Ok(()),
                 }
             }
             File_system_identifier_type::Device_file_system => {
-                self.Device_file_system.Close(Local_file)?
+                self.Device_file_system.Close(Local_file).await?
             }
             File_system_identifier_type::Network_socket_file_system => {
                 self.Network_socket_driver
@@ -365,7 +373,8 @@ impl<'a> Virtual_file_system_type<'a> {
             }
             _ => {
                 self.File_systems
-                    .read()?
+                    .read()
+                    .await
                     .get(&File_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .Inner
@@ -379,7 +388,8 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, Local_file) = Underlying_file.Into_local_file_identifier(Task);
 
         self.File_systems
-            .read()?
+            .read()
+            .await
             .get(&File_system)
             .ok_or(Error_type::Invalid_identifier)?
             .Inner
@@ -388,7 +398,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(())
     }
 
-    pub fn Read(
+    pub async fn Read(
         &self,
         File: Unique_file_identifier_type,
         Buffer: &mut [u8],
@@ -403,18 +413,22 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let (Size, Underlying_file) = match File_system {
             File_system_identifier_type::Pipe_file_system => {
-                self.Pipe_file_system.Read(Local_file_identifier, Buffer)?
+                self.Pipe_file_system
+                    .Read(Local_file_identifier, Buffer)
+                    .await?
             }
             File_system_identifier_type::Device_file_system => {
                 let Result = self
                     .Device_file_system
-                    .Read(Local_file_identifier, Buffer)?;
+                    .Read(Local_file_identifier, Buffer)
+                    .await?;
                 (Result.0, Some(Result.1))
             }
             _ => {
                 return self
                     .File_systems
-                    .read()?
+                    .read()
+                    .await
                     .get(&File_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .Inner
@@ -427,7 +441,8 @@ impl<'a> Virtual_file_system_type<'a> {
                 Underlying_file.Into_local_file_identifier(Task);
 
             self.File_systems
-                .read()?
+                .read()
+                .await
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
@@ -436,7 +451,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(Size)
     }
 
-    pub fn Read_line(
+    pub async fn Read_line(
         &self,
         File: Unique_file_identifier_type,
         Task: Task_identifier_type,
@@ -450,19 +465,23 @@ impl<'a> Virtual_file_system_type<'a> {
             .into();
 
         let (Size, Underlying_file) = match File_system {
-            File_system_identifier_type::Pipe_file_system => self
-                .Pipe_file_system
-                .Read_line(Local_file_identifier, Buffer)?,
+            File_system_identifier_type::Pipe_file_system => {
+                self.Pipe_file_system
+                    .Read_line(Local_file_identifier, Buffer)
+                    .await?
+            }
             File_system_identifier_type::Device_file_system => {
                 let Result = self
                     .Device_file_system
-                    .Read_line(Local_file_identifier, Buffer)?;
+                    .Read_line(Local_file_identifier, Buffer)
+                    .await?;
                 (Result.0, Some(Result.1))
             }
             _ => {
                 return self
                     .File_systems
-                    .read()?
+                    .read()
+                    .await
                     .get(&File_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .Inner
@@ -475,7 +494,8 @@ impl<'a> Virtual_file_system_type<'a> {
                 Underlying_file.Into_local_file_identifier(Task);
 
             self.File_systems
-                .read()?
+                .read()
+                .await
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
@@ -485,7 +505,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(Size)
     }
 
-    pub fn Read_to_end(
+    pub async fn Read_to_end(
         &self,
         File: Unique_file_identifier_type,
         Task: Task_identifier_type,
@@ -498,7 +518,7 @@ impl<'a> Virtual_file_system_type<'a> {
         loop {
             let mut Chunk = vec![0; Chunk_size];
 
-            let Size: usize = self.Read(File, &mut Chunk, Task)?.into();
+            let Size: usize = self.Read(File, &mut Chunk, Task).await?.into();
 
             if Size == 0 {
                 break;
@@ -512,7 +532,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(Read_size.into())
     }
 
-    pub fn Write(
+    pub async fn Write(
         &self,
         File: Unique_file_identifier_type,
         Buffer: &[u8],
@@ -527,18 +547,22 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let (Size, Underlying_file) = match File_system {
             File_system_identifier_type::Pipe_file_system => {
-                self.Pipe_file_system.Write(Local_file_identifier, Buffer)?
+                self.Pipe_file_system
+                    .Write(Local_file_identifier, Buffer)
+                    .await?
             }
             File_system_identifier_type::Device_file_system => {
                 let Result = self
                     .Device_file_system
-                    .Write(Local_file_identifier, Buffer)?;
+                    .Write(Local_file_identifier, Buffer)
+                    .await?;
                 (Result.0, Some(Result.1))
             }
             _ => {
                 return self
                     .File_systems
-                    .read()?
+                    .read()
+                    .await
                     .get(&File_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .Inner
@@ -551,7 +575,8 @@ impl<'a> Virtual_file_system_type<'a> {
                 Underlying_file.Into_local_file_identifier(Task);
 
             self.File_systems
-                .read()?
+                .read()
+                .await
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
@@ -561,7 +586,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(Size)
     }
 
-    pub fn Set_position(
+    pub async fn Set_position(
         &self,
         File: Unique_file_identifier_type,
         Position: &Position_type,
@@ -572,13 +597,16 @@ impl<'a> Virtual_file_system_type<'a> {
         match File_system {
             File_system_identifier_type::Pipe_file_system => Err(Error_type::Unsupported_operation),
             File_system_identifier_type::Device_file_system => {
-                let (Size, Underlying_file) =
-                    self.Device_file_system.Set_position(Local_file, Position)?;
+                let (Size, Underlying_file) = self
+                    .Device_file_system
+                    .Set_position(Local_file, Position)
+                    .await?;
 
                 let (File_system, Local_file) = Underlying_file.Into_local_file_identifier(Task);
 
                 self.File_systems
-                    .read()?
+                    .read()
+                    .await
                     .get(&File_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .Inner
@@ -588,7 +616,8 @@ impl<'a> Virtual_file_system_type<'a> {
             }
             _ => self
                 .File_systems
-                .read()?
+                .read()
+                .await
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
@@ -596,13 +625,13 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Set_owner(
+    pub async fn Set_owner(
         &self,
         Path: impl AsRef<Path_type>,
         User: Option<User_identifier_type>,
         Group: Option<Group_identifier_type>,
     ) -> Result_type<()> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
+        let File_systems = self.File_systems.read().await; // Get the file systems
 
         let (_, File_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
@@ -620,12 +649,12 @@ impl<'a> Virtual_file_system_type<'a> {
         File_system.Set_metadata_from_path(Relative_path, &Metadata)
     }
 
-    pub fn Set_permissions(
+    pub async fn Set_permissions(
         &self,
         Path: impl AsRef<Path_type>,
         Permissions: Permissions_type,
     ) -> Result_type<()> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
+        let File_systems = self.File_systems.read().await; // Get the file systems
 
         let (_, File_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
@@ -637,27 +666,27 @@ impl<'a> Virtual_file_system_type<'a> {
         File_system.Set_metadata_from_path(Relative_path, &Metadata)
     }
 
-    pub fn Close_all(&self, Task_identifier: Task_identifier_type) -> Result_type<()> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
+    pub async fn Close_all(&self, Task_identifier: Task_identifier_type) -> Result_type<()> {
+        let File_systems = self.File_systems.read().await; // Get the file systems
 
         for File_system in File_systems.values() {
             File_system.Inner.Close_all(Task_identifier)?;
         }
 
-        self.Device_file_system.Close_all(Task_identifier)?;
+        self.Device_file_system.Close_all(Task_identifier).await?;
 
-        self.Pipe_file_system.Close_all(Task_identifier)?;
+        self.Pipe_file_system.Close_all(Task_identifier).await?;
 
         Ok(())
     }
 
-    pub fn Mount_device(
+    pub async fn Mount_device(
         &self,
         Task: Task_identifier_type,
         Path: &impl AsRef<Path_type>,
         Device: Device_type,
     ) -> Result_type<()> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
+        let File_systems = self.File_systems.read().await; // Get the file systems
 
         let (_, File_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, &Path)?; // Get the file system identifier and the relative path
@@ -667,7 +696,7 @@ impl<'a> Virtual_file_system_type<'a> {
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let User = Task::Get_instance().Get_user(Task)?;
+        let User = Task::Get_instance().Get_user(Task).await?;
 
         let Group = Users::Get_instance().Get_user_primary_group(User)?;
 
@@ -684,14 +713,15 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let Inode = self
             .Device_file_system
-            .Mount_device(Relative_path.to_owned(), Device)?;
+            .Mount_device(Relative_path.to_owned(), Device)
+            .await?;
 
         let Time: Time_type = Time::Get_instance()
             .Get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let User = Task::Get_instance().Get_user(Task)?;
+        let User = Task::Get_instance().Get_user(Task).await?;
 
         let Group = Users::Get_instance().Get_user_primary_group(User)?;
 
@@ -704,13 +734,13 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(())
     }
 
-    pub fn Mount_static_device(
+    pub async fn Mount_static_device(
         &self,
         Task: Task_identifier_type,
         Path: &'a impl AsRef<Path_type>,
         Device: Device_type,
     ) -> Result_type<()> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
+        let File_systems = self.File_systems.read().await; // Get the file systems
 
         // Create a special file in the underlying file system.
         let (_, File_system, Relative_path) =
@@ -721,7 +751,7 @@ impl<'a> Virtual_file_system_type<'a> {
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let User = Task::Get_instance().Get_user(Task)?;
+        let User = Task::Get_instance().Get_user(Task).await?;
 
         let Group = Users::Get_instance().Get_user_primary_group(User)?;
 
@@ -743,14 +773,17 @@ impl<'a> Virtual_file_system_type<'a> {
         };
 
         // Create the actual device.
-        let Inode = self.Device_file_system.Mount_static_device(Path, Device)?;
+        let Inode = self
+            .Device_file_system
+            .Mount_static_device(Path, Device)
+            .await?;
 
         let Time: Time_type = Time::Get_instance()
             .Get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let User = Task::Get_instance().Get_user(Task)?;
+        let User = Task::Get_instance().Get_user(Task).await?;
 
         let Group = Users::Get_instance().Get_user_primary_group(User)?;
 
@@ -764,13 +797,13 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(())
     }
 
-    pub fn Create_named_pipe(
+    pub async fn Create_named_pipe(
         &self,
         Path: &impl AsRef<Path_type>,
         Size: usize,
         Task: Task_identifier_type,
     ) -> Result_type<()> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
+        let File_systems = self.File_systems.read().await; // Get the file systems
 
         let (_, File_system, Relative_path) = Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
@@ -779,7 +812,7 @@ impl<'a> Virtual_file_system_type<'a> {
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let User = Task::Get_instance().Get_user(Task)?;
+        let User = Task::Get_instance().Get_user(Task).await?;
 
         let Group = Users::Get_instance().Get_user_primary_group(User)?;
 
@@ -794,14 +827,14 @@ impl<'a> Virtual_file_system_type<'a> {
 
         File_system.Close(File)?;
 
-        let Inode = self.Pipe_file_system.Create_named_pipe(Size)?;
+        let Inode = self.Pipe_file_system.Create_named_pipe(Size).await?;
 
         let Time: Time_type = Time::Get_instance()
             .Get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let User = Task::Get_instance().Get_user(Task)?;
+        let User = Task::Get_instance().Get_user(Task).await?;
 
         let Group = Users::Get_instance().Get_user_primary_group(User)?;
 
@@ -814,7 +847,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(())
     }
 
-    pub fn Create_unnamed_pipe(
+    pub async fn Create_unnamed_pipe(
         &self,
         Task: Task_identifier_type,
         Status: Status_type,
@@ -822,7 +855,8 @@ impl<'a> Virtual_file_system_type<'a> {
     ) -> Result_type<(Unique_file_identifier_type, Unique_file_identifier_type)> {
         let (Read, Write) = self
             .Pipe_file_system
-            .Create_unnamed_pipe(Task, Status, Size)?;
+            .Create_unnamed_pipe(Task, Status, Size)
+            .await?;
 
         let (_, Read) =
             Read.Into_unique_file_identifier(File_system_identifier_type::Pipe_file_system);
@@ -832,8 +866,8 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok((Read, Write))
     }
 
-    pub fn Remove(&self, Path: impl AsRef<Path_type>) -> Result_type<()> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
+    pub async fn Remove(&self, Path: impl AsRef<Path_type>) -> Result_type<()> {
+        let File_systems = self.File_systems.read().await; // Get the file systems
 
         // - Check metadata on the underlying file system
         let (_, File_system, Relative_path) =
@@ -846,7 +880,7 @@ impl<'a> Virtual_file_system_type<'a> {
         match Metadata.Get_type() {
             Type_type::Pipe => {
                 if let Some(Inode) = Metadata.Get_inode() {
-                    match self.Pipe_file_system.Remove(Inode) {
+                    match self.Pipe_file_system.Remove(Inode).await {
                         Ok(_) | Err(Error_type::Invalid_inode) => (),
                         Err(Error) => {
                             return Err(Error);
@@ -856,7 +890,7 @@ impl<'a> Virtual_file_system_type<'a> {
             }
             Type_type::Block_device => {
                 if let Some(Inode) = Metadata.Get_inode() {
-                    match self.Device_file_system.Remove(Inode) {
+                    match self.Device_file_system.Remove(Inode).await {
                         Ok(_) | Err(Error_type::Invalid_inode) => (),
                         Err(Error) => {
                             return Err(Error);
@@ -866,7 +900,7 @@ impl<'a> Virtual_file_system_type<'a> {
             }
             Type_type::Character_device => {
                 if let Some(Inode) = Metadata.Get_inode() {
-                    match self.Device_file_system.Remove(Inode) {
+                    match self.Device_file_system.Remove(Inode).await {
                         Ok(_) | Err(Error_type::Invalid_inode) => (),
                         Err(Error) => {
                             return Err(Error);
@@ -881,7 +915,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(())
     }
 
-    pub fn Transfert(
+    pub async fn Transfert(
         &self,
         File: Unique_file_identifier_type,
         Current_task: Task_identifier_type,
@@ -892,15 +926,15 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let Underlying_file = match File_system {
             File_system_identifier_type::Pipe_file_system => {
-                self.Pipe_file_system.Get_underlying_file(File)?
+                self.Pipe_file_system.Get_underlying_file(File).await?
             }
             File_system_identifier_type::Device_file_system => {
-                Some(self.Device_file_system.Get_underlying_file(File)?)
+                Some(self.Device_file_system.Get_underlying_file(File).await?)
             }
             _ => None,
         };
 
-        let File_systems = self.File_systems.read()?;
+        let File_systems = self.File_systems.read().await;
 
         let Underlying_file = if let Some(Underlying_file) = Underlying_file {
             let (File_system, Local_file) =
@@ -921,13 +955,16 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let New_file = match File_system {
             File_system_identifier_type::Pipe_file_system => {
-                self.Pipe_file_system.Transfert(New_task, File, New_file)?
+                self.Pipe_file_system
+                    .Transfert(New_task, File, New_file)
+                    .await?
             }
             File_system_identifier_type::Device_file_system => {
                 let Underlying_file = Underlying_file.ok_or(Error_type::Internal_error)?;
 
                 self.Device_file_system
-                    .Transfert(New_task, File, Underlying_file, New_file)?
+                    .Transfert(New_task, File, Underlying_file, New_file)
+                    .await?
             }
             _ => Self::Get_file_system_from_identifier(&File_systems, File_system)?
                 .Inner
@@ -939,7 +976,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(New_file)
     }
 
-    pub fn Flush(
+    pub async fn Flush(
         &self,
         File: Unique_file_identifier_type,
         Task_identifier: Task_identifier_type,
@@ -949,13 +986,14 @@ impl<'a> Virtual_file_system_type<'a> {
         if File_system == File_system_identifier_type::Pipe_file_system {
             Ok(())
         } else if File_system == File_system_identifier_type::Device_file_system {
-            let Underlying_file = self.Device_file_system.Flush(File_identifier)?;
+            let Underlying_file = self.Device_file_system.Flush(File_identifier).await?;
 
             let (File_system, Local_file) =
                 Underlying_file.Into_local_file_identifier(Task_identifier);
 
             self.File_systems
-                .read()?
+                .read()
+                .await
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
@@ -964,7 +1002,8 @@ impl<'a> Virtual_file_system_type<'a> {
             Ok(())
         } else {
             self.File_systems
-                .read()?
+                .read()
+                .await
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
@@ -972,22 +1011,25 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Get_statistics(
+    pub async fn Get_statistics(
         &self,
         File: Unique_file_identifier_type,
         Task_identifier: Task_identifier_type,
     ) -> Result_type<Statistics_type> {
         let (File_system, Local_file) = File.Into_local_file_identifier(Task_identifier);
 
-        let File_systems = self.File_systems.read()?;
+        let File_systems = self.File_systems.read().await;
 
         let File = match File_system {
             File_system_identifier_type::Device_file_system => {
-                self.Device_file_system.Get_underlying_file(Local_file)?
+                self.Device_file_system
+                    .Get_underlying_file(Local_file)
+                    .await?
             }
             File_system_identifier_type::Pipe_file_system => self
                 .Pipe_file_system
-                .Get_underlying_file(Local_file)?
+                .Get_underlying_file(Local_file)
+                .await?
                 .ok_or(Error_type::Unsupported_operation)?,
             _ => File,
         };
@@ -999,12 +1041,12 @@ impl<'a> Virtual_file_system_type<'a> {
             .Get_statistics(Local_file)
     }
 
-    pub fn Open_directory(
+    pub async fn Open_directory(
         &self,
         Path: &impl AsRef<Path_type>,
         Task: Task_identifier_type,
     ) -> Result_type<Unique_file_identifier_type> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
+        let File_systems = self.File_systems.read().await; // Get the file systems
 
         let (File_system_identifier, File_system, Relative_path) =
             Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
@@ -1016,7 +1058,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(File)
     }
 
-    pub fn Read_directory(
+    pub async fn Read_directory(
         &self,
         File: Unique_file_identifier_type,
         Task: Task_identifier_type,
@@ -1030,7 +1072,8 @@ impl<'a> Virtual_file_system_type<'a> {
             }
             _ => self
                 .File_systems
-                .read()?
+                .read()
+                .await
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
@@ -1038,7 +1081,7 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Set_position_directory(
+    pub async fn Set_position_directory(
         &self,
         File: Unique_file_identifier_type,
         Position: Size_type,
@@ -1053,7 +1096,8 @@ impl<'a> Virtual_file_system_type<'a> {
             }
             _ => self
                 .File_systems
-                .read()?
+                .read()
+                .await
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
@@ -1061,7 +1105,7 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Get_position_directory(
+    pub async fn Get_position_directory(
         &self,
         File: Unique_file_identifier_type,
         Task: Task_identifier_type,
@@ -1075,7 +1119,8 @@ impl<'a> Virtual_file_system_type<'a> {
             }
             _ => self
                 .File_systems
-                .read()?
+                .read()
+                .await
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
@@ -1083,7 +1128,7 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Rewind_directory(
+    pub async fn Rewind_directory(
         &self,
         File: Unique_file_identifier_type,
         Task: Task_identifier_type,
@@ -1097,7 +1142,8 @@ impl<'a> Virtual_file_system_type<'a> {
             }
             _ => self
                 .File_systems
-                .read()?
+                .read()
+                .await
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
@@ -1105,7 +1151,7 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Close_directory(
+    pub async fn Close_directory(
         &self,
         File: Unique_file_identifier_type,
         Task: Task_identifier_type,
@@ -1119,7 +1165,8 @@ impl<'a> Virtual_file_system_type<'a> {
             }
             _ => self
                 .File_systems
-                .read()?
+                .read()
+                .await
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
@@ -1127,12 +1174,12 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Create_directory(
+    pub async fn Create_directory(
         &self,
         Path: &impl AsRef<Path_type>,
         Task: Task_identifier_type,
     ) -> Result_type<()> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
+        let File_systems = self.File_systems.read().await; // Get the file systems
 
         let (_, File_system, Relative_path) = Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
@@ -1141,14 +1188,14 @@ impl<'a> Virtual_file_system_type<'a> {
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let User = Task::Get_instance().Get_user(Task)?;
+        let User = Task::Get_instance().Get_user(Task).await?;
 
         let Group = Users::Get_instance().Get_user_primary_group(User)?;
 
         File_system.Create_directory(Relative_path, Time, User, Group)
     }
 
-    pub fn Get_mode(
+    pub async fn Get_mode(
         &self,
         File: Unique_file_identifier_type,
         Task: Task_identifier_type,
@@ -1156,13 +1203,16 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, File) = File.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Pipe_file_system => self.Pipe_file_system.Get_mode(File),
+            File_system_identifier_type::Pipe_file_system => {
+                self.Pipe_file_system.Get_mode(File).await
+            }
             File_system_identifier_type::Device_file_system => {
-                self.Device_file_system.Get_mode(File)
+                self.Device_file_system.Get_mode(File).await
             }
             _ => self
                 .File_systems
-                .read()?
+                .read()
+                .await
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
@@ -1170,7 +1220,7 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Duplicate_file_identifier(
+    pub async fn Duplicate_file_identifier(
         &self,
         File: Unique_file_identifier_type,
         Task: Task_identifier_type,
@@ -1179,15 +1229,15 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let Underlying_file = match File_system {
             File_system_identifier_type::Pipe_file_system => {
-                self.Pipe_file_system.Get_underlying_file(File)?
+                self.Pipe_file_system.Get_underlying_file(File).await?
             }
             File_system_identifier_type::Device_file_system => {
-                Some(self.Device_file_system.Get_underlying_file(File)?)
+                Some(self.Device_file_system.Get_underlying_file(File).await?)
             }
             _ => None,
         };
 
-        let File_systems = self.File_systems.read()?;
+        let File_systems = self.File_systems.read().await;
 
         let Underlying_file = if let Some(Underlying_file) = Underlying_file {
             let (File_system, Local_file) = Underlying_file.Into_local_file_identifier(Task);
@@ -1207,12 +1257,16 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let New_file = match File_system {
             File_system_identifier_type::Pipe_file_system => {
-                self.Pipe_file_system.Duplicate(File, Underlying_file)?
+                self.Pipe_file_system
+                    .Duplicate(File, Underlying_file)
+                    .await?
             }
             File_system_identifier_type::Device_file_system => {
                 let Underlying_file = Underlying_file.ok_or(Error_type::Internal_error)?;
 
-                self.Device_file_system.Duplicate(File, Underlying_file)?
+                self.Device_file_system
+                    .Duplicate(File, Underlying_file)
+                    .await?
             }
             _ => Self::Get_file_system_from_identifier(&File_systems, File_system)?
                 .Inner
@@ -1224,7 +1278,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(New_file)
     }
 
-    pub fn Create_new_task_standard_io(
+    pub async fn Create_new_task_standard_io(
         &self,
         Standard_in: Unique_file_identifier_type,
         Standard_error: Unique_file_identifier_type,
@@ -1238,38 +1292,50 @@ impl<'a> Virtual_file_system_type<'a> {
         Unique_file_identifier_type,
     )> {
         let (Standard_in, Standard_error, Standard_out) = if Duplicate {
-            let Standard_in = self.Duplicate_file_identifier(Standard_in, Current_task)?;
-            let Standard_error = self.Duplicate_file_identifier(Standard_error, Current_task)?;
-            let Standard_out = self.Duplicate_file_identifier(Standard_out, Current_task)?;
+            let Standard_in = self
+                .Duplicate_file_identifier(Standard_in, Current_task)
+                .await?;
+            let Standard_error = self
+                .Duplicate_file_identifier(Standard_error, Current_task)
+                .await?;
+            let Standard_out = self
+                .Duplicate_file_identifier(Standard_out, Current_task)
+                .await?;
 
             (Standard_in, Standard_error, Standard_out)
         } else {
             (Standard_in, Standard_error, Standard_out)
         };
 
-        let Standard_in = self.Transfert(
-            Standard_in,
-            Current_task,
-            New_task,
-            Some(File_identifier_type::Standard_in),
-        )?;
-        let Standard_error = self.Transfert(
-            Standard_error,
-            Current_task,
-            New_task,
-            Some(File_identifier_type::Standard_error),
-        )?;
-        let Standard_out = self.Transfert(
-            Standard_out,
-            Current_task,
-            New_task,
-            Some(File_identifier_type::Standard_out),
-        )?;
+        let Standard_in = self
+            .Transfert(
+                Standard_in,
+                Current_task,
+                New_task,
+                Some(File_identifier_type::Standard_in),
+            )
+            .await?;
+        let Standard_error = self
+            .Transfert(
+                Standard_error,
+                Current_task,
+                New_task,
+                Some(File_identifier_type::Standard_error),
+            )
+            .await?;
+        let Standard_out = self
+            .Transfert(
+                Standard_out,
+                Current_task,
+                New_task,
+                Some(File_identifier_type::Standard_out),
+            )
+            .await?;
 
         Ok((Standard_in, Standard_error, Standard_out))
     }
 
-    pub fn Is_a_terminal(
+    pub async fn Is_a_terminal(
         &self,
         File: Unique_file_identifier_type,
         Task: Task_identifier_type,
@@ -1279,18 +1345,18 @@ impl<'a> Virtual_file_system_type<'a> {
         match File_system {
             File_system_identifier_type::Pipe_file_system => Err(Error_type::Unsupported_operation),
             File_system_identifier_type::Device_file_system => {
-                self.Device_file_system.Is_a_terminal(File)
+                self.Device_file_system.Is_a_terminal(File).await
             }
             _ => Err(Error_type::Unsupported_operation),
         }
     }
 
-    pub fn Rename(
+    pub async fn Rename(
         &self,
         Old_path: &impl AsRef<Path_type>,
         New_path: &impl AsRef<Path_type>,
     ) -> Result_type<()> {
-        let File_systems = self.File_systems.read()?; // Get the file systems
+        let File_systems = self.File_systems.read().await; // Get the file systems
 
         let (Old_file_system_identifier, Old_file_system, Old_relative_path) =
             Self::Get_file_system_from_path(&File_systems, Old_path)?; // Get the file system identifier and the relative path
@@ -1309,11 +1375,8 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Get_raw_device(&self, Path: &impl AsRef<Path_type>) -> Result_type<Device_type> {
-        let File_systems = self
-            .File_systems
-            .read()
-            .map_err(|_| Error_type::Poisoned_lock)?;
+    pub async fn Get_raw_device(&self, Path: &impl AsRef<Path_type>) -> Result_type<Device_type> {
+        let File_systems = self.File_systems.read().await;
 
         let (_, File_system, Relative_path) = Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
@@ -1326,27 +1389,24 @@ impl<'a> Virtual_file_system_type<'a> {
         }
 
         if let Some(Inode) = Metadata.Get_inode() {
-            self.Device_file_system.Get_raw_device(Inode)
+            self.Device_file_system.Get_raw_device(Inode).await
         } else {
             Err(Error_type::Corrupted)
         }
     }
 
-    pub fn Get_metadata_from_path(
+    pub async fn Get_metadata_from_path(
         &self,
         Path: &impl AsRef<Path_type>,
     ) -> Result_type<Metadata_type> {
-        let File_systems = self
-            .File_systems
-            .read()
-            .map_err(|_| Error_type::Poisoned_lock)?;
+        let File_systems = self.File_systems.read().await;
 
         let (_, File_system, Relative_path) = Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
         File_system.Get_metadata_from_path(Relative_path)
     }
 
-    pub fn Send(
+    pub async fn Send(
         &self,
         Task: Task_identifier_type,
         Socket: Unique_file_identifier_type,
@@ -1365,7 +1425,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(())
     }
 
-    pub fn Receive(
+    pub async fn Receive(
         &self,
         Task: Task_identifier_type,
         Socket: Unique_file_identifier_type,
@@ -1382,7 +1442,7 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Send_to(
+    pub async fn Send_to(
         &self,
         Task: Task_identifier_type,
         Socket: Unique_file_identifier_type,
@@ -1407,7 +1467,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(())
     }
 
-    pub fn Receive_from(
+    pub async fn Receive_from(
         &self,
         Task: Task_identifier_type,
         Socket: Unique_file_identifier_type,
@@ -1445,7 +1505,7 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Bind(
+    pub async fn Bind(
         &self,
         Task: Task_identifier_type,
         Address: Socket_address_type,
@@ -1482,7 +1542,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(New_socket)
     }
 
-    pub fn Connect(
+    pub async fn Connect(
         &self,
         Task: Task_identifier_type,
         Address: Socket_address_type,
@@ -1518,7 +1578,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(New_socket)
     }
 
-    pub fn Accept(
+    pub async fn Accept(
         &self,
         Task: Task_identifier_type,
         Socket: Unique_file_identifier_type,
@@ -1542,7 +1602,7 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Set_send_timeout(
+    pub async fn Set_send_timeout(
         &self,
         Task: Task_identifier_type,
         Socket: Unique_file_identifier_type,
@@ -1561,7 +1621,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(())
     }
 
-    pub fn Set_receive_timeout(
+    pub async fn Set_receive_timeout(
         &self,
         Task: Task_identifier_type,
         Socket: Unique_file_identifier_type,
@@ -1580,7 +1640,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(())
     }
 
-    pub fn Get_send_timeout(
+    pub async fn Get_send_timeout(
         &self,
         Task: Task_identifier_type,
         Socket: Unique_file_identifier_type,
@@ -1596,7 +1656,7 @@ impl<'a> Virtual_file_system_type<'a> {
         }
     }
 
-    pub fn Get_receive_timeout(
+    pub async fn Get_receive_timeout(
         &self,
         Task: Task_identifier_type,
         Socket: Unique_file_identifier_type,

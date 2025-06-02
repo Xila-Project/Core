@@ -9,6 +9,8 @@ Task = { path = "../Task" }
 Users = { path = "../Users" }
 Time = { path = "../Time" }
 Network = { path = "../Network" }
+Synchronization = { version = "0.1.0", path = "../Synchronization" }
+Futures = { version = "0.1.0", path = "../Futures" }
 
 [dev-dependencies]
 Drivers = { path = "../Drivers" }

@@ -1,10 +1,10 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use Task::Task_identifier_type;
 
 use File_system::{
-    Error_type, Flags_type, Path_type, Position_type, Result_type, Size_type, Statistics_type,
-    Status_type, Unique_file_identifier_type,
+    Flags_type, Path_type, Position_type, Result_type, Size_type, Statistics_type, Status_type,
+    Unique_file_identifier_type,
 };
 
 use super::Virtual_file_system_type;
@@ -20,7 +20,7 @@ pub struct File_type<'a> {
 }
 
 impl Debug for File_type<'_> {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Formatter
             .debug_struct("File_type")
             .field("File_identifier", &self.File_identifier)
@@ -30,16 +30,14 @@ impl Debug for File_type<'_> {
 }
 
 impl<'a> File_type<'a> {
-    pub fn Open(
+    pub async fn Open(
         File_system: &'a Virtual_file_system_type<'a>,
         Path: impl AsRef<Path_type>,
         Flags: Flags_type,
     ) -> Result_type<Self> {
-        let Task = Task::Get_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
-        let File_identifier = File_system.Open(&Path, Flags, Task)?;
+        let File_identifier = File_system.Open(&Path, Flags, Task).await?;
 
         Ok(File_type {
             File_identifier,
@@ -48,14 +46,14 @@ impl<'a> File_type<'a> {
         })
     }
 
-    pub fn Create_unnamed_pipe(
+    pub async fn Create_unnamed_pipe(
         File_system: &'a Virtual_file_system_type<'a>,
         Size: usize,
         Status: Status_type,
         Task: Task_identifier_type,
     ) -> Result_type<(Self, Self)> {
         let (File_identifier_read, File_identifier_write) =
-            File_system.Create_unnamed_pipe(Task, Status, Size)?;
+            File_system.Create_unnamed_pipe(Task, Status, Size).await?;
 
         Ok((
             File_type {
@@ -72,9 +70,10 @@ impl<'a> File_type<'a> {
     }
 
     // - Setters
-    pub fn Set_position(&self, Position: &Position_type) -> Result_type<Size_type> {
+    pub async fn Set_position(&self, Position: &Position_type) -> Result_type<Size_type> {
         self.File_system
             .Set_position(self.Get_file_identifier(), Position, self.Task)
+            .await
     }
 
     // - Getters
@@ -84,24 +83,26 @@ impl<'a> File_type<'a> {
 
     // - Operations
 
-    pub fn Write(&self, Buffer: &[u8]) -> Result_type<Size_type> {
+    pub async fn Write(&self, Buffer: &[u8]) -> Result_type<Size_type> {
         self.File_system
             .Write(self.Get_file_identifier(), Buffer, self.Task)
+            .await
     }
 
-    pub fn Write_line(&self, Buffer: &[u8]) -> Result_type<Size_type> {
-        let Size = self.Write(Buffer)? + self.Write(b"\n")?;
+    pub async fn Write_line(&self, Buffer: &[u8]) -> Result_type<Size_type> {
+        let Size = self.Write(Buffer).await? + self.Write(b"\n").await?;
         Ok(Size)
     }
 
-    pub fn Read(&self, Buffer: &mut [u8]) -> Result_type<Size_type> {
+    pub async fn Read(&self, Buffer: &mut [u8]) -> Result_type<Size_type> {
         self.File_system
             .Read(self.Get_file_identifier(), Buffer, self.Task)
+            .await
     }
-    pub fn Read_line(&self, Buffer: &mut [u8]) -> Result_type<()> {
+    pub async fn Read_line(&self, Buffer: &mut [u8]) -> Result_type<()> {
         let mut Index = 0;
         loop {
-            let Size: usize = self.Read(&mut Buffer[Index..Index + 1])?.into();
+            let Size: usize = self.Read(&mut Buffer[Index..Index + 1]).await?.into();
             if Size == 0 {
                 break;
             }
@@ -113,14 +114,16 @@ impl<'a> File_type<'a> {
         Ok(())
     }
 
-    pub fn Read_to_end(&self, Buffer: &mut Vec<u8>) -> Result_type<Size_type> {
+    pub async fn Read_to_end(&self, Buffer: &mut Vec<u8>) -> Result_type<Size_type> {
         self.File_system
             .Read_to_end(self.Get_file_identifier(), self.Task, Buffer)
+            .await
     }
 
-    pub fn Get_statistics(&self) -> Result_type<Statistics_type> {
+    pub async fn Get_statistics(&self) -> Result_type<Statistics_type> {
         self.File_system
             .Get_statistics(self.Get_file_identifier(), self.Task)
+            .await
     }
 }
 

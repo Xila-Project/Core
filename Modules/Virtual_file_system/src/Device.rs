@@ -1,4 +1,8 @@
-use std::{collections::BTreeMap, sync::RwLock, time::Duration};
+extern crate alloc;
+
+use alloc::collections::BTreeMap;
+
+use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
 use Task::Task_identifier_type;
 
@@ -23,7 +27,7 @@ struct Inner_type<'a> {
 
 type Device_inner_type<'a> = (Internal_path_type<'a>, Device_type);
 
-pub struct File_system_type<'a>(RwLock<Inner_type<'a>>);
+pub struct File_system_type<'a>(RwLock<CriticalSectionRawMutex, Inner_type<'a>>);
 
 impl<'a> File_system_type<'a> {
     pub fn New() -> Self {
@@ -42,25 +46,26 @@ impl<'a> File_system_type<'a> {
         (&mut Inner.Devices, &mut Inner.Open_devices)
     }
 
-    pub fn Get_underlying_file(
+    pub async fn Get_underlying_file(
         &self,
         File: Local_file_identifier_type,
     ) -> Result_type<Unique_file_identifier_type> {
         Ok(self
             .0
-            .read()?
+            .read()
+            .await
             .Open_devices
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
             .2)
     }
 
-    pub fn Mount_device(
+    pub async fn Mount_device(
         &self,
         Path: Path_owned_type,
         Device: Device_type,
     ) -> Result_type<Inode_type> {
-        let mut Inner = self.0.write()?;
+        let mut Inner = self.0.write().await;
 
         let (Devices, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -71,12 +76,12 @@ impl<'a> File_system_type<'a> {
         Ok(Inode)
     }
 
-    pub fn Mount_static_device(
+    pub async fn Mount_static_device(
         &self,
         Path: &'a impl AsRef<Path_type>,
         Device: Device_type,
     ) -> Result_type<Inode_type> {
-        let mut Inner = self.0.write()?;
+        let mut Inner = self.0.write().await;
 
         let (Devices, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -87,10 +92,14 @@ impl<'a> File_system_type<'a> {
         Ok(Inode)
     }
 
-    pub fn Get_path_from_inode(&self, Inode: Inode_type) -> Result_type<Internal_path_type<'a>> {
+    pub async fn Get_path_from_inode(
+        &self,
+        Inode: Inode_type,
+    ) -> Result_type<Internal_path_type<'a>> {
         Ok(self
             .0
-            .read()?
+            .read()
+            .await
             .Devices
             .get(&Inode)
             .ok_or(Error_type::Invalid_identifier)?
@@ -98,10 +107,14 @@ impl<'a> File_system_type<'a> {
             .clone())
     }
 
-    pub fn Get_devices_from_path(&self, Path: &'static Path_type) -> Result_type<Vec<Inode_type>> {
+    pub async fn Get_devices_from_path(
+        &self,
+        Path: &'static Path_type,
+    ) -> Result_type<Vec<Inode_type>> {
         Ok(self
             .0
-            .read()?
+            .read()
+            .await
             .Devices
             .iter()
             .filter(|(_, (Device_path, _))| match Device_path {
@@ -114,14 +127,14 @@ impl<'a> File_system_type<'a> {
             .collect())
     }
 
-    pub fn Open(
+    pub async fn Open(
         &self,
         Inode: Inode_type,
         Task: Task_identifier_type,
         Flags: Flags_type,
         Underlying_file: Unique_file_identifier_type,
     ) -> Result_type<Local_file_identifier_type> {
-        let mut Inner = self.0.write()?;
+        let mut Inner = self.0.write().await;
 
         let (Devices, Open_pipes) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -137,13 +150,14 @@ impl<'a> File_system_type<'a> {
         Ok(Local_file_identifier)
     }
 
-    pub fn Close(
+    pub async fn Close(
         &self,
         File: Local_file_identifier_type,
     ) -> Result_type<Unique_file_identifier_type> {
         let (_, _, Underlying_file) = self
             .0
-            .write()?
+            .write()
+            .await
             .Open_devices
             .remove(&File)
             .ok_or(Error_type::Invalid_identifier)?;
@@ -151,8 +165,8 @@ impl<'a> File_system_type<'a> {
         Ok(Underlying_file)
     }
 
-    pub fn Close_all(&self, Task: Task_identifier_type) -> Result_type<()> {
-        let mut Inner = self.0.write()?;
+    pub async fn Close_all(&self, Task: Task_identifier_type) -> Result_type<()> {
+        let mut Inner = self.0.write().await;
 
         // Get all the keys of the open pipes that belong to the task
         let Keys = Inner
@@ -172,12 +186,12 @@ impl<'a> File_system_type<'a> {
         Ok(())
     }
 
-    pub fn Duplicate(
+    pub async fn Duplicate(
         &self,
         File: Local_file_identifier_type,
         Underlying_file: Unique_file_identifier_type,
     ) -> Result_type<Local_file_identifier_type> {
-        let mut Inner = self.0.write()?;
+        let mut Inner = self.0.write().await;
 
         let (Device, Flags, _) = Inner
             .Open_devices
@@ -194,14 +208,14 @@ impl<'a> File_system_type<'a> {
         Ok(New_file)
     }
 
-    pub fn Transfert(
+    pub async fn Transfert(
         &self,
         New_task: Task_identifier_type,
         File: Local_file_identifier_type,
         Underlying_file: Unique_file_identifier_type,
         New_file: Option<File_identifier_type>,
     ) -> Result_type<Local_file_identifier_type> {
-        let mut Inner = self.0.write()?;
+        let mut Inner = self.0.write().await;
 
         let (Device, Flags, _) = Inner
             .Open_devices
@@ -231,20 +245,21 @@ impl<'a> File_system_type<'a> {
         Ok(New_file)
     }
 
-    pub fn Remove(&self, Inode: Inode_type) -> Result_type<Device_inner_type<'a>> {
+    pub async fn Remove(&self, Inode: Inode_type) -> Result_type<Device_inner_type<'a>> {
         self.0
-            .write()?
+            .write()
+            .await
             .Devices
             .remove(&Inode)
             .ok_or(Error_type::Invalid_inode)
     }
 
-    pub fn Read(
+    pub async fn Read(
         &self,
         File: Local_file_identifier_type,
         Buffer: &mut [u8],
     ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
-        let Inner = self.0.read()?;
+        let Inner = self.0.read().await;
 
         let (Device, Flags, Underlying_file) = Inner
             .Open_devices
@@ -266,17 +281,15 @@ impl<'a> File_system_type<'a> {
             if Size != 0 {
                 return Ok((Size, *Underlying_file));
             }
-
-            Task::Manager_type::Sleep(Duration::from_millis(1));
         }
     }
 
-    pub fn Read_line(
+    pub async fn Read_line(
         &self,
         File: Local_file_identifier_type,
         Buffer: &mut String,
     ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
-        let Inner = self.0.read()?;
+        let Inner = self.0.read().await;
 
         let (Device, Flags, Underlying_file) = Inner
             .Open_devices
@@ -298,17 +311,15 @@ impl<'a> File_system_type<'a> {
             if Size != 0 {
                 return Ok((Size, *Underlying_file));
             }
-
-            Task::Manager_type::Sleep(Duration::from_millis(1));
         }
     }
 
-    pub fn Write(
+    pub async fn Write(
         &self,
         File: Local_file_identifier_type,
         Buffer: &[u8],
     ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
-        let Inner = self.0.read()?;
+        let Inner = self.0.read().await;
 
         let (Device, Flags, Underlying_file) = Inner
             .Open_devices
@@ -328,17 +339,15 @@ impl<'a> File_system_type<'a> {
             if Device.Write(Buffer).is_ok() {
                 return Ok((Buffer.len().into(), *Underlying_file));
             }
-
-            Task::Manager_type::Sleep(Duration::from_millis(1));
         }
     }
 
-    pub fn Set_position(
+    pub async fn Set_position(
         &self,
         File: Local_file_identifier_type,
         Position: &Position_type,
     ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
-        let Inner = self.0.read()?;
+        let Inner = self.0.read().await;
 
         let (Device, _, Underlying_file) = Inner
             .Open_devices
@@ -348,11 +357,11 @@ impl<'a> File_system_type<'a> {
         Ok((Device.Set_position(Position)?, *Underlying_file))
     }
 
-    pub fn Flush(
+    pub async fn Flush(
         &self,
         File: Local_file_identifier_type,
     ) -> Result_type<Unique_file_identifier_type> {
-        let Inner = self.0.read()?;
+        let Inner = self.0.read().await;
 
         let (Device, _, Underlying_file) = Inner
             .Open_devices
@@ -364,10 +373,11 @@ impl<'a> File_system_type<'a> {
         Ok(*Underlying_file)
     }
 
-    pub fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
+    pub async fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
         Ok(self
             .0
-            .read()?
+            .read()
+            .await
             .Open_devices
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
@@ -375,10 +385,11 @@ impl<'a> File_system_type<'a> {
             .Get_mode())
     }
 
-    pub fn Get_raw_device(&self, Inode: Inode_type) -> Result_type<Device_type> {
+    pub async fn Get_raw_device(&self, Inode: Inode_type) -> Result_type<Device_type> {
         Ok(self
             .0
-            .read()?
+            .read()
+            .await
             .Devices
             .get(&Inode)
             .ok_or(Error_type::Invalid_identifier)?
@@ -386,10 +397,11 @@ impl<'a> File_system_type<'a> {
             .clone())
     }
 
-    pub fn Is_a_terminal(&self, File: Local_file_identifier_type) -> Result_type<bool> {
+    pub async fn Is_a_terminal(&self, File: Local_file_identifier_type) -> Result_type<bool> {
         Ok(self
             .0
-            .read()?
+            .read()
+            .await
             .Open_devices
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
@@ -403,14 +415,15 @@ mod tests {
     use File_system::{Create_device, Position_type};
 
     use File_system::Memory_device_type;
+    use Task::Test;
 
     use super::*;
 
     pub const Memory_device_size: usize = 1024;
     pub const Memory_device_block_size: usize = 512;
 
-    #[test]
-    fn Test_mount_device() {
+    #[Test]
+    async fn Test_mount_device() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
@@ -419,12 +432,13 @@ mod tests {
 
         let Inode = fs
             .Mount_static_device(&"Memory_device", Memory_device)
+            .await
             .unwrap();
-        assert!(fs.Get_raw_device(Inode).is_ok());
+        assert!(fs.Get_raw_device(Inode).await.is_ok());
     }
 
-    #[test]
-    fn Test_open_close_device() {
+    #[Test]
+    async fn Test_open_close_device() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
@@ -433,6 +447,7 @@ mod tests {
 
         let Inode = fs
             .Mount_static_device(&"Memory_device", Memory_device.clone())
+            .await
             .unwrap();
         let file_id = fs
             .Open(
@@ -441,12 +456,13 @@ mod tests {
                 Mode_type::Read_only.into(),
                 0_usize.into(),
             )
+            .await
             .unwrap();
-        assert!(fs.Close(file_id).is_ok());
+        assert!(fs.Close(file_id).await.is_ok());
     }
 
-    #[test]
-    fn Test_read_write_device() {
+    #[Test]
+    async fn Test_read_write_device() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
@@ -455,6 +471,7 @@ mod tests {
 
         let Inode = fs
             .Mount_static_device(&"Memory_device", Memory_device.clone())
+            .await
             .unwrap();
         let file_id = fs
             .Open(
@@ -463,21 +480,24 @@ mod tests {
                 Mode_type::Read_write.into(),
                 0_usize.into(),
             )
+            .await
             .unwrap();
 
         let write_data = b"Hello, world!";
-        fs.Write(file_id, write_data).unwrap();
+        fs.Write(file_id, write_data).await.unwrap();
 
-        fs.Set_position(file_id, &Position_type::Start(0)).unwrap();
+        fs.Set_position(file_id, &Position_type::Start(0))
+            .await
+            .unwrap();
 
         let mut read_data = vec![0; write_data.len()];
-        fs.Read(file_id, &mut read_data).unwrap();
+        fs.Read(file_id, &mut read_data).await.unwrap();
 
         assert_eq!(&read_data, write_data);
     }
 
-    #[test]
-    fn Test_duplicate_file_identifier() {
+    #[Test]
+    async fn Test_duplicate_file_identifier() {
         let File_system = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
@@ -486,6 +506,7 @@ mod tests {
 
         let Inode = File_system
             .Mount_static_device(&"Memory_device", Memory_device.clone())
+            .await
             .unwrap();
 
         let Underlying_file = 0_usize.into();
@@ -497,22 +518,26 @@ mod tests {
                 Mode_type::Read_only.into(),
                 Underlying_file,
             )
+            .await
             .unwrap();
 
         let New_underlying_file = 1_usize.into();
 
-        let New_file = File_system.Duplicate(File, New_underlying_file).unwrap();
+        let New_file = File_system
+            .Duplicate(File, New_underlying_file)
+            .await
+            .unwrap();
 
         assert_eq!(
-            File_system.Get_underlying_file(New_file).unwrap(),
+            File_system.Get_underlying_file(New_file).await.unwrap(),
             New_underlying_file
         );
 
-        assert!(File_system.Close(New_file).is_ok());
+        assert!(File_system.Close(New_file).await.is_ok());
     }
 
-    #[test]
-    fn Test_transfert_file_identifier() {
+    #[Test]
+    async fn Test_transfert_file_identifier() {
         let File_system = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
@@ -521,27 +546,30 @@ mod tests {
 
         let Inode = File_system
             .Mount_static_device(&"Memory_device", Memory_device.clone())
+            .await
             .unwrap();
 
         let Task = Task_identifier_type::New(0);
 
         let File_identifier = File_system
             .Open(Inode, Task, Mode_type::Read_only.into(), 0_usize.into())
+            .await
             .unwrap();
 
         let New_task = Task_identifier_type::New(1);
 
         let New_file_identifier = File_system
             .Transfert(New_task, File_identifier, 0_usize.into(), None)
+            .await
             .unwrap();
 
         assert_eq!(New_file_identifier.Split().0, New_task);
 
-        File_system.Close(New_file_identifier).unwrap();
+        File_system.Close(New_file_identifier).await.unwrap();
     }
 
-    #[test]
-    fn Test_delete_device() {
+    #[Test]
+    async fn Test_delete_device() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
@@ -550,12 +578,13 @@ mod tests {
 
         let Inode = fs
             .Mount_static_device(&"Memory_device", Memory_device.clone())
+            .await
             .unwrap();
-        assert!(fs.Remove(Inode).is_ok());
+        assert!(fs.Remove(Inode).await.is_ok());
     }
 
-    #[test]
-    fn Test_set_position() {
+    #[Test]
+    async fn Test_set_position() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
@@ -564,6 +593,7 @@ mod tests {
 
         let Inode = fs
             .Mount_static_device(&"Memory_device", Memory_device.clone())
+            .await
             .unwrap();
         let file_id = fs
             .Open(
@@ -572,13 +602,16 @@ mod tests {
                 Mode_type::Read_only.into(),
                 0_usize.into(),
             )
+            .await
             .unwrap();
 
-        fs.Set_position(file_id, &Position_type::Start(10)).unwrap();
+        fs.Set_position(file_id, &Position_type::Start(10))
+            .await
+            .unwrap();
     }
 
-    #[test]
-    fn Test_flush() {
+    #[Test]
+    async fn Test_flush() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
@@ -587,6 +620,7 @@ mod tests {
 
         let Inode = fs
             .Mount_static_device(&"Memory_device", Memory_device.clone())
+            .await
             .unwrap();
         let file_id = fs
             .Open(
@@ -595,13 +629,14 @@ mod tests {
                 Mode_type::Read_only.into(),
                 0_usize.into(),
             )
+            .await
             .unwrap();
 
-        assert!(fs.Flush(file_id).is_ok());
+        assert!(fs.Flush(file_id).await.is_ok());
     }
 
-    #[test]
-    fn Test_get_mode() {
+    #[Test]
+    async fn Test_get_mode() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
@@ -610,6 +645,7 @@ mod tests {
 
         let Inode = fs
             .Mount_static_device(&"Memory_device", Memory_device.clone())
+            .await
             .unwrap();
         let file_id = fs
             .Open(
@@ -618,8 +654,9 @@ mod tests {
                 Mode_type::Read_only.into(),
                 0_usize.into(),
             )
+            .await
             .unwrap();
 
-        assert!(fs.Get_mode(file_id).is_ok());
+        assert!(fs.Get_mode(file_id).await.is_ok());
     }
 }
