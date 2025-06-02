@@ -1,7 +1,5 @@
 // Registration module - handles task registration and basic task data
 
-use std::intrinsics::unreachable;
-
 use super::*;
 use crate::Manager::Metadata_type;
 use smol_str::SmolStr;
