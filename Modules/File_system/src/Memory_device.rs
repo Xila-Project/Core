@@ -1,8 +1,13 @@
-use std::sync::RwLock;
+use alloc::vec;
+use alloc::vec::Vec;
+use Futures::block_on;
+use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
 use crate::{Device_trait, Position_type, Size_type};
 
-pub struct Memory_device_type<const Block_size: usize>(RwLock<(Vec<u8>, usize)>);
+pub struct Memory_device_type<const Block_size: usize>(
+    RwLock<CriticalSectionRawMutex, (Vec<u8>, usize)>,
+);
 
 impl<const Block_size: usize> Memory_device_type<Block_size> {
     pub fn New(Size: usize) -> Self {
@@ -20,7 +25,9 @@ impl<const Block_size: usize> Memory_device_type<Block_size> {
     }
 
     pub fn Get_block_count(&self) -> usize {
-        self.0.read().unwrap().0.len() / Block_size
+        let Inner = block_on(self.0.read());
+
+        Inner.0.len() / Block_size
     }
 }
 
@@ -39,10 +46,7 @@ impl<const Block_size: usize> Device_trait for Memory_device_type<Block_size> {
     }
 
     fn Write(&self, Buffer: &[u8]) -> crate::Result_type<Size_type> {
-        let mut Inner = self
-            .0
-            .write()
-            .map_err(|_| crate::Error_type::Ressource_busy)?;
+        let mut Inner = block_on(self.0.write());
         let (Data, Position) = &mut *Inner;
 
         Data[*Position..*Position + Buffer.len()].copy_from_slice(Buffer);
@@ -51,18 +55,13 @@ impl<const Block_size: usize> Device_trait for Memory_device_type<Block_size> {
     }
 
     fn Get_size(&self) -> crate::Result_type<Size_type> {
-        let Inner = self
-            .0
-            .read()
-            .map_err(|_| crate::Error_type::Ressource_busy)?;
+        let Inner = block_on(self.0.read());
+
         Ok(Size_type::New(Inner.0.len() as u64))
     }
 
     fn Set_position(&self, Position: &Position_type) -> crate::Result_type<Size_type> {
-        let mut Inner = self
-            .0
-            .write()
-            .map_err(|_| crate::Error_type::Ressource_busy)?;
+        let mut Inner = block_on(self.0.write());
         let (Data, Device_position) = &mut *Inner;
 
         match Position {
@@ -79,10 +78,7 @@ impl<const Block_size: usize> Device_trait for Memory_device_type<Block_size> {
     }
 
     fn Erase(&self) -> crate::Result_type<()> {
-        let mut Inner = self
-            .0
-            .write()
-            .map_err(|_| crate::Error_type::Ressource_busy)?;
+        let mut Inner = block_on(self.0.write());
 
         let (Data, Position) = &mut *Inner;
 
@@ -100,7 +96,7 @@ impl<const Block_size: usize> Device_trait for Memory_device_type<Block_size> {
     }
 
     fn Dump_device(&self) -> crate::Result_type<Vec<u8>> {
-        let Inner = self.0.read()?;
+        let Inner = block_on(self.0.read());
 
         Ok(Inner.0.clone())
     }

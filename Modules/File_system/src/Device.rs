@@ -1,15 +1,17 @@
 use core::fmt;
-use std::{
-    fmt::{Debug, Formatter},
-    sync::Arc,
-};
+use core::fmt::{Debug, Formatter};
+
+use alloc::string::String;
+use alloc::sync::Arc;
+use alloc::vec;
+use alloc::vec::Vec;
 
 use crate::{Error_type, Position_type, Result_type, Size_type};
 
 #[macro_export]
 macro_rules! Create_device {
     ($Device:expr) => {
-        $crate::Device_type::New(std::sync::Arc::new($Device))
+        $crate::Device_type::New(alloc::sync::Arc::new($Device))
     };
 }
 

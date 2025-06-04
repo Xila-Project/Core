@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use alloc::{collections::BTreeMap, string::String};
 
 use crate::{
     Entry_type, File_identifier_type, Inode_type, Local_file_identifier_type, Metadata_type,
@@ -229,7 +229,9 @@ pub fn Get_new_inode<T>(Map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type
 
 pub mod Tests {
 
-    use crate::{Loader::Loader_type, Open_type, Path_owned_type, Time_type, Type_type};
+    use crate::{Open_type, Path_owned_type, Time_type, Type_type};
+
+    use alloc::{borrow::ToOwned, format};
 
     use super::*;
 
@@ -685,7 +687,10 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
+    #[cfg(feature = "std")]
     pub fn Test_loader(mut File_system: impl File_system_traits) {
+        use alloc::vec;
+
         // - Load the file in the file system
         let Source_path = "Cargo.toml";
         let Destination_path = "/Cargo.toml";

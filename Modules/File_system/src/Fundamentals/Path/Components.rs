@@ -1,4 +1,4 @@
-use std::str::Split;
+use core::str::Split;
 
 use super::{Path_type, Separator};
 

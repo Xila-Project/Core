@@ -1,6 +1,6 @@
-use std::{fmt::Display, num::NonZeroU32, sync::PoisonError};
+use core::{fmt::Display, num::NonZeroU32};
 
-pub type Result_type<T> = std::result::Result<T, Error_type>;
+pub type Result_type<T> = core::result::Result<T, Error_type>;
 
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 #[repr(C)]
@@ -21,7 +21,6 @@ pub enum Error_type {
     Failed_to_get_task_informations,
     Failed_to_get_users_informations,
     Too_many_mounted_file_systems,
-    Poisoned_lock,
     Too_many_open_files,
     Internal_error,
     Invalid_mode,
@@ -55,9 +54,9 @@ impl Error_type {
 }
 
 #[cfg(feature = "std")]
-impl From<std::io::ErrorKind> for Error_type {
+impl From<core::io::ErrorKind> for Error_type {
     fn from(Error: std::io::ErrorKind) -> Self {
-        use std::io::ErrorKind;
+        use core::io::ErrorKind;
 
         match Error {
             ErrorKind::PermissionDenied => Error_type::Permission_denied,
@@ -71,7 +70,7 @@ impl From<std::io::ErrorKind> for Error_type {
 }
 
 #[cfg(feature = "std")]
-impl From<std::io::Error> for Error_type {
+impl From<core::io::Error> for Error_type {
     fn from(Error: std::io::Error) -> Self {
         Error.kind().into()
     }
@@ -89,12 +88,6 @@ impl From<Users::Error_type> for Error_type {
     }
 }
 
-impl<T> From<PoisonError<T>> for Error_type {
-    fn from(_: PoisonError<T>) -> Self {
-        Error_type::Poisoned_lock
-    }
-}
-
 impl From<Error_type> for NonZeroU32 {
     fn from(Error: Error_type) -> Self {
         Error.Get_discriminant()
@@ -102,7 +95,7 @@ impl From<Error_type> for NonZeroU32 {
 }
 
 impl Display for Error_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         let String = match self {
             Error_type::Failed_to_initialize_file_system => "Failed to initialize file system",
             Error_type::Permission_denied => "Permission denied",
@@ -120,7 +113,6 @@ impl Display for Error_type {
             Error_type::Failed_to_get_task_informations => "Failed to get task informations",
             Error_type::Failed_to_get_users_informations => "Failed to get users informations",
             Error_type::Too_many_mounted_file_systems => "Too many mounted file systems",
-            Error_type::Poisoned_lock => "Poisoned lock",
             Error_type::Too_many_open_files => "Too many open files",
             Error_type::Internal_error => "Internal error",
             Error_type::Invalid_mode => "Invalid mode",

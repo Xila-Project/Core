@@ -1,3 +1,5 @@
+use alloc::string::String;
+
 use crate::Type_type;
 
 use super::{Inode_type, Size_type};
