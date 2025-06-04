@@ -1,4 +1,6 @@
-use std::ops::{Add, AddAssign};
+extern crate alloc;
+
+use core::ops::{Add, AddAssign};
 
 pub type User_identifier_inner_type = u16;
 
@@ -95,6 +97,8 @@ impl Add<Group_identifier_inner_type> for Group_identifier_type {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use alloc::{collections::BTreeMap, format};
 
     #[test]
     fn test_user_identifier_constants() {
@@ -292,10 +296,8 @@ mod tests {
 
     #[test]
     fn test_hash_consistency() {
-        use std::collections::HashMap;
-
-        let mut user_map = HashMap::new();
-        let mut group_map = HashMap::new();
+        let mut user_map = BTreeMap::new();
+        let mut group_map = BTreeMap::new();
 
         let user_id = User_identifier_type::New(42);
         let group_id = Group_identifier_type::New(42);

@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+Synchronization = { version = "0.1.0", path = "../Synchronization" }
+
+[dev-dependencies]
+Futures = { path = "../Futures" }
+Task = { path = "../Task" }
