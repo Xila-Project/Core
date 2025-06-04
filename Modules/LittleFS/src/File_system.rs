@@ -608,11 +608,12 @@ impl File_system_traits for File_system_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
 
     use std::sync::Arc;
 
     use File_system::{Create_device, Memory_device_type};
+    use Task::Test;
 
     use super::*;
 
@@ -621,11 +622,7 @@ mod Tests {
     fn Initialize() -> File_system_type {
         let _ = Users::Initialize();
 
-        Task::Initialize().unwrap();
-
-        unsafe {
-            let _ = Task::Get_instance().Register_task();
-        }
+        Task::Initialize();
 
         let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()));
 
@@ -638,58 +635,58 @@ mod Tests {
         File_system_type::New(Device, Cache_size).unwrap()
     }
 
-    #[test]
-    fn Test_open_close_delete() {
-        File_system::Tests::Test_open_close_delete(Initialize());
+    #[Test]
+    async fn test_open_close_delete() {
+        File_system::Tests::Test_open_close_delete(Initialize()).await;
     }
 
-    #[test]
-    fn Test_read_write() {
-        File_system::Tests::Test_read_write(Initialize());
+    #[Test]
+    async fn test_read_write() {
+        File_system::Tests::Test_read_write(Initialize()).await;
     }
 
-    #[test]
-    fn Test_move() {
-        File_system::Tests::Test_move(Initialize());
+    #[Test]
+    async fn test_move() {
+        File_system::Tests::Test_move(Initialize()).await;
     }
 
-    #[test]
-    fn Test_set_position() {
-        File_system::Tests::Test_set_position(Initialize());
+    #[Test]
+    async fn test_set_position() {
+        File_system::Tests::Test_set_position(Initialize()).await;
     }
 
-    #[test]
-    fn Test_flush() {
-        File_system::Tests::Test_flush(Initialize());
+    #[Test]
+    async fn test_flush() {
+        File_system::Tests::Test_flush(Initialize()).await;
     }
 
-    #[test]
-    fn Test_set_get_metadata() {
-        File_system::Tests::Test_set_get_metadata(Initialize());
+    #[Test]
+    async fn test_set_get_metadata() {
+        File_system::Tests::Test_set_get_metadata(Initialize()).await;
     }
 
-    #[test]
-    fn Test_read_directory() {
-        File_system::Tests::Test_read_directory(Initialize());
+    #[Test]
+    async fn test_read_directory() {
+        File_system::Tests::Test_read_directory(Initialize()).await;
     }
 
-    #[test]
-    fn Test_set_position_directory() {
-        File_system::Tests::Test_set_position_directory(Initialize());
+    #[Test]
+    async fn test_set_position_directory() {
+        File_system::Tests::Test_set_position_directory(Initialize()).await;
     }
 
-    #[test]
-    fn Test_rewind_directory() {
-        File_system::Tests::Test_rewind_directory(Initialize());
+    #[Test]
+    async fn test_rewind_directory() {
+        File_system::Tests::Test_rewind_directory(Initialize()).await;
     }
 
-    #[test]
-    fn Test_create_remove_directory() {
-        File_system::Tests::Test_create_remove_directory(Initialize());
+    #[Test]
+    async fn test_create_remove_directory() {
+        File_system::Tests::Test_create_remove_directory(Initialize()).await;
     }
 
-    #[test]
-    fn Test_loader() {
+    #[Test]
+    async fn test_loader() {
         File_system::Tests::Test_loader(Initialize());
     }
 }

@@ -13,3 +13,4 @@ Synchronization = { version = "0.1.0", path = "../Synchronization" }
 
 [dev-dependencies]
 Drivers = { path = "../Drivers" }
+Futures = { path = "../Futures" }
