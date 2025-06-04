@@ -1,10 +1,12 @@
-extern crate alloc;
-
+use alloc::borrow::ToOwned;
+use alloc::string::{String, ToString};
+use alloc::vec;
+use alloc::vec::Vec;
 use Synchronization::{
     blocking_mutex::raw::CriticalSectionRawMutex, once_lock::OnceLock, rwlock::RwLock,
 };
 
-use alloc::collections::BTreeMap;
+use alloc::{boxed::Box, collections::BTreeMap};
 
 use Network::{IP_type, Network_socket_driver_trait, Port_type, Protocol_type};
 use Task::Task_identifier_type;
@@ -44,7 +46,7 @@ pub async fn Initialize(
 ) -> Result<&'static Virtual_file_system_type<'static>, crate::Error_type> {
     let Virtual_file_system = Virtual_file_system_type::New(
         Task::Get_instance(),
-        Users::Get_instance(),
+        Users::Get_instance().await,
         Time::Get_instance(),
         Root_file_system,
         Network_socket_driver,
@@ -182,7 +184,10 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+        let Group = Users::Get_instance()
+            .await
+            .Get_user_primary_group(User)
+            .await?;
 
         Parent_file_system.Create_directory(Relative_path, Time, User, Group)?;
 
@@ -302,7 +307,10 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+        let Group = Users::Get_instance()
+            .await
+            .Get_user_primary_group(User)
+            .await?;
 
         let Local_file = File_system.Open(Task, Relative_path, Flags, Time, User, Group)?;
 
@@ -698,7 +706,10 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+        let Group = Users::Get_instance()
+            .await
+            .Get_user_primary_group(User)
+            .await?;
 
         let File = File_system.Open(
             Task,
@@ -723,7 +734,10 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+        let Group = Users::Get_instance()
+            .await
+            .Get_user_primary_group(User)
+            .await?;
 
         let mut Metadata = Metadata_type::Get_default(Type_type::Block_device, Time, User, Group)
             .ok_or(Error_type::Invalid_parameter)?;
@@ -753,7 +767,10 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+        let Group = Users::Get_instance()
+            .await
+            .Get_user_primary_group(User)
+            .await?;
 
         let File = File_system.Open(
             Task,
@@ -785,7 +802,10 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+        let Group = Users::Get_instance()
+            .await
+            .Get_user_primary_group(User)
+            .await?;
 
         // Set the metadata of the special file.
         let mut Metadata = Metadata_type::Get_default(Type, Time, User, Group)
@@ -814,7 +834,10 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+        let Group = Users::Get_instance()
+            .await
+            .Get_user_primary_group(User)
+            .await?;
 
         let File = File_system.Open(
             Task,
@@ -836,7 +859,10 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+        let Group = Users::Get_instance()
+            .await
+            .Get_user_primary_group(User)
+            .await?;
 
         let mut Metadata = Metadata_type::Get_default(Type_type::Pipe, Time, User, Group)
             .ok_or(Error_type::Invalid_parameter)?;
@@ -1190,7 +1216,10 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance().Get_user_primary_group(User)?;
+        let Group = Users::Get_instance()
+            .await
+            .Get_user_primary_group(User)
+            .await?;
 
         File_system.Create_directory(Relative_path, Time, User, Group)
     }

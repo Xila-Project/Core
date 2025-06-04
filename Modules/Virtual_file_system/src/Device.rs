@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use alloc::collections::BTreeMap;
+use alloc::{collections::BTreeMap, string::String, vec::Vec};
 
 use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
@@ -412,6 +412,7 @@ impl<'a> File_system_type<'a> {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
     use File_system::{Create_device, Position_type};
 
     use File_system::Memory_device_type;

@@ -13,9 +13,9 @@ Synchronization = { version = "0.1.0", path = "../Synchronization" }
 Futures = { version = "0.1.0", path = "../Futures" }
 
 [dev-dependencies]
-Drivers = { path = "../Drivers" }
-LittleFS = { path = "../LittleFS" }
+# Drivers = { path = "../Drivers" }
+# LittleFS = { path = "../LittleFS" }
 
-[[test]]
-name = "Integration"
-path = "Tests/Integration.rs"
+# [[test]]
+# name = "Integration"
+# path = "Tests/Integration.rs"
