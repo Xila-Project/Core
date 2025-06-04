@@ -3,18 +3,20 @@ use Virtual_file_system::File_type;
 
 use crate::{Error_type, Random_device_path, Result_type};
 
-pub fn Generate_salt() -> Result_type<String> {
+pub async fn Generate_salt() -> Result_type<String> {
     let Random_file = File_type::Open(
-        Virtual_file_system::Get_instance(),
+        Virtual_file_system::Get_instance().await,
         Random_device_path,
         Mode_type::Read_only.into(),
     )
+    .await
     .map_err(Error_type::Failed_to_open_random_device)?;
 
     let mut Buffer = [0_u8; 16];
 
     Random_file
         .Read(&mut Buffer)
+        .await
         .map_err(Error_type::Failed_to_read_random_device)?;
 
     Buffer.iter_mut().for_each(|Byte| {

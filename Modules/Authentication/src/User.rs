@@ -82,7 +82,7 @@ pub fn Get_user_file_path(User_name: &str) -> Result_type<Path_owned_type> {
         .ok_or(Error_type::Failed_to_get_user_file_path)
 }
 
-pub fn Authenticate_user<'a>(
+pub async fn Authenticate_user<'a>(
     Virtual_file_system: &'a Virtual_file_system_type<'a>,
     User_name: &str,
     Password: &str,
@@ -90,12 +90,14 @@ pub fn Authenticate_user<'a>(
     let Path = Get_user_file_path(User_name)?;
 
     let User_file = File_type::Open(Virtual_file_system, Path, Mode_type::Read_only.into())
+        .await
         .map_err(Error_type::Failed_to_open_user_file)?;
 
     let mut Buffer = Vec::new();
 
     User_file
         .Read_to_end(&mut Buffer)
+        .await
         .map_err(Error_type::Failed_to_read_user_file)?;
 
     let User: User_type = miniserde::json::from_str(core::str::from_utf8(&Buffer).unwrap())
@@ -108,7 +110,7 @@ pub fn Authenticate_user<'a>(
     }
 }
 
-pub fn Create_user<'a>(
+pub async fn Create_user<'a>(
     Virtual_file_system: &'a Virtual_file_system_type<'a>,
     User_name: &str,
     Password: &str,
@@ -132,7 +134,7 @@ pub fn Create_user<'a>(
         .map_err(Error_type::Failed_to_create_user)?;
 
     // - Hash password.
-    let Salt = Generate_salt()?;
+    let Salt = Generate_salt().await?;
 
     let Hash = Hash_password(Password, &Salt);
 
@@ -145,7 +147,7 @@ pub fn Create_user<'a>(
         Salt,
     );
 
-    match Directory_type::Create(Virtual_file_system, Users_folder_path) {
+    match Directory_type::Create(Virtual_file_system, Users_folder_path).await {
         Ok(_) | Err(File_system::Error_type::Already_exists) => {}
         Err(Error) => Err(Error_type::Failed_to_create_users_directory(Error))?,
     }
@@ -160,23 +162,25 @@ pub fn Create_user<'a>(
         User_file_path,
         Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None),
     )
+    .await
     .map_err(Error_type::Failed_to_open_user_file)?;
 
     let User_json = miniserde::json::to_string(&User);
 
     User_file
         .Write(User_json.as_bytes())
+        .await
         .map_err(Error_type::Failed_to_write_user_file)?;
 
     Ok(User_identifier)
 }
 
-pub fn Change_user_password<'a>(
+pub async fn Change_user_password<'a>(
     Virtual_file_system: &'a Virtual_file_system_type<'a>,
     User_name: &str,
     New_password: &str,
 ) -> Result_type<()> {
-    let Salt = Generate_salt()?;
+    let Salt = Generate_salt().await?;
 
     let Hash = Hash_password(New_password, &Salt);
 
@@ -190,12 +194,14 @@ pub fn Change_user_password<'a>(
         User_file_path,
         Flags_type::New(Mode_type::Read_write, Some(Open_type::Truncate), None),
     )
+    .await
     .map_err(Error_type::Failed_to_open_user_file)?;
 
     let mut Buffer = Vec::new();
 
     User_file
         .Read_to_end(&mut Buffer)
+        .await
         .map_err(Error_type::Failed_to_read_user_file)?;
 
     let mut User: User_type = miniserde::json::from_str(core::str::from_utf8(&Buffer).unwrap())
@@ -208,12 +214,13 @@ pub fn Change_user_password<'a>(
 
     User_file
         .Write(User_json.as_bytes())
+        .await
         .map_err(Error_type::Failed_to_write_user_file)?;
 
     Ok(())
 }
 
-pub fn Change_user_name<'a>(
+pub async fn Change_user_name<'a>(
     Virtual_file_system: &'a Virtual_file_system_type<'a>,
     Current_name: &str,
     New_name: &str,
@@ -225,12 +232,14 @@ pub fn Change_user_name<'a>(
         File_path,
         Flags_type::New(Mode_type::Read_write, Some(Open_type::Truncate), None),
     )
+    .await
     .map_err(Error_type::Failed_to_open_user_file)?;
 
     let mut Buffer = Vec::new();
 
     User_file
         .Read_to_end(&mut Buffer)
+        .await
         .map_err(Error_type::Failed_to_read_user_file)?;
 
     let mut User: User_type = miniserde::json::from_str(core::str::from_utf8(&Buffer).unwrap())
@@ -242,12 +251,13 @@ pub fn Change_user_name<'a>(
 
     User_file
         .Write(User_json.as_bytes())
+        .await
         .map_err(Error_type::Failed_to_write_user_file)?;
 
     Ok(())
 }
 
-pub fn Read_user_file<'a>(
+pub async fn Read_user_file<'a>(
     Virtual_file_system: &'a Virtual_file_system_type<'a>,
     Buffer: &mut Vec<u8>,
     File: &str,
@@ -259,12 +269,14 @@ pub fn Read_user_file<'a>(
         User_file_path,
         Mode_type::Read_only.into(),
     )
+    .await
     .map_err(Error_type::Failed_to_read_users_directory)?;
 
     Buffer.clear();
 
     User_file
         .Read_to_end(Buffer)
+        .await
         .map_err(Error_type::Failed_to_read_user_file)?;
 
     miniserde::json::from_str(core::str::from_utf8(Buffer).unwrap())

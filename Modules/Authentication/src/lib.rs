@@ -15,12 +15,12 @@ const Users_folder_path: &str = "/System/Users";
 const Group_folder_path: &str = "/System/Groups";
 const Random_device_path: &str = "/Devices/Random";
 
-pub fn Load_all_users_and_groups() -> Result_type<()> {
+pub async fn Load_all_users_and_groups() -> Result_type<()> {
     use Group::Read_group_file;
     use User::Read_user_file;
     use Virtual_file_system::Directory_type;
     // Open Xila users folder.
-    let Virtual_file_system = Virtual_file_system::Get_instance();
+    let Virtual_file_system = &Virtual_file_system::Get_instance().await;
 
     let Users_manager = Users::Get_instance();
 
@@ -28,12 +28,13 @@ pub fn Load_all_users_and_groups() -> Result_type<()> {
 
     {
         let Groups_directory = Directory_type::Open(Virtual_file_system, Group_folder_path)
+            .await
             .map_err(Error_type::Failed_to_read_group_directory)?;
 
         // Read all groups.
         for Group_entry in Groups_directory {
             let Group = if let Ok(Group) =
-                Read_group_file(Virtual_file_system, &mut Buffer, Group_entry.Get_name())
+                Read_group_file(Virtual_file_system, &mut Buffer, Group_entry.Get_name()).await
             {
                 Group
             } else {
@@ -49,12 +50,13 @@ pub fn Load_all_users_and_groups() -> Result_type<()> {
 
     {
         let Users_directory = Directory_type::Open(Virtual_file_system, Users_folder_path)
+            .await
             .map_err(Error_type::Failed_to_read_users_directory)?;
 
         // Read all users.
         for User_entry in Users_directory {
             let User = if let Ok(User) =
-                Read_user_file(Virtual_file_system, &mut Buffer, User_entry.Get_name())
+                Read_user_file(Virtual_file_system, &mut Buffer, User_entry.Get_name()).await
             {
                 User
             } else {

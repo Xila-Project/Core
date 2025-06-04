@@ -49,7 +49,7 @@ pub fn Get_group_file_path(Group_name: &str) -> Result_type<Path_owned_type> {
         .ok_or(Error_type::Failed_to_get_group_file_path)
 }
 
-pub fn Read_group_file<'a>(
+pub async fn Read_group_file<'a>(
     Virtual_file_system: &'a Virtual_file_system_type<'a>,
     Buffer: &mut Vec<u8>,
     File: &str,
@@ -64,19 +64,21 @@ pub fn Read_group_file<'a>(
         Group_file_path,
         Mode_type::Read_only.into(),
     )
+    .await
     .map_err(Error_type::Failed_to_read_group_directory)?;
 
     Buffer.clear();
 
     Group_file
         .Read_to_end(Buffer)
+        .await
         .map_err(Error_type::Failed_to_read_group_file)?;
 
     miniserde::json::from_str(core::str::from_utf8(Buffer).unwrap())
         .map_err(Error_type::Failed_to_parse_group_file)
 }
 
-pub fn Create_group<'a>(
+pub async fn Create_group<'a>(
     Virtual_file_system: &'a Virtual_file_system_type<'a>,
     Group_name: &str,
     Group_identifier: Option<Group_identifier_type>,
@@ -100,7 +102,7 @@ pub fn Create_group<'a>(
     // - Write group file.
     let Group = Group_type::New(Group_identifier.As_u16(), Group_name.to_string(), vec![]);
 
-    match Directory_type::Create(Virtual_file_system, Group_folder_path) {
+    match Directory_type::Create(Virtual_file_system, Group_folder_path).await {
         Ok(_) | Err(File_system::Error_type::Already_exists) => {}
         Err(Error) => Err(Error_type::Failed_to_create_groups_directory(Error))?,
     };
@@ -112,12 +114,14 @@ pub fn Create_group<'a>(
         Group_file_path,
         Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None),
     )
+    .await
     .map_err(Error_type::Failed_to_open_group_file)?;
 
     let Group_json = miniserde::json::to_string(&Group);
 
     Group_file
         .Write(Group_json.as_bytes())
+        .await
         .map_err(Error_type::Failed_to_write_group_file)?;
 
     Ok(Group_identifier)
