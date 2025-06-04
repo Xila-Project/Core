@@ -12,12 +12,14 @@ syn = { version = "2.0", features = ["full"] }
 quote = "1.0"
 Time = { path = "../Time" }
 Shared = { path = "../Shared" }
+Synchronization = { version = "0.1.0", path = "../Synchronization" }
 
 
 [dev-dependencies]
 Drivers = { path = "../Drivers" }
 Users = { path = "../Users" }
 Task = { path = "../Task" }
+Futures = { path = "../Futures" }
 
 [features]
 default = ["RGB565"]

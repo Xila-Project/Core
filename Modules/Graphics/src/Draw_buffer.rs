@@ -1,3 +1,7 @@
+extern crate alloc;
+
+use alloc::{vec, vec::Vec};
+
 use crate::{Color_RGB565_type, Color_type, Point_type, Rendering_color_type};
 
 #[repr(transparent)]
@@ -9,7 +13,7 @@ impl AsRef<[Color_type]> for Buffer_type {
     fn as_ref(&self) -> &[Color_type] {
         unsafe {
             let Buffer = self.Buffer.as_ptr() as *const Color_type;
-            std::slice::from_raw_parts(Buffer, self.Buffer.len())
+            core::slice::from_raw_parts(Buffer, self.Buffer.len())
         }
     }
 }

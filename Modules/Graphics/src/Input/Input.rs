@@ -1,4 +1,8 @@
-use std::ffi::c_void;
+extern crate alloc;
+
+use alloc::boxed::Box;
+
+use core::ffi::c_void;
 
 use File_system::Device_type;
 

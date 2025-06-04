@@ -7,7 +7,7 @@ use super::{Color_ARGB8888_type, Color_RGBA8888_type};
 pub struct Color_RGB565_type(u16);
 
 impl Debug for Color_RGB565_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Formatter
             .debug_struct("Color_RGB565_type")
             .field("Red", &self.Get_red())

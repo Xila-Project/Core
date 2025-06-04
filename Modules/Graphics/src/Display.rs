@@ -1,5 +1,8 @@
-use core::slice;
-use std::{ffi::c_void, ptr::null_mut};
+extern crate alloc;
+
+use alloc::boxed::Box;
+
+use core::{ffi::c_void, ptr::null_mut, slice};
 
 use File_system::Device_type;
 
