@@ -6,15 +6,15 @@ edition = "2021"
 [dependencies]
 paste = "1.0.15"
 quote = "1.0.36"
-#File_system = { path = "../File_system", optional = true }
-#Virtual_file_system = { path = "../Virtual_file_system" , optional = true}
-#Task = { path = "../Task", optional = true }
-#Users = { path = "../Users" , optional = true}
-#Graphics = { path = "../Graphics", optional = true }
-#Time = { path = "../Time", optional = true }
-#Shared = { path = "../Shared", optional = true }
-#Peripherals = { path = "../Peripherals", optional = true }
-#Network = { path = "../Network", optional = true }
+File_system = { path = "../File_system", optional = true }
+Virtual_file_system = { path = "../Virtual_file_system" }
+Task = { path = "../Task" }
+Users = { path = "../Users" , optional = true}
+Graphics = { path = "../Graphics", optional = true }
+Time = { path = "../Time", optional = true }
+Shared = { path = "../Shared" }
+Peripherals = { path = "../Peripherals", optional = true }
+Network = { path = "../Network", optional = true }
 Memory = { path = "../Memory", optional = true }
 Synchronization = { path = "../Synchronization", optional = true }
 linked_list_allocator = { version = "0.10", default-features = false, features = [
@@ -24,18 +24,18 @@ libc = { version = "0.2", optional = true }
 embassy-sync = { version = "0.6.2" }
 
 [features]
-#Network = ["dep:Network"]
-#Std = []
-#File_system = ["dep:File_system"]
-#Graphics = ["dep:Graphics"]
-#Time = ["dep:Time"]
-#Random = []
+Network = ["dep:Network"]
+Std = []
+File_system = ["dep:File_system"]
+Graphics = ["dep:Graphics"]
+Time = ["dep:Time"]
+Random = []
 Memory = ["dep:libc", "dep:Memory", "dep:Synchronization"]
 
 
-#All = ["File_system", "Graphics", "Time", "Network", "Memory"]
+All = ["File_system", "Graphics", "Time", "Network", "Memory"]
 
-default = ["std", "binstart"]
+default = ["std", "binstart", "All"]
 std = ["alloc", "esp-idf-sys/std"]
 alloc = []
 nightly = []

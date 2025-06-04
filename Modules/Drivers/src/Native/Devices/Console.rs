@@ -91,9 +91,9 @@ impl Device_trait for Standard_error_device_type {
     }
 }
 
-pub fn Mount_devices(
+pub async fn Mount_devices(
     Task: Task_identifier_type,
-    Virtual_file_system: &Virtual_file_system_type,
+    Virtual_file_system: &Virtual_file_system_type<'_>,
 ) -> Result<(), String> {
     Virtual_file_system
         .Mount_static_device(
@@ -101,6 +101,7 @@ pub fn Mount_devices(
             &"/Devices/Standard_in",
             Create_device!(Standard_in_device_type),
         )
+        .await
         .map_err(|Error| format!("Error adding standard in device: {:?}", Error))?;
 
     Virtual_file_system
@@ -109,6 +110,7 @@ pub fn Mount_devices(
             &"/Devices/Standard_out",
             Create_device!(Standard_out_device_type),
         )
+        .await
         .map_err(|Error| format!("Error adding standard out device: {:?}", Error))?;
 
     Virtual_file_system
@@ -117,6 +119,7 @@ pub fn Mount_devices(
             &"/Devices/Standard_error",
             Create_device!(Standard_error_device_type),
         )
+        .await
         .map_err(|Error| format!("Error adding standard error device: {:?}", Error))?;
 
     Ok(())

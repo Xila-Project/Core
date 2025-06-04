@@ -10,9 +10,9 @@ use Graphics::Point_type;
 use Task::Task_identifier_type;
 use Virtual_file_system::Virtual_file_system_type;
 
-pub fn Mount_devices(
+pub async fn Mount_devices(
     Task: Task_identifier_type,
-    Virtual_file_system: &Virtual_file_system_type,
+    Virtual_file_system: &Virtual_file_system_type<'_>,
 ) -> Result<(), String> {
     const Resolution: Point_type = Point_type::New(800, 600);
 
@@ -20,17 +20,20 @@ pub fn Mount_devices(
 
     Virtual_file_system
         .Mount_static_device(Task, &"/Devices/Screen", Screen)
+        .await
         .map_err(|Error| format!("Error adding screen device: {:?}", Error))?;
 
     Virtual_file_system
         .Mount_static_device(Task, &"/Devices/Pointer", Pointer)
+        .await
         .map_err(|Error| format!("Error adding pointer device: {:?}", Error))?;
 
     Virtual_file_system
         .Mount_static_device(Task, &"/Devices/Keyboard", Keyboard)
+        .await
         .map_err(|Error| format!("Error adding keyboard device {:?}", Error))?;
 
-    Console::Mount_devices(Task, Virtual_file_system)?;
+    Console::Mount_devices(Task, Virtual_file_system).await?;
 
     Ok(())
 }
