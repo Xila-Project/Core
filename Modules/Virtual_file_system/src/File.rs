@@ -1,5 +1,6 @@
 use core::fmt::Debug;
 
+use Futures::block_on;
 use Task::Task_identifier_type;
 
 use File_system::{
@@ -129,8 +130,9 @@ impl<'a> File_type<'a> {
 
 impl Drop for File_type<'_> {
     fn drop(&mut self) {
-        let _ = self
-            .File_system
-            .Close(self.Get_file_identifier(), self.Task);
+        let _ = block_on(
+            self.File_system
+                .Close(self.Get_file_identifier(), self.Task),
+        );
     }
 }

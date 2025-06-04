@@ -237,8 +237,8 @@ pub mod Tests {
         Path_type::Root.to_owned()
     }
 
-    pub fn Test_open_close_delete(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_open_close_delete(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_open_close_delete").unwrap();
 
@@ -263,8 +263,8 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub fn Test_read_write(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_read_write(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_read_write").unwrap();
 
@@ -308,8 +308,8 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub fn Test_move(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_move(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_move").unwrap();
         let Path_destination = Get_test_path().Append("Test_move_destination").unwrap();
@@ -367,8 +367,8 @@ pub mod Tests {
         File_system.Remove(&Path_destination).unwrap();
     }
 
-    pub fn Test_set_position(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_set_position(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_set_position").unwrap();
 
@@ -418,8 +418,8 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub fn Test_flush(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_flush(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_flush").unwrap();
 
@@ -449,8 +449,8 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub fn Test_set_get_metadata(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_set_get_metadata(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_set_owner").unwrap();
 
@@ -490,8 +490,8 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub fn Test_read_directory(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_read_directory(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
@@ -530,8 +530,8 @@ pub mod Tests {
         File_system.Close_directory(Directory).unwrap();
     }
 
-    pub fn Test_set_position_directory(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_set_position_directory(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
@@ -580,8 +580,8 @@ pub mod Tests {
         }
     }
 
-    pub fn Test_rewind_directory(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_rewind_directory(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
@@ -636,8 +636,8 @@ pub mod Tests {
         File_system.Close_directory(Directory).unwrap();
     }
 
-    pub fn Test_create_remove_directory(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_create_remove_directory(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_create_directory").unwrap();
 
