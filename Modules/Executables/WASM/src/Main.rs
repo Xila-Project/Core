@@ -1,5 +1,5 @@
+use core::mem::forget;
 use core::num::NonZeroUsize;
-use std::mem::forget;
 
 use Executable::Standard_type;
 use File_system::{Mode_type, Path_type};

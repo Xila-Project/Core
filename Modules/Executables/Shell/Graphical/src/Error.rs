@@ -5,8 +5,6 @@ use core::{
 
 pub type Result_type<T> = Result<T, Error_type>;
 
-extern crate alloc;
-
 #[derive(Debug, Clone)]
 #[repr(u8)]
 pub enum Error_type {
