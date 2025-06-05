@@ -38,7 +38,6 @@ async fn Is_execute_allowed(Statistics: &Statistics_type, User: User_identifier_
 
     // - Check if the user is in the group
     let Is_in_group = Users::Get_instance()
-        .await
         .Is_in_group(User, Statistics.Get_group())
         .await;
 
@@ -83,7 +82,7 @@ pub async fn Execute(
     let Task = Task_instance.Get_current_task_identifier().await;
 
     let File = File_type::Open(
-        Virtual_file_system::Get_instance().await,
+        Virtual_file_system::Get_instance(),
         &Path,
         File_system::Mode_type::Read_write.into(),
     )
@@ -123,7 +122,7 @@ pub async fn Execute(
 
             let Standard = Standard.Transfert(Task).await.unwrap();
 
-            match Main(Standard, Inputs) {
+            match Main(Standard, Inputs).await {
                 Ok(_) => 0_isize,
                 Err(Error) => -(Error.get() as isize),
             }
