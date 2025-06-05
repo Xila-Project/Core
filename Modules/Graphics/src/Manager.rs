@@ -54,7 +54,7 @@ pub async fn Initialize(
             "Graphics",
             None,
             async move |_| {
-                let _ = Get_instance().await.Loop().await;
+                let _ = Get_instance().Loop().await;
             },
         )
         .await
@@ -63,8 +63,10 @@ pub async fn Initialize(
     Instance
 }
 
-pub async fn Get_instance() -> &'static Manager_type {
-    Manager_instance.get().await
+pub fn Get_instance() -> &'static Manager_type {
+    Manager_instance
+        .try_get()
+        .expect("Graphics manager not initialized")
 }
 
 struct Inner_type {
@@ -253,8 +255,8 @@ impl Manager_type {
         }
     }
 
-    pub async fn Lock(&self) -> Result_type<MutexGuard<'_, CriticalSectionRawMutex, ()>> {
-        Ok(self.Global_lock.lock().await)
+    pub async fn Lock(&self) -> MutexGuard<'_, CriticalSectionRawMutex, ()> {
+        self.Global_lock.lock().await
     }
 
     pub fn Get_current_screen(&self) -> Result_type<*mut LVGL::lv_obj_t> {
