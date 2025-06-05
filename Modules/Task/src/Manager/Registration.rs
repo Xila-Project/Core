@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::Manager::Metadata_type;
+use alloc::vec::Vec;
 use smol_str::SmolStr;
 use Users::{Group_identifier_type, User_identifier_type};
 

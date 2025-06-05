@@ -2,9 +2,8 @@
 
 use super::*;
 
-extern crate alloc;
 use alloc::collections::BTreeMap;
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 impl Manager_type {
     /// Find the first available identifier for any identifier type with Into_inner() method

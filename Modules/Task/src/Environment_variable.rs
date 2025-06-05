@@ -1,10 +1,11 @@
-use std::{ffi::CString, fmt::Debug, sync::Arc};
+use alloc::{ffi::CString, format, sync::Arc};
+use core::fmt::Debug;
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Environment_variable_type(Arc<CString>, usize);
 
 impl Debug for Environment_variable_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Formatter
             .debug_struct("Environment_variable_type")
             .field("Name", &self.Get_name())

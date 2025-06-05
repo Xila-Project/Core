@@ -217,7 +217,7 @@ unsafe fn Unmap(Pointer: *mut MaybeUninit<u8>, Size: usize) {
 #[cfg(test)]
 mod Tests {
     use super::*;
-    extern crate alloc;
+
     use alloc::alloc::{alloc, dealloc};
     use core::ptr::NonNull;
     use Memory::Allocator_type;

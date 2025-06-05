@@ -22,8 +22,6 @@ pub(crate) use Metadata::*;
 
 use crate::Manager::Metadata_type;
 
-extern crate alloc;
-
 use alloc::collections::BTreeMap;
 use Synchronization::{
     blocking_mutex::raw::CriticalSectionRawMutex, once_lock::OnceLock, rwlock::RwLock,

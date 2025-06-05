@@ -1,6 +1,7 @@
 // Lifecycle module - handles task spawning, execution, and lifecycle management
 
 use super::*;
+use alloc::boxed::Box;
 use core::{
     future::{poll_fn, Future},
     ptr::NonNull,

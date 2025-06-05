@@ -115,12 +115,12 @@ pub fn Test(args: TokenStream, input: TokenStream) -> TokenStream {
         fn #Function_name() {
             #Input_function
 
-            static mut __Executor: Option<#Task_path::Executor_type> = None;
+            static mut __Executor: Option<Drivers::Std::Executor::Executor_type> = None;
             static mut __Spawner : usize = 0;
 
             unsafe {
                 if __Executor.is_none() {
-                    __Executor = Some(#Task_path::Executor_type::New());
+                    __Executor = Some(Drivers::Std::Executor::Executor_type::New());
                 }
 
                 __Executor.as_mut().unwrap().Run(|Spawner| {

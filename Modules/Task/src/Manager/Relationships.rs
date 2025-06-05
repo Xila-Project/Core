@@ -1,5 +1,7 @@
 // Relationships module - handles parent/child relationships between tasks
 
+use alloc::vec::Vec;
+
 use super::*;
 
 impl Manager_type {

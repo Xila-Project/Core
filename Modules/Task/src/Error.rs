@@ -2,9 +2,9 @@
 
 use core::{fmt, num::NonZeroU32};
 
-use std::sync::PoisonError;
+use alloc::{format, vec};
 
-pub type Result_type<T> = std::result::Result<T, Error_type>;
+pub type Result_type<T> = core::result::Result<T, Error_type>;
 
 #[derive(Debug, Clone)]
 #[repr(C)]
@@ -16,7 +16,6 @@ pub enum Error_type {
     Failed_to_create_thread,
     No_thread_for_task,
     Failed_to_spawn_thread,
-    Poisoned_lock,
     Invalid_environment_variable,
     Too_many_tasks,
     Too_many_spawners,
@@ -32,12 +31,6 @@ impl fmt::Display for Error_type {
     }
 }
 
-impl<T> From<PoisonError<T>> for Error_type {
-    fn from(_: PoisonError<T>) -> Self {
-        Error_type::Poisoned_lock
-    }
-}
-
 impl From<Error_type> for NonZeroU32 {
     fn from(Error: Error_type) -> Self {
         unsafe { NonZeroU32::new_unchecked(Error as u32) }
@@ -47,7 +40,7 @@ impl From<Error_type> for NonZeroU32 {
 #[cfg(test)]
 mod Tests {
     use super::*;
-    use std::sync::{Mutex, RwLock};
+    use std::string::{String, ToString};
 
     #[test]
     fn Test_error_type_display() {
@@ -55,9 +48,9 @@ mod Tests {
         let display_string = format!("{}", error);
         assert_eq!(display_string, "Invalid_task_identifier");
 
-        let error = Error_type::Poisoned_lock;
+        let error = Error_type::Too_many_tasks;
         let display_string = format!("{}", error);
-        assert_eq!(display_string, "Poisoned_lock");
+        assert_eq!(display_string, "Too_many_tasks");
     }
 
     #[test]
@@ -89,7 +82,6 @@ mod Tests {
             Error_type::Failed_to_create_thread,
             Error_type::No_thread_for_task,
             Error_type::Failed_to_spawn_thread,
-            Error_type::Poisoned_lock,
             Error_type::Invalid_environment_variable,
             Error_type::Too_many_tasks,
             Error_type::Too_many_spawners,
@@ -111,56 +103,6 @@ mod Tests {
     }
 
     #[test]
-    fn Test_poison_error_conversion() {
-        use std::sync::Arc;
-
-        let mutex = Arc::new(Mutex::new(42));
-        let mutex_clone = Arc::clone(&mutex);
-
-        // Create a poison error by panicking while holding the lock
-        let handle = std::thread::spawn(move || {
-            let _guard = mutex_clone.lock().unwrap();
-            panic!("Intentional panic to poison the mutex");
-        });
-
-        let _ = handle.join();
-
-        // Now the mutex should be poisoned
-        let poison_result = mutex.lock();
-        assert!(poison_result.is_err());
-
-        if let Err(poison_error) = poison_result {
-            let task_error: Error_type = poison_error.into();
-            assert_eq!(format!("{:?}", task_error), "Poisoned_lock");
-        }
-    }
-
-    #[test]
-    fn Test_poison_error_conversion_rwlock() {
-        use std::sync::Arc;
-
-        let rwlock = Arc::new(RwLock::new(42));
-        let rwlock_clone = Arc::clone(&rwlock);
-
-        // Create a poison error by panicking while holding the lock
-        let handle = std::thread::spawn(move || {
-            let _guard = rwlock_clone.write().unwrap();
-            panic!("Intentional panic to poison the RwLock");
-        });
-
-        let _ = handle.join();
-
-        // Now the RwLock should be poisoned
-        let poison_result = rwlock.read();
-        assert!(poison_result.is_err());
-
-        if let Err(poison_error) = poison_result {
-            let task_error: Error_type = poison_error.into();
-            assert_eq!(format!("{:?}", task_error), "Poisoned_lock");
-        }
-    }
-
-    #[test]
     fn Test_error_to_nonzero_u32_conversion() {
         let errors_and_expected_values = vec![
             (Error_type::Invalid_task_identifier, 1u32),
@@ -170,14 +112,13 @@ mod Tests {
             (Error_type::Failed_to_create_thread, 5u32),
             (Error_type::No_thread_for_task, 6u32),
             (Error_type::Failed_to_spawn_thread, 7u32),
-            (Error_type::Poisoned_lock, 8u32),
-            (Error_type::Invalid_environment_variable, 9u32),
-            (Error_type::Too_many_tasks, 10u32),
-            (Error_type::Too_many_spawners, 11u32),
-            (Error_type::Already_initialized, 12u32),
-            (Error_type::Already_set, 13u32),
-            (Error_type::Not_initialized, 14u32),
-            (Error_type::No_spawner_available, 15u32),
+            (Error_type::Invalid_environment_variable, 8u32),
+            (Error_type::Too_many_tasks, 9u32),
+            (Error_type::Too_many_spawners, 10u32),
+            (Error_type::Already_initialized, 11u32),
+            (Error_type::Already_set, 12u32),
+            (Error_type::Not_initialized, 13u32),
+            (Error_type::No_spawner_available, 14u32),
         ];
 
         for (error, expected_value) in errors_and_expected_values {
@@ -273,7 +214,7 @@ mod Tests {
         let env_error = Error_type::Invalid_environment_variable;
         let display_str = format!("{}", env_error);
         let non_zero: NonZeroU32 = env_error.into();
-        assert_eq!(non_zero.get(), 9u32);
+        assert_eq!(non_zero.get(), 8u32);
         assert_eq!(display_str, "Invalid_environment_variable");
 
         // Test task-related errors

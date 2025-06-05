@@ -1,4 +1,5 @@
 use embassy_executor::{raw, Spawner};
+use std::boxed::Box;
 use std::marker::PhantomData;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Condvar, Mutex};

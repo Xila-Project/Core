@@ -2,8 +2,8 @@
 
 use super::*;
 use crate::Test;
+use alloc::{collections::BTreeMap, format, vec::Vec};
 use core::time::Duration;
-use std::collections::BTreeMap;
 use Users::{Group_identifier_type, User_identifier_type};
 
 #[Test(crate)]
@@ -456,7 +456,7 @@ async fn Test_get_children() {
     // Spawn first child
     let (Child1_handle, Child1_task) = Manager
         .Spawn(Root_task, "Child Task 1", Some(Spawner), async move |_| {
-            Manager_type::Sleep(std::time::Duration::from_millis(50)).await;
+            Manager_type::Sleep(core::time::Duration::from_millis(50)).await;
         })
         .await
         .unwrap();
@@ -464,7 +464,7 @@ async fn Test_get_children() {
     // Spawn second child
     let (Child2_handle, Child2_task) = Manager
         .Spawn(Root_task, "Child Task 2", Some(Spawner), async move |_| {
-            Manager_type::Sleep(std::time::Duration::from_millis(50)).await;
+            Manager_type::Sleep(core::time::Duration::from_millis(50)).await;
         })
         .await
         .unwrap();
@@ -755,7 +755,7 @@ async fn _Test_spawner_load_balancing() {
         let Task_name = format!("Load Balance Task {}", i);
         let (Handle, _) = Manager
             .Spawn(Parent_task, &Task_name, None, async move |Task| {
-                Manager_type::Sleep(std::time::Duration::from_millis(10)).await;
+                Manager_type::Sleep(core::time::Duration::from_millis(10)).await;
                 Get_instance().Get_spawner(Task).await.unwrap()
             })
             .await

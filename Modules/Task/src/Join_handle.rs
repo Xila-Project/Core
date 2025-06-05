@@ -1,5 +1,3 @@
-extern crate alloc;
-
 use alloc::sync::Arc;
 use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 

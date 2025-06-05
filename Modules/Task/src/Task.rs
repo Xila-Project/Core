@@ -3,6 +3,8 @@ pub type Task_identifier_inner_type = u16;
 #[cfg(target_pointer_width = "64")]
 pub type Task_identifier_inner_type = u32;
 
+use alloc::format;
+
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Task_identifier_type(Task_identifier_inner_type);

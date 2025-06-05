@@ -1,6 +1,7 @@
 // Metadata module - handles task metadata and data structures
 
 use super::*;
+use alloc::vec::Vec;
 use smol_str::SmolStr;
 use Users::{Group_identifier_type, User_identifier_type};
 

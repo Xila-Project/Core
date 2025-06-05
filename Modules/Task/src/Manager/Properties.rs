@@ -1,6 +1,9 @@
 // Properties module - handles task properties like user, group, and environment variables
 
+use alloc::string::ToString;
+
 use super::*;
+use alloc::{string::String, vec::Vec};
 use Users::{Group_identifier_type, User_identifier_type};
 
 impl Manager_type {

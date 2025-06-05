@@ -2,7 +2,6 @@
 
 use super::*;
 
-extern crate alloc;
 use alloc::collections::BTreeMap;
 use embassy_executor::Spawner;
 
