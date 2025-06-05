@@ -699,7 +699,8 @@ mod tests {
     }
 
     #[Test]
+    #[cfg(feature = "std")]
     async fn test_loader() {
-        //  File_system::Tests::Test_loader(Initialize());
+        File_system::Tests::Test_loader(Initialize());
     }
 }

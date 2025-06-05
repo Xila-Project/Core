@@ -3,6 +3,10 @@ name = "LittleFS"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+std = ["File_system/std"]
+default = []
+
 [dependencies]
 File_system = { path = "../File_system" }
 Task = { path = "../Task" }
