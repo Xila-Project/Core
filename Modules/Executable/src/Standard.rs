@@ -1,3 +1,4 @@
+use alloc::string::String;
 use File_system::{
     File_identifier_type, Mode_type, Path_type, Size_type, Unique_file_identifier_type,
 };

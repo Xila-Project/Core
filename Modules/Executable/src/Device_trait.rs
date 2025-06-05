@@ -1,3 +1,4 @@
+use alloc::string::String;
 use File_system::Device_trait;
 use Task::Task_identifier_type;
 use Virtual_file_system::Virtual_file_system_type;

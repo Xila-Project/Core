@@ -1,4 +1,6 @@
-use std::{mem::transmute, num::NonZeroUsize};
+use core::{mem::transmute, num::NonZeroUsize};
+
+use alloc::string::String;
 
 use crate::Standard_type;
 

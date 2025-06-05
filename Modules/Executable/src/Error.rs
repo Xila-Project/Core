@@ -1,5 +1,5 @@
+use core::fmt::Display;
 use core::result::Result;
-use std::fmt::Display;
 
 pub type Result_type<T> = Result<T, Error_type>;
 

@@ -1,12 +1,16 @@
+#![no_std]
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
+
+extern crate alloc;
 
 mod Device_trait;
 mod Error;
 mod Read_data;
 mod Standard;
 
+use alloc::string::String;
 pub use Device_trait::*;
 pub use Error::*;
 pub use Read_data::*;
@@ -18,7 +22,7 @@ use Virtual_file_system::File_type;
 
 use File_system::{Path_type, Statistics_type};
 
-fn Is_execute_allowed(Statistics: &Statistics_type, User: User_identifier_type) -> bool {
+async fn Is_execute_allowed(Statistics: &Statistics_type, User: User_identifier_type) -> bool {
     // - Check if the file can executed by anyone
     if Statistics.Get_permissions().Get_others().Get_execute() {
         return true;
@@ -33,7 +37,10 @@ fn Is_execute_allowed(Statistics: &Statistics_type, User: User_identifier_type) 
     }
 
     // - Check if the user is in the group
-    let Is_in_group = Users::Get_instance().Is_in_group(User, Statistics.Get_group());
+    let Is_in_group = Users::Get_instance()
+        .await
+        .Is_in_group(User, Statistics.Get_group())
+        .await;
 
     // - Check if the user is in the group
     if (Is_in_group) && Statistics.Get_permissions().Get_group().Get_execute() {
@@ -86,7 +93,9 @@ pub async fn Execute(
     if !Is_execute_allowed(
         &File.Get_statistics().await?,
         Task_instance.Get_user(Task).await?,
-    ) {
+    )
+    .await
+    {
         return Err(Error_type::Permission_denied);
     }
 
@@ -128,10 +137,12 @@ pub async fn Execute(
 mod Tests {
     use File_system::Time_type;
 
+    use Task::Test;
+
     use super::*;
 
-    #[test]
-    fn Is_user_allowed_test() {
+    #[Test]
+    async fn Is_user_allowed_test() {
         let Statistics = Statistics_type::New(
             File_system::File_system_identifier_type::New(0),
             File_system::Inode_type::New(0),
@@ -146,17 +157,8 @@ mod Tests {
             Users::Group_identifier_type::Root,
         );
 
-        assert!(Is_execute_allowed(
-            &Statistics,
-            Users::User_identifier_type::Root
-        ));
-        assert!(Is_execute_allowed(
-            &Statistics,
-            Users::User_identifier_type::Root
-        ));
-        assert!(Is_execute_allowed(
-            &Statistics,
-            Users::User_identifier_type::Root
-        ));
+        assert!(Is_execute_allowed(&Statistics, Users::User_identifier_type::Root).await);
+        assert!(Is_execute_allowed(&Statistics, Users::User_identifier_type::Root).await);
+        assert!(Is_execute_allowed(&Statistics, Users::User_identifier_type::Root).await);
     }
 }
