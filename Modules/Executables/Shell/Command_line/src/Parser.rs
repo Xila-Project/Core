@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use crate::{
     Error::{Error_type, Result_type},
     Tokenizer::Token_type,
@@ -53,6 +55,8 @@ pub fn Parse(Tokens: Vec<Token_type<'_>>) -> Result_type<Vec<Command_type<'_>>> 
 
 #[cfg(test)]
 mod Tests {
+    use alloc::vec;
+
     use super::*;
 
     #[test]

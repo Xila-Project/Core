@@ -1,5 +1,7 @@
+use alloc::string::String;
 use Executable::{Device_executable_trait, Read_data_type};
 use File_system::{Create_device, Device_trait};
+use Futures::block_on;
 use Task::Task_identifier_type;
 use Virtual_file_system::Virtual_file_system_type;
 
@@ -12,13 +14,12 @@ impl Device_executable_trait for Shell_executable_type {
         Virtual_file_system: &'a Virtual_file_system_type<'a>,
         Task: Task_identifier_type,
     ) -> Result<(), String> {
-        Virtual_file_system
-            .Mount_static_device(
-                Task,
-                &"/Binaries/Graphical_shell",
-                Create_device!(Shell_executable_type),
-            )
-            .unwrap();
+        block_on(Virtual_file_system.Mount_static_device(
+            Task,
+            &"/Binaries/Graphical_shell",
+            Create_device!(Shell_executable_type),
+        ))
+        .unwrap();
 
         Ok(())
     }

@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Redirect_type_type {
     Output,
@@ -75,6 +77,8 @@ pub fn Tokenize<'a>(Input: &'a [&'a str]) -> Vec<Token_type<'a>> {
 
 #[cfg(test)]
 mod Tests {
+    use alloc::vec::Vec;
+
     use super::*;
 
     #[test]

@@ -10,6 +10,7 @@ Executable = { path = "../../../Executable" }
 Task = { path = "../../../Task" }
 Users = { path = "../../../Users" }
 Authentication = { path = "../../../Authentication" }
+Futures = { version = "0.1.0", path = "../../../Futures" }
 
 [dev-dependencies]
 Drivers = { path = "../../../Drivers" }

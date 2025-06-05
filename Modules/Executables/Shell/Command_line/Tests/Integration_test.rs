@@ -1,16 +1,21 @@
+#![no_std]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 
+extern crate alloc;
+
+use alloc::string::ToString;
 use Command_line_shell::Shell_executable_type;
 use Executable::Standard_type;
 use File_system::{Create_device, Create_file_system, Memory_device_type, Mode_type};
+use Task::Test;
 use Users::Group_identifier_type;
 
 #[ignore]
-#[test]
-fn Integration_test() {
-    let Task_instance = Task::Initialize().unwrap();
+#[Test]
+async fn Integration_test() {
+    let Task_instance = Task::Initialize();
 
     let _ = Users::Initialize();
 
@@ -24,26 +29,31 @@ fn Integration_test() {
 
     Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
 
-    let Task = Task_instance.Get_current_task_identifier().unwrap();
+    let Task = Task_instance.Get_current_task_identifier().await;
 
     Virtual_file_system::Get_instance()
         .Mount_static_device(Task, &"/Shell", Create_device!(Shell_executable_type))
+        .await
         .unwrap();
 
     Virtual_file_system::Get_instance()
         .Create_directory(&"/Devices", Task)
+        .await
         .unwrap();
 
     Virtual_file_system::Get_instance()
-        .Create_directory(&"/Xila", Task)
+        .Create_directory(&"/System", Task)
+        .await
         .unwrap();
 
     Virtual_file_system::Get_instance()
-        .Create_directory(&"/Xila/Users", Task)
+        .Create_directory(&"/System/Users", Task)
+        .await
         .unwrap();
 
     Virtual_file_system::Get_instance()
-        .Create_directory(&"/Xila/Groups", Task)
+        .Create_directory(&"/System/Groups", Task)
+        .await
         .unwrap();
 
     Virtual_file_system::Get_instance()
@@ -52,6 +62,7 @@ fn Integration_test() {
             &"/Devices/Random",
             Create_device!(Drivers::Native::Random_device_type),
         )
+        .await
         .unwrap();
 
     let Group_identifier = Group_identifier_type::New(1000);
@@ -61,6 +72,7 @@ fn Integration_test() {
         "alix_anneraud",
         Some(Group_identifier),
     )
+    .await
     .unwrap();
 
     Authentication::Create_user(
@@ -70,16 +82,21 @@ fn Integration_test() {
         Group_identifier,
         None,
     )
+    .await
     .unwrap();
 
-    Drivers::Native::Console::Mount_devices(Task, Virtual_file_system::Get_instance()).unwrap();
+    Drivers::Native::Console::Mount_devices(Task, Virtual_file_system::Get_instance())
+        .await
+        .unwrap();
 
     let Standard_in = Virtual_file_system::Get_instance()
         .Open(&"/Devices/Standard_in", Mode_type::Read_only.into(), Task)
+        .await
         .unwrap();
 
     let Standard_out = Virtual_file_system::Get_instance()
         .Open(&"/Devices/Standard_out", Mode_type::Write_only.into(), Task)
+        .await
         .unwrap();
 
     let Standard_error = Virtual_file_system::Get_instance()
@@ -88,6 +105,7 @@ fn Integration_test() {
             Mode_type::Write_only.into(),
             Task,
         )
+        .await
         .unwrap();
 
     let Standard = Standard_type::New(
@@ -100,16 +118,19 @@ fn Integration_test() {
 
     Task_instance
         .Set_environment_variable(Task, "Paths", "/")
+        .await
         .unwrap();
 
     Task_instance
         .Set_environment_variable(Task, "Host", "xila")
+        .await
         .unwrap();
 
     let Result = Executable::Execute("/Shell", "".to_string(), Standard)
+        .await
         .unwrap()
         .Join()
-        .unwrap();
+        .await;
 
     assert!(Result == 0);
 }

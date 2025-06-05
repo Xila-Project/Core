@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, ffi::CString, os::raw::c_void};
+use core::ffi::c_void;
 
 use crate::{
     Error::{Error_type, Result_type},
@@ -6,8 +6,16 @@ use crate::{
     Shortcut::{Shortcut_path, Shortcut_type},
 };
 
+use alloc::{
+    collections::btree_map::BTreeMap,
+    ffi::CString,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
 use Executable::Standard_type;
 use File_system::{Mode_type, Type_type};
+use Futures::block_on;
 use Graphics::{Color_type, Event_code_type, Point_type, Window_type, LVGL};
 use Virtual_file_system::Directory_type;
 
@@ -51,9 +59,9 @@ unsafe extern "C" fn Event_handler(Event: *mut LVGL::lv_event_t) {
 impl Drop for Desk_type {
     fn drop(&mut self) {
         unsafe {
-            if let Ok(_Lock) = Graphics::Get_instance().Lock() {
-                LVGL::lv_obj_delete(self.Dock);
-            }
+            let _Lock = block_on(Graphics::Get_instance().Lock());
+
+            LVGL::lv_obj_delete(self.Dock);
         }
     }
 }
@@ -72,12 +80,14 @@ impl Desk_type {
         unsafe { LVGL::lv_obj_has_flag(self.Dock, LVGL::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN) }
     }
 
-    pub fn New(Windows_parent: *mut LVGL::lv_obj_t) -> Result_type<Self> {
+    pub async fn New(Windows_parent: *mut LVGL::lv_obj_t) -> Result_type<Self> {
+        let Graphics = Graphics::Get_instance();
+
         // - Lock the graphics
-        let _Lock = Graphics::Get_instance().Lock()?; // Lock the graphics
+        let _Lock = Graphics.Lock().await; // Lock the graphics
 
         // - Create a window
-        let mut Window = Graphics::Get_instance().Create_window()?;
+        let mut Window = Graphics.Create_window().await?;
 
         Window.Set_icon("De", Color_type::Black);
 
@@ -234,18 +244,22 @@ impl Desk_type {
         Ok(())
     }
 
-    unsafe fn Create_drawer_interface(&mut self, Drawer: *mut LVGL::lv_obj_t) -> Result_type<()> {
-        let Task = Task::Get_instance()
-            .Get_current_task_identifier()
-            .map_err(Error_type::Failed_to_get_current_task_identifier)?;
+    async unsafe fn Create_drawer_interface(
+        &mut self,
+        Drawer: *mut LVGL::lv_obj_t,
+    ) -> Result_type<()> {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Virtual_file_system = Virtual_file_system::Get_instance();
 
-        let _ = Virtual_file_system.Create_directory(&Shortcut_path, Task);
+        let _ = Virtual_file_system
+            .Create_directory(&Shortcut_path, Task)
+            .await;
 
         let mut Buffer: Vec<u8> = vec![];
 
         let Shortcuts_directory = Directory_type::Open(Virtual_file_system, Shortcut_path)
+            .await
             .map_err(Error_type::Failed_to_read_shortcut_directory)?;
 
         for Shortcut_entry in Shortcuts_directory {
@@ -257,7 +271,7 @@ impl Desk_type {
                 continue;
             }
 
-            match Shortcut_type::Read(Shortcut_entry.Get_name(), &mut Buffer) {
+            match Shortcut_type::Read(Shortcut_entry.Get_name(), &mut Buffer).await {
                 Ok(Shortcut) => {
                     self.Create_drawer_shortcut(
                         Shortcut_entry.Get_name(),
@@ -277,25 +291,26 @@ impl Desk_type {
         Ok(())
     }
 
-    fn Execute_shortcut(&self, Shortcut_name: &str) -> Result_type<()> {
-        let Task = Task::Get_instance()
-            .Get_current_task_identifier()
-            .map_err(Error_type::Failed_to_get_current_task_identifier)?;
+    async fn Execute_shortcut(&self, Shortcut_name: &str) -> Result_type<()> {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let mut Buffer = vec![];
 
-        let Shortcut = Shortcut_type::Read(Shortcut_name, &mut Buffer)?;
+        let Shortcut = Shortcut_type::Read(Shortcut_name, &mut Buffer).await?;
 
         let Standard_in = Virtual_file_system::Get_instance()
             .Open(&"/Devices/Null", Mode_type::Read_only.into(), Task)
+            .await
             .map_err(Error_type::Failed_to_open_standard_file)?;
 
         let Standard_out = Virtual_file_system::Get_instance()
             .Open(&"/Devices/Null", Mode_type::Write_only.into(), Task)
+            .await
             .map_err(Error_type::Failed_to_open_standard_file)?;
 
         let Standard_err = Virtual_file_system::Get_instance()
             .Open(&"/Devices/Null", Mode_type::Write_only.into(), Task)
+            .await
             .map_err(Error_type::Failed_to_open_standard_file)?;
 
         Executable::Execute(
@@ -309,17 +324,18 @@ impl Desk_type {
                 Virtual_file_system::Get_instance(),
             ),
         )
+        .await
         .map_err(Error_type::Failed_to_execute_shortcut)?;
 
         Ok(())
     }
 
-    fn Refresh_dock(&self) -> Result_type<()> {
+    async fn Refresh_dock(&self) -> Result_type<()> {
         let Dock_child_count = unsafe { LVGL::lv_obj_get_child_count(self.Dock) };
 
         let Graphics_manager = Graphics::Get_instance();
 
-        let Window_count = Graphics_manager.Get_window_count()?;
+        let Window_count = Graphics_manager.Get_window_count().await?;
 
         // Remove the icons of the windows that are not in the dock
         for i in 1..Dock_child_count {
@@ -331,13 +347,16 @@ impl Desk_type {
 
             let Dock_window_identifier = unsafe { LVGL::lv_obj_get_user_data(Icon) as usize };
 
-            let Found = (1..Window_count).find(|&i| {
-                if let Ok(Window_identifier) = Graphics_manager.Get_window_identifier(i) {
-                    Window_identifier == Dock_window_identifier
-                } else {
-                    false
+            let mut Found = Option::None;
+
+            for i in 1..Window_count {
+                if let Ok(Window_identifier) = Graphics_manager.Get_window_identifier(i).await {
+                    if Window_identifier == Dock_window_identifier {
+                        Found = Some(Window_identifier);
+                        break;
+                    }
                 }
-            });
+            }
 
             if Found.is_none() {
                 unsafe {
@@ -349,7 +368,7 @@ impl Desk_type {
         // Add the new icons
         for i in 1..Window_count {
             let Window_identifier =
-                if let Ok(Window_identifier) = Graphics_manager.Get_window_identifier(i) {
+                if let Ok(Window_identifier) = Graphics_manager.Get_window_identifier(i).await {
                     Window_identifier
                 } else {
                     continue;
@@ -368,9 +387,9 @@ impl Desk_type {
 
             // If the window is not in the dock, add it
             if Found.is_none() {
-                let (Icon_string, Icon_color) = Graphics_manager.Get_window_icon(i)?;
+                let (Icon_string, Icon_color) = Graphics_manager.Get_window_icon(i).await?;
 
-                let Window_identifier = Graphics_manager.Get_window_identifier(i)?;
+                let Window_identifier = Graphics_manager.Get_window_identifier(i).await?;
 
                 unsafe {
                     let Icon =
@@ -384,8 +403,8 @@ impl Desk_type {
         Ok(())
     }
 
-    pub fn Event_handler(&mut self) {
-        let _Lock = Graphics::Get_instance().Lock().unwrap();
+    pub async fn Event_handler(&mut self) {
+        let _Lock = Graphics::Get_instance().Lock().await;
         while let Some(Event) = self.Window.Pop_event() {
             match Event.Get_code() {
                 Self::Home_event => unsafe {
@@ -402,7 +421,7 @@ impl Desk_type {
                             if LVGL::lv_tileview_get_tile_active(self.Tile_view) == self.Desk_tile {
                                 LVGL::lv_obj_clean(self.Drawer_tile);
                             } else if LVGL::lv_obj_get_child_count(self.Drawer_tile) == 0 {
-                                let _ = self.Create_drawer_interface(self.Drawer_tile);
+                                let _ = self.Create_drawer_interface(self.Drawer_tile).await;
                             }
                         }
                     }
@@ -410,7 +429,7 @@ impl Desk_type {
                 Event_code_type::Clicked => {
                     // If the target is a shortcut, execute the shortcut
                     if let Some(Shortcut_name) = self.Shortcuts.get(&Event.Get_target()) {
-                        if let Err(Error) = self.Execute_shortcut(Shortcut_name) {
+                        if let Err(Error) = self.Execute_shortcut(Shortcut_name).await {
                             // ? : Log error ?
                             todo!("Failed to execute shortcut {}", Error.to_string());
                         }
@@ -427,6 +446,7 @@ impl Desk_type {
 
                         Graphics::Get_instance()
                             .Maximize_window(Window_identifier)
+                            .await
                             .unwrap();
                     }
                 }
@@ -481,7 +501,7 @@ impl Desk_type {
                         }
                     }
 
-                    self.Refresh_dock().unwrap();
+                    self.Refresh_dock().await.unwrap();
                 }
                 _ => {}
             }

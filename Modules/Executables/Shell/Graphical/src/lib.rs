@@ -1,7 +1,11 @@
+#![no_std]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 
+extern crate alloc;
+
+use alloc::boxed::Box;
 use Desk::Desk_type;
 use Executable::Standard_type;
 use Home::Home_type;

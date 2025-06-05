@@ -1,3 +1,4 @@
+use alloc::{format, string::String};
 use Graphics::LVGL;
 use Shared::Unix_to_human_time;
 
@@ -20,26 +21,23 @@ impl Drop for Layout_type {
 }
 
 impl Layout_type {
-    pub fn Loop(&mut self) {
-        self.Update_clock();
+    pub async fn Loop(&mut self) {
+        self.Update_clock().await;
     }
 
-    fn Update_clock(&mut self) {
+    async fn Update_clock(&mut self) {
         // - Update the clock
         let Current_time = Time::Get_instance().Get_current_time();
 
         if let Ok(Current_time) = Current_time {
             let (_, _, _, Hour, Minute, _) = Unix_to_human_time(Current_time.As_seconds() as i64);
 
-            if let Ok(_Lock) = Graphics::Get_instance().Lock() {
-                self.Clock_string = format!("{:02}:{:02}\0", Hour, Minute);
+            let _ = Graphics::Get_instance().Lock().await;
 
-                unsafe {
-                    LVGL::lv_label_set_text_static(
-                        self.Clock,
-                        self.Clock_string.as_ptr() as *const i8,
-                    );
-                }
+            self.Clock_string = format!("{:02}:{:02}\0", Hour, Minute);
+
+            unsafe {
+                LVGL::lv_label_set_text_static(self.Clock, self.Clock_string.as_ptr() as *const i8);
             }
         }
     }
@@ -48,8 +46,8 @@ impl Layout_type {
         self.Window
     }
 
-    pub fn New() -> Result_type<Self> {
-        let _Lock = Graphics::Get_instance().Lock()?; // Lock the graphics
+    pub async fn New() -> Result_type<Self> {
+        let _Lock = Graphics::Get_instance().Lock().await; // Lock the graphics
 
         // - Create a window
         let Window = unsafe {
@@ -155,7 +153,7 @@ impl Layout_type {
 
         drop(_Lock); // Unlock the graphics
 
-        Graphics::Get_instance().Set_window_parent(Body)?;
+        Graphics::Get_instance().Set_window_parent(Body).await?;
 
         Ok(Self {
             Window,

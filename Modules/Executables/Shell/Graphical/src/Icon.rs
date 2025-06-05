@@ -1,5 +1,4 @@
-use std::ffi::CString;
-
+use alloc::ffi::CString;
 use Graphics::{Color_type, Point_type, LVGL};
 
 use crate::Error::{Error_type, Result_type};

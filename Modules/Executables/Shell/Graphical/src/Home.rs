@@ -1,4 +1,4 @@
-use std::ptr::null_mut;
+use core::ptr::null_mut;
 
 use Graphics::LVGL;
 
@@ -17,8 +17,8 @@ impl Drop for Home_type {
 }
 
 impl Home_type {
-    pub fn New(Desk: *mut LVGL::lv_obj_t) -> Result_type<Self> {
-        let _Lock = Graphics::Get_instance().Lock()?; // Lock the graphics
+    pub async fn New(Desk: *mut LVGL::lv_obj_t) -> Result_type<Self> {
+        let _Lock = Graphics::Get_instance().Lock().await; // Lock the graphics
 
         let Button = unsafe {
             let Button = LVGL::lv_obj_create(LVGL::lv_layer_top());
