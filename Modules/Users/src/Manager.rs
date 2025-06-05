@@ -17,8 +17,10 @@ pub fn Initialize() -> &'static Manager_type {
     Manager_instance.get_or_init(Manager_type::New)
 }
 
-pub async fn Get_instance() -> &'static Manager_type {
-    Manager_instance.get().await
+pub fn Get_instance() -> &'static Manager_type {
+    Manager_instance
+        .try_get()
+        .expect("User manager instance not initialized")
 }
 
 struct Internal_user_type {
