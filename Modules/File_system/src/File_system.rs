@@ -13,7 +13,7 @@ use Users::{Group_identifier_type, User_identifier_type};
 #[macro_export]
 macro_rules! Create_file_system {
     ($file_system:expr) => {
-        std::boxed::Box::new($file_system)
+        alloc::boxed::Box::new($file_system)
     };
     () => {};
 }
