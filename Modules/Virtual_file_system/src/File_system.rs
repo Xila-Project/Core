@@ -40,23 +40,22 @@ struct Internal_file_system_type {
 /// It is a pragmatic choice for efficiency in embedded systems contexts (avoid using Arc).
 static Virtual_file_system_instance: OnceLock<Virtual_file_system_type> = OnceLock::new();
 
-pub async fn Initialize(
+pub fn Initialize(
     Root_file_system: Box<dyn File_system_traits>,
     Network_socket_driver: Option<&'static dyn Network_socket_driver_trait>,
 ) -> Result<&'static Virtual_file_system_type<'static>, crate::Error_type> {
     let Virtual_file_system = Virtual_file_system_type::New(
         Task::Get_instance(),
-        Users::Get_instance().await,
+        Users::Get_instance(),
         Time::Get_instance(),
         Root_file_system,
         Network_socket_driver,
-    )
-    .await?;
+    )?;
 
     Ok(Virtual_file_system_instance.get_or_init(|| Virtual_file_system))
 }
 
-pub async fn Get_instance() -> &'static Virtual_file_system_type<'static> {
+pub fn Get_instance() -> &'static Virtual_file_system_type<'static> {
     Virtual_file_system_instance
         .try_get()
         .expect("Virtual file system not initialized")
@@ -84,7 +83,7 @@ impl<'a> Virtual_file_system_type<'a> {
     pub const Standard_output_file_identifier: File_identifier_type = File_identifier_type::New(1);
     pub const Standard_error_file_identifier: File_identifier_type = File_identifier_type::New(2);
 
-    pub async fn New(
+    pub fn New(
         _: &'static Task::Manager_type,
         _: &'static Users::Manager_type,
         _: &'static Time::Manager_type,
@@ -107,7 +106,7 @@ impl<'a> Virtual_file_system_type<'a> {
         Ok(Self {
             File_systems: RwLock::new(File_systems),
             Device_file_system: Device::File_system_type::New(),
-            Pipe_file_system: Pipe::File_system_type::New().await,
+            Pipe_file_system: Pipe::File_system_type::New(),
             Network_socket_driver,
         })
     }
@@ -184,10 +183,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance()
-            .await
-            .Get_user_primary_group(User)
-            .await?;
+        let Group = Users::Get_instance().Get_user_primary_group(User).await?;
 
         Parent_file_system.Create_directory(Relative_path, Time, User, Group)?;
 
@@ -307,10 +303,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance()
-            .await
-            .Get_user_primary_group(User)
-            .await?;
+        let Group = Users::Get_instance().Get_user_primary_group(User).await?;
 
         let Local_file = File_system.Open(Task, Relative_path, Flags, Time, User, Group)?;
 
@@ -706,10 +699,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance()
-            .await
-            .Get_user_primary_group(User)
-            .await?;
+        let Group = Users::Get_instance().Get_user_primary_group(User).await?;
 
         let File = File_system.Open(
             Task,
@@ -734,10 +724,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance()
-            .await
-            .Get_user_primary_group(User)
-            .await?;
+        let Group = Users::Get_instance().Get_user_primary_group(User).await?;
 
         let mut Metadata = Metadata_type::Get_default(Type_type::Block_device, Time, User, Group)
             .ok_or(Error_type::Invalid_parameter)?;
@@ -767,10 +754,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance()
-            .await
-            .Get_user_primary_group(User)
-            .await?;
+        let Group = Users::Get_instance().Get_user_primary_group(User).await?;
 
         let File = File_system.Open(
             Task,
@@ -802,10 +786,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance()
-            .await
-            .Get_user_primary_group(User)
-            .await?;
+        let Group = Users::Get_instance().Get_user_primary_group(User).await?;
 
         // Set the metadata of the special file.
         let mut Metadata = Metadata_type::Get_default(Type, Time, User, Group)
@@ -834,10 +815,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance()
-            .await
-            .Get_user_primary_group(User)
-            .await?;
+        let Group = Users::Get_instance().Get_user_primary_group(User).await?;
 
         let File = File_system.Open(
             Task,
@@ -859,10 +837,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance()
-            .await
-            .Get_user_primary_group(User)
-            .await?;
+        let Group = Users::Get_instance().Get_user_primary_group(User).await?;
 
         let mut Metadata = Metadata_type::Get_default(Type_type::Pipe, Time, User, Group)
             .ok_or(Error_type::Invalid_parameter)?;
@@ -1216,10 +1191,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let User = Task::Get_instance().Get_user(Task).await?;
 
-        let Group = Users::Get_instance()
-            .await
-            .Get_user_primary_group(User)
-            .await?;
+        let Group = Users::Get_instance().Get_user_primary_group(User).await?;
 
         File_system.Create_directory(Relative_path, Time, User, Group)
     }
