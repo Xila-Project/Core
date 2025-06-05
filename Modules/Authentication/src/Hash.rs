@@ -9,7 +9,7 @@ use crate::{Error_type, Random_device_path, Result_type};
 
 pub async fn Generate_salt() -> Result_type<String> {
     let Random_file = File_type::Open(
-        Virtual_file_system::Get_instance().await,
+        Virtual_file_system::Get_instance(),
         Random_device_path,
         Mode_type::Read_only.into(),
     )

@@ -89,7 +89,7 @@ pub async fn Create_group<'a>(
     Group_name: &str,
     Group_identifier: Option<Group_identifier_type>,
 ) -> Result_type<Group_identifier_type> {
-    let Users_manager = Users::Get_instance().await;
+    let Users_manager = Users::Get_instance();
 
     // - New group identifier if not provided.
     let Group_identifier = if let Some(Group_identifier) = Group_identifier {

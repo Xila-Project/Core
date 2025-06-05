@@ -24,9 +24,9 @@ pub async fn Load_all_users_and_groups() -> Result_type<()> {
     use User::Read_user_file;
     use Virtual_file_system::Directory_type;
     // Open Xila users folder.
-    let Virtual_file_system = &Virtual_file_system::Get_instance().await;
+    let Virtual_file_system = Virtual_file_system::Get_instance();
 
-    let Users_manager = Users::Get_instance().await;
+    let Users_manager = Users::Get_instance();
 
     let mut Buffer: Vec<u8> = vec![];
 

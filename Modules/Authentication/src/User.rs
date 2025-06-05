@@ -122,7 +122,7 @@ pub async fn Create_user<'a>(
     Primary_group: Group_identifier_type,
     User_identifier: Option<User_identifier_type>,
 ) -> Result_type<User_identifier_type> {
-    let Users_manager = Users::Get_instance().await;
+    let Users_manager = Users::Get_instance();
 
     // - New user identifier if not provided.
     let User_identifier = if let Some(User_identifier) = User_identifier {
