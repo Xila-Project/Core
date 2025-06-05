@@ -1,5 +1,7 @@
-use std::{ffi::CStr, sync::RwLock};
+use alloc::string::String;
+use core::ffi::CStr;
 use Graphics::{Color_type, Event_code_type, Key_type, Window_type, LVGL};
+use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
 use crate::Error::Result_type;
 
@@ -11,7 +13,7 @@ pub(crate) struct Inner_type {
     Validated: bool,
 }
 
-pub struct Terminal_type(pub(crate) RwLock<Inner_type>);
+pub struct Terminal_type(pub(crate) RwLock<CriticalSectionRawMutex, Inner_type>);
 
 unsafe impl Send for Terminal_type {}
 
@@ -21,10 +23,10 @@ impl Terminal_type {
     const Clear: &'static str = "\x1B[2J";
     const Home: &'static str = "\x1B[H";
 
-    pub fn New() -> Result_type<Self> {
-        let _Lock = Graphics::Get_instance().Lock()?;
+    pub async fn New() -> Result_type<Self> {
+        let _Lock = Graphics::Get_instance().Lock().await;
 
-        let mut Window = Graphics::Get_instance().Create_window()?;
+        let mut Window = Graphics::Get_instance().Create_window().await?;
 
         unsafe {
             Window.Set_icon(">_", Color_type::Black);
@@ -90,15 +92,15 @@ impl Terminal_type {
         Ok(Self(RwLock::new(Inner)))
     }
 
-    pub fn Print(&self, Text: &str) -> Result_type<()> {
-        let mut Inner = self.0.write()?;
+    pub async fn Print(&self, Text: &str) -> Result_type<()> {
+        let mut Inner = self.0.write().await;
 
-        Self::Print_internal(&mut Inner, Text)?;
+        Self::Print_internal(&mut Inner, Text).await?;
 
         Ok(())
     }
 
-    fn Print_internal(Inner: &mut Inner_type, Text: &str) -> Result_type<()> {
+    async fn Print_internal(Inner: &mut Inner_type, Text: &str) -> Result_type<()> {
         if !Inner.Buffer.is_empty() {
             let Last_index = Inner.Buffer.len() - 1;
 
@@ -122,7 +124,7 @@ impl Terminal_type {
         Inner.Buffer += &Text[Start_index..];
         Inner.Buffer += "\0";
 
-        let _Lock = Graphics::Get_instance().Lock().unwrap();
+        let _Lock = Graphics::Get_instance().Lock().await;
 
         unsafe {
             LVGL::lv_label_set_text(Inner.Display, Inner.Buffer.as_ptr() as *const i8);
@@ -132,7 +134,7 @@ impl Terminal_type {
         Ok(())
     }
 
-    fn Print_line_internal(Inner: &mut Inner_type, Text: &str) -> Result_type<()> {
+    async fn Print_line_internal(Inner: &mut Inner_type, Text: &str) -> Result_type<()> {
         if !Inner.Buffer.is_empty() {
             let Last_index = Inner.Buffer.len() - 1;
 
@@ -149,7 +151,7 @@ impl Terminal_type {
         Inner.Buffer += Text[Start_index..].trim();
         Inner.Buffer += "\n\0";
 
-        let _Lock = Graphics::Get_instance().Lock().unwrap();
+        let _Lock = Graphics::Get_instance().Lock().await;
 
         unsafe {
             LVGL::lv_label_set_text(Inner.Display, Inner.Buffer.as_ptr() as *const i8);
@@ -159,14 +161,14 @@ impl Terminal_type {
         Ok(())
     }
 
-    pub fn Read_input(&self, String: &mut String) -> Result_type<usize> {
-        let mut Inner = self.0.write()?;
+    pub async fn Read_input(&self, String: &mut String) -> Result_type<usize> {
+        let mut Inner = self.0.write().await;
 
         if !Inner.Validated {
             return Ok(0);
         }
 
-        let _Lock = Graphics::Get_instance().Lock()?;
+        let _Lock = Graphics::Get_instance().Lock().await;
 
         let Text = unsafe {
             let Text = LVGL::lv_textarea_get_text(Inner.Input);
@@ -185,8 +187,8 @@ impl Terminal_type {
         Ok(Text.len())
     }
 
-    pub fn Event_handler(&self) -> Result_type<bool> {
-        let mut Inner = self.0.write()?;
+    pub async fn Event_handler(&self) -> Result_type<bool> {
+        let mut Inner = self.0.write().await;
 
         while let Some(Event) = Inner.Window.Pop_event() {
             match Event.Get_code() {
@@ -198,7 +200,7 @@ impl Terminal_type {
                         }
 
                         if Character == b'\n' || Character == b'\r' {
-                            let _Lock = Graphics::Get_instance().Lock()?;
+                            let _Lock = Graphics::Get_instance().Lock().await;
 
                             let Text = unsafe {
                                 let Text = LVGL::lv_textarea_get_text(Inner.Input);
@@ -208,7 +210,7 @@ impl Terminal_type {
 
                             drop(_Lock);
 
-                            Self::Print_line_internal(&mut Inner, Text)?;
+                            Self::Print_line_internal(&mut Inner, Text).await?;
 
                             Inner.Validated = true;
                         }
