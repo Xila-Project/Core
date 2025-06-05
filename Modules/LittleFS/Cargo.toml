@@ -10,6 +10,7 @@ Users = { path = "../Users" }
 Time = { path = "../Time" }
 littlefs2-sys = "0.3.1"
 Synchronization = { version = "0.1.0", path = "../Synchronization" }
+Futures = { path = "../Futures" }
 
 [dev-dependencies]
 Drivers = { path = "../Drivers" }

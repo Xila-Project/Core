@@ -1,9 +1,9 @@
-use std::{
-    ffi::{c_void, CString},
+use core::{
+    ffi::c_void,
     mem::{forget, MaybeUninit},
-    rc::Rc,
 };
 
+use alloc::{boxed::Box, ffi::CString, rc::Rc, vec, vec::Vec};
 use File_system::{
     Error_type, File_system_identifier_type, Flags_type, Inode_type, Metadata_type, Mode_type,
     Path_type, Position_type, Result_type, Size_type, Statistics_type, Time_type, Type_type,
