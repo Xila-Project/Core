@@ -22,7 +22,7 @@ pub async fn Load_all_users_and_groups() -> Result_type<()> {
     // Open Xila users folder.
     let Virtual_file_system = &Virtual_file_system::Get_instance().await;
 
-    let Users_manager = Users::Get_instance();
+    let Users_manager = Users::Get_instance().await;
 
     let mut Buffer: Vec<u8> = vec![];
 
@@ -44,6 +44,7 @@ pub async fn Load_all_users_and_groups() -> Result_type<()> {
 
             Users_manager
                 .Add_group(Group.Get_identifier(), Group.Get_name(), Group.Get_users())
+                .await
                 .map_err(Error_type::Failed_to_add_group)?;
         }
     }
@@ -70,6 +71,7 @@ pub async fn Load_all_users_and_groups() -> Result_type<()> {
                     User.Get_name(),
                     User.Get_primary_group(),
                 )
+                .await
                 .map_err(Error_type::Failed_to_add_user)?;
         }
     }

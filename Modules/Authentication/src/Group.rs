@@ -83,7 +83,7 @@ pub async fn Create_group<'a>(
     Group_name: &str,
     Group_identifier: Option<Group_identifier_type>,
 ) -> Result_type<Group_identifier_type> {
-    let Users_manager = Users::Get_instance();
+    let Users_manager = Users::Get_instance().await;
 
     // - New group identifier if not provided.
     let Group_identifier = if let Some(Group_identifier) = Group_identifier {
@@ -91,12 +91,14 @@ pub async fn Create_group<'a>(
     } else {
         Users_manager
             .Get_new_group_identifier()
+            .await
             .map_err(Error_type::Failed_to_get_new_group_identifier)?
     };
 
     // - Add it to the users manager.
     Users_manager
         .Add_group(Group_identifier, Group_name, &[])
+        .await
         .map_err(Error_type::Failed_to_add_group)?;
 
     // - Write group file.

@@ -117,7 +117,7 @@ pub async fn Create_user<'a>(
     Primary_group: Group_identifier_type,
     User_identifier: Option<User_identifier_type>,
 ) -> Result_type<User_identifier_type> {
-    let Users_manager = Users::Get_instance();
+    let Users_manager = Users::Get_instance().await;
 
     // - New user identifier if not provided.
     let User_identifier = if let Some(User_identifier) = User_identifier {
@@ -125,12 +125,14 @@ pub async fn Create_user<'a>(
     } else {
         Users_manager
             .Get_new_user_identifier()
+            .await
             .map_err(Error_type::Failed_to_get_new_user_identifier)?
     };
 
     // - Add it to the users manager.
     Users_manager
         .Add_user(User_identifier, User_name, Primary_group)
+        .await
         .map_err(Error_type::Failed_to_create_user)?;
 
     // - Hash password.
