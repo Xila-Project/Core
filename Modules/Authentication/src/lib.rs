@@ -1,12 +1,16 @@
+#![no_std]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
+
+extern crate alloc;
 
 mod Error;
 mod Group;
 mod Hash;
 mod User;
 
+use alloc::{vec, vec::Vec};
 pub use Error::*;
 pub use Group::*;
 pub use User::*;

@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use core::fmt::Display;
 
 pub type Result_type<T> = Result<T, Error_type>;
 
@@ -32,7 +32,7 @@ pub enum Error_type {
 }
 
 impl Display for Error_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             Self::Failed_to_get_current_task_identifier(Error) => {
                 write!(

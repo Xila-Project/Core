@@ -1,3 +1,9 @@
+use alloc::{
+    borrow::ToOwned,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
 use miniserde::{Deserialize, Serialize};
 use File_system::{Flags_type, Mode_type, Open_type, Path_owned_type, Path_type};
 use Users::{
