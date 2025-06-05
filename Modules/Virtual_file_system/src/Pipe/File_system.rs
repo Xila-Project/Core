@@ -1,5 +1,3 @@
-extern crate alloc;
-
 use alloc::{collections::BTreeMap, string::String, vec::Vec};
 
 use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
@@ -340,8 +338,6 @@ mod Tests {
     use Task::Test;
 
     use super::*;
-
-    extern crate alloc;
 
     #[Test]
     async fn Test_create_unnamed_pipe() {

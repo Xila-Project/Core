@@ -1,5 +1,3 @@
-extern crate alloc;
-
 use alloc::{collections::VecDeque, string::String, sync::Arc};
 
 use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};

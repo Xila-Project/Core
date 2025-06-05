@@ -1,5 +1,3 @@
-extern crate alloc;
-
 use alloc::{collections::BTreeMap, string::String, vec::Vec};
 
 use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
