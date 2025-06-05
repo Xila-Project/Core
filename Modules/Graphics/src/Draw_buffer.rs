@@ -1,5 +1,3 @@
-extern crate alloc;
-
 use alloc::{vec, vec::Vec};
 
 use crate::{Color_RGB565_type, Color_type, Point_type, Rendering_color_type};

@@ -1,5 +1,3 @@
-extern crate alloc;
-
 use core::mem::{size_of, transmute};
 
 use crate::{Area_type, Point_type, Rendering_color_type};

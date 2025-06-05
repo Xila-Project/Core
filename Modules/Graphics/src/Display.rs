@@ -1,5 +1,3 @@
-extern crate alloc;
-
 use alloc::boxed::Box;
 
 use core::{ffi::c_void, ptr::null_mut, slice};
