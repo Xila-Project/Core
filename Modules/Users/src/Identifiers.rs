@@ -1,5 +1,3 @@
-extern crate alloc;
-
 use core::ops::{Add, AddAssign};
 
 pub type User_identifier_inner_type = u16;

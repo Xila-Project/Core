@@ -7,5 +7,6 @@ edition = "2021"
 Synchronization = { version = "0.1.0", path = "../Synchronization" }
 
 [dev-dependencies]
+Drivers = { path = "../Drivers" }
 Futures = { path = "../Futures" }
 Task = { path = "../Task" }

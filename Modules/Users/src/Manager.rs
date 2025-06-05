@@ -1,5 +1,3 @@
-extern crate alloc;
-
 use alloc::{
     collections::{BTreeMap, BTreeSet},
     string::{String, ToString},
