@@ -5,6 +5,9 @@
 
 extern crate alloc;
 
+#[cfg(feature = "std")]
+extern crate std;
+
 mod Device;
 mod Error;
 mod File_system;

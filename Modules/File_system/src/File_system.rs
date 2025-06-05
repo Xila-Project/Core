@@ -689,6 +689,7 @@ pub mod Tests {
 
     #[cfg(feature = "std")]
     pub fn Test_loader(mut File_system: impl File_system_traits) {
+        use crate::Loader::Loader_type;
         use alloc::vec;
 
         // - Load the file in the file system

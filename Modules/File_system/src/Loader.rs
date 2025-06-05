@@ -3,6 +3,9 @@
 #![allow(non_upper_case_globals)]
 
 use core::result::Result;
+
+use std::prelude::rust_2024::*;
+
 use std::io;
 
 use std::{
