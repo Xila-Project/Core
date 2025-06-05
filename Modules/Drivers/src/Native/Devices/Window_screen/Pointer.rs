@@ -21,7 +21,7 @@ impl Device_trait for Pointer_device_type {
             .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
         // Copy the pointer data.
-        *Data = *self.0.lock()?.Get_pointer_data().unwrap();
+        *Data = *self.0.lock().unwrap().Get_pointer_data().unwrap();
 
         Ok(size_of::<Input_data_type>().into())
     }

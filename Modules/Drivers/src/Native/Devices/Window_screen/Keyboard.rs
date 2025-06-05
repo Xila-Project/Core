@@ -20,7 +20,7 @@ impl Device_trait for Keyboard_device_type {
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
-        if let Some((State, Key, Continue)) = self.0.lock()?.Pop_keyboard_data() {
+        if let Some((State, Key, Continue)) = self.0.lock().unwrap().Pop_keyboard_data() {
             Data.Set_state(State);
             Data.Set_key(Key);
             Data.Set_continue(Continue);

@@ -2,6 +2,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 
+extern crate alloc;
 use Task::Task_identifier_type;
 use Virtual_file_system::Virtual_file_system_type;
 

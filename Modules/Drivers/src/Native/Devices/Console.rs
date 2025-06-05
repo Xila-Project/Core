@@ -4,6 +4,8 @@ use File_system::{Create_device, Device_trait, Size_type};
 use Task::Task_identifier_type;
 use Virtual_file_system::Virtual_file_system_type;
 
+use crate::Std::IO::Map_error;
+
 pub struct Standard_in_device_type;
 
 impl Device_trait for Standard_in_device_type {
@@ -43,7 +45,9 @@ impl Device_trait for Standard_out_device_type {
     }
 
     fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<Size_type> {
-        Ok(Size_type::New(stdout().write(Buffer)? as u64))
+        Ok(Size_type::New(
+            stdout().write(Buffer).map_err(Map_error)? as u64
+        ))
     }
 
     fn Get_size(&self) -> File_system::Result_type<Size_type> {
@@ -55,7 +59,7 @@ impl Device_trait for Standard_out_device_type {
     }
 
     fn Flush(&self) -> File_system::Result_type<()> {
-        Ok(stdout().flush()?)
+        Ok(stdout().flush().map_err(Map_error)?)
     }
 
     fn Is_a_terminal(&self) -> bool {
@@ -71,7 +75,9 @@ impl Device_trait for Standard_error_device_type {
     }
 
     fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<Size_type> {
-        Ok(Size_type::New(stderr().write(Buffer)? as u64))
+        Ok(Size_type::New(
+            stderr().write(Buffer).map_err(Map_error)? as u64
+        ))
     }
 
     fn Get_size(&self) -> File_system::Result_type<Size_type> {
@@ -83,7 +89,7 @@ impl Device_trait for Standard_error_device_type {
     }
 
     fn Flush(&self) -> File_system::Result_type<()> {
-        Ok(stderr().flush()?)
+        Ok(stderr().flush().map_err(Map_error)?)
     }
 
     fn Is_a_terminal(&self) -> bool {
