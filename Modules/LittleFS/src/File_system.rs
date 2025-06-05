@@ -698,8 +698,8 @@ mod tests {
         File_system::Tests::Test_create_remove_directory(Initialize()).await;
     }
 
-    #[Test]
     #[cfg(feature = "std")]
+    #[Test]
     async fn test_loader() {
         File_system::Tests::Test_loader(Initialize());
     }
