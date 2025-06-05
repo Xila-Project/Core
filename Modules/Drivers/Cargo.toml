@@ -9,7 +9,7 @@ quote = "1.0.36"
 File_system = { path = "../File_system", optional = true }
 Virtual_file_system = { path = "../Virtual_file_system" }
 Task = { path = "../Task" }
-Users = { path = "../Users" , optional = true}
+Users = { path = "../Users", optional = true }
 Graphics = { path = "../Graphics", optional = true }
 Time = { path = "../Time", optional = true }
 Shared = { path = "../Shared" }
@@ -26,7 +26,7 @@ Futures = { version = "0.1.0", path = "../Futures" }
 
 [features]
 Network = ["dep:Network"]
-Std = []
+Std = ["File_system/std"]
 File_system = ["dep:File_system"]
 Graphics = ["dep:Graphics"]
 Time = ["dep:Time"]
