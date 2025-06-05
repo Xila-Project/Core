@@ -52,6 +52,8 @@ impl DoubleEndedIterator for Components_type<'_> {
 #[cfg(test)]
 mod Tests {
 
+    use alloc::{vec, vec::Vec};
+
     use super::*;
 
     #[test]
