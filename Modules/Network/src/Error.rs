@@ -1,4 +1,4 @@
-use std::{num::NonZeroU8, sync::PoisonError};
+use core::num::NonZeroU8;
 
 pub type Result_type<T> = Result<T, Error_type>;
 
@@ -47,11 +47,5 @@ impl Error_type {
 impl From<Error_type> for NonZeroU8 {
     fn from(Value: Error_type) -> Self {
         Value.Get_discriminant()
-    }
-}
-
-impl<T> From<PoisonError<T>> for Error_type {
-    fn from(_: PoisonError<T>) -> Self {
-        Self::Poisonned_lock
     }
 }
