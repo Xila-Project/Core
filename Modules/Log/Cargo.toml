@@ -1,0 +1,8 @@
+[package]
+name = "Log"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+Synchronization = { version = "0.1.0", path = "../Synchronization" }
+log = { version="0.4" }
