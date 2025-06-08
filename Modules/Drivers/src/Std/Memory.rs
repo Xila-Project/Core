@@ -1,6 +1,5 @@
 use core::{
-    alloc::Layout,
-    cell::{Ref, RefCell},
+    cell::RefCell,
     ffi::c_void,
     mem::MaybeUninit,
     ptr::{null_mut, NonNull},
@@ -116,6 +115,10 @@ impl Manager_trait for Memory_manager_type {
             Free
         })
     }
+
+    fn Get_page_size(&self) -> usize {
+        Get_page_size()
+    }
 }
 
 unsafe fn Is_slice_within_region(
@@ -135,7 +138,7 @@ unsafe fn Is_slice_within_region(
 unsafe fn Expand(Region: &mut Region_type, Tried_size: usize) -> bool {
     let Page_size = Get_page_size();
     // If the region is empty, allocate a new one
-    if Region.Slice.len() == 0 {
+    if Region.Slice.is_empty() {
         let Size = Round_page_size(Tried_size.max(INITIAL_HEAP_SIZE), Page_size);
         let New_slice = Map(Size, Region.Capabilities);
         let New_size = New_slice.len();
@@ -156,7 +159,7 @@ unsafe fn Expand(Region: &mut Region_type, Tried_size: usize) -> bool {
 
     Region.Heap.extend(Difference);
 
-    return true;
+    true
 }
 
 fn Get_page_size() -> usize {
@@ -178,7 +181,7 @@ unsafe fn Map(size: usize, Capabilities: Capabilities_type) -> &'static mut [May
     };
 
     let Pointer = mmap(
-        std::ptr::null_mut(),
+        null_mut(),
         Size,
         Capabilities,
         MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT,
@@ -190,7 +193,7 @@ unsafe fn Map(size: usize, Capabilities: Capabilities_type) -> &'static mut [May
         panic!("Failed to allocate memory");
     }
 
-    std::slice::from_raw_parts_mut(Pointer as *mut MaybeUninit<u8>, Size)
+    core::slice::from_raw_parts_mut(Pointer as *mut MaybeUninit<u8>, Size)
 }
 
 unsafe fn Remap(Slice: &mut &'static mut [MaybeUninit<u8>], New_size: usize) {
@@ -207,7 +210,7 @@ unsafe fn Remap(Slice: &mut &'static mut [MaybeUninit<u8>], New_size: usize) {
 
     //panic!("Reallocated memory from {} to {} bytes", Old_size, New_size);
 
-    *Slice = std::slice::from_raw_parts_mut(Slice.as_mut_ptr(), New_size);
+    *Slice = core::slice::from_raw_parts_mut(Slice.as_mut_ptr(), New_size);
 }
 
 unsafe fn Unmap(Pointer: *mut MaybeUninit<u8>, Size: usize) {
@@ -220,23 +223,21 @@ mod Tests {
 
     use alloc::alloc::{alloc, dealloc};
     use core::ptr::NonNull;
-    use Memory::Allocator_type;
+    use Memory::Instantiate_global_allocator;
+
+    Instantiate_global_allocator!(Memory_manager_type);
 
     #[test]
     fn Test_global_allocator() {
-        #[global_allocator]
-        static ALLOCATOR: Allocator_type<Memory_manager_type> =
-            Allocator_type::New(Memory_manager_type::New());
-
         // Allocate some memory using the global allocator
-        let Layout = Layout::from_size_align(128, 8).unwrap();
+        let Layout = Layout_type::from_size_align(128, 8).unwrap();
         let Pointer = unsafe { alloc(Layout) };
 
         assert!(!Pointer.is_null());
         // Use the allocated memory (e.g., write to it)
         unsafe {
-            *(Pointer as *mut u8) = 42;
-            assert_eq!(*(Pointer as *mut u8), 42);
+            *Pointer = 42;
+            assert_eq!(*Pointer, 42);
         }
 
         // Deallocate the memory
@@ -276,7 +277,7 @@ mod Tests {
             let Manager = Memory_manager_type::New();
 
             // Perform an initial allocation to trigger initialization
-            let Layout = Layout_type::from(Layout::from_size_align(128, 8).unwrap());
+            let Layout = Layout_type::from(Layout_type::from_size_align(128, 8).unwrap());
             let Capabilities = Capabilities_type::New(false, false);
             let Allocation = Manager.Allocate(Capabilities, Layout);
             assert!(Allocation.is_some());
@@ -296,8 +297,8 @@ mod Tests {
             // Check that regions are initialized
             Manager.Regions.lock(|Regions| {
                 let Regions_reference = Regions.borrow();
-                assert!(Regions_reference[0].Slice.len() > 0);
-                assert!(Regions_reference[1].Slice.len() > 0);
+                assert!(!Regions_reference[0].Slice.is_empty());
+                assert!(!Regions_reference[1].Slice.is_empty());
                 assert!(!Regions_reference[0].Capabilities.Get_executable());
                 assert!(Regions_reference[1].Capabilities.Get_executable());
             });
@@ -307,10 +308,10 @@ mod Tests {
     #[test]
     fn Test_allocate_deallocate() {
         unsafe {
-            let mut Manager = Memory_manager_type::New();
+            let Manager = Memory_manager_type::New();
 
             // Allocate some memory
-            let Layout = Layout_type::from(Layout::from_size_align(128, 8).unwrap());
+            let Layout = Layout_type::from_size_align(128, 8).unwrap();
             let Capabilities = Capabilities_type::New(false, false);
 
             let Allocation = Manager.Allocate(Capabilities, Layout);
@@ -329,7 +330,7 @@ mod Tests {
             let Manager = Memory_manager_type::New();
 
             // Allocate some executable memory
-            let Layout = Layout_type::from(Layout::from_size_align(128, 8).unwrap());
+            let Layout = Layout_type::from_size_align(128, 8).unwrap();
             let Capabilities = Capabilities_type::New(true, false);
 
             let Allocation = Manager.Allocate(Capabilities, Layout);
@@ -373,10 +374,10 @@ mod Tests {
     #[test]
     fn Test_is_slice_within_region() {
         unsafe {
-            let mut Manager = Memory_manager_type::New();
+            let Manager = Memory_manager_type::New();
 
             // Allocate some memory
-            let Layout = Layout_type::from(Layout::from_size_align(128, 8).unwrap());
+            let Layout = Layout_type::from_size_align(128, 8).unwrap();
             let Capabilities = Capabilities_type::New(false, false);
 
             let Allocation = Manager.Allocate(Capabilities, Layout);

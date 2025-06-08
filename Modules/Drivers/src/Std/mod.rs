@@ -7,3 +7,5 @@ pub mod Memory;
 pub mod IO;
 
 pub mod Executor;
+
+pub mod Log;

@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 paste = "1.0.15"
 quote = "1.0.36"
+Log = { path = "../Log" }
 File_system = { path = "../File_system", optional = true }
 Virtual_file_system = { path = "../Virtual_file_system" }
 Task = { path = "../Task" }
