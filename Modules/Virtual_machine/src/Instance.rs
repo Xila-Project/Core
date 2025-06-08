@@ -3,6 +3,7 @@
 
 use core::ffi::c_void;
 
+use alloc::{boxed::Box, vec, vec::Vec};
 use wamr_rust_sdk::{
     function::Function,
     instance::Instance,

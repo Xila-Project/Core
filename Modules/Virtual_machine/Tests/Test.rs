@@ -1,14 +1,24 @@
+#![no_std]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 
+extern crate alloc;
+
+use alloc::vec;
+
 use wamr_rust_sdk::value::WasmValue;
 
+use Drivers::Std::Memory::Memory_manager_type;
 use File_system::{Create_device, Create_file_system, Memory_device_type};
+use Memory::Instantiate_global_allocator;
+use Task::Test;
 use Virtual_machine::{
     Environment_type, Function_descriptor_type, Function_descriptors, Instance_type, Module_type,
     Registrable_trait, Runtime_type,
 };
+
+Instantiate_global_allocator!(Memory_manager_type);
 
 pub struct Registrable;
 
@@ -25,11 +35,11 @@ impl Registrable_trait for Registrable {
 const Functions: [Function_descriptor_type; 0] = Function_descriptors! {};
 
 #[ignore]
-#[test]
-fn Integration_test() {
-    let Task_instance = Task::Initialize().expect("Failed to initialize task manager");
+#[Test]
+async fn Integration_test() {
+    let Task_instance = Task::Initialize();
 
-    Users::Initialize().expect("Failed to initialize users manager");
+    Users::Initialize();
 
     Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()))
         .expect("Failed to initialize time manager");
@@ -42,20 +52,23 @@ fn Integration_test() {
     Virtual_file_system::Initialize(File_system, None).unwrap();
 
     // Set environment variables
-    let Task = Task_instance.Get_current_task_identifier().unwrap();
+    let Task = Task_instance.Get_current_task_identifier().await;
 
     Virtual_file_system::Get_instance()
         .Create_directory(&"/Devices", Task)
+        .await
         .unwrap();
 
     Drivers::Native::Console::Mount_devices(
-        Task_instance.Get_current_task_identifier().unwrap(),
+        Task_instance.Get_current_task_identifier().await,
         Virtual_file_system::Get_instance(),
     )
+    .await
     .unwrap();
 
     Task_instance
         .Set_environment_variable(Task, "Path", "/:/bin:/usr/bin")
+        .await
         .unwrap();
 
     // Load the WASM binary
@@ -75,6 +88,7 @@ fn Integration_test() {
             File_system::Mode_type::Read_only.into(),
             Task,
         )
+        .await
         .expect("Failed to open stdin");
     let Standard_out = Virtual_file_system::Get_instance()
         .Open(
@@ -82,6 +96,7 @@ fn Integration_test() {
             File_system::Mode_type::Write_only.into(),
             Task,
         )
+        .await
         .expect("Failed to open stdout");
     let Standard_error = Virtual_file_system::Get_instance()
         .Open(
@@ -89,10 +104,12 @@ fn Integration_test() {
             File_system::Mode_type::Write_only.into(),
             Task,
         )
+        .await
         .expect("Failed to open stderr");
 
     let (Standard_in, Standard_out, Standard_error) = Virtual_file_system::Get_instance()
         .Create_new_task_standard_io(Standard_in, Standard_error, Standard_out, Task, Task, false)
+        .await
         .unwrap();
 
     let Module = Module_type::From_buffer(
@@ -103,6 +120,7 @@ fn Integration_test() {
         Standard_out,
         Standard_error,
     )
+    .await
     .unwrap();
 
     let mut Instance =

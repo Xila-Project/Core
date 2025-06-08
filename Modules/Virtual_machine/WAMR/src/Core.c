@@ -30,7 +30,7 @@ void bh_platform_destroy(void) {}
 
 void *os_malloc(unsigned size)
 {
-    return Xila_memory_allocate(size);
+    return Xila_memory_allocate(NULL, size, sizeof(void *), 0);
 }
 
 void *os_realloc(void *ptr, unsigned size)
@@ -163,54 +163,35 @@ int os_mutex_unlock(korp_mutex *mutex)
  *            APIs required by WAMR AOT           *
  **************************************************/
 
-Xila_memory_protection_type To_xila_memory_protection(int prot)
+
+Xila_memory_capabilities_type To_xila_memory_capability(int prot)
 {
-    Xila_memory_protection_type Xila_protection = 0;
+    Xila_memory_capabilities_type Xila_protection = 0;
 
     if (prot & MMAP_PROT_EXEC)
-        Xila_protection |= Xila_memory_protection_execute;
-
-    if (prot & MMAP_PROT_READ)
-        Xila_protection |= Xila_memory_protection_read;
-
-    if (prot & MMAP_PROT_WRITE)
-        Xila_protection |= Xila_memory_protection_write;
+        Xila_protection |= Xila_memory_capabilities_execute;
 
     return Xila_protection;
 }
 
-Xila_memory_flags_type To_xila_memory_flags(int flags)
-{
-    Xila_memory_flags_type Xila_flags = Xila_memory_flag_anonymous | Xila_memory_flag_private;
-
-    if (flags & MMAP_MAP_FIXED)
-        Xila_flags |= Xila_memory_flag_fixed;
-
-    if (flags & MMAP_MAP_32BIT)
-        Xila_flags |= Xila_memory_flag_address_32_bits;
-
-    return Xila_flags;
-}
 
 void *os_mmap(void *hint, size_t size, int prot, int flags, os_file_handle file)
 {
-    Xila_memory_protection_type Xila_protection = To_xila_memory_protection(prot);
+    Xila_memory_capabilities_type Xila_protection = To_xila_memory_capability(prot);
 
-    Xila_memory_flags_type Xila_flags = To_xila_memory_flags(flags);
+    //Xila_memory_flags_type Xila_flags = To_xila_memory_flags(flags);
 
-    return Xila_memory_allocate_custom(hint, size, 8, Xila_protection, Xila_flags);
+    return Xila_memory_allocate(hint, size, sizeof(void *), Xila_protection);
 }
 
 void os_munmap(void *addr, size_t size)
 {
-    Xila_memory_deallocate_custom(addr, size);
+    Xila_memory_deallocate(addr);
 }
 
 int os_mprotect(void *addr, size_t size, int prot)
 {
-    Xila_memory_protection_type Xila_protection = To_xila_memory_protection(prot);
-
-    return !Xila_memory_protect(addr, size, Xila_protection);
+    return 0;
 }
 
 int os_getpagesize()

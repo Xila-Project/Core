@@ -15,10 +15,12 @@ LittleFS = { path = "../LittleFS" }
 Task = { version = "0.1.0", path = "../Task" }
 Time = { version = "0.1.0", path = "../Time" }
 ABI = { version = "0.1.0", path = "../ABI" }
+Synchronization = { version = "0.1.0", path = "../Synchronization" }
 
 [dev-dependencies]
 Users = { path = "../Users", version = "0.1.0" }
 Drivers = { path = "../Drivers", version = "0.1.0" }
+Futures = { path = "../Futures" }
 
 [[test]]
 name = "Virtual_machine_test"

@@ -1,7 +1,15 @@
 #![allow(non_camel_case_types)]
 
-use std::{ffi::CStr, marker::PhantomData, os::raw::c_void};
+use core::{
+    ffi::{c_void, CStr},
+    marker::PhantomData,
+};
 
+use alloc::{
+    boxed::Box,
+    string::{String, ToString},
+    vec::Vec,
+};
 use wamr_rust_sdk::{
     sys::{
         wasm_exec_env_t, wasm_module_inst_t, wasm_runtime_addr_app_to_native,
@@ -48,13 +56,13 @@ impl Environment_type<'_> {
         ))
     }
 
-    pub fn Get_or_initialize_custom_data(&self) -> Result_type<&Custom_data_type> {
+    pub async fn Get_or_initialize_custom_data(&self) -> Result_type<&Custom_data_type> {
         unsafe {
             let Custom_data = wasm_runtime_get_custom_data(self.Get_instance_pointer())
                 as *const Custom_data_type;
 
             let Custom_data = if Custom_data.is_null() {
-                let Task = Task::Get_instance().Get_current_task_identifier()?;
+                let Task = Task::Get_instance().Get_current_task_identifier().await;
 
                 let Custom_data = Box::new(Custom_data_type::New(Task));
 

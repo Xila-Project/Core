@@ -1,10 +1,9 @@
 #![allow(non_camel_case_types)]
 
-use std::sync::PoisonError;
-
+use alloc::string::String;
 use wamr_rust_sdk::RuntimeError;
 
-pub type Result_type<T> = std::result::Result<T, Error_type>;
+pub type Result_type<T> = core::result::Result<T, Error_type>;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -43,11 +42,5 @@ impl From<RuntimeError> for Error_type {
 impl From<Task::Error_type> for Error_type {
     fn from(Error: Task::Error_type) -> Self {
         Error_type::Failed_to_get_task_informations(Error)
-    }
-}
-
-impl<T> From<PoisonError<T>> for Error_type {
-    fn from(_: PoisonError<T>) -> Self {
-        Error_type::Poisoned_lock
     }
 }

@@ -1,10 +1,12 @@
-use std::{ffi::CStr, mem::forget, sync::OnceLock};
+use core::{ffi::CStr, mem::forget};
 
+use alloc::{string::ToString, vec, vec::Vec};
 use wamr_rust_sdk::{
     sys::{wasm_runtime_is_xip_file, wasm_runtime_load, wasm_runtime_register_module},
     value::WasmValue,
 };
 use File_system::Unique_file_identifier_type;
+use Synchronization::once_lock::OnceLock;
 
 use crate::{Error_type, Instance_type, Module_type, Registrable_trait, Result_type, Runtime_type};
 
@@ -20,7 +22,7 @@ pub fn Initialize(Registrables: &[&dyn Registrable_trait]) -> &'static Manager_t
 
 pub fn Get_instance() -> &'static Manager_type {
     Manager_instance
-        .get()
+        .try_get()
         .expect("Cannot get virtual machine manager instance before initialization")
 }
 
@@ -102,7 +104,7 @@ impl Manager_type {
         Ok(())
     }
 
-    pub fn Execute(
+    pub async fn Execute(
         &'static self,
         Buffer: Vec<u8>,
         Stack_size: usize,
@@ -117,7 +119,8 @@ impl Manager_type {
             Standard_in,
             Standard_out,
             Standard_error,
-        )?;
+        )
+        .await?;
 
         let Instance = Instance_type::New(&self.Runtime, &Module, Stack_size).unwrap();
 
