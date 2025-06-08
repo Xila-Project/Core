@@ -1,18 +1,22 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
-#![no_std]
+//#![no_std]
 
-mod Allocator;
 mod Cache;
 mod Capability;
+mod Macro;
+mod Manager;
 mod Protection;
 mod Statistics;
+mod Trait;
 
-pub use Allocator::*;
 pub use Cache::*;
 pub use Capability::*;
+pub use Macro::*;
+pub use Manager::*;
 pub use Protection::*;
 pub use Statistics::*;
+pub use Trait::*;
 
 pub type Layout_type = core::alloc::Layout;

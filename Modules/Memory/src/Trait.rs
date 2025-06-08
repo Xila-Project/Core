@@ -1,6 +1,6 @@
 use core::{alloc::GlobalAlloc, ptr::NonNull};
 
-use crate::{Capabilities_type, Layout_type};
+use crate::{Capabilities_type, Layout_type, Protection_type};
 
 /// Trait that defines the interface for memory allocators in the Xila system.
 ///
@@ -15,7 +15,7 @@ use crate::{Capabilities_type, Layout_type};
 /// - Deallocating memory that wasn't allocated with the same allocator
 /// - Using memory after it has been deallocated
 /// - Deallocating the same memory multiple times
-pub trait Manager_trait {
+pub trait Manager_trait: Send + Sync {
     /// Allocates memory with the specified capabilities and layout.
     ///
     /// # Parameters
@@ -49,6 +49,34 @@ pub trait Manager_trait {
     /// - The memory is not deallocated multiple times
     unsafe fn Deallocate(&self, Pointer: NonNull<u8>, Layout: Layout_type);
 
+    unsafe fn Reallocate(
+        &self,
+        Pointer: Option<NonNull<u8>>,
+        Old_layout: Layout_type,
+        New_layout: Layout_type,
+    ) -> Option<NonNull<u8>> {
+        // Default implementation simply deallocates and allocates again
+        let Memory = self.Allocate(Capabilities_type::default(), New_layout)?;
+
+        // Copy the old data to the new memory
+        let Pointer = match Pointer {
+            Some(ptr) => ptr,
+            None => return Some(Memory),
+        };
+
+        let Old_size = Old_layout.size();
+        let New_size = New_layout.size();
+        if Old_size > 0 && New_size > 0 {
+            let Old_ptr = Pointer.as_ptr();
+            let New_ptr = Memory.as_ptr();
+            core::ptr::copy_nonoverlapping(Old_ptr, New_ptr, core::cmp::min(Old_size, New_size));
+        }
+        // Deallocate the old memory
+        self.Deallocate(Pointer, Old_layout);
+
+        Some(Memory)
+    }
+
     /// Returns the amount of memory currently used in this allocator.
     ///
     /// # Returns
@@ -68,75 +96,17 @@ pub trait Manager_trait {
     /// This function is unsafe because it may rely on internal allocator state
     /// that could be concurrently modified by other threads.
     unsafe fn Get_free(&self) -> usize;
-}
 
-/// A wrapper type that adapts any type implementing `Allocator_trait` to the standard
-/// Rust `GlobalAlloc` trait.
-///
-/// This enables custom allocators that implement the Xila-specific `Allocator_trait`
-/// to be used as the global memory allocator for Rust's allocation system.
-pub struct Allocator_type<T: Manager_trait>(T);
-
-impl<T: Manager_trait> Allocator_type<T> {
-    /// Creates a new instance of `Allocator_type` wrapping the provided allocator.
-    ///
-    /// # Parameters
-    /// * `Allocator` - The allocator to wrap
-    ///
-    /// # Returns
-    /// A new instance of `Allocator_type` containing the provided allocator.
-    pub const fn New(Allocator: T) -> Self {
-        Allocator_type(Allocator)
-    }
-}
-
-/// Implementation of the standard library's `GlobalAlloc` trait for any wrapped
-/// type that implements `Allocator_trait`.
-///
-/// This implementation delegates the standard allocation operations to the wrapped
-/// allocator's methods, converting between Rust's and Xila's allocation types.
-///
-/// # Safety
-/// The implementation upholds the safety guarantees required by `GlobalAlloc`:
-/// - Memory is properly aligned according to the layout
-/// - Deallocation uses the same layout that was used for allocation
-unsafe impl<T: Manager_trait> GlobalAlloc for Allocator_type<T> {
-    unsafe fn alloc(&self, Layout: core::alloc::Layout) -> *mut u8 {
-        self.0
-            .Allocate(Capabilities_type::default(), Layout_type::from(Layout))
-            .map_or(core::ptr::null_mut(), |Pointer| Pointer.as_ptr())
+    fn Flush_instruction_cache(&self, _Adresss: NonNull<u8>, _Size: usize) {
+        // Default implementation does nothing, can be overridden by specific allocators
     }
 
-    unsafe fn dealloc(&self, Pointer: *mut u8, Layout: core::alloc::Layout) {
-        if !Pointer.is_null() {
-            self.0
-                .Deallocate(NonNull::new_unchecked(Pointer), Layout_type::from(Layout))
-        }
+    fn Flush_data_cache(&self) {
+        // Default implementation does nothing, can be overridden by specific allocators
     }
-}
 
-/// Macro to instantiate a global allocator using a Xila memory allocator.
-///
-/// This macro creates a static global allocator using the provided expression and
-/// applies the `#[global_allocator]` attribute to it. This is the recommended way
-/// to set up the global allocator in applications using Xila memory management.
-///
-/// # Example
-/// ```rust,ignore
-/// use Memory::{Instantiate_allocator};
-///
-/// struct My_allocator;
-///
-/// // Create a custom allocator instance
-/// let Custom_allocator = My_allocator::new();
-///
-/// // Set it as the global allocator
-/// Instantiate_allocator!(Custom_allocator);
-/// ```
-#[macro_export]
-macro_rules! Instantiate_global_allocator {
-    ($Allocator:expr) => {
-        #[global_allocator]
-        static ALLOCATOR: $crate::Allocator_type = $crate::Allocator_type($Allocator);
-    };
+    fn Get_page_size(&self) -> usize {
+        // Default implementation returns a common page size, can be overridden by specific allocators
+        4096 // 4 KiB is a common page size
+    }
 }

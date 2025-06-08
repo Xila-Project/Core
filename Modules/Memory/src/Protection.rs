@@ -192,26 +192,4 @@ impl From<u8> for Protection_type {
 ///
 /// This trait should be implemented by memory managers or other components
 /// that can apply protection settings to memory regions.
-pub trait Protection_trait {
-    /// Sets protection flags for a memory region.
-    ///
-    /// # Safety
-    /// This function is unsafe because:
-    /// - It operates on raw pointers
-    /// - Improper memory protection can lead to security vulnerabilities
-    /// - It may interact with hardware or OS memory protection mechanisms
-    ///
-    /// # Parameters
-    /// - `Address`: Pointer to the start of the memory region
-    /// - `Size`: Size of the memory region in bytes
-    /// - `Protection`: The protection settings to apply
-    ///
-    /// # Returns
-    /// `true` if the protection was successfully applied, `false` otherwise.
-    unsafe fn Set_protection(
-        &self,
-        Address: *mut u8,
-        Size: usize,
-        Protection: Protection_type,
-    ) -> bool;
-}
+pub trait Protection_trait {}

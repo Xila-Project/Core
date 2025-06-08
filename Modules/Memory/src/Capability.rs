@@ -4,8 +4,8 @@ use core::fmt::Display;
 pub struct Capabilities_type(u8);
 
 impl Capabilities_type {
-    const Executable_flag: u8 = 1 << 0;
-    const Direct_memory_access_flag: u8 = 1 << 1;
+    pub const Executable_flag: u8 = 1 << 0;
+    pub const Direct_memory_access_flag: u8 = 1 << 1;
 
     pub const fn New(Executable: bool, Direct_memory_access: bool) -> Self {
         Capabilities_type(0)
@@ -45,6 +45,14 @@ impl Capabilities_type {
 
     pub const fn Is_superset_of(&self, Other: Capabilities_type) -> bool {
         (self.0 & Other.0) == Other.0
+    }
+
+    pub const fn From_u8(Value: u8) -> Self {
+        Capabilities_type(Value)
+    }
+
+    pub const fn To_u8(&self) -> u8 {
+        self.0
     }
 }
 
