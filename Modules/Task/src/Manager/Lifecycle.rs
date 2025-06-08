@@ -143,7 +143,7 @@ impl Manager_type {
         Timer::after(embassy_time::Duration::from_nanos(Nano_seconds as u64)).await
     }
 
-    async fn Get_current_internal_identifier() -> usize {
+    pub async fn Get_current_internal_identifier() -> usize {
         poll_fn(|Context| {
             let Task_reference = task_from_waker(Context.waker());
 
