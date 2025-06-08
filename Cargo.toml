@@ -89,6 +89,7 @@ members = [
     "Modules/Synchronization",
     "Modules/Task/Task_macros",
     "Modules/Futures",
+    "Modules/Log",
 ]
 exclude = [
     "Modules/Virtual_machine/Tests/WASM_test",
