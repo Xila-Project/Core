@@ -1,38 +1,30 @@
-use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use alloc::boxed::Box;
+use core::mem::{align_of, size_of};
+use Synchronization::blocking_mutex::{raw::CriticalSectionRawMutex, Mutex};
 
-#[derive(Debug)]
-enum Guard_type<'a> {
-    #[allow(dead_code)]
-    Read(RwLockReadGuard<'a, ()>),
-    #[allow(dead_code)]
-    Write(RwLockWriteGuard<'a, ()>),
+pub struct Raw_rwlock_type {
+    /// Mutex to protect the lock state.
+    ///
+    /// The lock state is represented as follows:
+    /// - 0: Unlocked
+    /// - 1: Write locked (no readers allowed)
+    /// - 2 or more: Read locked (number of readers)
+    Mutex: Mutex<CriticalSectionRawMutex, usize>,
 }
 
-#[derive(Debug)]
-pub struct Raw_rwlock_type<'a> {
-    Lock: RwLock<()>,
-    #[allow(dead_code)]
-    Guard: Option<Guard_type<'a>>,
-}
+impl Raw_rwlock_type {
+    const Reading: usize = 2; // Represents the state when there are readers
+    const Writing: usize = 1; // Represents the state when there is a writer
+    const Unlocked: usize = 0; // Represents the state when the rwlock is unlocked
 
-impl<'a> Raw_rwlock_type<'a> {
     pub fn New() -> Self {
         Self {
-            Lock: RwLock::new(()),
-            Guard: None,
+            Mutex: Mutex::new(Self::Unlocked), // Initial state: unlocked
         }
     }
 
-    pub fn Is_valid_pointer(Pointer: *const Raw_rwlock_type<'a>) -> bool {
-        if Pointer.is_null() {
-            return false;
-        }
-
-        if Pointer as usize % std::mem::align_of::<Self>() != 0 {
-            return false;
-        }
-
-        true
+    pub fn Is_valid_pointer(pointer: *const Raw_rwlock_type) -> bool {
+        !pointer.is_null() && (pointer as usize % align_of::<Self>() == 0)
     }
 
     /// Transforms a pointer to a reference.
@@ -40,16 +32,12 @@ impl<'a> Raw_rwlock_type<'a> {
     /// # Safety
     ///
     /// This function is unsafe because it dereferences a raw pointer.
-    ///
-    /// # Errors
-    ///
-    ///  This function may return an error if the pointer is null or not aligned.
-    pub unsafe fn From_pointer(Pointer: *const Raw_rwlock_type<'a>) -> Option<&'a Self> {
-        if Self::Is_valid_pointer(Pointer) {
+    /// The caller must ensure the pointer is valid and points to properly initialized memory.
+    pub unsafe fn From_pointer<'a>(pointer: *const Raw_rwlock_type) -> Option<&'a Self> {
+        if !Self::Is_valid_pointer(pointer) {
             return None;
         }
-
-        Some(&*Pointer)
+        Some(&*pointer)
     }
 
     /// Transforms a mutable pointer to a mutable reference.
@@ -57,16 +45,12 @@ impl<'a> Raw_rwlock_type<'a> {
     /// # Safety
     ///
     /// This function is unsafe because it dereferences a raw pointer.
-    ///
-    /// # Errors
-    ///
-    /// This function may return an error if the pointer is null or not aligned.
-    pub unsafe fn From_mutable_pointer(Pointer: *mut Raw_rwlock_type<'a>) -> Option<&'a mut Self> {
-        if Self::Is_valid_pointer(Pointer) {
+    /// The caller must ensure the pointer is valid and points to properly initialized memory.
+    pub unsafe fn From_mutable_pointer<'a>(pointer: *mut Raw_rwlock_type) -> Option<&'a mut Self> {
+        if !Self::Is_valid_pointer(pointer) {
             return None;
         }
-
-        Some(&mut *Pointer)
+        Some(&mut *pointer)
     }
 
     /// Transforms a mutable pointer to a box.
@@ -74,59 +58,72 @@ impl<'a> Raw_rwlock_type<'a> {
     /// # Safety
     ///
     /// This function is unsafe because it dereferences a raw pointer.
-    ///
-    /// # Errors
-    ///
-    /// This function may return an error if the pointer is null or not aligned.
-    pub unsafe fn From_mutable_pointer_to_box(
-        Pointer: *mut Raw_rwlock_type<'a>,
-    ) -> Option<Box<Self>> {
-        if Self::Is_valid_pointer(Pointer) {
+    /// The caller must ensure the pointer was allocated with Box and is properly aligned.
+    pub unsafe fn From_mutable_pointer_to_box(pointer: *mut Raw_rwlock_type) -> Option<Box<Self>> {
+        if !Self::Is_valid_pointer(pointer) {
             return None;
         }
-
-        Some(Box::from_raw(Pointer))
+        Some(Box::from_raw(pointer))
     }
 
-    pub fn Read(&'a mut self) -> bool {
-        if self.Guard.is_some() {
-            return false;
-        }
+    pub fn Read(&self) -> bool {
+        unsafe {
+            self.Mutex.lock_mut(|State| {
+                // Can't read if there's a writer (state == 1)
 
-        match self.Lock.read() {
-            Ok(Guard) => {
-                self.Guard = Some(Guard_type::Read(Guard));
+                match *State {
+                    Self::Writing => return false, // Write lock prevents reading
+                    Self::Unlocked => *State = Self::Reading, // Unlocked, can read
+                    _ => *State += 1,              // Already has readers, can add more
+                }
+
                 true
-            }
-            Err(_) => false,
+            })
         }
     }
 
-    pub fn Write(&'a mut self) -> bool {
-        if self.Guard.is_some() {
-            return false;
-        }
+    pub fn Write(&self) -> bool {
+        unsafe {
+            self.Mutex.lock_mut(|State| {
+                // Can only write if completely unlocked
+                if *State != Self::Unlocked {
+                    return false;
+                }
 
-        match self.Lock.write() {
-            Ok(Guard) => {
-                self.Guard = Some(Guard_type::Write(Guard));
+                *State = Self::Writing; // Write lock
                 true
-            }
-            Err(_) => false,
+            })
         }
     }
 
-    pub fn Unlock(&mut self) -> bool {
-        match self.Guard {
-            Some(_) => (),
-            None => return false,
+    pub fn Unlock(&self) -> bool {
+        unsafe {
+            self.Mutex.lock_mut(|State| {
+                match *State {
+                    Self::Unlocked => false, // Not locked
+                    Self::Writing => {
+                        // Write lock - unlock completely
+                        *State = Self::Unlocked;
+                        true
+                    }
+                    n if n >= 2 => {
+                        // Read lock - decrement reader count
+                        *State -= 1;
+                        if *State == Self::Writing {
+                            // This shouldn't happen, but fix it
+                            *State = Self::Unlocked;
+                        }
+                        true
+                    }
+                    _ => false,
+                }
+            })
         }
-
-        self.Guard = None;
-
-        true
     }
 }
+
+#[no_mangle]
+pub static Raw_rwlock_size: usize = size_of::<Raw_rwlock_type>();
 
 /// This function is used to initialize a rwlock.
 ///
@@ -143,26 +140,22 @@ pub unsafe extern "C" fn Xila_initialize_rwlock(Rwlock: *mut Raw_rwlock_type) ->
         return false;
     }
 
-    if Rwlock as usize % std::mem::align_of::<Raw_rwlock_type>() != 0 {
+    if Rwlock as usize % align_of::<Raw_rwlock_type>() != 0 {
         return false;
     }
 
-    unsafe {
-        Rwlock.write(Raw_rwlock_type::New());
-    }
+    Rwlock.write(Raw_rwlock_type::New());
 
     true
 }
 
-/// This function is used to read a rwlock.
+/// Read lock a rwlock.
 ///
 /// # Safety
 ///
-/// This function is unsafe because it dereferences raw pointers.
-///
-/// # Errors
-///
-/// This function may return an error if the rwlock is not initialized.
+/// The caller must ensure:
+/// - `rwlock` points to a valid, initialized `Raw_rwlock_type`
+/// - The rwlock remains valid for the duration of the call
 #[no_mangle]
 pub unsafe extern "C" fn Xila_read_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
     let Rwlock = match Raw_rwlock_type::From_mutable_pointer(Rwlock) {
@@ -173,15 +166,13 @@ pub unsafe extern "C" fn Xila_read_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool 
     Rwlock.Read()
 }
 
-/// This function is used to write a rwlock.
+/// Write lock a rwlock.
 ///
 /// # Safety
 ///
-/// This function is unsafe because it dereferences raw pointers.
-///
-/// # Errors
-///
-/// This function may return an error if the rwlock is not initialized.
+/// The caller must ensure:
+/// - `rwlock` points to a valid, initialized `Raw_rwlock_type`
+/// - The rwlock remains valid for the duration of the call
 #[no_mangle]
 pub unsafe extern "C" fn Xila_write_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
     let Rwlock = match Raw_rwlock_type::From_mutable_pointer(Rwlock) {
@@ -192,15 +183,14 @@ pub unsafe extern "C" fn Xila_write_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool
     Rwlock.Write()
 }
 
-/// This function is used to unlock a rwlock.
+/// Unlock a rwlock.
 ///
 /// # Safety
 ///
-/// This function is unsafe because it dereferences raw pointers.
-///
-/// # Errors
-///
-/// This function may return an error if the rwlock is not initialized.
+/// The caller must ensure:
+/// - `rwlock` points to a valid, initialized `Raw_rwlock_type`
+/// - The rwlock remains valid for the duration of the call
+/// - The current task owns the lock (either read or write)
 #[no_mangle]
 pub unsafe extern "C" fn Xila_unlock_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
     let Rwlock = match Raw_rwlock_type::From_mutable_pointer(Rwlock) {
@@ -211,15 +201,14 @@ pub unsafe extern "C" fn Xila_unlock_rwlock(Rwlock: *mut Raw_rwlock_type) -> boo
     Rwlock.Unlock()
 }
 
-/// This function is used to destroy a rwlock.
+/// Destroy a rwlock.
 ///
 /// # Safety
 ///
-/// This function is unsafe because it dereferences raw pointers.
-///
-/// # Errors
-///
-/// This function may return an error if the rwlock is not initialized.
+/// The caller must ensure:
+/// - `rwlock` points to a valid, initialized `Raw_rwlock_type` allocated with Box
+/// - The rwlock is not currently locked
+/// - No other threads are waiting on the rwlock
 #[no_mangle]
 pub unsafe extern "C" fn Xila_destroy_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
     let _ = match Raw_rwlock_type::From_mutable_pointer_to_box(Rwlock) {

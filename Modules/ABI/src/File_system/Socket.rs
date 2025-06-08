@@ -1,4 +1,5 @@
 use super::{Into_u32, Xila_file_system_result_type, Xila_unique_file_identifier_type};
+use Futures::block_on;
 use Task::Get_instance as Get_task_manager_instance;
 use Virtual_file_system::{Error_type, Get_instance as Get_file_system_instance};
 
@@ -14,9 +15,7 @@ pub unsafe extern "C" fn Xila_file_system_send(
     Size: usize,
 ) -> Xila_file_system_result_type {
     Into_u32(|| {
-        let Task = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task = block_on(Get_task_manager_instance().Get_current_task_identifier());
 
         let Socket = File_system::Unique_file_identifier_type::From_raw(Socket);
 
@@ -24,9 +23,9 @@ pub unsafe extern "C" fn Xila_file_system_send(
             Err(Error_type::Invalid_parameter)?;
         }
 
-        let Buffer = std::slice::from_raw_parts(Buffer, Size);
+        let Buffer = core::slice::from_raw_parts(Buffer, Size);
 
-        Get_file_system_instance().Send(Task, Socket, Buffer)?;
+        block_on(Get_file_system_instance().Send(Task, Socket, Buffer))?;
 
         Ok(())
     })
@@ -48,9 +47,7 @@ pub unsafe extern "C" fn Xila_file_system_receive(
     Size: usize,
 ) -> Xila_file_system_result_type {
     Into_u32(|| {
-        let Task = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task = block_on(Get_task_manager_instance().Get_current_task_identifier());
 
         let Socket = File_system::Unique_file_identifier_type::From_raw(Socket);
 
@@ -58,9 +55,9 @@ pub unsafe extern "C" fn Xila_file_system_receive(
             Err(Error_type::Invalid_parameter)?;
         }
 
-        let Buffer = std::slice::from_raw_parts_mut(Buffer, Size);
+        let Buffer = core::slice::from_raw_parts_mut(Buffer, Size);
 
-        Get_file_system_instance().Receive(Task, Socket, Buffer)?;
+        block_on(Get_file_system_instance().Receive(Task, Socket, Buffer))?;
 
         Ok(())
     })

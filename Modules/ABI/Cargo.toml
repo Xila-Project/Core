@@ -11,7 +11,14 @@ Task = { path = "../Task" }
 Time = { path = "../Time" }
 Memory = { path = "../Memory" }
 Network = { path = "../Network" }
+Synchronization = { version = "0.1.0", path = "../Synchronization" }
+Futures = { version = "0.1.0", path = "../Futures" }
+Log = { version = "0.1.0", path = "../Log" }
 
 [build-dependencies]
 cbindgen = "0.28.0"
  
+[dev-dependencies]
+Drivers = { path = "../Drivers" }
+LittleFS = { path = "../LittleFS" }
+Users = { path = "../Users" }
