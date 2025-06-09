@@ -49,6 +49,21 @@ impl Memory_manager_type {
     }
 }
 
+impl Drop for Memory_manager_type {
+    fn drop(&mut self) {
+        self.Regions.lock(|Regions| {
+            let mut Regions = Regions.borrow_mut();
+            for Region in Regions.iter_mut() {
+                if !Region.Slice.is_empty() {
+                    unsafe {
+                        Unmap(Region.Slice.as_mut_ptr(), Region.Slice.len());
+                    }
+                }
+            }
+        });
+    }
+}
+
 impl Manager_trait for Memory_manager_type {
     unsafe fn Allocate(
         &self,
