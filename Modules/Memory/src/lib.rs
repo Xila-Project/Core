@@ -1,7 +1,9 @@
+#![no_std]
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
-//#![no_std]
+
+extern crate alloc;
 
 mod Cache;
 mod Capability;
@@ -13,7 +15,6 @@ mod Trait;
 
 pub use Cache::*;
 pub use Capability::*;
-pub use Macro::*;
 pub use Manager::*;
 pub use Protection::*;
 pub use Statistics::*;
