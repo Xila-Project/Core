@@ -49,6 +49,22 @@ impl Manager_type {
         Ok(())
     }
 
+    pub async fn Set_environment_variables(
+        &self,
+        Task_identifier: Task_identifier_type,
+        Environment_variables: &[(&str, &str)],
+    ) -> Result_type<()> {
+        let mut Inner = self.0.write().await;
+        let Metadata = Self::Get_task_mutable(&mut Inner, Task_identifier)?;
+
+        Environment_variables.iter().for_each(|(Name, Value)| {
+            let Environment_variable = Environment_variable_type::New(Name, Value);
+            Metadata.Environment_variables.push(Environment_variable);
+        });
+
+        Ok(())
+    }
+
     pub async fn Remove_environment_variable(
         &self,
         Task_identifier: Task_identifier_type,

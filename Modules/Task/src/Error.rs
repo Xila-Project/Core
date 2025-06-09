@@ -2,8 +2,6 @@
 
 use core::{fmt, num::NonZeroU32};
 
-use alloc::{format, vec};
-
 pub type Result_type<T> = core::result::Result<T, Error_type>;
 
 #[derive(Debug, Clone)]
@@ -40,7 +38,9 @@ impl From<Error_type> for NonZeroU32 {
 #[cfg(test)]
 mod Tests {
     use super::*;
+    use std::format;
     use std::string::{String, ToString};
+    use std::vec;
 
     #[test]
     fn Test_error_type_display() {
