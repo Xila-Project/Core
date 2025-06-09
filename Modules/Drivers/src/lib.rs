@@ -7,9 +7,6 @@ extern crate alloc;
 #[cfg(any(test, feature = "std"))]
 extern crate std;
 
-use Task::Task_identifier_type;
-use Virtual_file_system::Virtual_file_system_type;
-
 #[cfg(target_vendor = "espressif")]
 pub mod Espressif;
 

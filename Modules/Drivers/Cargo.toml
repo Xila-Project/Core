@@ -10,7 +10,7 @@ Log = { path = "../Log" }
 File_system = { path = "../File_system", optional = true }
 Virtual_file_system = { path = "../Virtual_file_system" }
 Task = { path = "../Task" }
-Users = { path = "../Users", optional = true }
+Users = { path = "../Users" }
 Graphics = { path = "../Graphics", optional = true }
 Time = { path = "../Time", optional = true }
 Shared = { path = "../Shared" }
@@ -62,6 +62,9 @@ esp-idf-sys = { version = "0.35.0" }
 
 [build-dependencies]
 embuild = { version = "0.32", features = ["espidf"] }
+
+[dev-dependencies]
+LittleFS = { path = "../LittleFS" }
 
 [target.'cfg( target_os = "espidf" )'.dev-dependencies]
 anyhow = "1"

@@ -1,6 +1,6 @@
 use std::{
     fs::{File, OpenOptions},
-    io::{Error, ErrorKind, Read, Seek, Write},
+    io::{Read, Seek, Write},
     sync::RwLock,
 };
 
