@@ -13,9 +13,6 @@ mod Error;
 mod File_system;
 mod Fundamentals;
 
-#[cfg(feature = "std")]
-pub mod Loader;
-
 mod Memory_device;
 mod Time;
 

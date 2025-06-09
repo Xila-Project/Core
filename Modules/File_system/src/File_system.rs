@@ -686,41 +686,4 @@ pub mod Tests {
         }
         File_system.Remove(&Path).unwrap();
     }
-
-    #[cfg(feature = "std")]
-    pub fn Test_loader(mut File_system: impl File_system_traits) {
-        use crate::Loader::Loader_type;
-        use alloc::vec;
-
-        // - Load the file in the file system
-        let Source_path = "Cargo.toml";
-        let Destination_path = "/Cargo.toml";
-
-        let Loader = Loader_type::New().Add_file(Source_path, Destination_path);
-
-        Loader.Load(&mut File_system).unwrap();
-
-        // - Read the file and compare it with the original
-        let Test_file = std::fs::read_to_string(Source_path).unwrap();
-
-        let mut Buffer = vec![0; Test_file.len()];
-
-        let File = File_system
-            .Open(
-                Task_identifier_type::New(0),
-                Path_type::New(Destination_path),
-                Flags_type::New(Mode_type::Read_only, None, None),
-                Time_type::New(0),
-                User_identifier_type::Root,
-                Group_identifier_type::Root,
-            )
-            .unwrap();
-
-        let Read = File_system
-            .Read(File, &mut Buffer, Time_type::New(0))
-            .unwrap();
-
-        assert_eq!(Read, Test_file.len());
-        assert_eq!(Buffer, Test_file.as_bytes());
-    }
 }
