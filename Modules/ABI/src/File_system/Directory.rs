@@ -144,12 +144,10 @@ mod Tests {
 
     use super::*;
     use alloc::{ffi::CString, format, vec::Vec};
-    use Drivers::Std::Memory::Memory_manager_type;
     use File_system::{
         Create_device, Create_file_system, Memory_device_type, Mode_type, Open_type,
         Path_owned_type,
     };
-    use Memory::Instantiate_global_allocator;
     use Task::{Task_identifier_type, Test};
     use Virtual_file_system::Virtual_file_system_type;
 
