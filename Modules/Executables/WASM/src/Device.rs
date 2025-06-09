@@ -1,5 +1,7 @@
+use alloc::string::{String, ToString};
 use Executable::{Device_executable_trait, Read_data_type};
 use File_system::{Create_device, Device_trait};
+use Futures::block_on;
 use Task::Task_identifier_type;
 use Virtual_file_system::Virtual_file_system_type;
 
@@ -12,9 +14,12 @@ impl Device_executable_trait for WASM_device_type {
         Virtual_file_system: &'a Virtual_file_system_type<'a>,
         Task: Task_identifier_type,
     ) -> Result<(), String> {
-        Virtual_file_system
-            .Mount_static_device(Task, &"/Binaries/WASM", Create_device!(WASM_device_type))
-            .map_err(|Error| Error.to_string())?;
+        block_on(Virtual_file_system.Mount_static_device(
+            Task,
+            &"/Binaries/WASM",
+            Create_device!(WASM_device_type),
+        ))
+        .map_err(|Error| Error.to_string())?;
 
         Ok(())
     }

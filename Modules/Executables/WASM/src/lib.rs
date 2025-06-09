@@ -3,6 +3,8 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_snake_case)]
 
+extern crate alloc;
+
 mod Device;
 mod Error;
 mod Main;
