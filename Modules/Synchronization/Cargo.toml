@@ -4,4 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [target.'cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))'.dependencies]
-embassy-sync = { version = "0.6.2", features = ["std"] }
+embassy-sync = { version = "0.7.0", features = ["std"] }
+
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+embassy-sync = { version = "0.7.0" }
