@@ -7,10 +7,11 @@ extern crate alloc;
 
 use alloc::string::ToString;
 use Command_line_shell::Shell_executable_type;
-use Executable::Standard_type;
+use Executable::{Mount_static_executables, Standard_type};
 use File_system::{Create_device, Create_file_system, Memory_device_type, Mode_type};
 use Task::Test;
 use Users::Group_identifier_type;
+use Virtual_file_system::{Create_default_hierarchy, Mount_static_devices};
 
 #[ignore]
 #[Test]
@@ -27,56 +28,55 @@ async fn Integration_test() {
 
     let File_system = LittleFS::File_system_type::New(Memory_device, 256).unwrap();
 
-    Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
+    let Virtual_file_system =
+        Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
 
     let Task = Task_instance.Get_current_task_identifier().await;
 
-    Virtual_file_system::Get_instance()
-        .Mount_static_device(Task, &"/Shell", Create_device!(Shell_executable_type))
+    Create_default_hierarchy(Virtual_file_system, Task)
         .await
         .unwrap();
 
-    Virtual_file_system::Get_instance()
-        .Create_directory(&"/Devices", Task)
-        .await
-        .unwrap();
-
-    Virtual_file_system::Get_instance()
-        .Create_directory(&"/System", Task)
-        .await
-        .unwrap();
-
-    Virtual_file_system::Get_instance()
-        .Create_directory(&"/System/Users", Task)
-        .await
-        .unwrap();
-
-    Virtual_file_system::Get_instance()
-        .Create_directory(&"/System/Groups", Task)
-        .await
-        .unwrap();
-
-    Virtual_file_system::Get_instance()
-        .Mount_static_device(
-            Task,
-            &"/Devices/Random",
-            Create_device!(Drivers::Native::Random_device_type),
-        )
-        .await
-        .unwrap();
-
-    let Group_identifier = Group_identifier_type::New(1000);
-
-    Authentication::Create_group(
-        Virtual_file_system::Get_instance(),
-        "alix_anneraud",
-        Some(Group_identifier),
+    Mount_static_devices!(
+        Virtual_file_system,
+        Task,
+        &[
+            (
+                &"/Devices/Standard_in",
+                Drivers::Std::Console::Standard_in_device_type
+            ),
+            (
+                &"/Devices/Standard_out",
+                Drivers::Std::Console::Standard_out_device_type
+            ),
+            (
+                &"/Devices/Standard_error",
+                Drivers::Std::Console::Standard_error_device_type
+            ),
+            (&"/Devices/Time", Drivers::Native::Time_driver_type),
+            (&"/Devices/Random", Drivers::Native::Random_device_type),
+            (&"/Devices/Null", Drivers::Core::Null_device_type)
+        ]
     )
     .await
     .unwrap();
 
+    Mount_static_executables!(
+        Virtual_file_system,
+        Task,
+        &[(&"/Binaries/Command_line_shell", Shell_executable_type)]
+    )
+    .await
+    .unwrap();
+
+    let Group_identifier = Group_identifier_type::New(1000);
+
+    Authentication::Create_group(Virtual_file_system, "alix_anneraud", Some(Group_identifier))
+        .await
+        .unwrap();
+
     Authentication::Create_user(
-        Virtual_file_system::Get_instance(),
+        Virtual_file_system,
         "alix_anneraud",
         "password",
         Group_identifier,
@@ -85,21 +85,17 @@ async fn Integration_test() {
     .await
     .unwrap();
 
-    Drivers::Native::Console::Mount_devices(Task, Virtual_file_system::Get_instance())
-        .await
-        .unwrap();
-
-    let Standard_in = Virtual_file_system::Get_instance()
+    let Standard_in = Virtual_file_system
         .Open(&"/Devices/Standard_in", Mode_type::Read_only.into(), Task)
         .await
         .unwrap();
 
-    let Standard_out = Virtual_file_system::Get_instance()
+    let Standard_out = Virtual_file_system
         .Open(&"/Devices/Standard_out", Mode_type::Write_only.into(), Task)
         .await
         .unwrap();
 
-    let Standard_error = Virtual_file_system::Get_instance()
+    let Standard_error = Virtual_file_system
         .Open(
             &"/Devices/Standard_error",
             Mode_type::Write_only.into(),
@@ -113,7 +109,7 @@ async fn Integration_test() {
         Standard_out,
         Standard_error,
         Task,
-        Virtual_file_system::Get_instance(),
+        Virtual_file_system,
     );
 
     Task_instance
@@ -126,7 +122,7 @@ async fn Integration_test() {
         .await
         .unwrap();
 
-    let Result = Executable::Execute("/Shell", "".to_string(), Standard)
+    let Result = Executable::Execute("/Binaries/Command_line_shell", "".to_string(), Standard)
         .await
         .unwrap()
         .Join()

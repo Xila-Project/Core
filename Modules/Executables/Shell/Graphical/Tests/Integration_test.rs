@@ -61,48 +61,58 @@ async fn main() {
 
     let File_system = LittleFS::File_system_type::New(Memory_device, 256).unwrap();
 
-    Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
+    let Virtual_file_system =
+        Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
 
     let Task = Task_instance.Get_current_task_identifier().await;
 
-    Virtual_file_system::Create_default_hierarchy(Virtual_file_system::Get_instance(), Task)
+    Virtual_file_system::Create_default_hierarchy(Virtual_file_system, Task)
         .await
         .unwrap();
 
     Mount_static_executables!(
-        Virtual_file_system::Get_instance(),
+        Virtual_file_system,
         Task,
         &[(&"/Binaries/Graphical_shell", Shell_executable_type),]
     )
     .await
     .unwrap();
 
-    Virtual_file_system::Get_instance()
-        .Create_directory(&"/Configuration/Shared/Shortcuts", Task)
-        .await
-        .unwrap();
-
-    Drivers::Native::Console::Mount_devices(Task, Virtual_file_system::Get_instance())
-        .await
-        .unwrap();
-
     Mount_static_devices!(
-        Virtual_file_system::Get_instance(),
+        Virtual_file_system,
         Task,
         &[
+            (
+                &"/Devices/Standard_in",
+                Drivers::Std::Console::Standard_in_device_type
+            ),
+            (
+                &"/Devices/Standard_out",
+                Drivers::Std::Console::Standard_out_device_type
+            ),
+            (
+                &"/Devices/Standard_error",
+                Drivers::Std::Console::Standard_error_device_type
+            ),
+            (&"/Devices/Time", Drivers::Native::Time_driver_type),
             (&"/Devices/Random", Drivers::Native::Random_device_type),
-            (&"/Devices/Null", Drivers::Core::Null_device_type),
+            (&"/Devices/Null", Drivers::Core::Null_device_type)
         ]
     )
     .await
     .unwrap();
+
+    Virtual_file_system
+        .Create_directory(&"/Configuration/Shared/Shortcuts", Task)
+        .await
+        .unwrap();
 
     // Add fake shortcuts.
     for i in 0..20 {
         use alloc::format;
 
         File_type::Open(
-            Virtual_file_system::Get_instance(),
+            Virtual_file_system,
             format!("/Configuration/Shared/Shortcuts/Test{}.json", i).as_str(),
             Flags_type::New(Mode_type::Write_only, Some(Open_type::Create), None),
         )
@@ -130,16 +140,12 @@ async fn main() {
 
     let Group_identifier = Group_identifier_type::New(1000);
 
-    Authentication::Create_group(
-        Virtual_file_system::Get_instance(),
-        "alix_anneraud",
-        Some(Group_identifier),
-    )
-    .await
-    .unwrap();
+    Authentication::Create_group(Virtual_file_system, "alix_anneraud", Some(Group_identifier))
+        .await
+        .unwrap();
 
     Authentication::Create_user(
-        Virtual_file_system::Get_instance(),
+        Virtual_file_system,
         "alix_anneraud",
         "password",
         Group_identifier,
@@ -153,7 +159,7 @@ async fn main() {
         &"/Devices/Standard_out",
         &"/Devices/Standard_error",
         Task,
-        Virtual_file_system::Get_instance(),
+        Virtual_file_system,
     )
     .await
     .unwrap();
