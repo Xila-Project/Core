@@ -8,6 +8,7 @@ cstr_core = "0.2.6"
 Task = { path = "../Task" }
 File_system = { path = "../File_system" }
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
+#lvgl_rust_sys = { path = "../../../lvgl_rust_sys", default-features = false }
 syn = { version = "2.0", features = ["full"] }
 quote = "1.0"
 Time = { path = "../Time" }
