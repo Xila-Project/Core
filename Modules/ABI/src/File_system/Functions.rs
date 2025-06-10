@@ -11,8 +11,6 @@ use Futures::block_on;
 use File_system::{
     Error_type, File_identifier_type, Flags_type, Mode_type, Open_type, Status_type,
 };
-
-use Task::Get_instance as Get_task_manager_instance;
 use Virtual_file_system::Get_instance as Get_file_system_instance;
 
 use crate::{Context, Into_position, Xila_time_type};

@@ -39,13 +39,14 @@ impl Context_type {
         Inner.Task.take();
     }
 
-    pub async fn Call_ABI<F, R>(&self, Function: F) -> R
+    pub async fn Call_ABI<F, Fut, R>(&self, Function: F) -> R
     where
-        F: FnOnce() -> R,
+        F: FnOnce() -> Fut,
+        Fut: core::future::Future<Output = R>,
     {
         let Task = Task::Get_instance().Get_current_task_identifier().await;
         self.Set_task(Task).await;
-        let Result = Function();
+        let Result = Function().await;
         self.Clear_task().await;
         Result
     }

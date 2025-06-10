@@ -2,7 +2,7 @@ use core::ptr::null_mut;
 use core::{ffi::c_void, time::Duration};
 
 use Futures::block_on;
-use Task::{Get_instance as Get_task_manager_instance, Manager_type};
+use Task::Manager_type;
 
 use crate::Context;
 

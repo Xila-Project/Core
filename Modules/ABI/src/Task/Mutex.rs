@@ -1,8 +1,8 @@
 use alloc::boxed::Box;
 use core::mem::{align_of, size_of};
-use Futures::block_on;
 use Synchronization::blocking_mutex::{raw::CriticalSectionRawMutex, Mutex};
-use Task::Manager_type;
+
+use crate::Context;
 
 #[derive(Debug, Clone, Copy, Default)]
 struct Mutex_state_type {
@@ -67,7 +67,9 @@ impl Raw_mutex_type {
     }
 
     pub fn Lock(&self) -> bool {
-        let current_task = block_on(Manager_type::Get_current_internal_identifier());
+        let current_task = Context::Get_instance()
+            .Get_current_task_identifier()
+            .Into_inner() as usize;
 
         unsafe {
             self.Mutex.lock_mut(|State| {
@@ -90,7 +92,9 @@ impl Raw_mutex_type {
     }
 
     pub fn Unlock(&self) -> bool {
-        let current_task = block_on(Manager_type::Get_current_internal_identifier());
+        let current_task = Context::Get_instance()
+            .Get_current_task_identifier()
+            .Into_inner() as usize;
 
         unsafe {
             self.Mutex.lock_mut(|state| {

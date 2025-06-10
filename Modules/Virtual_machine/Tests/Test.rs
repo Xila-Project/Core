@@ -92,13 +92,6 @@ async fn Integration_test() {
     let Binary_buffer =
         include_bytes!("./WASM_test/target/wasm32-wasip1/release/Virtual_machine_WASM_test.wasm");
 
-    // Register the functions
-
-    let Runtime = Runtime_type::Builder()
-        .Register(&Registrable)
-        .Build()
-        .unwrap();
-
     let Standard_in = Virtual_file_system
         .Open(
             &"/Devices/Standard_in",
@@ -129,41 +122,52 @@ async fn Integration_test() {
         .await
         .unwrap();
 
-    let Module = Module_type::From_buffer(
-        &Runtime,
-        Binary_buffer.to_vec(),
-        "main",
-        Standard_in,
-        Standard_out,
-        Standard_error,
-    )
-    .await
-    .unwrap();
+    ABI::Get_instance()
+        .Call_ABI(async || {
+            // Register the functions
 
-    let mut Instance =
-        Instance_type::New(&Runtime, &Module, 1024 * 4).expect("Failed to instantiate module");
+            let Runtime = Runtime_type::Builder()
+                .Register(&Registrable)
+                .Build()
+                .unwrap();
 
-    let _ =
-        Environment_type::From_instance(&Instance).expect("Failed to get execution environment");
+            let Module = Module_type::From_buffer(
+                &Runtime,
+                Binary_buffer.to_vec(),
+                "main",
+                Standard_in,
+                Standard_out,
+                Standard_error,
+            )
+            .await
+            .unwrap();
 
-    assert_eq!(Instance.Call_main(&vec![]).unwrap(), [WasmValue::Void]);
+            let mut Instance = Instance_type::New(&Runtime, &Module, 1024 * 4)
+                .expect("Failed to instantiate module");
 
-    assert_eq!(
-        Instance
-            .Call_export_function("GCD", &vec![WasmValue::I32(9), WasmValue::I32(27)])
-            .unwrap(),
-        [WasmValue::I32(9)]
-    );
+            let _ = Environment_type::From_instance(&Instance)
+                .expect("Failed to get execution environment");
 
-    // Test allocation and deallocation
+            assert_eq!(Instance.Call_main(&vec![]).unwrap(), [WasmValue::Void]);
 
-    let Pointer = Instance.Allocate::<u32>(4).unwrap();
+            assert_eq!(
+                Instance
+                    .Call_export_function("GCD", &vec![WasmValue::I32(9), WasmValue::I32(27)])
+                    .unwrap(),
+                [WasmValue::I32(9)]
+            );
 
-    unsafe {
-        Pointer.write(1234);
+            // Test allocation and deallocation
 
-        assert_eq!(1234, Pointer.read());
-    }
+            let Pointer = Instance.Allocate::<u32>(4).unwrap();
 
-    Instance.Deallocate(Pointer);
+            unsafe {
+                Pointer.write(1234);
+
+                assert_eq!(1234, Pointer.read());
+            }
+
+            Instance.Deallocate(Pointer);
+        })
+        .await;
 }
