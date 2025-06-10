@@ -1,4 +1,4 @@
-#![no_std]
+//#![no_std]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
@@ -13,6 +13,7 @@ use Drivers::Std::Memory::Memory_manager_type;
 use File_system::{Create_device, Create_file_system, Memory_device_type};
 use Memory::Instantiate_global_allocator;
 use Task::Test;
+use Virtual_file_system::{Create_default_hierarchy, Mount_static_devices};
 use Virtual_machine::{
     Environment_type, Function_descriptor_type, Function_descriptors, Instance_type, Module_type,
     Registrable_trait, Runtime_type,
@@ -49,19 +50,35 @@ async fn Integration_test() {
     LittleFS::File_system_type::Format(Device.clone(), 512).unwrap();
     let File_system = Create_file_system!(LittleFS::File_system_type::New(Device, 256).unwrap());
 
-    Virtual_file_system::Initialize(File_system, None).unwrap();
+    let Virtual_file_system = Virtual_file_system::Initialize(File_system, None).unwrap();
 
     // Set environment variables
     let Task = Task_instance.Get_current_task_identifier().await;
 
-    Virtual_file_system::Get_instance()
-        .Create_directory(&"/Devices", Task)
+    Create_default_hierarchy(Virtual_file_system, Task)
         .await
         .unwrap();
 
-    Drivers::Native::Console::Mount_devices(
-        Task_instance.Get_current_task_identifier().await,
-        Virtual_file_system::Get_instance(),
+    Mount_static_devices!(
+        Virtual_file_system,
+        Task,
+        &[
+            (
+                &"/Devices/Standard_in",
+                Drivers::Std::Console::Standard_in_device_type
+            ),
+            (
+                &"/Devices/Standard_out",
+                Drivers::Std::Console::Standard_out_device_type
+            ),
+            (
+                &"/Devices/Standard_error",
+                Drivers::Std::Console::Standard_error_device_type
+            ),
+            (&"/Devices/Time", Drivers::Native::Time_driver_type),
+            (&"/Devices/Random", Drivers::Native::Random_device_type),
+            (&"/Devices/Null", Drivers::Core::Null_device_type)
+        ]
     )
     .await
     .unwrap();
@@ -82,7 +99,7 @@ async fn Integration_test() {
         .Build()
         .unwrap();
 
-    let Standard_in = Virtual_file_system::Get_instance()
+    let Standard_in = Virtual_file_system
         .Open(
             &"/Devices/Standard_in",
             File_system::Mode_type::Read_only.into(),
@@ -90,7 +107,7 @@ async fn Integration_test() {
         )
         .await
         .expect("Failed to open stdin");
-    let Standard_out = Virtual_file_system::Get_instance()
+    let Standard_out = Virtual_file_system
         .Open(
             &"/Devices/Standard_out",
             File_system::Mode_type::Write_only.into(),
@@ -98,7 +115,7 @@ async fn Integration_test() {
         )
         .await
         .expect("Failed to open stdout");
-    let Standard_error = Virtual_file_system::Get_instance()
+    let Standard_error = Virtual_file_system
         .Open(
             &"/Devices/Standard_error",
             File_system::Mode_type::Write_only.into(),
@@ -107,7 +124,7 @@ async fn Integration_test() {
         .await
         .expect("Failed to open stderr");
 
-    let (Standard_in, Standard_out, Standard_error) = Virtual_file_system::Get_instance()
+    let (Standard_in, Standard_out, Standard_error) = Virtual_file_system
         .Create_new_task_standard_io(Standard_in, Standard_error, Standard_out, Task, Task, false)
         .await
         .unwrap();
