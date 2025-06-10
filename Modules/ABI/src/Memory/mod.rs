@@ -285,18 +285,12 @@ pub unsafe extern "C" fn Xila_memory_reallocate(Pointer: *mut c_void, Size: usiz
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn Xila_memory_allocate(
-    Hint_address: *mut c_void,
+    _: *mut c_void,
     Size: usize,
     Alignment: usize,
     Capabilities: Xila_memory_capabilities_type,
 ) -> *mut c_void {
     Into_pointer(|| {
-        let Hint_address = if Hint_address.is_null() {
-            None
-        } else {
-            Some(NonNull::new_unchecked(Hint_address as *mut u8))
-        };
-
         let Layout = Layout_type::from_size_align(Size, Alignment)
             .expect("Failed to create layout for memory allocation");
 
@@ -464,7 +458,7 @@ mod Tests {
 
             let pointer = Xila_memory_allocate(hint_address, size, alignment, capabilities);
             // Zero-size allocation might return null or a valid pointer, both are acceptable
-            if (!pointer.is_null()) {
+            if !pointer.is_null() {
                 Xila_memory_deallocate(pointer);
             }
         }

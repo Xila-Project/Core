@@ -4,11 +4,15 @@ use core::{ffi::c_void, time::Duration};
 use Futures::block_on;
 use Task::{Get_instance as Get_task_manager_instance, Manager_type};
 
+use crate::Context;
+
 pub type Xila_thread_identifier_type = usize;
 
 #[no_mangle]
 pub extern "C" fn Xila_get_current_thread_identifier() -> usize {
-    block_on(Get_task_manager_instance().Get_current_task_identifier()).Into_inner() as usize
+    Context::Get_instance()
+        .Get_current_task_identifier()
+        .Into_inner() as usize
 }
 
 #[no_mangle]
