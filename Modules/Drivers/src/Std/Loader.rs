@@ -122,6 +122,8 @@ mod Tests {
         let Device = File_system::Create_device!(File_system::Memory_device_type::<512>::New(
             1024 * 1024 * 512
         ));
+
+        LittleFS::File_system_type::Format(Device.clone(), 256).unwrap();
         let mut File_system = LittleFS::File_system_type::New(Device, 256).unwrap();
 
         let Loader = Loader_type::New().Add_file(Source_path, Destination_path);
