@@ -4,6 +4,7 @@ use std::{
     os::raw::c_void,
 };
 
+use Futures::block_on;
 pub use Graphics::LVGL;
 
 use Task::Task_identifier_type;
@@ -114,30 +115,28 @@ pub unsafe fn Call(
 
     let Instance = Graphics::Get_instance();
 
-    let Lock = Instance.Lock();
+    let Lock = block_on(Instance.Lock());
 
-    if Lock.is_ok() {
-        let Pointer_table_reference = &raw mut Pointer_table;
+    let Pointer_table_reference = &raw mut Pointer_table;
 
-        let _ = (*Pointer_table_reference).get_or_init(Pointer_table_type::New);
+    let _ = (*Pointer_table_reference).get_or_init(Pointer_table_type::New);
 
-        let Pointer_table_reference = (*Pointer_table_reference).get_mut().unwrap();
+    let Pointer_table_reference = (*Pointer_table_reference).get_mut().unwrap();
 
-        Generated_bindings::Call_function(
-            Environment,
-            Pointer_table_reference,
-            Function,
-            Argument_0,
-            Argument_1,
-            Argument_2,
-            Argument_3,
-            Argument_4,
-            Argument_5,
-            Argument_6,
-            Arguments_count,
-            Result,
-        );
-    }
+    Generated_bindings::Call_function(
+        Environment,
+        Pointer_table_reference,
+        Function,
+        Argument_0,
+        Argument_1,
+        Argument_2,
+        Argument_3,
+        Argument_4,
+        Argument_5,
+        Argument_6,
+        Arguments_count,
+        Result,
+    );
 
     // Lock is automatically released here.
 }
