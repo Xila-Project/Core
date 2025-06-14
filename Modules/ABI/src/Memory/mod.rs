@@ -37,7 +37,7 @@ use alloc::collections::BTreeMap;
 use core::ptr::null_mut;
 use core::{ffi::c_void, ptr::NonNull};
 use Futures::block_on;
-use Log::Warning;
+use Log::{Debug, Trace, Warning};
 use Synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 
 use Synchronization::rwlock::RwLock;
@@ -153,12 +153,20 @@ macro_rules! Write_allocations_table {
 #[no_mangle]
 pub extern "C" fn Xila_memory_deallocate(Pointer: *mut c_void) {
     if Pointer.is_null() {
+        Warning! { "Xila_memory_deallocate called with null pointer, ignoring"
+        };
         return;
     }
 
     let Layout = match Write_allocations_table!().remove(&(Pointer as usize)) {
         Some(Size) => Size,
-        None => return,
+        None => {
+            Warning! {
+                "Xila_memory_deallocate called with untracked pointer: {:#x}, ignoring",
+                Pointer as usize
+            };
+            return;
+        }
     };
 
     unsafe {
@@ -166,6 +174,10 @@ pub extern "C" fn Xila_memory_deallocate(Pointer: *mut c_void) {
             NonNull::new(Pointer as *mut u8).expect("Failed to deallocate memory, pointer is null"),
             Layout,
         );
+        Debug! {
+            "Xila_memory_deallocate called with pointer: {:#x}, deallocated successfully",
+            Pointer as usize
+        };
     }
 }
 
@@ -230,6 +242,13 @@ pub unsafe extern "C" fn Xila_memory_reallocate(Pointer: *mut c_void, Size: usiz
 
         let New_layout = Layout_type::from_size_align(Size, Old_layout.align()).ok()?;
 
+        Debug!(
+            "Xila_memory_reallocate called with Pointer: {:#x}, Old_layout: {:?}, New_layout: {:?}",
+            Pointer.map_or(0, |p| p.as_ptr() as usize),
+            Old_layout,
+            New_layout
+        );
+
         let Allocated = Memory::Get_instance().Reallocate(Pointer, Old_layout, New_layout)?;
 
         Allocation_table.insert(Allocated.as_ptr() as usize, New_layout);
@@ -249,7 +268,7 @@ pub unsafe extern "C" fn Xila_memory_reallocate(Pointer: *mut c_void, Size: usiz
 /// This function is unsafe because:
 /// - The returned memory is uninitialized
 /// - The caller must ensure proper deallocation
-/// - The hint address, if provided, must be a valid memory address
+/// - The hint address, if providalignment enumed, must be a valid memory address
 ///
 /// # Parameters
 ///
@@ -291,12 +310,33 @@ pub unsafe extern "C" fn Xila_memory_allocate(
     Capabilities: Xila_memory_capabilities_type,
 ) -> *mut c_void {
     Into_pointer(|| {
+        Trace!(
+            "Xila_memory_allocate called with Size: {}, Alignment: {}, Capabilities: {:?}",
+            Size,
+            Alignment,
+            Capabilities
+        );
         let Layout = Layout_type::from_size_align(Size, Alignment)
             .expect("Failed to create layout for memory allocation");
 
         let Capabilities = Capabilities_type::From_u8(Capabilities);
 
-        Memory::Get_instance().Allocate(Capabilities, Layout)
+        let Result = Memory::Get_instance().Allocate(Capabilities, Layout);
+
+        if Result.is_some() {
+            Write_allocations_table!().insert(Result.unwrap().as_ptr() as usize, Layout);
+            Debug! {
+                "Xila_memory_allocate called with Size: {}, Alignment: {}, Capabilities: {:?}, allocated memory at {:#x}",
+                Size, Alignment, Capabilities, Result.unwrap().as_ptr() as usize
+            };
+        } else {
+            Warning! {
+                "Xila_memory_allocate failed with Size: {}, Alignment: {}, Capabilities: {:?}",
+                Size, Alignment, Capabilities
+            };
+        }
+
+        Result
     })
 }
 
@@ -808,6 +848,26 @@ mod Tests {
 
             // The new pointer should be properly tracked
             Xila_memory_deallocate(new_pointer);
+        }
+    }
+
+    #[test]
+    fn test_double_free_handling() {
+        unsafe {
+            // Test that double-free is handled gracefully
+            let size = 64;
+            let alignment = 8;
+            let capabilities = 0;
+
+            let pointer =
+                Xila_memory_allocate(core::ptr::null_mut(), size, alignment, capabilities);
+            assert!(!pointer.is_null(), "Allocation should succeed");
+
+            // First deallocation should succeed
+            Xila_memory_deallocate(pointer);
+
+            // Second deallocation should be ignored (no crash)
+            Xila_memory_deallocate(pointer);
         }
     }
 }

@@ -181,6 +181,7 @@ mod Tests {
     #[Test]
     async fn test_null_pointer_handling() {
         // Test that functions properly handle null pointers and return appropriate error codes
+        let (_Task, _VFS) = Initialize_test_environment().await;
 
         let Context = Get_context_instance();
 

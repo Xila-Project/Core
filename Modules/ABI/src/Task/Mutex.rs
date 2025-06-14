@@ -1,5 +1,8 @@
 use alloc::boxed::Box;
-use core::mem::{align_of, size_of};
+use core::{
+    mem::{align_of, size_of},
+    ptr::drop_in_place,
+};
 use Synchronization::blocking_mutex::{raw::CriticalSectionRawMutex, Mutex};
 
 use crate::Context;
@@ -51,19 +54,6 @@ impl Raw_mutex_type {
             return None;
         }
         Some(&mut *pointer)
-    }
-
-    /// Transforms a mutable pointer to a box.
-    ///
-    /// # Safety
-    ///
-    /// This function is unsafe because it dereferences a raw pointer.
-    /// The caller must ensure the pointer was allocated with Box and is properly aligned.
-    pub unsafe fn From_mutable_pointer_to_box(pointer: *mut Raw_mutex_type) -> Option<Box<Self>> {
-        if !Self::Is_valid_pointer(pointer) {
-            return None;
-        }
-        Some(Box::from_raw(pointer))
     }
 
     pub fn Lock(&self) -> bool {
@@ -213,10 +203,13 @@ pub unsafe extern "C" fn Xila_unlock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
 /// - No other threads are waiting on the mutex
 #[no_mangle]
 pub unsafe extern "C" fn Xila_destroy_mutex(Mutex: *mut Raw_mutex_type) -> bool {
-    let _ = match Raw_mutex_type::From_mutable_pointer_to_box(Mutex) {
+    let Mutex = match Raw_mutex_type::From_mutable_pointer(Mutex) {
         Some(Mutex) => Mutex,
         None => return false,
     };
+
+    // Drop the mutex, which will release any resources it holds
+    drop_in_place(Mutex);
 
     true // Mutex is dropped here
 }

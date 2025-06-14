@@ -1,5 +1,8 @@
 use alloc::boxed::Box;
-use core::mem::{align_of, size_of};
+use core::{
+    mem::{align_of, size_of},
+    ptr::drop_in_place,
+};
 use Synchronization::blocking_mutex::{raw::CriticalSectionRawMutex, Mutex};
 
 pub struct Raw_rwlock_type {
@@ -51,19 +54,6 @@ impl Raw_rwlock_type {
             return None;
         }
         Some(&mut *pointer)
-    }
-
-    /// Transforms a mutable pointer to a box.
-    ///
-    /// # Safety
-    ///
-    /// This function is unsafe because it dereferences a raw pointer.
-    /// The caller must ensure the pointer was allocated with Box and is properly aligned.
-    pub unsafe fn From_mutable_pointer_to_box(pointer: *mut Raw_rwlock_type) -> Option<Box<Self>> {
-        if !Self::Is_valid_pointer(pointer) {
-            return None;
-        }
-        Some(Box::from_raw(pointer))
     }
 
     pub fn Read(&self) -> bool {
@@ -211,10 +201,12 @@ pub unsafe extern "C" fn Xila_unlock_rwlock(Rwlock: *mut Raw_rwlock_type) -> boo
 /// - No other threads are waiting on the rwlock
 #[no_mangle]
 pub unsafe extern "C" fn Xila_destroy_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
-    let _ = match Raw_rwlock_type::From_mutable_pointer_to_box(Rwlock) {
+    let _ = match Raw_rwlock_type::From_mutable_pointer(Rwlock) {
         Some(RwLock) => RwLock,
         None => return false,
     };
+
+    drop_in_place(Rwlock); // Drop the rwlock, releasing resources
 
     true // RwLock is dropped here
 }
