@@ -3,6 +3,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
+extern crate ABI;
 extern crate alloc;
 
 mod Custom_data;
@@ -13,10 +14,6 @@ mod Manager;
 mod Module;
 mod Registrable;
 mod Runtime;
-
-// Force linking of the ABI
-#[allow(unused_imports)]
-use ABI::*;
 
 pub use wamr_rust_sdk::value::WasmValue;
 pub use Custom_data::*;

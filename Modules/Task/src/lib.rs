@@ -17,10 +17,11 @@ mod Task;
 
 pub use Environment_variable::*;
 pub use Error::*;
+pub use Futures;
 pub use Join_handle::*;
 pub use Manager::*;
 pub use Signal::*;
 pub use Task::*;
-pub use Task_macros::Test;
+pub use Task_macros::{Run_with_executor, Test};
 
 pub use embassy_executor;

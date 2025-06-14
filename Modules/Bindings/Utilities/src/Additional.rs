@@ -11,8 +11,9 @@ pub fn Get() -> TokenStream {
         }
 
         pub unsafe fn Window_create() -> *mut lv_obj_t {
-            Graphics::Get_instance().Create_window().unwrap().Into_raw()
-
+            Futures::block_on(
+                Graphics::Get_instance().Create_window()
+            ).unwrap().Into_raw()
         }
 
         pub unsafe fn Window_get_event_code(Window: *mut lv_obj_t) -> u32 {

@@ -115,7 +115,7 @@ pub unsafe fn Call(
 
     let Instance = Graphics::Get_instance();
 
-    let Lock = block_on(Instance.Lock());
+    let _Lock = block_on(Instance.Lock());
 
     let Pointer_table_reference = &raw mut Pointer_table;
 

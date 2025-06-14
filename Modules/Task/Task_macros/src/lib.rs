@@ -152,3 +152,143 @@ pub fn Test(args: TokenStream, input: TokenStream) -> TokenStream {
     .to_token_stream()
     .into()
 }
+
+/// A procedural macro to annotate functions that should run with a specific executor.
+///
+/// This macro wraps the annotated async function to be executed with a provided
+/// executor, handling the registration, spawning, and cleanup automatically.
+///
+/// # Requirements
+///
+/// Functions must:
+/// - Be async
+/// - Have no arguments
+/// - Have no return type (or return unit type `()`)
+///
+/// # Usage
+///
+/// The macro accepts an executor expression as a parameter:
+///
+/// ```rust
+/// #[Run_with_executor(Drivers::Std::Executor::Executor_type::New())]
+/// async fn my_function() {
+///     println!("Running with custom executor!");
+/// }
+/// ```
+///
+/// You can also use any executor expression:
+/// ```rust
+/// #[Run_with_executor(my_custom_executor)]
+/// async fn my_function() { ... }
+/// ```
+#[proc_macro_attribute]
+#[allow(non_snake_case)]
+pub fn Run_with_executor(args: TokenStream, input: TokenStream) -> TokenStream {
+    // Parse the input as a function
+    let Input_function = parse_macro_input!(input as ItemFn);
+
+    // Parse the executor expression from arguments
+    if args.is_empty() {
+        return syn::Error::new_spanned(
+            Input_function.sig.fn_token,
+            "Run_with_executor requires an executor expression as argument",
+        )
+        .to_compile_error()
+        .into();
+    }
+
+    let Executor_expression: proc_macro2::TokenStream = args.into();
+
+    // Extract function details
+    let Function_name = &Input_function.sig.ident;
+    let Function_name_string = Function_name.to_string();
+
+    // Check if function is async
+    let Is_asynchronous = Input_function.sig.asyncness.is_some();
+
+    if !Is_asynchronous {
+        return syn::Error::new_spanned(
+            Input_function.sig.fn_token,
+            "Functions with Run_with_executor must be async",
+        )
+        .to_compile_error()
+        .into();
+    }
+
+    // Check if function has no arguments
+    if !Input_function.sig.inputs.is_empty() {
+        return syn::Error::new_spanned(
+            &Input_function.sig.inputs,
+            "Functions with Run_with_executor must not have any arguments",
+        )
+        .to_compile_error()
+        .into();
+    }
+
+    // Check if function has no return type (or returns unit type)
+    if let syn::ReturnType::Type(_, Return_type) = &Input_function.sig.output {
+        // Allow unit type () but reject any other return type
+        if let syn::Type::Tuple(tuple) = Return_type.as_ref() {
+            if !tuple.elems.is_empty() {
+                return syn::Error::new_spanned(
+                    Return_type,
+                    "Functions with Run_with_executor must not have a return type",
+                )
+                .to_compile_error()
+                .into();
+            }
+        } else {
+            return syn::Error::new_spanned(
+                Return_type,
+                "Functions with Run_with_executor must not have a return type",
+            )
+            .to_compile_error()
+            .into();
+        }
+    }
+
+    // Change ident to __inner to avoid name conflicts
+    let mut Input_function = Input_function.clone();
+    Input_function.sig.ident = format_ident!("__inner");
+
+    // Generate the new function
+    quote! {
+        fn #Function_name() {
+            #Input_function
+
+            static mut __Executor: Option<#Executor_expression> = None;
+            static mut __Spawner : usize = 0;
+
+            unsafe {
+                if __Executor.is_none() {
+                    __Executor = Some(#Executor_expression::New());
+                }
+
+                __Executor.as_mut().unwrap().Run(|Spawner| {
+                    let Manager = ::Task::Initialize();
+
+                    unsafe {
+                        __Spawner = Manager.Register_spawner(Spawner).expect("Failed to register spawner");
+                    }
+
+                    ::Task::Futures::block_on(async move {
+                        Manager.Spawn(
+                            ::Task::Manager_type::Root_task_identifier,
+                            #Function_name_string,
+                            Some(__Spawner),
+                            async move |_task| {
+                                __inner().await;
+                                __Executor.as_mut().unwrap().Stop();
+                            }
+                        ).await
+                    }).expect("Failed to spawn task");
+                });
+            }
+            unsafe {
+                ::Task::Initialize().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
+            }
+        }
+    }
+    .to_token_stream()
+    .into()
+}

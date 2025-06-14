@@ -32,7 +32,7 @@ Authentication = { path = "Modules/Authentication", optional = true }
 Target = { path = "Modules/Target", optional = true }
 
 [features]
-default = []
+default = ["Host"]
 
 Host = [
     "dep:LittleFS",
