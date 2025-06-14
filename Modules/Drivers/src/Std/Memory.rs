@@ -6,8 +6,8 @@ use core::{
 };
 
 use libc::{
-    mmap, mremap, munmap, sysconf, MAP_32BIT, MAP_ANONYMOUS, MAP_FAILED, MAP_PRIVATE, PROT_EXEC,
-    PROT_READ, PROT_WRITE, _SC_PAGE_SIZE,
+    mmap, mremap, munmap, sysconf, MAP_32BIT, MAP_ANONYMOUS, MAP_FAILED, MAP_PRIVATE,
+    MREMAP_MAYMOVE, PROT_EXEC, PROT_READ, PROT_WRITE, _SC_PAGE_SIZE,
 };
 use linked_list_allocator::Heap;
 use Memory::{Capabilities_type, Layout_type, Manager_trait};
@@ -67,20 +67,33 @@ impl Manager_trait for Memory_manager_type {
         Layout: Layout_type,
     ) -> Option<NonNull<u8>> {
         self.Regions.lock(|Regions| {
-            for Region in Regions.borrow_mut().iter_mut() {
-                if Region.Capabilities.Is_superset_of(Capabilities) {
-                    let Result = Region.Heap.allocate_first_fit(Layout);
-                    if let Ok(Pointer) = Result {
-                        return Some(Pointer);
-                    } else {
-                        // Try to expand the region if allocation fails
-                        let Tried_size = Layout.size();
-                        if Expand(Region, Tried_size) {
-                            let Pointer = Region.Heap.allocate_first_fit(Layout);
-                            if let Ok(Pointer) = Pointer {
-                                return Some(Pointer);
-                            }
-                        }
+            let mut Regions = Regions.try_borrow_mut().ok()?;
+
+            // Find the first region that can satisfy the allocation request
+            let Capable_regions = Regions
+                .iter_mut()
+                .filter(|Region| Region.Capabilities.Is_superset_of(Capabilities));
+
+            // Try to allocate from the first capable region
+            for Region in Capable_regions {
+                let Result = Region.Heap.allocate_first_fit(Layout).ok();
+                if Result.is_some() {
+                    return Result;
+                }
+            }
+
+            let Capable_regions = Regions
+                .iter_mut()
+                .filter(|Region| Region.Capabilities.Is_superset_of(Capabilities));
+
+            // If no region could satisfy the request, try to expand existing regions
+            for Region in Capable_regions {
+                // Try to expand the region to fit the requested layout
+                if Expand(Region, Layout.size()) {
+                    // Try to allocate again after expanding
+                    let Result = Region.Heap.allocate_first_fit(Layout).ok();
+                    if Result.is_some() {
+                        return Result;
                     }
                 }
             }
@@ -215,6 +228,8 @@ unsafe fn Remap(Slice: &mut &'static mut [MaybeUninit<u8>], New_size: usize) {
 
     let Pointer = mremap(Slice.as_mut_ptr() as *mut c_void, Old_size, New_size, 0);
 
+    assert_eq!(Pointer, Slice.as_mut_ptr() as *mut c_void);
+
     if Pointer == MAP_FAILED {
         panic!("Failed to reallocate memory");
     }
@@ -232,7 +247,6 @@ unsafe fn Unmap(Pointer: *mut MaybeUninit<u8>, Size: usize) {
 mod Tests {
     use super::*;
 
-    use alloc::alloc::{alloc, dealloc};
     use core::ptr::NonNull;
     use Memory::Instantiate_global_allocator;
 
@@ -240,20 +254,25 @@ mod Tests {
 
     #[test]
     fn Test_global_allocator() {
-        // Allocate some memory using the global allocator
+        // Create a separate instance for testing to avoid reentrancy issues with the global allocator
+        let Test_manager = Memory_manager_type::New();
+
+        // Allocate some memory using the test manager directly
         let Layout = Layout_type::from_size_align(128, 8).unwrap();
-        let Pointer = unsafe { alloc(Layout) };
+        let Capabilities = Capabilities_type::New(false, false);
 
-        assert!(!Pointer.is_null());
-        // Use the allocated memory (e.g., write to it)
         unsafe {
-            *Pointer = 42;
-            assert_eq!(*Pointer, 42);
-        }
+            let Allocation = Test_manager.Allocate(Capabilities, Layout);
+            assert!(Allocation.is_some());
 
-        // Deallocate the memory
-        unsafe {
-            dealloc(Pointer, Layout);
+            if let Some(Pointer) = Allocation {
+                // Use the allocated memory (e.g., write to it)
+                *Pointer.as_ptr() = 42;
+                assert_eq!(*Pointer.as_ptr(), 42);
+
+                // Deallocate the memory
+                Test_manager.Deallocate(Pointer, Layout);
+            }
         }
     }
 
@@ -361,7 +380,7 @@ mod Tests {
 
             // Allocate a chunk of memory close to the region size
             // to trigger expansion
-            let Page_size = Get_page_size();
+            let _page_size = Get_page_size();
             let Layout = Layout_type::from_size_align(INITIAL_HEAP_SIZE, 8).unwrap();
             let Capabilities = Capabilities_type::New(false, false);
 

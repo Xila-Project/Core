@@ -40,6 +40,10 @@ const Functions: [Function_descriptor_type; 0] = Function_descriptors! {};
 async fn Integration_test() {
     let Task_instance = Task::Initialize();
 
+    static Logger: Drivers::Std::Log::Logger_type = Drivers::Std::Log::Logger_type;
+
+    Log::Initialize(&Logger).expect("Failed to initialize logger");
+
     Users::Initialize();
 
     Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()))

@@ -21,6 +21,7 @@ Synchronization = { version = "0.1.0", path = "../Synchronization" }
 Users = { path = "../Users", version = "0.1.0" }
 Drivers = { path = "../Drivers", version = "0.1.0" }
 Futures = { path = "../Futures" }
+Log = { path = "../Log" }
 
 [[test]]
 name = "Virtual_machine_test"
