@@ -6,8 +6,8 @@ use core::{
 };
 
 use libc::{
-    mmap, mremap, munmap, sysconf, MAP_32BIT, MAP_ANONYMOUS, MAP_FAILED, MAP_PRIVATE,
-    MREMAP_MAYMOVE, PROT_EXEC, PROT_READ, PROT_WRITE, _SC_PAGE_SIZE,
+    mmap, mremap, munmap, sysconf, MAP_32BIT, MAP_ANONYMOUS, MAP_FAILED, MAP_PRIVATE, PROT_EXEC,
+    PROT_READ, PROT_WRITE, _SC_PAGE_SIZE,
 };
 use linked_list_allocator::Heap;
 use Memory::{Capabilities_type, Layout_type, Manager_trait};

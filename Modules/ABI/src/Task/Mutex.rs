@@ -1,4 +1,3 @@
-use alloc::boxed::Box;
 use core::{
     mem::{align_of, size_of},
     ptr::drop_in_place,
