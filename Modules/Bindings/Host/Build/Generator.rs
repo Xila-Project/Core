@@ -283,7 +283,7 @@ pub fn Generate_code(
             __Result: WASM_pointer_type,
         )
         {
-            let __Custom_data = Futures::block_on(__Environment.Get_or_initialize_custom_data()).unwrap();
+            let __Custom_data = __Environment.Get_or_initialize_custom_data().unwrap();
             let __Task = __Custom_data.Get_task_identifier();
 
             match __Function {

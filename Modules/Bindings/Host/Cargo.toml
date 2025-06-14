@@ -19,6 +19,7 @@ Futures = { path = "../../Futures" }
 [dev-dependencies]
 Drivers = { path = "../../Drivers" }
 LittleFS = { path = "../../LittleFS" }
+Memory = { path = "../../Memory" }
 Virtual_file_system = { path = "../../Virtual_file_system" }
 
 [build-dependencies]

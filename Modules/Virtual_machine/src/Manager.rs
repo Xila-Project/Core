@@ -112,20 +112,24 @@ impl Manager_type {
         Standard_out: Unique_file_identifier_type,
         Standard_error: Unique_file_identifier_type,
     ) -> Result_type<Vec<WasmValue>> {
-        let Module = Module_type::From_buffer(
-            &self.Runtime,
-            Buffer,
-            "module",
-            Standard_in,
-            Standard_out,
-            Standard_error,
-        )
-        .await?;
+        ABI::Get_instance()
+            .Call_ABI(async || {
+                let Module = Module_type::From_buffer(
+                    &self.Runtime,
+                    Buffer,
+                    "module",
+                    Standard_in,
+                    Standard_out,
+                    Standard_error,
+                )
+                .await?;
 
-        let Instance = Instance_type::New(&self.Runtime, &Module, Stack_size).unwrap();
+                let Instance = Instance_type::New(&self.Runtime, &Module, Stack_size).unwrap();
 
-        let Result = Instance.Call_main(&vec![])?;
+                let Result = Instance.Call_main(&vec![])?;
 
-        Ok(Result)
+                Ok(Result)
+            })
+            .await
     }
 }
