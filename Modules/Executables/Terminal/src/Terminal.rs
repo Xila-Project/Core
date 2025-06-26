@@ -128,7 +128,7 @@ impl Terminal_type {
 
         unsafe {
             LVGL::lv_label_set_text(Inner.Display, Inner.Buffer.as_ptr() as *const i8);
-            LVGL::lv_obj_scroll_to_view(Inner.Display, LVGL::lv_anim_enable_t_LV_ANIM_OFF);
+            LVGL::lv_obj_scroll_to_view(Inner.Display, true);
         }
 
         Ok(())
@@ -155,7 +155,7 @@ impl Terminal_type {
 
         unsafe {
             LVGL::lv_label_set_text(Inner.Display, Inner.Buffer.as_ptr() as *const i8);
-            LVGL::lv_obj_scroll_to_view(Inner.Display, LVGL::lv_anim_enable_t_LV_ANIM_OFF);
+            LVGL::lv_obj_scroll_to_view(Inner.Display, true);
         }
 
         Ok(())

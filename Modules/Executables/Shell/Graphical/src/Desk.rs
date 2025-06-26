@@ -408,12 +408,7 @@ impl Desk_type {
         while let Some(Event) = self.Window.Pop_event() {
             match Event.Get_code() {
                 Self::Home_event => unsafe {
-                    LVGL::lv_tileview_set_tile_by_index(
-                        self.Tile_view,
-                        0,
-                        0,
-                        LVGL::lv_anim_enable_t_LV_ANIM_ON,
-                    );
+                    LVGL::lv_tileview_set_tile_by_index(self.Tile_view, 0, 0, true);
                 },
                 Event_code_type::Value_changed => {
                     if Event.Get_target() == self.Tile_view {
@@ -484,12 +479,7 @@ impl Desk_type {
                         }
 
                         unsafe {
-                            LVGL::lv_tileview_set_tile_by_index(
-                                self.Tile_view,
-                                0,
-                                1,
-                                LVGL::lv_anim_enable_t_LV_ANIM_ON,
-                            );
+                            LVGL::lv_tileview_set_tile_by_index(self.Tile_view, 0, 1, true);
                         }
                     }
                 }
