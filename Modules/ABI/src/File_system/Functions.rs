@@ -9,8 +9,7 @@ use core::{
 use Futures::block_on;
 
 use File_system::{
-    Error_type, File_identifier_type, Flags_type, Metadata_type, Mode_type, Open_type,
-    Statistics_type, Status_type,
+    Error_type, File_identifier_type, Flags_type, Mode_type, Open_type, Status_type,
 };
 use Virtual_file_system::Get_instance as Get_file_system_instance;
 
