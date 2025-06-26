@@ -9,7 +9,8 @@ use core::{
 use Futures::block_on;
 
 use File_system::{
-    Error_type, File_identifier_type, Flags_type, Mode_type, Open_type, Status_type,
+    Error_type, File_identifier_type, Flags_type, Metadata_type, Mode_type, Open_type,
+    Statistics_type, Status_type,
 };
 use Virtual_file_system::Get_instance as Get_file_system_instance;
 
@@ -64,13 +65,30 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics(
 }
 
 /// This function is used to get the statistics of a file from its path.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub extern "C" fn Xila_file_system_get_statistics_from_path(
-    _Path: *const c_char,
-    _Statistics: *mut Xila_file_system_statistics_type,
-    _Follow: bool,
+pub unsafe extern "C" fn Xila_file_system_get_statistics_from_path(
+    Path: *const c_char,
+    Statistics: *mut Xila_file_system_statistics_type,
+    _: bool,
 ) -> Xila_file_system_result_type {
-    todo!()
+    Into_u32(move || {
+        let Path = CStr::from_ptr(Path)
+            .to_str()
+            .map_err(|_| Error_type::Invalid_parameter)?;
+
+        let Statistics = Xila_file_system_statistics_type::From_mutable_pointer(Statistics)
+            .ok_or(Error_type::Invalid_parameter)?;
+
+        *Statistics = Xila_file_system_statistics_type::From_statistics(block_on(
+            Get_file_system_instance().Get_statistics_from_path(&Path),
+        )?);
+
+        Ok(())
+    })
 }
 
 /// This function is used to get the access mode of a file.

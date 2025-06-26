@@ -14,8 +14,8 @@ use Time::Duration_type;
 use Users::{Group_identifier_type, User_identifier_type};
 
 use File_system::{
-    Device_type, Entry_type, File_identifier_type, Local_file_identifier_type, Metadata_type,
-    Mode_type, Open_type, Statistics_type, Time_type, Type_type,
+    Device_type, Entry_type, File_identifier_type, Inode_type, Local_file_identifier_type,
+    Metadata_type, Mode_type, Open_type, Statistics_type, Time_type, Type_type,
 };
 
 use File_system::{
@@ -1405,6 +1405,32 @@ impl<'a> Virtual_file_system_type<'a> {
         let (_, File_system, Relative_path) = Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
 
         File_system.Get_metadata_from_path(Relative_path)
+    }
+
+    pub async fn Get_statistics_from_path(
+        &self,
+        Path: &impl AsRef<Path_type>,
+    ) -> Result_type<Statistics_type> {
+        let File_systems = self.File_systems.read().await;
+
+        let (File_system_identifier, File_system, Relative_path) =
+            Self::Get_file_system_from_path(&File_systems, Path)?; // Get the file system identifier and the relative path
+
+        let Metadata = File_system.Get_metadata_from_path(Relative_path)?;
+
+        Ok(Statistics_type::New(
+            File_system_identifier,
+            Metadata.Get_inode().unwrap_or(Inode_type::New(0)),
+            0,
+            Size_type::New(0),
+            Metadata.Get_access_time(),
+            Metadata.Get_modification_time(),
+            Metadata.Get_creation_time(),
+            Metadata.Get_type(),
+            Metadata.Get_permissions(),
+            Metadata.Get_user(),
+            Metadata.Get_group(),
+        ))
     }
 
     pub async fn Send(
