@@ -1,5 +1,4 @@
 use core::fmt::Display;
-use std::sync::PoisonError;
 
 pub type Result_type<T> = Result<T, Error_type>;
 
@@ -12,7 +11,6 @@ pub enum Error_type {
     Not_initialized,
     Out_of_memory,
     Already_in_use,
-    Poisoned_lock,
     Failed_to_register,
     Failed_to_get_resolution,
     Not_registered,
@@ -30,7 +28,6 @@ impl Display for Error_type {
             Error_type::Not_initialized => "Not initialized",
             Error_type::Out_of_memory => "Out of memory",
             Error_type::Already_in_use => "Already in use",
-            Error_type::Poisoned_lock => "Poisoned lock",
             Error_type::Failed_to_register => "Failed to register",
             Error_type::Failed_to_get_resolution => "Failed to get resolution",
             Error_type::Not_registered => "Not registered",
@@ -40,12 +37,6 @@ impl Display for Error_type {
         };
 
         write!(Formatter, "{}", String)
-    }
-}
-
-impl<T> From<PoisonError<T>> for Error_type {
-    fn from(_: PoisonError<T>) -> Self {
-        Error_type::Poisoned_lock
     }
 }
 

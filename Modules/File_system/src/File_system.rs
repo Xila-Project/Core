@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use alloc::{collections::BTreeMap, string::String};
 
 use crate::{
     Entry_type, File_identifier_type, Inode_type, Local_file_identifier_type, Metadata_type,
@@ -13,7 +13,7 @@ use Users::{Group_identifier_type, User_identifier_type};
 #[macro_export]
 macro_rules! Create_file_system {
     ($file_system:expr) => {
-        std::boxed::Box::new($file_system)
+        alloc::boxed::Box::new($file_system)
     };
     () => {};
 }
@@ -229,7 +229,9 @@ pub fn Get_new_inode<T>(Map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type
 
 pub mod Tests {
 
-    use crate::{Loader::Loader_type, Open_type, Path_owned_type, Time_type, Type_type};
+    use crate::{Open_type, Path_owned_type, Time_type, Type_type};
+
+    use alloc::{borrow::ToOwned, format};
 
     use super::*;
 
@@ -237,8 +239,8 @@ pub mod Tests {
         Path_type::Root.to_owned()
     }
 
-    pub fn Test_open_close_delete(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_open_close_delete(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_open_close_delete").unwrap();
 
@@ -263,8 +265,8 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub fn Test_read_write(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_read_write(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_read_write").unwrap();
 
@@ -308,8 +310,8 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub fn Test_move(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_move(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_move").unwrap();
         let Path_destination = Get_test_path().Append("Test_move_destination").unwrap();
@@ -367,8 +369,8 @@ pub mod Tests {
         File_system.Remove(&Path_destination).unwrap();
     }
 
-    pub fn Test_set_position(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_set_position(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_set_position").unwrap();
 
@@ -418,8 +420,8 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub fn Test_flush(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_flush(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_flush").unwrap();
 
@@ -449,8 +451,8 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub fn Test_set_get_metadata(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_set_get_metadata(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_set_owner").unwrap();
 
@@ -490,8 +492,8 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub fn Test_read_directory(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_read_directory(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
@@ -530,8 +532,8 @@ pub mod Tests {
         File_system.Close_directory(Directory).unwrap();
     }
 
-    pub fn Test_set_position_directory(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_set_position_directory(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
@@ -580,8 +582,8 @@ pub mod Tests {
         }
     }
 
-    pub fn Test_rewind_directory(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_rewind_directory(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
@@ -636,8 +638,8 @@ pub mod Tests {
         File_system.Close_directory(Directory).unwrap();
     }
 
-    pub fn Test_create_remove_directory(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().unwrap();
+    pub async fn Test_create_remove_directory(File_system: impl File_system_traits) {
+        let Task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_create_directory").unwrap();
 
@@ -683,38 +685,5 @@ pub mod Tests {
             File_system.Close_directory(Directory).unwrap();
         }
         File_system.Remove(&Path).unwrap();
-    }
-
-    pub fn Test_loader(mut File_system: impl File_system_traits) {
-        // - Load the file in the file system
-        let Source_path = "Cargo.toml";
-        let Destination_path = "/Cargo.toml";
-
-        let Loader = Loader_type::New().Add_file(Source_path, Destination_path);
-
-        Loader.Load(&mut File_system).unwrap();
-
-        // - Read the file and compare it with the original
-        let Test_file = std::fs::read_to_string(Source_path).unwrap();
-
-        let mut Buffer = vec![0; Test_file.len()];
-
-        let File = File_system
-            .Open(
-                Task_identifier_type::New(0),
-                Path_type::New(Destination_path),
-                Flags_type::New(Mode_type::Read_only, None, None),
-                Time_type::New(0),
-                User_identifier_type::Root,
-                Group_identifier_type::Root,
-            )
-            .unwrap();
-
-        let Read = File_system
-            .Read(File, &mut Buffer, Time_type::New(0))
-            .unwrap();
-
-        assert_eq!(Read, Test_file.len());
-        assert_eq!(Buffer, Test_file.as_bytes());
     }
 }

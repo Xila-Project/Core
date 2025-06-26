@@ -1,7 +1,3 @@
-use Users::User_identifier_type;
-
-use crate::{Environment_variable_type, Get_instance, Join_handle_type, Result_type};
-
 #[cfg(target_pointer_width = "32")]
 pub type Task_identifier_inner_type = u16;
 #[cfg(target_pointer_width = "64")]
@@ -13,6 +9,7 @@ pub struct Task_identifier_type(Task_identifier_inner_type);
 
 impl Task_identifier_type {
     pub const Maximum: Task_identifier_inner_type = Task_identifier_inner_type::MAX;
+    pub const Minimum: Task_identifier_inner_type = Task_identifier_inner_type::MIN;
 }
 
 impl Task_identifier_type {
@@ -37,62 +34,182 @@ impl From<Task_identifier_type> for Task_identifier_inner_type {
     }
 }
 
-/// A wrapper for individual tasks that are managed by [crate::Manager_type].
-pub struct Task_type {
-    /// The identifier of the task.
-    Identifier: Task_identifier_type,
+impl PartialEq<Task_identifier_inner_type> for Task_identifier_type {
+    fn eq(&self, other: &Task_identifier_inner_type) -> bool {
+        self.0 == *other
+    }
 }
 
-impl Task_type {
-    /// Internal method to create a new task.
-    pub(crate) fn New(Identifier: Task_identifier_type) -> Self {
-        Self { Identifier }
+#[cfg(test)]
+mod Tests {
+    use super::*;
+    use std::format;
+
+    #[test]
+    fn test_task_identifier_constants() {
+        assert_eq!(
+            Task_identifier_type::Maximum,
+            Task_identifier_inner_type::MAX
+        );
+        assert_eq!(
+            Task_identifier_type::Minimum,
+            Task_identifier_inner_type::MIN
+        );
     }
 
-    /// Create a new child task.
-    pub fn New_child_task<T, F>(
-        &self,
-        Name: &str,
-        Stack_size: Option<usize>,
-        Function: F,
-    ) -> Result_type<(Task_type, Join_handle_type<T>)>
-    where
-        T: Send + 'static,
-        F: FnOnce() -> T + Send + 'static,
-    {
-        let (Task_identifier, Join_handle) =
-            Get_instance().New_task(self.Identifier, Name, Stack_size, Function)?;
-
-        Ok((Task_type::New(Task_identifier), Join_handle))
+    #[test]
+    fn test_task_identifier_new() {
+        let id = Task_identifier_type::New(42);
+        assert_eq!(id.Into_inner(), 42);
     }
 
-    pub fn Get_current_task() -> Result_type<Self> {
-        let Identifier = Get_instance().Get_current_task_identifier()?;
-
-        Ok(Self { Identifier })
+    #[test]
+    fn test_task_identifier_into_inner() {
+        let inner_value = 123;
+        let id = Task_identifier_type::New(inner_value);
+        assert_eq!(id.Into_inner(), inner_value);
     }
 
-    pub fn Get_name(&self) -> Result_type<String> {
-        Get_instance().Get_task_name(self.Identifier)
+    #[test]
+    fn test_task_identifier_from_inner_type() {
+        let inner_value = 456;
+        let id: Task_identifier_type = inner_value.into();
+        assert_eq!(id.Into_inner(), inner_value);
     }
 
-    pub fn Get_identifier(&self) -> Task_identifier_type {
-        self.Identifier
+    #[test]
+    fn test_task_identifier_into_inner_type() {
+        let id = Task_identifier_type::New(789);
+        let inner_value: Task_identifier_inner_type = id.into();
+        assert_eq!(inner_value, 789);
     }
 
-    pub fn Get_owner(&self) -> Result_type<User_identifier_type> {
-        Get_instance().Get_user(self.Identifier)
+    #[test]
+    fn test_task_identifier_clone_copy() {
+        let id1 = Task_identifier_type::New(42);
+        let id2 = id1; // Copy
+        let id3 = id1; // Copy (Clone not needed for Copy types)
+
+        assert_eq!(id1.Into_inner(), 42);
+        assert_eq!(id2.Into_inner(), 42);
+        assert_eq!(id3.Into_inner(), 42);
     }
 
-    pub fn Get_environment_variable(&self, Name: &str) -> Result_type<Environment_variable_type> {
-        Get_instance().Get_environment_variable(self.Identifier, Name)
+    #[test]
+    fn test_task_identifier_equality() {
+        let id1 = Task_identifier_type::New(42);
+        let id2 = Task_identifier_type::New(42);
+        let id3 = Task_identifier_type::New(43);
+
+        assert_eq!(id1, id2);
+        assert_ne!(id1, id3);
     }
 
-    pub fn Set_environment_variable(&self, Name: &str, Value: &str) -> Result_type<()> {
-        Get_instance().Set_environment_variable(self.Identifier, Name, Value)
+    #[test]
+    fn test_task_identifier_equality_with_inner_type() {
+        let id = Task_identifier_type::New(42);
+        let inner_value = 42;
+        let different_value = 43;
+
+        assert_eq!(id, inner_value);
+        assert_ne!(id, different_value);
     }
 
-    pub fn Remove_environment_variable(&self, Name: &str) -> Result_type<()> {
-        Get_instance().Remove_environment_variable(self.Identifier, Name)
+    #[test]
+    fn test_task_identifier_ordering() {
+        let id1 = Task_identifier_type::New(10);
+        let id2 = Task_identifier_type::New(20);
+
+        assert!(id1 < id2);
+        assert!(id2 > id1);
+        assert!(id1 <= id2);
+        assert!(id2 >= id1);
+        assert!(id1 <= id1);
+        assert!(id1 >= id1);
+    }
+
+    #[test]
+    fn test_task_identifier_hash_consistency() {
+        use std::collections::HashMap;
+
+        let mut map = HashMap::new();
+        let id = Task_identifier_type::New(42);
+
+        map.insert(id, "test_task");
+        assert_eq!(map.get(&id), Some(&"test_task"));
+    }
+
+    #[test]
+    fn test_task_identifier_debug_format() {
+        let id = Task_identifier_type::New(42);
+        let debug_str = format!("{:?}", id);
+        assert!(debug_str.contains("42"));
+    }
+
+    #[test]
+    fn test_edge_cases() {
+        // Test minimum value
+        let min_id = Task_identifier_type::New(Task_identifier_type::Minimum);
+        assert_eq!(min_id.Into_inner(), Task_identifier_type::Minimum);
+
+        // Test maximum value
+        let max_id = Task_identifier_type::New(Task_identifier_type::Maximum);
+        assert_eq!(max_id.Into_inner(), Task_identifier_type::Maximum);
+    }
+
+    #[test]
+    fn test_const_constructor() {
+        // Test that the constructor can be used in const context
+        const ID: Task_identifier_type = Task_identifier_type::New(100);
+        assert_eq!(ID.Into_inner(), 100);
+    }
+
+    #[test]
+    fn test_const_into_inner() {
+        // Test that Into_inner can be used in const context
+        const ID: Task_identifier_type = Task_identifier_type::New(200);
+        const INNER: Task_identifier_inner_type = ID.Into_inner();
+        assert_eq!(INNER, 200);
+    }
+
+    #[test]
+    fn test_repr_transparent() {
+        // Test that the size is the same as the inner type (due to #[repr(transparent)])
+        assert_eq!(
+            std::mem::size_of::<Task_identifier_type>(),
+            std::mem::size_of::<Task_identifier_inner_type>()
+        );
+    }
+
+    #[test]
+    fn test_different_architectures() {
+        // This test verifies the conditional compilation works correctly
+        #[cfg(target_pointer_width = "32")]
+        {
+            assert_eq!(std::mem::size_of::<Task_identifier_inner_type>(), 2); // u16
+        }
+
+        #[cfg(target_pointer_width = "64")]
+        {
+            assert_eq!(std::mem::size_of::<Task_identifier_inner_type>(), 4); // u32
+        }
+    }
+
+    #[test]
+    fn test_zero_value() {
+        let zero_id = Task_identifier_type::New(0);
+        assert_eq!(zero_id.Into_inner(), 0);
+        assert_eq!(zero_id, 0);
+    }
+
+    #[test]
+    fn test_bidirectional_conversion() {
+        let original_value = 12345;
+        let id = Task_identifier_type::New(original_value);
+        let converted_back: Task_identifier_inner_type = id.into();
+        let id_again: Task_identifier_type = converted_back.into();
+
+        assert_eq!(original_value, converted_back);
+        assert_eq!(id, id_again);
     }
 }

@@ -6,7 +6,11 @@ build = "Build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git", features = ["multi-module"] }
+wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git", features = [
+    "multi-module",
+    "instruction-metering",
+] }
+
 Shared = { version = "0.1.0", path = "../Shared" }
 Memory = { version = "0.1.0", path = "../Memory" }
 File_system = { path = "../File_system" }
@@ -15,11 +19,18 @@ LittleFS = { path = "../LittleFS" }
 Task = { version = "0.1.0", path = "../Task" }
 Time = { version = "0.1.0", path = "../Time" }
 ABI = { version = "0.1.0", path = "../ABI" }
+Synchronization = { version = "0.1.0", path = "../Synchronization" }
 
 [dev-dependencies]
 Users = { path = "../Users", version = "0.1.0" }
 Drivers = { path = "../Drivers", version = "0.1.0" }
+Futures = { path = "../Futures" }
+Log = { path = "../Log" }
 
 [[test]]
 name = "Virtual_machine_test"
 path = "Tests/Test.rs"
+
+[[test]]
+name = "Virtual_machine_test_2"
+path = "Tests/Test_2.rs"

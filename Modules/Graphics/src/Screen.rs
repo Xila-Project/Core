@@ -1,5 +1,4 @@
 use core::mem::{size_of, transmute};
-use std::mem::align_of;
 
 use crate::{Area_type, Point_type, Rendering_color_type};
 
@@ -16,7 +15,7 @@ impl<'a> Screen_write_data_type<'a> {
 
 impl AsRef<[u8]> for Screen_write_data_type<'_> {
     fn as_ref(&self) -> &[u8] {
-        unsafe { std::slice::from_raw_parts(self as *const _ as *const u8, size_of::<Self>()) }
+        unsafe { core::slice::from_raw_parts(self as *const _ as *const u8, size_of::<Self>()) }
     }
 }
 
@@ -83,7 +82,7 @@ impl Screen_read_data_type {
 
 impl AsMut<[u8]> for Screen_read_data_type {
     fn as_mut(&mut self) -> &mut [u8] {
-        unsafe { std::slice::from_raw_parts_mut(self as *mut _ as *mut u8, size_of::<Self>()) }
+        unsafe { core::slice::from_raw_parts_mut(self as *mut _ as *mut u8, size_of::<Self>()) }
     }
 }
 

@@ -1,3 +1,4 @@
+use alloc::string::String;
 use File_system::Device_trait;
 use Task::Task_identifier_type;
 use Virtual_file_system::Virtual_file_system_type;
@@ -14,13 +15,13 @@ macro_rules! Mount_static_executables {
 
     ( $Virtual_file_system:expr, $Task_identifier:expr, &[ $( ($Path:expr, $Device:expr) ),* $(,)? ] ) => {
 
-    || -> Result<(), File_system::Error_type>
+    async || -> Result<(), File_system::Error_type>
     {
         use File_system::{Create_device, Permissions_type};
 
         $(
-            $Virtual_file_system.Mount_static_device($Task_identifier, $Path, Create_device!($Device))?;
-            $Virtual_file_system.Set_permissions($Path, Permissions_type::Executable )?;
+            $Virtual_file_system.Mount_static_device($Task_identifier, $Path, Create_device!($Device)).await?;
+            $Virtual_file_system.Set_permissions($Path, Permissions_type::Executable ).await?;
         )*
 
         Ok(())

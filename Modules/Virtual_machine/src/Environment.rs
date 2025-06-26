@@ -1,15 +1,23 @@
 #![allow(non_camel_case_types)]
 
-use std::{ffi::CStr, marker::PhantomData, os::raw::c_void};
+use core::{
+    ffi::{c_void, CStr},
+    marker::PhantomData,
+};
 
+use alloc::{
+    boxed::Box,
+    string::{String, ToString},
+    vec::Vec,
+};
 use wamr_rust_sdk::{
     sys::{
         wasm_exec_env_t, wasm_module_inst_t, wasm_runtime_addr_app_to_native,
         wasm_runtime_addr_native_to_app, wasm_runtime_call_indirect, wasm_runtime_create_exec_env,
         wasm_runtime_get_custom_data, wasm_runtime_get_exception,
         wasm_runtime_get_exec_env_singleton, wasm_runtime_get_module_inst,
-        wasm_runtime_set_custom_data, wasm_runtime_validate_app_addr,
-        wasm_runtime_validate_native_addr,
+        wasm_runtime_set_custom_data, wasm_runtime_set_instruction_count_limit,
+        wasm_runtime_validate_app_addr, wasm_runtime_validate_native_addr,
     },
     value::WasmValue,
 };
@@ -54,7 +62,7 @@ impl Environment_type<'_> {
                 as *const Custom_data_type;
 
             let Custom_data = if Custom_data.is_null() {
-                let Task = Task::Get_instance().Get_current_task_identifier()?;
+                let Task = ABI::Get_instance().Get_current_task_identifier();
 
                 let Custom_data = Box::new(Custom_data_type::New(Task));
 
@@ -164,6 +172,15 @@ impl Environment_type<'_> {
         }
 
         Ok(Self(Execution_environment, PhantomData))
+    }
+
+    pub fn Set_instruction_count_limit(&self, Limit: Option<u64>) {
+        unsafe {
+            wasm_runtime_set_instruction_count_limit(
+                self.Get_inner_reference(),
+                Limit.map(|Limit| Limit as i32).unwrap_or(-1),
+            );
+        }
     }
 
     fn Get_instance_pointer(&self) -> wasm_module_inst_t {

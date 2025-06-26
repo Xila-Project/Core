@@ -1,12 +1,18 @@
+#![no_std]
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
+
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
 
 mod Device;
 mod Error;
 mod File_system;
 mod Fundamentals;
-pub mod Loader;
+
 mod Memory_device;
 mod Time;
 

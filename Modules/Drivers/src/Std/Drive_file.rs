@@ -6,6 +6,8 @@ use std::{
 
 use File_system::{Device_trait, Error_type, Path_type, Size_type};
 
+use crate::Std::IO::Map_error;
+
 pub struct File_drive_device_type(RwLock<File>);
 
 impl File_drive_device_type {
@@ -31,7 +33,7 @@ impl Device_trait for File_drive_device_type {
             .map_err(|_| Error_type::Ressource_busy)?
             .read(Buffer)
             .map(|Size| File_system::Size_type::New(Size as u64))
-            .map_err(|Error| Error.into())
+            .map_err(Map_error)
     }
 
     fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<File_system::Size_type> {
@@ -40,7 +42,7 @@ impl Device_trait for File_drive_device_type {
             .map_err(|_| Error_type::Ressource_busy)?
             .write(Buffer)
             .map(|Size| File_system::Size_type::New(Size as u64))
-            .map_err(|Error| Error.into())
+            .map_err(Map_error)
     }
 
     fn Get_size(&self) -> File_system::Result_type<File_system::Size_type> {
@@ -62,11 +64,11 @@ impl Device_trait for File_drive_device_type {
             .map_err(|_| Error_type::Ressource_busy)?
             .seek(Position)
             .map(Size_type::New)
-            .map_err(|Error| Error.into())
+            .map_err(Map_error)
     }
 
     fn Flush(&self) -> File_system::Result_type<()> {
-        self.0.write()?.flush().map_err(|Error| Error.into())
+        self.0.write().unwrap().flush().map_err(Map_error)
     }
 
     fn Erase(&self) -> File_system::Result_type<()> {

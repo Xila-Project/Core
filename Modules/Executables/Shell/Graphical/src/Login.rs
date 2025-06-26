@@ -1,5 +1,6 @@
 use core::ffi::CStr;
 
+use alloc::string::ToString;
 use Graphics::{Event_code_type, Window_type, LVGL};
 use Users::User_identifier_type;
 
@@ -15,12 +16,12 @@ pub struct Login_type {
 }
 
 impl Login_type {
-    pub fn New() -> Result_type<Self> {
+    pub async fn New() -> Result_type<Self> {
         // - Lock the graphics
         let _Lock = Graphics::Get_instance().Lock();
 
         // - Create a window
-        let Window = Graphics::Get_instance().Create_window()?;
+        let Window = Graphics::Get_instance().Create_window().await?;
 
         unsafe {
             LVGL::lv_obj_set_flex_flow(Window.Get_object(), LVGL::LV_FLEX_COLUMN);
@@ -100,7 +101,7 @@ impl Login_type {
         }
     }
 
-    pub fn Authenticate(&mut self) -> Result_type<()> {
+    pub async fn Authenticate(&mut self) -> Result_type<()> {
         let (User_name, Password) = unsafe {
             let User_name = LVGL::lv_textarea_get_text(self.User_name_text_area);
             let User_name = CStr::from_ptr(User_name);
@@ -120,17 +121,17 @@ impl Login_type {
             User_name,
             Password,
         )
+        .await
         .map_err(Error_type::Authentication_failed)?;
 
         // - Set the user
         let Task_manager = Task::Get_instance();
 
-        let Task = Task_manager
-            .Get_current_task_identifier()
-            .map_err(Error_type::Failed_to_set_task_user)?;
+        let Task = Task_manager.Get_current_task_identifier().await;
 
         Task_manager
             .Set_user(Task, User_identifier)
+            .await
             .map_err(Error_type::Failed_to_set_task_user)?;
 
         self.User = Some(User_identifier);
@@ -138,7 +139,7 @@ impl Login_type {
         Ok(())
     }
 
-    pub fn Event_handler(&mut self) {
+    pub async fn Event_handler(&mut self) {
         while let Some(Event) = self.Window.Pop_event() {
             // If we are typing the user name or the password
             if Event.Get_code() == Event_code_type::Value_changed
@@ -151,7 +152,7 @@ impl Login_type {
             else if Event.Get_code() == Event_code_type::Clicked
                 && Event.Get_target() == self.Button
             {
-                let Result = self.Authenticate();
+                let Result = self.Authenticate().await;
 
                 if let Err(Error) = Result {
                     self.Print_error(Error);

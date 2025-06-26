@@ -1,5 +1,6 @@
-use std::{ffi::c_void, mem::forget};
+use core::{ffi::c_void, mem::forget};
 
+use alloc::{boxed::Box, vec};
 use File_system::Device_type;
 
 use super::{littlefs, Callbacks};
@@ -17,6 +18,9 @@ pub struct Configuration_type {
     Maximum_name_size: Option<usize>,
     Cache_size: usize,
     Look_ahead_size: usize,
+    Compact_threshold: Option<usize>,
+    Metadata_maxium: Option<usize>,
+    Inline_maximum: Option<usize>,
 }
 
 impl Configuration_type {
@@ -39,6 +43,9 @@ impl Configuration_type {
         name_max: 0,
         file_max: 0,
         attr_max: 0,
+        compact_thresh: 0,
+        metadata_max: 0,
+        inline_max: 0,
     };
 
     pub fn New(
@@ -74,6 +81,9 @@ impl Configuration_type {
             Maximum_name_size: None,
             Cache_size,
             Look_ahead_size,
+            Compact_threshold: None,
+            Metadata_maxium: None,
+            Inline_maximum: None,
         })
     }
 
@@ -104,6 +114,31 @@ impl Configuration_type {
 
     pub const fn Set_maximum_name_size(mut self, Maximum_name_size: usize) -> Self {
         self.Maximum_name_size = Some(Maximum_name_size);
+        self
+    }
+
+    pub const fn Set_cache_size(mut self, Cache_size: usize) -> Self {
+        self.Cache_size = Cache_size;
+        self
+    }
+
+    pub const fn Set_look_ahead_size(mut self, Look_ahead_size: usize) -> Self {
+        self.Look_ahead_size = Look_ahead_size;
+        self
+    }
+
+    pub const fn Set_compact_threshold(mut self, Compact_threshold: usize) -> Self {
+        self.Compact_threshold = Some(Compact_threshold);
+        self
+    }
+
+    pub const fn Set_metadata_maximum(mut self, Metadata_maxium: usize) -> Self {
+        self.Metadata_maxium = Some(Metadata_maxium);
+        self
+    }
+
+    pub const fn Set_inline_maximum(mut self, Inline_maximum: usize) -> Self {
+        self.Inline_maximum = Some(Inline_maximum);
         self
     }
 }
@@ -138,6 +173,9 @@ impl TryFrom<Configuration_type> for littlefs::lfs_config {
             name_max: Configuration.Maximum_name_size.unwrap_or(0) as u32, // Default value : 255 (LFS_NAME_MAX)
             file_max: Configuration.Maximum_file_size.unwrap_or(0) as u32, // Default value : 2,147,483,647 (2 GiB) (LFS_FILE_MAX)
             attr_max: Configuration.Maximum_attributes_size.unwrap_or(0) as u32, // Default value : 1022 (LFS_ATTR_MAX)
+            compact_thresh: Configuration.Compact_threshold.unwrap_or(0) as u32, // Default value : 0 (LFS_COMPACT_THRESH)
+            metadata_max: Configuration.Metadata_maxium.unwrap_or(0) as u32, // Default value : 0 (LFS_METADATA_MAX)
+            inline_max: Configuration.Inline_maximum.unwrap_or(0) as u32, // Default value : 0 (LFS_INLINE_MAX)
         };
 
         forget(Read_buffer);

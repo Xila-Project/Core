@@ -23,7 +23,7 @@ impl Device_trait for Screen_device_type {
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
-        let Resolution = self.0.lock()?.Get_resolution().unwrap();
+        let Resolution = self.0.lock().unwrap().Get_resolution().unwrap();
 
         Data.Set_resolution(Resolution);
 
@@ -35,7 +35,7 @@ impl Device_trait for Screen_device_type {
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
-        self.0.lock()?.Draw(Data).unwrap();
+        self.0.lock().unwrap().Draw(Data).unwrap();
 
         Ok(Size_type::New(size_of::<Self>() as u64))
     }

@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use super::Permission_type;
 
@@ -87,7 +87,7 @@ impl Mode_type {
 }
 
 impl Debug for Mode_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Formatter
             .debug_struct("Mode_type")
             .field("Read", &self.Get_read())
@@ -188,7 +188,7 @@ impl Default for Open_type {
 }
 
 impl Debug for Open_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Formatter
             .debug_struct("Open_type")
             .field("Create", &self.Get_create())
@@ -298,7 +298,7 @@ impl Status_type {
 }
 
 impl Debug for Status_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Formatter
             .debug_struct("Status_type")
             .field("Append", &self.Get_append())
@@ -342,7 +342,7 @@ impl Default for Status_type {
 pub struct Flags_type(u16);
 
 impl Debug for Flags_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Formatter
             .debug_struct("Flags_type")
             .field("Mode", &self.Get_mode())

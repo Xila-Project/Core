@@ -1,22 +1,24 @@
-use super::*;
-use std::{
+use alloc::{
     collections::{BTreeMap, BTreeSet},
-    sync::{OnceLock, RwLock},
+    string::{String, ToString},
     vec::Vec,
 };
+use Synchronization::{
+    blocking_mutex::raw::CriticalSectionRawMutex, once_lock::OnceLock, rwlock::RwLock,
+};
+
+use super::*;
 
 static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
 
-pub fn Initialize() -> Result_type<()> {
-    Manager_instance
-        .set(Manager_type::New())
-        .map_err(|_| Error_type::Already_initialized)
+pub fn Initialize() -> &'static Manager_type {
+    Manager_instance.get_or_init(Manager_type::New)
 }
 
 pub fn Get_instance() -> &'static Manager_type {
     Manager_instance
-        .get()
-        .expect("Users manager not initialized")
+        .try_get()
+        .expect("User manager instance not initialized")
 }
 
 struct Internal_user_type {
@@ -34,7 +36,7 @@ struct Internal_manager_type {
     pub Groups: BTreeMap<Group_identifier_type, Internal_group_type>,
 }
 
-pub struct Manager_type(RwLock<Internal_manager_type>);
+pub struct Manager_type(RwLock<CriticalSectionRawMutex, Internal_manager_type>);
 
 impl Manager_type {
     fn New() -> Self {
@@ -59,8 +61,8 @@ impl Manager_type {
         Self(RwLock::new(Internal_manager_type { Users, Groups }))
     }
 
-    pub fn Get_new_group_identifier(&self) -> Result_type<Group_identifier_type> {
-        let Inner = self.0.read()?;
+    pub async fn Get_new_group_identifier(&self) -> Result_type<Group_identifier_type> {
+        let Inner = self.0.read().await;
 
         let mut Identifier = Group_identifier_type::Minimum;
 
@@ -75,8 +77,8 @@ impl Manager_type {
         Ok(Identifier)
     }
 
-    pub fn Get_new_user_identifier(&self) -> Result_type<User_identifier_type> {
-        let Inner = self.0.read()?;
+    pub async fn Get_new_user_identifier(&self) -> Result_type<User_identifier_type> {
+        let Inner = self.0.read().await;
 
         let mut Identifier = User_identifier_type::Minimum;
 
@@ -91,13 +93,13 @@ impl Manager_type {
         Ok(Identifier)
     }
 
-    pub fn Add_user(
+    pub async fn Add_user(
         &self,
         Identifier: User_identifier_type,
         Name: &str,
         Primary_group: Group_identifier_type,
     ) -> Result_type<()> {
-        let mut Inner = self.0.write()?;
+        let mut Inner = self.0.write().await;
 
         // - Check if user identifier is unique
         if Inner.Users.contains_key(&Identifier) {
@@ -133,13 +135,13 @@ impl Manager_type {
         Ok(())
     }
 
-    pub fn Add_group(
+    pub async fn Add_group(
         &self,
         Identifier: Group_identifier_type,
         Name: &str,
         Users: &[User_identifier_type],
     ) -> Result_type<()> {
-        let mut Inner = self.0.write()?;
+        let mut Inner = self.0.write().await;
 
         // - Check if group identifier is unique
         if Inner.Groups.contains_key(&Identifier) {
@@ -167,12 +169,12 @@ impl Manager_type {
         User_identifier_type::Root == Identifier
     }
 
-    pub fn Is_in_group(
+    pub async fn Is_in_group(
         &self,
         User_identifier: User_identifier_type,
         Group_identifier: Group_identifier_type,
     ) -> bool {
-        let Inner = self.0.read().unwrap();
+        let Inner = self.0.read().await;
         Inner
             .Groups
             .get(&Group_identifier)
@@ -181,11 +183,11 @@ impl Manager_type {
             .contains(&User_identifier)
     }
 
-    pub fn Get_user_groups(
+    pub async fn Get_user_groups(
         &self,
         Identifier: User_identifier_type,
     ) -> Result_type<BTreeSet<Group_identifier_type>> {
-        let Inner = self.0.read()?;
+        let Inner = self.0.read().await;
 
         let mut User_groups: BTreeSet<Group_identifier_type> = BTreeSet::new();
 
@@ -200,23 +202,23 @@ impl Manager_type {
         Ok(User_groups)
     }
 
-    pub fn Exists_group(&self, Identifier: Group_identifier_type) -> Result_type<bool> {
-        Ok(self.0.read()?.Groups.contains_key(&Identifier))
+    pub async fn Exists_group(&self, Identifier: Group_identifier_type) -> Result_type<bool> {
+        Ok(self.0.read().await.Groups.contains_key(&Identifier))
     }
 
-    pub fn Exists_user(&self, Identifier: User_identifier_type) -> Result_type<bool> {
-        Ok(self.0.read()?.Users.contains_key(&Identifier))
+    pub async fn Exists_user(&self, Identifier: User_identifier_type) -> Result_type<bool> {
+        Ok(self.0.read().await.Users.contains_key(&Identifier))
     }
 
-    pub fn Add_to_group(
+    pub async fn Add_to_group(
         &self,
         User_identifier: User_identifier_type,
         Group_identifier: Group_identifier_type,
     ) -> Result_type<()> {
-        if !self.Exists_group(Group_identifier)? {
+        if !self.Exists_group(Group_identifier).await? {
             return Err(Error_type::Invalid_group_identifier);
         }
-        let mut Inner = self.0.write()?;
+        let mut Inner = self.0.write().await;
         if !Inner
             .Groups
             .get_mut(&Group_identifier)
@@ -229,14 +231,23 @@ impl Manager_type {
         Ok(())
     }
 
-    pub fn Get_group_name(&self, Identifier: Group_identifier_type) -> Result_type<String> {
-        Ok(self.0.read()?.Groups.get(&Identifier).unwrap().Name.clone())
+    pub async fn Get_group_name(&self, Identifier: Group_identifier_type) -> Result_type<String> {
+        Ok(self
+            .0
+            .read()
+            .await
+            .Groups
+            .get(&Identifier)
+            .unwrap()
+            .Name
+            .clone())
     }
 
-    pub fn Get_user_identifier(&self, Name: &str) -> Result_type<User_identifier_type> {
+    pub async fn Get_user_identifier(&self, Name: &str) -> Result_type<User_identifier_type> {
         Ok(*self
             .0
-            .read()?
+            .read()
+            .await
             .Users
             .iter()
             .find(|(_, User)| User.Name == Name)
@@ -244,13 +255,14 @@ impl Manager_type {
             .0)
     }
 
-    pub fn Get_group_users(
+    pub async fn Get_group_users(
         &self,
         Identifier: Group_identifier_type,
     ) -> Result_type<Vec<User_identifier_type>> {
         Ok(self
             .0
-            .read()?
+            .read()
+            .await
             .Groups
             .get(&Identifier)
             .ok_or(Error_type::Invalid_group_identifier)?
@@ -260,10 +272,11 @@ impl Manager_type {
             .collect())
     }
 
-    pub fn Get_user_name(&self, Identifier: User_identifier_type) -> Result_type<String> {
+    pub async fn Get_user_name(&self, Identifier: User_identifier_type) -> Result_type<String> {
         Ok(self
             .0
-            .read()?
+            .read()
+            .await
             .Users
             .get(&Identifier)
             .ok_or(Error_type::Invalid_user_identifier)?
@@ -271,13 +284,14 @@ impl Manager_type {
             .clone())
     }
 
-    pub fn Get_user_primary_group(
+    pub async fn Get_user_primary_group(
         &self,
         Identifier: User_identifier_type,
     ) -> Result_type<Group_identifier_type> {
         Ok(self
             .0
-            .read()?
+            .read()
+            .await
             .Users
             .get(&Identifier)
             .ok_or(Error_type::Invalid_user_identifier)?
@@ -293,19 +307,22 @@ impl Manager_type {
 mod Tests {
     use super::*;
 
-    #[test]
-    fn Create_user() {
+    use Task::Test;
+
+    #[Test]
+    async fn Create_user() {
         let Manager = Manager_type::New();
         let User_name = "Alice";
         let Identifier = User_identifier_type::New(1000);
         Manager
             .Add_user(Identifier, User_name, Group_identifier_type::Root)
+            .await
             .unwrap();
-        assert!(Manager.Exists_user(Identifier).unwrap());
+        assert!(Manager.Exists_user(Identifier).await.unwrap());
     }
 
-    #[test]
-    fn Create_user_duplicate() {
+    #[Test]
+    async fn Create_user_duplicate() {
         let User_name_1 = "Alice";
         let User_name_2 = "Bob";
 
@@ -317,9 +334,12 @@ mod Tests {
 
         Manager
             .Add_user(Identifier_1, User_name_1, Group_identifier_type::Root)
+            .await
             .unwrap();
 
-        let Result = Manager.Add_user(Identifier_1, User_name_2, Group_identifier_type::Root);
+        let Result = Manager
+            .Add_user(Identifier_1, User_name_2, Group_identifier_type::Root)
+            .await;
         assert_eq!(Result, Err(Error_type::Duplicate_user_identifier));
 
         // Same name
@@ -327,9 +347,12 @@ mod Tests {
 
         Manager
             .Add_user(Identifier_1, User_name_1, Group_identifier_type::Root)
+            .await
             .unwrap();
 
-        let Result = Manager.Add_user(Identifier_2, User_name_1, Group_identifier_type::Root);
+        let Result = Manager
+            .Add_user(Identifier_2, User_name_1, Group_identifier_type::Root)
+            .await;
         assert_eq!(Result, Err(Error_type::Duplicate_user_name));
 
         // Same name and identifier
@@ -337,25 +360,27 @@ mod Tests {
 
         Manager
             .Add_user(Identifier_1, User_name_1, Group_identifier_type::Root)
+            .await
             .unwrap();
 
         Manager
             .Add_user(Identifier_1, User_name_1, Group_identifier_type::Root)
+            .await
             .unwrap_err();
     }
 
-    #[test]
-    fn Create_group() {
+    #[Test]
+    async fn Create_group() {
         let Manager = Manager_type::New();
         let Group_name = "Developers";
         let Group_id = Group_identifier_type::New(1000);
-        let Result = Manager.Add_group(Group_id, Group_name, &[]);
+        let Result = Manager.Add_group(Group_id, Group_name, &[]).await;
         assert!(Result.is_ok());
-        assert!(Manager.Exists_group(Group_id).unwrap());
+        assert!(Manager.Exists_group(Group_id).await.unwrap());
     }
 
-    #[test]
-    fn Create_group_duplicate() {
+    #[Test]
+    async fn Create_group_duplicate() {
         let Group_name_1 = "Developers";
         let Group_name_2 = "Testers";
 
@@ -365,72 +390,90 @@ mod Tests {
         // Same identifier
         let Manager = Manager_type::New();
 
-        Manager.Add_group(Group_id_1, Group_name_1, &[]).unwrap();
+        Manager
+            .Add_group(Group_id_1, Group_name_1, &[])
+            .await
+            .unwrap();
 
-        let Result = Manager.Add_group(Group_id_1, Group_name_2, &[]);
+        let Result = Manager.Add_group(Group_id_1, Group_name_2, &[]).await;
         assert_eq!(Result, Err(Error_type::Duplicate_group_identifier));
 
         // Same name
         let Manager = Manager_type::New();
 
-        Manager.Add_group(Group_id_1, Group_name_1, &[]).unwrap();
+        Manager
+            .Add_group(Group_id_1, Group_name_1, &[])
+            .await
+            .unwrap();
 
-        let Result = Manager.Add_group(Group_id_2, Group_name_1, &[]);
+        let Result = Manager.Add_group(Group_id_2, Group_name_1, &[]).await;
         assert_eq!(Result, Err(Error_type::Duplicate_group_name));
 
         // Same name and identifier
         let Manager = Manager_type::New();
 
-        Manager.Add_group(Group_id_1, Group_name_1, &[]).unwrap();
+        Manager
+            .Add_group(Group_id_1, Group_name_1, &[])
+            .await
+            .unwrap();
 
         Manager
             .Add_group(Group_id_1, Group_name_1, &[])
+            .await
             .unwrap_err();
     }
 
-    #[test]
-    fn Is_root() {
+    #[Test]
+    async fn Is_root() {
         let Root_id = User_identifier_type::Root;
         assert!(Manager_type::Is_root(Root_id));
     }
 
-    #[test]
-    fn Is_in_group() {
+    #[Test]
+    async fn Is_in_group() {
         let Manager = Manager_type::New();
         let User_name = "Bob";
         let Identifier = User_identifier_type::New(1000);
         Manager
             .Add_user(Identifier, User_name, Group_identifier_type::Root)
+            .await
             .unwrap();
         let Group_name = "Admins";
         let Group_id = Group_identifier_type::New(1000);
 
-        Manager.Add_group(Group_id, Group_name, &[]).unwrap();
-        Manager.Add_to_group(Identifier, Group_id).unwrap();
-        assert!(Manager.Is_in_group(Identifier, Group_id));
+        Manager.Add_group(Group_id, Group_name, &[]).await.unwrap();
+        Manager.Add_to_group(Identifier, Group_id).await.unwrap();
+        assert!(Manager.Is_in_group(Identifier, Group_id).await);
     }
 
-    #[test]
-    fn Get_user_groups() {
+    #[Test]
+    async fn Get_user_groups() {
         let Manager = Manager_type::New();
 
         let User_name = "Charlie";
         let Identifier = User_identifier_type::New(1000);
         Manager
             .Add_user(Identifier, User_name, Group_identifier_type::Root)
+            .await
             .unwrap();
         let Group_name1 = "TeamA";
         let Group_id1 = Group_identifier_type::New(1000);
 
-        Manager.Add_group(Group_id1, Group_name1, &[]).unwrap();
+        Manager
+            .Add_group(Group_id1, Group_name1, &[])
+            .await
+            .unwrap();
         let Group_name2 = "TeamB";
         let Group_id2 = Group_identifier_type::New(1001);
 
-        Manager.Add_group(Group_id2, Group_name2, &[]).unwrap();
-        Manager.Add_to_group(Identifier, Group_id1).unwrap();
-        Manager.Add_to_group(Identifier, Group_id2).unwrap();
-        let Groups = Manager.Get_user_groups(Identifier).unwrap();
-        println!("{:?}", Groups);
+        Manager
+            .Add_group(Group_id2, Group_name2, &[])
+            .await
+            .unwrap();
+        Manager.Add_to_group(Identifier, Group_id1).await.unwrap();
+        Manager.Add_to_group(Identifier, Group_id2).await.unwrap();
+        let Groups = Manager.Get_user_groups(Identifier).await.unwrap();
+
         assert_eq!(Groups.len(), 3);
         assert!(
             Groups.contains(&Group_id1)
@@ -439,47 +482,49 @@ mod Tests {
         );
     }
 
-    #[test]
-    fn Get_group_name() {
+    #[Test]
+    async fn Get_group_name() {
         let Manager = Manager_type::New();
         let Group_name = "QA";
         let Group_id = Group_identifier_type::New(1000);
-        Manager.Add_group(Group_id, Group_name, &[]).unwrap();
-        let Retrieved_name = Manager.Get_group_name(Group_id).unwrap();
+        Manager.Add_group(Group_id, Group_name, &[]).await.unwrap();
+        let Retrieved_name = Manager.Get_group_name(Group_id).await.unwrap();
         assert_eq!(Group_name, Retrieved_name);
     }
 
-    #[test]
-    fn Get_group_users() {
+    #[Test]
+    async fn Get_group_users() {
         let Manager = Manager_type::New();
         let User_name = "Dave";
         let Identifier = User_identifier_type::New(1000);
         Manager
             .Add_user(Identifier, User_name, Group_identifier_type::Root)
+            .await
             .unwrap();
         let Group_name = "Engineers";
         let Group_id = Group_identifier_type::New(1000);
-        Manager.Add_group(Group_id, Group_name, &[]).unwrap();
-        Manager.Add_to_group(Identifier, Group_id).unwrap();
-        let Users = Manager.Get_group_users(Group_id).unwrap();
+        Manager.Add_group(Group_id, Group_name, &[]).await.unwrap();
+        Manager.Add_to_group(Identifier, Group_id).await.unwrap();
+        let Users = Manager.Get_group_users(Group_id).await.unwrap();
         assert_eq!(Users.len(), 1);
         assert!(Users.contains(&Identifier));
     }
 
-    #[test]
-    fn Get_user_name() {
+    #[Test]
+    async fn Get_user_name() {
         let Manager = Manager_type::New();
         let User_name = "Eve";
         let Identifier = User_identifier_type::New(1000);
         Manager
             .Add_user(Identifier, User_name, Group_identifier_type::Root)
+            .await
             .unwrap();
-        let Retrieved_name = Manager.Get_user_name(Identifier).unwrap();
+        let Retrieved_name = Manager.Get_user_name(Identifier).await.unwrap();
         assert_eq!(User_name, Retrieved_name);
     }
 
-    #[test]
-    fn Check_credentials() {
+    #[Test]
+    async fn Check_credentials() {
         let Manager = Manager_type::New();
         let User_name = "Frank";
         let Password = "password123";

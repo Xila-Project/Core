@@ -1,6 +1,11 @@
-use std::{
+use core::{
     fmt::{Display, Formatter},
     ops::Deref,
+};
+
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
 };
 
 use super::{Extension_separator, Path_type, Separator};
@@ -169,7 +174,7 @@ impl TryFrom<String> for Path_owned_type {
 }
 
 impl Display for Path_owned_type {
-    fn fmt(&self, Formatter: &mut Formatter) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, Formatter: &mut Formatter) -> Result<(), core::fmt::Error> {
         write!(Formatter, "{}", self.0)
     }
 }

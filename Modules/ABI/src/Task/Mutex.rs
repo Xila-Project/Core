@@ -1,38 +1,32 @@
-use std::sync::{Mutex, MutexGuard};
+use core::{
+    mem::{align_of, size_of},
+    ptr::drop_in_place,
+};
+use Synchronization::blocking_mutex::{raw::CriticalSectionRawMutex, Mutex};
 
-#[derive(Debug)]
-struct Metadata_type<'a> {
-    #[allow(dead_code)]
-    pub Guard: MutexGuard<'a, ()>,
-    pub Thread: std::thread::ThreadId,
+use crate::Context;
+
+#[derive(Debug, Clone, Copy, Default)]
+struct Mutex_state_type {
+    Task: Option<usize>,
+    Lock_count: u32, // For recursive mutexes
 }
 
-#[derive(Debug)]
-pub struct Raw_mutex_type<'a> {
-    Mutex: Mutex<()>,
-    Metadata: Option<Metadata_type<'a>>,
+pub struct Raw_mutex_type {
+    Mutex: Mutex<CriticalSectionRawMutex, Mutex_state_type>,
     Recursive: bool,
 }
 
-impl<'a> Raw_mutex_type<'a> {
-    pub fn New(Recursive: bool) -> Self {
+impl Raw_mutex_type {
+    pub fn New(recursive: bool) -> Self {
         Self {
-            Mutex: Mutex::new(()),
-            Metadata: None,
-            Recursive,
+            Mutex: Mutex::new(Mutex_state_type::default()),
+            Recursive: recursive,
         }
     }
 
-    pub fn Is_valid_pointer(Pointer: *const Raw_mutex_type<'a>) -> bool {
-        if Pointer.is_null() {
-            return false;
-        }
-
-        if Pointer as usize % std::mem::align_of::<Self>() != 0 {
-            return false;
-        }
-
-        true
+    pub fn Is_valid_pointer(pointer: *const Raw_mutex_type) -> bool {
+        !pointer.is_null() && (pointer as usize % align_of::<Self>() == 0)
     }
 
     /// Transforms a pointer to a reference.
@@ -40,16 +34,12 @@ impl<'a> Raw_mutex_type<'a> {
     /// # Safety
     ///
     /// This function is unsafe because it dereferences a raw pointer.
-    ///
-    /// # Errors
-    ///
-    /// This function may return an error if the pointer is null or not aligned.
-    pub unsafe fn From_pointer(Pointer: *const Raw_mutex_type<'a>) -> Option<&'a Self> {
-        if Self::Is_valid_pointer(Pointer) {
+    /// The caller must ensure the pointer is valid and points to properly initialized memory.
+    pub unsafe fn From_pointer<'a>(pointer: *const Raw_mutex_type) -> Option<&'a Self> {
+        if !Self::Is_valid_pointer(pointer) {
             return None;
         }
-
-        Some(&*Pointer)
+        Some(&*pointer)
     }
 
     /// Transforms a mutable pointer to a mutable reference.
@@ -57,76 +47,63 @@ impl<'a> Raw_mutex_type<'a> {
     /// # Safety
     ///
     /// This function is unsafe because it dereferences a raw pointer.
-    ///
-    /// # Errors
-    ///
-    /// This function may return an error if the pointer is null or not aligned.
-    pub unsafe fn From_mutable_pointer(Pointer: *mut Raw_mutex_type<'a>) -> Option<&'a mut Self> {
-        if Self::Is_valid_pointer(Pointer) {
+    /// The caller must ensure the pointer is valid and points to properly initialized memory.
+    pub unsafe fn From_mutable_pointer<'a>(pointer: *mut Raw_mutex_type) -> Option<&'a mut Self> {
+        if !Self::Is_valid_pointer(pointer) {
             return None;
         }
-
-        Some(&mut *Pointer)
+        Some(&mut *pointer)
     }
 
-    /// Transforms a mutable pointer to a box.
-    ///
-    /// # Safety
-    ///
-    /// This function is unsafe because it dereferences a raw pointer.
-    ///
-    /// # Errors
-    ///
-    /// This function may return an error if the pointer is null or not aligned.
-    pub unsafe fn From_mutable_pointer_to_box(
-        Pointer: *mut Raw_mutex_type<'a>,
-    ) -> Option<Box<Self>> {
-        if Self::Is_valid_pointer(Pointer) {
-            return None;
-        }
+    pub fn Lock(&self) -> bool {
+        let current_task = Context::Get_instance()
+            .Get_current_task_identifier()
+            .Into_inner() as usize;
 
-        Some(Box::from_raw(Pointer))
-    }
-
-    pub fn Lock(&'a mut self) -> bool {
-        // If the mutex is recursive, we can lock it multiple times from the same thread.
-        if self.Recursive {
-            if let Some(Metadata) = self.Metadata.as_ref() {
-                if Metadata.Thread == std::thread::current().id() {
-                    return true;
-                }
-            }
-        }
-
-        // If the mutex is not recursive or the current thread is not the owner, we need to lock it.
-        let Guard = match self.Mutex.lock() {
-            Ok(Guard) => Guard,
-            Err(_) => return false,
-        };
-
-        self.Metadata
-            .replace(Metadata_type {
-                Guard,
-                Thread: std::thread::current().id(),
-            })
-            .is_some()
-    }
-
-    pub fn Unlock(&mut self) -> bool {
-        match self.Metadata.as_ref() {
-            Some(Metadata) => {
-                if Metadata.Thread != std::thread::current().id() {
+        unsafe {
+            self.Mutex.lock_mut(|State| {
+                if let Some(owner) = State.Task {
+                    if owner == current_task && self.Recursive {
+                        // Recursive lock
+                        State.Lock_count += 1;
+                        return true;
+                    }
+                    // Mutex is already locked by another task
                     return false;
-                };
-            }
-            None => {
-                return false;
-            }
+                }
+
+                // Lock is available
+                State.Task = Some(current_task);
+                State.Lock_count = 1;
+                true
+            })
         }
+    }
 
-        self.Metadata.take();
+    pub fn Unlock(&self) -> bool {
+        let current_task = Context::Get_instance()
+            .Get_current_task_identifier()
+            .Into_inner() as usize;
 
-        true // Guard is dropped here
+        unsafe {
+            self.Mutex.lock_mut(|state| {
+                // Check if current task owns the mutex
+                if let Some(owner) = state.Task {
+                    if owner == current_task {
+                        if self.Recursive && state.Lock_count > 1 {
+                            // Decrement lock count for recursive mutex
+                            state.Lock_count -= 1;
+                        } else {
+                            // Unlock the mutex
+                            state.Task = None;
+                            state.Lock_count = 0;
+                        }
+                        return true; // Successfully unlocked
+                    }
+                }
+                false // Not owned by current task or not locked
+            })
+        }
     }
 }
 
@@ -148,7 +125,7 @@ pub unsafe extern "C" fn Xila_initialize_mutex(Mutex: *mut Raw_mutex_type) -> bo
         return false;
     }
 
-    if Mutex as usize % std::mem::align_of::<Raw_mutex_type>() != 0 {
+    if Mutex as usize % align_of::<Raw_mutex_type>() != 0 {
         return false;
     }
 
@@ -157,17 +134,21 @@ pub unsafe extern "C" fn Xila_initialize_mutex(Mutex: *mut Raw_mutex_type) -> bo
     true
 }
 
+/// Initialize a recursive mutex.
+///
 /// # Safety
 ///
-///
-///
+/// The caller must ensure:
+/// - `mutex` points to valid, uninitialized memory
+/// - The memory is properly aligned for `Raw_mutex_type`
+/// - The memory will remain valid for the lifetime of the mutex
 #[no_mangle]
 pub unsafe extern "C" fn Xila_initialize_recursive_mutex(Mutex: *mut Raw_mutex_type) -> bool {
     if Mutex.is_null() {
         return false;
     }
 
-    if Mutex as usize % std::mem::align_of::<Raw_mutex_type>() != 0 {
+    if Mutex as usize % align_of::<Raw_mutex_type>() != 0 {
         return false;
     }
 
@@ -176,15 +157,13 @@ pub unsafe extern "C" fn Xila_initialize_recursive_mutex(Mutex: *mut Raw_mutex_t
     true
 }
 
-/// This function is used to lock a mutex.
+/// Lock a mutex (blocking).
 ///
 /// # Safety
 ///
-/// This function is unsafe because it dereferences raw pointers.
-///
-/// # Errors
-///
-/// This function may return an error if the mutex is not initialized.
+/// The caller must ensure:
+/// - `mutex` points to a valid, initialized `Raw_mutex_type`
+/// - The mutex remains valid for the duration of the call
 #[no_mangle]
 pub unsafe extern "C" fn Xila_lock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
     let Mutex = match Raw_mutex_type::From_mutable_pointer(Mutex) {
@@ -195,15 +174,14 @@ pub unsafe extern "C" fn Xila_lock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
     Mutex.Lock()
 }
 
-/// This function is used to unlock a mutex.
+/// Unlock a mutex (blocking).
 ///
 /// # Safety
 ///
-/// This function is unsafe because it dereferences raw pointers.
-///
-/// # Errors
-///
-/// This function may return an error if the mutex is not initialized.
+/// The caller must ensure:
+/// - `mutex` points to a valid, initialized `Raw_mutex_type`
+/// - The mutex remains valid for the duration of the call
+/// - The current task owns the mutex
 #[no_mangle]
 pub unsafe extern "C" fn Xila_unlock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
     let Mutex = match Raw_mutex_type::From_mutable_pointer(Mutex) {
@@ -214,21 +192,23 @@ pub unsafe extern "C" fn Xila_unlock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
     Mutex.Unlock()
 }
 
-/// This function is used to destroy a mutex.
+/// Destroy a mutex.
 ///
 /// # Safety
 ///
-/// This function is unsafe because it dereferences raw pointers.
-///
-/// # Errors    
-///
-/// This function may return an error if the mutex is not initialized.
+/// The caller must ensure:
+/// - `mutex` points to a valid, initialized `Raw_mutex_type` allocated with Box
+/// - The mutex is not currently locked
+/// - No other threads are waiting on the mutex
 #[no_mangle]
 pub unsafe extern "C" fn Xila_destroy_mutex(Mutex: *mut Raw_mutex_type) -> bool {
-    let _ = match Raw_mutex_type::From_mutable_pointer_to_box(Mutex) {
+    let Mutex = match Raw_mutex_type::From_mutable_pointer(Mutex) {
         Some(Mutex) => Mutex,
         None => return false,
     };
+
+    // Drop the mutex, which will release any resources it holds
+    drop_in_place(Mutex);
 
     true // Mutex is dropped here
 }

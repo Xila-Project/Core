@@ -65,7 +65,7 @@ impl Network_socket_driver_type {
     }
 
     fn New_socket(&self, Socket: Local_file_identifier_type, Raw_socket: RawFd) -> Result_type<()> {
-        let mut Inner = self.0.write()?;
+        let mut Inner = self.0.write().unwrap();
 
         if Inner.Sockets.contains_key(&Socket) {
             return Err(Error_type::Duplicate_identifier);
@@ -81,7 +81,8 @@ impl Network_socket_driver_type {
     fn Get_socket(&self, Socket: Local_file_identifier_type) -> Result_type<RawFd> {
         Ok(*self
             .0
-            .read()?
+            .read()
+            .unwrap()
             .Sockets
             .get(&Socket)
             .ok_or(Error_type::Invalid_identifier)?)
@@ -90,7 +91,8 @@ impl Network_socket_driver_type {
     fn Get_socket_mutable(&self, Socket: Local_file_identifier_type) -> Result_type<RawFd> {
         Ok(*self
             .0
-            .write()?
+            .write()
+            .unwrap()
             .Sockets
             .get(&Socket)
             .ok_or(Error_type::Invalid_identifier)?)
@@ -98,7 +100,8 @@ impl Network_socket_driver_type {
 
     fn Remove_socket(&self, Socket: Local_file_identifier_type) -> Result_type<RawFd> {
         self.0
-            .write()?
+            .write()
+            .unwrap()
             .Sockets
             .remove(&Socket)
             .ok_or(Error_type::Invalid_identifier)
@@ -110,7 +113,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         &self,
         mut Iterator: Local_file_identifier_iterator_type,
     ) -> Result_type<Option<Local_file_identifier_type>> {
-        let Inner = self.0.read()?;
+        let Inner = self.0.read().unwrap();
 
         Ok(Iterator.find(|Identifier| !Inner.Sockets.contains_key(Identifier)))
     }

@@ -1,4 +1,6 @@
-use std::borrow::Borrow;
+use core::borrow::Borrow;
+
+use alloc::{borrow::ToOwned, format, string::ToString};
 
 use super::*;
 

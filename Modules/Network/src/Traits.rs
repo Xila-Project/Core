@@ -3,8 +3,6 @@ use Time::Duration_type;
 
 use File_system::{Local_file_identifier_iterator_type, Local_file_identifier_type};
 
-extern crate alloc;
-
 use crate::Result_type;
 
 pub trait Network_socket_driver_trait: Send + Sync {

@@ -3,6 +3,7 @@
 
 use core::ffi::c_void;
 
+use alloc::{boxed::Box, vec, vec::Vec};
 use wamr_rust_sdk::{
     function::Function,
     instance::Instance,
@@ -136,7 +137,7 @@ impl<'module> Instance_type<'module> {
         let _ = self.Call_export_function("Deallocate", &vec![WasmValue::I32(Data as i32)]);
     }
 
-    pub(crate) fn Get_inner_reference(&self) -> &Instance {
+    pub fn Get_inner_reference(&self) -> &Instance {
         &self.Instance
     }
 }

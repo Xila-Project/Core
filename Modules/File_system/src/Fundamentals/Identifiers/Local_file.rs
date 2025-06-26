@@ -1,4 +1,4 @@
-use std::{
+use core::{
     fmt::Debug,
     ops::{Add, AddAssign},
 };
@@ -94,7 +94,7 @@ impl Local_file_identifier_type {
 }
 
 impl Debug for Local_file_identifier_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let (Task, File) = self.Split();
 
         Formatter

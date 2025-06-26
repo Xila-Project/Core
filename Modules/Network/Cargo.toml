@@ -5,4 +5,6 @@ edition = "2021"
 
 [dependencies]
 File_system = { path = "../File_system" }
+Futures = { version = "0.1.0", path = "../Futures" }
+Synchronization = { version = "0.1.0", path = "../Synchronization" }
 Time = { path = "../Time" }

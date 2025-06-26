@@ -13,11 +13,13 @@ Task = { path = "../../Task" }
 Graphics = { path = "../../Graphics" }
 Time = { path = "../../Time" }
 include_bytes_aligned = "0.1"
+Futures = { path = "../../Futures" }
 #wit-bindgen = "0.34.0"
 
 [dev-dependencies]
 Drivers = { path = "../../Drivers" }
 LittleFS = { path = "../../LittleFS" }
+Memory = { path = "../../Memory" }
 Virtual_file_system = { path = "../../Virtual_file_system" }
 
 [build-dependencies]

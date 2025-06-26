@@ -47,12 +47,12 @@ impl From<LVGL::lv_area_t> for Area_type {
 impl AsRef<[u8]> for Area_type {
     fn as_ref(&self) -> &[u8] {
         unsafe {
-            std::slice::from_raw_parts(self as *const _ as *const u8, core::mem::size_of::<Self>())
+            core::slice::from_raw_parts(self as *const _ as *const u8, core::mem::size_of::<Self>())
         }
     }
 }
 
-impl AsRef<Area_type> for [u8; std::mem::size_of::<Area_type>()] {
+impl AsRef<Area_type> for [u8; core::mem::size_of::<Area_type>()] {
     fn as_ref(&self) -> &Area_type {
         unsafe { &*(self as *const _ as *const Area_type) }
     }

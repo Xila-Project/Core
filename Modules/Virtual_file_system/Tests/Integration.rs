@@ -8,13 +8,15 @@ use File_system::{
     Create_device, Create_file_system, Flags_type, Memory_device_type, Mode_type, Open_type,
     Path_type, Position_type, Status_type,
 };
+#[cfg(target_os = "linux")]
+use Task::Test;
 use Virtual_file_system::{File_type, Virtual_file_system_type};
 
-fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>) {
-    let Task_instance = Task::Initialize().expect("Failed to initialize task manager");
+async fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>) {
+    let Task_instance = Task::Initialize();
 
     unsafe {
-        let _ = Task_instance.Register_task();
+        let _ = Task_instance.Register_task().await;
     }
 
     let _ = Users::Initialize();
@@ -38,15 +40,15 @@ fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>) {
         Time::Get_instance(),
         Create_file_system!(File_system),
         None,
-    )
+    ).await
     .unwrap();
 
     (Task, Virtual_file_system)
 }
 
 #[cfg(target_os = "linux")]
-#[test]
-fn Test_file() {
+#[Test]
+async fn Test_file() {
     let (_, Virtual_file_system) = Initialize();
 
     let File_path = "/file";
@@ -70,14 +72,14 @@ fn Test_file() {
 
     assert_eq!(Buffer, *Data);
 
-    std::mem::drop(File);
+    core::mem::drop(File);
 
     Virtual_file_system.Remove(File_path).unwrap();
 }
 
 #[cfg(target_os = "linux")]
-#[test]
-fn Test_unnamed_pipe() {
+#[Test]
+async fn Test_unnamed_pipe() {
     let (Task, Virtual_file_system) = Initialize();
 
     let (Pipe_read, Pipe_write) =
@@ -96,8 +98,8 @@ fn Test_unnamed_pipe() {
 }
 
 #[cfg(target_os = "linux")]
-#[test]
-fn Test_named_pipe() {
+#[Test]
+async fn Test_named_pipe() {
     let (Task, Virtual_file_system) = Initialize();
 
     let Pipe_path = "/pipe";
@@ -125,14 +127,14 @@ fn Test_named_pipe() {
 
     assert_eq!(Buffer, *Data);
 
-    std::mem::drop(Pipe_read);
-    std::mem::drop(Pipe_write);
+    core::mem::drop(Pipe_read);
+    core::mem::drop(Pipe_write);
 
     Virtual_file_system.Remove(Pipe_path).unwrap();
 }
 
 #[cfg(target_os = "linux")]
-#[test]
+#[Test]
 fn Test_device() {
     let (Task, Virtual_file_system) = Initialize();
 
@@ -149,6 +151,7 @@ fn Test_device() {
         Device_path,
         Mode_type::Read_write.into(),
     )
+    .await
     .unwrap();
 
     let Data = 0x1234567890ABCDEF_u64;
@@ -163,7 +166,7 @@ fn Test_device() {
 
     assert_eq!(Buffer, Data.to_le_bytes());
 
-    std::mem::drop(Device_file);
+    core::mem::drop(Device_file);
 
     Virtual_file_system.Remove(Device_path).unwrap();
 }

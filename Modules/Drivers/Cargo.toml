@@ -4,28 +4,38 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-File_system = { path = "../File_system" }
+paste = "1.0.15"
+quote = "1.0.36"
+Log = { path = "../Log" }
+File_system = { path = "../File_system", optional = true }
 Virtual_file_system = { path = "../Virtual_file_system" }
 Task = { path = "../Task" }
 Users = { path = "../Users" }
-Graphics = { path = "../Graphics" }
-Time = { path = "../Time" }
+Graphics = { path = "../Graphics", optional = true }
+Time = { path = "../Time", optional = true }
 Shared = { path = "../Shared" }
-paste = "1.0.15"
-quote = "1.0.36"
-Peripherals = { path = "../Peripherals" }
+Peripherals = { path = "../Peripherals", optional = true }
 Network = { path = "../Network", optional = true }
+Memory = { path = "../Memory", optional = true }
+Synchronization = { path = "../Synchronization", optional = true }
+linked_list_allocator = { version = "0.10", default-features = false, features = [
+    "const_mut_refs",
+] }
+libc = { version = "0.2", optional = true }
+embassy-sync = { version = "0.6.2" }
+Futures = { version = "0.1.0", path = "../Futures" }
+embassy-executor = { version = "0.7.0" }
 
 [features]
 Network = ["dep:Network"]
-Std = []
-File_system = []
-Graphics = []
-Time = []
+Std = ["File_system/std"]
+File_system = ["dep:File_system"]
+Graphics = ["dep:Graphics"]
+Time = ["dep:Time"]
 Random = []
+Memory = ["dep:libc", "dep:Memory", "dep:Synchronization"]
 
-
-All = ["File_system", "Graphics", "Time", "Network"]
+All = ["File_system", "Graphics", "Time", "Network", "Memory"]
 
 default = ["std", "binstart", "All"]
 std = ["alloc", "esp-idf-sys/std"]
@@ -53,6 +63,9 @@ esp-idf-sys = { version = "0.35.0" }
 [build-dependencies]
 embuild = { version = "0.32", features = ["espidf"] }
 
+[dev-dependencies]
+LittleFS = { path = "../LittleFS" }
+
 [target.'cfg( target_os = "espidf" )'.dev-dependencies]
 anyhow = "1"
 esp-idf-sys = { version = "0.35.0", features = ["binstart"] }
@@ -61,7 +74,7 @@ display-interface-spi = "0.4.1"
 embedded-graphics = "0.7.1"
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
-Graphics = { path = "../Graphics", features = ["RGB565"] }
+#Graphics = { path = "../Graphics", features = ["RGB565"] }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
 pixels = "0.14"

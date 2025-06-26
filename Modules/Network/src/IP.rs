@@ -44,7 +44,7 @@ impl TryFrom<&str> for IPv4_type {
 }
 
 impl Display for IPv4_type {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}.{}.{}.{}", self.0[0], self.0[1], self.0[2], self.0[3])
     }
 }
@@ -92,7 +92,7 @@ impl TryFrom<&str> for IPv6_type {
 }
 
 impl Display for IPv6_type {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "{:x}:{:x}:{:x}:{:x}:{:x}:{:x}:{:x}:{:x}",
@@ -108,7 +108,7 @@ pub enum IP_type {
 }
 
 impl Display for IP_type {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             IP_type::IPv4(Value) => write!(f, "{}", Value),
             IP_type::IPv6(Value) => write!(f, "{}", Value),

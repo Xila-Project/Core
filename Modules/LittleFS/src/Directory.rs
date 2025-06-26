@@ -1,10 +1,6 @@
-use std::{
-    ffi::{CStr, CString},
-    fmt::Debug,
-    mem::MaybeUninit,
-    rc::Rc,
-};
+use core::{ffi::CStr, fmt::Debug, mem::MaybeUninit};
 
+use alloc::{ffi::CString, rc::Rc, string::ToString};
 use File_system::{Entry_type, Inode_type, Path_type, Result_type, Size_type, Type_type};
 
 use super::{littlefs, Convert_result};
@@ -17,7 +13,7 @@ struct Inner_type {
 pub struct Directory_type(Rc<Inner_type>);
 
 impl Debug for Directory_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Formatter
             .debug_struct("Directory_type")
             .field("Inner", &self.0.Directory)

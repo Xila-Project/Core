@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use super::{Color_RGB565_type, Color_RGBA8888_type};
 
@@ -7,7 +7,7 @@ use super::{Color_RGB565_type, Color_RGBA8888_type};
 pub struct Color_ARGB8888_type(u32);
 
 impl Debug for Color_ARGB8888_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Formatter
             .debug_struct("Color_ARGB8888_type")
             .field("Alpha", &self.Get_alpha())

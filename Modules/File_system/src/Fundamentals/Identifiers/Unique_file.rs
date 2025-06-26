@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use Task::Task_identifier_type;
 
@@ -42,7 +42,7 @@ use super::{
 pub struct Unique_file_identifier_type(usize);
 
 impl Debug for Unique_file_identifier_type {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let (File_system_identifier, File_identifier) = self.Split();
 
         Formatter

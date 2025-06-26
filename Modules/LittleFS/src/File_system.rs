@@ -1,12 +1,14 @@
 use core::mem::MaybeUninit;
-use std::{collections::BTreeMap, ffi::CString, sync::RwLock};
 
+use alloc::{boxed::Box, collections::btree_map::BTreeMap, ffi::CString, vec::Vec};
 use File_system::{
     Device_type, Entry_type, File_identifier_inner_type, File_identifier_type,
     File_system_identifier_type, File_system_traits, Flags_type, Get_new_file_identifier,
     Inode_type, Local_file_identifier_type, Metadata_type, Mode_type, Path_type, Permissions_type,
     Position_type, Size_type, Statistics_type, Time_type, Type_type,
 };
+use Futures::block_on;
+use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use Users::{Group_identifier_type, User_identifier_type};
 
 use super::{littlefs, Configuration_type, Convert_result, Directory_type, File_type};
@@ -20,14 +22,14 @@ struct Inner_type {
 }
 
 pub struct File_system_type {
-    Inner: RwLock<Inner_type>,
+    Inner: RwLock<CriticalSectionRawMutex, Inner_type>,
     Cache_size: usize,
 }
 
 impl Drop for File_system_type {
     fn drop(&mut self) {
         // - Close all the open files
-        let mut Inner = self.Inner.write().unwrap();
+        let mut Inner = self.Write_inner();
 
         let Keys = Inner.Open_files.keys().cloned().collect::<Vec<_>>();
 
@@ -168,6 +170,18 @@ impl File_system_type {
     pub fn Is_file(File: Local_file_identifier_type) -> bool {
         File.Split().1 < Self::Directory_minimum
     }
+
+    fn Read_inner(
+        &self,
+    ) -> Synchronization::rwlock::RwLockReadGuard<'_, CriticalSectionRawMutex, Inner_type> {
+        block_on(self.Inner.read())
+    }
+
+    fn Write_inner(
+        &self,
+    ) -> Synchronization::rwlock::RwLockWriteGuard<'_, CriticalSectionRawMutex, Inner_type> {
+        block_on(self.Inner.write())
+    }
 }
 
 unsafe impl Send for File_system_type {}
@@ -184,7 +198,7 @@ impl File_system_traits for File_system_type {
         User: User_identifier_type,
         Group: Group_identifier_type,
     ) -> Result_type<Local_file_identifier_type> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let File = File_type::Open(
             &mut Inner.File_system,
@@ -211,7 +225,7 @@ impl File_system_traits for File_system_type {
     }
 
     fn Close(&self, File: Local_file_identifier_type) -> Result_type<()> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let File = Inner
             .Open_files
@@ -224,7 +238,7 @@ impl File_system_traits for File_system_type {
     }
 
     fn Close_all(&self, Task: Task::Task_identifier_type) -> Result_type<()> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         // Get all the keys of the open files that belong to the task
         let Keys = Inner
@@ -250,7 +264,7 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<Local_file_identifier_type> {
         let (Task, _) = File.Split();
 
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let File = Inner
             .Open_files
@@ -279,7 +293,7 @@ impl File_system_traits for File_system_type {
         File_identifier: Local_file_identifier_type,
         New_file: Option<File_identifier_type>,
     ) -> Result_type<Local_file_identifier_type> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let File = Inner
             .Open_files
@@ -320,7 +334,7 @@ impl File_system_traits for File_system_type {
     fn Remove(&self, Path: &Path_type) -> Result_type<()> {
         let Path = CString::new(Path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         Convert_result(unsafe {
             littlefs::lfs_remove(&mut Inner.File_system as *mut _, Path.as_ptr())
@@ -335,7 +349,7 @@ impl File_system_traits for File_system_type {
         Buffer: &mut [u8],
         _: Time_type,
     ) -> Result_type<Size_type> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -352,7 +366,7 @@ impl File_system_traits for File_system_type {
         Buffer: &[u8],
         _: Time_type,
     ) -> Result_type<Size_type> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -369,7 +383,7 @@ impl File_system_traits for File_system_type {
         let Destination =
             CString::new(Destination.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         Convert_result(unsafe {
             littlefs::lfs_rename(
@@ -387,7 +401,7 @@ impl File_system_traits for File_system_type {
         File: Local_file_identifier_type,
         Position: &Position_type,
     ) -> Result_type<Size_type> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -399,7 +413,7 @@ impl File_system_traits for File_system_type {
     }
 
     fn Flush(&self, File: Local_file_identifier_type) -> Result_type<()> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -411,7 +425,7 @@ impl File_system_traits for File_system_type {
     }
 
     fn Get_statistics(&self, File: Local_file_identifier_type) -> Result_type<Statistics_type> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let (File_system, Open_files, Open_directories) =
             Self::Borrow_mutable_inner_2_splitted(&mut Inner);
@@ -441,7 +455,7 @@ impl File_system_traits for File_system_type {
     }
 
     fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
-        let Inner = self.Inner.read()?;
+        let Inner = self.Read_inner();
 
         let Result = if Self::Is_file(File) {
             Inner
@@ -466,7 +480,7 @@ impl File_system_traits for File_system_type {
         Path: &Path_type,
         Task: Task::Task_identifier_type,
     ) -> Result_type<Local_file_identifier_type> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let Directory = Directory_type::Open(&mut Inner.File_system, Path)?;
 
@@ -489,7 +503,7 @@ impl File_system_traits for File_system_type {
     }
 
     fn Read_directory(&self, File: Local_file_identifier_type) -> Result_type<Option<Entry_type>> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -505,7 +519,7 @@ impl File_system_traits for File_system_type {
         File: Local_file_identifier_type,
         Position: Size_type,
     ) -> Result_type<()> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -517,7 +531,7 @@ impl File_system_traits for File_system_type {
     }
 
     fn Rewind_directory(&self, File: Local_file_identifier_type) -> Result_type<()> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -531,7 +545,7 @@ impl File_system_traits for File_system_type {
     }
 
     fn Close_directory(&self, File: Local_file_identifier_type) -> Result_type<()> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -552,7 +566,7 @@ impl File_system_traits for File_system_type {
         User: User_identifier_type,
         Group: Group_identifier_type,
     ) -> Result_type<()> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         Directory_type::Create_directory(&mut Inner.File_system, Path)?;
 
@@ -565,7 +579,7 @@ impl File_system_traits for File_system_type {
     }
 
     fn Get_position_directory(&self, File: Local_file_identifier_type) -> Result_type<Size_type> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -581,7 +595,7 @@ impl File_system_traits for File_system_type {
         Path: &Path_type,
         Metadata: &Metadata_type,
     ) -> Result_type<()> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         File_type::Set_metadata_from_path(&mut Inner.File_system, Path, Metadata)?;
 
@@ -589,13 +603,13 @@ impl File_system_traits for File_system_type {
     }
 
     fn Get_metadata_from_path(&self, Path: &Path_type) -> Result_type<Metadata_type> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         File_type::Get_metadata_from_path(&mut Inner.File_system, Path)
     }
 
     fn Get_metadata(&self, File: Local_file_identifier_type) -> Result_type<Metadata_type> {
-        let mut Inner = self.Inner.write()?;
+        let mut Inner = self.Write_inner();
 
         let (_, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
 
@@ -608,11 +622,11 @@ impl File_system_traits for File_system_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
 
-    use std::sync::Arc;
-
+    use alloc::sync::Arc;
     use File_system::{Create_device, Memory_device_type};
+    use Task::Test;
 
     use super::*;
 
@@ -621,11 +635,7 @@ mod Tests {
     fn Initialize() -> File_system_type {
         let _ = Users::Initialize();
 
-        Task::Initialize().unwrap();
-
-        unsafe {
-            let _ = Task::Get_instance().Register_task();
-        }
+        Task::Initialize();
 
         let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()));
 
@@ -638,58 +648,59 @@ mod Tests {
         File_system_type::New(Device, Cache_size).unwrap()
     }
 
-    #[test]
-    fn Test_open_close_delete() {
-        File_system::Tests::Test_open_close_delete(Initialize());
+    #[Test]
+    async fn test_open_close_delete() {
+        File_system::Tests::Test_open_close_delete(Initialize()).await;
     }
 
-    #[test]
-    fn Test_read_write() {
-        File_system::Tests::Test_read_write(Initialize());
+    #[Test]
+    async fn test_read_write() {
+        File_system::Tests::Test_read_write(Initialize()).await;
     }
 
-    #[test]
-    fn Test_move() {
-        File_system::Tests::Test_move(Initialize());
+    #[Test]
+    async fn test_move() {
+        File_system::Tests::Test_move(Initialize()).await;
     }
 
-    #[test]
-    fn Test_set_position() {
-        File_system::Tests::Test_set_position(Initialize());
+    #[Test]
+    async fn test_set_position() {
+        File_system::Tests::Test_set_position(Initialize()).await;
     }
 
-    #[test]
-    fn Test_flush() {
-        File_system::Tests::Test_flush(Initialize());
+    #[Test]
+    async fn test_flush() {
+        File_system::Tests::Test_flush(Initialize()).await;
     }
 
-    #[test]
-    fn Test_set_get_metadata() {
-        File_system::Tests::Test_set_get_metadata(Initialize());
+    #[Test]
+    async fn test_set_get_metadata() {
+        File_system::Tests::Test_set_get_metadata(Initialize()).await;
     }
 
-    #[test]
-    fn Test_read_directory() {
-        File_system::Tests::Test_read_directory(Initialize());
+    #[Test]
+    async fn test_read_directory() {
+        File_system::Tests::Test_read_directory(Initialize()).await;
     }
 
-    #[test]
-    fn Test_set_position_directory() {
-        File_system::Tests::Test_set_position_directory(Initialize());
+    #[Test]
+    async fn test_set_position_directory() {
+        File_system::Tests::Test_set_position_directory(Initialize()).await;
     }
 
-    #[test]
-    fn Test_rewind_directory() {
-        File_system::Tests::Test_rewind_directory(Initialize());
+    #[Test]
+    async fn test_rewind_directory() {
+        File_system::Tests::Test_rewind_directory(Initialize()).await;
     }
 
-    #[test]
-    fn Test_create_remove_directory() {
-        File_system::Tests::Test_create_remove_directory(Initialize());
+    #[Test]
+    async fn test_create_remove_directory() {
+        File_system::Tests::Test_create_remove_directory(Initialize()).await;
     }
 
-    #[test]
-    fn Test_loader() {
+    #[cfg(feature = "std")]
+    #[Test]
+    async fn test_loader() {
         File_system::Tests::Test_loader(Initialize());
     }
 }

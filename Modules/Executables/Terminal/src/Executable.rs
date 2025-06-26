@@ -1,3 +1,4 @@
+use alloc::string::{String, ToString};
 use Executable::Read_data_type;
 use File_system::{Device_trait, Flags_type, Mode_type, Open_type};
 use Task::Task_identifier_type;
@@ -8,17 +9,21 @@ use crate::Main::Main;
 pub struct Terminal_executable_type;
 
 impl Terminal_executable_type {
-    pub fn New<'a>(
+    pub async fn New<'a>(
         Virtual_file_system: &'a Virtual_file_system_type<'a>,
         Task: Task_identifier_type,
     ) -> Result<Self, String> {
-        let _ = Virtual_file_system.Create_directory(&"/Configuration/Shared/Shortcuts", Task);
+        let _ = Virtual_file_system
+            .Create_directory(&"/Configuration/Shared/Shortcuts", Task)
+            .await;
 
         let File = match File_type::Open(
             Virtual_file_system,
             "/Configuration/Shared/Shortcuts/Terminal.json",
             Flags_type::New(Mode_type::Write_only, Open_type::Create_only.into(), None),
-        ) {
+        )
+        .await
+        {
             Ok(File) => File,
             Err(File_system::Error_type::Already_exists) => {
                 return Ok(Self);
@@ -27,6 +32,7 @@ impl Terminal_executable_type {
         };
 
         File.Write(crate::Shortcut.as_bytes())
+            .await
             .map_err(|Error| Error.to_string())?;
 
         Ok(Self)

@@ -1,5 +1,6 @@
-use std::{ffi::CStr, ptr::null_mut};
+use core::{ffi::CStr, mem::transmute, ptr::null_mut};
 
+use alloc::vec::Vec;
 use wamr_rust_sdk::{module::Module, sys::wasm_runtime_set_wasi_args_ex};
 use File_system::Unique_file_identifier_type;
 
@@ -16,7 +17,7 @@ const Directory_paths: [&CStr; 1] = [c"/"];
 const Directory_paths_raw: [*const i8; 1] = [Directory_paths[0].as_ptr()];
 
 impl<'runtime> Module_type<'runtime> {
-    pub fn From_buffer(
+    pub async fn From_buffer(
         Runtime: &'runtime Runtime_type,
         Buffer: Vec<u8>,
         Name: &str,
@@ -27,12 +28,10 @@ impl<'runtime> Module_type<'runtime> {
         // - Environment variables.
         let Task_instance = Task::Get_instance();
 
-        let Task = Task_instance
-            .Get_current_task_identifier()
-            .map_err(Error_type::Failed_to_get_task_informations)?;
-
+        let Task = Task_instance.Get_current_task_identifier().await;
         let mut Environment_variables_raw: Vec<*const i8> = Task_instance
             .Get_environment_variables(Task)
+            .await
             .map_err(Error_type::Failed_to_get_task_informations)?
             .into_iter()
             .map(|x| x.Get_raw().as_ptr())
@@ -64,9 +63,9 @@ impl<'runtime> Module_type<'runtime> {
                 Environment_variables_length as u32,
                 null_mut(),
                 0,
-                std::mem::transmute::<u64, i64>(Standard_in),
-                std::mem::transmute::<u64, i64>(Standard_out),
-                std::mem::transmute::<u64, i64>(Standard_error),
+                transmute::<u64, i64>(Standard_in),
+                transmute::<u64, i64>(Standard_out),
+                transmute::<u64, i64>(Standard_error),
             )
         }
 

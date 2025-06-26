@@ -1,19 +1,32 @@
-use std::{mem::transmute, num::NonZeroUsize};
+use core::{future::Future, mem::transmute, num::NonZeroUsize, pin::Pin};
+
+use alloc::{boxed::Box, string::String};
 
 use crate::Standard_type;
 
-pub type Main_function_type = fn(Standard_type, String) -> Result<(), NonZeroUsize>;
+pub type Main_function_type = Box<
+    dyn Fn(
+            Standard_type,
+            String,
+        ) -> Pin<Box<dyn Future<Output = Result<(), NonZeroUsize>> + 'static>>
+        + 'static,
+>;
 
-#[derive(Debug)]
 pub struct Read_data_type {
     Main: Option<Main_function_type>,
     Stack_size: usize,
 }
 
 impl Read_data_type {
-    pub const fn New(Main: Main_function_type, Stack_size: usize) -> Self {
+    pub fn New<F>(Main: impl Fn(Standard_type, String) -> F + 'static, Stack_size: usize) -> Self
+    where
+        F: Future<Output = Result<(), NonZeroUsize>> + 'static,
+    {
         Self {
-            Main: Some(Main),
+            Main: Some(Box::new(move |Standard, Arguments| {
+                Box::pin(Main(Standard, Arguments))
+            })),
+
             Stack_size,
         }
     }
@@ -26,7 +39,7 @@ impl Read_data_type {
         size_of::<Self>()
     }
 
-    pub fn Get_main(&self) -> Option<Main_function_type> {
+    pub fn Get_main(self) -> Option<Main_function_type> {
         self.Main
     }
 

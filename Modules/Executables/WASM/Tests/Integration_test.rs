@@ -2,17 +2,23 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 
+extern crate alloc;
+
 use Command_line_shell::Shell_executable_type;
-use Executable::Standard_type;
-use File_system::{
-    Create_device, Create_file_system, Loader::Loader_type, Memory_device_type, Mode_type,
-};
+use Drivers::Std::Loader::Loader_type;
+use Executable::{Mount_static_executables, Standard_type};
+use File_system::{Create_device, Create_file_system, Memory_device_type, Mode_type};
+use Memory::Instantiate_global_allocator;
+use Task::Test;
+use Virtual_file_system::{Create_default_hierarchy, Mount_static_devices};
 use WASM::WASM_device_type;
 
+Instantiate_global_allocator!(Drivers::Std::Memory::Memory_manager_type);
+
 #[ignore]
-#[test]
-fn Integration_test() {
-    let Task_instance = Task::Initialize().unwrap();
+#[Test]
+async fn Integration_test() {
+    let Task_instance = Task::Initialize();
 
     let _ = Users::Initialize();
 
@@ -34,38 +40,67 @@ fn Integration_test() {
         .Load(&mut File_system)
         .unwrap();
 
-    Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
+    let Virtual_file_system =
+        Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
 
-    let Task = Task_instance.Get_current_task_identifier().unwrap();
+    let Task = Task_instance.Get_current_task_identifier().await;
 
-    Virtual_file_system::Get_instance()
-        .Mount_static_device(Task, &"/Shell", Create_device!(Shell_executable_type))
+    Create_default_hierarchy(Virtual_file_system, Task)
+        .await
         .unwrap();
 
-    Virtual_file_system::Get_instance()
-        .Mount_static_device(Task, &"/WASM", Create_device!(WASM_device_type))
-        .unwrap();
+    Mount_static_devices!(
+        Virtual_file_system,
+        Task,
+        &[
+            (
+                &"/Devices/Standard_in",
+                Drivers::Std::Console::Standard_in_device_type
+            ),
+            (
+                &"/Devices/Standard_out",
+                Drivers::Std::Console::Standard_out_device_type
+            ),
+            (
+                &"/Devices/Standard_error",
+                Drivers::Std::Console::Standard_error_device_type
+            ),
+            (&"/Devices/Time", Drivers::Native::Time_driver_type),
+            (&"/Devices/Random", Drivers::Native::Random_device_type),
+            (&"/Devices/Null", Drivers::Core::Null_device_type)
+        ]
+    )
+    .await
+    .unwrap();
 
-    Virtual_file_system::Get_instance()
-        .Create_directory(&"/Devices", Task)
-        .unwrap();
+    Mount_static_executables!(
+        Virtual_file_system,
+        Task,
+        &[
+            (&"/Binaries/Command_line_shell", Shell_executable_type),
+            (&"/Binaries/WASM", WASM_device_type)
+        ]
+    )
+    .await
+    .unwrap();
 
-    Drivers::Native::Console::Mount_devices(Task, Virtual_file_system::Get_instance()).unwrap();
-
-    let Standard_in = Virtual_file_system::Get_instance()
+    let Standard_in = Virtual_file_system
         .Open(&"/Devices/Standard_in", Mode_type::Read_only.into(), Task)
+        .await
         .unwrap();
 
-    let Standard_out = Virtual_file_system::Get_instance()
+    let Standard_out = Virtual_file_system
         .Open(&"/Devices/Standard_out", Mode_type::Write_only.into(), Task)
+        .await
         .unwrap();
 
-    let Standard_error = Virtual_file_system::Get_instance()
+    let Standard_error = Virtual_file_system
         .Open(
             &"/Devices/Standard_error",
             Mode_type::Write_only.into(),
             Task,
         )
+        .await
         .unwrap();
 
     let Standard = Standard_type::New(
@@ -73,25 +108,21 @@ fn Integration_test() {
         Standard_out,
         Standard_error,
         Task,
-        Virtual_file_system::Get_instance(),
+        Virtual_file_system,
     );
 
-    Task_instance
-        .Set_environment_variable(Task, "Paths", "/")
-        .unwrap();
+    let Environment_variables = &[("Paths", "/"), ("User", "alix_anneraud"), ("Host", "xila")];
 
     Task_instance
-        .Set_environment_variable(Task, "User", "alix_anneraud")
+        .Set_environment_variables(Task, Environment_variables)
+        .await
         .unwrap();
 
-    Task_instance
-        .Set_environment_variable(Task, "Host", "xila")
-        .unwrap();
-
-    let Result = Executable::Execute("/Shell", "".to_string(), Standard)
+    let Result = Executable::Execute("/Binaries/Command_line_shell", "".to_string(), Standard)
+        .await
         .unwrap()
         .Join()
-        .unwrap();
+        .await;
 
     assert!(Result == 0);
 }

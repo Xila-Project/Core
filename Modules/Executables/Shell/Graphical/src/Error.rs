@@ -1,9 +1,9 @@
-use core::{fmt::Display, num::NonZeroUsize};
-use std::num::NonZeroU8;
+use core::{
+    fmt::Display,
+    num::{NonZeroU8, NonZeroUsize},
+};
 
 pub type Result_type<T> = Result<T, Error_type>;
-
-extern crate alloc;
 
 #[derive(Debug, Clone)]
 #[repr(u8)]

@@ -1,5 +1,8 @@
-use core::str;
-use std::{collections::VecDeque, mem::forget};
+use alloc::boxed::Box;
+
+use core::{mem::forget, str};
+
+use alloc::collections::VecDeque;
 
 use crate::{Color_type, Error_type, Event::Event_type, Event_code_type, Result_type};
 

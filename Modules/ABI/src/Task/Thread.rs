@@ -1,20 +1,23 @@
+use core::ptr::null_mut;
 use core::{ffi::c_void, time::Duration};
-use std::ptr::null_mut;
 
-use Task::{Get_instance as Get_task_manager_instance, Manager_type};
+use Futures::block_on;
+use Task::Manager_type;
+
+use crate::Context;
 
 pub type Xila_thread_identifier_type = usize;
 
 #[no_mangle]
 pub extern "C" fn Xila_get_current_thread_identifier() -> usize {
-    Get_task_manager_instance()
-        .Get_current_thread_identifier()
-        .into()
+    Context::Get_instance()
+        .Get_current_task_identifier()
+        .Into_inner() as usize
 }
 
 #[no_mangle]
 pub extern "C" fn Xila_thread_sleep(Duration: u64) {
-    Manager_type::Sleep(Duration::from_millis(Duration));
+    block_on(Manager_type::Sleep(Duration::from_millis(Duration)));
 }
 
 #[no_mangle]
@@ -34,7 +37,7 @@ pub extern "C" fn Xila_thread_detach(_Thread: usize) -> u32 {
 
 #[no_mangle]
 pub extern "C" fn Xila_thread_exit() {
-    todo!()
+    unreachable!("Thread exit is not supported in this environment");
 }
 
 #[no_mangle]

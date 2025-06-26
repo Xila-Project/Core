@@ -1,3 +1,8 @@
+//! WASM Runtime management and configuration.
+//!
+//! This module provides a wrapper around the WAMR runtime with a builder pattern
+//! for configuring and creating runtime instances with registered host functions.
+
 use core::ffi::c_void;
 
 use wamr_rust_sdk::{
@@ -7,6 +12,10 @@ use wamr_rust_sdk::{
 
 use crate::{Registrable_trait, Result_type};
 
+/// Builder for configuring and creating WASM runtime instances.
+///
+/// This builder allows incremental configuration of the runtime with
+/// host functions before creating the final runtime instance.
 pub struct Runtime_builder_type(RuntimeBuilder);
 
 impl Runtime_builder_type {

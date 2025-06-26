@@ -1,5 +1,5 @@
+use core::num::{NonZeroU16, NonZeroUsize};
 use core::{fmt::Display, result::Result};
-use std::num::{NonZeroU16, NonZeroUsize};
 
 pub type Result_type<T> = Result<T, Error_type>;
 

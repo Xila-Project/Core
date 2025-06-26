@@ -32,7 +32,7 @@ Authentication = { path = "Modules/Authentication", optional = true }
 Target = { path = "Modules/Target", optional = true }
 
 [features]
-default = []
+default = ["Host"]
 
 Host = [
     "dep:LittleFS",
@@ -86,6 +86,10 @@ members = [
     "Modules/Executables/Terminal",
     "Modules/Authentication",
     "Modules/Network",
+    "Modules/Synchronization",
+    "Modules/Task/Task_macros",
+    "Modules/Futures",
+    "Modules/Log",
 ]
 exclude = [
     "Modules/Virtual_machine/Tests/WASM_test",

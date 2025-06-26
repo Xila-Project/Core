@@ -1,4 +1,4 @@
-use std::str::Split;
+use core::str::Split;
 
 use super::{Path_type, Separator};
 
@@ -51,6 +51,8 @@ impl DoubleEndedIterator for Components_type<'_> {
 
 #[cfg(test)]
 mod Tests {
+
+    use alloc::{vec, vec::Vec};
 
     use super::*;
 

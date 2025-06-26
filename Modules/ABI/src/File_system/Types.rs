@@ -131,7 +131,7 @@ impl Xila_file_system_statistics_type {
             return None;
         }
 
-        if Pointer as usize % std::mem::align_of::<Xila_file_system_statistics_type>() != 0 {
+        if Pointer as usize % align_of::<Xila_file_system_statistics_type>() != 0 {
             return None;
         }
 

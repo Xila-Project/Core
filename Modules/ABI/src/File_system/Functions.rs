@@ -1,6 +1,4 @@
 /// This module implements the POSIX like file system C ABI.
-extern crate alloc;
-
 use core::{
     cmp::min,
     ffi::{c_char, CStr},
@@ -8,14 +6,15 @@ use core::{
     ptr::copy_nonoverlapping,
 };
 
-use File_system::{
-    Error_type, File_identifier_type, Flags_type, Mode_type, Open_type, Status_type,
-};
+use Futures::block_on;
 
-use Task::Get_instance as Get_task_manager_instance;
+use File_system::{
+    Error_type, File_identifier_type, Flags_type, Metadata_type, Mode_type, Open_type,
+    Statistics_type, Status_type,
+};
 use Virtual_file_system::Get_instance as Get_file_system_instance;
 
-use crate::{Into_position, Xila_time_type};
+use crate::{Context, Into_position, Xila_time_type};
 
 use super::{
     Xila_file_system_mode_type, Xila_file_system_open_type, Xila_file_system_result_type,
@@ -49,9 +48,7 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics(
     Statistics: *mut Xila_file_system_statistics_type,
 ) -> Xila_file_system_result_type {
     Into_u32(move || {
-        let Task_identifier = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task_identifier = Context::Get_instance().Get_current_task_identifier();
 
         let Statistics = Xila_file_system_statistics_type::From_mutable_pointer(Statistics)
             .ok_or(Error_type::Invalid_parameter)?;
@@ -59,8 +56,7 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics(
         let File = File_system::Unique_file_identifier_type::From_raw(File);
 
         *Statistics = Xila_file_system_statistics_type::From_statistics(
-            Get_file_system_instance()
-                .Get_statistics(File, Task_identifier)
+            block_on(Get_file_system_instance().Get_statistics(File, Task_identifier))
                 .expect("Failed to get file statistics."),
         );
 
@@ -69,13 +65,30 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics(
 }
 
 /// This function is used to get the statistics of a file from its path.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub extern "C" fn Xila_file_system_get_statistics_from_path(
-    _Path: *const c_char,
-    _Statistics: *mut Xila_file_system_statistics_type,
-    _Follow: bool,
+pub unsafe extern "C" fn Xila_file_system_get_statistics_from_path(
+    Path: *const c_char,
+    Statistics: *mut Xila_file_system_statistics_type,
+    _: bool,
 ) -> Xila_file_system_result_type {
-    todo!()
+    Into_u32(move || {
+        let Path = CStr::from_ptr(Path)
+            .to_str()
+            .map_err(|_| Error_type::Invalid_parameter)?;
+
+        let Statistics = Xila_file_system_statistics_type::From_mutable_pointer(Statistics)
+            .ok_or(Error_type::Invalid_parameter)?;
+
+        *Statistics = Xila_file_system_statistics_type::From_statistics(block_on(
+            Get_file_system_instance().Get_statistics_from_path(&Path),
+        )?);
+
+        Ok(())
+    })
 }
 
 /// This function is used to get the access mode of a file.
@@ -92,12 +105,10 @@ pub unsafe extern "C" fn Xila_file_system_get_access_mode(
     File: Xila_unique_file_identifier_type,
     Mode: *mut Xila_file_system_mode_type,
 ) -> Xila_file_system_result_type {
-    println!("Getting file access mode : {:?}", File);
+    // Debug: Getting file access mode
 
     Into_u32(move || {
-        let Task_identifier = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task_identifier = Context::Get_instance().Get_current_task_identifier();
 
         if Mode.is_null() {
             Err(Error_type::Invalid_parameter)?;
@@ -105,11 +116,7 @@ pub unsafe extern "C" fn Xila_file_system_get_access_mode(
 
         let File = File_system::Unique_file_identifier_type::From_raw(File);
 
-        Mode.write(
-            Get_file_system_instance()
-                .Get_mode(File, Task_identifier)?
-                .As_u8(),
-        );
+        Mode.write(block_on(Get_file_system_instance().Get_mode(File, Task_identifier))?.As_u8());
 
         Ok(())
     })
@@ -126,13 +133,11 @@ pub extern "C" fn Xila_file_system_close(
     File: Xila_unique_file_identifier_type,
 ) -> Xila_file_system_result_type {
     Into_u32(move || {
-        let Task_identifier = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task_identifier = Context::Get_instance().Get_current_task_identifier();
 
         let File = File_system::Unique_file_identifier_type::From_raw(File);
 
-        Get_file_system_instance().Close(File, Task_identifier)?;
+        block_on(Get_file_system_instance().Close(File, Task_identifier))?;
 
         Ok(())
     })
@@ -158,25 +163,23 @@ pub unsafe extern "C" fn Xila_file_system_write_vectored(
     Written: *mut usize,
 ) -> Xila_file_system_result_type {
     Into_u32(move || {
-        let Task_identifier = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task_identifier = Context::Get_instance().Get_current_task_identifier();
 
-        let Buffers = std::slice::from_raw_parts(Buffers, Buffer_count);
-        let Buffers_length = std::slice::from_raw_parts(Buffers_length, Buffer_count);
+        let Buffers = core::slice::from_raw_parts(Buffers, Buffer_count);
+        let Buffers_length = core::slice::from_raw_parts(Buffers_length, Buffer_count);
 
         let mut Current_written = 0;
 
         let File = File_system::Unique_file_identifier_type::From_raw(File);
 
         for (Buffer, Length) in Buffers.iter().zip(Buffers_length.iter()) {
-            let Buffer_slice = std::slice::from_raw_parts(*Buffer, *Length);
+            let Buffer_slice = core::slice::from_raw_parts(*Buffer, *Length);
 
-            Current_written += usize::from(Get_file_system_instance().Write(
+            Current_written += usize::from(block_on(Get_file_system_instance().Write(
                 File,
                 Buffer_slice,
                 Task_identifier,
-            )?);
+            ))?);
         }
 
         if !Written.is_null() {
@@ -205,21 +208,19 @@ pub unsafe extern "C" fn Xila_file_system_read_vectored(
     Read: *mut usize,
 ) -> Xila_file_system_result_type {
     Into_u32(move || {
-        let Task_identifier = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task_identifier = Context::Get_instance().Get_current_task_identifier();
 
-        let Buffers = std::slice::from_raw_parts_mut(Buffers, Buffer_count);
-        let Buffers_length = std::slice::from_raw_parts_mut(Buffers_length, Buffer_count);
+        let Buffers = core::slice::from_raw_parts_mut(Buffers, Buffer_count);
+        let Buffers_length = core::slice::from_raw_parts_mut(Buffers_length, Buffer_count);
 
         let mut Current_read = 0;
 
         let File = File_system::Unique_file_identifier_type::From_raw(File);
 
         for (Buffer_pointer, Buffer_length) in Buffers.iter_mut().zip(Buffers_length.iter_mut()) {
-            let Buffer = std::slice::from_raw_parts_mut(*Buffer_pointer, *Buffer_length);
+            let Buffer = core::slice::from_raw_parts_mut(*Buffer_pointer, *Buffer_length);
 
-            let Read = Get_file_system_instance().Read(File, Buffer, Task_identifier)?;
+            let Read = block_on(Get_file_system_instance().Read(File, Buffer, Task_identifier))?;
 
             Current_read += usize::from(Read);
         }
@@ -247,28 +248,26 @@ pub unsafe extern "C" fn Xila_file_system_read_at_position_vectored(
     Read: *mut usize,
 ) -> Xila_file_system_result_type {
     Into_u32(move || {
-        let Task_identifier = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task_identifier = Context::Get_instance().Get_current_task_identifier();
 
-        let Buffers = std::slice::from_raw_parts_mut(Buffers, Buffer_count);
-        let Buffers_length = std::slice::from_raw_parts_mut(Buffers_length, Buffer_count);
+        let Buffers = core::slice::from_raw_parts_mut(Buffers, Buffer_count);
+        let Buffers_length = core::slice::from_raw_parts_mut(Buffers_length, Buffer_count);
 
         let mut Current_read = 0;
 
         let File: File_system::Unique_file_identifier_type =
             File_system::Unique_file_identifier_type::From_raw(File);
 
-        Get_file_system_instance().Set_position(
+        block_on(Get_file_system_instance().Set_position(
             File,
             &File_system::Position_type::Start(Position),
             Task_identifier,
-        )?;
+        ))?;
 
         for (Buffer_pointer, Buffer_length) in Buffers.iter_mut().zip(Buffers_length.iter_mut()) {
-            let Buffer = std::slice::from_raw_parts_mut(*Buffer_pointer, *Buffer_length);
+            let Buffer = core::slice::from_raw_parts_mut(*Buffer_pointer, *Buffer_length);
 
-            let Read = Get_file_system_instance().Read(File, Buffer, Task_identifier)?;
+            let Read = block_on(Get_file_system_instance().Read(File, Buffer, Task_identifier))?;
 
             Current_read += usize::from(Read);
         }
@@ -296,32 +295,30 @@ pub unsafe extern "C" fn Xila_file_system_write_at_position_vectored(
     Written: *mut usize,
 ) -> Xila_file_system_result_type {
     Into_u32(move || {
-        let Task_identifier = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task_identifier = Context::Get_instance().Get_current_task_identifier();
 
-        let Buffers = std::slice::from_raw_parts(Buffers, Buffer_count);
-        let Buffers_length = std::slice::from_raw_parts(Buffers_length, Buffer_count);
+        let Buffers = core::slice::from_raw_parts(Buffers, Buffer_count);
+        let Buffers_length = core::slice::from_raw_parts(Buffers_length, Buffer_count);
 
         let mut Current_written = 0;
 
         let File: File_system::Unique_file_identifier_type =
             File_system::Unique_file_identifier_type::From_raw(File);
 
-        Get_file_system_instance().Set_position(
+        block_on(Get_file_system_instance().Set_position(
             File,
             &File_system::Position_type::Start(Position),
             Task_identifier,
-        )?;
+        ))?;
 
         for (Buffer, Length) in Buffers.iter().zip(Buffers_length.iter()) {
-            let Buffer_slice = std::slice::from_raw_parts(*Buffer, *Length);
+            let Buffer_slice = core::slice::from_raw_parts(*Buffer, *Length);
 
-            Current_written += usize::from(Get_file_system_instance().Write(
+            Current_written += usize::from(block_on(Get_file_system_instance().Write(
                 File,
                 Buffer_slice,
                 Task_identifier,
-            )?);
+            ))?);
         }
 
         if !Written.is_null() {
@@ -347,9 +344,7 @@ pub unsafe extern "C" fn Xila_file_system_is_a_terminal(
     Is_a_terminal: *mut bool,
 ) -> Xila_file_system_result_type {
     Into_u32(move || {
-        let Task_identifier = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task_identifier = Context::Get_instance().Get_current_task_identifier();
 
         if Is_a_terminal.is_null() {
             Err(Error_type::Invalid_parameter)?;
@@ -357,7 +352,7 @@ pub unsafe extern "C" fn Xila_file_system_is_a_terminal(
 
         let File = File_system::Unique_file_identifier_type::From_raw(File);
 
-        *Is_a_terminal = Get_file_system_instance().Is_a_terminal(File, Task_identifier)?;
+        *Is_a_terminal = block_on(Get_file_system_instance().Is_a_terminal(File, Task_identifier))?;
 
         Ok(())
     })
@@ -369,11 +364,7 @@ pub extern "C" fn Xila_file_system_is_stdin(File: Xila_unique_file_identifier_ty
 
     let (_, File) = File.Split();
 
-    println!(
-        "Checking if file is stdin : {:?} : {:?}",
-        File,
-        File == File_identifier_type::Standard_in
-    );
+    // Debug: Checking if file is stdin
 
     File == File_identifier_type::Standard_in
 }
@@ -384,11 +375,7 @@ pub extern "C" fn Xila_file_system_is_stderr(File: Xila_unique_file_identifier_t
 
     let (_, File) = File.Split();
 
-    println!(
-        "Checking if file is stderr : {:?} : {:?}",
-        File,
-        File == File_identifier_type::Standard_error
-    );
+    // Debug: Checking if file is stderr
 
     File == File_identifier_type::Standard_error
 }
@@ -399,11 +386,7 @@ pub extern "C" fn Xila_file_system_is_stdout(File: Xila_unique_file_identifier_t
 
     let (_, File) = File.Split();
 
-    println!(
-        "Checking if file is stdout : {:?} : {:?}",
-        File,
-        File == File_identifier_type::Standard_out
-    );
+    // Debug: Checking if file is stdout
 
     File == File_identifier_type::Standard_out
 }
@@ -422,7 +405,7 @@ pub unsafe extern "C" fn Xila_file_system_open(
     File: *mut Xila_unique_file_identifier_type,
 ) -> Xila_file_system_result_type {
     Into_u32(move || {
-        let Path = std::ffi::CStr::from_ptr(Path)
+        let Path = core::ffi::CStr::from_ptr(Path)
             .to_str()
             .map_err(|_| Error_type::Invalid_parameter)?;
 
@@ -432,14 +415,11 @@ pub unsafe extern "C" fn Xila_file_system_open(
 
         let Flags = Flags_type::New(Mode, Some(Open), Some(Status));
 
-        println!("Opening file : {:?} with flags : {:?}", Path, Flags);
+        // Debug: Opening file
 
-        let Task = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task = Context::Get_instance().Get_current_task_identifier();
 
-        *File = Get_file_system_instance()
-            .Open(&Path, Flags, Task)
+        *File = block_on(Get_file_system_instance().Open(&Path, Flags, Task))
             .expect("Failed to open file")
             .Into_inner();
 
@@ -480,11 +460,11 @@ pub unsafe extern "C" fn Xila_file_system_resolve_path(
     Resolved_path_size: usize,
 ) -> Xila_file_system_result_type {
     Into_u32(move || {
-        let Path = std::ffi::CStr::from_ptr(Path)
+        let Path = core::ffi::CStr::from_ptr(Path)
             .to_str()
             .map_err(|_| Error_type::Invalid_parameter)?;
 
-        println!("Resolving path : {:?}", Path);
+        // Debug: Resolving path
 
         // Copy path to resolved path.
         copy_nonoverlapping(
@@ -503,13 +483,11 @@ pub extern "C" fn Xila_file_system_flush(
     _: bool,
 ) -> Xila_file_system_result_type {
     Into_u32(move || {
-        let Task = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let Task = Context::Get_instance().Get_current_task_identifier();
 
         let File = File_system::Unique_file_identifier_type::From_raw(File);
 
-        Get_file_system_instance().Flush(File, Task)?;
+        block_on(Get_file_system_instance().Flush(File, Task))?;
 
         Ok(())
     })
@@ -547,22 +525,16 @@ pub unsafe extern "C" fn Xila_file_system_set_position(
     Position: *mut Xila_file_system_size_type,
 ) -> Xila_file_system_result_type {
     Into_u32(move || {
-        let Task = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
-
+        let Task = Context::Get_instance().Get_current_task_identifier();
         let Current_position = Into_position(Whence, Offset);
 
-        println!(
-            "Setting position : {:?} : {:?} : {:?}",
-            File, Current_position, Position
-        );
+        // Debug: Setting position
 
         let File = File_system::Unique_file_identifier_type::From_raw(File);
 
-        *Position = Get_file_system_instance()
-            .Set_position(File, &Current_position, Task)?
-            .As_u64();
+        *Position =
+            block_on(Get_file_system_instance().Set_position(File, &Current_position, Task))?
+                .As_u64();
 
         Ok(())
     })
@@ -582,13 +554,10 @@ pub unsafe extern "C" fn Xila_file_system_create_directory(
             .to_str()
             .map_err(|_| Error_type::Invalid_parameter)?;
 
-        println!("Creating directory : {:?}", Path);
+        // Debug: Creating directory
 
-        let Task = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
-
-        Get_file_system_instance().Create_directory(&Path, Task)?;
+        let Task = Context::Get_instance().Get_current_task_identifier();
+        block_on(Get_file_system_instance().Create_directory(&Path, Task))?;
 
         Ok(())
     })
@@ -613,9 +582,9 @@ pub unsafe extern "C" fn Xila_file_system_rename(
             .to_str()
             .map_err(|_| Error_type::Invalid_parameter)?;
 
-        println!("Renaming : {:?} to : {:?}", Old_path, New_path);
+        // Debug: Renaming files
 
-        Get_file_system_instance().Rename(&Old_path, &New_path)?;
+        block_on(Get_file_system_instance().Rename(&Old_path, &New_path))?;
 
         Ok(())
     })
@@ -661,7 +630,7 @@ pub unsafe extern "C" fn Xila_file_system_remove(
             .to_str()
             .map_err(|_| Error_type::Invalid_parameter)?;
 
-        Get_file_system_instance().Remove(Path)?;
+        block_on(Get_file_system_instance().Remove(Path))?;
 
         Ok(())
     })
@@ -674,9 +643,7 @@ pub extern "C" fn Xila_file_system_truncate(
     _Length: Xila_file_system_size_type,
 ) -> Xila_file_system_result_type {
     Into_u32(move || {
-        let _Task = Get_task_manager_instance()
-            .Get_current_task_identifier()
-            .map_err(|_| Error_type::Failed_to_get_task_informations)?;
+        let _Task = Context::Get_instance().Get_current_task_identifier();
 
         let _File = File_system::Unique_file_identifier_type::From_raw(_File);
 

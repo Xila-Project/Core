@@ -1268,6 +1268,13 @@ os_file_handle os_get_invalid_handle()
     return 0xFFFFFFFFFFFFFFFF;
 }
 
+os_raw_file_handle
+os_invalid_raw_handle()
+{
+    return 0xFFFFFFFFFFFFFFFF;
+}
+
+
 /**
  * NOTES:
  * Fileystem APIs are required for WASI libc support. If you don't need to
