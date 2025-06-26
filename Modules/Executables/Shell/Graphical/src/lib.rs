@@ -13,7 +13,6 @@ use Layout::Layout_type;
 use Login::Login_type;
 
 mod Desk;
-mod Device;
 mod Error;
 mod Home;
 mod Icon;
@@ -21,8 +20,6 @@ mod Layout;
 mod Login;
 mod Main;
 mod Shortcut;
-
-pub use Device::*;
 
 pub struct Shell_type {
     _Standard: Standard_type,
@@ -32,3 +29,11 @@ pub struct Shell_type {
     _Home: Option<Box<Home_type>>,
     Login: Option<Box<Login_type>>,
 }
+
+pub struct Shell_executable_type;
+
+Executable::Implement_executable_device!(
+    Structure: Shell_executable_type,
+    Mount_path: "/Binaries/Graphical_shell",
+    Main_function: Main::Main,
+);
