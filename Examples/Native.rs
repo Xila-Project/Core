@@ -119,6 +119,12 @@ async fn main() {
                 Graphical_shell::Shell_executable_type
             ),
             (
+                &"/Binaries/File_manager",
+                File_manager::File_manager_executable_type::New(Virtual_file_system, Task)
+                    .await
+                    .unwrap()
+            ),
+            (
                 &"/Binaries/Command_line_shell",
                 Command_line_shell::Shell_executable_type
             ),
