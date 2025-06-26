@@ -20,6 +20,7 @@ Users = { path = "Modules/Users", optional = true }
 Drivers = { path = "Modules/Drivers", optional = true }
 Memory = { path = "Modules/Memory", optional = true }
 WASM = { path = "Modules/Executables/WASM", optional = true }
+File_manager = { path = "Modules/Executables/File_manager", optional = true }
 Command_line_shell = { path = "Modules/Executables/Shell/Command_line", optional = true }
 Executable = { path = "Modules/Executable", optional = true }
 File_system = { path = "Modules/File_system", optional = true }
@@ -45,6 +46,7 @@ Host = [
     "dep:Drivers",
     "dep:Memory",
     "dep:WASM",
+    "dep:File_manager",
     "dep:Command_line_shell",
     "dep:Target",
     "dep:Executable",
@@ -79,6 +81,7 @@ members = [
     "Modules/Bindings/Utilities",
     "Modules/Bindings/Host",
     "Modules/Bindings/WASM",
+    "Modules/Executables/File_manager",
     "Modules/Executables/Shell/Command_line",
     "Modules/Executable",
     "Modules/Executables/WASM",
