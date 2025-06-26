@@ -16,8 +16,8 @@ use wamr_rust_sdk::{
         wasm_runtime_addr_native_to_app, wasm_runtime_call_indirect, wasm_runtime_create_exec_env,
         wasm_runtime_get_custom_data, wasm_runtime_get_exception,
         wasm_runtime_get_exec_env_singleton, wasm_runtime_get_module_inst,
-        wasm_runtime_set_custom_data, wasm_runtime_validate_app_addr,
-        wasm_runtime_validate_native_addr,
+        wasm_runtime_set_custom_data, wasm_runtime_set_instruction_count_limit,
+        wasm_runtime_validate_app_addr, wasm_runtime_validate_native_addr,
     },
     value::WasmValue,
 };
@@ -172,6 +172,15 @@ impl Environment_type<'_> {
         }
 
         Ok(Self(Execution_environment, PhantomData))
+    }
+
+    pub fn Set_instruction_count_limit(&self, Limit: Option<u64>) {
+        unsafe {
+            wasm_runtime_set_instruction_count_limit(
+                self.Get_inner_reference(),
+                Limit.map(|Limit| Limit as i32).unwrap_or(-1),
+            );
+        }
     }
 
     fn Get_instance_pointer(&self) -> wasm_module_inst_t {
