@@ -24,7 +24,30 @@ const Information_icon: &str = "ℹ️";
 const Debug_icon: &str = "🐞";
 const Trace_icon: &str = "🐾";
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Level_type {
+    Error = 1,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
+impl From<log::Level> for Level_type {
+    fn from(Level: log::Level) -> Self {
+        match Level {
+            log::Level::Error => Level_type::Error,
+            log::Level::Warn => Level_type::Warn,
+            log::Level::Info => Level_type::Info,
+            log::Level::Debug => Level_type::Debug,
+            log::Level::Trace => Level_type::Trace,
+        }
+    }
+}
+
 pub trait Logger_trait: Send + Sync {
+    fn Enabled(&self, Level: Level_type) -> bool;
+
     fn Write(&self, Arguments: fmt::Arguments);
 
     fn Log(&self, Record: &Record) {
@@ -50,11 +73,14 @@ pub trait Logger_trait: Send + Sync {
 struct Logger_type(&'static dyn Logger_trait);
 
 impl Log for Logger_type {
-    fn enabled(&self, _: &Metadata) -> bool {
-        true // Always enabled for simplicity; you can implement your own logic here
+    fn enabled(&self, Metadata: &Metadata) -> bool {
+        self.0.Enabled(Level_type::from(Metadata.level()))
     }
 
     fn log(&self, Record: &Record) {
+        if !self.enabled(Record.metadata()) {
+            return;
+        }
         self.0.Log(Record)
     }
 

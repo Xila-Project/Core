@@ -5,6 +5,16 @@ use Log::Logger_trait;
 pub struct Logger_type;
 
 impl Logger_trait for Logger_type {
+    fn Enabled(&self, Level: Log::Level_type) -> bool {
+        match Level {
+            Log::Level_type::Error => true,
+            Log::Level_type::Warn => true,
+            Log::Level_type::Info => true,
+            Log::Level_type::Debug => false,
+            Log::Level_type::Trace => false,
+        }
+    }
+
     fn Write(&self, args: fmt::Arguments) {
         println!("{}", args);
     }
