@@ -530,14 +530,6 @@ fn New_part(
     Factor: u8,
     Color: Color_type,
 ) -> Result_type<*mut LVGL::lv_obj_t> {
-    //let Color = match Alignment {
-    //    LVGL::lv_align_t_LV_ALIGN_TOP_RIGHT => LVGL::lv_palette_t_LV_PALETTE_YELLOW,
-    //    LVGL::lv_align_t_LV_ALIGN_BOTTOM_LEFT => LVGL::lv_palette_t_LV_PALETTE_BLUE,
-    //    LVGL::lv_align_t_LV_ALIGN_BOTTOM_RIGHT => LVGL::lv_palette_t_LV_PALETTE_GREEN,
-    //    LVGL::lv_align_t_LV_ALIGN_TOP_LEFT => LVGL::lv_palette_t_LV_PALETTE_RED,
-    //    _ => LVGL::lv_palette_t_LV_PALETTE_GREY,
-    //};
-
     let Size = (10_i32 * Factor as i32, 21_i32 * Factor as i32);
 
     unsafe {
