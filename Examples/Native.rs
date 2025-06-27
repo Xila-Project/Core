@@ -24,6 +24,9 @@ async fn main() {
     Users::Initialize();
     // Initialize the time manager
     Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New())).unwrap();
+
+    Log::Initialize(&Drivers::Std::Log::Logger_type).unwrap();
+
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
     const Resolution: Graphics::Point_type = Graphics::Point_type::New(800, 600);

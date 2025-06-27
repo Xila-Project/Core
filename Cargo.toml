@@ -28,6 +28,7 @@ Host_bindings = { path = "Modules/Bindings/Host", optional = true }
 Graphical_shell = { path = "Modules/Executables/Shell/Graphical", optional = true }
 Terminal = { path = "Modules/Executables/Terminal", optional = true }
 Authentication = { path = "Modules/Authentication", optional = true }
+Log = { path = "Modules/Log", version = "0.1.0", optional = true }
 
 [build-dependencies]
 Target = { path = "Modules/Target", optional = true }
@@ -55,6 +56,7 @@ Host = [
     "dep:Graphical_shell",
     "dep:Terminal",
     "dep:Authentication",
+    "dep:Log",
 ]
 WASM = ["dep:WASM_bindings"]
 
