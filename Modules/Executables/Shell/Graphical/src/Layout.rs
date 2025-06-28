@@ -34,7 +34,7 @@ impl Layout_type {
 
             let _ = Graphics::Get_instance().Lock().await;
 
-            self.Clock_string = format!("{:02}:{:02}\0", Hour, Minute);
+            self.Clock_string = format!("{Hour:02}:{Minute:02}\0");
 
             unsafe {
                 LVGL::lv_label_set_text_static(self.Clock, self.Clock_string.as_ptr() as *const i8);

@@ -311,10 +311,7 @@ pub unsafe extern "C" fn Xila_memory_allocate(
 ) -> *mut c_void {
     Into_pointer(|| {
         Trace!(
-            "Xila_memory_allocate called with Size: {}, Alignment: {}, Capabilities: {:?}",
-            Size,
-            Alignment,
-            Capabilities
+            "Xila_memory_allocate called with Size: {Size}, Alignment: {Alignment}, Capabilities: {Capabilities:?}"
         );
         let Layout = Layout_type::from_size_align(Size, Alignment)
             .expect("Failed to create layout for memory allocation");
@@ -331,8 +328,7 @@ pub unsafe extern "C" fn Xila_memory_allocate(
             };
         } else {
             Warning! {
-                "Xila_memory_allocate failed with Size: {}, Alignment: {}, Capabilities: {:?}",
-                Size, Alignment, Capabilities
+                "Xila_memory_allocate failed with Size: {Size}, Alignment: {Alignment}, Capabilities: {Capabilities:?}"
             };
         }
 

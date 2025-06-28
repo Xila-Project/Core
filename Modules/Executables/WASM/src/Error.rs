@@ -25,7 +25,7 @@ impl fmt::Display for Error_type {
             Error_type::Failed_to_execute => "Failed to execute",
         };
 
-        write!(f, "{}", String)
+        write!(f, "{String}")
     }
 }
 

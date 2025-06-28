@@ -7,10 +7,7 @@ extern crate alloc;
 
 use alloc::vec;
 
-use wamr_rust_sdk::{
-    function::Function, sys::wasm_runtime_set_instruction_count_limit, value::WasmValue,
-    RuntimeError,
-};
+use wamr_rust_sdk::{function::Function, value::WasmValue, RuntimeError};
 
 use Drivers::Std::Memory::Memory_manager_type;
 use File_system::{Create_device, Create_file_system, Memory_device_type};
@@ -165,7 +162,7 @@ async fn Integration_test() {
 
                 let Result = Function.call(Instance.Get_inner_reference(), &vec![]);
 
-                println!("Result: {:?}", Result);
+                println!("Result: {Result:?}");
 
                 match Result {
                     Ok(Values) => {
@@ -185,7 +182,7 @@ async fn Integration_test() {
                         Information!("Caught exception: {}", E.message);
                     }
                     Err(Error) => {
-                        panic!("Unexpected error: {:?}", Error);
+                        panic!("Unexpected error: {Error:?}");
                     }
                 }
             }

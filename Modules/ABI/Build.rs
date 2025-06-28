@@ -4,7 +4,7 @@
 
 pub fn main() {
     let Out_dir = "./include";
-    let Out_file = format!("{}/Xila.h", Out_dir);
+    let Out_file = format!("{Out_dir}/Xila.h");
 
     let Enumeration_configuration = cbindgen::EnumConfig {
         prefix_with_name: true,

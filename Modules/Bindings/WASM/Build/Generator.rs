@@ -70,7 +70,7 @@ fn Generate_function_signature(Signature: &Signature) -> String {
             syn::FnArg::Typed(Pattern) => {
                 let Identifier = Pattern.pat.to_token_stream().to_string();
                 let Type = Convert_type(Pattern.ty.to_token_stream().to_string());
-                format!("{} {}", Type, Identifier)
+                format!("{Type} {Identifier}")
             }
             _ => panic!("Unsupported argument type"),
         })
@@ -78,7 +78,7 @@ fn Generate_function_signature(Signature: &Signature) -> String {
 
     if let ReturnType::Type(_, Type) = &Signature.output {
         let Type = Convert_type(Type.to_token_stream().to_string());
-        Inputs.push(format!("{}* __Result", Type));
+        Inputs.push(format!("{Type}* __Result"));
     }
 
     format!("void {}({})", Identifier, Inputs.join(", "))
@@ -134,9 +134,9 @@ fn Generate_graphics_call(Signature: &Signature) -> String {
                 Type::Ptr(_) => {
                     format!("(size_t){}", Pattern.pat.to_token_stream())
                 }
-                Type => panic!("Unsupported argument type : {:?}", Type),
+                Type => panic!("Unsupported argument type : {Type:?}"),
             },
-            Receiver => panic!("Unsupported argument type : {:?}", Receiver),
+            Receiver => panic!("Unsupported argument type : {Receiver:?}"),
         })
         .collect::<Vec<_>>();
 
@@ -151,7 +151,7 @@ fn Generate_graphics_call(Signature: &Signature) -> String {
         ReturnType::Type(_, Type) => {
             let Type = Convert_type(Type.to_token_stream().to_string());
 
-            let Declaration = format!("{} __Result;", Type);
+            let Declaration = format!("{Type} __Result;");
 
             Some(Declaration)
         }
@@ -183,7 +183,7 @@ pub fn Generate_types(LVGL_functions: &LVGL_context) -> String {
 
     let Types = fs::read_to_string("./Build/Types.h").unwrap();
 
-    format!("{}\n{}\n{}", Includes, Opaque_types, Types)
+    format!("{Includes}\n{Opaque_types}\n{Types}")
 }
 
 pub fn Generate_header(Output_file: &mut File, LVGL_functions: &LVGL_context) {
@@ -245,7 +245,7 @@ pub fn Generate_code_enumeration(Signature: Vec<Signature>) -> String {
         .collect::<Vec<_>>()
         .join(",\n");
 
-    format!("enum {{\n{}\n}};\n", Function_calls)
+    format!("enum {{\n{Function_calls}\n}};\n")
 }
 
 pub fn Generate_C_function_definition(Signature: &Signature) -> String {
@@ -253,7 +253,7 @@ pub fn Generate_C_function_definition(Signature: &Signature) -> String {
 
     let Graphics_call = Generate_graphics_call(Signature);
 
-    format!("{}\n{{\n{}\n}}\n", C_signature, Graphics_call)
+    format!("{C_signature}\n{{\n{Graphics_call}\n}}\n")
 }
 
 pub fn Generate_source(Output_file: &mut File, Context: &LVGL_context) {

@@ -55,16 +55,16 @@ impl From<Graphics::Error_type> for Error_type {
 impl Display for Error_type {
     fn fmt(&self, Formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
-            Self::Graphics(Error) => write!(Formatter, "Graphics: {}", Error),
+            Self::Graphics(Error) => write!(Formatter, "Graphics: {Error}"),
             Self::Failed_to_create_object => write!(Formatter, "Failed to create object"),
-            Self::UTF_8(Error) => write!(Formatter, "UTF-8: {}", Error),
+            Self::UTF_8(Error) => write!(Formatter, "UTF-8: {Error}"),
             Self::Failed_to_mount_device(Error) => {
-                write!(Formatter, "Failed to mount device: {}", Error)
+                write!(Formatter, "Failed to mount device: {Error}")
             }
             Self::Failed_to_get_task_identifier(Error) => {
-                write!(Formatter, "Failed to get task identifier: {}", Error)
+                write!(Formatter, "Failed to get task identifier: {Error}")
             }
-            Self::Failed_to_execute(Error) => write!(Formatter, "Failed to execute: {}", Error),
+            Self::Failed_to_execute(Error) => write!(Formatter, "Failed to execute: {Error}"),
         }
     }
 }

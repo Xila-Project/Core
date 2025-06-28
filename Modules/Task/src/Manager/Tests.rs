@@ -752,7 +752,7 @@ async fn _Test_spawner_load_balancing() {
     let mut Handles = Vec::new();
 
     for i in 0..4 {
-        let Task_name = format!("Load Balance Task {}", i);
+        let Task_name = format!("Load Balance Task {i}");
         let (Handle, _) = Manager
             .Spawn(Parent_task, &Task_name, None, async move |Task| {
                 Manager_type::Sleep(core::time::Duration::from_millis(10)).await;

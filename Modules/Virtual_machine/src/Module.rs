@@ -1,4 +1,4 @@
-use core::{ffi::CStr, mem::transmute, ptr::null_mut};
+use core::{ffi::CStr, ptr::null_mut};
 
 use alloc::vec::Vec;
 use wamr_rust_sdk::{module::Module, sys::wasm_runtime_set_wasi_args_ex};

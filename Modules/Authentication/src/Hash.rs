@@ -94,5 +94,5 @@ pub fn Hash_password(Password: &str, Salt: &str) -> String {
 
     let Hash = Hasher.finalize();
 
-    format!("{:x}", Hash)
+    format!("{Hash:x}")
 }

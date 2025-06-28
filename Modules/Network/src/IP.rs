@@ -110,8 +110,8 @@ pub enum IP_type {
 impl Display for IP_type {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            IP_type::IPv4(Value) => write!(f, "{}", Value),
-            IP_type::IPv6(Value) => write!(f, "{}", Value),
+            IP_type::IPv4(Value) => write!(f, "{Value}"),
+            IP_type::IPv6(Value) => write!(f, "{Value}"),
         }
     }
 }

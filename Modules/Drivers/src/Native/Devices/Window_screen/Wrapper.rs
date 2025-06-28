@@ -20,7 +20,7 @@ impl Inner_type {
             //  .with_wayland()
             .with_any_thread(true)
             .build()
-            .map_err(|Error| format!("Error building event loop: {:?}", Error))?;
+            .map_err(|Error| format!("Error building event loop: {Error:?}"))?;
 
         let mut Window = Window_type::New(Resolution);
 

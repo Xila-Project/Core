@@ -58,8 +58,8 @@ impl Display for Error_type {
             Error_type::Failed_to_get_task_informations => {
                 write!(f, "Failed to get task informations")
             }
-            Error_type::File_system(err) => write!(f, "File system error: {}", err),
-            Error_type::Network(err) => write!(f, "Network error: {}", err),
+            Error_type::File_system(err) => write!(f, "File system error: {err}"),
+            Error_type::Network(err) => write!(f, "Network error: {err}"),
         }
     }
 }

@@ -82,7 +82,7 @@ fn Generate_conversion_for_argument(
                         })
                     }
                 }
-                T => Err(format!("Unsupported type conversion : {:?}", T)),
+                T => Err(format!("Unsupported type conversion : {T:?}")),
             }
         }
         _ => Err("Unsupported argument type".to_string()),
@@ -136,7 +136,7 @@ fn Generate_conversion_for_output(Return: &ReturnType) -> Result<Option<TokenStr
                 }
 
                 T => {
-                    return Err(format!("Unsupported return type : {:?}", T));
+                    return Err(format!("Unsupported return type : {T:?}"));
                 }
             };
 
@@ -302,7 +302,7 @@ pub fn Generate(Output_path: &Path, Context: &LVGL_context) -> Result<(), String
     // Open the output file
     let Output_file_path = Output_path.join("Bindings.rs");
     let mut Output_file = File::create(&Output_file_path)
-        .map_err(|Error| format!("Error creating output file : {}", Error))?;
+        .map_err(|Error| format!("Error creating output file : {Error}"))?;
 
     let Enumerations = Enumeration::Generate_code(Context.Get_signatures());
 
@@ -323,7 +323,7 @@ pub fn Generate(Output_path: &Path, Context: &LVGL_context) -> Result<(), String
             .to_string()
             .as_bytes(),
         )
-        .map_err(|Error| format!("Error writing to output file : {}", Error))?;
+        .map_err(|Error| format!("Error writing to output file : {Error}"))?;
 
     Format_rust(&Output_file_path)?;
 

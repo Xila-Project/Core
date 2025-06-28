@@ -113,7 +113,7 @@ async fn main() {
 
         File_type::Open(
             Virtual_file_system,
-            format!("/Configuration/Shared/Shortcuts/Test{}.json", i).as_str(),
+            format!("/Configuration/Shared/Shortcuts/Test{i}.json").as_str(),
             Flags_type::New(Mode_type::Write_only, Some(Open_type::Create), None),
         )
         .await
@@ -122,15 +122,14 @@ async fn main() {
             format!(
                 r#"
     {{
-        "Name": "Test{}",
+        "Name": "Test{i}",
         "Command": "/Binaries/?",
         "Arguments": "",
         "Terminal": false,
         "Icon_string": "T!",
         "Icon_color": [255, 0, 0]
     }}
-        "#,
-                i
+        "#
             )
             .as_bytes(),
         )

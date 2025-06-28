@@ -142,7 +142,7 @@ mod Tests {
     #[test]
     fn test_task_identifier_debug_format() {
         let id = Task_identifier_type::New(42);
-        let debug_str = format!("{:?}", id);
+        let debug_str = format!("{id:?}");
         assert!(debug_str.contains("42"));
     }
 

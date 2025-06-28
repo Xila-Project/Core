@@ -312,8 +312,8 @@ mod tests {
         let user_id = User_identifier_type::New(42);
         let group_id = Group_identifier_type::New(42);
 
-        let user_debug = format!("{:?}", user_id);
-        let group_debug = format!("{:?}", group_id);
+        let user_debug = format!("{user_id:?}");
+        let group_debug = format!("{group_id:?}");
 
         assert!(user_debug.contains("42"));
         assert!(group_debug.contains("42"));

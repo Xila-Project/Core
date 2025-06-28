@@ -501,7 +501,7 @@ pub mod Tests {
             let File = File_system
                 .Open(
                     Task,
-                    Path_type::From_str(&format!("/Test{}", i)),
+                    Path_type::From_str(&format!("/Test{i}")),
                     Flags,
                     Time_type::New(123),
                     User_identifier_type::Root,
@@ -525,7 +525,7 @@ pub mod Tests {
         for i in 0..10 {
             let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
             assert_eq!(Entry.Get_type(), Type_type::File);
         }
 
@@ -541,7 +541,7 @@ pub mod Tests {
             let File = File_system
                 .Open(
                     Task,
-                    Path_type::From_str(&format!("/Test{}", i)),
+                    Path_type::From_str(&format!("/Test{i}")),
                     Flags,
                     Time_type::New(123),
                     User_identifier_type::Root,
@@ -566,7 +566,7 @@ pub mod Tests {
         for i in 0..10 {
             let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
             assert_eq!(Entry.Get_type(), Type_type::File);
         }
 
@@ -577,7 +577,7 @@ pub mod Tests {
         for i in 0..10 {
             let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
             assert_eq!(Entry.Get_type(), Type_type::File);
         }
     }
@@ -591,7 +591,7 @@ pub mod Tests {
             let File = File_system
                 .Open(
                     Task,
-                    Path_type::From_str(&format!("/Test{}", i)),
+                    Path_type::From_str(&format!("/Test{i}")),
                     Flags,
                     Time_type::New(123),
                     User_identifier_type::Root,
@@ -614,7 +614,7 @@ pub mod Tests {
         for i in 0..10 {
             let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
             assert_eq!(Entry.Get_type(), Type_type::File);
         }
 
@@ -631,7 +631,7 @@ pub mod Tests {
         for i in 0..10 {
             let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
             assert_eq!(Entry.Get_type(), Type_type::File);
         }
 
