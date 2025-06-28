@@ -93,13 +93,13 @@ impl File_manager_type {
                     let Target = Event.Get_target();
 
                     // Handle different button clicks
-                    if core::ptr::eq(Target, self.Up_button) {
+                    if Target == self.Up_button {
                         self.Handle_up_click().await;
-                    } else if core::ptr::eq(Target, self.Home_button) {
+                    } else if Target == self.Home_button {
                         self.Handle_home_click().await;
-                    } else if core::ptr::eq(Target, self.Refresh_button) {
+                    } else if Target == self.Refresh_button {
                         self.Handle_refresh_click().await;
-                    } else if core::ptr::eq(Target, self.Go_button) {
+                    } else if Target == self.Go_button {
                         self.Handle_go_click().await;
                     } else {
                         // Handle file item clicks
@@ -347,7 +347,7 @@ impl File_manager_type {
                             self.Update_path_label();
                             // Reload directory contents
                             if let Err(error) = self.Load_directory().await {
-                                Log::Error!("Failed to load directory: {:?}", error);
+                                Log::Error!("Failed to load directory: {error:?}");
                             }
                         }
                     } else {
@@ -365,7 +365,7 @@ impl File_manager_type {
             self.Current_path = Parent_path.to_owned();
             self.Update_path_label();
             if let Err(error) = self.Load_directory().await {
-                Log::Error!("Failed to load parent directory: {:?}", error);
+                Log::Error!("Failed to load parent directory: {error:?}");
             }
         }
     }
@@ -374,13 +374,13 @@ impl File_manager_type {
         self.Current_path = Path_owned_type::Root();
         self.Update_path_label();
         if let Err(error) = self.Load_directory().await {
-            Log::Error!("Failed to load home directory: {:?}", error);
+            Log::Error!("Failed to load home directory: {error:?}");
         }
     }
 
     async fn Handle_refresh_click(&mut self) {
         if let Err(error) = self.Load_directory().await {
-            Log::Error!("Failed to refresh directory: {:?}", error);
+            Log::Error!("Failed to refresh directory: {error:?}");
         }
     }
 
@@ -396,7 +396,7 @@ impl File_manager_type {
                         // Try to create a path from the entered string
                         let New_path =
                             Path_owned_type::New(Path_str.to_string()).unwrap_or_else(|| {
-                                Log::Error!("Invalid path entered: {}", Path_str);
+                                Log::Error!("Invalid path entered: {Path_str}");
                                 self.Current_path.clone()
                             });
 
@@ -406,7 +406,7 @@ impl File_manager_type {
 
                         // Try to load the directory
                         if let Err(error) = self.Load_directory().await {
-                            Log::Error!("Failed to navigate to path '{}': {:?}", Path_str, error);
+                            Log::Error!("Failed to navigate to path '{Path_str}': {error:?}");
                             // If navigation fails, revert to previous path
                             // For now, just stay on the current path
                         }
