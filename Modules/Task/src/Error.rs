@@ -25,7 +25,7 @@ pub enum Error_type {
 
 impl fmt::Display for Error_type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

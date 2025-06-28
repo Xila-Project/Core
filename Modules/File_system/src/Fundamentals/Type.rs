@@ -24,6 +24,6 @@ impl Display for Type_type {
             Type_type::Symbolic_link => "Symbolic link",
         };
 
-        write!(f, "{}", Type)
+        write!(f, "{Type}")
     }
 }

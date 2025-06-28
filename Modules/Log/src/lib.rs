@@ -101,7 +101,7 @@ pub fn Initialize(Logger: &'static dyn Logger_trait) -> Result<(), log::SetLogge
 
 pub fn Test_write(Logger: &impl Logger_trait) {
     for i in 0..5 {
-        Logger.Write(format_args!("This is a test message number {}.", i));
+        Logger.Write(format_args!("This is a test message number {i}."));
     }
 }
 

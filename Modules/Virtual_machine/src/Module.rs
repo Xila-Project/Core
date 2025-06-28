@@ -63,9 +63,9 @@ impl<'runtime> Module_type<'runtime> {
                 Environment_variables_length as u32,
                 null_mut(),
                 0,
-                transmute::<u64, i64>(Standard_in),
-                transmute::<u64, i64>(Standard_out),
-                transmute::<u64, i64>(Standard_error),
+                u64::cast_signed(Standard_in),
+                u64::cast_signed(Standard_out),
+                u64::cast_signed(Standard_error),
             )
         }
 

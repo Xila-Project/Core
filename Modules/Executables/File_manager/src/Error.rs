@@ -74,35 +74,31 @@ impl From<alloc::ffi::NulError> for Error_type {
 impl Display for Error_type {
     fn fmt(&self, Formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
-            Error_type::Graphics(Error) => write!(Formatter, "Graphics error: {}", Error),
-            Error_type::File_system(Error) => write!(Formatter, "File system error: {}", Error),
+            Error_type::Graphics(Error) => write!(Formatter, "Graphics error: {Error}"),
+            Error_type::File_system(Error) => write!(Formatter, "File system error: {Error}"),
             Error_type::Virtual_file_system(Error) => {
-                write!(Formatter, "Virtual file system error: {}", Error)
+                write!(Formatter, "Virtual file system error: {Error}")
             }
             Error_type::Failed_to_create_object => write!(Formatter, "Failed to create object"),
             Error_type::Failed_to_get_child => write!(Formatter, "Failed to get child"),
             Error_type::Failed_to_set_environment_variable(Error) => {
-                write!(Formatter, "Failed to set environment variable: {}", Error)
+                write!(Formatter, "Failed to set environment variable: {Error}")
             }
-            Error_type::Invalid_UTF_8(Error) => write!(Formatter, "Invalid UTF-8: {}", Error),
+            Error_type::Invalid_UTF_8(Error) => write!(Formatter, "Invalid UTF-8: {Error}"),
             Error_type::Failed_to_set_task_user(Error) => {
-                write!(Formatter, "Failed to set task user: {}", Error)
+                write!(Formatter, "Failed to set task user: {Error}")
             }
             Error_type::Failed_to_get_current_task_identifier(Error) => {
-                write!(
-                    Formatter,
-                    "Failed to get current task identifier: {}",
-                    Error
-                )
+                write!(Formatter, "Failed to get current task identifier: {Error}")
             }
             Error_type::Failed_to_read_directory(Error) => {
-                write!(Formatter, "Failed to read directory: {}", Error)
+                write!(Formatter, "Failed to read directory: {Error}")
             }
             Error_type::Failed_to_open_standard_file(Error) => {
-                write!(Formatter, "Failed to open standard file: {}", Error)
+                write!(Formatter, "Failed to open standard file: {Error}")
             }
             Error_type::Null_character_in_string(Error) => {
-                write!(Formatter, "Null character in string: {}", Error)
+                write!(Formatter, "Null character in string: {Error}")
             }
             Error_type::Missing_arguments => write!(Formatter, "Missing arguments"),
         }
