@@ -21,6 +21,14 @@
 //!
 //! let device = Create_device!(Memory_device_type::<512>::New(512));
 //!
+//! // Create a new MBR
+//! let mut mbr = MBR_type::New_with_signature(0x12345678);
+//! // Add a FAT32 partition
+//! mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 204800, true).unwrap();
+//!
+//! // Write MBR to the device
+//! mbr.Write_to_device(&device).unwrap();
+//!
 //! // Read MBR from a device
 //! let mbr = MBR_type::Read_from_device(&device).unwrap();
 //!

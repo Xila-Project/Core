@@ -90,7 +90,7 @@ pub fn Find_partitions_by_type(
 
 /// Get partition statistics
 #[derive(Debug, Clone)]
-pub struct Partition_statistics {
+pub struct Partition_statistics_type {
     pub Total_partitions: usize,
     pub Bootable_partitions: usize,
     pub Fat_partitions: usize,
@@ -103,7 +103,7 @@ pub struct Partition_statistics {
     pub Smallest_partition_sectors: u32,
 }
 
-impl Partition_statistics {
+impl Partition_statistics_type {
     pub fn From_mbr(Mbr: &super::MBR_type) -> Self {
         let Valid_partitions: Vec<_> = Mbr.Get_valid_partitions();
 
@@ -426,7 +426,7 @@ mod Tests {
     #[test]
     fn Test_partition_statistics() {
         let Mbr = create_test_mbr();
-        let Stats = Partition_statistics::From_mbr(&Mbr);
+        let Stats = Partition_statistics_type::From_mbr(&Mbr);
 
         assert_eq!(Stats.Total_partitions, 3);
         assert_eq!(Stats.Bootable_partitions, 1);
@@ -443,7 +443,7 @@ mod Tests {
     #[test]
     fn Test_partition_statistics_empty_mbr() {
         let Mbr = MBR_type::New_with_signature(0x12345678);
-        let Stats = Partition_statistics::From_mbr(&Mbr);
+        let Stats = Partition_statistics_type::From_mbr(&Mbr);
 
         assert_eq!(Stats.Total_partitions, 0);
         assert_eq!(Stats.Bootable_partitions, 0);
@@ -584,7 +584,7 @@ mod Tests {
         let _ = Mbr.Add_partition(Partition_type_type::Unknown(0x42), 20000, 5000, false);
 
         // Test statistics
-        let Stats = Partition_statistics::From_mbr(&Mbr);
+        let Stats = Partition_statistics_type::From_mbr(&Mbr);
         assert_eq!(Stats.Total_partitions, 4);
         assert_eq!(Stats.Bootable_partitions, 1);
         assert_eq!(Stats.Fat_partitions, 1);
@@ -607,7 +607,7 @@ mod Tests {
         // Test with MBR containing only empty partitions
         let Empty_mbr = MBR_type::New_with_signature(0x12345678);
 
-        let Stats = Partition_statistics::From_mbr(&Empty_mbr);
+        let Stats = Partition_statistics_type::From_mbr(&Empty_mbr);
         assert_eq!(Stats.Total_partitions, 0);
 
         let Partitions = Find_partitions_by_type(&Empty_mbr, Partition_type_type::Fat32);
