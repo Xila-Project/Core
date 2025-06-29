@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use super::super::MBR_type;
+use super::MBR_type;
 use crate::{Device_type, Error_type, MBR_partition_entry, Partition_device_type, Result_type};
 
 /// Create a partition device from an MBR partition entry
@@ -228,7 +228,7 @@ pub fn Restore_mbr(Device: &Device_type, Backup: &[u8; 512]) -> Result_type<()> 
 mod Tests {
     use super::*;
     use crate::{Device_type, Error_type, Memory_device_type, Partition_type};
-    use alloc::vec;
+    use alloc::{format, sync::Arc, vec};
 
     /// Create a test device with MBR data
     fn Create_test_device_with_mbr() -> Device_type {
