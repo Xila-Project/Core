@@ -20,19 +20,9 @@ pub trait Device_executable_trait: Device_trait {
 /// For simple executables:
 /// ```rust
 /// Implement_executable_device!(
-///     struct_name: MyExecutableType,
-///     mount_path: "/Binaries/MyExecutable",
-///     main_function: my_main_function,
-/// );
-/// ```
-///
-/// For terminal executables (with constructor):
-/// ```rust
-/// Implement_executable_device!(
 ///     Structure: MyExecutableType,
 ///     Mount_path: "/Binaries/MyExecutable",
 ///     Main_function: my_main_function,
-///     constructor: true
 /// );
 /// ```
 #[macro_export]
