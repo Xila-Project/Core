@@ -2,6 +2,7 @@ use alloc::borrow::ToOwned;
 use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
+use Futures::yield_now;
 use Synchronization::{
     blocking_mutex::raw::CriticalSectionRawMutex, once_lock::OnceLock, rwlock::RwLock,
 };
@@ -479,14 +480,14 @@ impl<'a> Virtual_file_system_type<'a> {
                 (Result.0, Some(Result.1))
             }
             _ => {
-                return self
-                    .File_systems
-                    .read()
-                    .await
+                let File_systems = self.File_systems.read().await; // Get the file systems
+
+                let File_system = &File_systems
                     .get(&File_system)
                     .ok_or(Error_type::Invalid_identifier)?
-                    .Inner
-                    .Read_line(Local_file_identifier, Buffer, Time)
+                    .Inner;
+
+                return Read_line(&**File_system, Buffer, Local_file_identifier, Time).await;
             }
         };
 
@@ -500,7 +501,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 .get(&File_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .Inner
-                .Read_line(Local_file_identifier, Buffer, Time)?;
+                .Read(Local_file_identifier, &mut [0; 0], Time)?;
         }
 
         Ok(Size)
@@ -1698,6 +1699,34 @@ impl<'a> Virtual_file_system_type<'a> {
             _ => Err(crate::Error_type::Invalid_file_system),
         }
     }
+}
+
+async fn Read_line(
+    File_system: &dyn File_system_traits,
+    Buffer: &mut String,
+    File: Local_file_identifier_type,
+    Time: Time_type,
+) -> Result_type<Size_type> {
+    loop {
+        let Current_buffer = &mut [0; 1];
+
+        let Size = File_system.Read(File, Current_buffer, Time)?;
+
+        if Size == 0 {
+            yield_now().await; // Yield to allow other tasks to run, especially in a blocking operation
+            continue; // Retry reading if no data was read
+        }
+
+        let Byte = Current_buffer[0];
+
+        if Byte == b'\n' || Byte == b'\r' {
+            break;
+        }
+
+        Buffer.push(Byte as char);
+    }
+
+    Ok(Buffer.len().into())
 }
 
 #[cfg(test)]

@@ -1,7 +1,6 @@
 use core::fmt;
 use core::fmt::{Debug, Formatter};
 
-use alloc::string::String;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
@@ -24,24 +23,6 @@ macro_rules! Create_device {
 pub trait Device_trait: Send + Sync {
     /// Read data from the device.
     fn Read(&self, Buffer: &mut [u8]) -> Result_type<Size_type>;
-
-    fn Read_line(&self, Buffer: &mut String) -> Result_type<Size_type> {
-        let Current_position = Buffer.len();
-
-        let mut Temp_buffer = vec![0; 1];
-
-        loop {
-            self.Read(&mut Temp_buffer)?;
-
-            if Temp_buffer[0] == b'\n' {
-                break;
-            }
-
-            Buffer.push(Temp_buffer[0] as char);
-        }
-
-        Ok((Buffer.len() - Current_position).into())
-    }
 
     /// Write data to the device.
     fn Write(&self, Buffer: &[u8]) -> Result_type<Size_type>;
@@ -103,10 +84,6 @@ impl Device_type {
 
     pub fn Read(&self, Buffer: &mut [u8]) -> Result_type<Size_type> {
         self.0.Read(Buffer)
-    }
-
-    pub fn Read_line(&self, Buffer: &mut String) -> Result_type<Size_type> {
-        self.0.Read_line(Buffer)
     }
 
     pub fn Write(&self, Buffer: &[u8]) -> Result_type<Size_type> {
