@@ -114,6 +114,10 @@ impl Window_type {
         Ok(Self { Window })
     }
 
+    pub fn Get_identifier(&self) -> usize {
+        self.Window as usize
+    }
+
     pub fn Peek_event(&self) -> Option<Event_type> {
         let User_data = unsafe { LVGL::lv_obj_get_user_data(self.Window) as *mut User_data_type };
 
