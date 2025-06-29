@@ -27,7 +27,7 @@ impl From<String> for Operating_system_type {
             "macos" => Operating_system_type::MacOS,
             "espidf" => Operating_system_type::ESP_IDF,
             "wasi" => Operating_system_type::WASI,
-            _ => panic!("Unknown operating system type : {}", s),
+            _ => panic!("Unknown operating system type : {s}"),
         }
     }
 }

@@ -17,6 +17,8 @@ Instantiate_global_allocator!(Drivers::Std::Memory::Memory_manager_type);
 #[Task::Run_with_executor(Drivers::Std::Executor::Executor_type)]
 async fn main() {
     // - Initialize the system
+    Log::Initialize(&Drivers::Std::Log::Logger_type).unwrap();
+
     // Initialize the task manager
     Task::Initialize();
 
@@ -24,6 +26,7 @@ async fn main() {
     Users::Initialize();
     // Initialize the time manager
     Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New())).unwrap();
+
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
     const Resolution: Graphics::Point_type = Graphics::Point_type::New(800, 600);
@@ -117,6 +120,12 @@ async fn main() {
             (
                 &"/Binaries/Graphical_shell",
                 Graphical_shell::Shell_executable_type
+            ),
+            (
+                &"/Binaries/File_manager",
+                File_manager::File_manager_executable_type::New(Virtual_file_system, Task)
+                    .await
+                    .unwrap()
             ),
             (
                 &"/Binaries/Command_line_shell",

@@ -24,7 +24,7 @@ impl Shell_type {
             .await
         {
             self.Standard
-                .Print_error_line(&format!("Failed to set environment variable: {}", Error))
+                .Print_error_line(&format!("Failed to set environment variable: {Error}"))
                 .await;
         }
     }
@@ -44,7 +44,7 @@ impl Shell_type {
             .await
         {
             self.Standard
-                .Print_error_line(&format!("Failed to unset environment variable: {}", Error))
+                .Print_error_line(&format!("Failed to unset environment variable: {Error}"))
                 .await;
         }
     }

@@ -11,6 +11,7 @@ Task = { path = "../../../Task" }
 Users = { path = "../../../Users" }
 Authentication = { path = "../../../Authentication" }
 Futures = { version = "0.1.0", path = "../../../Futures" }
+Log = { path = "../../../Log" }
 
 [dev-dependencies]
 Drivers = { path = "../../../Drivers" }

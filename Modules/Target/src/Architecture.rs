@@ -33,7 +33,7 @@ impl From<String> for Architecture_type {
             "riscv" => Architecture_type::RiscV,
             "wasm32" => Architecture_type::WASM32,
             "wasm64" => Architecture_type::WASM64,
-            _ => panic!("Unknown architecture type : {}", s),
+            _ => panic!("Unknown architecture type : {s}"),
         }
     }
 }

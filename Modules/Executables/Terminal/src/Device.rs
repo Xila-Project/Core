@@ -5,15 +5,8 @@ use Futures::block_on;
 use crate::Terminal::Terminal_type;
 
 impl Device_trait for Terminal_type {
-    fn Read(&self, _: &mut [u8]) -> File_system::Result_type<File_system::Size_type> {
-        Err(File_system::Error_type::Unsupported_operation)
-    }
-
-    fn Read_line(&self, Buffer: &mut String) -> File_system::Result_type<File_system::Size_type> {
-        let Size = block_on(self.Read_input(Buffer))
-            .map_err(|_| File_system::Error_type::Internal_error)?;
-
-        Ok(Size.into())
+    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<File_system::Size_type> {
+        block_on(self.Read_input(Buffer)).map_err(|_| File_system::Error_type::Internal_error)
     }
 
     fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<File_system::Size_type> {

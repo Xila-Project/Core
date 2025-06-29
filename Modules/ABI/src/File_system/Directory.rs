@@ -38,7 +38,7 @@ pub unsafe extern "C" fn Xila_file_system_open_directory(
 
         let Task = Get_context_instance().Get_current_task_identifier();
 
-        Debug!("Opening directory {:?} for task {:?}", Path, Task);
+        Debug!("Opening directory {Path:?} for task {Task:?}");
 
         *Directory = block_on(Get_file_system_instance().Open_directory(&Path, Task))?.Into_inner();
 
@@ -62,7 +62,7 @@ pub unsafe extern "C" fn Xila_file_system_read_directory(
     Into_u32(move || {
         let Task = Get_context_instance().Get_current_task_identifier();
 
-        Debug!("Reading directory {:?} for task {:?}", File, Task);
+        Debug!("Reading directory {File:?} for task {Task:?}");
 
         let File = File_system::Unique_file_identifier_type::From_raw(File);
 
@@ -90,7 +90,7 @@ pub extern "C" fn Xila_file_system_close_directory(
 
         let Directory = File_system::Unique_file_identifier_type::From_raw(Directory);
 
-        Debug!("Closing directory {:?} for task {:?}", Directory, Task);
+        Debug!("Closing directory {Directory:?} for task {Task:?}");
 
         block_on(Get_file_system_instance().Close_directory(Directory, Task))?;
 
@@ -107,7 +107,7 @@ pub extern "C" fn Xila_file_system_rewind_directory(
 
         let Directory = File_system::Unique_file_identifier_type::From_raw(Directory);
 
-        Debug!("Rewinding directory {:?} for task {:?}", Directory, Task);
+        Debug!("Rewinding directory {Directory:?} for task {Task:?}");
 
         block_on(Get_file_system_instance().Rewind_directory(Directory, Task))?;
 
@@ -125,12 +125,7 @@ pub extern "C" fn Xila_file_system_directory_set_position(
 
         let Directory = File_system::Unique_file_identifier_type::From_raw(Directory);
 
-        Debug!(
-            "Setting position in directory {:?} to offset {} for task {:?}",
-            Directory,
-            Offset,
-            Task
-        );
+        Debug!("Setting position in directory {Directory:?} to offset {Offset} for task {Task:?}");
 
         block_on(Get_file_system_instance().Set_position_directory(
             Directory,
@@ -520,7 +515,7 @@ mod Tests {
 
         // Create some test files
         for i in 0..3 {
-            let Path = format!("/test_rewind_directory_{}.txt", i);
+            let Path = format!("/test_rewind_directory_{i}.txt");
 
             let test_file = VFS
                 .Open(
@@ -642,7 +637,7 @@ mod Tests {
 
         // Create some test files
         for i in 0..5 {
-            let Path = format!("/test_file_{}.txt", i);
+            let Path = format!("/test_file_{i}.txt");
 
             let test_file = VFS
                 .Open(

@@ -34,7 +34,7 @@ impl fmt::Display for Permissions_type {
         let Group = self.Get_group();
         let Others = self.Get_others();
 
-        write!(f, "{}{}{}", User, Group, Others)
+        write!(f, "{User}{Group}{Others}")
     }
 }
 
@@ -206,7 +206,7 @@ impl fmt::Display for Special_type {
             "-"
         };
 
-        write!(f, "{}{}{}", Sticky, Set_gid, Set_uid)
+        write!(f, "{Sticky}{Set_gid}{Set_uid}")
     }
 }
 
@@ -287,7 +287,7 @@ impl fmt::Display for Permission_type {
         let Write = if self.Get_write() { "w" } else { "-" };
         let Execute = if self.Get_execute() { "x" } else { "-" };
 
-        write!(f, "{}{}{}", Read, Write, Execute)
+        write!(f, "{Read}{Write}{Execute}")
     }
 }
 

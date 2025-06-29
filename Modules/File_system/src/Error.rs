@@ -120,6 +120,6 @@ impl Display for Error_type {
             Error_type::Other => "Other",
         };
 
-        write!(Formatter, "{}", String)
+        write!(Formatter, "{String}")
     }
 }

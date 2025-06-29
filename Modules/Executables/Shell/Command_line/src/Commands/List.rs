@@ -18,7 +18,7 @@ impl Shell_type {
             Ok(Directory) => Directory,
             Err(Error) => {
                 self.Standard
-                    .Print_error_line(&format!("Failed to open directory: {:?}", Error))
+                    .Print_error_line(&format!("Failed to open directory: {Error:?}"))
                     .await;
 
                 return;

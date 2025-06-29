@@ -8,7 +8,7 @@ pub fn Format_rust(File_path: &Path) -> Result<(), String> {
                 .ok_or("Error converting path to string")?,
         )
         .status()
-        .map_err(|Code| format!("Error running rustfmt : {}", Code))?;
+        .map_err(|Code| format!("Error running rustfmt : {Code}"))?;
 
     Ok(())
 }
@@ -22,7 +22,7 @@ pub fn Format_C(File_path: &Path) -> Result<(), String> {
                 .ok_or("Error converting path to string")?,
         )
         .status()
-        .map_err(|Code| format!("Error running clang-format : {}", Code))?;
+        .map_err(|Code| format!("Error running clang-format : {Code}"))?;
 
     Ok(())
 }
@@ -38,7 +38,7 @@ pub fn Format_identifier(Prefix: &str, Function_name: &str) -> String {
     };
 
     let Function_name = if !Function_name.starts_with(Prefix) {
-        format!("{}{}", Prefix, Function_name)
+        format!("{Prefix}{Function_name}")
     } else {
         Function_name
     };

@@ -79,7 +79,7 @@ impl Path_owned_type {
     pub fn Get_extension(&self) -> Option<&str> {
         let mut extension = None;
 
-        for (i, c) in self.0.chars().enumerate() {
+        for (i, c) in self.0.char_indices() {
             if c == Extension_separator {
                 extension = Some(&self.0[i..]);
             }

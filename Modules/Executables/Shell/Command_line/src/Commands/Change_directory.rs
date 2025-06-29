@@ -30,7 +30,7 @@ impl Shell_type {
             .await
         {
             self.Standard
-                .Print_error_line(&format!("Failed to change directory: {}", Error))
+                .Print_error_line(&format!("Failed to change directory: {Error}"))
                 .await;
             return;
         }

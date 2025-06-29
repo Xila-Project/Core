@@ -36,7 +36,7 @@ impl Shell_type {
             .await
         {
             self.Standard
-                .Print_error_line(&format!("Failed to create directory: {}", Error))
+                .Print_error_line(&format!("Failed to create directory: {Error}"))
                 .await;
         }
     }
@@ -70,7 +70,7 @@ impl Shell_type {
 
         if let Err(Error) = Virtual_file_system::Get_instance().Remove(&Path).await {
             self.Standard
-                .Print_error_line(&format!("Failed to remove directory: {}", Error))
+                .Print_error_line(&format!("Failed to remove directory: {Error}"))
                 .await;
         }
     }

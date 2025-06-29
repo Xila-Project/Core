@@ -15,6 +15,7 @@ Time = { path = "../../../Time" }
 Authentication = { path = "../../../Authentication" }
 miniserde = "0.1"
 Futures = { version = "0.1.0", path = "../../../Futures" }
+Log = { version = "0.1.0", path = "../../../Log" }
 
 [dev-dependencies]
 Drivers = { path = "../../../Drivers" }

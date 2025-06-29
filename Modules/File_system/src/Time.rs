@@ -38,8 +38,7 @@ impl Display for Time_type {
 
         write!(
             f,
-            "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
-            Year, Month, Day, Hour, Minute, Second
+            "{Year:04}-{Month:02}-{Day:02} {Hour:02}:{Minute:02}:{Second:02}",
         )
     }
 }

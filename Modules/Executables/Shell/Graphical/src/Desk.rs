@@ -17,6 +17,7 @@ use Executable::Standard_type;
 use File_system::{Mode_type, Type_type};
 use Futures::block_on;
 use Graphics::{Color_type, Event_code_type, Point_type, Window_type, LVGL};
+use Log::Error;
 use Virtual_file_system::Directory_type;
 
 pub const Windows_parent_child_changed: Graphics::Event_code_type =
@@ -282,7 +283,7 @@ impl Desk_type {
                     )?;
                 }
                 Err(_) => {
-                    // ? : Log error ?
+                    Error!("Failed to read shortcut {}", Shortcut_entry.Get_name());
                     continue;
                 }
             }
@@ -330,6 +331,7 @@ impl Desk_type {
         Ok(())
     }
 
+    // This function is intentionally private and is only used within this module.
     async fn Refresh_dock(&self) -> Result_type<()> {
         let Dock_child_count = unsafe { LVGL::lv_obj_get_child_count(self.Dock) };
 
@@ -337,8 +339,8 @@ impl Desk_type {
 
         let Window_count = Graphics_manager.Get_window_count().await?;
 
-        // Remove the icons of the windows that are not in the dock
-        for i in 1..Dock_child_count {
+        // Remove the icons of windows that do not exist anymore
+        for i in 0..Dock_child_count {
             let Icon = unsafe { LVGL::lv_obj_get_child(self.Dock, i as i32) };
 
             if Icon == self.Main_button {
@@ -349,8 +351,8 @@ impl Desk_type {
 
             let mut Found = Option::None;
 
-            for i in 1..Window_count {
-                if let Ok(Window_identifier) = Graphics_manager.Get_window_identifier(i).await {
+            for j in 1..Window_count {
+                if let Ok(Window_identifier) = Graphics_manager.Get_window_identifier(j).await {
                     if Window_identifier == Dock_window_identifier {
                         Found = Some(Window_identifier);
                         break;
@@ -366,7 +368,7 @@ impl Desk_type {
         }
 
         // Add the new icons
-        for i in 1..Window_count {
+        for i in 0..Window_count {
             let Window_identifier =
                 if let Ok(Window_identifier) = Graphics_manager.Get_window_identifier(i).await {
                     Window_identifier
@@ -374,10 +376,19 @@ impl Desk_type {
                     continue;
                 };
 
+            // Check if the window is not desk
+            if Window_identifier == self.Window.Get_identifier() {
+                continue;
+            }
+
             // Find the index of the window in the dock
-            let Found = (1..Dock_child_count).find(|&i| {
+            let Found = (1..Dock_child_count).find(|&dock_idx| {
                 let Dock_window_identifier = unsafe {
-                    let Icon = LVGL::lv_obj_get_child(self.Dock, i as i32);
+                    let Icon = LVGL::lv_obj_get_child(self.Dock, dock_idx as i32);
+
+                    if Icon.is_null() {
+                        return false;
+                    }
 
                     LVGL::lv_obj_get_user_data(Icon) as usize
                 };
@@ -387,9 +398,9 @@ impl Desk_type {
 
             // If the window is not in the dock, add it
             if Found.is_none() {
-                let (Icon_string, Icon_color) = Graphics_manager.Get_window_icon(i).await?;
-
+                // Fetch the window identifier once and reuse it
                 let Window_identifier = Graphics_manager.Get_window_identifier(i).await?;
+                let (Icon_string, Icon_color) = Graphics_manager.Get_window_icon(i).await?;
 
                 unsafe {
                     let Icon =
@@ -408,12 +419,7 @@ impl Desk_type {
         while let Some(Event) = self.Window.Pop_event() {
             match Event.Get_code() {
                 Self::Home_event => unsafe {
-                    LVGL::lv_tileview_set_tile_by_index(
-                        self.Tile_view,
-                        0,
-                        0,
-                        LVGL::lv_anim_enable_t_LV_ANIM_ON,
-                    );
+                    LVGL::lv_tileview_set_tile_by_index(self.Tile_view, 0, 0, true);
                 },
                 Event_code_type::Value_changed => {
                     if Event.Get_target() == self.Tile_view {
@@ -430,8 +436,7 @@ impl Desk_type {
                     // If the target is a shortcut, execute the shortcut
                     if let Some(Shortcut_name) = self.Shortcuts.get(&Event.Get_target()) {
                         if let Err(Error) = self.Execute_shortcut(Shortcut_name).await {
-                            // ? : Log error ?
-                            todo!("Failed to execute shortcut {}", Error.to_string());
+                            Error!("Failed to execute shortcut {Shortcut_name}: {Error:?}");
                         }
                     }
                     // If the target is a dock icon, move the window to the foreground
@@ -484,12 +489,7 @@ impl Desk_type {
                         }
 
                         unsafe {
-                            LVGL::lv_tileview_set_tile_by_index(
-                                self.Tile_view,
-                                0,
-                                1,
-                                LVGL::lv_anim_enable_t_LV_ANIM_ON,
-                            );
+                            LVGL::lv_tileview_set_tile_by_index(self.Tile_view, 0, 1, true);
                         }
                     }
                 }
@@ -540,14 +540,6 @@ fn New_part(
     Factor: u8,
     Color: Color_type,
 ) -> Result_type<*mut LVGL::lv_obj_t> {
-    //let Color = match Alignment {
-    //    LVGL::lv_align_t_LV_ALIGN_TOP_RIGHT => LVGL::lv_palette_t_LV_PALETTE_YELLOW,
-    //    LVGL::lv_align_t_LV_ALIGN_BOTTOM_LEFT => LVGL::lv_palette_t_LV_PALETTE_BLUE,
-    //    LVGL::lv_align_t_LV_ALIGN_BOTTOM_RIGHT => LVGL::lv_palette_t_LV_PALETTE_GREEN,
-    //    LVGL::lv_align_t_LV_ALIGN_TOP_LEFT => LVGL::lv_palette_t_LV_PALETTE_RED,
-    //    _ => LVGL::lv_palette_t_LV_PALETTE_GREY,
-    //};
-
     let Size = (10_i32 * Factor as i32, 21_i32 * Factor as i32);
 
     unsafe {

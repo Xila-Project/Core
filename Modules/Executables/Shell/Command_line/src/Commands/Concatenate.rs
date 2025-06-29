@@ -12,7 +12,7 @@ impl Shell_type {
             Ok(File) => File,
             Err(Error) => {
                 self.Standard
-                    .Print_error_line(&format!("Failed to open file: {:?}", Error))
+                    .Print_error_line(&format!("Failed to open file: {Error:?}"))
                     .await;
                 return;
             }

@@ -15,8 +15,8 @@ pub enum Error_type {
 impl Display for Error_type {
     fn fmt(&self, Formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
-            Error_type::File_system(Error) => write!(Formatter, "{}", Error),
-            Error_type::Task(Error) => write!(Formatter, "{}", Error),
+            Error_type::File_system(Error) => write!(Formatter, "{Error}"),
+            Error_type::Task(Error) => write!(Formatter, "{Error}"),
             Error_type::Failed_to_get_main_function => {
                 write!(Formatter, "Failed to get main function")
             }

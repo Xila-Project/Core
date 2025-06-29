@@ -6,8 +6,8 @@
 extern crate alloc;
 
 use Executable::Standard_type;
+use File_manager::File_manager_executable_type;
 use File_system::{Create_device, Create_file_system, Memory_device_type, Mode_type};
-use Graphical_shell::Shell_executable_type;
 use Task::Test;
 
 #[cfg(target_os = "linux")]
@@ -15,13 +15,11 @@ use Task::Test;
 #[Test]
 async fn main() {
     use alloc::string::ToString;
+    use Command_line_shell::Shell_executable_type;
     use Drivers::Native::Window_screen;
     use Executable::Mount_static_executables;
-    use File_system::{Flags_type, Open_type};
     use Graphics::{Get_minimal_buffer_size, Input_type_type, Point_type};
-    use Users::Group_identifier_type;
-
-    use Virtual_file_system::{File_type, Mount_static_devices};
+    use Virtual_file_system::{Create_default_hierarchy, Mount_static_devices};
 
     // - Initialize the task manager.
     let Task_instance = Task::Initialize();
@@ -31,6 +29,16 @@ async fn main() {
 
     // - Initialize the time manager.
     let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()));
+
+    // - Initialize the virtual file system.
+    let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
+
+    LittleFS::File_system_type::Format(Memory_device.clone(), 256).unwrap();
+
+    let File_system = LittleFS::File_system_type::New(Memory_device, 256).unwrap();
+
+    let Virtual_file_system =
+        Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
 
     // - Initialize the graphics manager.
 
@@ -54,29 +62,11 @@ async fn main() {
         .await
         .unwrap();
 
-    // - Initialize the virtual file system.
-    let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
-
-    LittleFS::File_system_type::Format(Memory_device.clone(), 256).unwrap();
-
-    let File_system = LittleFS::File_system_type::New(Memory_device, 256).unwrap();
-
-    let Virtual_file_system =
-        Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
-
     let Task = Task_instance.Get_current_task_identifier().await;
 
-    Virtual_file_system::Create_default_hierarchy(Virtual_file_system, Task)
+    Create_default_hierarchy(Virtual_file_system, Task)
         .await
         .unwrap();
-
-    Mount_static_executables!(
-        Virtual_file_system,
-        Task,
-        &[(&"/Binaries/Graphical_shell", Shell_executable_type),]
-    )
-    .await
-    .unwrap();
 
     Mount_static_devices!(
         Virtual_file_system,
@@ -102,66 +92,43 @@ async fn main() {
     .await
     .unwrap();
 
-    Virtual_file_system
-        .Create_directory(&"/Configuration/Shared/Shortcuts", Task)
-        .await
-        .unwrap();
-
-    // Add fake shortcuts.
-    for i in 0..20 {
-        use alloc::format;
-
-        File_type::Open(
-            Virtual_file_system,
-            format!("/Configuration/Shared/Shortcuts/Test{i}.json").as_str(),
-            Flags_type::New(Mode_type::Write_only, Some(Open_type::Create), None),
-        )
-        .await
-        .unwrap()
-        .Write(
-            format!(
-                r#"
-    {{
-        "Name": "Test{i}",
-        "Command": "/Binaries/?",
-        "Arguments": "",
-        "Terminal": false,
-        "Icon_string": "T!",
-        "Icon_color": [255, 0, 0]
-    }}
-        "#
-            )
-            .as_bytes(),
-        )
-        .await
-        .unwrap();
-    }
-
-    let Group_identifier = Group_identifier_type::New(1000);
-
-    Authentication::Create_group(Virtual_file_system, "alix_anneraud", Some(Group_identifier))
-        .await
-        .unwrap();
-
-    Authentication::Create_user(
+    Mount_static_executables!(
         Virtual_file_system,
-        "alix_anneraud",
-        "password",
-        Group_identifier,
-        None,
+        Task,
+        &[
+            (&"/Binaries/Command_line_shell", Shell_executable_type),
+            (&"/Binaries/File_manager", File_manager_executable_type)
+        ]
     )
     .await
     .unwrap();
 
-    let Standard = Standard_type::Open(
-        &"/Devices/Standard_in",
-        &"/Devices/Standard_out",
-        &"/Devices/Standard_error",
+    let Standard_in = Virtual_file_system
+        .Open(&"/Devices/Standard_in", Mode_type::Read_only.into(), Task)
+        .await
+        .unwrap();
+
+    let Standard_out = Virtual_file_system
+        .Open(&"/Devices/Standard_out", Mode_type::Write_only.into(), Task)
+        .await
+        .unwrap();
+
+    let Standard_error = Virtual_file_system
+        .Open(
+            &"/Devices/Standard_error",
+            Mode_type::Write_only.into(),
+            Task,
+        )
+        .await
+        .unwrap();
+
+    let Standard = Standard_type::New(
+        Standard_in,
+        Standard_out,
+        Standard_error,
         Task,
         Virtual_file_system,
-    )
-    .await
-    .unwrap();
+    );
 
     Task_instance
         .Set_environment_variable(Task, "Paths", "/")
@@ -173,11 +140,11 @@ async fn main() {
         .await
         .unwrap();
 
-    let Result = Executable::Execute("/Binaries/Graphical_shell", "".to_string(), Standard)
+    let Result = Executable::Execute("/Binaries/File_manager", "".to_string(), Standard)
         .await
         .unwrap()
         .Join()
         .await;
 
-    assert!(Result == 0);
+    assert_eq!(Result, 0);
 }

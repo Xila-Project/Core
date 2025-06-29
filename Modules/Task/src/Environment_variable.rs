@@ -17,7 +17,7 @@ impl Debug for Environment_variable_type {
 impl Environment_variable_type {
     /// Create a new environment variable.
     pub fn New(Name: &str, Value: &str) -> Self {
-        let Environment_variable = CString::new(format!("{}={}", Name, Value)).unwrap();
+        let Environment_variable = CString::new(format!("{Name}={Value}")).unwrap();
         Self(Arc::new(Environment_variable), Name.len())
     }
 
@@ -169,7 +169,7 @@ mod Tests {
     #[test]
     fn Test_environment_variable_debug_format() {
         let env_var = Environment_variable_type::New("DEBUG_VAR", "debug_value");
-        let debug_string = format!("{:?}", env_var);
+        let debug_string = format!("{env_var:?}");
 
         assert!(debug_string.contains("Environment_variable_type"));
         assert!(debug_string.contains("DEBUG_VAR"));

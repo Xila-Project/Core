@@ -7,7 +7,7 @@ edition = "2021"
 paste = "1.0.15"
 quote = "1.0.36"
 Log = { path = "../Log" }
-File_system = { path = "../File_system", optional = true }
+File_system = { path = "../File_system" }
 Virtual_file_system = { path = "../Virtual_file_system" }
 Task = { path = "../Task" }
 Users = { path = "../Users" }
@@ -22,56 +22,24 @@ linked_list_allocator = { version = "0.10", default-features = false, features =
     "const_mut_refs",
 ] }
 libc = { version = "0.2", optional = true }
-embassy-sync = { version = "0.6.2" }
+embassy-sync = { version = "0.7" }
 Futures = { version = "0.1.0", path = "../Futures" }
 embassy-executor = { version = "0.7.0" }
 
 [features]
 Network = ["dep:Network"]
-Std = ["File_system/std"]
-File_system = ["dep:File_system"]
+std = ["File_system/std"]
 Graphics = ["dep:Graphics"]
 Time = ["dep:Time"]
 Random = []
 Memory = ["dep:libc", "dep:Memory", "dep:Synchronization"]
 
-All = ["File_system", "Graphics", "Time", "Network", "Memory"]
+All = ["Graphics", "Time", "Network", "Memory", "std"]
 
-default = ["std", "binstart", "All"]
-std = ["alloc", "esp-idf-sys/std"]
-alloc = []
-nightly = []
-wake-from-isr = [] # Only enable if you plan to use the `edge-executor` crate
-embassy-sync = [
-] # For now, the dependecy on the `embassy-sync` crate is non-optional, but this might change in future
-# Temporary, until (https://github.com/espressif/esp-idf/issues/13938) is addressed
-# - When enabled, the code for the legacy ADC oneshot driver will be compiled;
-# - When not enabled (default) the code for the new ADC oneshot driver will be compiled;
-# - Since we don't wrap the legacy _continuous_ ADC driver, the new _continuous_ ADC driver is always compiled.
-adc-oneshot-legacy = []
-# Propagated esp-idf-sys features
-native = ["esp-idf-sys/native"]
-pio = ["esp-idf-sys/pio"]
-alloc_handler = ["esp-idf-sys/alloc_handler"]
-panic_handler = ["esp-idf-sys/panic_handler"]
-binstart = ["esp-idf-sys/binstart"]
-libstart = ["esp-idf-sys/libstart"]
-
-[target.'cfg( target_os = "espidf" )'.dependencies]
-esp-idf-sys = { version = "0.35.0" }
-
-[build-dependencies]
-embuild = { version = "0.32", features = ["espidf"] }
 
 [dev-dependencies]
 LittleFS = { path = "../LittleFS" }
 
-[target.'cfg( target_os = "espidf" )'.dev-dependencies]
-anyhow = "1"
-esp-idf-sys = { version = "0.35.0", features = ["binstart"] }
-mipidsi = "0.5.0"
-display-interface-spi = "0.4.1"
-embedded-graphics = "0.7.1"
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
 #Graphics = { path = "../Graphics", features = ["RGB565"] }

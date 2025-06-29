@@ -1,4 +1,4 @@
-use alloc::{collections::BTreeMap, string::String};
+use alloc::collections::BTreeMap;
 
 use crate::{
     Entry_type, File_identifier_type, Inode_type, Local_file_identifier_type, Metadata_type,
@@ -96,33 +96,6 @@ pub trait File_system_traits: Send + Sync {
         Buffer: &mut [u8],
         Time_type: Time_type,
     ) -> Result_type<Size_type>;
-
-    fn Read_line(
-        &self,
-        File: Local_file_identifier_type,
-        Buffer: &mut String,
-        Time_type: Time_type,
-    ) -> Result_type<Size_type> {
-        loop {
-            let Current_buffer = &mut [0; 1];
-
-            let Size = self.Read(File, Current_buffer, Time_type)?;
-
-            if Size == 0 {
-                break;
-            }
-
-            let Byte = Current_buffer[0];
-
-            if Byte == b'\n' || Byte == b'\r' {
-                break;
-            }
-
-            Buffer.push(Byte as char);
-        }
-
-        Ok(Buffer.len().into())
-    }
 
     /// Write a file.
     ///
@@ -501,7 +474,7 @@ pub mod Tests {
             let File = File_system
                 .Open(
                     Task,
-                    Path_type::From_str(&format!("/Test{}", i)),
+                    Path_type::From_str(&format!("/Test{i}")),
                     Flags,
                     Time_type::New(123),
                     User_identifier_type::Root,
@@ -525,7 +498,7 @@ pub mod Tests {
         for i in 0..10 {
             let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
             assert_eq!(Entry.Get_type(), Type_type::File);
         }
 
@@ -541,7 +514,7 @@ pub mod Tests {
             let File = File_system
                 .Open(
                     Task,
-                    Path_type::From_str(&format!("/Test{}", i)),
+                    Path_type::From_str(&format!("/Test{i}")),
                     Flags,
                     Time_type::New(123),
                     User_identifier_type::Root,
@@ -566,7 +539,7 @@ pub mod Tests {
         for i in 0..10 {
             let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
             assert_eq!(Entry.Get_type(), Type_type::File);
         }
 
@@ -577,7 +550,7 @@ pub mod Tests {
         for i in 0..10 {
             let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
             assert_eq!(Entry.Get_type(), Type_type::File);
         }
     }
@@ -591,7 +564,7 @@ pub mod Tests {
             let File = File_system
                 .Open(
                     Task,
-                    Path_type::From_str(&format!("/Test{}", i)),
+                    Path_type::From_str(&format!("/Test{i}")),
                     Flags,
                     Time_type::New(123),
                     User_identifier_type::Root,
@@ -614,7 +587,7 @@ pub mod Tests {
         for i in 0..10 {
             let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
             assert_eq!(Entry.Get_type(), Type_type::File);
         }
 
@@ -631,7 +604,7 @@ pub mod Tests {
         for i in 0..10 {
             let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{}", i));
+            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
             assert_eq!(Entry.Get_type(), Type_type::File);
         }
 

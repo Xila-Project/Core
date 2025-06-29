@@ -21,6 +21,8 @@ async fn main() {
     use Graphics::{Get_minimal_buffer_size, Input_type_type, Point_type};
     use Virtual_file_system::{Create_default_hierarchy, Mount_static_devices};
 
+    Log::Initialize(&Drivers::Std::Log::Logger_type).unwrap();
+
     // - Initialize the task manager.
     let Task_instance = Task::Initialize();
 
@@ -129,6 +131,11 @@ async fn main() {
         Task,
         Virtual_file_system,
     );
+
+    Task_instance
+        .Set_environment_variable(Task, "User", "xila")
+        .await
+        .unwrap();
 
     Task_instance
         .Set_environment_variable(Task, "Paths", "/")

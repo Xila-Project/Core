@@ -1,4 +1,4 @@
-use core::num::NonZeroU32;
+use core::{fmt::Display, num::NonZeroU32};
 
 pub type Result_type<T> = Result<T, Error_type>;
 
@@ -6,7 +6,6 @@ pub type Result_type<T> = Result<T, Error_type>;
 #[repr(u32)]
 pub enum Error_type {
     Already_initialized = 1,
-    Poisonned_lock,
     Unavailable_driver,
     Invalid_file_system,
     Invalid_parameter,
@@ -45,5 +44,22 @@ impl From<File_system::Error_type> for Error_type {
 impl From<Network::Error_type> for Error_type {
     fn from(Value: Network::Error_type) -> Self {
         Self::Network(Value)
+    }
+}
+
+impl Display for Error_type {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Error_type::Already_initialized => write!(f, "Already initialized"),
+            Error_type::Unavailable_driver => write!(f, "Unavailable driver"),
+            Error_type::Invalid_file_system => write!(f, "Invalid file system"),
+            Error_type::Invalid_parameter => write!(f, "Invalid parameter"),
+            Error_type::Too_many_open_files => write!(f, "Too many open files"),
+            Error_type::Failed_to_get_task_informations => {
+                write!(f, "Failed to get task informations")
+            }
+            Error_type::File_system(err) => write!(f, "File system error: {err}"),
+            Error_type::Network(err) => write!(f, "Network error: {err}"),
+        }
     }
 }

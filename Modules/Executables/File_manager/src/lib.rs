@@ -1,14 +1,34 @@
+#![no_std]
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+#![allow(non_upper_case_globals)]
+
+extern crate alloc;
+
+mod Error;
+mod File_manager;
+mod Main;
+
 use alloc::string::{String, ToString};
-use Executable::Implement_executable_device;
+pub use Error::*;
+pub use File_manager::*;
 use File_system::{Flags_type, Mode_type, Open_type};
 use Task::Task_identifier_type;
 use Virtual_file_system::{File_type, Virtual_file_system_type};
 
-use crate::Main::Main;
+pub const Shortcut: &str = r#"
+{
+    "Name": "File manager",
+    "Command": "/Binaries/File_manager",
+    "Arguments": "",
+    "Terminal": false,
+    "Icon_string": "Fm",
+    "Icon_color": [0, 188, 212]
+}"#;
 
-pub struct Terminal_executable_type;
+pub struct File_manager_executable_type;
 
-impl Terminal_executable_type {
+impl File_manager_executable_type {
     pub async fn New<'a>(
         Virtual_file_system: &'a Virtual_file_system_type<'a>,
         Task: Task_identifier_type,
@@ -19,7 +39,7 @@ impl Terminal_executable_type {
 
         let File = match File_type::Open(
             Virtual_file_system,
-            "/Configuration/Shared/Shortcuts/Terminal.json",
+            "/Configuration/Shared/Shortcuts/File_manager.json",
             Flags_type::New(Mode_type::Write_only, Open_type::Create_only.into(), None),
         )
         .await
@@ -39,8 +59,8 @@ impl Terminal_executable_type {
     }
 }
 
-Implement_executable_device!(
-    Structure: Terminal_executable_type,
-    Mount_path: "/Binaries/Terminal",
-    Main_function: Main,
+Executable::Implement_executable_device!(
+    Structure: File_manager_executable_type,
+    Mount_path: "/Binaries/File_manager",
+    Main_function: Main::Main,
 );

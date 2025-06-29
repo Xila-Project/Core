@@ -25,7 +25,7 @@ pub enum Error_type {
 
 impl fmt::Display for Error_type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -45,22 +45,22 @@ mod Tests {
     #[test]
     fn Test_error_type_display() {
         let error = Error_type::Invalid_task_identifier;
-        let display_string = format!("{}", error);
+        let display_string = format!("{error}");
         assert_eq!(display_string, "Invalid_task_identifier");
 
         let error = Error_type::Too_many_tasks;
-        let display_string = format!("{}", error);
+        let display_string = format!("{error}");
         assert_eq!(display_string, "Too_many_tasks");
     }
 
     #[test]
     fn Test_error_type_debug() {
         let error = Error_type::Invalid_spawner_identifier;
-        let debug_string = format!("{:?}", error);
+        let debug_string = format!("{error:?}");
         assert_eq!(debug_string, "Invalid_spawner_identifier");
 
         let error = Error_type::Thread_not_registered;
-        let debug_string = format!("{:?}", error);
+        let debug_string = format!("{error:?}");
         assert_eq!(debug_string, "Thread_not_registered");
     }
 
@@ -69,7 +69,7 @@ mod Tests {
         let error1 = Error_type::Failed_to_create_thread;
         let error2 = error1.clone();
 
-        assert_eq!(format!("{:?}", error1), format!("{:?}", error2));
+        assert_eq!(format!("{error1:?}"), format!("{:?}", error2));
     }
 
     #[test]
@@ -93,8 +93,8 @@ mod Tests {
 
         // Test that all variants can be created and formatted
         for error in errors {
-            let debug_str = format!("{:?}", error);
-            let display_str = format!("{}", error);
+            let debug_str = format!("{error:?}");
+            let display_str = format!("{error}");
 
             assert!(!debug_str.is_empty());
             assert!(!display_str.is_empty());
@@ -142,7 +142,7 @@ mod Tests {
         assert!(result.is_err());
 
         if let Err(error) = result {
-            assert_eq!(format!("{:?}", error), "Invalid_task_identifier");
+            assert_eq!(format!("{error:?}"), "Invalid_task_identifier");
         }
     }
 
@@ -166,7 +166,7 @@ mod Tests {
         assert!(failure_result.is_err());
 
         if let Err(error) = failure_result {
-            assert_eq!(format!("{:?}", error), "Too_many_tasks");
+            assert_eq!(format!("{error:?}"), "Too_many_tasks");
         }
     }
 
@@ -185,7 +185,7 @@ mod Tests {
         assert!(result.is_err());
 
         if let Err(error) = result {
-            assert_eq!(format!("{:?}", error), "Not_initialized");
+            assert_eq!(format!("{error:?}"), "Not_initialized");
         }
     }
 
@@ -212,16 +212,16 @@ mod Tests {
     fn Test_specific_error_scenarios() {
         // Test environment variable error specifically
         let env_error = Error_type::Invalid_environment_variable;
-        let display_str = format!("{}", env_error);
+        let display_str = format!("{env_error}");
         let non_zero: NonZeroU32 = env_error.into();
         assert_eq!(non_zero.get(), 8u32);
         assert_eq!(display_str, "Invalid_environment_variable");
 
         // Test task-related errors
         let task_error = Error_type::Invalid_task_identifier;
-        assert_eq!(format!("{}", task_error), "Invalid_task_identifier");
+        assert_eq!(format!("{task_error}"), "Invalid_task_identifier");
 
         let spawner_error = Error_type::Invalid_spawner_identifier;
-        assert_eq!(format!("{}", spawner_error), "Invalid_spawner_identifier");
+        assert_eq!(format!("{spawner_error}"), "Invalid_spawner_identifier");
     }
 }

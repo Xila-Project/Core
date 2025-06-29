@@ -16,7 +16,7 @@ Futures = { version = "0.1.0", path = "../Futures" }
 Log = { version = "0.1.0", path = "../Log" }
 
 [build-dependencies]
-cbindgen = "0.28.0"
+cbindgen = "0.29"
  
 [dev-dependencies]
 Drivers = { path = "../Drivers" }

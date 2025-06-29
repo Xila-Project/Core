@@ -211,7 +211,7 @@ mod tests {
                 1 => assert_eq!(Line, Test_str_2),
                 2 => assert_eq!(Line, Test_str_3),
                 3 => assert_eq!(Line, &Test_string_4),
-                _ => panic!("Unexpected line: {}", Line),
+                _ => panic!("Unexpected line: {Line}"),
             }
         }
 

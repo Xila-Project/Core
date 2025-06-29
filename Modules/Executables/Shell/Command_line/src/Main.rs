@@ -75,10 +75,7 @@ impl Shell_type {
                         .await
                     {
                         self.Standard
-                            .Print_error_line(&format!(
-                                "Failed to set current directory: {}",
-                                Error
-                            ))
+                            .Print_error_line(&format!("Failed to set current directory: {Error}"))
                             .await;
                     }
 

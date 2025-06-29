@@ -14,11 +14,10 @@ pub type Main_function_type = Box<
 
 pub struct Read_data_type {
     Main: Option<Main_function_type>,
-    Stack_size: usize,
 }
 
 impl Read_data_type {
-    pub fn New<F>(Main: impl Fn(Standard_type, String) -> F + 'static, Stack_size: usize) -> Self
+    pub fn New<F>(Main: impl Fn(Standard_type, String) -> F + 'static) -> Self
     where
         F: Future<Output = Result<(), NonZeroUsize>> + 'static,
     {
@@ -26,8 +25,6 @@ impl Read_data_type {
             Main: Some(Box::new(move |Standard, Arguments| {
                 Box::pin(Main(Standard, Arguments))
             })),
-
-            Stack_size,
         }
     }
 
@@ -41,10 +38,6 @@ impl Read_data_type {
 
     pub fn Get_main(self) -> Option<Main_function_type> {
         self.Main
-    }
-
-    pub fn Get_stack_size(&self) -> usize {
-        self.Stack_size
     }
 }
 

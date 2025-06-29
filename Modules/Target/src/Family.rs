@@ -23,7 +23,7 @@ impl From<String> for Family_type {
             "unix" => Family_type::Unix,
             "windows" => Family_type::Windows,
             "wasm" => Family_type::Wasm,
-            _ => panic!("Unknown family type : {}", s),
+            _ => panic!("Unknown family type : {s}"),
         }
     }
 }

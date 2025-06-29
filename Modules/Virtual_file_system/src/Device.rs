@@ -1,5 +1,6 @@
 use alloc::{collections::BTreeMap, string::String, vec::Vec};
 
+use Futures::yield_now;
 use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
 use Task::Task_identifier_type;
@@ -298,17 +299,24 @@ impl<'a> File_system_type<'a> {
             return Err(Error_type::Invalid_mode);
         }
 
-        if Flags.Get_status().Get_non_blocking() {
-            return Ok((Device.Read_line(Buffer)?, *Underlying_file));
-        }
+        Buffer.clear();
+
+        let Byte: &mut [u8] = &mut [0; 1];
 
         loop {
-            // Wait for the pipe to be ready
-            let Size = Device.Read_line(Buffer)?;
+            // Wait for the device to be ready
+            let Size = Device.Read(Byte)?;
 
-            if Size != 0 {
+            if Size == 0 {
+                yield_now().await;
+                continue;
+            }
+
+            if Byte[0] == b'\n' || Byte[0] == b'\r' {
                 return Ok((Size, *Underlying_file));
             }
+
+            Buffer.push(Byte[0] as char);
         }
     }
 

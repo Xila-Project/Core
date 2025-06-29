@@ -36,7 +36,7 @@ impl Display for Error_type {
             Error_type::Invalid_window_identifier => "Invalid window identifier",
         };
 
-        write!(Formatter, "{}", String)
+        write!(Formatter, "{String}")
     }
 }
 
