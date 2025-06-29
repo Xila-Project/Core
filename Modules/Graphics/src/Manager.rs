@@ -253,6 +253,15 @@ impl Manager_type {
         }
     }
 
+    pub async fn Lock_function<T>(
+        &self,
+        Function: impl FnOnce() -> Result_type<T>,
+    ) -> Result_type<T> {
+        let _Lock = self.Global_lock.lock().await;
+
+        Function()
+    }
+
     pub async fn Lock(&self) -> MutexGuard<'_, CriticalSectionRawMutex, ()> {
         self.Global_lock.lock().await
     }

@@ -137,6 +137,12 @@ async fn main() {
                     .await
                     .unwrap()
             ),
+            (
+                &"/Binaries/Settings",
+                Settings::Settings_executable_type::New(Virtual_file_system, Task)
+                    .await
+                    .unwrap()
+            ),
             (&"/Binaries/WASM", WASM::WASM_device_type)
         ]
     )
