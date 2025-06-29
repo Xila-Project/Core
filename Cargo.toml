@@ -63,7 +63,7 @@ WASM = ["dep:WASM_bindings"]
 [[example]]
 name = "Native"
 path = "Examples/Native.rs"
-required-features = ["Host"]
+required-features = ["Host", "Drivers/All"]
 
 [workspace]
 members = [
