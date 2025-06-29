@@ -3,7 +3,7 @@ use core::fmt;
 /// MBR partition table entry (16 bytes)
 #[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
-pub struct MBR_partition_entry {
+pub struct Partition_entry_type {
     /// Boot indicator (0x80 = bootable, 0x00 = non-bootable)
     pub Bootable: u8,
     /// Starting head
@@ -26,7 +26,7 @@ pub struct MBR_partition_entry {
     pub Size_sectors: u32,
 }
 
-impl MBR_partition_entry {
+impl Partition_entry_type {
     /// Create a new empty partition entry
     pub fn New() -> Self {
         Self {
@@ -46,7 +46,7 @@ impl MBR_partition_entry {
     /// Create a new partition entry with specified parameters
     pub fn New_with_params(
         Bootable: bool,
-        Partition_type: crate::Partition_type,
+        Partition_type: crate::Partition_type_type,
         Start_lba: u32,
         Size_sectors: u32,
     ) -> Self {
@@ -94,12 +94,12 @@ impl MBR_partition_entry {
     }
 
     /// Get the partition type as an enum
-    pub fn Get_partition_type(&self) -> crate::Partition_type {
-        crate::Partition_type::From_u8(self.Partition_type)
+    pub fn Get_partition_type(&self) -> crate::Partition_type_type {
+        crate::Partition_type_type::From_u8(self.Partition_type)
     }
 
     /// Set the partition type from an enum
-    pub fn Set_partition_type(&mut self, Partition_type: crate::Partition_type) {
+    pub fn Set_partition_type(&mut self, Partition_type: crate::Partition_type_type) {
         self.Partition_type = Partition_type.To_u8();
     }
 
@@ -149,13 +149,13 @@ impl MBR_partition_entry {
     }
 }
 
-impl Default for MBR_partition_entry {
+impl Default for Partition_entry_type {
     fn default() -> Self {
         Self::New()
     }
 }
 
-impl fmt::Display for MBR_partition_entry {
+impl fmt::Display for Partition_entry_type {
     fn fmt(&self, Formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         if !self.Is_valid() {
             write!(Formatter, "Empty partition")
@@ -176,27 +176,27 @@ impl fmt::Display for MBR_partition_entry {
 
 #[cfg(test)]
 mod Tests {
-    use super::MBR_partition_entry;
-    use crate::Partition_type;
+    use super::Partition_entry_type;
+    use crate::Partition_type_type;
     use alloc::format;
 
-    fn Create_test_partition() -> MBR_partition_entry {
-        MBR_partition_entry::New_with_params(
-            true,                      // Bootable
-            Partition_type::Fat32_lba, // Type
-            2048,                      // Start LBA
-            204800,                    // Size in sectors (100MB)
+    fn Create_test_partition() -> Partition_entry_type {
+        Partition_entry_type::New_with_params(
+            true,                           // Bootable
+            Partition_type_type::Fat32_lba, // Type
+            2048,                           // Start LBA
+            204800,                         // Size in sectors (100MB)
         )
     }
 
     #[test]
     fn Test_partition_entry_new() {
-        let Entry = MBR_partition_entry::New();
+        let Entry = Partition_entry_type::New();
         assert!(!Entry.Is_valid());
         assert!(!Entry.Is_bootable());
         assert_eq!(Entry.Get_start_lba(), 0);
         assert_eq!(Entry.Get_size_sectors(), 0);
-        assert_eq!(Entry.Get_partition_type(), Partition_type::Empty);
+        assert_eq!(Entry.Get_partition_type(), Partition_type_type::Empty);
     }
 
     #[test]
@@ -206,12 +206,12 @@ mod Tests {
         assert!(Entry.Is_bootable());
         assert_eq!(Entry.Get_start_lba(), 2048);
         assert_eq!(Entry.Get_size_sectors(), 204800);
-        assert_eq!(Entry.Get_partition_type(), Partition_type::Fat32_lba);
+        assert_eq!(Entry.Get_partition_type(), Partition_type_type::Fat32_lba);
     }
 
     #[test]
     fn Test_partition_entry_bootable() {
-        let mut Entry = MBR_partition_entry::New();
+        let mut Entry = Partition_entry_type::New();
         assert!(!Entry.Is_bootable());
 
         Entry.Set_bootable(true);
@@ -225,7 +225,7 @@ mod Tests {
 
     #[test]
     fn Test_partition_entry_lba() {
-        let mut Entry = MBR_partition_entry::New();
+        let mut Entry = Partition_entry_type::New();
         assert_eq!(Entry.Get_start_lba(), 0);
 
         Entry.Set_start_lba(12345);
@@ -234,7 +234,7 @@ mod Tests {
 
     #[test]
     fn Test_partition_entry_size() {
-        let mut Entry = MBR_partition_entry::New();
+        let mut Entry = Partition_entry_type::New();
         assert_eq!(Entry.Get_size_sectors(), 0);
 
         Entry.Set_size_sectors(67890);
@@ -244,11 +244,11 @@ mod Tests {
 
     #[test]
     fn Test_partition_entry_type() {
-        let mut Entry = MBR_partition_entry::New();
-        assert_eq!(Entry.Get_partition_type(), Partition_type::Empty);
+        let mut Entry = Partition_entry_type::New();
+        assert_eq!(Entry.Get_partition_type(), Partition_type_type::Empty);
 
-        Entry.Set_partition_type(Partition_type::Linux);
-        assert_eq!(Entry.Get_partition_type(), Partition_type::Linux);
+        Entry.Set_partition_type(Partition_type_type::Linux);
+        assert_eq!(Entry.Get_partition_type(), Partition_type_type::Linux);
         assert_eq!(Entry.Partition_type, 0x83);
     }
 
@@ -261,11 +261,15 @@ mod Tests {
     #[test]
     fn Test_partition_entry_overlaps() {
         let Partition1 =
-            MBR_partition_entry::New_with_params(false, Partition_type::Fat32, 1000, 2000);
+            Partition_entry_type::New_with_params(false, Partition_type_type::Fat32, 1000, 2000);
         let Partition2 =
-            MBR_partition_entry::New_with_params(false, Partition_type::Linux, 2400, 1000);
-        let Partition3 =
-            MBR_partition_entry::New_with_params(false, Partition_type::Linux_swap, 1500, 1000);
+            Partition_entry_type::New_with_params(false, Partition_type_type::Linux, 2400, 1000);
+        let Partition3 = Partition_entry_type::New_with_params(
+            false,
+            Partition_type_type::Linux_swap,
+            1500,
+            1000,
+        );
 
         // Partition1: 1000-2999, Partition2: 2400-3399, Partition3: 1500-2499
         assert!(Partition1.Overlaps_with(&Partition3)); // 1000-2999 overlaps 1500-2499
@@ -276,9 +280,9 @@ mod Tests {
     #[test]
     fn Test_partition_entry_no_overlap() {
         let Partition1 =
-            MBR_partition_entry::New_with_params(false, Partition_type::Fat32, 1000, 1000);
+            Partition_entry_type::New_with_params(false, Partition_type_type::Fat32, 1000, 1000);
         let Partition2 =
-            MBR_partition_entry::New_with_params(false, Partition_type::Linux, 2000, 1000);
+            Partition_entry_type::New_with_params(false, Partition_type_type::Linux, 2000, 1000);
 
         // Partition1: 1000-1999, Partition2: 2000-2999
         assert!(!Partition1.Overlaps_with(&Partition2));
@@ -310,9 +314,9 @@ mod Tests {
 
     #[test]
     fn Test_partition_entry_default() {
-        let Entry = MBR_partition_entry::default();
+        let Entry = Partition_entry_type::default();
         assert!(!Entry.Is_valid());
-        assert_eq!(Entry.Get_partition_type(), Partition_type::Empty);
+        assert_eq!(Entry.Get_partition_type(), Partition_type_type::Empty);
     }
 
     #[test]
@@ -326,30 +330,33 @@ mod Tests {
         assert!(Display_string.contains("Size=204800"));
         assert!(Display_string.contains("Bootable=true"));
 
-        let Empty_entry = MBR_partition_entry::New();
+        let Empty_entry = Partition_entry_type::New();
         let Empty_string = format!("{Empty_entry}");
         assert!(Empty_string.contains("Empty partition"));
     }
 
     #[test]
     fn Test_partition_entry_size_bytes() {
-        let Entry = MBR_partition_entry::New_with_params(false, Partition_type::Linux, 0, 2048);
+        let Entry =
+            Partition_entry_type::New_with_params(false, Partition_type_type::Linux, 0, 2048);
         assert_eq!(Entry.Get_size_bytes(), 2048 * 512); // 1MB
     }
 
     #[test]
     fn Test_partition_entry_validity() {
         // Valid partition must have non-zero type and size
-        let Valid = MBR_partition_entry::New_with_params(false, Partition_type::Linux, 100, 200);
+        let Valid =
+            Partition_entry_type::New_with_params(false, Partition_type_type::Linux, 100, 200);
         assert!(Valid.Is_valid());
 
         // Zero size makes it invalid
-        let Zero_size = MBR_partition_entry::New_with_params(false, Partition_type::Linux, 100, 0);
+        let Zero_size =
+            Partition_entry_type::New_with_params(false, Partition_type_type::Linux, 100, 0);
         assert!(!Zero_size.Is_valid());
 
         // Empty type makes it invalid
         let Empty_type =
-            MBR_partition_entry::New_with_params(false, Partition_type::Empty, 100, 200);
+            Partition_entry_type::New_with_params(false, Partition_type_type::Empty, 100, 200);
         assert!(!Empty_type.Is_valid());
     }
 }

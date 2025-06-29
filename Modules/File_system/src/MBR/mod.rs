@@ -41,7 +41,7 @@ use core::fmt;
 mod Utilities;
 pub use Utilities::*;
 
-use crate::{Device_type, Error_type, MBR_partition_entry, Partition_type, Result_type};
+use crate::{Device_type, Error_type, Partition_entry_type, Partition_type_type, Result_type};
 
 /// Master Boot Record structure (512 bytes)
 #[derive(Debug, Clone)]
@@ -53,20 +53,20 @@ pub struct MBR_type {
     /// Reserved (usually 0x0000)
     pub Reserved: [u8; 2],
     /// Partition table (4 entries × 16 bytes = 64 bytes)
-    pub Partitions: [MBR_partition_entry; 4],
+    pub Partitions: [Partition_entry_type; 4],
     /// Boot signature (0x55AA)
     pub Boot_signature: [u8; 2],
 }
 
 impl MBR_type {
     /// MBR signature bytes
-    pub const SIGNATURE: [u8; 2] = [0x55, 0xAA];
+    pub const Signature: [u8; 2] = [0x55, 0xAA];
 
     /// Size of MBR in bytes
-    pub const SIZE: usize = 512;
+    pub const Size: usize = 512;
 
     /// Maximum number of primary partitions in MBR
-    pub const MAX_PARTITIONS: usize = 4;
+    pub const Maximum_partitions_count: usize = 4;
 
     /// Create a new empty MBR
     pub fn New() -> Self {
@@ -74,8 +74,8 @@ impl MBR_type {
             Bootstrap_code: [0; 440],
             Disk_signature: [0; 4],
             Reserved: [0; 2],
-            Partitions: [MBR_partition_entry::New(); 4],
-            Boot_signature: Self::SIGNATURE,
+            Partitions: [Partition_entry_type::New(); 4],
+            Boot_signature: Self::Signature,
         }
     }
 
@@ -88,12 +88,12 @@ impl MBR_type {
 
     /// Parse MBR from raw bytes
     pub fn From_bytes(Data: &[u8]) -> Result_type<Self> {
-        if Data.len() < Self::SIZE {
+        if Data.len() < Self::Size {
             return Err(Error_type::Invalid_parameter);
         }
 
         // Check MBR signature
-        if Data[510] != Self::SIGNATURE[0] || Data[511] != Self::SIGNATURE[1] {
+        if Data[510] != Self::Signature[0] || Data[511] != Self::Signature[1] {
             return Err(Error_type::Corrupted);
         }
 
@@ -101,7 +101,7 @@ impl MBR_type {
             Bootstrap_code: [0; 440],
             Disk_signature: [0; 4],
             Reserved: [0; 2],
-            Partitions: [MBR_partition_entry::New(); 4],
+            Partitions: [Partition_entry_type::New(); 4],
             Boot_signature: [0; 2],
         };
 
@@ -150,7 +150,7 @@ impl MBR_type {
     /// Read and parse MBR from a device
     pub fn Read_from_device(Device: &Device_type) -> Result_type<Self> {
         // Read the first 512 bytes (MBR sector)
-        let mut Buffer = [0u8; Self::SIZE];
+        let mut Buffer = [0u8; Self::Size];
 
         // Set position to the beginning of the device
         Device.Set_position(&crate::Position_type::Start(0))?;
@@ -158,7 +158,7 @@ impl MBR_type {
         // Read MBR data
         let Bytes_read = Device.Read(&mut Buffer)?;
 
-        if Bytes_read.As_u64() < Self::SIZE as u64 {
+        if Bytes_read.As_u64() < Self::Size as u64 {
             return Err(Error_type::Input_output);
         }
 
@@ -174,7 +174,7 @@ impl MBR_type {
         let Buffer = self.To_bytes();
         let Bytes_written = Device.Write(&Buffer)?;
 
-        if Bytes_written.As_u64() < Self::SIZE as u64 {
+        if Bytes_written.As_u64() < Self::Size as u64 {
             return Err(Error_type::Input_output);
         }
 
@@ -184,11 +184,11 @@ impl MBR_type {
 
     /// Check if MBR has a valid signature
     pub fn Is_valid(&self) -> bool {
-        self.Boot_signature == Self::SIGNATURE
+        self.Boot_signature == Self::Signature
     }
 
     /// Get all valid partitions
-    pub fn Get_valid_partitions(&self) -> Vec<&MBR_partition_entry> {
+    pub fn Get_valid_partitions(&self) -> Vec<&Partition_entry_type> {
         self.Partitions
             .iter()
             .filter(|Partition| Partition.Is_valid())
@@ -196,7 +196,7 @@ impl MBR_type {
     }
 
     /// Get all valid partitions (mutable)
-    pub fn Get_valid_partitions_mut(&mut self) -> Vec<&mut MBR_partition_entry> {
+    pub fn Get_valid_partitions_mut(&mut self) -> Vec<&mut Partition_entry_type> {
         self.Partitions
             .iter_mut()
             .filter(|Partition| Partition.Is_valid())
@@ -204,14 +204,14 @@ impl MBR_type {
     }
 
     /// Get bootable partition (if any)
-    pub fn Get_bootable_partition(&self) -> Option<&MBR_partition_entry> {
+    pub fn Get_bootable_partition(&self) -> Option<&Partition_entry_type> {
         self.Partitions
             .iter()
             .find(|Partition| Partition.Is_bootable())
     }
 
     /// Get bootable partition (mutable, if any)
-    pub fn Get_bootable_partition_mut(&mut self) -> Option<&mut MBR_partition_entry> {
+    pub fn Get_bootable_partition_mut(&mut self) -> Option<&mut Partition_entry_type> {
         self.Partitions
             .iter_mut()
             .find(|Partition| Partition.Is_bootable())
@@ -219,7 +219,7 @@ impl MBR_type {
 
     /// Set a partition as bootable (clears bootable flag from other partitions)
     pub fn Set_bootable_partition(&mut self, Index: usize) -> Result_type<()> {
-        if Index >= Self::MAX_PARTITIONS {
+        if Index >= Self::Maximum_partitions_count {
             return Err(Error_type::Invalid_parameter);
         }
 
@@ -237,7 +237,7 @@ impl MBR_type {
     pub fn Has_gpt_protective_partition(&self) -> bool {
         self.Partitions
             .iter()
-            .any(|Partition| Partition.Get_partition_type() == Partition_type::Gpt_protective)
+            .any(|Partition| Partition.Get_partition_type() == Partition_type_type::Gpt_protective)
     }
 
     /// Get disk signature as u32
@@ -260,7 +260,7 @@ impl MBR_type {
     /// Add a new partition
     pub fn Add_partition(
         &mut self,
-        Partition_type: crate::Partition_type,
+        Partition_type: crate::Partition_type_type,
         Start_lba: u32,
         Size_sectors: u32,
         Bootable: bool,
@@ -269,8 +269,12 @@ impl MBR_type {
             .Get_free_partition_slot()
             .ok_or(Error_type::File_system_full)?;
 
-        let New_partition =
-            MBR_partition_entry::New_with_params(Bootable, Partition_type, Start_lba, Size_sectors);
+        let New_partition = Partition_entry_type::New_with_params(
+            Bootable,
+            Partition_type,
+            Start_lba,
+            Size_sectors,
+        );
 
         // Check for overlaps with existing partitions
         for Existing in &self.Partitions {
@@ -291,7 +295,7 @@ impl MBR_type {
 
     /// Remove a partition by index
     pub fn Remove_partition(&mut self, Index: usize) -> Result_type<()> {
-        if Index >= Self::MAX_PARTITIONS {
+        if Index >= Self::Maximum_partitions_count {
             return Err(Error_type::Invalid_parameter);
         }
 
@@ -320,8 +324,8 @@ impl MBR_type {
     }
 
     /// Convert MBR back to bytes
-    pub fn To_bytes(&self) -> [u8; Self::SIZE] {
-        let mut Buffer = [0u8; Self::SIZE];
+    pub fn To_bytes(&self) -> [u8; Self::Size] {
+        let mut Buffer = [0u8; Self::Size];
 
         // Copy bootstrap code
         Buffer[0..440].copy_from_slice(&self.Bootstrap_code);
@@ -410,7 +414,7 @@ impl fmt::Display for MBR_type {
 #[cfg(test)]
 mod Tests {
     use super::*;
-    use crate::MBR_partition_entry;
+    use crate::Partition_entry_type;
     use alloc::format;
 
     fn Create_sample_mbr_bytes() -> [u8; 512] {
@@ -475,14 +479,17 @@ mod Tests {
         // Check first partition
         let P1 = &Partitions[0];
         assert!(P1.Is_bootable());
-        assert_eq!(P1.Get_partition_type(), super::Partition_type::Fat32_lba);
+        assert_eq!(
+            P1.Get_partition_type(),
+            super::Partition_type_type::Fat32_lba
+        );
         assert_eq!(P1.Get_start_lba(), 2048);
         assert_eq!(P1.Get_size_sectors(), 204800);
 
         // Check second partition
         let P2 = &Partitions[1];
         assert!(!P2.Is_bootable());
-        assert_eq!(P2.Get_partition_type(), super::Partition_type::Linux);
+        assert_eq!(P2.Get_partition_type(), super::Partition_type_type::Linux);
         assert_eq!(P2.Get_start_lba(), 206848);
         assert_eq!(P2.Get_size_sectors(), 102400);
     }
@@ -534,7 +541,7 @@ mod Tests {
         assert!(Bootable.is_some());
         assert_eq!(
             Bootable.unwrap().Get_partition_type(),
-            super::Partition_type::Fat32_lba
+            super::Partition_type_type::Fat32_lba
         );
     }
 
@@ -543,19 +550,25 @@ mod Tests {
         let mut Mbr = super::MBR_type::New();
 
         // Add two partitions
-        Mbr.Add_partition(super::Partition_type::Fat32, 2048, 100000, false)
+        Mbr.Add_partition(super::Partition_type_type::Fat32, 2048, 100000, false)
             .unwrap();
-        Mbr.Add_partition(super::Partition_type::Linux, 102048, 50000, true)
+        Mbr.Add_partition(super::Partition_type_type::Linux, 102048, 50000, true)
             .unwrap();
 
         // Second partition should be bootable
         let Bootable = Mbr.Get_bootable_partition().unwrap();
-        assert_eq!(Bootable.Get_partition_type(), super::Partition_type::Linux);
+        assert_eq!(
+            Bootable.Get_partition_type(),
+            super::Partition_type_type::Linux
+        );
 
         // Set first partition as bootable
         Mbr.Set_bootable_partition(0).unwrap();
         let Bootable = Mbr.Get_bootable_partition().unwrap();
-        assert_eq!(Bootable.Get_partition_type(), super::Partition_type::Fat32);
+        assert_eq!(
+            Bootable.Get_partition_type(),
+            super::Partition_type_type::Fat32
+        );
     }
 
     #[test]
@@ -563,7 +576,7 @@ mod Tests {
         let mut Mbr = super::MBR_type::New();
 
         let Index = Mbr
-            .Add_partition(super::Partition_type::Fat32_lba, 2048, 204800, true)
+            .Add_partition(super::Partition_type_type::Fat32_lba, 2048, 204800, true)
             .unwrap();
 
         assert_eq!(Index, 0);
@@ -574,7 +587,7 @@ mod Tests {
         assert!(Partition.Is_bootable());
         assert_eq!(
             Partition.Get_partition_type(),
-            super::Partition_type::Fat32_lba
+            super::Partition_type_type::Fat32_lba
         );
     }
 
@@ -583,11 +596,11 @@ mod Tests {
         let mut Mbr = super::MBR_type::New();
 
         // Add first partition
-        Mbr.Add_partition(super::Partition_type::Fat32, 1000, 2000, false)
+        Mbr.Add_partition(super::Partition_type_type::Fat32, 1000, 2000, false)
             .unwrap();
 
         // Try to add overlapping partition
-        let Result = Mbr.Add_partition(super::Partition_type::Linux, 1500, 1000, false);
+        let Result = Mbr.Add_partition(super::Partition_type_type::Linux, 1500, 1000, false);
         assert!(Result.is_err());
         assert_eq!(Result.unwrap_err(), crate::Error_type::Already_exists);
     }
@@ -599,12 +612,12 @@ mod Tests {
         // Fill all 4 partition slots
         for I in 0..4 {
             let Start = (I as u32) * 10000 + 1000;
-            Mbr.Add_partition(super::Partition_type::Linux, Start, 5000, false)
+            Mbr.Add_partition(super::Partition_type_type::Linux, Start, 5000, false)
                 .unwrap();
         }
 
         // Try to add fifth partition
-        let Result = Mbr.Add_partition(super::Partition_type::Fat32, 50000, 1000, false);
+        let Result = Mbr.Add_partition(super::Partition_type_type::Fat32, 50000, 1000, false);
         assert!(Result.is_err());
         assert_eq!(Result.unwrap_err(), crate::Error_type::File_system_full);
     }
@@ -613,7 +626,7 @@ mod Tests {
     fn Test_mbr_remove_partition() {
         let mut Mbr = super::MBR_type::New();
 
-        Mbr.Add_partition(super::Partition_type::Fat32, 2048, 100000, false)
+        Mbr.Add_partition(super::Partition_type_type::Fat32, 2048, 100000, false)
             .unwrap();
         assert_eq!(Mbr.Get_partition_count(), 1);
 
@@ -637,18 +650,18 @@ mod Tests {
         assert_eq!(Mbr.Get_free_partition_slot(), Some(0));
 
         // Fill first two slots
-        Mbr.Add_partition(super::Partition_type::Fat32, 1000, 1000, false)
+        Mbr.Add_partition(super::Partition_type_type::Fat32, 1000, 1000, false)
             .unwrap();
-        Mbr.Add_partition(super::Partition_type::Linux, 3000, 1000, false)
+        Mbr.Add_partition(super::Partition_type_type::Linux, 3000, 1000, false)
             .unwrap();
 
         // Should have third slot free
         assert_eq!(Mbr.Get_free_partition_slot(), Some(2));
 
         // Fill remaining slots
-        Mbr.Add_partition(super::Partition_type::Linux_swap, 5000, 1000, false)
+        Mbr.Add_partition(super::Partition_type_type::Linux_swap, 5000, 1000, false)
             .unwrap();
-        Mbr.Add_partition(super::Partition_type::Ntfs_exfat, 7000, 1000, false)
+        Mbr.Add_partition(super::Partition_type_type::Ntfs_exfat, 7000, 1000, false)
             .unwrap();
 
         // Should have no free slots
@@ -660,8 +673,13 @@ mod Tests {
         let mut Mbr = super::MBR_type::New();
         assert!(!Mbr.Has_gpt_protective_partition());
 
-        Mbr.Add_partition(super::Partition_type::Gpt_protective, 1, 0xFFFFFFFF, false)
-            .unwrap();
+        Mbr.Add_partition(
+            super::Partition_type_type::Gpt_protective,
+            1,
+            0xFFFFFFFF,
+            false,
+        )
+        .unwrap();
         assert!(Mbr.Has_gpt_protective_partition());
     }
 
@@ -670,16 +688,16 @@ mod Tests {
         let mut Mbr = super::MBR_type::New();
 
         // Add non-overlapping partitions
-        Mbr.Add_partition(super::Partition_type::Fat32, 1000, 1000, false)
+        Mbr.Add_partition(super::Partition_type_type::Fat32, 1000, 1000, false)
             .unwrap();
-        Mbr.Add_partition(super::Partition_type::Linux, 3000, 1000, false)
+        Mbr.Add_partition(super::Partition_type_type::Linux, 3000, 1000, false)
             .unwrap();
         assert!(!Mbr.Has_overlapping_partitions());
 
         // Manually create overlapping partitions (bypassing validation)
-        Mbr.Partitions[2] = MBR_partition_entry::New_with_params(
+        Mbr.Partitions[2] = Partition_entry_type::New_with_params(
             false,
-            super::Partition_type::Linux_swap,
+            super::Partition_type_type::Linux_swap,
             1500,
             1000,
         );
@@ -709,8 +727,8 @@ mod Tests {
 
     #[test]
     fn Test_mbr_constants() {
-        assert_eq!(super::MBR_type::SIZE, 512);
-        assert_eq!(super::MBR_type::MAX_PARTITIONS, 4);
-        assert_eq!(super::MBR_type::SIGNATURE, [0x55, 0xAA]);
+        assert_eq!(super::MBR_type::Size, 512);
+        assert_eq!(super::MBR_type::Maximum_partitions_count, 4);
+        assert_eq!(super::MBR_type::Signature, [0x55, 0xAA]);
     }
 }

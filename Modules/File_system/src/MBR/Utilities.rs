@@ -1,12 +1,12 @@
 use alloc::vec::Vec;
 
 use super::MBR_type;
-use crate::{Device_type, Error_type, MBR_partition_entry, Partition_device_type, Result_type};
+use crate::{Device_type, Error_type, Partition_device_type, Partition_entry_type, Result_type};
 
 /// Create a partition device from an MBR partition entry
 pub fn Create_partition_device(
     Base_device: Device_type,
-    Partition: &MBR_partition_entry,
+    Partition: &Partition_entry_type,
 ) -> Result_type<Partition_device_type> {
     if !Partition.Is_valid() {
         return Err(Error_type::Invalid_parameter);
@@ -20,7 +20,9 @@ pub fn Create_partition_device(
 }
 
 /// Scan a device for MBR and return partition information
-pub fn Scan_mbr_partitions(Device: &Device_type) -> Result_type<Vec<(usize, MBR_partition_entry)>> {
+pub fn Scan_mbr_partitions(
+    Device: &Device_type,
+) -> Result_type<Vec<(usize, Partition_entry_type)>> {
     let Mbr = MBR_type::Read_from_device(Device)?;
 
     let mut Partitions = Vec::new();
@@ -75,8 +77,8 @@ pub fn Create_all_partition_devices(
 /// Find partitions of a specific type
 pub fn Find_partitions_by_type(
     Mbr: &super::MBR_type,
-    Partition_type: crate::Partition_type,
-) -> Vec<(usize, &MBR_partition_entry)> {
+    Partition_type: crate::Partition_type_type,
+) -> Vec<(usize, &Partition_entry_type)> {
     Mbr.Partitions
         .iter()
         .enumerate()
@@ -130,7 +132,12 @@ impl Partition_statistics {
 
         let Unknown_partitions = Valid_partitions
             .iter()
-            .filter(|P| matches!(P.Get_partition_type(), crate::Partition_type::Unknown(_)))
+            .filter(|P| {
+                matches!(
+                    P.Get_partition_type(),
+                    crate::Partition_type_type::Unknown(_)
+                )
+            })
             .count();
 
         let Total_used_sectors = Valid_partitions
@@ -184,7 +191,7 @@ pub fn Is_gpt_disk(Device: &Device_type) -> bool {
 /// Create a basic MBR with a single partition
 pub fn Create_basic_mbr(
     Disk_signature: u32,
-    Partition_type: crate::Partition_type,
+    Partition_type: crate::Partition_type_type,
     Total_sectors: u32,
 ) -> Result_type<super::MBR_type> {
     let mut Mbr = MBR_type::New_with_signature(Disk_signature);
@@ -227,7 +234,7 @@ pub fn Restore_mbr(Device: &Device_type, Backup: &[u8; 512]) -> Result_type<()> 
 #[cfg(test)]
 mod Tests {
     use super::*;
-    use crate::{Device_type, Error_type, Memory_device_type, Partition_type};
+    use crate::{Device_type, Error_type, Memory_device_type, Partition_type_type};
     use alloc::vec;
 
     /// Create a test device with MBR data
@@ -254,9 +261,9 @@ mod Tests {
         let mut Mbr = MBR_type::New_with_signature(0x12345678);
 
         // Add a few test partitions
-        let _ = Mbr.Add_partition(Partition_type::Fat32_lba, 2048, 1024, true);
-        let _ = Mbr.Add_partition(Partition_type::Linux, 4096, 2048, false);
-        let _ = Mbr.Add_partition(Partition_type::Hidden_fat16, 8192, 512, false);
+        let _ = Mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true);
+        let _ = Mbr.Add_partition(Partition_type_type::Linux, 4096, 2048, false);
+        let _ = Mbr.Add_partition(Partition_type_type::Hidden_fat16, 8192, 512, false);
 
         Mbr
     }
@@ -279,7 +286,7 @@ mod Tests {
     #[test]
     fn Test_create_partition_device_invalid() {
         let Base_device = Create_test_device_with_mbr();
-        let Invalid_partition = MBR_partition_entry::New();
+        let Invalid_partition = Partition_entry_type::New();
 
         let Device_result = Create_partition_device(Base_device, &Invalid_partition);
         assert!(Device_result.is_err());
@@ -304,12 +311,15 @@ mod Tests {
         // Check partition types
         assert_eq!(
             Partitions[0].1.Get_partition_type(),
-            Partition_type::Fat32_lba
+            Partition_type_type::Fat32_lba
         );
-        assert_eq!(Partitions[1].1.Get_partition_type(), Partition_type::Linux);
+        assert_eq!(
+            Partitions[1].1.Get_partition_type(),
+            Partition_type_type::Linux
+        );
         assert_eq!(
             Partitions[2].1.Get_partition_type(),
-            Partition_type::Hidden_fat16
+            Partition_type_type::Hidden_fat16
         );
     }
 
@@ -345,9 +355,9 @@ mod Tests {
 
         // Manually create multiple bootable partitions (bypassing Add_partition validation)
         Mbr.Partitions[0] =
-            MBR_partition_entry::New_with_params(true, Partition_type::Fat32_lba, 2048, 1024);
+            Partition_entry_type::New_with_params(true, Partition_type_type::Fat32_lba, 2048, 1024);
         Mbr.Partitions[1] =
-            MBR_partition_entry::New_with_params(true, Partition_type::Linux, 4096, 2048);
+            Partition_entry_type::New_with_params(true, Partition_type_type::Linux, 4096, 2048);
 
         let Validation_result = Validate_mbr(&Mbr);
         assert!(Validation_result.is_err());
@@ -359,10 +369,14 @@ mod Tests {
         let mut Mbr = MBR_type::New_with_signature(0x12345678);
 
         // Manually create overlapping partitions (bypassing Add_partition validation)
-        Mbr.Partitions[0] =
-            MBR_partition_entry::New_with_params(false, Partition_type::Fat32_lba, 2048, 2048);
+        Mbr.Partitions[0] = Partition_entry_type::New_with_params(
+            false,
+            Partition_type_type::Fat32_lba,
+            2048,
+            2048,
+        );
         Mbr.Partitions[1] =
-            MBR_partition_entry::New_with_params(false, Partition_type::Linux, 3000, 2048);
+            Partition_entry_type::New_with_params(false, Partition_type_type::Linux, 3000, 2048);
 
         let Validation_result = Validate_mbr(&Mbr);
         assert!(Validation_result.is_err());
@@ -395,17 +409,17 @@ mod Tests {
         let Mbr = create_test_mbr();
 
         // Find FAT32 partitions
-        let Fat_partitions = Find_partitions_by_type(&Mbr, Partition_type::Fat32_lba);
+        let Fat_partitions = Find_partitions_by_type(&Mbr, Partition_type_type::Fat32_lba);
         assert_eq!(Fat_partitions.len(), 1);
         assert_eq!(Fat_partitions[0].0, 0); // Index 0
 
         // Find Linux partitions
-        let Linux_partitions = Find_partitions_by_type(&Mbr, Partition_type::Linux);
+        let Linux_partitions = Find_partitions_by_type(&Mbr, Partition_type_type::Linux);
         assert_eq!(Linux_partitions.len(), 1);
         assert_eq!(Linux_partitions[0].0, 1); // Index 1
 
         // Find non-existent type
-        let Ntfs_partitions = Find_partitions_by_type(&Mbr, Partition_type::Ntfs_exfat);
+        let Ntfs_partitions = Find_partitions_by_type(&Mbr, Partition_type_type::Ntfs_exfat);
         assert_eq!(Ntfs_partitions.len(), 0);
     }
 
@@ -456,7 +470,7 @@ mod Tests {
     fn Test_is_gpt_disk() {
         // Create MBR with GPT protective partition
         let mut Mbr = MBR_type::New_with_signature(0x12345678);
-        let _ = Mbr.Add_partition(Partition_type::Gpt_protective, 1, 0xFFFFFFFF, false);
+        let _ = Mbr.Add_partition(Partition_type_type::Gpt_protective, 1, 0xFFFFFFFF, false);
 
         let mut Data = vec![0u8; 4096];
         let Mbr_bytes = Mbr.To_bytes();
@@ -473,7 +487,7 @@ mod Tests {
 
     #[test]
     fn Test_create_basic_mbr() {
-        let Mbr_result = Create_basic_mbr(0xABCDEF00, Partition_type::Fat32_lba, 100000);
+        let Mbr_result = Create_basic_mbr(0xABCDEF00, Partition_type_type::Fat32_lba, 100000);
         assert!(Mbr_result.is_ok());
 
         let Mbr = Mbr_result.unwrap();
@@ -484,7 +498,10 @@ mod Tests {
         assert_eq!(Valid_partitions.len(), 1);
 
         let Partition = &Valid_partitions[0];
-        assert_eq!(Partition.Get_partition_type(), Partition_type::Fat32_lba);
+        assert_eq!(
+            Partition.Get_partition_type(),
+            Partition_type_type::Fat32_lba
+        );
         assert_eq!(Partition.Get_start_lba(), 2048);
         assert_eq!(Partition.Get_size_sectors(), 100000 - 2048);
         assert!(Partition.Is_bootable());
@@ -492,7 +509,7 @@ mod Tests {
 
     #[test]
     fn Test_create_basic_mbr_too_small() {
-        let Mbr_result = Create_basic_mbr(0x12345678, Partition_type::Fat32_lba, 1000);
+        let Mbr_result = Create_basic_mbr(0x12345678, Partition_type_type::Fat32_lba, 1000);
         assert!(Mbr_result.is_err());
         assert_eq!(Mbr_result.unwrap_err(), Error_type::Invalid_parameter);
     }
@@ -561,10 +578,10 @@ mod Tests {
         // Create a more complex MBR for comprehensive testing
         let mut Mbr = MBR_type::New_with_signature(0xDEADBEEF);
 
-        let _ = Mbr.Add_partition(Partition_type::Fat16, 63, 1000, true);
-        let _ = Mbr.Add_partition(Partition_type::Extended_lba, 2048, 10000, false);
-        let _ = Mbr.Add_partition(Partition_type::Linux_swap, 15000, 2000, false);
-        let _ = Mbr.Add_partition(Partition_type::Unknown(0x42), 20000, 5000, false);
+        let _ = Mbr.Add_partition(Partition_type_type::Fat16, 63, 1000, true);
+        let _ = Mbr.Add_partition(Partition_type_type::Extended_lba, 2048, 10000, false);
+        let _ = Mbr.Add_partition(Partition_type_type::Linux_swap, 15000, 2000, false);
+        let _ = Mbr.Add_partition(Partition_type_type::Unknown(0x42), 20000, 5000, false);
 
         // Test statistics
         let Stats = Partition_statistics::From_mbr(&Mbr);
@@ -576,11 +593,11 @@ mod Tests {
         assert_eq!(Stats.Unknown_partitions, 1);
 
         // Test finding by type
-        let Extended = Find_partitions_by_type(&Mbr, Partition_type::Extended_lba);
+        let Extended = Find_partitions_by_type(&Mbr, Partition_type_type::Extended_lba);
         assert_eq!(Extended.len(), 1);
         assert_eq!(Extended[0].0, 1);
 
-        let Unknown = Find_partitions_by_type(&Mbr, Partition_type::Unknown(0x42));
+        let Unknown = Find_partitions_by_type(&Mbr, Partition_type_type::Unknown(0x42));
         assert_eq!(Unknown.len(), 1);
         assert_eq!(Unknown[0].0, 3);
     }
@@ -593,7 +610,7 @@ mod Tests {
         let Stats = Partition_statistics::From_mbr(&Empty_mbr);
         assert_eq!(Stats.Total_partitions, 0);
 
-        let Partitions = Find_partitions_by_type(&Empty_mbr, Partition_type::Fat32);
+        let Partitions = Find_partitions_by_type(&Empty_mbr, Partition_type_type::Fat32);
         assert_eq!(Partitions.len(), 0);
 
         // Test scan on empty device
