@@ -12,6 +12,8 @@ mod Device;
 mod Error;
 mod File_system;
 mod Fundamentals;
+mod MBR;
+mod Partition;
 
 mod Memory_device;
 mod Time;
@@ -22,4 +24,8 @@ pub use Error::*;
 pub use File_system::*;
 pub use Fundamentals::*;
 pub use Memory_device::*;
+pub use Partition::*;
 pub use Time::*;
+
+// Export MBR module and its contents
+pub use MBR::*;
