@@ -18,11 +18,13 @@ use log::set_max_level;
 pub use log::trace as Trace;
 pub use log::warn as Warning;
 
-const Error_icon: &str = "❌";
-const Warning_icon: &str = "⚠️";
-const Information_icon: &str = "ℹ️";
-const Debug_icon: &str = "🐞";
-const Trace_icon: &str = "🐾";
+const Bold: &str = "\x1b[0;1m";
+const Red: &str = "\x1b[0;41m";
+const Yellow: &str = "\x1b[0;43m";
+const Blue: &str = "\x1b[0;46m";
+const Green: &str = "\x1b[0;42m";
+const Grey: &str = "\x1b[0;100m";
+const Reset: &str = "\x1b[0m";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Level_type {
@@ -51,16 +53,30 @@ pub trait Logger_trait: Send + Sync {
     fn Write(&self, Arguments: fmt::Arguments);
 
     fn Log(&self, Record: &Record) {
+        let Letter = match Record.level() {
+            log::Level::Error => "E",
+            log::Level::Warn => "W",
+            log::Level::Info => "I",
+            log::Level::Debug => "D",
+            log::Level::Trace => "T",
+        };
+
+        let Color = match Record.level() {
+            log::Level::Error => Red,
+            log::Level::Warn => Yellow,
+            log::Level::Info => Blue,
+            log::Level::Debug => Green,
+            log::Level::Trace => Grey,
+        };
+
         self.Write(format_args!(
-            "{} {}: {}",
-            match Record.level() {
-                log::Level::Error => Error_icon,
-                log::Level::Warn => Warning_icon,
-                log::Level::Info => Information_icon,
-                log::Level::Debug => Debug_icon,
-                log::Level::Trace => Trace_icon,
-            },
+            "{} {} {} | {}{}{} | {}",
+            Color,
+            Letter,
+            Reset,
+            Bold,
             Record.target(),
+            Reset,
             Record.args()
         ))
     }
