@@ -18,7 +18,7 @@ use Virtual_file_system::{File_type, Virtual_file_system_type};
 
 pub const Shortcut: &str = r#"
 {
-    "Name": "File_manager",
+    "Name": "File manager",
     "Command": "/Binaries/File_manager",
     "Arguments": "",
     "Terminal": false,

@@ -138,8 +138,6 @@ impl File_manager_type {
             if self.Up_button.is_null() {
                 return Err(Error_type::Failed_to_create_object);
             }
-
-            LVGL::lv_obj_set_size(self.Up_button, 40, 30);
             let Up_label = LVGL::lv_label_create(self.Up_button);
             LVGL::lv_label_set_text(Up_label, LVGL::LV_SYMBOL_UP as *const _ as *const i8);
             LVGL::lv_obj_center(Up_label);
@@ -152,7 +150,6 @@ impl File_manager_type {
                 return Err(Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_set_size(self.Home_button, 40, 30);
             let Home_label = LVGL::lv_label_create(self.Home_button);
             LVGL::lv_label_set_text(Home_label, LVGL::LV_SYMBOL_HOME as *const _ as *const i8);
             LVGL::lv_obj_center(Home_label);
@@ -165,7 +162,6 @@ impl File_manager_type {
                 return Err(Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_set_size(self.Refresh_button, 40, 30);
             let Refresh_label = LVGL::lv_label_create(self.Refresh_button);
 
             LVGL::lv_label_set_text(
@@ -182,7 +178,6 @@ impl File_manager_type {
                 return Err(Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_set_height(self.Path_text_area, 30); // Match button height
             LVGL::lv_obj_set_flex_grow(self.Path_text_area, 1); // Take remaining space
             LVGL::lv_obj_set_style_pad_left(self.Path_text_area, 10, LVGL::LV_STATE_DEFAULT);
 
@@ -196,7 +191,6 @@ impl File_manager_type {
                 return Err(Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_set_size(self.Go_button, 40, 30);
             let Go_label = LVGL::lv_label_create(self.Go_button);
             LVGL::lv_label_set_text(Go_label, LVGL::LV_SYMBOL_RIGHT as *const _ as *const i8);
             LVGL::lv_obj_center(Go_label);
@@ -353,7 +347,6 @@ impl File_manager_type {
                     } else {
                         // Handle file selection/opening
                         // Could open files with appropriate applications
-                        Log::Information!("Selected file: {}", File.Name);
                     }
                 }
             }
