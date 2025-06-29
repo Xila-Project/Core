@@ -228,7 +228,7 @@ pub fn Restore_mbr(Device: &Device_type, Backup: &[u8; 512]) -> Result_type<()> 
 mod Tests {
     use super::*;
     use crate::{Device_type, Error_type, Memory_device_type, Partition_type};
-    use alloc::{format, sync::Arc, vec};
+    use alloc::vec;
 
     /// Create a test device with MBR data
     fn Create_test_device_with_mbr() -> Device_type {

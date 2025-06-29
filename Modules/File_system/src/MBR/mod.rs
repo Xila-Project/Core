@@ -41,7 +41,7 @@ use core::fmt;
 mod Utilities;
 pub use Utilities::*;
 
-use crate::{Device_type, Error_type, MBR_partition_entry, Partition_type, Result_type, Size_type};
+use crate::{Device_type, Error_type, MBR_partition_entry, Partition_type, Result_type};
 
 /// Master Boot Record structure (512 bytes)
 #[derive(Debug, Clone)]
@@ -410,7 +410,7 @@ impl fmt::Display for MBR_type {
 #[cfg(test)]
 mod Tests {
     use super::*;
-    use crate::{MBR_partition_entry, Partition_type};
+    use crate::MBR_partition_entry;
     use alloc::format;
 
     fn Create_sample_mbr_bytes() -> [u8; 512] {
@@ -698,7 +698,7 @@ mod Tests {
         let Data = Create_sample_mbr_bytes();
         let Mbr = MBR_type::From_bytes(&Data).unwrap();
 
-        let Display_string = format!("{}", Mbr);
+        let Display_string = format!("{Mbr}");
         assert!(Display_string.contains("Master Boot Record"));
         assert!(Display_string.contains("Disk Signature: 0x12345678"));
         assert!(Display_string.contains("Valid: true"));
