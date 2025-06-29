@@ -6,8 +6,8 @@ build = "Build/Main.rs"
 
 [build-dependencies]
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
-bindgen = "0.70"
-cc = "1.1"
+bindgen = "0.72"
+cc = "1.2"
 Bindings_utilities = { path = "../Utilities" }
 quote = "1.0"
 syn = { version = "2.0", features = ["full", "visit", "extra-traits"] }

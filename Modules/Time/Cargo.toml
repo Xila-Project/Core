@@ -5,10 +5,12 @@ edition = "2021"
 
 [dependencies]
 File_system = { path = "../File_system" }
+Log = { path = "../Log" }
 Shared = { path = "../Shared" }
 
 [dev-dependencies]
 Drivers = { path = "../Drivers" }
+Log = { path = "../Log" }
 
 [[test]]
 name = "Integration"
