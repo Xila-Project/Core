@@ -1,5 +1,4 @@
 use core::num::NonZeroUsize;
-use core::time::Duration;
 
 use alloc::{
     string::{String, ToString},
@@ -7,6 +6,7 @@ use alloc::{
 };
 use Executable::Standard_type;
 use File_system::{Device_type, Flags_type, Mode_type, Unique_file_identifier_type};
+use Futures::yield_now;
 use Task::Task_identifier_type;
 
 use crate::{Error::Result_type, Terminal::Terminal_type};
@@ -61,7 +61,7 @@ async fn Inner_main(Task: Task_identifier_type) -> Result_type<()> {
     Executable::Execute("/Binaries/Command_line_shell", "".to_string(), Standard).await?;
 
     while Terminal.Event_handler().await? {
-        Task::Manager_type::Sleep(Duration::from_millis(20)).await;
+        yield_now().await;
     }
 
     Ok(())

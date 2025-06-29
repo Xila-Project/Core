@@ -1,5 +1,6 @@
 use alloc::string::String;
 use core::ffi::CStr;
+use File_system::Size_type;
 use Graphics::{Color_type, Event_code_type, Key_type, Window_type, LVGL};
 use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
@@ -10,7 +11,7 @@ pub(crate) struct Inner_type {
     Buffer: String,
     Display: *mut LVGL::lv_obj_t,
     Input: *mut LVGL::lv_obj_t,
-    Validated: bool,
+    Validated: Option<(&'static str, usize)>,
 }
 
 pub struct Terminal_type(pub(crate) RwLock<CriticalSectionRawMutex, Inner_type>);
@@ -86,7 +87,7 @@ impl Terminal_type {
             Buffer,
             Display,
             Input,
-            Validated: false,
+            Validated: None,
         };
 
         Ok(Self(RwLock::new(Inner)))
@@ -161,30 +162,43 @@ impl Terminal_type {
         Ok(())
     }
 
-    pub async fn Read_input(&self, String: &mut String) -> Result_type<usize> {
+    pub async fn Read_input(&self, Buffer: &mut [u8]) -> Result_type<Size_type> {
         let mut Inner = self.0.write().await;
 
-        if !Inner.Validated {
-            return Ok(0);
-        }
-
-        let _Lock = Graphics::Get_instance().Lock().await;
-
-        let Text = unsafe {
-            let Text = LVGL::lv_textarea_get_text(Inner.Input);
-
-            CStr::from_ptr(Text).to_str()?
+        let (String, Index) = match Inner.Validated.as_mut() {
+            Some(Validated) => Validated,
+            None => return Ok(Size_type::New(0)),
         };
 
-        String.push_str(Text);
+        if *Index >= String.len() {
+            let _Lock = Graphics::Get_instance().Lock().await;
 
-        unsafe {
-            LVGL::lv_textarea_set_text(Inner.Input, c"".as_ptr());
+            unsafe {
+                LVGL::lv_textarea_set_text(Inner.Input, c"".as_ptr());
+                LVGL::lv_obj_remove_state(Inner.Input, LVGL::LV_STATE_DISABLED as _);
+            }
+
+            Inner.Validated.take();
+
+            if let Some(Byte) = Buffer.first_mut() {
+                *Byte = b'\n';
+            }
+
+            return Ok(Size_type::New(1));
         }
 
-        Inner.Validated = false;
+        let mut Read = 0;
 
-        Ok(Text.len())
+        Buffer
+            .iter_mut()
+            .zip(&String.as_bytes()[*Index..])
+            .for_each(|(Byte, &Char)| {
+                *Byte = Char;
+                *Index += 1;
+                Read += 1;
+            });
+
+        Ok(Size_type::New(Read))
     }
 
     pub async fn Event_handler(&self) -> Result_type<bool> {
@@ -195,7 +209,7 @@ impl Terminal_type {
                 Event_code_type::Delete => return Ok(false),
                 Event_code_type::Key => {
                     if let Some(Key_type::Character(Character)) = Event.Get_key() {
-                        if Inner.Validated {
+                        if Inner.Validated.is_some() {
                             continue;
                         }
 
@@ -208,11 +222,15 @@ impl Terminal_type {
                                 CStr::from_ptr(Text).to_str()?
                             };
 
+                            unsafe {
+                                LVGL::lv_obj_add_state(Inner.Input, LVGL::LV_STATE_DISABLED as _);
+                            }
+
                             drop(_Lock);
 
                             Self::Print_line_internal(&mut Inner, Text).await?;
 
-                            Inner.Validated = true;
+                            Inner.Validated.replace((Text, 0));
                         }
                     }
                 }
