@@ -17,6 +17,8 @@ Instantiate_global_allocator!(Drivers::Std::Memory::Memory_manager_type);
 #[Task::Run_with_executor(Drivers::Std::Executor::Executor_type)]
 async fn main() {
     // - Initialize the system
+    Log::Initialize(&Drivers::Std::Log::Logger_type).unwrap();
+
     // Initialize the task manager
     Task::Initialize();
 
@@ -24,8 +26,6 @@ async fn main() {
     Users::Initialize();
     // Initialize the time manager
     Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New())).unwrap();
-
-    Log::Initialize(&Drivers::Std::Log::Logger_type).unwrap();
 
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
