@@ -23,7 +23,7 @@ pub const Shortcut: &str = r#"
     "Arguments": "",
     "Terminal": false,
     "Icon_string": "Fm",
-    "Icon_color": [0, 0, 0]
+    "Icon_color": [0, 188, 212]
 }"#;
 
 pub struct File_manager_executable_type;

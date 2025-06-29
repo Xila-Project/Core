@@ -7,7 +7,11 @@ use alloc::{
 use core::{ptr::null_mut, time::Duration};
 
 use File_system::{Path_owned_type, Path_type, Type_type};
-use Graphics::{Event_code_type, Window_type, LVGL};
+use Graphics::{
+    Event_code_type,
+    Palette::{self, Hue_type},
+    Window_type, LVGL,
+};
 use Virtual_file_system::{Directory_type, Get_instance};
 
 use crate::Error::{Error_type, Result_type};
@@ -37,7 +41,9 @@ impl File_manager_type {
     pub async fn New() -> Result_type<Self> {
         let _Lock = Graphics::Get_instance().Lock().await;
 
-        let Window = Graphics::Get_instance().Create_window().await?;
+        let mut Window = Graphics::Get_instance().Create_window().await?;
+
+        Window.Set_icon("Fm", Palette::Get(Hue_type::Cyan, Palette::Tone_type::Main));
 
         let mut Manager = Self {
             Window,
