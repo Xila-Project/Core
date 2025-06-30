@@ -1,9 +1,45 @@
+//! Utility functions for Master Boot Record (MBR) operations.
+//!
+//! This module provides high-level utility functions for working with MBR partition tables,
+//! including creating partition devices, scanning for partitions, validation, and disk formatting.
+//! These utilities simplify common MBR operations and provide comprehensive error handling.
+
 use alloc::vec::Vec;
 
 use super::MBR_type;
 use crate::{Device_type, Error_type, Partition_device_type, Partition_entry_type, Result_type};
 
-/// Create a partition device from an MBR partition entry
+/// Create a partition device from an MBR partition entry.
+///
+/// This function takes a base device and a partition entry from an MBR, and creates
+/// a [`Partition_device_type`] that represents just that partition. The resulting
+/// partition device can be used for all standard device operations, but will only
+/// access the sectors allocated to that specific partition.
+///
+/// # Arguments
+///
+/// * `Base_device` - The underlying storage device containing the partition
+/// * `Partition` - MBR partition entry describing the partition layout
+///
+/// # Returns
+///
+/// * `Ok(Partition_device_type)` - Successfully created partition device
+/// * `Err(Error_type::Invalid_parameter)` - Partition entry is invalid
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let mbr = MBR_type::Read_from_device(&device).unwrap();
+///
+/// if let Some(partition) = mbr.Get_valid_partitions().first() {
+///     let partition_device = Create_partition_device(device, partition).unwrap();
+///     // Now you can use partition_device for I/O operations
+/// }
+/// ```
 pub fn Create_partition_device(
     Base_device: Device_type,
     Partition: &Partition_entry_type,
@@ -19,7 +55,39 @@ pub fn Create_partition_device(
     ))
 }
 
-/// Scan a device for MBR and return partition information
+/// Scan a device for MBR and return partition information.
+///
+/// This function reads the MBR from a device and extracts information about all
+/// valid partitions. It returns a vector of tuples containing the partition index
+/// and the partition entry for each valid partition found.
+///
+/// # Arguments
+///
+/// * `Device` - The storage device to scan for MBR partitions
+///
+/// # Returns
+///
+/// * `Ok(Vec<(usize, Partition_entry_type)>)` - List of valid partitions with their indices
+/// * `Err(Error_type)` - Error reading MBR or device access failure
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+///
+/// match Scan_mbr_partitions(&device) {
+///     Ok(partitions) => {
+///         println!("Found {} valid partitions", partitions.len());
+///         for (index, partition) in partitions {
+///             println!("Partition {}: {:?}", index, partition.Get_partition_type());
+///         }
+///     }
+///     Err(e) => println!("Failed to scan partitions: {}", e),
+/// }
+/// ```
 pub fn Scan_mbr_partitions(
     Device: &Device_type,
 ) -> Result_type<Vec<(usize, Partition_entry_type)>> {
@@ -35,7 +103,37 @@ pub fn Scan_mbr_partitions(
     Ok(Partitions)
 }
 
-/// Validate MBR structure and partitions
+/// Validate MBR structure and partitions for consistency and correctness.
+///
+/// This function performs comprehensive validation of an MBR structure, checking:
+/// - MBR signature validity (0x55AA boot signature)
+/// - Partition overlap detection
+/// - Bootable partition count (at most one partition should be bootable)
+///
+/// # Arguments
+///
+/// * `Mbr` - The MBR structure to validate
+///
+/// # Returns
+///
+/// * `Ok(())` - MBR is valid and consistent
+/// * `Err(Error_type::Corrupted)` - MBR is invalid or corrupted
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let mbr = MBR_type::Read_from_device(&device).unwrap();
+///
+/// match Validate_mbr(&mbr) {
+///     Ok(()) => println!("MBR is valid"),
+///     Err(Error_type::Corrupted) => println!("MBR is corrupted"),
+///     Err(e) => println!("Validation error: {}", e),
+/// }
+/// ```
 pub fn Validate_mbr(Mbr: &crate::MBR_type) -> Result_type<()> {
     // Check MBR signature
     if !Mbr.Is_valid() {
@@ -57,7 +155,38 @@ pub fn Validate_mbr(Mbr: &crate::MBR_type) -> Result_type<()> {
     Ok(())
 }
 
-/// Create all partition devices from an MBR
+/// Create partition devices for all valid partitions in an MBR.
+///
+/// This function iterates through all partition entries in an MBR and creates
+/// [`Partition_device_type`] instances for each valid partition. This is useful
+/// when you need to access all partitions on a disk programmatically.
+///
+/// # Arguments
+///
+/// * `Base_device` - The underlying storage device containing all partitions
+/// * `Mbr` - The MBR structure containing partition information
+///
+/// # Returns
+///
+/// * `Ok(Vec<Partition_device_type>)` - Vector of partition devices for all valid partitions
+/// * `Err(Error_type)` - Error if any partition device creation fails
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let mbr = MBR_type::Read_from_device(&device).unwrap();
+///
+/// let partition_devices = Create_all_partition_devices(device, &mbr).unwrap();
+/// println!("Created {} partition devices", partition_devices.len());
+///
+/// for (i, partition) in partition_devices.iter().enumerate() {
+///     println!("Partition {}: {} sectors", i, partition.Get_sector_count());
+/// }
+/// ```
 pub fn Create_all_partition_devices(
     Base_device: Device_type,
     Mbr: &super::MBR_type,
@@ -88,22 +217,150 @@ pub fn Find_partitions_by_type(
         .collect()
 }
 
-/// Get partition statistics
+/// Find partitions of a specific type within an MBR.
+///
+/// This function searches through all partitions in an MBR and returns references
+/// to those that match the specified partition type. This is useful for locating
+/// specific types of partitions (e.g., FAT32, Linux, etc.) without creating
+/// partition devices.
+///
+/// # Arguments
+///
+/// * `Mbr` - The MBR structure to search through
+/// * `Partition_type` - The specific partition type to find
+///
+/// # Returns
+///
+/// A vector of tuples containing the partition index and reference to the partition entry
+/// for each matching partition.
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let mbr = MBR_type::Read_from_device(&device).unwrap();
+///
+/// // Find all FAT32 partitions
+/// let fat32_partitions = Find_partitions_by_type(&mbr, Partition_type_type::Fat32_lba);
+/// println!("Found {} FAT32 partitions", fat32_partitions.len());
+/// ```
+///
+/// # Arguments
+///
+/// * `Mbr` - The MBR structure to search through
+/// * `Partition_type` - The specific partition type to find
+///
+/// # Returns
+///
+/// A vector of tuples containing the partition index and reference to the partition entry
+/// for each matching partition.
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let mbr = MBR_type::Read_from_device(&device).unwrap();
+///
+/// // Find all FAT32 partitions
+/// let fat32_partitions = Find_partitions_by_type(&mbr, Partition_type_type::Fat32_lba);
+/// println!("Found {} FAT32 partitions", fat32_partitions.len());
+/// ```
+
+/// Comprehensive statistics about partitions in an MBR.
+///
+/// This structure provides detailed statistical information about the partitions
+/// present in an MBR, including counts by type, size information, and bootability status.
+/// It's useful for disk analysis, partition management tools, and system diagnostics.
+///
+/// # Fields
+///
+/// ## Partition Counts
+/// * `Total_partitions` - Total number of valid partitions
+/// * `Bootable_partitions` - Number of partitions marked as bootable
+/// * `Fat_partitions` - Number of FAT file system partitions (FAT16, FAT32, etc.)
+/// * `Linux_partitions` - Number of Linux-type partitions
+/// * `Hidden_partitions` - Number of hidden partitions
+/// * `Extended_partitions` - Number of extended partitions
+/// * `Unknown_partitions` - Number of partitions with unknown/unrecognized types
+///
+/// ## Size Information
+/// * `Total_used_sectors` - Total sectors used by all partitions
+/// * `Largest_partition_sectors` - Size of the largest partition in sectors
+/// * `Smallest_partition_sectors` - Size of the smallest partition in sectors
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let mbr = MBR_type::Read_from_device(&device).unwrap();
+///
+/// let stats = Partition_statistics_type::From_mbr(&mbr);
+/// println!("Total partitions: {}", stats.Total_partitions);
+/// println!("Bootable partitions: {}", stats.Bootable_partitions);
+/// println!("Total used sectors: {}", stats.Total_used_sectors);
+/// ```
 #[derive(Debug, Clone)]
 pub struct Partition_statistics_type {
+    /// Total number of valid partitions in the MBR.
     pub Total_partitions: usize,
+    /// Number of partitions marked as bootable.
     pub Bootable_partitions: usize,
+    /// Number of FAT file system partitions.
     pub Fat_partitions: usize,
+    /// Number of Linux-type partitions.
     pub Linux_partitions: usize,
+    /// Number of hidden partitions.
     pub Hidden_partitions: usize,
+    /// Number of extended partitions.
     pub Extended_partitions: usize,
+    /// Number of partitions with unknown types.
     pub Unknown_partitions: usize,
+    /// Total sectors used by all partitions.
     pub Total_used_sectors: u64,
+    /// Size of the largest partition in sectors.
     pub Largest_partition_sectors: u32,
+    /// Size of the smallest partition in sectors.
     pub Smallest_partition_sectors: u32,
 }
 
 impl Partition_statistics_type {
+    /// Generate comprehensive statistics from an MBR.
+    ///
+    /// This method analyzes all partitions in the provided MBR and generates
+    /// detailed statistics about partition types, sizes, and other characteristics.
+    ///
+    /// # Arguments
+    ///
+    /// * `Mbr` - The MBR structure to analyze
+    ///
+    /// # Returns
+    ///
+    /// A new `Partition_statistics_type` containing the computed statistics.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// extern crate alloc;
+    /// use File_system::*;
+    ///
+    /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+    /// let mbr = MBR_type::Read_from_device(&device).unwrap();
+    ///
+    /// let stats = Partition_statistics_type::From_mbr(&mbr);
+    /// if stats.Total_partitions > 0 {
+    ///     println!("Average partition size: {} sectors",
+    ///              stats.Total_used_sectors / stats.Total_partitions as u64);
+    /// }
+    /// ```
     pub fn From_mbr(Mbr: &super::MBR_type) -> Self {
         let Valid_partitions: Vec<_> = Mbr.Get_valid_partitions();
 
@@ -172,7 +429,34 @@ impl Partition_statistics_type {
     }
 }
 
-/// Check if a device contains a valid MBR
+/// Check if a device contains a valid MBR.
+///
+/// This function attempts to read an MBR from the device and validates its signature.
+/// It's a quick way to determine if a device has been properly partitioned with MBR.
+///
+/// # Arguments
+///
+/// * `Device` - The storage device to check
+///
+/// # Returns
+///
+/// * `true` - Device contains a valid MBR with proper signature
+/// * `false` - Device doesn't contain a valid MBR or cannot be read
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+///
+/// if Has_valid_mbr(&device) {
+///     println!("Device has a valid MBR");
+/// } else {
+///     println!("Device needs to be partitioned");
+/// }
+/// ```
 pub fn Has_valid_mbr(Device: &Device_type) -> bool {
     match MBR_type::Read_from_device(Device) {
         Ok(Mbr) => Mbr.Is_valid(),
@@ -180,7 +464,35 @@ pub fn Has_valid_mbr(Device: &Device_type) -> bool {
     }
 }
 
-/// Check if a device uses GPT (has GPT protective partition)
+/// Check if a device uses GPT (GUID Partition Table) instead of MBR.
+///
+/// This function checks if the device contains a GPT protective partition in its MBR,
+/// which indicates that the device uses GPT partitioning instead of traditional MBR.
+/// GPT is the modern replacement for MBR and supports larger disks and more partitions.
+///
+/// # Arguments
+///
+/// * `Device` - The storage device to check
+///
+/// # Returns
+///
+/// * `true` - Device uses GPT partitioning (has protective MBR)
+/// * `false` - Device uses traditional MBR or cannot be read
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+///
+/// if Is_gpt_disk(&device) {
+///     println!("Device uses GPT partitioning");
+/// } else {
+///     println!("Device uses MBR partitioning");
+/// }
+/// ```
 pub fn Is_gpt_disk(Device: &Device_type) -> bool {
     match MBR_type::Read_from_device(Device) {
         Ok(Mbr) => Mbr.Has_gpt_protective_partition(),
@@ -188,7 +500,36 @@ pub fn Is_gpt_disk(Device: &Device_type) -> bool {
     }
 }
 
-/// Create a basic MBR with a single partition
+/// Create a basic MBR with a single partition covering most of the disk.
+///
+/// This function creates a simple MBR structure with one partition that uses
+/// most of the available disk space. It leaves 2048 sectors at the beginning
+/// for proper alignment, which is standard practice for modern storage devices.
+///
+/// # Arguments
+///
+/// * `Disk_signature` - Unique 32-bit signature for the disk
+/// * `Partition_type` - Type of partition to create (e.g., FAT32, Linux, etc.)
+/// * `Total_sectors` - Total number of sectors available on the disk
+///
+/// # Returns
+///
+/// * `Ok(MBR_type)` - Successfully created MBR with single partition
+/// * `Err(Error_type::Invalid_parameter)` - Disk is too small for a partition
+///
+/// # Examples
+///
+/// ```rust
+/// use File_system::*;
+///
+/// // Create MBR for a 4MB device (8192 sectors)
+/// let mbr = Create_basic_mbr(0x12345678, Partition_type_type::Fat32_lba, 8192).unwrap();
+///
+/// // The MBR will have one FAT32 partition starting at sector 2048
+/// let partitions = mbr.Get_valid_partitions();
+/// assert_eq!(partitions.len(), 1);
+/// assert_eq!(partitions[0].Get_start_lba(), 2048);
+/// ```
 pub fn Create_basic_mbr(
     Disk_signature: u32,
     Partition_type: crate::Partition_type_type,
@@ -209,7 +550,37 @@ pub fn Create_basic_mbr(
     Ok(Mbr)
 }
 
-/// Clone an MBR to another device
+/// Clone an MBR from one device to another.
+///
+/// This function reads the MBR from a source device, validates it for consistency,
+/// and writes it to a target device. This is useful for creating exact copies of
+/// partition layouts or backing up partition tables.
+///
+/// # Arguments
+///
+/// * `Source_device` - Device to read the MBR from
+/// * `Target_device` - Device to write the MBR to
+///
+/// # Returns
+///
+/// * `Ok(())` - MBR successfully cloned
+/// * `Err(Error_type)` - Error reading, validating, or writing MBR
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let source = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let target = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+///
+/// // Assume source has a valid MBR
+/// Clone_mbr(&source, &target).unwrap();
+///
+/// // Now target has the same partition layout as source
+/// assert_eq!(Has_valid_mbr(&source), Has_valid_mbr(&target));
+/// ```
 pub fn Clone_mbr(Source_device: &Device_type, Target_device: &Device_type) -> Result_type<()> {
     let Mbr = MBR_type::Read_from_device(Source_device)?;
     Validate_mbr(&Mbr)?;
@@ -217,13 +588,73 @@ pub fn Clone_mbr(Source_device: &Device_type, Target_device: &Device_type) -> Re
     Ok(())
 }
 
-/// Backup MBR to a buffer
+/// Create a backup of an MBR as a byte array.
+///
+/// This function reads the MBR from a device and returns it as a 512-byte array.
+/// This backup can be stored and later restored using [`Restore_mbr`]. This is
+/// essential for disaster recovery and partition table management.
+///
+/// # Arguments
+///
+/// * `Device` - The storage device to backup the MBR from
+///
+/// # Returns
+///
+/// * `Ok([u8; 512])` - 512-byte array containing the complete MBR
+/// * `Err(Error_type)` - Error reading MBR from device
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+///
+/// // Create backup
+/// let backup = Backup_mbr(&device).unwrap();
+///
+/// // Store backup somewhere safe...
+/// // Later, restore it if needed
+/// Restore_mbr(&device, &backup).unwrap();
+/// ```
 pub fn Backup_mbr(Device: &Device_type) -> Result_type<[u8; 512]> {
     let Mbr = MBR_type::Read_from_device(Device)?;
     Ok(Mbr.To_bytes())
 }
 
-/// Restore MBR from a buffer
+/// Restore an MBR from a backup byte array.
+///
+/// This function takes a previously created MBR backup and writes it to a device.
+/// The backup is validated before writing to ensure data integrity. This is the
+/// counterpart to [`Backup_mbr`] for disaster recovery scenarios.
+///
+/// # Arguments
+///
+/// * `Device` - The storage device to restore the MBR to
+/// * `Backup` - 512-byte array containing the MBR backup
+///
+/// # Returns
+///
+/// * `Ok(())` - MBR successfully restored
+/// * `Err(Error_type)` - Error validating backup or writing to device
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+///
+/// // Assume we have a valid backup
+/// let backup = Backup_mbr(&device).unwrap();
+///
+/// // Simulate corruption or need to restore
+/// Restore_mbr(&device, &backup).unwrap();
+///
+/// assert!(Has_valid_mbr(&device));
+/// ```
 pub fn Restore_mbr(Device: &Device_type, Backup: &[u8; 512]) -> Result_type<()> {
     let Mbr = MBR_type::From_bytes(Backup)?;
     Validate_mbr(&Mbr)?;
