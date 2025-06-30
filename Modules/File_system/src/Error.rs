@@ -283,3 +283,302 @@ impl Display for Error_type {
         write!(Formatter, "{String}")
     }
 }
+
+#[cfg(test)]
+mod Tests {
+    use super::*;
+    use alloc::format;
+
+    #[test]
+    fn Test_error_discriminants() {
+        // Test that each error has a unique discriminant
+        assert_eq!(
+            Error_type::Failed_to_initialize_file_system
+                .Get_discriminant()
+                .get(),
+            1
+        );
+        assert_eq!(Error_type::Permission_denied.Get_discriminant().get(), 2);
+        assert_eq!(Error_type::Not_found.Get_discriminant().get(), 3);
+        assert_eq!(Error_type::Already_exists.Get_discriminant().get(), 4);
+        assert_eq!(
+            Error_type::Directory_already_exists
+                .Get_discriminant()
+                .get(),
+            5
+        );
+
+        // Test a few more to ensure discriminants are sequential
+        assert_eq!(Error_type::File_system_full.Get_discriminant().get(), 6);
+        assert_eq!(Error_type::File_system_error.Get_discriminant().get(), 7);
+        assert_eq!(Error_type::Invalid_path.Get_discriminant().get(), 8);
+    }
+
+    #[test]
+    fn Test_error_display() {
+        // Test display formatting for all error types
+        assert_eq!(
+            format!("{}", Error_type::Failed_to_initialize_file_system),
+            "Failed to initialize file system"
+        );
+        assert_eq!(
+            format!("{}", Error_type::Permission_denied),
+            "Permission denied"
+        );
+        assert_eq!(format!("{}", Error_type::Not_found), "Not found");
+        assert_eq!(format!("{}", Error_type::Already_exists), "Already exists");
+        assert_eq!(
+            format!("{}", Error_type::Directory_already_exists),
+            "Directory already exists"
+        );
+        assert_eq!(
+            format!("{}", Error_type::File_system_full),
+            "File system full"
+        );
+        assert_eq!(
+            format!("{}", Error_type::File_system_error),
+            "File system error"
+        );
+        assert_eq!(format!("{}", Error_type::Invalid_path), "Invalid path");
+        assert_eq!(format!("{}", Error_type::Invalid_file), "Invalid file");
+        assert_eq!(
+            format!("{}", Error_type::Invalid_directory),
+            "Invalid directory"
+        );
+        assert_eq!(
+            format!("{}", Error_type::Invalid_symbolic_link),
+            "Invalid symbolic link"
+        );
+        assert_eq!(format!("{}", Error_type::Unknown), "Unknown");
+        assert_eq!(
+            format!("{}", Error_type::Invalid_identifier),
+            "Invalid identifier"
+        );
+        assert_eq!(
+            format!("{}", Error_type::Failed_to_get_task_informations),
+            "Failed to get task informations"
+        );
+        assert_eq!(
+            format!("{}", Error_type::Failed_to_get_users_informations),
+            "Failed to get users informations"
+        );
+        assert_eq!(
+            format!("{}", Error_type::Too_many_mounted_file_systems),
+            "Too many mounted file systems"
+        );
+        assert_eq!(
+            format!("{}", Error_type::Too_many_open_files),
+            "Too many open files"
+        );
+        assert_eq!(format!("{}", Error_type::Internal_error), "Internal error");
+        assert_eq!(format!("{}", Error_type::Invalid_mode), "Invalid mode");
+        assert_eq!(
+            format!("{}", Error_type::Unsupported_operation),
+            "Unsupported operation"
+        );
+        assert_eq!(format!("{}", Error_type::Ressource_busy), "Ressource busy");
+        assert_eq!(
+            format!("{}", Error_type::Already_initialized),
+            "Already initialized"
+        );
+        assert_eq!(
+            format!("{}", Error_type::Not_initialized),
+            "Not initialized"
+        );
+        assert_eq!(
+            format!("{}", Error_type::Failed_to_get_users_manager_instance),
+            "Failed to get users manager instance"
+        );
+        assert_eq!(
+            format!("{}", Error_type::Failed_to_get_task_manager_instance),
+            "Failed to get task manager instance"
+        );
+        assert_eq!(
+            format!("{}", Error_type::Invalid_parameter),
+            "Invalid parameter"
+        );
+        assert_eq!(format!("{}", Error_type::Invalid_flags), "Invalid flags");
+        assert_eq!(format!("{}", Error_type::Not_directory), "Not directory");
+        assert_eq!(format!("{}", Error_type::Is_directory), "Is directory");
+        assert_eq!(format!("{}", Error_type::Input_output), "Input output");
+        assert_eq!(
+            format!("{}", Error_type::Directory_not_empty),
+            "Directory not empty"
+        );
+        assert_eq!(format!("{}", Error_type::File_too_large), "File too large");
+        assert_eq!(format!("{}", Error_type::No_attribute), "No attribute");
+        assert_eq!(format!("{}", Error_type::Name_too_long), "Name too long");
+        assert_eq!(format!("{}", Error_type::Corrupted), "Corrupted");
+        assert_eq!(format!("{}", Error_type::No_memory), "No memory");
+        assert_eq!(format!("{}", Error_type::No_space_left), "No space left");
+        assert_eq!(format!("{}", Error_type::Time_error), "Time error");
+        assert_eq!(format!("{}", Error_type::Invalid_inode), "Invalid inode");
+        assert_eq!(format!("{}", Error_type::Other), "Other");
+    }
+
+    #[test]
+    fn Test_error_debug() {
+        // Test debug formatting
+        let error = Error_type::Permission_denied;
+        let debug_str = format!("{:?}", error);
+        assert_eq!(debug_str, "Permission_denied");
+    }
+
+    #[test]
+    fn Test_error_equality() {
+        // Test equality and cloning
+        let error1 = Error_type::Not_found;
+        let error2 = Error_type::Not_found;
+        let error3 = Error_type::Permission_denied;
+
+        assert_eq!(error1, error2);
+        assert_ne!(error1, error3);
+
+        let cloned = error1.clone();
+        assert_eq!(error1, cloned);
+    }
+
+    #[test]
+    fn Test_error_conversions() {
+        // Test conversion to NonZeroU32
+        let error = Error_type::Not_found;
+        let discriminant: NonZeroU32 = error.into();
+        assert_eq!(discriminant.get(), 3);
+
+        // Test explicit discriminant access
+        assert_eq!(error.Get_discriminant().get(), 3);
+    }
+
+    #[test]
+    fn Test_result_type() {
+        // Test the Result_type alias
+        let success: Result_type<i32> = Ok(42);
+        let failure: Result_type<i32> = Err(Error_type::Permission_denied);
+
+        assert!(success.is_ok());
+        assert_eq!(success.unwrap(), 42);
+
+        assert!(failure.is_err());
+        assert_eq!(failure.unwrap_err(), Error_type::Permission_denied);
+    }
+
+    #[test]
+    fn Test_error_categories() {
+        // Test that errors can be categorized by their discriminant ranges
+
+        // Initialization errors (1-3 range roughly)
+        assert!(matches!(
+            Error_type::Failed_to_initialize_file_system
+                .Get_discriminant()
+                .get(),
+            1
+        ));
+        assert!(matches!(
+            Error_type::Already_initialized.Get_discriminant().get(),
+            22
+        ));
+        assert!(matches!(
+            Error_type::Not_initialized.Get_discriminant().get(),
+            23
+        ));
+
+        // Permission errors
+        assert!(matches!(
+            Error_type::Permission_denied.Get_discriminant().get(),
+            2
+        ));
+        assert!(matches!(
+            Error_type::Invalid_mode.Get_discriminant().get(),
+            19
+        ));
+
+        // File/Directory errors
+        assert!(matches!(Error_type::Not_found.Get_discriminant().get(), 3));
+        assert!(matches!(
+            Error_type::Already_exists.Get_discriminant().get(),
+            4
+        ));
+        assert!(matches!(
+            Error_type::Directory_already_exists
+                .Get_discriminant()
+                .get(),
+            5
+        ));
+    }
+
+    #[test]
+    fn Test_error_copy_semantics() {
+        // Test that Error_type implements Copy
+        let error = Error_type::File_system_full;
+        let copied = error; // This should work due to Copy trait
+
+        // Both should be usable
+        assert_eq!(error, Error_type::File_system_full);
+        assert_eq!(copied, Error_type::File_system_full);
+        assert_eq!(error, copied);
+    }
+
+    #[test]
+    fn Test_error_size() {
+        // Ensure Error_type has a reasonable size for an enum
+        use core::mem::size_of;
+
+        // Should be small since it's a C-style enum
+        assert!(size_of::<Error_type>() <= 4); // Should be 4 bytes or less
+    }
+
+    #[test]
+    fn Test_nonzero_conversion() {
+        // Test that all errors convert to valid NonZeroU32
+        let errors = [
+            Error_type::Failed_to_initialize_file_system,
+            Error_type::Permission_denied,
+            Error_type::Not_found,
+            Error_type::Already_exists,
+            Error_type::Directory_already_exists,
+            Error_type::File_system_full,
+            Error_type::File_system_error,
+            Error_type::Invalid_path,
+            Error_type::Invalid_file,
+            Error_type::Invalid_directory,
+            Error_type::Invalid_symbolic_link,
+            Error_type::Unknown,
+            Error_type::Invalid_identifier,
+            Error_type::Failed_to_get_task_informations,
+            Error_type::Failed_to_get_users_informations,
+            Error_type::Too_many_mounted_file_systems,
+            Error_type::Too_many_open_files,
+            Error_type::Internal_error,
+            Error_type::Invalid_mode,
+            Error_type::Unsupported_operation,
+            Error_type::Ressource_busy,
+            Error_type::Already_initialized,
+            Error_type::Not_initialized,
+            Error_type::Failed_to_get_users_manager_instance,
+            Error_type::Failed_to_get_task_manager_instance,
+            Error_type::Invalid_parameter,
+            Error_type::Invalid_flags,
+            Error_type::Not_directory,
+            Error_type::Is_directory,
+            Error_type::Input_output,
+            Error_type::Directory_not_empty,
+            Error_type::File_too_large,
+            Error_type::No_attribute,
+            Error_type::Name_too_long,
+            Error_type::Corrupted,
+            Error_type::No_memory,
+            Error_type::No_space_left,
+            Error_type::Time_error,
+            Error_type::Invalid_inode,
+            Error_type::Other,
+        ];
+
+        for error in errors.iter() {
+            let discriminant = error.Get_discriminant();
+            assert!(discriminant.get() > 0);
+
+            let converted: NonZeroU32 = (*error).into();
+            assert_eq!(discriminant, converted);
+        }
+    }
+}

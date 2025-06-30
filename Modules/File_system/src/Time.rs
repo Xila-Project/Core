@@ -108,3 +108,206 @@ impl Display for Time_type {
         )
     }
 }
+
+#[cfg(test)]
+mod Tests {
+    use super::*;
+    use alloc::{format, vec};
+
+    #[test]
+    fn Test_time_creation() {
+        let time = Time_type::New(1640995200); // January 1, 2022
+        assert_eq!(time.As_u64(), 1640995200);
+    }
+
+    #[test]
+    fn Test_time_epoch() {
+        let epoch = Time_type::New(0);
+        assert_eq!(epoch.As_u64(), 0);
+    }
+
+    #[test]
+    fn Test_time_const_operations() {
+        // Test that New and As_u64 are const functions
+        const TIME: Time_type = Time_type::New(1234567890);
+        const SECONDS: u64 = TIME.As_u64();
+
+        assert_eq!(SECONDS, 1234567890);
+        assert_eq!(TIME.As_u64(), 1234567890);
+    }
+
+    #[test]
+    fn Test_time_comparison() {
+        let early = Time_type::New(1000);
+        let late = Time_type::New(2000);
+
+        assert!(early < late);
+        assert!(late > early);
+        assert!(early <= late);
+        assert!(late >= early);
+        assert!(early <= early);
+        assert!(late >= late);
+        assert_eq!(early, early);
+        assert_ne!(early, late);
+    }
+
+    #[test]
+    fn Test_time_ordering() {
+        let mut times = vec![
+            Time_type::New(3000),
+            Time_type::New(1000),
+            Time_type::New(2000),
+            Time_type::New(500),
+        ];
+
+        times.sort();
+
+        assert_eq!(times[0], Time_type::New(500));
+        assert_eq!(times[1], Time_type::New(1000));
+        assert_eq!(times[2], Time_type::New(2000));
+        assert_eq!(times[3], Time_type::New(3000));
+    }
+
+    #[test]
+    fn Test_time_clone_copy() {
+        let original = Time_type::New(999);
+        let cloned = original.clone();
+        let copied = original;
+
+        assert_eq!(original, cloned);
+        assert_eq!(original, copied);
+        assert_eq!(cloned, copied);
+
+        // Test that we can still use original after copying
+        assert_eq!(original.As_u64(), 999);
+    }
+
+    #[test]
+    fn Test_time_debug() {
+        let time = Time_type::New(1640995200);
+        let debug_str = format!("{:?}", time);
+        assert!(debug_str.contains("Time_type"));
+        assert!(debug_str.contains("1640995200"));
+    }
+
+    #[test]
+    fn Test_time_hash() {
+        use alloc::collections::BTreeMap;
+
+        let time1 = Time_type::New(12345);
+        let time2 = Time_type::New(12345);
+        let time3 = Time_type::New(54321);
+
+        // Test that equal times can be used as keys in collections
+        let mut map = BTreeMap::new();
+        map.insert(time1, "first");
+        map.insert(time2, "second"); // Should overwrite first
+        map.insert(time3, "third");
+
+        assert_eq!(map.len(), 2); // time1 and time2 are equal, so only 2 entries
+        assert_eq!(map.get(&time1), Some(&"second"));
+        assert_eq!(map.get(&time3), Some(&"third"));
+    }
+
+    #[test]
+    fn Test_time_from_duration() {
+        let duration = Duration_type::New(1640995200, 0);
+        let time: Time_type = duration.into();
+        assert_eq!(time.As_u64(), 1640995200);
+    }
+
+    #[test]
+    fn Test_time_to_duration() {
+        let time = Time_type::New(1640995200);
+        let duration: Duration_type = time.into();
+        assert_eq!(duration.As_seconds(), 1640995200);
+    }
+
+    #[test]
+    fn Test_time_display_formatting() {
+        // Test display formatting
+        let time = Time_type::New(0); // Unix epoch
+        let display_str = format!("{}", time);
+
+        // The exact format depends on Unix_to_human_time implementation
+        // We just verify it produces some reasonable format
+        assert!(display_str.contains("-"));
+        assert!(display_str.contains(":"));
+        assert!(display_str.len() > 10); // Should be a reasonable datetime string
+    }
+
+    #[test]
+    fn Test_time_display_various_dates() {
+        // Test some known timestamps
+        let times = vec![
+            Time_type::New(0),          // 1970-01-01 00:00:00
+            Time_type::New(86400),      // 1970-01-02 00:00:00
+            Time_type::New(1640995200), // 2022-01-01 00:00:00 (approximately)
+        ];
+
+        for time in times {
+            let display_str = format!("{}", time);
+            // Basic sanity checks
+            assert!(display_str.len() >= 19); // YYYY-MM-DD HH:MM:SS is 19 chars
+            assert!(display_str.contains("-"));
+            assert!(display_str.contains(":"));
+            assert!(display_str.contains(" "));
+        }
+    }
+
+    #[test]
+    fn Test_time_max_value() {
+        let max_time = Time_type::New(u64::MAX);
+        assert_eq!(max_time.As_u64(), u64::MAX);
+
+        // Should still be convertible to duration
+        let duration: Duration_type = max_time.into();
+        assert_eq!(duration.As_seconds(), u64::MAX);
+    }
+
+    #[test]
+    fn Test_time_zero_and_max_comparison() {
+        let zero = Time_type::New(0);
+        let max = Time_type::New(u64::MAX);
+
+        assert!(zero < max);
+        assert!(max > zero);
+        assert_ne!(zero, max);
+    }
+
+    #[test]
+    fn Test_time_round_trip_conversions() {
+        let original_seconds = 1640995200u64;
+
+        // Time -> Duration -> Time
+        let time = Time_type::New(original_seconds);
+        let duration: Duration_type = time.into();
+        let back_to_time: Time_type = duration.into();
+
+        assert_eq!(time, back_to_time);
+        assert_eq!(original_seconds, back_to_time.As_u64());
+    }
+
+    #[test]
+    fn Test_time_type_size() {
+        use core::mem::{align_of, size_of};
+
+        // Should be same size as u64 due to repr(transparent)
+        assert_eq!(size_of::<Time_type>(), size_of::<u64>());
+        assert_eq!(align_of::<Time_type>(), align_of::<u64>());
+    }
+
+    #[test]
+    fn Test_time_sequence() {
+        // Test a sequence of times
+        use alloc::vec::Vec;
+        let times: Vec<Time_type> = (0..10)
+            .map(|i| Time_type::New(i * 86400)) // Each day
+            .collect();
+
+        // Verify they're in ascending order
+        for i in 1..times.len() {
+            assert!(times[i - 1] < times[i]);
+        }
+    }
+}
