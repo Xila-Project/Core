@@ -47,7 +47,7 @@
 use alloc::vec::Vec;
 use core::fmt;
 
-use crate::Partition_device_type;
+use crate::{Partition_device_type, Partition_statistics_type};
 
 mod Utilities;
 pub use Utilities::*;

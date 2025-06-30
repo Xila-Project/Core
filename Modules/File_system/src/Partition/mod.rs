@@ -7,8 +7,10 @@
 
 mod Device;
 mod Entry;
+mod Statistics;
 mod Type;
 
 pub use Device::*;
 pub use Entry::*;
+pub use Statistics::*;
 pub use Type::*;
