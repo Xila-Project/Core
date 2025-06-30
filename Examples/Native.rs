@@ -8,7 +8,10 @@ extern crate alloc;
 use alloc::string::String;
 use Executable::Mount_static_executables;
 use Executable::Standard_type;
+use File_system::MBR_type;
+use File_system::Partition_type_type;
 use File_system::{Create_device, Create_file_system};
+use Log::Information;
 use Memory::Instantiate_global_allocator;
 use Virtual_file_system::Mount_static_devices;
 
@@ -52,18 +55,32 @@ async fn main() {
     let Drive = Create_device!(Drivers::Std::Drive_file::File_drive_device_type::New(
         &"./Drive.img"
     ));
+
+    // Create a partition type
+    let Partition = Create_device!(MBR_type::Find_or_create_partition_with_signature(
+        &Drive,
+        0xDEADBEEF,
+        Partition_type_type::Xila
+    )
+    .unwrap());
+
+    // Print MBR information
+    let MBR = MBR_type::Read_from_device(&Drive).unwrap();
+
+    Information!("MBR information: {}", MBR);
+
     // Mount the file system
-    let File_system = match LittleFS::File_system_type::New(Drive.clone(), 256) {
+    let File_system = match LittleFS::File_system_type::New(Partition.clone(), 256) {
         Ok(File_system) => File_system,
         // If the file system is not found, format it
         Err(_) => {
-            Drive
+            Partition
                 .Set_position(&File_system::Position_type::Start(0))
                 .unwrap();
 
-            LittleFS::File_system_type::Format(Drive.clone(), 256).unwrap();
+            LittleFS::File_system_type::Format(Partition.clone(), 256).unwrap();
 
-            LittleFS::File_system_type::New(Drive, 256).unwrap()
+            LittleFS::File_system_type::New(Partition, 256).unwrap()
         }
     };
     // Initialize the virtual file system
