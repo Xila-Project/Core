@@ -1,6 +1,45 @@
+//! Partition entry structures for MBR partition tables.
+//!
+//! This module provides the [`Partition_entry_type`] structure which represents
+//! individual partition entries in Master Boot Record (MBR) partition tables.
+//! Each entry contains information about a partition's location, size, type, and bootability.
+
 use core::fmt;
 
-/// MBR partition table entry (16 bytes)
+/// MBR partition table entry structure (16 bytes).
+///
+/// This structure represents a single partition entry in an MBR partition table.
+/// Each MBR contains exactly 4 partition entries, defining up to 4 primary partitions.
+/// The structure follows the traditional PC BIOS partition table format.
+///
+/// # Memory Layout
+///
+/// The structure is packed and has a fixed 16-byte layout for MBR compatibility:
+/// - Bytes 0: Boot indicator
+/// - Bytes 1-3: CHS start address (legacy)
+/// - Byte 4: Partition type ID
+/// - Bytes 5-7: CHS end address (legacy)
+/// - Bytes 8-11: LBA start address (little-endian)
+/// - Bytes 12-15: Partition size in sectors (little-endian)
+///
+/// # Examples
+///
+/// ```rust
+/// # extern crate alloc;
+/// use File_system::*;
+///
+/// // Create a new bootable FAT32 partition
+/// let partition = Partition_entry_type::New_with_params(
+///     true,
+///     Partition_type_type::Fat32_lba,
+///     2048,
+///     204800
+/// );
+///
+/// assert!(partition.Is_bootable());
+/// assert_eq!(partition.Get_start_lba(), 2048);
+/// assert_eq!(partition.Get_size_sectors(), 204800);
+/// ```
 #[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
 pub struct Partition_entry_type {
@@ -27,7 +66,21 @@ pub struct Partition_entry_type {
 }
 
 impl Partition_entry_type {
-    /// Create a new empty partition entry
+    /// Create a new empty (invalid) partition entry.
+    ///
+    /// All fields are initialized to zero, making this an invalid partition entry
+    /// that will not be recognized by the MBR parser.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # extern crate alloc;
+    /// use File_system::*;
+    ///
+    /// let partition = Partition_entry_type::New();
+    /// assert!(!partition.Is_valid());
+    /// assert!(!partition.Is_bootable());
+    /// ```
     pub fn New() -> Self {
         Self {
             Bootable: 0,
@@ -43,7 +96,36 @@ impl Partition_entry_type {
         }
     }
 
-    /// Create a new partition entry with specified parameters
+    /// Create a new partition entry with specified parameters.
+    ///
+    /// This constructor creates a valid partition entry with the specified type,
+    /// location, and size. The CHS (Cylinder-Head-Sector) fields are not set
+    /// as modern systems use LBA addressing.
+    ///
+    /// # Arguments
+    ///
+    /// * `Bootable` - Whether this partition should be marked as bootable
+    /// * `Partition_type` - The type of partition (FAT32, Linux, etc.)
+    /// * `Start_lba` - Starting logical block address (sector number)
+    /// * `Size_sectors` - Size of the partition in 512-byte sectors
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # extern crate alloc;
+    /// use File_system::*;
+    ///
+    /// // Create a 100MB FAT32 partition starting at sector 2048
+    /// let partition = Partition_entry_type::New_with_params(
+    ///     true,
+    ///     Partition_type_type::Fat32_lba,
+    ///     2048,
+    ///     204800
+    /// );
+    ///
+    /// assert!(partition.Is_valid());
+    /// assert!(partition.Is_bootable());
+    /// ```
     pub fn New_with_params(
         Bootable: bool,
         Partition_type: crate::Partition_type_type,

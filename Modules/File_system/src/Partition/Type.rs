@@ -1,36 +1,130 @@
+//! Partition type definitions for MBR partition tables.
+//!
+//! This module provides the [`Partition_type_type`] enumeration which defines
+//! all standard partition types used in MBR partition tables. Each partition
+//! type corresponds to a specific file system or partition purpose.
+
 use core::fmt;
 
-/// MBR Partition type enumeration
+/// MBR partition type enumeration with comprehensive type definitions.
+///
+/// This enum represents the partition type field in MBR partition entries.
+/// Each variant corresponds to a specific file system type or partition purpose
+/// as defined by the standard PC partition type IDs.
+///
+/// # Standard Partition Types
+///
+/// ## FAT File Systems
+/// - [`Fat12`] - FAT12 file system (floppy disks, small partitions)
+/// - [`Fat16`] - FAT16 file system
+/// - [`Fat16_small`] - FAT16 for partitions < 32MB
+/// - [`Fat32`] - FAT32 file system
+/// - [`Fat32_lba`] - FAT32 with LBA addressing (recommended)
+///
+/// ## Extended Partitions
+/// - [`Extended`] - Extended partition (CHS addressing)
+/// - [`Extended_lba`] - Extended partition (LBA addressing)
+///
+/// ## Linux File Systems
+/// - [`Linux`] - Linux native partition (typically ext2/3/4)
+/// - [`Linux_swap`] - Linux swap partition
+/// - [`Linux_lvm`] - Linux LVM (Logical Volume Manager)
+///
+/// ## Other File Systems
+/// - [`Ntfs_exfat`] - NTFS or exFAT file system
+/// - [`Efi_system`] - EFI System Partition
+/// - [`Gpt_protective`] - GPT protective partition
+///
+/// # Examples
+///
+/// ```rust
+/// use File_system::*;
+///
+/// let partition_type = Partition_type_type::Fat32_lba;
+/// assert!(partition_type.Is_fat());
+/// assert!(!partition_type.Is_extended());
+///
+/// let linux_type = Partition_type_type::From_u8(0x83);
+/// assert_eq!(linux_type, Partition_type_type::Linux);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Partition_type_type {
+    /// Empty/unused partition slot
     Empty = 0x00,
+    /// FAT12 file system
     Fat12 = 0x01,
+    /// FAT16 file system (small partitions < 32MB)
     Fat16_small = 0x04,
+    /// Extended partition (CHS addressing)
     Extended = 0x05,
+    /// FAT16 file system
     Fat16 = 0x06,
+    /// NTFS or exFAT file system
     Ntfs_exfat = 0x07,
+    /// FAT32 file system (CHS addressing)
     Fat32 = 0x0B,
+    /// FAT32 file system (LBA addressing - recommended)
     Fat32_lba = 0x0C,
+    /// FAT16 file system (LBA addressing)
     Fat16_lba = 0x0E,
+    /// Extended partition (LBA addressing)
     Extended_lba = 0x0F,
+    /// Hidden FAT12 partition
     Hidden_fat12 = 0x11,
+    /// Hidden FAT16 partition (small)
     Hidden_fat16_small = 0x14,
+    /// Hidden FAT16 partition
     Hidden_fat16 = 0x16,
+    /// Hidden NTFS/exFAT partition
     Hidden_ntfs_exfat = 0x17,
+    /// Hidden FAT32 partition
     Hidden_fat32 = 0x1B,
+    /// Hidden FAT32 partition (LBA addressing)
     Hidden_fat32_lba = 0x1C,
+    /// Hidden FAT16 partition (LBA addressing)
     Hidden_fat16_lba = 0x1E,
+    /// Linux swap partition
     Linux_swap = 0x82,
+    /// Linux native partition (typically ext2/3/4)
     Linux = 0x83,
+    /// Linux LVM (Logical Volume Manager)
     Linux_lvm = 0x8E,
+    /// GPT protective partition (indicates GPT, not MBR)
     Gpt_protective = 0xEE,
+    /// EFI System Partition
     Efi_system = 0xEF,
+    /// Unknown or custom partition type
     Unknown(u8),
 }
 
 impl Partition_type_type {
-    /// Create a partition type from a raw u8 value
+    /// Create a partition type from a raw u8 value.
+    ///
+    /// This function maps standard partition type IDs to their corresponding
+    /// enum variants. Unknown types are wrapped in [`Partition_type_type::Unknown`].
+    ///
+    /// # Arguments
+    ///
+    /// * `Value` - The raw partition type ID from the MBR partition entry
+    ///
+    /// # Returns
+    ///
+    /// The corresponding partition type enum variant.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use File_system::*;
+    ///
+    /// assert_eq!(Partition_type_type::From_u8(0x0C), Partition_type_type::Fat32_lba);
+    /// assert_eq!(Partition_type_type::From_u8(0x83), Partition_type_type::Linux);
+    ///
+    /// // Unknown types are preserved
+    /// if let Partition_type_type::Unknown(id) = Partition_type_type::From_u8(0xFF) {
+    ///     assert_eq!(id, 0xFF);
+    /// }
+    /// ```
     pub fn From_u8(Value: u8) -> Self {
         match Value {
             0x00 => Partition_type_type::Empty,

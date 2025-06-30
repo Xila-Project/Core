@@ -1,17 +1,72 @@
+//! Partition device implementation for accessing individual partitions.
+//!
+//! This module provides [`Partition_device_type`], which allows treating individual
+//! partitions on a storage device as separate devices. This is essential for file
+//! systems that need to operate on specific partitions rather than entire disks.
+
 use core::fmt;
 
 use crate::{Device_trait, Device_type, Result_type, Size_type};
 
-/// A device that represents a partition within a larger device
+/// A device implementation that represents a partition within a larger storage device.
+///
+/// This type wraps a base device and provides access to only a specific region (partition)
+/// of that device. It maintains its own position cursor and ensures all operations stay
+/// within the partition boundaries. This allows file systems to operate on individual
+/// partitions without needing to know about the partition layout.
+///
+/// # Thread Safety
+///
+/// The partition device is thread-safe and uses atomic operations for position management.
+/// Multiple threads can safely access the same partition device simultaneously.
+///
+/// # Examples
+///
+/// ```rust
+/// # extern crate alloc;
+/// # use File_system::*;
+///
+/// // Create a memory device for testing
+/// let base_device = Create_device!(Memory_device_type::<512>::New(1024 * 1024));
+///
+/// // Create a partition device for sectors 100-199 (50KB partition)
+/// let partition = Partition_device_type::New_from_lba(base_device, 100, 100);
+/// let partition_device = Create_device!(partition);
+///
+/// // Now you can use partition_device like any other device
+/// let data = b"Hello, Partition!";
+/// partition_device.Write(data).unwrap();
+/// ```
 pub struct Partition_device_type {
+    /// Base device containing this partition
     Base_device: Device_type,
+    /// Byte offset from the beginning of the base device
     Offset: u64,
+    /// Size of this partition in bytes
     Size: u64,
+    /// Current position within this partition (atomic for thread safety)
     Position: core::sync::atomic::AtomicU64,
 }
 
 impl Partition_device_type {
-    /// Create a new partition device
+    /// Create a new partition device with explicit byte offset and size.
+    ///
+    /// # Arguments
+    ///
+    /// * `Base_device` - The underlying storage device
+    /// * `Offset` - Byte offset from the beginning of the base device
+    /// * `Size` - Size of the partition in bytes
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # extern crate alloc;
+    /// # use File_system::*;
+    ///
+    /// let base_device = Create_device!(Memory_device_type::<512>::New(1024 * 1024));
+    /// // Create a partition starting at 64KB with 128KB size
+    /// let partition = Partition_device_type::New(base_device, 64 * 1024, 128 * 1024);
+    /// ```
     pub fn New(Base_device: Device_type, Offset: u64, Size: u64) -> Self {
         Self {
             Base_device,
@@ -21,29 +76,109 @@ impl Partition_device_type {
         }
     }
 
-    /// Create a partition device from LBA and sector count
+    /// Create a partition device from LBA (Logical Block Address) parameters.
+    ///
+    /// This is a convenience method for creating partition devices using standard
+    /// disk partitioning terminology. It assumes 512-byte sectors.
+    ///
+    /// # Arguments
+    ///
+    /// * `Base_device` - The underlying storage device
+    /// * `Start_lba` - Starting logical block address (sector number)
+    /// * `Sector_count` - Number of 512-byte sectors in this partition
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # extern crate alloc;
+    /// # use File_system::*;
+    ///
+    /// let base_device = Create_device!(Memory_device_type::<512>::New(1024 * 1024));
+    /// // Create a partition starting at sector 2048 with 1024 sectors (512KB)
+    /// let partition = Partition_device_type::New_from_lba(base_device, 2048, 1024);
+    /// ```
     pub fn New_from_lba(Base_device: Device_type, Start_lba: u32, Sector_count: u32) -> Self {
         let Offset = Start_lba as u64 * 512;
         let Size = Sector_count as u64 * 512;
         Self::New(Base_device, Offset, Size)
     }
 
-    /// Get the byte offset of this partition within the base device
+    /// Get the byte offset of this partition within the base device.
+    ///
+    /// # Returns
+    ///
+    /// The absolute byte offset from the beginning of the base device.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # extern crate alloc;
+    /// # use File_system::*;
+    ///
+    /// let base_device = Create_device!(Memory_device_type::<512>::New(1024 * 1024));
+    /// let partition = Partition_device_type::New_from_lba(base_device, 100, 50);
+    /// assert_eq!(partition.Get_offset(), 100 * 512);
+    /// ```
     pub fn Get_offset(&self) -> u64 {
         self.Offset
     }
 
-    /// Get the size of this partition in bytes
+    /// Get the size of this partition in bytes.
+    ///
+    /// # Returns
+    ///
+    /// The total size of the partition in bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # extern crate alloc;
+    /// # use File_system::*;
+    ///
+    /// let base_device = Create_device!(Memory_device_type::<512>::New(1024 * 1024));
+    /// let partition = Partition_device_type::New_from_lba(base_device, 100, 50);
+    /// assert_eq!(partition.Get_partition_size(), 50 * 512);
+    /// ```
     pub fn Get_partition_size(&self) -> u64 {
         self.Size
     }
 
-    /// Get the starting LBA of this partition
+    /// Get the starting LBA (Logical Block Address) of this partition.
+    ///
+    /// # Returns
+    ///
+    /// The sector number where this partition starts (assuming 512-byte sectors).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # extern crate alloc;
+    /// # use File_system::*;
+    ///
+    /// let base_device = Create_device!(Memory_device_type::<512>::New(1024 * 1024));
+    /// let partition = Partition_device_type::New_from_lba(base_device, 100, 50);
+    /// assert_eq!(partition.Get_start_lba(), 100);
+    /// ```
     pub fn Get_start_lba(&self) -> u32 {
         (self.Offset / 512) as u32
     }
 
-    /// Get the size in sectors of this partition
+    /// Get the size in sectors of this partition.
+    ///
+    /// # Returns
+    ///
+    /// The number of 512-byte sectors this partition contains.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # extern crate alloc;
+    /// # use File_system::*;
+    ///
+    /// let base_device = Create_device!(Memory_device_type::<512>::New(1024 * 1024));
+    /// let partition = Partition_device_type::New_from_lba(base_device, 100, 50);
+    /// assert_eq!(partition.Get_sector_count(), 50);
+    /// ```
     pub fn Get_sector_count(&self) -> u32 {
         (self.Size / 512) as u32
     }
