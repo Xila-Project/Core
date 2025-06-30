@@ -46,6 +46,9 @@
 
 use alloc::vec::Vec;
 use core::fmt;
+
+use crate::Partition_device_type;
+
 mod Utilities;
 pub use Utilities::*;
 
@@ -329,6 +332,305 @@ impl MBR_type {
     /// Get partition count
     pub fn Get_partition_count(&self) -> usize {
         self.Partitions.iter().filter(|P| P.Is_valid()).count()
+    }
+
+    /// Create partition devices for all valid partitions in this MBR.
+    ///
+    /// This method iterates through all partition entries in this MBR and creates
+    /// [`Partition_device_type`] instances for each valid partition. This is useful
+    /// when you need to access all partitions on a disk programmatically.
+    ///
+    /// # Arguments
+    ///
+    /// * `Base_device` - The underlying storage device containing all partitions
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<Partition_device_type>)` - Vector of partition devices for all valid partitions
+    /// * `Err(Error_type)` - Error if any partition device creation fails
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// extern crate alloc;
+    /// use File_system::*;
+    ///
+    /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+    /// // Create an MBR with multiple partitions
+    /// let mut mbr = MBR_type::New_with_signature(0x12345678);
+    /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
+    /// mbr.Add_partition(Partition_type_type::Linux, 4096, 2048, false).unwrap();
+    /// mbr.Write_to_device(&device).unwrap();
+    ///
+    /// // Read it back and create all partition devices
+    /// let mbr = MBR_type::Read_from_device(&device).unwrap();
+    /// let partition_devices = mbr.Create_all_partition_devices(device).unwrap();
+    /// println!("Created {} partition devices", partition_devices.len());
+    ///
+    /// for (i, partition) in partition_devices.iter().enumerate() {
+    ///     println!("Partition {}: {} sectors", i, partition.Get_sector_count());
+    /// }
+    /// ```
+    pub fn Create_all_partition_devices(
+        &self,
+        Base_device: Device_type,
+    ) -> Result_type<Vec<Partition_device_type>> {
+        let mut Devices = Vec::new();
+
+        for Partition in &self.Partitions {
+            if Partition.Is_valid() {
+                let Device = Create_partition_device(Base_device.clone(), Partition)?;
+                Devices.push(Device);
+            }
+        }
+
+        Ok(Devices)
+    }
+
+    /// Find partitions of a specific type within this MBR.
+    ///
+    /// This method searches through all partitions in this MBR and returns references
+    /// to those that match the specified partition type. This is useful for locating
+    /// specific types of partitions (e.g., FAT32, Linux, etc.) without creating
+    /// partition devices.
+    ///
+    /// # Arguments
+    ///
+    /// * `Partition_type` - The specific partition type to find
+    ///
+    /// # Returns
+    ///
+    /// A vector of tuples containing the partition index and reference to the partition entry
+    /// for each matching partition.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// extern crate alloc;
+    /// use File_system::*;
+    ///
+    /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+    /// // Create an MBR with FAT32 partition
+    /// let mut mbr = MBR_type::New_with_signature(0x12345678);
+    /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
+    /// mbr.Write_to_device(&device).unwrap();
+    ///
+    /// // Read it back and find FAT32 partitions
+    /// let mbr = MBR_type::Read_from_device(&device).unwrap();
+    /// let fat32_partitions = mbr.Find_partitions_by_type(Partition_type_type::Fat32_lba);
+    /// println!("Found {} FAT32 partitions", fat32_partitions.len());
+    /// ```
+    pub fn Find_partitions_by_type(
+        &self,
+        Partition_type: crate::Partition_type_type,
+    ) -> Vec<(usize, &Partition_entry_type)> {
+        self.Partitions
+            .iter()
+            .enumerate()
+            .filter(|(_, Partition)| {
+                Partition.Is_valid() && Partition.Get_partition_type() == Partition_type
+            })
+            .collect()
+    }
+
+    /// Validate this MBR structure for consistency and correctness.
+    ///
+    /// This method performs comprehensive validation of this MBR structure, checking:
+    /// - MBR signature validity (0x55AA boot signature)
+    /// - Partition overlap detection
+    /// - Bootable partition count (at most one partition should be bootable)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - MBR is valid and consistent
+    /// * `Err(Error_type::Corrupted)` - MBR is invalid or corrupted
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// extern crate alloc;
+    /// use File_system::*;
+    ///
+    /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+    /// // First create and write a valid MBR
+    /// let mut mbr = MBR_type::New_with_signature(0x12345678);
+    /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
+    /// mbr.Write_to_device(&device).unwrap();
+    ///
+    /// // Read it back and validate
+    /// let mbr = MBR_type::Read_from_device(&device).unwrap();
+    /// match mbr.Validate() {
+    ///     Ok(()) => println!("MBR is valid"),
+    ///     Err(Error_type::Corrupted) => println!("MBR is corrupted"),
+    ///     Err(e) => println!("Validation error: {}", e),
+    /// }
+    /// ```
+    pub fn Validate(&self) -> Result_type<()> {
+        // Check MBR signature
+        if !self.Is_valid() {
+            return Err(Error_type::Corrupted);
+        }
+
+        // Check for overlapping partitions
+        if self.Has_overlapping_partitions() {
+            return Err(Error_type::Corrupted);
+        }
+
+        // Check that only one partition is bootable
+        let Bootable_count = self.Partitions.iter().filter(|P| P.Is_bootable()).count();
+
+        if Bootable_count > 1 {
+            return Err(Error_type::Corrupted);
+        }
+
+        Ok(())
+    }
+
+    /// Generate comprehensive statistics from this MBR.
+    ///
+    /// This method analyzes all partitions in this MBR and generates
+    /// detailed statistics about partition types, sizes, and other characteristics.
+    ///
+    /// # Returns
+    ///
+    /// A new `Partition_statistics_type` containing the computed statistics.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// extern crate alloc;
+    /// use File_system::*;
+    ///
+    /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+    /// // Create an MBR with some partitions
+    /// let mut mbr = MBR_type::New_with_signature(0x12345678);
+    /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
+    /// mbr.Add_partition(Partition_type_type::Linux, 4096, 2048, false).unwrap();
+    /// mbr.Write_to_device(&device).unwrap();
+    ///
+    /// // Read it back and analyze
+    /// let mbr = MBR_type::Read_from_device(&device).unwrap();
+    /// let stats = mbr.Generate_statistics();
+    /// if stats.Total_partitions > 0 {
+    ///     println!("Average partition size: {} sectors",
+    ///              stats.Total_used_sectors / stats.Total_partitions as u64);
+    /// }
+    /// ```
+    pub fn Generate_statistics(&self) -> Partition_statistics_type {
+        let Valid_partitions: Vec<_> = self.Get_valid_partitions();
+
+        let Total_partitions = Valid_partitions.len();
+        let Bootable_partitions = Valid_partitions.iter().filter(|P| P.Is_bootable()).count();
+
+        let Fat_partitions = Valid_partitions
+            .iter()
+            .filter(|P| P.Get_partition_type().Is_fat())
+            .count();
+
+        let Linux_partitions = Valid_partitions
+            .iter()
+            .filter(|P| P.Get_partition_type().Is_linux())
+            .count();
+
+        let Hidden_partitions = Valid_partitions
+            .iter()
+            .filter(|P| P.Get_partition_type().Is_hidden())
+            .count();
+
+        let Extended_partitions = Valid_partitions
+            .iter()
+            .filter(|P| P.Get_partition_type().Is_extended())
+            .count();
+
+        let Unknown_partitions = Valid_partitions
+            .iter()
+            .filter(|P| {
+                matches!(
+                    P.Get_partition_type(),
+                    crate::Partition_type_type::Unknown(_)
+                )
+            })
+            .count();
+
+        let Total_used_sectors = Valid_partitions
+            .iter()
+            .map(|P| P.Get_size_sectors() as u64)
+            .sum();
+
+        let Largest_partition_sectors = Valid_partitions
+            .iter()
+            .map(|P| P.Get_size_sectors())
+            .max()
+            .unwrap_or(0);
+
+        let Smallest_partition_sectors = Valid_partitions
+            .iter()
+            .map(|P| P.Get_size_sectors())
+            .min()
+            .unwrap_or(0);
+
+        Partition_statistics_type {
+            Total_partitions,
+            Bootable_partitions,
+            Fat_partitions,
+            Linux_partitions,
+            Hidden_partitions,
+            Extended_partitions,
+            Unknown_partitions,
+            Total_used_sectors,
+            Largest_partition_sectors,
+            Smallest_partition_sectors,
+        }
+    }
+
+    /// Create a basic MBR with a single partition covering most of the disk.
+    ///
+    /// This function creates a simple MBR structure with one partition that uses
+    /// most of the available disk space. It leaves 2048 sectors at the beginning
+    /// for proper alignment, which is standard practice for modern storage devices.
+    ///
+    /// # Arguments
+    ///
+    /// * `Disk_signature` - Unique 32-bit signature for the disk
+    /// * `Partition_type` - Type of partition to create (e.g., FAT32, Linux, etc.)
+    /// * `Total_sectors` - Total number of sectors available on the disk
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(MBR_type)` - Successfully created MBR with single partition
+    /// * `Err(Error_type::Invalid_parameter)` - Disk is too small for a partition
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use File_system::*;
+    ///
+    /// // Create MBR for a 4MB device (8192 sectors)
+    /// let mbr = MBR_type::Create_basic(0x12345678, Partition_type_type::Fat32_lba, 8192).unwrap();
+    ///
+    /// // The MBR will have one FAT32 partition starting at sector 2048
+    /// let partitions = mbr.Get_valid_partitions();
+    /// assert_eq!(partitions.len(), 1);
+    /// assert_eq!(partitions[0].Get_start_lba(), 2048);
+    /// ```
+    pub fn Create_basic(
+        Disk_signature: u32,
+        Partition_type: crate::Partition_type_type,
+        Total_sectors: u32,
+    ) -> Result_type<Self> {
+        let mut Mbr = Self::New_with_signature(Disk_signature);
+
+        // Leave some space at the beginning (typically 2048 sectors for alignment)
+        let Start_lba = 2048;
+        let Partition_sectors = Total_sectors.saturating_sub(Start_lba);
+
+        if Partition_sectors == 0 {
+            return Err(Error_type::Invalid_parameter);
+        }
+
+        Mbr.Add_partition(Partition_type, Start_lba, Partition_sectors, true)?;
+
+        Ok(Mbr)
     }
 
     /// Convert MBR back to bytes

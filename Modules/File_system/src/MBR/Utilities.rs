@@ -138,31 +138,14 @@ pub fn Scan_mbr_partitions(
 ///
 /// // Read it back and validate
 /// let mbr = MBR_type::Read_from_device(&device).unwrap();
-/// match Validate_mbr(&mbr) {
+/// match mbr.Validate() {
 ///     Ok(()) => println!("MBR is valid"),
 ///     Err(Error_type::Corrupted) => println!("MBR is corrupted"),
 ///     Err(e) => println!("Validation error: {}", e),
 /// }
 /// ```
 pub fn Validate_mbr(Mbr: &crate::MBR_type) -> Result_type<()> {
-    // Check MBR signature
-    if !Mbr.Is_valid() {
-        return Err(Error_type::Corrupted);
-    }
-
-    // Check for overlapping partitions
-    if Mbr.Has_overlapping_partitions() {
-        return Err(Error_type::Corrupted);
-    }
-
-    // Check that only one partition is bootable
-    let Bootable_count = Mbr.Partitions.iter().filter(|P| P.Is_bootable()).count();
-
-    if Bootable_count > 1 {
-        return Err(Error_type::Corrupted);
-    }
-
-    Ok(())
+    Mbr.Validate()
 }
 
 /// Create partition devices for all valid partitions in an MBR.
@@ -196,7 +179,7 @@ pub fn Validate_mbr(Mbr: &crate::MBR_type) -> Result_type<()> {
 ///
 /// // Read it back and create all partition devices
 /// let mbr = MBR_type::Read_from_device(&device).unwrap();
-/// let partition_devices = Create_all_partition_devices(device, &mbr).unwrap();
+/// let partition_devices = mbr.Create_all_partition_devices(device).unwrap();
 /// println!("Created {} partition devices", partition_devices.len());
 ///
 /// for (i, partition) in partition_devices.iter().enumerate() {
@@ -207,30 +190,48 @@ pub fn Create_all_partition_devices(
     Base_device: Device_type,
     Mbr: &super::MBR_type,
 ) -> Result_type<Vec<Partition_device_type>> {
-    let mut Devices = Vec::new();
-
-    for Partition in &Mbr.Partitions {
-        if Partition.Is_valid() {
-            let Device = Create_partition_device(Base_device.clone(), Partition)?;
-            Devices.push(Device);
-        }
-    }
-
-    Ok(Devices)
+    Mbr.Create_all_partition_devices(Base_device)
 }
 
-/// Find partitions of a specific type
+/// Find partitions of a specific type within an MBR.
+///
+/// This function searches through all partitions in an MBR and returns references
+/// to those that match the specified partition type. This is useful for locating
+/// specific types of partitions (e.g., FAT32, Linux, etc.) without creating
+/// partition devices.
+///
+/// # Arguments
+///
+/// * `Mbr` - The MBR structure to search through
+/// * `Partition_type` - The specific partition type to find
+///
+/// # Returns
+///
+/// A vector of tuples containing the partition index and reference to the partition entry
+/// for each matching partition.
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+/// use File_system::*;
+///
+/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// // Create an MBR with FAT32 partition
+/// let mut mbr = MBR_type::New_with_signature(0x12345678);
+/// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
+/// mbr.Write_to_device(&device).unwrap();
+///
+/// // Read it back and find FAT32 partitions
+/// let mbr = MBR_type::Read_from_device(&device).unwrap();
+/// let fat32_partitions = mbr.Find_partitions_by_type(Partition_type_type::Fat32_lba);
+/// println!("Found {} FAT32 partitions", fat32_partitions.len());
+/// ```
 pub fn Find_partitions_by_type(
     Mbr: &super::MBR_type,
     Partition_type: crate::Partition_type_type,
 ) -> Vec<(usize, &Partition_entry_type)> {
-    Mbr.Partitions
-        .iter()
-        .enumerate()
-        .filter(|(_, Partition)| {
-            Partition.Is_valid() && Partition.Get_partition_type() == Partition_type
-        })
-        .collect()
+    Mbr.Find_partitions_by_type(Partition_type)
 }
 
 /// Find partitions of a specific type within an MBR.
@@ -398,70 +399,7 @@ impl Partition_statistics_type {
     /// }
     /// ```
     pub fn From_mbr(Mbr: &super::MBR_type) -> Self {
-        let Valid_partitions: Vec<_> = Mbr.Get_valid_partitions();
-
-        let Total_partitions = Valid_partitions.len();
-        let Bootable_partitions = Valid_partitions.iter().filter(|P| P.Is_bootable()).count();
-
-        let Fat_partitions = Valid_partitions
-            .iter()
-            .filter(|P| P.Get_partition_type().Is_fat())
-            .count();
-
-        let Linux_partitions = Valid_partitions
-            .iter()
-            .filter(|P| P.Get_partition_type().Is_linux())
-            .count();
-
-        let Hidden_partitions = Valid_partitions
-            .iter()
-            .filter(|P| P.Get_partition_type().Is_hidden())
-            .count();
-
-        let Extended_partitions = Valid_partitions
-            .iter()
-            .filter(|P| P.Get_partition_type().Is_extended())
-            .count();
-
-        let Unknown_partitions = Valid_partitions
-            .iter()
-            .filter(|P| {
-                matches!(
-                    P.Get_partition_type(),
-                    crate::Partition_type_type::Unknown(_)
-                )
-            })
-            .count();
-
-        let Total_used_sectors = Valid_partitions
-            .iter()
-            .map(|P| P.Get_size_sectors() as u64)
-            .sum();
-
-        let Largest_partition_sectors = Valid_partitions
-            .iter()
-            .map(|P| P.Get_size_sectors())
-            .max()
-            .unwrap_or(0);
-
-        let Smallest_partition_sectors = Valid_partitions
-            .iter()
-            .map(|P| P.Get_size_sectors())
-            .min()
-            .unwrap_or(0);
-
-        Self {
-            Total_partitions,
-            Bootable_partitions,
-            Fat_partitions,
-            Linux_partitions,
-            Hidden_partitions,
-            Extended_partitions,
-            Unknown_partitions,
-            Total_used_sectors,
-            Largest_partition_sectors,
-            Smallest_partition_sectors,
-        }
+        Mbr.Generate_statistics()
     }
 }
 
@@ -559,7 +497,7 @@ pub fn Is_gpt_disk(Device: &Device_type) -> bool {
 /// use File_system::*;
 ///
 /// // Create MBR for a 4MB device (8192 sectors)
-/// let mbr = Create_basic_mbr(0x12345678, Partition_type_type::Fat32_lba, 8192).unwrap();
+/// let mbr = MBR_type::Create_basic(0x12345678, Partition_type_type::Fat32_lba, 8192).unwrap();
 ///
 /// // The MBR will have one FAT32 partition starting at sector 2048
 /// let partitions = mbr.Get_valid_partitions();
@@ -571,19 +509,7 @@ pub fn Create_basic_mbr(
     Partition_type: crate::Partition_type_type,
     Total_sectors: u32,
 ) -> Result_type<super::MBR_type> {
-    let mut Mbr = MBR_type::New_with_signature(Disk_signature);
-
-    // Leave some space at the beginning (typically 2048 sectors for alignment)
-    let Start_lba = 2048;
-    let Partition_sectors = Total_sectors.saturating_sub(Start_lba);
-
-    if Partition_sectors == 0 {
-        return Err(Error_type::Invalid_parameter);
-    }
-
-    Mbr.Add_partition(Partition_type, Start_lba, Partition_sectors, true)?;
-
-    Ok(Mbr)
+    MBR_type::Create_basic(Disk_signature, Partition_type, Total_sectors)
 }
 
 /// Clone an MBR from one device to another.
@@ -624,7 +550,7 @@ pub fn Create_basic_mbr(
 /// ```
 pub fn Clone_mbr(Source_device: &Device_type, Target_device: &Device_type) -> Result_type<()> {
     let Mbr = MBR_type::Read_from_device(Source_device)?;
-    Validate_mbr(&Mbr)?;
+    Mbr.Validate()?;
     Mbr.Write_to_device(Target_device)?;
     Ok(())
 }
@@ -706,7 +632,7 @@ pub fn Backup_mbr(Device: &Device_type) -> Result_type<[u8; 512]> {
 /// ```
 pub fn Restore_mbr(Device: &Device_type, Backup: &[u8; 512]) -> Result_type<()> {
     let Mbr = MBR_type::From_bytes(Backup)?;
-    Validate_mbr(&Mbr)?;
+    Mbr.Validate()?;
     Mbr.Write_to_device(Device)?;
     Ok(())
 }
@@ -750,7 +676,7 @@ pub fn Format_disk_and_get_first_partition(
             0x12345678
         });
 
-        let New_mbr = Create_basic_mbr(Signature, Partition_type, Total_sectors)?;
+        let New_mbr = MBR_type::Create_basic(Signature, Partition_type, Total_sectors)?;
 
         // Write the new MBR to device
         New_mbr.Write_to_device(Device)?;
