@@ -263,7 +263,7 @@ mod Tests {
             Size_type::New(64),
         );
 
-        let debug_str = alloc::format!("{:?}", entry);
+        let debug_str = alloc::format!("{entry:?}");
         assert!(debug_str.contains("Entry_type"));
         assert!(debug_str.contains("789"));
         assert!(debug_str.contains("debug_test"));
@@ -400,11 +400,11 @@ mod Tests {
         // Modify multiple times
         for i in 1..=5 {
             entry.Set_inode(Inode_type::New(i));
-            entry.Set_name(alloc::format!("name_{}", i));
+            entry.Set_name(alloc::format!("name_{i}"));
             entry.Set_size(Size_type::New(i * 100));
 
             assert_eq!(entry.Get_inode().As_u64(), i);
-            assert_eq!(entry.Get_name(), &alloc::format!("name_{}", i));
+            assert_eq!(entry.Get_name(), &alloc::format!("name_{i}"));
             assert_eq!(entry.Get_size().As_u64(), i * 100);
         }
     }

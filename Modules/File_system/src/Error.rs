@@ -420,7 +420,7 @@ mod Tests {
     fn Test_error_debug() {
         // Test debug formatting
         let error = Error_type::Permission_denied;
-        let debug_str = format!("{:?}", error);
+        let debug_str = format!("{error:?}");
         assert_eq!(debug_str, "Permission_denied");
     }
 
@@ -434,7 +434,7 @@ mod Tests {
         assert_eq!(error1, error2);
         assert_ne!(error1, error3);
 
-        let cloned = error1.clone();
+        let cloned = error1;
         assert_eq!(error1, cloned);
     }
 
@@ -455,11 +455,9 @@ mod Tests {
         let success: Result_type<i32> = Ok(42);
         let failure: Result_type<i32> = Err(Error_type::Permission_denied);
 
-        assert!(success.is_ok());
-        assert_eq!(success.unwrap(), 42);
+        assert_eq!(success, Ok(42));
 
-        assert!(failure.is_err());
-        assert_eq!(failure.unwrap_err(), Error_type::Permission_denied);
+        assert_eq!(failure, Err(Error_type::Permission_denied));
     }
 
     #[test]

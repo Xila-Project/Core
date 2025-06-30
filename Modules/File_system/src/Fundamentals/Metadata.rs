@@ -248,7 +248,7 @@ mod Tests {
     #[test]
     fn Test_metadata_debug() {
         let metadata = Create_test_metadata();
-        let debug_str = alloc::format!("{:?}", metadata);
+        let debug_str = alloc::format!("{metadata:?}");
 
         assert!(debug_str.contains("Metadata_type"));
         assert!(debug_str.contains("File"));

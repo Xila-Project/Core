@@ -54,6 +54,9 @@ pub use Utilities::*;
 
 use crate::{Device_type, Error_type, Partition_entry_type, Partition_type_type, Result_type};
 
+#[cfg(test)]
+use crate::Memory_device_type;
+
 /// Master Boot Record structure (512 bytes)
 #[derive(Debug, Clone)]
 pub struct MBR_type {
@@ -670,6 +673,133 @@ impl MBR_type {
 
         Buffer
     }
+
+    /// Find or create a partition with a specific disk signature.
+    ///
+    /// This function searches for an MBR with the specified disk signature on the device.
+    /// If found, it returns a partition device for the first valid partition. If not found,
+    /// or if no valid partitions exist, it formats the disk with a new MBR containing a
+    /// single partition that occupies the full disk space.
+    ///
+    /// # Arguments
+    ///
+    /// * `Device` - The storage device to search or format
+    /// * `Target_signature` - The disk signature to look for
+    /// * `Partition_type` - The type of partition to create if formatting is needed
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Partition_device_type)` - Partition device for the found or created partition
+    /// * `Err(Error_type)` - Error if operation failed
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// extern crate alloc;
+    /// use File_system::*;
+    ///
+    /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+    ///
+    /// // Look for partition with signature 0x12345678, create FAT32 partition if not found
+    /// let partition = MBR_type::Find_or_create_partition_with_signature(
+    ///     &device,
+    ///     0x12345678,
+    ///     Partition_type_type::Fat32_lba
+    /// ).unwrap();
+    ///
+    /// // The partition device is ready to use
+    /// assert!(partition.Is_valid());
+    /// ```
+    pub fn Find_or_create_partition_with_signature(
+        Device: &Device_type,
+        Target_signature: u32,
+        Partition_type: crate::Partition_type_type,
+    ) -> Result_type<Partition_device_type> {
+        // Try to read existing MBR from device
+        if let Ok(existing_mbr) = Self::Read_from_device(Device) {
+            // Check if the MBR has the target signature
+            if existing_mbr.Get_disk_signature() == Target_signature && existing_mbr.Is_valid() {
+                // Get valid partitions
+                let valid_partitions = existing_mbr.Get_valid_partitions();
+
+                // If we have at least one valid partition, return it
+                if !valid_partitions.is_empty() {
+                    return Create_partition_device(Device.clone(), valid_partitions[0]);
+                }
+            }
+        }
+
+        // Either no MBR found, wrong signature, or no valid partitions
+        // Format the disk with new MBR and create partition
+        Self::Format_disk_with_signature_and_partition(Device, Target_signature, Partition_type)
+    }
+
+    /// Format a disk with a specific signature and create a single partition.
+    ///
+    /// This function creates a new MBR with the specified disk signature and a single
+    /// partition that occupies most of the available disk space, leaving standard
+    /// alignment space at the beginning.
+    ///
+    /// # Arguments
+    ///
+    /// * `Device` - The storage device to format
+    /// * `Disk_signature` - The disk signature to set in the new MBR
+    /// * `Partition_type` - The type of partition to create
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Partition_device_type)` - Partition device for the created partition
+    /// * `Err(Error_type)` - Error if operation failed
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// extern crate alloc;
+    /// use File_system::*;
+    ///
+    /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+    ///
+    /// // Format disk and create a Linux partition with specific signature
+    /// let partition = MBR_type::Format_disk_with_signature_and_partition(
+    ///     &device,
+    ///     0xABCDEF00,
+    ///     Partition_type_type::Linux
+    /// ).unwrap();
+    ///
+    /// // Verify the partition was created correctly
+    /// assert!(partition.Is_valid());
+    /// assert_eq!(partition.Get_start_lba(), 2048); // Standard alignment
+    /// ```
+    pub fn Format_disk_with_signature_and_partition(
+        Device: &Device_type,
+        Disk_signature: u32,
+        Partition_type: crate::Partition_type_type,
+    ) -> Result_type<Partition_device_type> {
+        // Get device size in sectors
+        let device_size = Device.Get_size()?;
+        let block_size = Device.Get_block_size()?;
+        let total_sectors = (device_size.As_u64() / block_size as u64) as u32;
+
+        // Ensure device is large enough for a meaningful partition
+        if total_sectors < 2048 {
+            return Err(Error_type::Invalid_parameter);
+        }
+
+        // Create new MBR with the specified signature
+        let new_mbr = Self::Create_basic(Disk_signature, Partition_type, total_sectors)?;
+
+        // Write the new MBR to device
+        new_mbr.Write_to_device(Device)?;
+
+        // Get the first (and only) partition
+        let valid_partitions = new_mbr.Get_valid_partitions();
+        if valid_partitions.is_empty() {
+            return Err(Error_type::Internal_error);
+        }
+
+        // Create and return partition device
+        Create_partition_device(Device.clone(), valid_partitions[0])
+    }
 }
 
 impl Default for MBR_type {
@@ -725,7 +855,7 @@ impl fmt::Display for MBR_type {
 mod Tests {
     use super::*;
     use crate::Partition_entry_type;
-    use alloc::format;
+    use alloc::{format, vec};
 
     fn Create_sample_mbr_bytes() -> [u8; 512] {
         let mut Data = [0u8; 512];
@@ -1040,5 +1170,166 @@ mod Tests {
         assert_eq!(super::MBR_type::Size, 512);
         assert_eq!(super::MBR_type::Maximum_partitions_count, 4);
         assert_eq!(super::MBR_type::Signature, [0x55, 0xAA]);
+    }
+
+    #[test]
+    fn Test_find_or_create_partition_with_signature_existing() {
+        let Mbr_data = Create_sample_mbr_bytes();
+        // Create a larger device (4MB) and put the MBR at the beginning
+        let mut Data = vec![0u8; 4096 * 1024];
+        Data[0..512].copy_from_slice(&Mbr_data);
+
+        let Memory_device = Memory_device_type::<512>::From_vec(Data);
+        let Device = crate::Create_device!(Memory_device);
+
+        // The sample MBR has signature 0x12345678
+        let Result = MBR_type::Find_or_create_partition_with_signature(
+            &Device,
+            0x12345678,
+            Partition_type_type::Fat32_lba,
+        );
+        assert!(Result.is_ok());
+
+        let Partition_device = Result.unwrap();
+        assert!(Partition_device.Is_valid());
+        assert_eq!(Partition_device.Get_start_lba(), 2048); // From sample data
+    }
+
+    #[test]
+    fn Test_find_or_create_partition_with_signature_wrong_signature() {
+        let Mbr_data = Create_sample_mbr_bytes();
+        // Create a larger device (4MB) and put the MBR at the beginning
+        let mut Data = vec![0u8; 4096 * 1024];
+        Data[0..512].copy_from_slice(&Mbr_data);
+
+        let Memory_device = Memory_device_type::<512>::From_vec(Data);
+        let Device = crate::Create_device!(Memory_device);
+
+        // Request different signature than what's in the sample MBR
+        let Result = MBR_type::Find_or_create_partition_with_signature(
+            &Device,
+            0xABCDEF00, // Different from 0x12345678 in sample
+            Partition_type_type::Linux,
+        );
+
+        assert!(Result.is_ok());
+
+        let Partition_device = Result.unwrap();
+        assert!(Partition_device.Is_valid());
+
+        // Verify new MBR was created with correct signature
+        let New_mbr = MBR_type::Read_from_device(&Device).unwrap();
+        assert_eq!(New_mbr.Get_disk_signature(), 0xABCDEF00);
+
+        // Check partition type
+        let Valid_partitions = New_mbr.Get_valid_partitions();
+        assert_eq!(Valid_partitions.len(), 1);
+        assert_eq!(
+            Valid_partitions[0].Get_partition_type(),
+            Partition_type_type::Linux
+        );
+    }
+
+    #[test]
+    fn Test_find_or_create_partition_with_signature_no_mbr() {
+        // Create device with no MBR
+        let Data = vec![0u8; 4096 * 1024]; // 8MB device with no MBR
+        let Memory_device = Memory_device_type::<512>::From_vec(Data);
+        let Device = crate::Create_device!(Memory_device);
+
+        let Result = MBR_type::Find_or_create_partition_with_signature(
+            &Device,
+            0x11223344,
+            Partition_type_type::Fat32_lba,
+        );
+        assert!(Result.is_ok());
+
+        let Partition_device = Result.unwrap();
+        assert!(Partition_device.Is_valid());
+        assert_eq!(Partition_device.Get_start_lba(), 2048); // Standard alignment
+
+        // Verify MBR was created with correct signature
+        let Mbr = MBR_type::Read_from_device(&Device).unwrap();
+        assert_eq!(Mbr.Get_disk_signature(), 0x11223344);
+        assert!(Mbr.Is_valid());
+    }
+
+    #[test]
+    fn Test_find_or_create_partition_with_signature_empty_mbr() {
+        // Create device with valid MBR but no partitions
+        let mut Data = vec![0u8; 4096 * 1024];
+        let Empty_mbr = MBR_type::New_with_signature(0x55667788);
+        let Mbr_bytes = Empty_mbr.To_bytes();
+        Data[0..512].copy_from_slice(&Mbr_bytes);
+
+        let Memory_device = Memory_device_type::<512>::From_vec(Data);
+        let Device = crate::Create_device!(Memory_device);
+
+        let Result = MBR_type::Find_or_create_partition_with_signature(
+            &Device,
+            0x55667788, // Same signature as existing MBR
+            Partition_type_type::Ntfs_exfat,
+        );
+        assert!(Result.is_ok());
+
+        let Partition_device = Result.unwrap();
+        assert!(Partition_device.Is_valid());
+
+        // Verify partition was created with correct type
+        let Mbr = MBR_type::Read_from_device(&Device).unwrap();
+        assert_eq!(Mbr.Get_disk_signature(), 0x55667788);
+        let Valid_partitions = Mbr.Get_valid_partitions();
+        assert_eq!(Valid_partitions.len(), 1);
+        assert_eq!(
+            Valid_partitions[0].Get_partition_type(),
+            Partition_type_type::Ntfs_exfat
+        );
+    }
+
+    #[test]
+    fn Test_format_disk_with_signature_and_partition() {
+        let Data = vec![0u8; 2048 * 1024]; // 4MB device
+        let Memory_device = Memory_device_type::<512>::From_vec(Data);
+        let Device = crate::Create_device!(Memory_device);
+
+        let Result = MBR_type::Format_disk_with_signature_and_partition(
+            &Device,
+            0x99887766,
+            Partition_type_type::Linux_swap,
+        );
+        assert!(Result.is_ok());
+
+        let Partition_device = Result.unwrap();
+        assert!(Partition_device.Is_valid());
+        assert_eq!(Partition_device.Get_start_lba(), 2048);
+
+        // Verify MBR
+        let Mbr = MBR_type::Read_from_device(&Device).unwrap();
+        assert_eq!(Mbr.Get_disk_signature(), 0x99887766);
+        assert!(Mbr.Is_valid());
+
+        let Valid_partitions = Mbr.Get_valid_partitions();
+        assert_eq!(Valid_partitions.len(), 1);
+        assert_eq!(
+            Valid_partitions[0].Get_partition_type(),
+            Partition_type_type::Linux_swap
+        );
+        assert!(Valid_partitions[0].Is_bootable()); // Should be bootable by default
+    }
+
+    #[test]
+    fn Test_format_disk_with_signature_and_partition_device_too_small() {
+        // Create very small device (less than 2048 sectors)
+        let Data = vec![0u8; 1024]; // 2 sectors only
+        let Memory_device = Memory_device_type::<512>::From_vec(Data);
+        let Device = crate::Create_device!(Memory_device);
+
+        let Result = MBR_type::Format_disk_with_signature_and_partition(
+            &Device,
+            0x12345678,
+            Partition_type_type::Fat32_lba,
+        );
+        assert!(Result.is_err());
+        assert_eq!(Result.unwrap_err(), Error_type::Invalid_parameter);
     }
 }

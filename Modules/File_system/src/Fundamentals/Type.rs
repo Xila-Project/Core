@@ -109,7 +109,7 @@ mod Tests {
     #[test]
     fn Test_type_clone_copy() {
         let original = Type_type::File;
-        let cloned = original.clone();
+        let cloned = original;
         let copied = original;
 
         assert_eq!(original, cloned);
@@ -120,11 +120,11 @@ mod Tests {
     #[test]
     fn Test_type_debug() {
         let file_type = Type_type::File;
-        let debug_str = format!("{:?}", file_type);
+        let debug_str = format!("{file_type:?}");
         assert_eq!(debug_str, "File");
 
         let directory_type = Type_type::Directory;
-        let debug_str = format!("{:?}", directory_type);
+        let debug_str = format!("{directory_type:?}");
         assert_eq!(debug_str, "Directory");
     }
 
@@ -177,8 +177,7 @@ mod Tests {
             for j in i + 1..discriminants.len() {
                 assert_ne!(
                     discriminants[i], discriminants[j],
-                    "Discriminants {} and {} should be different",
-                    i, j
+                    "Discriminants {i} and {j} should be different"
                 );
             }
         }
@@ -229,12 +228,11 @@ mod Tests {
 
     #[test]
     fn Test_type_in_collections() {
-        use alloc::vec::Vec;
-
-        let mut types = Vec::new();
-        types.push(Type_type::File);
-        types.push(Type_type::Directory);
-        types.push(Type_type::Symbolic_link);
+        let types = [
+            Type_type::File,
+            Type_type::Directory,
+            Type_type::Symbolic_link,
+        ];
 
         assert_eq!(types.len(), 3);
         assert_eq!(types[0], Type_type::File);

@@ -162,8 +162,7 @@ mod Tests {
 
     #[test]
     fn Test_inode_ordering() {
-        use alloc::vec;
-        let mut inodes = vec![
+        let mut inodes = [
             Inode_type::New(100),
             Inode_type::New(50),
             Inode_type::New(200),
@@ -195,7 +194,7 @@ mod Tests {
     #[test]
     fn Test_inode_debug() {
         let inode = Inode_type::New(789);
-        let debug_str = format!("{:?}", inode);
+        let debug_str = format!("{inode:?}");
         assert!(debug_str.contains("Inode_type"));
         assert!(debug_str.contains("789"));
     }
@@ -203,7 +202,7 @@ mod Tests {
     #[test]
     fn Test_inode_clone_copy() {
         let original = Inode_type::New(999);
-        let cloned = original.clone();
+        let cloned = original;
         let copied = original;
 
         assert_eq!(original, cloned);

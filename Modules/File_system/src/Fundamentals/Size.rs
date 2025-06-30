@@ -303,21 +303,21 @@ mod Tests {
     #[test]
     fn Test_size_display() {
         let size = Size_type::New(12345);
-        let display_str = format!("{}", size);
+        let display_str = format!("{size}");
         assert_eq!(display_str, "12345");
     }
 
     #[test]
     fn Test_size_debug() {
         let size = Size_type::New(67890);
-        let debug_str = format!("{:?}", size);
+        let debug_str = format!("{size:?}");
         assert_eq!(debug_str, "Size_type(67890)");
     }
 
     #[test]
     fn Test_size_clone_copy() {
         let original = Size_type::New(999);
-        let cloned = original.clone();
+        let cloned = original;
         let copied = original;
 
         assert_eq!(original, cloned);
@@ -422,8 +422,7 @@ mod Tests {
 
     #[test]
     fn Test_size_ordering() {
-        use alloc::vec;
-        let mut sizes = vec![
+        let mut sizes = [
             Size_type::New(300),
             Size_type::New(100),
             Size_type::New(200),

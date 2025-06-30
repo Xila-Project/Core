@@ -153,7 +153,7 @@ mod Tests {
 
     #[test]
     fn Test_time_ordering() {
-        let mut times = vec![
+        let mut times = [
             Time_type::New(3000),
             Time_type::New(1000),
             Time_type::New(2000),
@@ -171,7 +171,7 @@ mod Tests {
     #[test]
     fn Test_time_clone_copy() {
         let original = Time_type::New(999);
-        let cloned = original.clone();
+        let cloned = original;
         let copied = original;
 
         assert_eq!(original, cloned);
@@ -185,7 +185,7 @@ mod Tests {
     #[test]
     fn Test_time_debug() {
         let time = Time_type::New(1640995200);
-        let debug_str = format!("{:?}", time);
+        let debug_str = format!("{time:?}");
         assert!(debug_str.contains("Time_type"));
         assert!(debug_str.contains("1640995200"));
     }
@@ -227,7 +227,7 @@ mod Tests {
     fn Test_time_display_formatting() {
         // Test display formatting
         let time = Time_type::New(0); // Unix epoch
-        let display_str = format!("{}", time);
+        let display_str = format!("{time}");
 
         // The exact format depends on Unix_to_human_time implementation
         // We just verify it produces some reasonable format
@@ -246,7 +246,7 @@ mod Tests {
         ];
 
         for time in times {
-            let display_str = format!("{}", time);
+            let display_str = format!("{time}");
             // Basic sanity checks
             assert!(display_str.len() >= 19); // YYYY-MM-DD HH:MM:SS is 19 chars
             assert!(display_str.contains("-"));

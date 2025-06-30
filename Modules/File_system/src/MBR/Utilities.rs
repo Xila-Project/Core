@@ -234,69 +234,6 @@ pub fn Find_partitions_by_type(
     Mbr.Find_partitions_by_type(Partition_type)
 }
 
-/// Find partitions of a specific type within an MBR.
-///
-/// This function searches through all partitions in an MBR and returns references
-/// to those that match the specified partition type. This is useful for locating
-/// specific types of partitions (e.g., FAT32, Linux, etc.) without creating
-/// partition devices.
-///
-/// # Arguments
-///
-/// * `Mbr` - The MBR structure to search through
-/// * `Partition_type` - The specific partition type to find
-///
-/// # Returns
-///
-/// A vector of tuples containing the partition index and reference to the partition entry
-/// for each matching partition.
-///
-/// # Examples
-///
-/// ```rust
-/// extern crate alloc;
-/// use File_system::*;
-///
-/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
-/// // Create an MBR with FAT32 partition
-/// let mut mbr = MBR_type::New_with_signature(0x12345678);
-/// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
-/// mbr.Write_to_device(&device).unwrap();
-///
-/// // Read it back and find FAT32 partitions
-/// let mbr = MBR_type::Read_from_device(&device).unwrap();
-/// let fat32_partitions = Find_partitions_by_type(&mbr, Partition_type_type::Fat32_lba);
-/// println!("Found {} FAT32 partitions", fat32_partitions.len());
-/// ```
-///
-/// # Arguments
-///
-/// * `Mbr` - The MBR structure to search through
-/// * `Partition_type` - The specific partition type to find
-///
-/// # Returns
-///
-/// A vector of tuples containing the partition index and reference to the partition entry
-/// for each matching partition.
-///
-/// # Examples
-///
-/// ```rust
-/// extern crate alloc;
-/// use File_system::*;
-///
-/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
-/// // Create an MBR with FAT32 partition
-/// let mut mbr = MBR_type::New_with_signature(0x12345678);
-/// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
-/// mbr.Write_to_device(&device).unwrap();
-///
-/// // Read it back and find FAT32 partitions
-/// let mbr = MBR_type::Read_from_device(&device).unwrap();
-/// let fat32_partitions = Find_partitions_by_type(&mbr, Partition_type_type::Fat32_lba);
-/// println!("Found {} FAT32 partitions", fat32_partitions.len());
-/// ```
-
 /// Check if a device contains a valid MBR.
 ///
 /// This function attempts to read an MBR from the device and validates its signature.
@@ -564,7 +501,7 @@ pub fn Format_disk_and_get_first_partition(
         }
 
         // Create new MBR with signature
-        let Signature = Disk_signature.unwrap_or_else(|| {
+        let Signature = Disk_signature.unwrap_or({
             // Generate a simple signature based on current time or use a default
             // In a real implementation, you might want to use a proper random number generator
             0x12345678
@@ -585,7 +522,7 @@ pub fn Format_disk_and_get_first_partition(
     }
 
     // Create partition device for the first partition
-    Create_partition_device(Device.clone(), &Valid_partitions[0])
+    Create_partition_device(Device.clone(), Valid_partitions[0])
 }
 
 #[cfg(test)]
@@ -1234,9 +1171,9 @@ mod Tests {
         assert_eq!(Valid_partitions.len(), 2);
 
         let First_partition_device =
-            Create_partition_device(Device.clone(), &Valid_partitions[0]).unwrap();
+            Create_partition_device(Device.clone(), Valid_partitions[0]).unwrap();
         let Second_partition_device =
-            Create_partition_device(Device.clone(), &Valid_partitions[1]).unwrap();
+            Create_partition_device(Device.clone(), Valid_partitions[1]).unwrap();
 
         // Write different data to each partition
         let First_data = b"Data for first partition - FAT32";

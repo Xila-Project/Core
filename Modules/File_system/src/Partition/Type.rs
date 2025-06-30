@@ -94,6 +94,8 @@ pub enum Partition_type_type {
     Gpt_protective = 0xEE,
     /// EFI System Partition
     Efi_system = 0xEF,
+    /// Xila
+    Xila = 0xDA,
     /// Unknown or custom partition type
     Unknown(u8),
 }
@@ -149,6 +151,7 @@ impl Partition_type_type {
             0x8E => Partition_type_type::Linux_lvm,
             0xEE => Partition_type_type::Gpt_protective,
             0xEF => Partition_type_type::Efi_system,
+            0xDA => Partition_type_type::Xila,
             _ => Partition_type_type::Unknown(Value),
         }
     }
@@ -178,6 +181,7 @@ impl Partition_type_type {
             Partition_type_type::Linux_lvm => 0x8E,
             Partition_type_type::Gpt_protective => 0xEE,
             Partition_type_type::Efi_system => 0xEF,
+            Partition_type_type::Xila => 0xDA,
             Partition_type_type::Unknown(Value) => *Value,
         }
     }
@@ -207,6 +211,7 @@ impl Partition_type_type {
             Partition_type_type::Linux_lvm => "Linux LVM",
             Partition_type_type::Gpt_protective => "GPT protective",
             Partition_type_type::Efi_system => "EFI System",
+            Partition_type_type::Xila => "Xila",
             Partition_type_type::Unknown(_) => "Unknown",
         }
     }
