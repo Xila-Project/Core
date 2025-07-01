@@ -238,10 +238,15 @@ pub fn Get_enumerate_item(Item: &str) -> String {
     Format_identifier("Xila_graphics_call_", Item)
 }
 
-pub fn Generate_code_enumeration(Signature: Vec<Signature>) -> String {
-    let Function_calls = Signature
+pub fn Generate_code_enumeration(Signatures: Vec<Signature>) -> String {
+    let mut Signatures = Signatures.clone();
+
+    Signatures.sort_by_key(|x| x.ident.to_string().to_lowercase());
+
+    let Function_calls = Signatures
         .iter()
-        .map(|x| Get_enumerate_item(&x.ident.to_string()))
+        .enumerate()
+        .map(|(i, x)| format!("{} = {}", Get_enumerate_item(&x.ident.to_string()), i))
         .collect::<Vec<_>>()
         .join(",\n");
 
