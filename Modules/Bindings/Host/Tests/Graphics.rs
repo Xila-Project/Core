@@ -5,9 +5,9 @@
 
 extern crate alloc;
 
-use Drivers::Native::{Time_driver_type, Window_screen};
+use Drivers::Native::Time_driver_type;
 use File_system::{Create_device, Create_file_system, Memory_device_type};
-use Graphics::{Get_minimal_buffer_size, Point_type, LVGL};
+use Graphics::LVGL;
 use Memory::Instantiate_global_allocator;
 use Task::Test;
 use Time::Duration_type;
@@ -18,6 +18,9 @@ Instantiate_global_allocator!(Drivers::Std::Memory::Memory_manager_type);
 #[ignore]
 #[Test]
 async fn Integration_test() {
+    // - Initialize the system
+    Log::Initialize(&Drivers::Std::Log::Logger_type).unwrap();
+
     let Binary_buffer = include_bytes!("./WASM_test/target/wasm32-wasip1/release/WASM_test.wasm");
 
     Users::Initialize();
@@ -69,23 +72,25 @@ async fn Integration_test() {
     Virtual_machine::Initialize(&[&Host_bindings::Graphics_bindings]);
 
     let Virtual_machine = Virtual_machine::Get_instance();
-
-    const Resolution: Point_type = Point_type::New(800, 480);
-
-    const Buffer_size: usize = Get_minimal_buffer_size(&Resolution);
-
-    let (Screen_device, Pointer_device, _) = Window_screen::New(Resolution).unwrap();
-
-    let _Task = Task_instance.Get_current_task_identifier().await;
-
+    const Resolution: Graphics::Point_type = Graphics::Point_type::New(800, 600);
+    let (Screen_device, Pointer_device, Keyboard_device) =
+        Drivers::Native::Window_screen::New(Resolution).unwrap();
+    // - - Initialize the graphics manager
     Graphics::Initialize(
         Screen_device,
         Pointer_device,
         Graphics::Input_type_type::Pointer,
-        Buffer_size,
+        Graphics::Get_minimal_buffer_size(&Resolution),
         true,
     )
     .await;
+
+    Graphics::Get_instance()
+        .Add_input_device(Keyboard_device, Graphics::Input_type_type::Keypad)
+        .await
+        .unwrap();
+
+    let Task = Task_instance.Get_current_task_identifier().await;
 
     let Graphics_manager = Graphics::Get_instance();
 
@@ -97,7 +102,7 @@ async fn Integration_test() {
         .Open(
             &"/Devices/Standard_in",
             File_system::Mode_type::Read_only.into(),
-            _Task,
+            Task,
         )
         .await
         .unwrap();
@@ -106,7 +111,7 @@ async fn Integration_test() {
         .Open(
             &"/Devices/Standard_out",
             File_system::Mode_type::Write_only.into(),
-            _Task,
+            Task,
         )
         .await
         .unwrap();
@@ -115,7 +120,7 @@ async fn Integration_test() {
         .Open(
             &"/Devices/Standard_out",
             File_system::Mode_type::Write_only.into(),
-            _Task,
+            Task,
         )
         .await
         .unwrap();
