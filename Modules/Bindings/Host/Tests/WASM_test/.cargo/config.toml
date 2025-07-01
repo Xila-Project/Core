@@ -2,9 +2,9 @@
 target = "wasm32-wasip1"
 rustflags = [
   "-C",
-  "link-arg=--initial-memory=65536",
+  "link-arg=--initial-memory=131072",
   "-C",
-  "link-arg=--max-memory=65536",
+  "link-arg=--max-memory=131072",
   "-C",
   "link-arg=-zstack-size=8192",
   "-C",
