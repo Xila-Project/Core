@@ -19,15 +19,9 @@ Task = { path = "Modules/Task", optional = true }
 Users = { path = "Modules/Users", optional = true }
 Drivers = { path = "Modules/Drivers", optional = true }
 Memory = { path = "Modules/Memory", optional = true }
-WASM = { path = "Modules/Executables/WASM", optional = true }
-File_manager = { path = "Modules/Executables/File_manager", optional = true }
-Command_line_shell = { path = "Modules/Executables/Shell/Command_line", optional = true }
 Executable = { path = "Modules/Executable", optional = true }
 File_system = { path = "Modules/File_system", optional = true }
 Host_bindings = { path = "Modules/Bindings/Host", optional = true }
-Graphical_shell = { path = "Modules/Executables/Shell/Graphical", optional = true }
-Terminal = { path = "Modules/Executables/Terminal", optional = true }
-Settings = { path = "Modules/Executables/Settings", optional = true }
 Authentication = { path = "Modules/Authentication", optional = true }
 Log = { path = "Modules/Log", version = "0.1.0", optional = true }
 
@@ -85,13 +79,13 @@ members = [
     "Modules/Bindings/Utilities",
     "Modules/Bindings/Host",
     "Modules/Bindings/WASM",
-    "Modules/Executables/File_manager",
-    "Modules/Executables/Shell/Command_line",
+    "Executables/File_manager",
+    "Executables/Shell/Command_line",
     "Modules/Executable",
-    "Modules/Executables/WASM",
-    "Modules/Executables/Shell/Graphical",
-    "Modules/Executables/Terminal",
-    "Modules/Executables/Settings",
+    "Executables/WASM",
+    "Executables/Shell/Graphical",
+    "Executables/Terminal",
+    "Executables/Settings",
     "Modules/Authentication",
     "Modules/Network",
     "Modules/Synchronization",
