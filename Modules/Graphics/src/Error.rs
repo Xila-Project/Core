@@ -7,7 +7,6 @@ pub type Result_type<T> = Result<T, Error_type>;
 pub enum Error_type {
     Invalid_reference,
     Already_initialized,
-    Failed_to_create_thread,
     Not_initialized,
     Out_of_memory,
     Already_in_use,
@@ -24,7 +23,6 @@ impl Display for Error_type {
         let String = match self {
             Error_type::Invalid_reference => "Invalid reference",
             Error_type::Already_initialized => "Already initialized",
-            Error_type::Failed_to_create_thread => "Failed to create thread",
             Error_type::Not_initialized => "Not initialized",
             Error_type::Out_of_memory => "Out of memory",
             Error_type::Already_in_use => "Already in use",
@@ -37,11 +35,5 @@ impl Display for Error_type {
         };
 
         write!(Formatter, "{String}")
-    }
-}
-
-impl From<Task::Error_type> for Error_type {
-    fn from(_: Task::Error_type) -> Self {
-        Error_type::Failed_to_create_thread
     }
 }

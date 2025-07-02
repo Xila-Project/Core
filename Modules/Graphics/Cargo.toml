@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 cstr_core = "0.2.6"
-Task = { path = "../Task" }
 File_system = { path = "../File_system" }
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
 #lvgl_rust_sys = { path = "../../../lvgl_rust_sys", default-features = false }
@@ -17,7 +16,7 @@ Synchronization = { version = "0.1.0", path = "../Synchronization" }
 
 
 [dev-dependencies]
-Drivers = { path = "../Drivers" }
+Drivers = { path = "../Drivers", features = ["std", "Memory", "Graphics"] }
 Users = { path = "../Users" }
 Task = { path = "../Task" }
 Futures = { path = "../Futures" }

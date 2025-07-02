@@ -7,7 +7,7 @@ use Synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 use Synchronization::mutex::{Mutex, MutexGuard};
 use Synchronization::{once_lock::OnceLock, rwlock::RwLock};
 
-use core::mem::forget;
+use core::{future::Future, mem::forget};
 
 use core::time::Duration;
 use File_system::Device_type;
@@ -42,23 +42,7 @@ pub async fn Initialize(
     )
     .expect("Failed to create manager instance");
 
-    let Instance = Manager_instance.get_or_init(|| Manager);
-
-    let Task_instance = Task::Get_instance();
-
-    Task_instance
-        .Spawn(
-            Task_instance.Get_current_task_identifier().await,
-            "Graphics",
-            None,
-            async move |_| {
-                let _ = Get_instance().Loop().await;
-            },
-        )
-        .await
-        .expect("Failed to spawn graphics task");
-
-    Instance
+    Manager_instance.get_or_init(|| Manager)
 }
 
 pub fn Get_instance() -> &'static Manager_type {
@@ -142,13 +126,17 @@ impl Manager_type {
         })
     }
 
-    async fn Loop(&self) -> Result_type<()> {
+    pub async fn Loop<F>(&self, Sleep: impl Fn(Duration) -> F + Send + 'static) -> Result_type<()>
+    where
+        F: Future<Output = ()> + Send + 'static,
+    {
         loop {
             let Time_until_next = unsafe {
                 let _Lock = self.Global_lock.lock().await;
                 LVGL::lv_timer_handler()
             };
-            Task::Manager_type::Sleep(Duration::from_millis(Time_until_next as u64)).await;
+
+            Sleep(Duration::from_millis(Time_until_next as u64)).await;
         }
     }
 
