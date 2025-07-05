@@ -36,15 +36,11 @@ pub fn Convert_fundamental_type(Type: &str) -> String {
 pub fn Convert_type(Type: String) -> String {
     let Type = Type.split_whitespace().collect::<Vec<_>>();
 
-    let mut Type = Type
+    let Type = Type
         .into_iter()
         .filter(|x| *x != "mut" && *x != "core" && *x != "ffi" && *x != "::" && !x.is_empty())
+        .rev()
         .collect::<Vec<_>>();
-
-    while Type.first() == Some(&"*") {
-        let String = Type.remove(0);
-        Type.push(String);
-    }
 
     let Type = Type
         .iter()

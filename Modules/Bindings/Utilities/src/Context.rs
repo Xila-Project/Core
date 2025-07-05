@@ -88,8 +88,6 @@ impl LVGL_context {
             "lv_obj_delete",
             "lv_obj_delete_delayed",
             "lv_obj_delete_async",
-            "lv_buttonmatrix_set_map",
-            "lv_buttonmatrix_get_map",
         ];
 
         if Unauthorized_functions.contains(&Signature.ident.to_string().as_str()) {

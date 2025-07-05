@@ -1,4 +1,3 @@
-#![no_std]
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
@@ -14,6 +13,14 @@ use Time::Duration_type;
 use Virtual_file_system::{Create_default_hierarchy, Mount_static_devices};
 
 Instantiate_global_allocator!(Drivers::Std::Memory::Memory_manager_type);
+
+#[Task::Run(Executor = Drivers::Std::Executor::Instantiate_static_executor!())]
+async fn Run_graphics() {
+    Graphics::Get_instance()
+        .Loop(Task::Manager_type::Sleep)
+        .await
+        .unwrap();
+}
 
 #[ignore]
 #[Test]
@@ -89,6 +96,8 @@ async fn Integration_test() {
         .Add_input_device(Keyboard_device, Graphics::Input_type_type::Keypad)
         .await
         .unwrap();
+
+    std::thread::spawn(Run_graphics);
 
     let Task = Task_instance.Get_current_task_identifier().await;
 
