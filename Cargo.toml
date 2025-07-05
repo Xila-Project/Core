@@ -10,6 +10,7 @@ rust-version = "1.82.0"
 # - WASM
 WASM_bindings = { path = "Modules/Bindings/WASM", optional = true }
 # - Host
+ABI = { path = "Modules/ABI", optional = true }
 LittleFS = { path = "Modules/LittleFS", optional = true }
 Virtual_machine = { path = "Modules/Virtual_machine", optional = true }
 Virtual_file_system = { path = "Modules/Virtual_file_system", optional = true }
@@ -23,7 +24,10 @@ Executable = { path = "Modules/Executable", optional = true }
 File_system = { path = "Modules/File_system", optional = true }
 Host_bindings = { path = "Modules/Bindings/Host", optional = true }
 Authentication = { path = "Modules/Authentication", optional = true }
-Log = { path = "Modules/Log", version = "0.1.0", optional = true }
+Log = { path = "Modules/Log", optional = true }
+Futures = { path = "Modules/Futures", optional = true }
+Shared = { path = "Modules/Shared", optional = true }
+Synchronization = { path = "Modules/Synchronization", optional = true }
 
 [build-dependencies]
 Target = { path = "Modules/Target", optional = true }
@@ -32,7 +36,9 @@ Target = { path = "Modules/Target", optional = true }
 default = ["Host"]
 
 Host = [
+    "dep:ABI",
     "dep:LittleFS",
+    "dep:Futures",
     "dep:Virtual_machine",
     "dep:Virtual_file_system",
     "dep:Graphics",
@@ -41,25 +47,17 @@ Host = [
     "dep:Users",
     "dep:Drivers",
     "dep:Memory",
-    "dep:WASM",
-    "dep:File_manager",
-    "dep:Command_line_shell",
     "dep:Target",
     "dep:Executable",
     "dep:File_system",
     "dep:Host_bindings",
-    "dep:Graphical_shell",
-    "dep:Terminal",
     "dep:Authentication",
-    "dep:Settings",
     "dep:Log",
+    "dep:Shared",
+    "dep:Synchronization",
 ]
 WASM = ["dep:WASM_bindings"]
 
-[[example]]
-name = "Native"
-path = "Examples/Native.rs"
-required-features = ["Host", "Drivers/All"]
 
 [workspace]
 members = [
@@ -92,6 +90,7 @@ members = [
     "Modules/Task/Task_macros",
     "Modules/Futures",
     "Modules/Log",
+    "Examples/Native",
 ]
 exclude = [
     "Modules/Virtual_machine/Tests/WASM_test",
