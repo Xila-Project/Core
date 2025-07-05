@@ -16,7 +16,7 @@ Synchronization = { version = "0.1.0", path = "../Synchronization" }
 
 
 [dev-dependencies]
-Drivers = { path = "../Drivers", features = ["std", "Memory", "Graphics"] }
+Drivers = { path = "../Drivers" }
 Users = { path = "../Users" }
 Task = { path = "../Task" }
 Futures = { path = "../Futures" }
