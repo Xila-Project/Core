@@ -4,37 +4,26 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-paste = "1.0.15"
 quote = "1.0.36"
 Log = { path = "../Log" }
 File_system = { path = "../File_system" }
 Virtual_file_system = { path = "../Virtual_file_system" }
 Task = { path = "../Task" }
 Users = { path = "../Users" }
-Graphics = { path = "../Graphics", optional = true }
-Time = { path = "../Time", optional = true }
+Graphics = { path = "../Graphics" }
+Time = { path = "../Time" }
 Shared = { path = "../Shared" }
-Peripherals = { path = "../Peripherals", optional = true }
-Network = { path = "../Network", optional = true }
-Memory = { path = "../Memory", optional = true }
-Synchronization = { path = "../Synchronization", optional = true }
+Peripherals = { path = "../Peripherals" }
+Network = { path = "../Network" }
+Memory = { path = "../Memory" }
+Synchronization = { path = "../Synchronization" }
 linked_list_allocator = { version = "0.10", default-features = false, features = [
     "const_mut_refs",
 ] }
-libc = { version = "0.2", optional = true }
+
 embassy-sync = { version = "0.7" }
 Futures = { version = "0.1.0", path = "../Futures" }
 embassy-executor = { version = "0.7.0" }
-
-[features]
-Network = ["dep:Network"]
-std = ["File_system/std"]
-Graphics = ["dep:Graphics"]
-Time = ["dep:Time"]
-Random = []
-Memory = ["dep:libc", "dep:Memory", "dep:Synchronization"]
-
-All = ["Graphics", "Time", "Network", "Memory", "std"]
 
 
 [dev-dependencies]
@@ -48,6 +37,7 @@ LittleFS = { path = "../LittleFS" }
 pixels = "0.14"
 winit = { version = "0.30", features = ["rwh_05"] }
 rand = "0.9.0"
+libc = { version = "0.2" }
 
 
 #[[te0.9.0.0]

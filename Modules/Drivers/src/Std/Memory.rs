@@ -228,13 +228,9 @@ unsafe fn Remap(Slice: &mut &'static mut [MaybeUninit<u8>], New_size: usize) {
 
     let Pointer = mremap(Slice.as_mut_ptr() as *mut c_void, Old_size, New_size, 0);
 
-    assert_eq!(Pointer, Slice.as_mut_ptr() as *mut c_void);
-
-    if Pointer == MAP_FAILED {
+    if (Pointer == MAP_FAILED) || (Pointer != Slice.as_mut_ptr() as *mut c_void) {
         panic!("Failed to reallocate memory");
     }
-
-    //panic!("Reallocated memory from {} to {} bytes", Old_size, New_size);
 
     *Slice = core::slice::from_raw_parts_mut(Slice.as_mut_ptr(), New_size);
 }

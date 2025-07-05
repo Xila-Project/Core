@@ -52,8 +52,8 @@ impl Executor_type {
     /// - a local variable in a function you know never returns (like `fn main() -> !`), upgrading its lifetime with `transmute`. (unsafe)
     ///
     /// This function never returns.
-    pub fn Run(&'static mut self, init: impl FnOnce(Spawner)) {
-        init(self.Inner.spawner());
+    pub fn Run(&'static self, init: impl FnOnce(Spawner, &'static Self)) {
+        init(self.Inner.spawner(), self);
 
         while !self.Stop.load(std::sync::atomic::Ordering::SeqCst) {
             unsafe { self.Inner.poll() };
@@ -89,3 +89,19 @@ impl Signaler_type {
         self.Condvar.notify_one();
     }
 }
+
+#[macro_export]
+macro_rules! Instantiate_static_executor {
+    () => {{
+        static mut __Executor: Option<$crate::Std::Executor::Executor_type> = None;
+
+        unsafe {
+            if __Executor.is_none() {
+                __Executor = Some($crate::Std::Executor::Executor_type::New());
+            }
+            __Executor.as_mut().expect("Executor is not initialized")
+        }
+    }};
+}
+
+pub use Instantiate_static_executor;
