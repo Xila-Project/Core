@@ -2,9 +2,34 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_snake_case)]
 
+use darling::{FromMeta, ast::NestedMeta};
 use proc_macro::TokenStream;
 use quote::{ToTokens, format_ident, quote};
-use syn::{ItemFn, parse_macro_input};
+use syn::{ItemFn, Meta, parse_macro_input, parse_str};
+
+fn Default_task_path() -> syn::Expr {
+    parse_str("Task").unwrap()
+}
+
+fn Default_executor() -> syn::Expr {
+    parse_str("Drivers::Std::Executor::Instantiate_static_executor!()").unwrap()
+}
+
+#[derive(Debug, FromMeta, Clone)]
+struct Task_arguments_type {
+    #[darling(default = "Default_task_path")]
+    pub Task_path: syn::Expr,
+
+    #[darling(default = "Default_executor")]
+    pub Executor: syn::Expr,
+}
+
+impl Task_arguments_type {
+    fn From_token_stream(Arguments: TokenStream) -> Result<Self, darling::Error> {
+        let Arguments = NestedMeta::parse_meta_list(Arguments.into()).unwrap();
+        Self::from_list(&Arguments.clone())
+    }
+}
 
 /// A procedural macro to annotate test functions.
 ///
@@ -41,20 +66,15 @@ use syn::{ItemFn, parse_macro_input};
 /// ```
 #[proc_macro_attribute]
 #[allow(non_snake_case)]
-pub fn Test(args: TokenStream, input: TokenStream) -> TokenStream {
-    // Parse the input as a function
-    let Input_function = parse_macro_input!(input as ItemFn);
-
-    // Determine the module path from arguments
-    let Task_path = if args.is_empty() {
-        // Default: assume we're are not in the Task crate
-        quote! { ::Task }
-    } else {
-        // Parse the path from the arguments
-        let Path_string = args.to_string().trim_matches('"').to_string();
-        let Path_identifier = format_ident!("{}", Path_string);
-        quote! { #Path_identifier }
+pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
+    let Arguments = match Task_arguments_type::From_token_stream(Arguments) {
+        Ok(o) => o,
+        Err(e) => return e.write_errors().into(),
     };
+    let Input_function = parse_macro_input!(Input as ItemFn);
+
+    let Executor = Arguments.Executor;
+    let Task_path = Arguments.Task_path;
 
     // Extract function details
     let Function_name = &Input_function.sig.ident;
@@ -115,36 +135,33 @@ pub fn Test(args: TokenStream, input: TokenStream) -> TokenStream {
         fn #Function_name() {
             #Input_function
 
-            static mut __Executor: Option<Drivers::Std::Executor::Executor_type> = None;
             static mut __Spawner : usize = 0;
 
             unsafe {
-                if __Executor.is_none() {
-                    __Executor = Some(Drivers::Std::Executor::Executor_type::New());
-                }
+                let __Executor = #Executor;
 
-                __Executor.as_mut().unwrap().Run(|Spawner| {
+                __Executor.Run(|Spawner, __Executor| {
                     let Manager = #Task_path::Initialize();
 
                     unsafe {
                         __Spawner = Manager.Register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
-                    ::Futures::block_on(async move {
+                    #Task_path::Futures::block_on(async move {
                         Manager.Spawn(
                             #Task_path::Manager_type::Root_task_identifier,
                             #Function_name_string,
                             Some(__Spawner),
                             async move |_task| {
                                 __inner().await;
-                                __Executor.as_mut().unwrap().Stop();
+                                __Executor.Stop();
                             }
                         ).await
                     }).expect("Failed to spawn task");
                 });
             }
             unsafe {
-                #Task_path::Initialize().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
+                #Task_path::Get_instance().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
             }
 
         }
@@ -183,21 +200,15 @@ pub fn Test(args: TokenStream, input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 #[allow(non_snake_case)]
-pub fn Run_with_executor(args: TokenStream, input: TokenStream) -> TokenStream {
-    // Parse the input as a function
-    let Input_function = parse_macro_input!(input as ItemFn);
+pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
+    let Arguments = match Task_arguments_type::From_token_stream(Arguments) {
+        Ok(o) => o,
+        Err(e) => return e.write_errors().into(),
+    };
+    let Input_function = parse_macro_input!(Input as ItemFn);
 
-    // Parse the executor expression from arguments
-    if args.is_empty() {
-        return syn::Error::new_spanned(
-            Input_function.sig.fn_token,
-            "Run_with_executor requires an executor expression as argument",
-        )
-        .to_compile_error()
-        .into();
-    }
-
-    let Executor_expression: proc_macro2::TokenStream = args.into();
+    let Task_path = Arguments.Task_path;
+    let Executor_expression = Arguments.Executor;
 
     // Extract function details
     let Function_name = &Input_function.sig.ident;
@@ -256,36 +267,33 @@ pub fn Run_with_executor(args: TokenStream, input: TokenStream) -> TokenStream {
         fn #Function_name() {
             #Input_function
 
-            static mut __Executor: Option<#Executor_expression> = None;
             static mut __Spawner : usize = 0;
 
             unsafe {
-                if __Executor.is_none() {
-                    __Executor = Some(#Executor_expression::New());
-                }
+                let __Executor : &'static mut _ = #Executor_expression;
 
-                __Executor.as_mut().unwrap().Run(|Spawner| {
-                    let Manager = ::Task::Initialize();
+                __Executor.Run(|Spawner, __Executor| {
+                    let Manager = #Task_path::Initialize();
 
                     unsafe {
                         __Spawner = Manager.Register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
-                    ::Task::Futures::block_on(async move {
+                    #Task_path::Futures::block_on(async move {
                         Manager.Spawn(
-                            ::Task::Manager_type::Root_task_identifier,
+                            #Task_path::Manager_type::Root_task_identifier,
                             #Function_name_string,
                             Some(__Spawner),
                             async move |_task| {
                                 __inner().await;
-                                __Executor.as_mut().unwrap().Stop();
+                                __Executor.Stop();
                             }
                         ).await
                     }).expect("Failed to spawn task");
                 });
             }
             unsafe {
-                ::Task::Initialize().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
+                #Task_path::Get_instance().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
             }
         }
     }
