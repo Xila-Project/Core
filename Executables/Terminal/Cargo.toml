@@ -17,7 +17,7 @@ Futures = { version = "0.1.0", path = "../../Modules/Futures" }
 Log = { path = "../../Modules/Log" }
 
 [dev-dependencies]
-Drivers = { path = "../../Modules/Drivers" , features = ["All"]}
+Drivers = { path = "../../Modules/Drivers" }
 Time = { path = "../../Modules/Time" }
 LittleFS = { path = "../../Modules/LittleFS" }
 Command_line_shell = { path = "../Shell/Command_line" }

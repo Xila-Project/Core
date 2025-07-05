@@ -18,7 +18,7 @@ Log = { version = "0.1.0", path = "../../Modules/Log" }
 Authentication = { path = "../../Modules/Authentication" }
 
 [dev-dependencies]
-Drivers = { path = "../../Modules/Drivers", features = ["All"]}
+Drivers = { path = "../../Modules/Drivers" }
 LittleFS = { path = "../../Modules/LittleFS" }
 Command_line_shell = { path = "../Shell/Command_line" }
 
