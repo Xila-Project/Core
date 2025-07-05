@@ -93,7 +93,7 @@ async fn main() {
     // Print MBR information
     let MBR = MBR_type::Read_from_device(&Drive).unwrap();
 
-    Information!("MBR information: {}", MBR);
+    Information!("MBR information: {MBR}");
 
     // Mount the file system
     let File_system = match LittleFS::File_system_type::New(Partition.clone(), 256) {
