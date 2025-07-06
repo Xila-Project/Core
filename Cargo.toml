@@ -33,7 +33,7 @@ Synchronization = { path = "Modules/Synchronization", optional = true }
 Target = { path = "Modules/Target", optional = true }
 
 [features]
-default = ["Host"]
+default = []
 
 Host = [
     "dep:ABI",
@@ -90,7 +90,7 @@ members = [
     "Modules/Task/Task_macros",
     "Modules/Futures",
     "Modules/Log",
-    "Examples/Native",
+    "Examples/Native", "Executables/Calculator",
 ]
 exclude = [
     "Modules/Virtual_machine/Tests/WASM_test",
