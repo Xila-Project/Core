@@ -13,6 +13,7 @@ quote = "1.0"
 Time = { path = "../Time" }
 Shared = { path = "../Shared" }
 Synchronization = { version = "0.1.0", path = "../Synchronization" }
+Log = { version = "0.1.0", path = "../Log" }
 
 
 [dev-dependencies]
