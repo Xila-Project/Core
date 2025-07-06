@@ -5,7 +5,7 @@
 use darling::{FromMeta, ast::NestedMeta};
 use proc_macro::TokenStream;
 use quote::{ToTokens, format_ident, quote};
-use syn::{ItemFn, Meta, parse_macro_input, parse_str};
+use syn::{ItemFn, parse_macro_input, parse_str};
 
 fn Default_task_path() -> syn::Expr {
     parse_str("Task").unwrap()
