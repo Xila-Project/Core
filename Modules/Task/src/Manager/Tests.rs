@@ -6,7 +6,7 @@ use alloc::{collections::BTreeMap, format, vec::Vec};
 use core::time::Duration;
 use Users::{Group_identifier_type, User_identifier_type};
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_get_task_name() {
     let Manager = Initialize();
 
@@ -26,7 +26,7 @@ async fn Test_get_task_name() {
         .await;
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_set_get_owner() {
     let Manager = Initialize();
 
@@ -52,7 +52,7 @@ async fn Test_set_get_owner() {
     );
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_get_current_task_identifier() {
     let Manager = Initialize();
 
@@ -71,7 +71,7 @@ async fn Test_get_current_task_identifier() {
         .await;
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_task_owner_inheritance() {
     let Manager = Initialize();
 
@@ -133,7 +133,7 @@ async fn Test_task_owner_inheritance() {
         .await;
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_environment_variables() {
     let Manager = Initialize();
 
@@ -163,7 +163,7 @@ async fn Test_environment_variables() {
         .is_err());
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_environment_variable_inheritance() {
     let Manager = Initialize();
 
@@ -196,7 +196,7 @@ async fn Test_environment_variable_inheritance() {
         .await;
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_join_handle() {
     let Manager = Initialize();
 
@@ -210,7 +210,7 @@ async fn Test_join_handle() {
     assert_eq!(Join_handle.0.Join().await, 42);
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_set_user() {
     let Manager = Initialize();
 
@@ -223,7 +223,7 @@ async fn Test_set_user() {
     assert_eq!(Manager.Get_user(Task).await.unwrap(), User);
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_set_group() {
     let Manager = Initialize();
 
@@ -236,7 +236,7 @@ async fn Test_set_group() {
     assert_eq!(Manager.Get_group(Task).await.unwrap(), Group);
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_signal() {
     let Manager = Initialize();
 
@@ -397,7 +397,7 @@ fn test_find_first_available_identifier_empty_range() {
     assert_eq!(result, None);
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_spawn() {
     let Manager = Initialize();
 
@@ -415,7 +415,7 @@ async fn Test_spawn() {
         .await;
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_get_parent() {
     let Manager = Initialize();
 
@@ -441,7 +441,7 @@ async fn Test_get_parent() {
     Child_handle.Join().await;
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_get_children() {
     let Manager = Initialize();
 
@@ -484,7 +484,7 @@ async fn Test_get_children() {
     assert_eq!(Final_children.len(), Initial_count);
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_get_children_with_nested_tasks() {
     let Manager = Initialize();
 
@@ -534,7 +534,7 @@ async fn Test_get_children_with_nested_tasks() {
     Parent_handle.Join().await;
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_get_parent_invalid_task() {
     let Manager = Initialize();
 
@@ -545,7 +545,7 @@ async fn Test_get_parent_invalid_task() {
     assert!(Result.is_err());
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_get_children_invalid_task() {
     let Manager = Initialize();
 
@@ -559,7 +559,7 @@ async fn Test_get_children_invalid_task() {
     assert_eq!(Result.unwrap().len(), 0);
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_root_task_parent() {
     let Manager = Initialize();
 
@@ -570,7 +570,7 @@ async fn Test_root_task_parent() {
     assert_eq!(Parent, Manager_type::Root_task_identifier);
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_multiple_generation_relationships() {
     let Manager = Initialize();
 
@@ -650,7 +650,7 @@ async fn Test_multiple_generation_relationships() {
     Level1_handle.Join().await;
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_register_spawner() {
     let Manager = Initialize();
 
@@ -677,7 +677,7 @@ async fn Test_register_spawner() {
     ));
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_unregister_spawner() {
     let Manager = Initialize();
 
@@ -699,7 +699,7 @@ async fn Test_unregister_spawner() {
     ));
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_unregister_nonexistent_spawner() {
     let Manager = Initialize();
 
@@ -714,7 +714,7 @@ async fn Test_unregister_nonexistent_spawner() {
     ));
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_register_multiple_spawners() {
     let Manager = Initialize();
 
@@ -737,7 +737,7 @@ async fn Test_register_multiple_spawners() {
     }
 }
 
-//#[Test(crate)]
+//#[Test(Task_path = crate)]
 async fn _Test_spawner_load_balancing() {
     let Manager = Initialize();
 
@@ -785,7 +785,7 @@ async fn _Test_spawner_load_balancing() {
     }
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_get_spawner_invalid_task() {
     let Manager = Initialize();
 
@@ -800,7 +800,7 @@ async fn Test_get_spawner_invalid_task() {
     ));
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_get_spawner_valid_task() {
     let Manager = Initialize();
 
@@ -811,7 +811,7 @@ async fn Test_get_spawner_valid_task() {
     assert!(Spawner_result.is_ok());
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_spawner_with_explicit_selection() {
     let Manager = Initialize();
 
@@ -833,7 +833,7 @@ async fn Test_spawner_with_explicit_selection() {
     assert_eq!(Used_spawner, Current_spawner_id);
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_spawner_with_invalid_selection() {
     let Manager = Initialize();
 
@@ -856,7 +856,7 @@ async fn Test_spawner_with_invalid_selection() {
     }
 }
 
-#[Test(crate)]
+#[Test(Task_path = crate)]
 async fn Test_spawner_reuse_after_unregister() {
     let Manager = Initialize();
 

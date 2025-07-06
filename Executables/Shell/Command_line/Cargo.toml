@@ -1,0 +1,24 @@
+[package]
+name = "Command_line_shell"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+File_system = { path = "../../../Modules/File_system" }
+Virtual_file_system = { path = "../../../Modules/Virtual_file_system" }
+Executable = { path = "../../../Modules/Executable" }
+Task = { path = "../../../Modules/Task" }
+Users = { path = "../../../Modules/Users" }
+Authentication = { path = "../../../Modules/Authentication" }
+Futures = { version = "0.1.0", path = "../../../Modules/Futures" }
+Log = { path = "../../../Modules/Log" }
+
+[dev-dependencies]
+Drivers = { path = "../../../Modules/Drivers" }
+Time = { path = "../../../Modules/Time" }
+LittleFS = { path = "../../../Modules/LittleFS" }
+
+
+[[test]]
+name = "Integration_test"
+path = "Tests/Integration_test.rs"

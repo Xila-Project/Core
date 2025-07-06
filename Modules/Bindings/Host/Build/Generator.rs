@@ -28,17 +28,18 @@ fn Generate_conversion_for_argument(
                     if Type_string == "lv_obj_t" {
                         Ok(quote! {
 
-                            let #Identifier = __Pointer_table.Get(
+                            let #Identifier = __Pointer_table.Get_native_pointer(
                                 __Task,
-                                #Identifier.try_into().unwrap()
-                            ).unwrap();
+                                #Identifier.try_into().map_err(|_| Error_type::Invalid_pointer)?
+                            )?;
 
                         })
                     } else {
                         Ok(quote! {
-                            let #Identifier : #Type = __Environment.Convert_to_native_pointer(
+                            let #Identifier : #Type = Convert_to_native_pointer(
+                                &__Environment,
                                 #Identifier
-                            ).unwrap();
+                            )?;
                         })
                     }
                 }
@@ -99,14 +100,14 @@ fn Generate_conversion_for_output(Return: &ReturnType) -> Result<Option<TokenStr
                     if Type_string == "lv_obj_t" {
                         quote! {
 
-                            let __Result_2 : *mut u16 = __Environment.Convert_to_native_pointer(__Result).unwrap();
+                            let __Result_2 : *mut u16 = Convert_to_native_pointer(&__Environment, __Result)?;
 
-                            let __Result : *mut u16 = __Environment.Convert_to_native_pointer(__Result).unwrap();
+                            let __Result : *mut u16 = Convert_to_native_pointer(&__Environment, __Result)?;
 
                             let __Current_result = __Pointer_table.Insert(
                                 __Task,
                                 __Current_result as *mut core::ffi::c_void
-                            ).unwrap();
+                            )?;
 
 
                             *__Result = __Current_result;
@@ -117,7 +118,7 @@ fn Generate_conversion_for_output(Return: &ReturnType) -> Result<Option<TokenStr
                                 __Current_result
                             );
 
-                            let __Result : *mut WASM_pointer_type = __Environment.Convert_to_native_pointer(__Result).unwrap();
+                            let __Result : *mut WASM_pointer_type = Convert_to_native_pointer(&__Environment, __Result)?;
                         }
                     } else {
                         quote! {
@@ -125,13 +126,13 @@ fn Generate_conversion_for_output(Return: &ReturnType) -> Result<Option<TokenStr
                                 __Current_result as *mut core::ffi::c_void
                             );
 
-                            let __Result : *mut WASM_pointer_type = __Environment.Convert_to_native_pointer(__Result).unwrap();
+                            let __Result : *mut WASM_pointer_type = Convert_to_native_pointer(&__Environment, __Result)?;
                         }
                     }
                 }
                 syn::Type::Path(Type) => {
                     quote! {
-                        let __Result : *mut #Type = __Environment.Convert_to_native_pointer(__Result).unwrap();
+                        let __Result : *mut #Type = Convert_to_native_pointer(&__Environment, __Result)?;
                     }
                 }
 
@@ -207,7 +208,7 @@ fn Generate_function_call(
         .collect::<Result<Vec<_>, _>>()?;
 
     // - Get the number of arguments
-    let Arguments_count = Literal::usize_unsuffixed(Call_arguments.len());
+    let Arguments_count = Literal::usize_unsuffixed(Right_inputs.len());
 
     // - Get the function identifier
     let Function_identifier = &Function.ident;
@@ -236,7 +237,7 @@ fn Generate_function_call(
         Function_calls_type::#Function_identifier => {
             // Check arguments count
             if __Arguments_count != #Arguments_count {
-                return;
+                return Err(Error_type::Invalid_arguments_count);
             }
             // Assign arguments
             #(
@@ -281,9 +282,9 @@ pub fn Generate_code(
             __Argument_6: WASM_usize_type,
             __Arguments_count: u8,
             __Result: WASM_pointer_type,
-        )
+        ) -> Result_type<()>
         {
-            let __Custom_data = __Environment.Get_or_initialize_custom_data().unwrap();
+            let __Custom_data = __Environment.Get_or_initialize_custom_data().map_err(|_| Error_type::Failed_to_get_environment)?;
             let __Task = __Custom_data.Get_task_identifier();
 
             match __Function {
@@ -292,6 +293,8 @@ pub fn Generate_code(
                 )*
 
             }
+
+            Ok(())
 
         }
     }

@@ -4,7 +4,7 @@
 
 extern crate alloc;
 
-#[cfg(any(test, feature = "std"))]
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 extern crate std;
 
 #[cfg(target_vendor = "espressif")]
@@ -15,7 +15,7 @@ pub mod Native;
 
 pub mod Core;
 
-#[cfg(feature = "std")]
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 pub mod Std;
 
 //pub fn Mount_devices(

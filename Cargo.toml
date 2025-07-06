@@ -10,6 +10,7 @@ rust-version = "1.82.0"
 # - WASM
 WASM_bindings = { path = "Modules/Bindings/WASM", optional = true }
 # - Host
+ABI = { path = "Modules/ABI", optional = true }
 LittleFS = { path = "Modules/LittleFS", optional = true }
 Virtual_machine = { path = "Modules/Virtual_machine", optional = true }
 Virtual_file_system = { path = "Modules/Virtual_file_system", optional = true }
@@ -19,26 +20,25 @@ Task = { path = "Modules/Task", optional = true }
 Users = { path = "Modules/Users", optional = true }
 Drivers = { path = "Modules/Drivers", optional = true }
 Memory = { path = "Modules/Memory", optional = true }
-WASM = { path = "Modules/Executables/WASM", optional = true }
-File_manager = { path = "Modules/Executables/File_manager", optional = true }
-Command_line_shell = { path = "Modules/Executables/Shell/Command_line", optional = true }
 Executable = { path = "Modules/Executable", optional = true }
 File_system = { path = "Modules/File_system", optional = true }
 Host_bindings = { path = "Modules/Bindings/Host", optional = true }
-Graphical_shell = { path = "Modules/Executables/Shell/Graphical", optional = true }
-Terminal = { path = "Modules/Executables/Terminal", optional = true }
-Settings = { path = "Modules/Executables/Settings", optional = true }
 Authentication = { path = "Modules/Authentication", optional = true }
-Log = { path = "Modules/Log", version = "0.1.0", optional = true }
+Log = { path = "Modules/Log", optional = true }
+Futures = { path = "Modules/Futures", optional = true }
+Shared = { path = "Modules/Shared", optional = true }
+Synchronization = { path = "Modules/Synchronization", optional = true }
 
 [build-dependencies]
 Target = { path = "Modules/Target", optional = true }
 
 [features]
-default = ["Host"]
+default = []
 
 Host = [
+    "dep:ABI",
     "dep:LittleFS",
+    "dep:Futures",
     "dep:Virtual_machine",
     "dep:Virtual_file_system",
     "dep:Graphics",
@@ -47,25 +47,17 @@ Host = [
     "dep:Users",
     "dep:Drivers",
     "dep:Memory",
-    "dep:WASM",
-    "dep:File_manager",
-    "dep:Command_line_shell",
     "dep:Target",
     "dep:Executable",
     "dep:File_system",
     "dep:Host_bindings",
-    "dep:Graphical_shell",
-    "dep:Terminal",
     "dep:Authentication",
-    "dep:Settings",
     "dep:Log",
+    "dep:Shared",
+    "dep:Synchronization",
 ]
 WASM = ["dep:WASM_bindings"]
 
-[[example]]
-name = "Native"
-path = "Examples/Native.rs"
-required-features = ["Host", "Drivers/All"]
 
 [workspace]
 members = [
@@ -85,19 +77,20 @@ members = [
     "Modules/Bindings/Utilities",
     "Modules/Bindings/Host",
     "Modules/Bindings/WASM",
-    "Modules/Executables/File_manager",
-    "Modules/Executables/Shell/Command_line",
+    "Executables/File_manager",
+    "Executables/Shell/Command_line",
     "Modules/Executable",
-    "Modules/Executables/WASM",
-    "Modules/Executables/Shell/Graphical",
-    "Modules/Executables/Terminal",
-    "Modules/Executables/Settings",
+    "Executables/WASM",
+    "Executables/Shell/Graphical",
+    "Executables/Terminal",
+    "Executables/Settings",
     "Modules/Authentication",
     "Modules/Network",
     "Modules/Synchronization",
     "Modules/Task/Task_macros",
     "Modules/Futures",
     "Modules/Log",
+    "Examples/Native", "Executables/Calculator",
 ]
 exclude = [
     "Modules/Virtual_machine/Tests/WASM_test",

@@ -19,16 +19,17 @@ fn main() {
     let Parsed_input = syn::parse_file(Input).expect("Error parsing input file");
 
     let mut Context = Bindings_utilities::Context::LVGL_context::default();
+    Context.Set_function_filtering(Some(
+        Bindings_utilities::Context::LVGL_context::Filter_function,
+    ));
     Context.visit_file(&Parsed_input);
+    Context.Set_function_filtering(None);
     Context.visit_file(&syn::parse2(Bindings_utilities::Additional::Get()).unwrap());
 
     let Out_directory = env::var("OUT_DIR").unwrap();
     let Out_directory = Path::new(Out_directory.as_str());
 
     Generator::Generate(Out_directory, &Context).expect("Error generating WASM bindings");
-
-    let Out_directory = env::var("OUT_DIR").unwrap();
-    let Out_directory = Path::new(&Out_directory);
 
     cc::Build::new()
         .file(Out_directory.join("Xila_graphics.c"))

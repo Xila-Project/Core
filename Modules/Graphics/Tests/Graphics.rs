@@ -75,7 +75,5 @@ async fn main() {
         );
     }
 
-    loop {
-        Task::Manager_type::Yield().await;
-    }
+    Graphics.Loop(Task::Manager_type::Sleep).await.unwrap();
 }

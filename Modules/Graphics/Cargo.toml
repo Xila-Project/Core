@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 cstr_core = "0.2.6"
-Task = { path = "../Task" }
 File_system = { path = "../File_system" }
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
 #lvgl_rust_sys = { path = "../../../lvgl_rust_sys", default-features = false }
@@ -14,6 +13,7 @@ quote = "1.0"
 Time = { path = "../Time" }
 Shared = { path = "../Shared" }
 Synchronization = { version = "0.1.0", path = "../Synchronization" }
+Log = { version = "0.1.0", path = "../Log" }
 
 
 [dev-dependencies]

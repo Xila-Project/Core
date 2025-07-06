@@ -7,7 +7,6 @@ use Graphics::{
     Palette::{self, Hue_type},
     Window_type, LVGL,
 };
-use Task;
 
 use crate::Error::Result_type;
 use crate::Tabs::{General_tab_type, Password_tab_type, Tab_type};

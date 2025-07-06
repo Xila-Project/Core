@@ -36,15 +36,11 @@ pub fn Convert_fundamental_type(Type: &str) -> String {
 pub fn Convert_type(Type: String) -> String {
     let Type = Type.split_whitespace().collect::<Vec<_>>();
 
-    let mut Type = Type
+    let Type = Type
         .into_iter()
         .filter(|x| *x != "mut" && *x != "core" && *x != "ffi" && *x != "::" && !x.is_empty())
+        .rev()
         .collect::<Vec<_>>();
-
-    while Type.first() == Some(&"*") {
-        let String = Type.remove(0);
-        Type.push(String);
-    }
 
     let Type = Type
         .iter()
@@ -52,7 +48,9 @@ pub fn Convert_type(Type: String) -> String {
         .collect::<Vec<_>>()
         .join(" ");
 
-    let Type = Type.replace("Xila_graphics_object_t *", "Xila_graphics_object_t");
+    let Type = Type
+        .replace("Xila_graphics_object_t *", "Xila_graphics_object_t")
+        .replace("Xila_graphics_object_t const *", "Xila_graphics_object_t");
 
     Type.replace("const Xila_graphics_object_t", "Xila_graphics_object_t")
 }
@@ -238,10 +236,15 @@ pub fn Get_enumerate_item(Item: &str) -> String {
     Format_identifier("Xila_graphics_call_", Item)
 }
 
-pub fn Generate_code_enumeration(Signature: Vec<Signature>) -> String {
-    let Function_calls = Signature
+pub fn Generate_code_enumeration(Signatures: Vec<Signature>) -> String {
+    let mut Signatures = Signatures.clone();
+
+    Signatures.sort_by_key(|x| x.ident.to_string().to_lowercase());
+
+    let Function_calls = Signatures
         .iter()
-        .map(|x| Get_enumerate_item(&x.ident.to_string()))
+        .enumerate()
+        .map(|(i, x)| format!("{} = {}", Get_enumerate_item(&x.ident.to_string()), i))
         .collect::<Vec<_>>()
         .join(",\n");
 

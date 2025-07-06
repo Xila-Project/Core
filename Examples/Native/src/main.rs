@@ -5,25 +5,42 @@
 
 extern crate alloc;
 
+use Xila::Authentication;
+use Xila::Drivers;
+use Xila::Drivers::Std::Executor::Instantiate_static_executor;
+use Xila::Executable;
+use Xila::Executable::Mount_static_executables;
+use Xila::Executable::Standard_type;
+use Xila::File_system;
+use Xila::File_system::MBR_type;
+use Xila::File_system::Partition_type_type;
+use Xila::File_system::{Create_device, Create_file_system};
+use Xila::Graphics;
+use Xila::Host_bindings;
+use Xila::LittleFS;
+use Xila::Log;
+use Xila::Log::Information;
+use Xila::Memory::Instantiate_global_allocator;
+use Xila::Task;
+use Xila::Time;
+use Xila::Users;
+use Xila::Virtual_file_system;
+use Xila::Virtual_file_system::Mount_static_devices;
+use Xila::Virtual_machine;
+
 use alloc::string::String;
-use Executable::Mount_static_executables;
-use Executable::Standard_type;
-use File_system::MBR_type;
-use File_system::Partition_type_type;
-use File_system::{Create_device, Create_file_system};
-use Log::Information;
-use Memory::Instantiate_global_allocator;
-use Virtual_file_system::Mount_static_devices;
 
 Instantiate_global_allocator!(Drivers::Std::Memory::Memory_manager_type);
 
-#[Task::Run_with_executor(Drivers::Std::Executor::Executor_type)]
+#[Task::Run(Task_path = Task, Executor = Instantiate_static_executor!())]
 async fn main() {
     // - Initialize the system
     Log::Initialize(&Drivers::Std::Log::Logger_type).unwrap();
 
     // Initialize the task manager
-    Task::Initialize();
+    let Task_manager = Task::Initialize();
+
+    let Task = Task_manager.Get_current_task_identifier().await;
 
     // Initialize the users manager
     Users::Initialize();
@@ -36,7 +53,7 @@ async fn main() {
     let (Screen_device, Pointer_device, Keyboard_device) =
         Drivers::Native::Window_screen::New(Resolution).unwrap();
     // - - Initialize the graphics manager
-    Graphics::Initialize(
+    let Graphics_manager = Graphics::Initialize(
         Screen_device,
         Pointer_device,
         Graphics::Input_type_type::Pointer,
@@ -45,8 +62,15 @@ async fn main() {
     )
     .await;
 
-    Graphics::Get_instance()
+    Graphics_manager
         .Add_input_device(Keyboard_device, Graphics::Input_type_type::Keypad)
+        .await
+        .unwrap();
+
+    Task_manager
+        .Spawn(Task, "Graphics", None, |_| {
+            Graphics_manager.Loop(Task::Manager_type::Sleep)
+        })
         .await
         .unwrap();
 
@@ -57,17 +81,19 @@ async fn main() {
     ));
 
     // Create a partition type
-    let Partition = Create_device!(MBR_type::Find_or_create_partition_with_signature(
-        &Drive,
-        0xDEADBEEF,
-        Partition_type_type::Xila
-    )
-    .unwrap());
+    let Partition = Create_device!(
+        MBR_type::Find_or_create_partition_with_signature(
+            &Drive,
+            0xDEADBEEF,
+            Partition_type_type::Xila
+        )
+        .unwrap()
+    );
 
     // Print MBR information
     let MBR = MBR_type::Read_from_device(&Drive).unwrap();
 
-    Information!("MBR information: {}", MBR);
+    Information!("MBR information: {MBR}");
 
     // Mount the file system
     let File_system = match LittleFS::File_system_type::New(Partition.clone(), 256) {
@@ -87,7 +113,6 @@ async fn main() {
     Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
 
     // - - Mount the devices
-    let Task = Task::Get_instance().Get_current_task_identifier().await;
 
     // - - Create the default system hierarchy
     let _ =
@@ -198,12 +223,12 @@ async fn main() {
     .await;
 
     // - - Set the environment variables
-    Task::Get_instance()
+    Task_manager
         .Set_environment_variable(Task, "Paths", "/")
         .await
         .unwrap();
 
-    Task::Get_instance()
+    Task_manager
         .Set_environment_variable(Task, "Host", "xila")
         .await
         .unwrap();

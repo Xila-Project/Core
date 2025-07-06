@@ -11,9 +11,14 @@ pub struct LVGL_context {
     Types: Vec<ItemType>,
     Structures: Vec<ItemStruct>,
     Unions: Vec<ItemUnion>,
+    Function_filtering: Option<fn(&Signature) -> bool>,
 }
 
 impl LVGL_context {
+    pub fn Set_function_filtering(&mut self, Function_filtering: Option<fn(&Signature) -> bool>) {
+        self.Function_filtering = Function_filtering;
+    }
+
     pub fn Get_signatures(&self) -> Vec<Signature> {
         self.Signatures.clone()
     }
@@ -82,12 +87,13 @@ impl LVGL_context {
         }
     }
 
-    fn Filter_function(Signature: &Signature) -> bool {
+    pub fn Filter_function(Signature: &Signature) -> bool {
         let Unauthorized_functions = [
             "lv_obj_get_display",
             "lv_obj_delete",
             "lv_obj_delete_delayed",
             "lv_obj_delete_async",
+            "lv_buttonmatrix_set_map",
         ];
 
         if Unauthorized_functions.contains(&Signature.ident.to_string().as_str()) {
@@ -145,9 +151,13 @@ impl LVGL_context {
 
 impl Visit<'_> for LVGL_context {
     fn visit_foreign_item_fn(&mut self, Foreign_item_function: &ForeignItemFn) {
-        if Self::Filter_function(&Foreign_item_function.sig) {
-            self.Signatures.push(Foreign_item_function.sig.clone());
+        if let Some(Filter_function) = self.Function_filtering {
+            if !Filter_function(&Foreign_item_function.sig) {
+                return;
+            }
         }
+
+        self.Signatures.push(Foreign_item_function.sig.clone());
     }
 
     fn visit_item_type(&mut self, i: &ItemType) {
@@ -168,9 +178,13 @@ impl Visit<'_> for LVGL_context {
     }
 
     fn visit_item_fn(&mut self, i: &'_ syn::ItemFn) {
-        if Self::Filter_function(&i.sig) {
-            self.Signatures.push(i.sig.clone());
-            self.Definitions.push(i.clone());
+        if let Some(Filter_function) = self.Function_filtering {
+            if !Filter_function(&i.sig) {
+                return;
+            }
         }
+
+        self.Signatures.push(i.sig.clone());
+        self.Definitions.push(i.clone());
     }
 }
