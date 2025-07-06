@@ -1,4 +1,5 @@
-
+#include <stdbool.h>
+#include <stdint.h>
 
 typedef struct {
   int32_t x;
@@ -681,110 +682,133 @@ typedef enum {
   LV_EVENT_ALL = 0,
 
   /** Input device events*/
-  LV_EVENT_PRESSED,  /**< The object has been pressed*/
-  LV_EVENT_PRESSING, /**< The object is being pressed (called continuously while
-                        pressing)*/
-  LV_EVENT_PRESS_LOST,    /**< The object is still being pressed but slid
-                             cursor/finger off of the object */
-  LV_EVENT_SHORT_CLICKED, /**< The object was pressed for a short period of
-                             time, then released it. Not called if scrolled.*/
-  LV_EVENT_LONG_PRESSED,  /**< Object has been pressed for at least
-                             `long_press_time`.  Not called if scrolled.*/
-  LV_EVENT_LONG_PRESSED_REPEAT, /**< Called after `long_press_time` in every
-                                   `long_press_repeat_time` ms.  Not called if
-                                   scrolled.*/
-  LV_EVENT_CLICKED,  /**< Called on release if not scrolled (regardless to long
+  LV_EVENT_PRESSED,    /**< Widget has been pressed */
+  LV_EVENT_PRESSING,   /**< Widget is being pressed (sent continuously while
+                          pressing)*/
+  LV_EVENT_PRESS_LOST, /**< Widget is still being pressed but slid cursor/finger
+                          off Widget */
+  LV_EVENT_SHORT_CLICKED,  /**< Widget was pressed for a short period of time,
+                              then released. Not sent if scrolled. */
+  LV_EVENT_SINGLE_CLICKED, /**< Sent for first short click within a small
+                              distance and short time */
+  LV_EVENT_DOUBLE_CLICKED, /**< Sent for second short click within small
+                              distance and short time */
+  LV_EVENT_TRIPLE_CLICKED, /**< Sent for third short click within small distance
+                              and short time */
+  LV_EVENT_LONG_PRESSED,   /**< Object has been pressed for at least
+                              `long_press_time`.  Not sent if scrolled. */
+  LV_EVENT_LONG_PRESSED_REPEAT, /**< Sent after `long_press_time` in every
+                                   `long_press_repeat_time` ms.  Not sent if
+                                   scrolled. */
+  LV_EVENT_CLICKED,  /**< Sent on release if not scrolled (regardless to long
                         press)*/
-  LV_EVENT_RELEASED, /**< Called in every cases when the object has been
-                        released*/
+  LV_EVENT_RELEASED, /**< Sent in every cases when Widget has been released */
   LV_EVENT_SCROLL_BEGIN, /**< Scrolling begins. The event parameter is a pointer
-                            to the animation of the scroll. Can be modified*/
+                            to the animation of the scroll. Can be modified */
   LV_EVENT_SCROLL_THROW_BEGIN,
-  LV_EVENT_SCROLL_END, /**< Scrolling ends*/
-  LV_EVENT_SCROLL,     /**< Scrolling*/
-  LV_EVENT_GESTURE,    /**< A gesture is detected. Get the gesture with
+  LV_EVENT_SCROLL_END, /**< Scrolling ends */
+  LV_EVENT_SCROLL,     /**< Scrolling */
+  LV_EVENT_GESTURE,    /**< A gesture is detected. Get gesture with
                           `lv_indev_get_gesture_dir(lv_indev_active());` */
-  LV_EVENT_KEY,        /**< A key is sent to the object. Get the key with
+  LV_EVENT_KEY,        /**< A key is sent to Widget. Get key with
                           `lv_indev_get_key(lv_indev_active());`*/
-  LV_EVENT_ROTARY,  /**< An encoder or wheel was rotated. Get the rotation count
-                       with `lv_event_get_rotary_diff(e);`*/
-  LV_EVENT_FOCUSED, /**< The object is focused*/
-  LV_EVENT_DEFOCUSED,   /**< The object is defocused*/
-  LV_EVENT_LEAVE,       /**< The object is defocused but still selected*/
-  LV_EVENT_HIT_TEST,    /**< Perform advanced hit-testing*/
-  LV_EVENT_INDEV_RESET, /**< Indev has been reset*/
-  LV_EVENT_HOVER_OVER,  /**< Indev hover over object*/
-  LV_EVENT_HOVER_LEAVE, /**< Indev hover leave object*/
+  LV_EVENT_ROTARY, /**< An encoder or wheel was rotated. Get rotation count with
+                      `lv_event_get_rotary_diff(e);`*/
+  LV_EVENT_FOCUSED,   /**< Widget received focus */
+  LV_EVENT_DEFOCUSED, /**< Widget's focus has been lost */
+  LV_EVENT_LEAVE,     /**< Widget's focus has been lost but is still selected */
+  LV_EVENT_HIT_TEST,  /**< Perform advanced hit-testing */
+  LV_EVENT_INDEV_RESET, /**< Indev has been reset */
+  LV_EVENT_HOVER_OVER,  /**< Indev hover over object */
+  LV_EVENT_HOVER_LEAVE, /**< Indev hover leave object */
 
-  /** Drawing events*/
-  LV_EVENT_COVER_CHECK, /**< Check if the object fully covers an area. The event
-                           parameter is `lv_cover_check_info_t *`.*/
-  LV_EVENT_REFR_EXT_DRAW_SIZE, /**< Get the required extra draw area around the
-                                  object (e.g. for shadow). The event parameter
-                                  is `int32_t *` to store the size.*/
-  LV_EVENT_DRAW_MAIN_BEGIN,    /**< Starting the main drawing phase*/
-  LV_EVENT_DRAW_MAIN,          /**< Perform the main drawing*/
-  LV_EVENT_DRAW_MAIN_END,      /**< Finishing the main drawing phase*/
+  /** Drawing events */
+  LV_EVENT_COVER_CHECK, /**< Check if Widget fully covers an area. The event
+                           parameter is `lv_cover_check_info_t *`. */
+  LV_EVENT_REFR_EXT_DRAW_SIZE, /**< Get required extra draw area around Widget
+                                  (e.g. for shadow). The event parameter is
+                                  `int32_t *` to store the size. */
+  LV_EVENT_DRAW_MAIN_BEGIN,    /**< Starting the main drawing phase */
+  LV_EVENT_DRAW_MAIN,          /**< Perform the main drawing */
+  LV_EVENT_DRAW_MAIN_END,      /**< Finishing the main drawing phase */
   LV_EVENT_DRAW_POST_BEGIN, /**< Starting the post draw phase (when all children
                                are drawn)*/
   LV_EVENT_DRAW_POST, /**< Perform the post draw phase (when all children are
                          drawn)*/
   LV_EVENT_DRAW_POST_END, /**< Finishing the post draw phase (when all children
                              are drawn)*/
-  LV_EVENT_DRAW_TASK_ADDED, /**< Adding a draw task */
+  LV_EVENT_DRAW_TASK_ADDED, /**< Adding a draw task. The
+                               `LV_OBJ_FLAG_SEND_DRAW_TASK_EVENTS` flag needs to
+                               be set */
 
-  /** Special events*/
-  LV_EVENT_VALUE_CHANGED, /**< The object's value has changed (i.e. slider
-                             moved)*/
-  LV_EVENT_INSERT,  /**< A text is inserted to the object. The event data is
-                       `char *` being inserted.*/
-  LV_EVENT_REFRESH, /**< Notify the object to refresh something on it (for the
-                       user)*/
-  LV_EVENT_READY,   /**< A process has finished*/
+  /** Special events */
+  LV_EVENT_VALUE_CHANGED, /**< Widget's value has changed (i.e. slider moved)*/
+  LV_EVENT_INSERT,  /**< Text has been inserted into Widget. The event data is
+                       `char *` being inserted. */
+  LV_EVENT_REFRESH, /**< Notify Widget to refresh something on it (for user)*/
+  LV_EVENT_READY,   /**< A process has finished */
   LV_EVENT_CANCEL,  /**< A process has been cancelled */
 
-  /** Other events*/
-  LV_EVENT_CREATE,        /**< Object is being created*/
-  LV_EVENT_DELETE,        /**< Object is being deleted*/
+  /** Other events */
+  LV_EVENT_CREATE,        /**< Object is being created */
+  LV_EVENT_DELETE,        /**< Object is being deleted */
   LV_EVENT_CHILD_CHANGED, /**< Child was removed, added, or its size, position
                              were changed */
   LV_EVENT_CHILD_CREATED, /**< Child was created, always bubbles up to all
-                             parents*/
+                             parents */
   LV_EVENT_CHILD_DELETED, /**< Child was deleted, always bubbles up to all
-                             parents*/
+                             parents */
   LV_EVENT_SCREEN_UNLOAD_START, /**< A screen unload started, fired immediately
-                                   when scr_load is called*/
+                                   when scr_load is called */
   LV_EVENT_SCREEN_LOAD_START, /**< A screen load started, fired when the screen
-                                 change delay is expired*/
-  LV_EVENT_SCREEN_LOADED,     /**< A screen was loaded*/
-  LV_EVENT_SCREEN_UNLOADED,   /**< A screen was unloaded*/
-  LV_EVENT_SIZE_CHANGED,      /**< Object coordinates/size have changed*/
-  LV_EVENT_STYLE_CHANGED,     /**< Object's style has changed*/
-  LV_EVENT_LAYOUT_CHANGED,    /**< The children position has changed due to a
-                                 layout recalculation*/
-  LV_EVENT_GET_SELF_SIZE,     /**< Get the internal size of a widget*/
+                                 change delay is expired */
+  LV_EVENT_SCREEN_LOADED,     /**< A screen was loaded */
+  LV_EVENT_SCREEN_UNLOADED,   /**< A screen was unloaded */
+  LV_EVENT_SIZE_CHANGED,      /**< Object coordinates/size have changed */
+  LV_EVENT_STYLE_CHANGED,     /**< Object's style has changed */
+  LV_EVENT_LAYOUT_CHANGED, /**< A child's position position has changed due to a
+                              layout recalculation */
+  LV_EVENT_GET_SELF_SIZE,  /**< Get internal size of a widget */
 
-  /** Events of optional LVGL components*/
-  LV_EVENT_INVALIDATE_AREA,
-  LV_EVENT_RESOLUTION_CHANGED,
-  LV_EVENT_COLOR_FORMAT_CHANGED,
-  LV_EVENT_REFR_REQUEST,
-  LV_EVENT_REFR_START,
-  LV_EVENT_REFR_READY,
-  LV_EVENT_RENDER_START,
-  LV_EVENT_RENDER_READY,
-  LV_EVENT_FLUSH_START,
-  LV_EVENT_FLUSH_FINISH,
-  LV_EVENT_FLUSH_WAIT_START,
-  LV_EVENT_FLUSH_WAIT_FINISH,
+  /** Events of optional LVGL components */
+  LV_EVENT_INVALIDATE_AREA,    /**< An area is invalidated (marked for redraw).
+                                * `lv_event_get_param(e)`    returns a pointer to an
+                                * `lv_area_t` object with the coordinates of the
+                                * area to be invalidated.  The area can be freely
+                                * modified if needed to    adapt it a special
+                                * requirement of the display. Usually needed with
+                                * monochrome displays to invalidate `N x 8` rows or
+                                * columns in one pass. */
+  LV_EVENT_RESOLUTION_CHANGED, /**< Sent when the resolution changes due to
+                                  `lv_display_set_resolution()` or
+                                  `lv_display_set_rotation()`. */
+  LV_EVENT_COLOR_FORMAT_CHANGED, /**< Sent as a result of any call to
+                                    `lv_display_set_color_format()`. */
+  LV_EVENT_REFR_REQUEST, /**< Sent when something happened that requires redraw.
+                          */
+  LV_EVENT_REFR_START, /**< Sent before a refreshing cycle starts. Sent even if
+                          there is nothing to redraw. */
+  LV_EVENT_REFR_READY, /**< Sent when refreshing has been completed (after
+                          rendering and calling flush callback). Sent even if no
+                          redraw happened. */
+  LV_EVENT_RENDER_START, /**< Sent just before rendering begins. */
+  LV_EVENT_RENDER_READY, /**< Sent after rendering has been completed (before
+                            calling flush callback) */
+  LV_EVENT_FLUSH_START,  /**< Sent before flush callback is called. */
+  LV_EVENT_FLUSH_FINISH, /**< Sent after flush callback call has returned. */
+  LV_EVENT_FLUSH_WAIT_START,  /**< Sent before flush wait callback is called. */
+  LV_EVENT_FLUSH_WAIT_FINISH, /**< Sent after flush wait callback call has
+                                 returned. */
 
   LV_EVENT_VSYNC,
+  LV_EVENT_VSYNC_REQUEST,
 
-  LV_EVENT_LAST, /** Number of default events*/
+  LV_EVENT_LAST, /** Number of default events */
 
   LV_EVENT_PREPROCESS =
       0x8000, /** This is a flag that can be set with an event so it's processed
                 before the class default event processing */
+  LV_EVENT_MARKED_DELETING = 0x10000,
 } Xila_graphics_event_code_t;
 
 typedef enum {
@@ -825,4 +849,34 @@ typedef enum {
 } Xila_graphics_slider_orientation_t;
 
 typedef struct {
+  float m[3][3];
 } Xila_graphics_matrix_t;
+
+// Coordinate type constants
+#define XILA_GRAPHICS_COORD_TYPE_SHIFT (29U)
+
+#define XILA_GRAPHICS_COORD_TYPE_MASK (3 << XILA_GRAPHICS_COORD_TYPE_SHIFT)
+#define XILA_GRAPHICS_COORD_TYPE_PX (0 << XILA_GRAPHICS_COORD_TYPE_SHIFT)
+#define XILA_GRAPHICS_COORD_TYPE_SPEC (1 << XILA_GRAPHICS_COORD_TYPE_SHIFT)
+#define XILA_GRAPHICS_COORD_TYPE_PX_NEG (3 << XILA_GRAPHICS_COORD_TYPE_SHIFT)
+
+#define XILA_GRAPHICS_COORD_MAX ((1 << XILA_GRAPHICS_COORD_TYPE_SHIFT) - 1)
+#define XILA_GRAPHICS_COORD_MIN (-XILA_GRAPHICS_COORD_MAX)
+
+#define XILA_GRAPHICS_SIZE_CONTENT                                             \
+  Xila_graphics_coord_set_spec(XILA_GRAPHICS_COORD_MAX)
+#define XILA_GRAPHICS_PCT_STORED_MAX (XILA_GRAPHICS_COORD_MAX - 1)
+#define XILA_GRAPHICS_PCT_POS_MAX (XILA_GRAPHICS_PCT_STORED_MAX / 2)
+
+// Function prototypes for coordinate utility functions
+int32_t Xila_graphics_coord_type(int32_t x);
+int32_t Xila_graphics_coord_plain(int32_t x);
+bool Xila_graphics_coord_is_px(int32_t x);
+bool Xila_graphics_coord_is_spec(int32_t x);
+int32_t Xila_graphics_coord_set_spec(int32_t x);
+int32_t Xila_graphics_max(int32_t a, int32_t b);
+int32_t Xila_graphics_min(int32_t a, int32_t b);
+int32_t Xila_graphics_pct(int32_t x);
+bool Xila_graphics_coord_is_pct(int32_t x);
+int32_t Xila_graphics_coord_get_pct(int32_t x);
+int32_t Xila_graphics_size_content(void);

@@ -48,7 +48,9 @@ pub fn Convert_type(Type: String) -> String {
         .collect::<Vec<_>>()
         .join(" ");
 
-    let Type = Type.replace("Xila_graphics_object_t *", "Xila_graphics_object_t");
+    let Type = Type
+        .replace("Xila_graphics_object_t *", "Xila_graphics_object_t")
+        .replace("Xila_graphics_object_t const *", "Xila_graphics_object_t");
 
     Type.replace("const Xila_graphics_object_t", "Xila_graphics_object_t")
 }
