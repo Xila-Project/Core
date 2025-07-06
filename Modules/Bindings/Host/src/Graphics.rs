@@ -13,9 +13,30 @@ use Virtual_machine::{
     WASM_pointer_type, WASM_usize_type,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Error_type {
+    Invalid_arguments_count,
+    Invalid_pointer,
+    Native_pointer_not_found,
+    WASM_pointer_not_found,
+    Pointer_table_full,
+    Failed_to_get_environment,
+}
+
+pub type Result_type<T> = Result<T, Error_type>;
+
 mod Generated_bindings {
-    use super::{Pointer_table_type, Task_identifier_type, LVGL::*};
+    use super::{Error_type, Pointer_table_type, Result_type, Task_identifier_type, LVGL::*};
     use Virtual_machine::{Environment_type, WASM_pointer_type, WASM_usize_type};
+
+    unsafe fn Convert_to_native_pointer<T>(
+        Environment: &Environment_type,
+        Pointer: WASM_pointer_type,
+    ) -> Result_type<*mut T> {
+        Environment
+            .Convert_to_native_pointer(Pointer)
+            .ok_or(Error_type::Invalid_pointer)
+    }
 
     include!(concat!(env!("OUT_DIR"), "/Bindings.rs"));
 }
@@ -38,13 +59,15 @@ impl Registrable_trait for Graphics_bindings {
 }
 
 pub(crate) struct Pointer_table_type {
-    Pointers_table: BTreeMap<usize, *mut c_void>,
+    To_native_pointer: BTreeMap<usize, *mut c_void>,
+    To_wasm_pointer: BTreeMap<*mut c_void, u16>,
 }
 
 impl Pointer_table_type {
     pub fn New() -> Self {
         Self {
-            Pointers_table: BTreeMap::new(),
+            To_native_pointer: BTreeMap::new(),
+            To_wasm_pointer: BTreeMap::new(),
         }
     }
 
@@ -52,40 +75,63 @@ impl Pointer_table_type {
         (Task.Into_inner() as usize) << 32 | Identifier as usize
     }
 
-    pub fn Insert(&mut self, Task: Task_identifier_type, Pointer: *mut c_void) -> Option<u16> {
+    pub fn Insert(&mut self, Task: Task_identifier_type, Pointer: *mut c_void) -> Result_type<u16> {
         for i in u16::MIN..u16::MAX {
             let Identifier = Self::Get_identifier(Task, i);
 
-            match self.Pointers_table.entry(Identifier) {
+            match self.To_native_pointer.entry(Identifier) {
                 Entry::Vacant(entry) => {
                     entry.insert(Pointer);
-                    return Some(i);
+                    self.To_wasm_pointer.insert(Pointer, i);
+                    return Ok(i);
                 }
                 Entry::Occupied(Entry_pointer) => {
                     if *Entry_pointer.get() == Pointer {
-                        return Some(i);
+                        return Ok(i);
                     }
                 }
             }
         }
 
-        None
+        Err(Error_type::Pointer_table_full)
     }
 
-    pub fn Get<T>(&self, Task: Task_identifier_type, Identifier: u16) -> Option<*mut T> {
+    pub fn Get_native_pointer<T>(
+        &self,
+        Task: Task_identifier_type,
+        Identifier: u16,
+    ) -> Result_type<*mut T> {
         let Identifier = Self::Get_identifier(Task, Identifier);
 
-        self.Pointers_table
+        self.To_native_pointer
             .get(&Identifier)
             .map(|Pointer| *Pointer as *mut T)
+            .ok_or(Error_type::Native_pointer_not_found)
     }
 
-    pub fn Remove<T>(&mut self, Task: Task_identifier_type, Identifier: u16) -> Option<*mut T> {
+    pub fn Get_wasm_pointer<T>(&self, Pointer: *mut T) -> Result_type<u16> {
+        self.To_wasm_pointer
+            .get(&(Pointer as *mut c_void))
+            .cloned()
+            .ok_or(Error_type::WASM_pointer_not_found)
+    }
+
+    pub fn Remove<T>(
+        &mut self,
+        Task: Task_identifier_type,
+        Identifier: u16,
+    ) -> Result_type<*mut T> {
         let Identifier = Self::Get_identifier(Task, Identifier);
 
-        self.Pointers_table
+        let Pointer = self
+            .To_native_pointer
             .remove(&Identifier)
             .map(|Pointer| Pointer as *mut T)
+            .ok_or(Error_type::Native_pointer_not_found)?;
+
+        self.To_wasm_pointer.remove(&(Pointer as *mut _));
+
+        Ok(Pointer)
     }
 }
 
@@ -123,7 +169,7 @@ pub unsafe fn Call(
 
     let Pointer_table_reference = (*Pointer_table_reference).get_mut().unwrap();
 
-    Generated_bindings::Call_function(
+    if let Err(Error) = Generated_bindings::Call_function(
         Environment,
         Pointer_table_reference,
         Function,
@@ -136,7 +182,20 @@ pub unsafe fn Call(
         Argument_6,
         Arguments_count,
         Result,
-    );
+    ) {
+        Log::Error!(
+            "Error {:?} durring graphics call: {:?} with arguments: {:x}, {:x}, {:x}, {:x}, {:x}, {:x}, {:x}",
+            Error,
+            Function,
+            Argument_0,
+            Argument_1,
+            Argument_2,
+            Argument_3,
+            Argument_4,
+            Argument_5,
+            Argument_6,
+        );
+    }
 
     // Lock is automatically released here.
 }
