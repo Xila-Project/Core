@@ -1399,9 +1399,6 @@ os_fsync(os_file_handle handle)
 __wasi_errno_t
 os_open_preopendir(const char *path, os_file_handle *out)
 {
-
-    printf("Open preopendir: %s\n", path);
-
     Xila_file_system_result_type Result = Xila_file_system_open_directory(path, out);
 
     return Into_WASI_Error(Result);
@@ -2008,8 +2005,7 @@ bool os_is_handle_valid(os_file_handle *handle)
  */
 char *os_realpath(const char *path, char *resolved_path)
 {
-    printf("Resolve path: %s\n", path);
-
+ 
     // Xila_file_system_result_type Result = Xila_file_system_resolve_path(path, resolved_path, PATH_MAX);
 
     // printf("os_realpath: %s - %u\n", resolved_path, Result);

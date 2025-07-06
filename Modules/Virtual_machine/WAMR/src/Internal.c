@@ -52,8 +52,6 @@ __wasi_filetype_t Into_WASI_file_type(Xila_file_type_type Type)
 
 void Into_WASI_file_statistics(const Xila_file_system_statistics_type *Statistics, __wasi_filestat_t *WASI_Statistics)
 {
-    printf("Statistics: %p\n", Statistics);
-
     WASI_Statistics->st_dev = Statistics->File_system;
     WASI_Statistics->st_ino = Statistics->Inode;
     WASI_Statistics->st_nlink = Statistics->Links;
