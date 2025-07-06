@@ -184,16 +184,7 @@ pub unsafe fn Call(
         Result,
     ) {
         Log::Error!(
-            "Error {:?} durring graphics call: {:?} with arguments: {:x}, {:x}, {:x}, {:x}, {:x}, {:x}, {:x}",
-            Error,
-            Function,
-            Argument_0,
-            Argument_1,
-            Argument_2,
-            Argument_3,
-            Argument_4,
-            Argument_5,
-            Argument_6,
+            "Error {Error:?} durring graphics call: {Function:?} with arguments: {Argument_0:x}, {Argument_1:x}, {Argument_2:x}, {Argument_3:x}, {Argument_4:x}, {Argument_5:x}, {Argument_6:x}",
         );
     }
 
