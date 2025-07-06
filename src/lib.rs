@@ -4,7 +4,7 @@
 #![allow(non_upper_case_globals)]
 
 #[cfg(all(target_arch = "wasm32", feature = "WASM"))]
-pub use WASM_bindings::*;
+pub use WASM_bindings as Bindings;
 
 #[cfg(feature = "Host")]
 pub use Authentication;
