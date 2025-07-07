@@ -43,7 +43,7 @@ impl Inode_type {
     ///
     /// Most file systems reserve inode 0 for special purposes, so valid
     /// inode numbers typically start from 1.
-    pub const Minimum: Self = Inode_type(1);
+    pub const MAXIMUM: Self = Inode_type(1);
 
     /// Create a new inode identifier from a u64 value.
     ///
@@ -121,7 +121,7 @@ mod Tests {
 
     #[test]
     fn Test_inode_minimum() {
-        assert_eq!(Inode_type::Minimum.As_u64(), 1);
+        assert_eq!(Inode_type::MAXIMUM.As_u64(), 1);
     }
 
     #[test]
@@ -217,7 +217,7 @@ mod Tests {
     fn Test_inode_zero() {
         let zero = Inode_type::New(0);
         assert_eq!(zero.As_u64(), 0);
-        assert!(zero < Inode_type::Minimum);
+        assert!(zero < Inode_type::MAXIMUM);
     }
 
     #[test]
@@ -268,7 +268,7 @@ mod Tests {
 
     #[test]
     fn Test_inode_minimum_comparison() {
-        let minimum = Inode_type::Minimum;
+        let minimum = Inode_type::MAXIMUM;
         let zero = Inode_type::New(0);
         let two = Inode_type::New(2);
 

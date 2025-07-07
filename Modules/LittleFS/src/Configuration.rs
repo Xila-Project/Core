@@ -24,7 +24,7 @@ pub struct Configuration_type {
 }
 
 impl Configuration_type {
-    pub const Default_raw: littlefs::lfs_config = littlefs::lfs_config {
+    pub const DEFAULT_RAW: littlefs::lfs_config = littlefs::lfs_config {
         context: 0 as *mut c_void,
         read: None,
         prog: None,

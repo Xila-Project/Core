@@ -20,7 +20,7 @@ impl Terminal_executable_type {
         let File = match File_type::Open(
             Virtual_file_system,
             "/Configuration/Shared/Shortcuts/Terminal.json",
-            Flags_type::New(Mode_type::Write_only, Open_type::Create_only.into(), None),
+            Flags_type::New(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
         )
         .await
         {
@@ -31,7 +31,7 @@ impl Terminal_executable_type {
             Err(Error) => Err(Error.to_string())?,
         };
 
-        File.Write(crate::Shortcut.as_bytes())
+        File.Write(crate::SHORTCUT.as_bytes())
             .await
             .map_err(|Error| Error.to_string())?;
 

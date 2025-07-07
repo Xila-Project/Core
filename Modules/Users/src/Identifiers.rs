@@ -7,10 +7,10 @@ pub type User_identifier_inner_type = u16;
 pub struct User_identifier_type(User_identifier_inner_type);
 
 impl User_identifier_type {
-    pub const Root: Self = Self::New(0);
+    pub const ROOT: Self = Self::New(0);
 
-    pub const Minimum: Self = Self::New(1);
-    pub const Maximum: Self = Self::New(User_identifier_inner_type::MAX);
+    pub const MINIMUM: Self = Self::New(1);
+    pub const MAXIMUM: Self = Self::New(User_identifier_inner_type::MAX);
 
     pub const fn New(Identifier: User_identifier_inner_type) -> Self {
         Self(Identifier)
@@ -53,10 +53,10 @@ pub type Group_identifier_inner_type = u16;
 pub struct Group_identifier_type(Group_identifier_inner_type);
 
 impl Group_identifier_type {
-    pub const Root: Self = Self::New(0);
+    pub const ROOT: Self = Self::New(0);
 
-    pub const Minimum: Self = Self::New(1);
-    pub const Maximum: Self = Self::New(Group_identifier_inner_type::MAX);
+    pub const MINIMUM: Self = Self::New(1);
+    pub const MAXIMUM: Self = Self::New(Group_identifier_inner_type::MAX);
 
     pub const fn New(Identifier: Group_identifier_inner_type) -> Self {
         Self(Identifier)
@@ -100,9 +100,9 @@ mod tests {
 
     #[test]
     fn test_user_identifier_constants() {
-        assert_eq!(User_identifier_type::Root.As_u16(), 0);
-        assert_eq!(User_identifier_type::Minimum.As_u16(), 1);
-        assert_eq!(User_identifier_type::Maximum.As_u16(), u16::MAX);
+        assert_eq!(User_identifier_type::ROOT.As_u16(), 0);
+        assert_eq!(User_identifier_type::MINIMUM.As_u16(), 1);
+        assert_eq!(User_identifier_type::MAXIMUM.As_u16(), u16::MAX);
     }
 
     #[test]
@@ -181,9 +181,9 @@ mod tests {
 
     #[test]
     fn test_group_identifier_constants() {
-        assert_eq!(Group_identifier_type::Root.As_u16(), 0);
-        assert_eq!(Group_identifier_type::Minimum.As_u16(), 1);
-        assert_eq!(Group_identifier_type::Maximum.As_u16(), u16::MAX);
+        assert_eq!(Group_identifier_type::ROOT.As_u16(), 0);
+        assert_eq!(Group_identifier_type::MINIMUM.As_u16(), 1);
+        assert_eq!(Group_identifier_type::MAXIMUM.As_u16(), u16::MAX);
     }
 
     #[test]

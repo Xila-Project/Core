@@ -5,7 +5,7 @@ use core::fmt::Display;
 pub struct Port_type(u16);
 
 impl Port_type {
-    pub const Any: Self = Self(0);
+    pub const ANY: Self = Self(0);
 
     pub const fn New(value: u16) -> Self {
         Self(value)

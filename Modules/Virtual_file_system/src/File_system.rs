@@ -39,7 +39,7 @@ struct Internal_file_system_type {
 /// I know, it is not safe to use mutable static variables.
 /// It is thread safe (after initialization) because it is only read after initialization.
 /// It is a pragmatic choice for efficiency in embedded systems contexts (avoid using Arc).
-static Virtual_file_system_instance: OnceLock<Virtual_file_system_type> = OnceLock::new();
+static VIRTUAL_FILE_SYSTEM_INSTANCE: OnceLock<Virtual_file_system_type> = OnceLock::new();
 
 pub fn Initialize(
     Root_file_system: Box<dyn File_system_traits>,
@@ -53,11 +53,11 @@ pub fn Initialize(
         Network_socket_driver,
     )?;
 
-    Ok(Virtual_file_system_instance.get_or_init(|| Virtual_file_system))
+    Ok(VIRTUAL_FILE_SYSTEM_INSTANCE.get_or_init(|| Virtual_file_system))
 }
 
 pub fn Get_instance() -> &'static Virtual_file_system_type<'static> {
-    Virtual_file_system_instance
+    VIRTUAL_FILE_SYSTEM_INSTANCE
         .try_get()
         .expect("Virtual file system not initialized")
 }
@@ -80,9 +80,9 @@ pub struct Virtual_file_system_type<'a> {
 }
 
 impl<'a> Virtual_file_system_type<'a> {
-    pub const Standard_input_file_identifier: File_identifier_type = File_identifier_type::New(0);
-    pub const Standard_output_file_identifier: File_identifier_type = File_identifier_type::New(1);
-    pub const Standard_error_file_identifier: File_identifier_type = File_identifier_type::New(2);
+    pub const STANDARD_INPUT_FILE_IDENTIFIER: File_identifier_type = File_identifier_type::New(0);
+    pub const STANDARD_OUTPUT_FILE_IDENTIFIER: File_identifier_type = File_identifier_type::New(1);
+    pub const STANDARD_ERROR_FILE_IDENTIFIER: File_identifier_type = File_identifier_type::New(2);
 
     pub fn New(
         _: &'static Task::Manager_type,
@@ -115,7 +115,7 @@ impl<'a> Virtual_file_system_type<'a> {
     pub async fn Uninitialize(&self) {
         if let Ok(Inodes) = self
             .Device_file_system
-            .Get_devices_from_path(Path_type::Root)
+            .Get_devices_from_path(Path_type::ROOT)
             .await
         {
             for Inode in Inodes {
@@ -136,7 +136,7 @@ impl<'a> Virtual_file_system_type<'a> {
     fn Get_new_file_system_identifier(
         File_systems: &BTreeMap<File_system_identifier_type, Internal_file_system_type>,
     ) -> Option<File_system_identifier_type> {
-        let mut File_system_identifier = File_system_identifier_type::Minimum;
+        let mut File_system_identifier = File_system_identifier_type::MINIMUM;
 
         while File_systems.contains_key(&File_system_identifier) {
             File_system_identifier += 1;
@@ -322,7 +322,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
                     Local_file
                         .Into_unique_file_identifier(
-                            File_system_identifier_type::Device_file_system,
+                            File_system_identifier_type::DEVICE_FILE_SYSTEM,
                         )
                         .1
                 } else {
@@ -337,7 +337,7 @@ impl<'a> Virtual_file_system_type<'a> {
                         .await?;
 
                     Local_file
-                        .Into_unique_file_identifier(File_system_identifier_type::Pipe_file_system)
+                        .Into_unique_file_identifier(File_system_identifier_type::PIPE_FILE_SYSTEM)
                         .1
                 } else {
                     return Err(Error_type::Corrupted)?;
@@ -357,16 +357,16 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, Local_file) = File.Into_local_file_identifier(Task);
 
         let Underlying_file = match File_system {
-            File_system_identifier_type::Pipe_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => {
                 match self.Pipe_file_system.Close(Local_file).await? {
                     Some(Underlying_file) => Underlying_file,
                     None => return Ok(()),
                 }
             }
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 self.Device_file_system.Close(Local_file).await?
             }
-            File_system_identifier_type::Network_socket_file_system => {
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => {
                 self.Network_socket_driver
                     .ok_or(Error_type::Unsupported_operation)?
                     .Close(Local_file)?;
@@ -414,12 +414,12 @@ impl<'a> Virtual_file_system_type<'a> {
             .into();
 
         let (Size, Underlying_file) = match File_system {
-            File_system_identifier_type::Pipe_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => {
                 self.Pipe_file_system
                     .Read(Local_file_identifier, Buffer)
                     .await?
             }
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 let Result = self
                     .Device_file_system
                     .Read(Local_file_identifier, Buffer)
@@ -467,12 +467,12 @@ impl<'a> Virtual_file_system_type<'a> {
             .into();
 
         let (Size, Underlying_file) = match File_system {
-            File_system_identifier_type::Pipe_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => {
                 self.Pipe_file_system
                     .Read_line(Local_file_identifier, Buffer)
                     .await?
             }
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 let Result = self
                     .Device_file_system
                     .Read_line(Local_file_identifier, Buffer)
@@ -513,12 +513,12 @@ impl<'a> Virtual_file_system_type<'a> {
         Task: Task_identifier_type,
         Buffer: &mut Vec<u8>,
     ) -> Result_type<Size_type> {
-        const Chunk_size: usize = 512;
+        const CHUNK_SIZE: usize = 512;
 
         let mut Read_size = 0;
 
         loop {
-            let mut Chunk = vec![0; Chunk_size];
+            let mut Chunk = vec![0; CHUNK_SIZE];
 
             let Size: usize = self.Read(File, &mut Chunk, Task).await?.into();
 
@@ -548,12 +548,12 @@ impl<'a> Virtual_file_system_type<'a> {
             .into();
 
         let (Size, Underlying_file) = match File_system {
-            File_system_identifier_type::Pipe_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => {
                 self.Pipe_file_system
                     .Write(Local_file_identifier, Buffer)
                     .await?
             }
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 let Result = self
                     .Device_file_system
                     .Write(Local_file_identifier, Buffer)
@@ -597,8 +597,8 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, Local_file) = File.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Pipe_file_system => Err(Error_type::Unsupported_operation),
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => Err(Error_type::Unsupported_operation),
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 let (Size, Underlying_file) = self
                     .Device_file_system
                     .Set_position(Local_file, Position)
@@ -705,7 +705,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let File = File_system.Open(
             Task,
             Relative_path,
-            Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None),
+            Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None),
             Time,
             User,
             Group,
@@ -760,7 +760,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let File = File_system.Open(
             Task,
             Relative_path,
-            Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None),
+            Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None),
             Time,
             User,
             Group,
@@ -821,7 +821,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let File = File_system.Open(
             Task,
             Relative_path,
-            Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None),
+            Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None),
             Time,
             User,
             Group,
@@ -861,9 +861,9 @@ impl<'a> Virtual_file_system_type<'a> {
             .await?;
 
         let (_, Read) =
-            Read.Into_unique_file_identifier(File_system_identifier_type::Pipe_file_system);
+            Read.Into_unique_file_identifier(File_system_identifier_type::PIPE_FILE_SYSTEM);
         let (_, Write) =
-            Write.Into_unique_file_identifier(File_system_identifier_type::Pipe_file_system);
+            Write.Into_unique_file_identifier(File_system_identifier_type::PIPE_FILE_SYSTEM);
 
         Ok((Read, Write))
     }
@@ -927,10 +927,10 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, File) = File.Into_local_file_identifier(Current_task);
 
         let Underlying_file = match File_system {
-            File_system_identifier_type::Pipe_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => {
                 self.Pipe_file_system.Get_underlying_file(File).await?
             }
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 Some(self.Device_file_system.Get_underlying_file(File).await?)
             }
             _ => None,
@@ -956,12 +956,12 @@ impl<'a> Virtual_file_system_type<'a> {
         };
 
         let New_file = match File_system {
-            File_system_identifier_type::Pipe_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => {
                 self.Pipe_file_system
                     .Transfert(New_task, File, New_file)
                     .await?
             }
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 let Underlying_file = Underlying_file.ok_or(Error_type::Internal_error)?;
 
                 self.Device_file_system
@@ -985,9 +985,9 @@ impl<'a> Virtual_file_system_type<'a> {
     ) -> Result_type<()> {
         let (File_system, File_identifier) = File.Into_local_file_identifier(Task_identifier);
 
-        if File_system == File_system_identifier_type::Pipe_file_system {
+        if File_system == File_system_identifier_type::PIPE_FILE_SYSTEM {
             Ok(())
-        } else if File_system == File_system_identifier_type::Device_file_system {
+        } else if File_system == File_system_identifier_type::DEVICE_FILE_SYSTEM {
             let Underlying_file = self.Device_file_system.Flush(File_identifier).await?;
 
             let (File_system, Local_file) =
@@ -1023,12 +1023,12 @@ impl<'a> Virtual_file_system_type<'a> {
         let File_systems = self.File_systems.read().await;
 
         let File = match File_system {
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 self.Device_file_system
                     .Get_underlying_file(Local_file)
                     .await?
             }
-            File_system_identifier_type::Pipe_file_system => self
+            File_system_identifier_type::PIPE_FILE_SYSTEM => self
                 .Pipe_file_system
                 .Get_underlying_file(Local_file)
                 .await?
@@ -1068,8 +1068,8 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, File) = File.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Pipe_file_system => Err(Error_type::Unsupported_operation),
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => Err(Error_type::Unsupported_operation),
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 Err(Error_type::Unsupported_operation)
             }
             _ => self
@@ -1092,8 +1092,8 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, File) = File.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Pipe_file_system => Err(Error_type::Unsupported_operation),
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => Err(Error_type::Unsupported_operation),
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 Err(Error_type::Unsupported_operation)
             }
             _ => self
@@ -1115,8 +1115,8 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, File) = File.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Pipe_file_system => Err(Error_type::Unsupported_operation),
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => Err(Error_type::Unsupported_operation),
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 Err(Error_type::Unsupported_operation)
             }
             _ => self
@@ -1138,8 +1138,8 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, File) = File.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Pipe_file_system => Err(Error_type::Unsupported_operation),
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => Err(Error_type::Unsupported_operation),
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 Err(Error_type::Unsupported_operation)
             }
             _ => self
@@ -1161,8 +1161,8 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, File) = File.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Pipe_file_system => Err(Error_type::Unsupported_operation),
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => Err(Error_type::Unsupported_operation),
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 Err(Error_type::Unsupported_operation)
             }
             _ => self
@@ -1205,10 +1205,10 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, File) = File.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Pipe_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => {
                 self.Pipe_file_system.Get_mode(File).await
             }
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 self.Device_file_system.Get_mode(File).await
             }
             _ => self
@@ -1230,10 +1230,10 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, File) = File.Into_local_file_identifier(Task);
 
         let Underlying_file = match File_system {
-            File_system_identifier_type::Pipe_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => {
                 self.Pipe_file_system.Get_underlying_file(File).await?
             }
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 Some(self.Device_file_system.Get_underlying_file(File).await?)
             }
             _ => None,
@@ -1258,12 +1258,12 @@ impl<'a> Virtual_file_system_type<'a> {
         };
 
         let New_file = match File_system {
-            File_system_identifier_type::Pipe_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => {
                 self.Pipe_file_system
                     .Duplicate(File, Underlying_file)
                     .await?
             }
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 let Underlying_file = Underlying_file.ok_or(Error_type::Internal_error)?;
 
                 self.Device_file_system
@@ -1314,7 +1314,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 Standard_in,
                 Current_task,
                 New_task,
-                Some(File_identifier_type::Standard_in),
+                Some(File_identifier_type::STANDARD_IN),
             )
             .await?;
         let Standard_error = self
@@ -1322,7 +1322,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 Standard_error,
                 Current_task,
                 New_task,
-                Some(File_identifier_type::Standard_error),
+                Some(File_identifier_type::STANDARD_ERROR),
             )
             .await?;
         let Standard_out = self
@@ -1330,7 +1330,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 Standard_out,
                 Current_task,
                 New_task,
-                Some(File_identifier_type::Standard_out),
+                Some(File_identifier_type::STANDARD_OUT),
             )
             .await?;
 
@@ -1345,8 +1345,8 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, File) = File.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Pipe_file_system => Err(Error_type::Unsupported_operation),
-            File_system_identifier_type::Device_file_system => {
+            File_system_identifier_type::PIPE_FILE_SYSTEM => Err(Error_type::Unsupported_operation),
+            File_system_identifier_type::DEVICE_FILE_SYSTEM => {
                 self.Device_file_system.Is_a_terminal(File).await
             }
             _ => Err(Error_type::Unsupported_operation),
@@ -1443,7 +1443,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Network_socket_file_system => self
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => self
                 .Network_socket_driver
                 .ok_or(crate::Error_type::Unavailable_driver)?
                 .Send(Socket, Data)?,
@@ -1462,7 +1462,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Network_socket_file_system => Ok(self
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => Ok(self
                 .Network_socket_driver
                 .ok_or(crate::Error_type::Unavailable_driver)?
                 .Receive(Socket, Data)?),
@@ -1480,7 +1480,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Network_socket_file_system => {
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => {
                 let (IP, Port) = Address
                     .Into_IP_and_port()
                     .ok_or(crate::Error_type::Invalid_parameter)?;
@@ -1504,7 +1504,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Network_socket_file_system => {
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => {
                 let (Size, IP, Port) = self
                     .Network_socket_driver
                     .ok_or(crate::Error_type::Unavailable_driver)?
@@ -1524,7 +1524,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let Iterator = Local_file_identifier_type::Get_minimum(Task).into_iter();
 
         match File_system {
-            File_system_identifier_type::Network_socket_file_system => Ok(self
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => Ok(self
                 .Network_socket_driver
                 .ok_or(crate::Error_type::Unavailable_driver)?
                 .Get_new_socket_identifier(Iterator)?
@@ -1541,7 +1541,7 @@ impl<'a> Virtual_file_system_type<'a> {
     ) -> crate::Result_type<Unique_file_identifier_type> {
         let File_system = match Address {
             Socket_address_type::IPv4(_, _) | Socket_address_type::IPv6(_, _) => {
-                File_system_identifier_type::Network_socket_file_system
+                File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM
             }
             Socket_address_type::Local(_) => {
                 todo!()
@@ -1551,7 +1551,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let New_socket = self.New_file_identifier(File_system, Task)?;
 
         match File_system {
-            File_system_identifier_type::Network_socket_file_system => {
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => {
                 let (IP, Port) = if let Some((IP_type, Port)) = Address.Into_IP_and_port() {
                     (IP_type, Port)
                 } else {
@@ -1577,7 +1577,7 @@ impl<'a> Virtual_file_system_type<'a> {
     ) -> crate::Result_type<Unique_file_identifier_type> {
         let File_system = match Address {
             Socket_address_type::IPv4(_, _) | Socket_address_type::IPv6(_, _) => {
-                File_system_identifier_type::Network_socket_file_system
+                File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM
             }
             Socket_address_type::Local(_) => {
                 todo!()
@@ -1587,7 +1587,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let New_socket = self.New_file_identifier(File_system, Task)?;
 
         match File_system {
-            File_system_identifier_type::Network_socket_file_system => {
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => {
                 let (IP, Port) = if let Some((IP_type, Port)) = Address.Into_IP_and_port() {
                     (IP_type, Port)
                 } else {
@@ -1614,7 +1614,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Network_socket_file_system => {
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => {
                 let New_socket = self.New_file_identifier(File_system, Task)?;
 
                 let (IP, Port) = self
@@ -1639,7 +1639,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Network_socket_file_system => self
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => self
                 .Network_socket_driver
                 .ok_or(crate::Error_type::Unavailable_driver)?
                 .Set_send_timeout(Socket, Timeout)?,
@@ -1658,7 +1658,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Network_socket_file_system => self
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => self
                 .Network_socket_driver
                 .ok_or(crate::Error_type::Unavailable_driver)?
                 .Set_receive_timeout(Socket, Timeout)?,
@@ -1676,7 +1676,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Network_socket_file_system => Ok(self
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => Ok(self
                 .Network_socket_driver
                 .ok_or(crate::Error_type::Unavailable_driver)?
                 .Get_send_timeout(Socket)?),
@@ -1692,7 +1692,7 @@ impl<'a> Virtual_file_system_type<'a> {
         let (File_system, Socket) = Socket.Into_local_file_identifier(Task);
 
         match File_system {
-            File_system_identifier_type::Network_socket_file_system => Ok(self
+            File_system_identifier_type::NETWORK_SOCKET_FILE_SYSTEM => Ok(self
                 .Network_socket_driver
                 .ok_or(crate::Error_type::Unavailable_driver)?
                 .Get_receive_timeout(Socket)?),
@@ -1908,14 +1908,14 @@ mod Tests {
             Virtual_file_system_type::Get_file_system_from_path(&File_systems, &"/").unwrap();
 
         assert_eq!(File_system, 1.into());
-        assert_eq!(Relative_path, Path_type::Root);
+        assert_eq!(Relative_path, Path_type::ROOT);
 
         let (File_system, _, Relative_path) =
             Virtual_file_system_type::Get_file_system_from_path(&File_systems, &"/Foo/Bar")
                 .unwrap();
 
         assert_eq!(File_system, 3.into());
-        assert_eq!(Relative_path, Path_type::Root);
+        assert_eq!(Relative_path, Path_type::ROOT);
 
         let (File_system, _, Relative_path) =
             Virtual_file_system_type::Get_file_system_from_path(&File_systems, &"/Foo/Bar/Baz")
@@ -1928,6 +1928,6 @@ mod Tests {
             Virtual_file_system_type::Get_file_system_from_path(&File_systems, &"/Foo").unwrap();
 
         assert_eq!(File_system, 2.into());
-        assert_eq!(Relative_path, Path_type::Root);
+        assert_eq!(Relative_path, Path_type::ROOT);
     }
 }

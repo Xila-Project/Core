@@ -17,7 +17,7 @@ use Synchronization::once_lock::OnceLock;
 use crate::{Error_type, Instance_type, Module_type, Registrable_trait, Result_type, Runtime_type};
 
 /// Global singleton instance of the Virtual Machine Manager
-static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
+static MANAGER_INSTANCE: OnceLock<Manager_type> = OnceLock::new();
 
 /// Initialize the Virtual Machine Manager with a set of registrable host functions.
 ///
@@ -39,7 +39,7 @@ static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
 /// let manager = Initialize(&[&MyHostFunctions]);
 /// ```
 pub fn Initialize(Registrables: &[&dyn Registrable_trait]) -> &'static Manager_type {
-    Manager_instance.get_or_init(|| {
+    MANAGER_INSTANCE.get_or_init(|| {
         Manager_type::New(Registrables).expect("Cannot create virtual machine manager")
     });
 
@@ -56,7 +56,7 @@ pub fn Initialize(Registrables: &[&dyn Registrable_trait]) -> &'static Manager_t
 ///
 /// A static reference to the Manager instance
 pub fn Get_instance() -> &'static Manager_type {
-    Manager_instance
+    MANAGER_INSTANCE
         .try_get()
         .expect("Cannot get virtual machine manager instance before initialization")
 }

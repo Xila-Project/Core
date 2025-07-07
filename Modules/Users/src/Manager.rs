@@ -9,14 +9,14 @@ use Synchronization::{
 
 use super::*;
 
-static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
+static MANAGER_INSTANCE: OnceLock<Manager_type> = OnceLock::new();
 
 pub fn Initialize() -> &'static Manager_type {
-    Manager_instance.get_or_init(Manager_type::New)
+    MANAGER_INSTANCE.get_or_init(Manager_type::New)
 }
 
 pub fn Get_instance() -> &'static Manager_type {
-    Manager_instance
+    MANAGER_INSTANCE
         .try_get()
         .expect("User manager instance not initialized")
 }
@@ -42,7 +42,7 @@ impl Manager_type {
     fn New() -> Self {
         let mut Groups = BTreeMap::new();
         Groups.insert(
-            Group_identifier_type::Root,
+            Group_identifier_type::ROOT,
             Internal_group_type {
                 Name: "Root".to_string(),
                 Users: BTreeSet::new(),
@@ -51,10 +51,10 @@ impl Manager_type {
 
         let mut Users = BTreeMap::new();
         Users.insert(
-            User_identifier_type::Root,
+            User_identifier_type::ROOT,
             Internal_user_type {
                 Name: "Root".to_string(),
-                Primary_group: Group_identifier_type::Root,
+                Primary_group: Group_identifier_type::ROOT,
             },
         );
 
@@ -64,12 +64,12 @@ impl Manager_type {
     pub async fn Get_new_group_identifier(&self) -> Result_type<Group_identifier_type> {
         let Inner = self.0.read().await;
 
-        let mut Identifier = Group_identifier_type::Minimum;
+        let mut Identifier = Group_identifier_type::MINIMUM;
 
         while Inner.Groups.contains_key(&Identifier) {
             Identifier += 1;
 
-            if Identifier == Group_identifier_type::Maximum {
+            if Identifier == Group_identifier_type::MAXIMUM {
                 return Err(Error_type::Too_many_groups);
             }
         }
@@ -80,12 +80,12 @@ impl Manager_type {
     pub async fn Get_new_user_identifier(&self) -> Result_type<User_identifier_type> {
         let Inner = self.0.read().await;
 
-        let mut Identifier = User_identifier_type::Minimum;
+        let mut Identifier = User_identifier_type::MINIMUM;
 
         while Inner.Users.contains_key(&Identifier) {
             Identifier += 1;
 
-            if Identifier == User_identifier_type::Maximum {
+            if Identifier == User_identifier_type::MAXIMUM {
                 return Err(Error_type::Too_many_users);
             }
         }
@@ -166,7 +166,7 @@ impl Manager_type {
     }
 
     pub fn Is_root(Identifier: User_identifier_type) -> bool {
-        User_identifier_type::Root == Identifier
+        User_identifier_type::ROOT == Identifier
     }
 
     pub async fn Is_in_group(
@@ -315,7 +315,7 @@ mod Tests {
         let User_name = "Alice";
         let Identifier = User_identifier_type::New(1000);
         Manager
-            .Add_user(Identifier, User_name, Group_identifier_type::Root)
+            .Add_user(Identifier, User_name, Group_identifier_type::ROOT)
             .await
             .unwrap();
         assert!(Manager.Exists_user(Identifier).await.unwrap());
@@ -333,12 +333,12 @@ mod Tests {
         let Manager = Manager_type::New();
 
         Manager
-            .Add_user(Identifier_1, User_name_1, Group_identifier_type::Root)
+            .Add_user(Identifier_1, User_name_1, Group_identifier_type::ROOT)
             .await
             .unwrap();
 
         let Result = Manager
-            .Add_user(Identifier_1, User_name_2, Group_identifier_type::Root)
+            .Add_user(Identifier_1, User_name_2, Group_identifier_type::ROOT)
             .await;
         assert_eq!(Result, Err(Error_type::Duplicate_user_identifier));
 
@@ -346,12 +346,12 @@ mod Tests {
         let Manager = Manager_type::New();
 
         Manager
-            .Add_user(Identifier_1, User_name_1, Group_identifier_type::Root)
+            .Add_user(Identifier_1, User_name_1, Group_identifier_type::ROOT)
             .await
             .unwrap();
 
         let Result = Manager
-            .Add_user(Identifier_2, User_name_1, Group_identifier_type::Root)
+            .Add_user(Identifier_2, User_name_1, Group_identifier_type::ROOT)
             .await;
         assert_eq!(Result, Err(Error_type::Duplicate_user_name));
 
@@ -359,12 +359,12 @@ mod Tests {
         let Manager = Manager_type::New();
 
         Manager
-            .Add_user(Identifier_1, User_name_1, Group_identifier_type::Root)
+            .Add_user(Identifier_1, User_name_1, Group_identifier_type::ROOT)
             .await
             .unwrap();
 
         Manager
-            .Add_user(Identifier_1, User_name_1, Group_identifier_type::Root)
+            .Add_user(Identifier_1, User_name_1, Group_identifier_type::ROOT)
             .await
             .unwrap_err();
     }
@@ -425,7 +425,7 @@ mod Tests {
 
     #[Test]
     async fn Is_root() {
-        let Root_id = User_identifier_type::Root;
+        let Root_id = User_identifier_type::ROOT;
         assert!(Manager_type::Is_root(Root_id));
     }
 
@@ -435,7 +435,7 @@ mod Tests {
         let User_name = "Bob";
         let Identifier = User_identifier_type::New(1000);
         Manager
-            .Add_user(Identifier, User_name, Group_identifier_type::Root)
+            .Add_user(Identifier, User_name, Group_identifier_type::ROOT)
             .await
             .unwrap();
         let Group_name = "Admins";
@@ -453,7 +453,7 @@ mod Tests {
         let User_name = "Charlie";
         let Identifier = User_identifier_type::New(1000);
         Manager
-            .Add_user(Identifier, User_name, Group_identifier_type::Root)
+            .Add_user(Identifier, User_name, Group_identifier_type::ROOT)
             .await
             .unwrap();
         let Group_name1 = "TeamA";
@@ -478,7 +478,7 @@ mod Tests {
         assert!(
             Groups.contains(&Group_id1)
                 && Groups.contains(&Group_id2)
-                && Groups.contains(&Group_identifier_type::Root)
+                && Groups.contains(&Group_identifier_type::ROOT)
         );
     }
 
@@ -498,7 +498,7 @@ mod Tests {
         let User_name = "Dave";
         let Identifier = User_identifier_type::New(1000);
         Manager
-            .Add_user(Identifier, User_name, Group_identifier_type::Root)
+            .Add_user(Identifier, User_name, Group_identifier_type::ROOT)
             .await
             .unwrap();
         let Group_name = "Engineers";
@@ -516,7 +516,7 @@ mod Tests {
         let User_name = "Eve";
         let Identifier = User_identifier_type::New(1000);
         Manager
-            .Add_user(Identifier, User_name, Group_identifier_type::Root)
+            .Add_user(Identifier, User_name, Group_identifier_type::ROOT)
             .await
             .unwrap();
         let Retrieved_name = Manager.Get_user_name(Identifier).await.unwrap();

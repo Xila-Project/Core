@@ -54,14 +54,14 @@ impl Debug for Unique_file_identifier_type {
 }
 
 impl Unique_file_identifier_type {
-    const File_system_identifier_position: u8 = File_identifier_type::Size_bits;
+    const FILE_SYSTEM_IDENTIFIER_POSITION: u8 = File_identifier_type::SIZE_BITS;
 
     pub const fn New(File_system: File_system_identifier_type, File: File_identifier_type) -> Self {
         let File_system_identifier = File_system.As_inner();
         let File_identifier = File.Into_inner();
 
         Self(
-            (File_system_identifier as usize) << Self::File_system_identifier_position
+            (File_system_identifier as usize) << Self::FILE_SYSTEM_IDENTIFIER_POSITION
                 | File_identifier as usize,
         )
     }

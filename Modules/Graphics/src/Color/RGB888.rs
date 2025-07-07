@@ -8,8 +8,8 @@ pub struct Color_RGB888_type {
 }
 
 impl Color_RGB888_type {
-    pub const White: Color_RGB888_type = Color_RGB888_type::New(0xFF, 0xFF, 0xFF);
-    pub const Black: Color_RGB888_type = Color_RGB888_type::New(0x00, 0x00, 0x00);
+    pub const WHITE: Color_RGB888_type = Color_RGB888_type::New(0xFF, 0xFF, 0xFF);
+    pub const BLACK: Color_RGB888_type = Color_RGB888_type::New(0x00, 0x00, 0x00);
 
     pub const fn New(Red: u8, Green: u8, Blue: u8) -> Self {
         Self { Red, Green, Blue }

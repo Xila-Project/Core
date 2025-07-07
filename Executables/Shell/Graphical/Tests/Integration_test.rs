@@ -1,7 +1,6 @@
 #![no_std]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
-#![allow(non_upper_case_globals)]
 
 extern crate alloc;
 
@@ -34,17 +33,17 @@ async fn main() {
 
     // - Initialize the graphics manager.
 
-    const Resolution: Point_type = Point_type::New(800, 480);
+    const RESOLUTION: Point_type = Point_type::New(800, 480);
 
-    let (Screen_device, Pointer_device, Keyboard_device) = Window_screen::New(Resolution).unwrap();
+    let (Screen_device, Pointer_device, Keyboard_device) = Window_screen::New(RESOLUTION).unwrap();
 
-    const Buffer_size: usize = Get_minimal_buffer_size(&Resolution);
+    const BUFFER_SIZE: usize = Get_minimal_buffer_size(&RESOLUTION);
 
     Graphics::Initialize(
         Screen_device,
         Pointer_device,
         Input_type_type::Pointer,
-        Buffer_size,
+        BUFFER_SIZE,
         true,
     )
     .await;
@@ -114,7 +113,7 @@ async fn main() {
         File_type::Open(
             Virtual_file_system,
             format!("/Configuration/Shared/Shortcuts/Test{i}.json").as_str(),
-            Flags_type::New(Mode_type::Write_only, Some(Open_type::Create), None),
+            Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE), None),
         )
         .await
         .unwrap()

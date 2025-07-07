@@ -430,8 +430,8 @@ mod Tests {
         // - Bind sockets
         Driver
             .Bind(
-                IPv4_type::Localhost.into(),
-                Port_type::Any,
+                IPv4_type::LOCALHOST.into(),
+                Port_type::ANY,
                 Protocol_type::UDP,
                 Socket_1,
             )
@@ -439,8 +439,8 @@ mod Tests {
 
         Driver
             .Bind(
-                IPv4_type::Localhost.into(),
-                Port_type::Any,
+                IPv4_type::LOCALHOST.into(),
+                Port_type::ANY,
                 Protocol_type::UDP,
                 Socket_identifier_2,
             )
@@ -513,8 +513,8 @@ mod Tests {
         // - Bind socket
         Driver
             .Bind(
-                IPv4_type::Localhost.into(),
-                Port_type::Any,
+                IPv4_type::LOCALHOST.into(),
+                Port_type::ANY,
                 Protocol_type::TCP,
                 Server,
             )
@@ -638,8 +638,8 @@ mod Tests {
         // - Bind socket
         Driver
             .Bind(
-                IPv4_type::Localhost.into(),
-                Port_type::Any,
+                IPv4_type::LOCALHOST.into(),
+                Port_type::ANY,
                 Protocol_type::TCP,
                 Server_listener,
             )
@@ -706,8 +706,8 @@ mod Tests {
         // -  Bind sockets
         Driver
             .Bind(
-                IPv4_type::Localhost.into(),
-                Port_type::Any,
+                IPv4_type::LOCALHOST.into(),
+                Port_type::ANY,
                 Protocol_type::UDP,
                 Socket_1,
             )
@@ -774,8 +774,8 @@ mod Tests {
         // - Bind sockets
         Driver
             .Bind(
-                IPv4_type::Localhost.into(),
-                Port_type::Any,
+                IPv4_type::LOCALHOST.into(),
+                Port_type::ANY,
                 Protocol_type::UDP,
                 Socket_1_identifier,
             )
@@ -783,8 +783,8 @@ mod Tests {
 
         Driver
             .Bind(
-                IPv4_type::Localhost.into(),
-                Port_type::Any,
+                IPv4_type::LOCALHOST.into(),
+                Port_type::ANY,
                 Protocol_type::UDP,
                 Socket_2_identifier,
             )

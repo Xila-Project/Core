@@ -365,7 +365,7 @@ pub extern "C" fn Xila_file_system_is_stdin(File: Xila_unique_file_identifier_ty
 
     // Debug: Checking if file is stdin
 
-    File == File_identifier_type::Standard_in
+    File == File_identifier_type::STANDARD_IN
 }
 
 #[no_mangle]
@@ -376,7 +376,7 @@ pub extern "C" fn Xila_file_system_is_stderr(File: Xila_unique_file_identifier_t
 
     // Debug: Checking if file is stderr
 
-    File == File_identifier_type::Standard_error
+    File == File_identifier_type::STANDARD_ERROR
 }
 
 #[no_mangle]
@@ -387,7 +387,7 @@ pub extern "C" fn Xila_file_system_is_stdout(File: Xila_unique_file_identifier_t
 
     // Debug: Checking if file is stdout
 
-    File == File_identifier_type::Standard_out
+    File == File_identifier_type::STANDARD_OUT
 }
 
 /// This function is used to open a file.

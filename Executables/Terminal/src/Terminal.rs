@@ -21,8 +21,8 @@ unsafe impl Send for Terminal_type {}
 unsafe impl Sync for Terminal_type {}
 
 impl Terminal_type {
-    const Clear: &'static str = "\x1B[2J";
-    const Home: &'static str = "\x1B[H";
+    const CLEAR: &'static str = "\x1B[2J";
+    const HOME: &'static str = "\x1B[H";
 
     pub async fn New() -> Result_type<Self> {
         let _Lock = Graphics::Get_instance().Lock().await;
@@ -30,7 +30,7 @@ impl Terminal_type {
         let mut Window = Graphics::Get_instance().Create_window().await?;
 
         unsafe {
-            Window.Set_icon(">_", Color_type::Black);
+            Window.Set_icon(">_", Color_type::BLACK);
 
             LVGL::lv_obj_set_flex_flow(
                 Window.Get_object(),
@@ -108,16 +108,16 @@ impl Terminal_type {
             Inner.Buffer.remove(Last_index);
         }
 
-        let Start_index = if let Some(Last_clear) = Text.rfind(Self::Clear) {
+        let Start_index = if let Some(Last_clear) = Text.rfind(Self::CLEAR) {
             Inner.Buffer.clear();
-            Last_clear + Self::Clear.len()
+            Last_clear + Self::CLEAR.len()
         } else {
             0
         };
 
-        let Start_index = if let Some(Last_home) = Text.rfind(Self::Home) {
+        let Start_index = if let Some(Last_home) = Text.rfind(Self::HOME) {
             Inner.Buffer.clear();
-            Last_home + Self::Home.len()
+            Last_home + Self::HOME.len()
         } else {
             Start_index
         };

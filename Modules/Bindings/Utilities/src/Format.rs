@@ -27,7 +27,7 @@ pub fn Format_C(File_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-const Names: [(&str, &str); 1] = [("obj", "object")];
+const NAMES: [(&str, &str); 1] = [("obj", "object")];
 
 pub fn Format_identifier(Prefix: &str, Function_name: &str) -> String {
     // - Remove prefix
@@ -46,7 +46,7 @@ pub fn Format_identifier(Prefix: &str, Function_name: &str) -> String {
     // - Replace names
     let Function_name = Function_name
         .split("_")
-        .map(|Part| match Names.iter().find(|(Old, _)| *Old == Part) {
+        .map(|Part| match NAMES.iter().find(|(Old, _)| *Old == Part) {
             Some((_, New)) => New.to_string(),
             None => Part.to_string(),
         })

@@ -6,7 +6,7 @@ use crate::Shell_type;
 impl Shell_type {
     async fn Read_file_and_write(&mut self, Path: &Path_type) {
         let File = match Virtual_file_system::Get_instance()
-            .Open(&Path, Mode_type::Read_only.into(), self.Standard.Get_task())
+            .Open(&Path, Mode_type::READ_ONLY.into(), self.Standard.Get_task())
             .await
         {
             Ok(File) => File,

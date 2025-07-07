@@ -426,15 +426,15 @@ mod tests {
 
     use super::*;
 
-    pub const Memory_device_size: usize = 1024;
-    pub const Memory_device_block_size: usize = 512;
+    pub const MEMORY_DEVICE_SIZE: usize = 1024;
+    pub const MEMORY_DEVICE_BLOCK_SIZE: usize = 512;
 
     #[Test]
     async fn Test_mount_device() {
         let fs = File_system_type::New();
 
-        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
-            Memory_device_size
+        let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
+            MEMORY_DEVICE_SIZE
         ));
 
         let Inode = fs
@@ -448,8 +448,8 @@ mod tests {
     async fn Test_open_close_device() {
         let fs = File_system_type::New();
 
-        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
-            Memory_device_size
+        let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
+            MEMORY_DEVICE_SIZE
         ));
 
         let Inode = fs
@@ -460,7 +460,7 @@ mod tests {
             .Open(
                 Inode,
                 Task_identifier_type::New(0),
-                Mode_type::Read_only.into(),
+                Mode_type::READ_ONLY.into(),
                 0_usize.into(),
             )
             .await
@@ -472,8 +472,8 @@ mod tests {
     async fn Test_read_write_device() {
         let fs = File_system_type::New();
 
-        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
-            Memory_device_size
+        let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
+            MEMORY_DEVICE_SIZE
         ));
 
         let Inode = fs
@@ -484,7 +484,7 @@ mod tests {
             .Open(
                 Inode,
                 Task_identifier_type::New(0),
-                Mode_type::Read_write.into(),
+                Mode_type::READ_WRITE.into(),
                 0_usize.into(),
             )
             .await
@@ -507,8 +507,8 @@ mod tests {
     async fn Test_duplicate_file_identifier() {
         let File_system = File_system_type::New();
 
-        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
-            Memory_device_size
+        let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
+            MEMORY_DEVICE_SIZE
         ));
 
         let Inode = File_system
@@ -522,7 +522,7 @@ mod tests {
             .Open(
                 Inode,
                 Task_identifier_type::New(0),
-                Mode_type::Read_only.into(),
+                Mode_type::READ_ONLY.into(),
                 Underlying_file,
             )
             .await
@@ -547,8 +547,8 @@ mod tests {
     async fn Test_transfert_file_identifier() {
         let File_system = File_system_type::New();
 
-        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
-            Memory_device_size
+        let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
+            MEMORY_DEVICE_SIZE
         ));
 
         let Inode = File_system
@@ -559,7 +559,7 @@ mod tests {
         let Task = Task_identifier_type::New(0);
 
         let File_identifier = File_system
-            .Open(Inode, Task, Mode_type::Read_only.into(), 0_usize.into())
+            .Open(Inode, Task, Mode_type::READ_ONLY.into(), 0_usize.into())
             .await
             .unwrap();
 
@@ -579,8 +579,8 @@ mod tests {
     async fn Test_delete_device() {
         let fs = File_system_type::New();
 
-        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
-            Memory_device_size
+        let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
+            MEMORY_DEVICE_SIZE
         ));
 
         let Inode = fs
@@ -594,8 +594,8 @@ mod tests {
     async fn Test_set_position() {
         let fs = File_system_type::New();
 
-        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
-            Memory_device_size
+        let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
+            MEMORY_DEVICE_SIZE
         ));
 
         let Inode = fs
@@ -606,7 +606,7 @@ mod tests {
             .Open(
                 Inode,
                 Task_identifier_type::New(0),
-                Mode_type::Read_only.into(),
+                Mode_type::READ_ONLY.into(),
                 0_usize.into(),
             )
             .await
@@ -621,8 +621,8 @@ mod tests {
     async fn Test_flush() {
         let fs = File_system_type::New();
 
-        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
-            Memory_device_size
+        let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
+            MEMORY_DEVICE_SIZE
         ));
 
         let Inode = fs
@@ -633,7 +633,7 @@ mod tests {
             .Open(
                 Inode,
                 Task_identifier_type::New(0),
-                Mode_type::Read_only.into(),
+                Mode_type::READ_ONLY.into(),
                 0_usize.into(),
             )
             .await
@@ -646,8 +646,8 @@ mod tests {
     async fn Test_get_mode() {
         let fs = File_system_type::New();
 
-        let Memory_device = Create_device!(Memory_device_type::<Memory_device_block_size>::New(
-            Memory_device_size
+        let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
+            MEMORY_DEVICE_SIZE
         ));
 
         let Inode = fs
@@ -658,7 +658,7 @@ mod tests {
             .Open(
                 Inode,
                 Task_identifier_type::New(0),
-                Mode_type::Read_only.into(),
+                Mode_type::READ_ONLY.into(),
                 0_usize.into(),
             )
             .await

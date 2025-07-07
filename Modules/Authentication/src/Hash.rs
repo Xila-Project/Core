@@ -19,7 +19,7 @@ use alloc::{
 use File_system::Mode_type;
 use Virtual_file_system::File_type;
 
-use crate::{Error_type, Random_device_path, Result_type};
+use crate::{Error_type, Result_type, RANDOM_DEVICE_PATH};
 
 /// Generates a random salt for password hashing.
 ///
@@ -44,8 +44,8 @@ use crate::{Error_type, Random_device_path, Result_type};
 pub async fn Generate_salt() -> Result_type<String> {
     let Random_file = File_type::Open(
         Virtual_file_system::Get_instance(),
-        Random_device_path,
-        Mode_type::Read_only.into(),
+        RANDOM_DEVICE_PATH,
+        Mode_type::READ_ONLY.into(),
     )
     .await
     .map_err(Error_type::Failed_to_open_random_device)?;

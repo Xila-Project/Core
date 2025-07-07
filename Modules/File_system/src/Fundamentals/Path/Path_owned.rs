@@ -8,7 +8,7 @@ use alloc::{
     vec::Vec,
 };
 
-use super::{Extension_separator, Path_type, Separator};
+use super::{Path_type, EXTENSION_SEPARATOR, SEPARATOR};
 
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 #[repr(transparent)]
@@ -22,7 +22,7 @@ impl Path_owned_type {
     }
 
     pub fn New(Path: String) -> Option<Self> {
-        let Path = if Path.ends_with(Separator) && Path.len() > 1 {
+        let Path = if Path.ends_with(SEPARATOR) && Path.len() > 1 {
             Path[..Path.len() - 1].to_string()
         } else {
             Path
@@ -48,8 +48,8 @@ impl Path_owned_type {
             return Some(self);
         }
 
-        if !self.0.ends_with(Separator) {
-            self.0.push(Separator);
+        if !self.0.ends_with(SEPARATOR) {
+            self.0.push(SEPARATOR);
         }
         self.0.push_str(Path.as_ref().As_str());
 
@@ -63,7 +63,7 @@ impl Path_owned_type {
     pub fn Revert_parent_directory(&mut self) -> &mut Self {
         let mut Last_index = 0;
         for (i, c) in self.0.chars().enumerate() {
-            if c == Separator {
+            if c == SEPARATOR {
                 Last_index = i;
             }
         }
@@ -80,7 +80,7 @@ impl Path_owned_type {
         let mut extension = None;
 
         for (i, c) in self.0.char_indices() {
-            if c == Extension_separator {
+            if c == EXTENSION_SEPARATOR {
                 extension = Some(&self.0[i..]);
             }
         }
@@ -90,7 +90,7 @@ impl Path_owned_type {
     pub fn Get_file_name(&self) -> &str {
         let mut Last_index = 0;
         for (i, c) in self.0.chars().enumerate() {
-            if c == Separator {
+            if c == SEPARATOR {
                 Last_index = i;
             }
         }
@@ -115,7 +115,7 @@ impl Path_owned_type {
             Stack.push("");
         }
 
-        for Component in self.0.split(Separator) {
+        for Component in self.0.split(SEPARATOR) {
             match Component {
                 ".." => {
                     Stack.pop();
@@ -141,7 +141,7 @@ pub fn Is_valid_string(String: &str) -> bool {
         }
     }
 
-    if String.ends_with(Separator) && String.len() > 1 {
+    if String.ends_with(SEPARATOR) && String.len() > 1 {
         // Check if the string ends with a separator and is not the root directory.
         return false;
     }

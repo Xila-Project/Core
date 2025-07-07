@@ -1,7 +1,6 @@
 #![no_std]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
-#![allow(non_upper_case_globals)]
 
 extern crate alloc;
 
@@ -99,7 +98,7 @@ async fn Integration_test() {
     let Standard_in = Virtual_file_system
         .Open(
             &"/Devices/Standard_in",
-            File_system::Mode_type::Read_only.into(),
+            File_system::Mode_type::READ_ONLY.into(),
             Task,
         )
         .await
@@ -107,7 +106,7 @@ async fn Integration_test() {
     let Standard_out = Virtual_file_system
         .Open(
             &"/Devices/Standard_out",
-            File_system::Mode_type::Write_only.into(),
+            File_system::Mode_type::WRITE_ONLY.into(),
             Task,
         )
         .await
@@ -115,7 +114,7 @@ async fn Integration_test() {
     let Standard_error = Virtual_file_system
         .Open(
             &"/Devices/Standard_error",
-            File_system::Mode_type::Write_only.into(),
+            File_system::Mode_type::WRITE_ONLY.into(),
             Task,
         )
         .await

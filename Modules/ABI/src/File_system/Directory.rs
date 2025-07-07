@@ -363,8 +363,8 @@ mod Tests {
             .Open(
                 &"/test_read_directory_entries.txt",
                 File_system::Flags_type::New(
-                    Mode_type::Write_only,
-                    Some(Open_type::Create_only),
+                    Mode_type::WRITE_ONLY,
+                    Some(Open_type::CREATE_ONLY),
                     None,
                 ),
                 Task,
@@ -521,8 +521,8 @@ mod Tests {
                 .Open(
                     &Path_owned_type::New(Path).unwrap(),
                     File_system::Flags_type::New(
-                        Mode_type::Write_only,
-                        Some(Open_type::Create_only),
+                        Mode_type::WRITE_ONLY,
+                        Some(Open_type::CREATE_ONLY),
                         None,
                     ),
                     Task,
@@ -643,8 +643,8 @@ mod Tests {
                 .Open(
                     &Path_owned_type::New(Path).unwrap(),
                     File_system::Flags_type::New(
-                        Mode_type::Write_only,
-                        Some(Open_type::Create_only),
+                        Mode_type::WRITE_ONLY,
+                        Some(Open_type::CREATE_ONLY),
                         None,
                     ),
                     Task,
@@ -773,8 +773,8 @@ mod Tests {
             .Open(
                 &"/test_dir/file.txt",
                 File_system::Flags_type::New(
-                    Mode_type::Write_only,
-                    Some(Open_type::Create_only),
+                    Mode_type::WRITE_ONLY,
+                    Some(Open_type::CREATE_ONLY),
                     None,
                 ),
                 Task,

@@ -6,7 +6,7 @@ use Virtual_file_system::File_type;
 
 use crate::Error::{Error_type, Result_type};
 
-pub const Shortcut_path: &Path_type = Path_type::From_str("/Configuration/Shared/Shortcuts");
+pub const SHORTCUT_PATH: &Path_type = Path_type::From_str("/Configuration/Shared/Shortcuts");
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Shortcut_type {
@@ -23,7 +23,7 @@ impl Shortcut_type {
     pub async fn Add(Path: &Path_type) -> Result_type<()> {
         let Shortcut = Shortcut_type::Read_from_path(Path, &mut Vec::new()).await?;
 
-        let New_shortcut_path = Shortcut_path
+        let New_shortcut_path = SHORTCUT_PATH
             .Append(Shortcut.Get_name())
             .ok_or(Error_type::Failed_to_get_shortcut_file_path)?
             .Append(".json")
@@ -43,7 +43,7 @@ impl Shortcut_type {
     ) -> Result_type<Shortcut_type> {
         let Virtual_file_system = Virtual_file_system::Get_instance();
 
-        let Shortcut_file = File_type::Open(Virtual_file_system, Path, Mode_type::Read_only.into())
+        let Shortcut_file = File_type::Open(Virtual_file_system, Path, Mode_type::READ_ONLY.into())
             .await
             .map_err(Error_type::Failed_to_read_shortcut_file)?;
 
@@ -62,7 +62,7 @@ impl Shortcut_type {
     }
 
     pub async fn Read(Entry_name: &str, Buffer: &mut Vec<u8>) -> Result_type<Shortcut_type> {
-        let Shortcut_file_path = Shortcut_path
+        let Shortcut_file_path = SHORTCUT_PATH
             .Append(Entry_name)
             .ok_or(Error_type::Failed_to_get_shortcut_file_path)?;
 

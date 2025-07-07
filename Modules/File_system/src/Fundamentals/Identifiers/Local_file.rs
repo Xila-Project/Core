@@ -50,17 +50,17 @@ use super::{
 pub struct Local_file_identifier_type(usize);
 
 impl Local_file_identifier_type {
-    const Task_position: u8 = File_identifier_type::Size_bits;
+    const TASK_POSITION: u8 = File_identifier_type::SIZE_BITS;
 
     pub const fn New(Task: Task_identifier_type, File: File_identifier_type) -> Self {
         let Task = Task.Into_inner();
         let File = File.Into_inner();
 
-        Self((Task as usize) << Self::Task_position | File as usize)
+        Self((Task as usize) << Self::TASK_POSITION | File as usize)
     }
 
     pub const fn Split(self) -> (Task_identifier_type, File_identifier_type) {
-        let Task = self.0 >> File_identifier_type::Size_bits;
+        let Task = self.0 >> File_identifier_type::SIZE_BITS;
         let Task = Task_identifier_type::New(Task as Task_identifier_inner_type);
 
         let File = self.0 as File_identifier_inner_type;
@@ -70,11 +70,11 @@ impl Local_file_identifier_type {
     }
 
     pub const fn Get_minimum(Task: Task_identifier_type) -> Self {
-        Self::New(Task, File_identifier_type::Minimum)
+        Self::New(Task, File_identifier_type::MINIMUM)
     }
 
     pub const fn Get_maximum(Task: Task_identifier_type) -> Self {
-        Self::New(Task, File_identifier_type::Maximum)
+        Self::New(Task, File_identifier_type::MAXIMUM)
     }
 
     pub const fn Into_unique_file_identifier(

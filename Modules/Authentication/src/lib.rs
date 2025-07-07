@@ -30,7 +30,6 @@
 #![no_std]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
-#![allow(non_upper_case_globals)]
 
 extern crate alloc;
 
@@ -45,13 +44,13 @@ pub use Group::*;
 pub use User::*;
 
 /// Path to the users directory in the filesystem
-const Users_folder_path: &str = "/System/Users";
+const USERS_FOLDER_PATH: &str = "/System/Users";
 
 /// Path to the groups directory in the filesystem
-const Group_folder_path: &str = "/System/Groups";
+const GROUP_FOLDER_PATH: &str = "/System/Groups";
 
 /// Path to the random device used for salt generation
-const Random_device_path: &str = "/Devices/Random";
+const RANDOM_DEVICE_PATH: &str = "/Devices/Random";
 
 /// Loads all users and groups from the filesystem into memory.
 ///
@@ -93,7 +92,7 @@ pub async fn Load_all_users_and_groups() -> Result_type<()> {
     let mut Buffer: Vec<u8> = vec![];
 
     {
-        let Groups_directory = Directory_type::Open(Virtual_file_system, Group_folder_path)
+        let Groups_directory = Directory_type::Open(Virtual_file_system, GROUP_FOLDER_PATH)
             .await
             .map_err(Error_type::Failed_to_read_group_directory)?;
 
@@ -116,7 +115,7 @@ pub async fn Load_all_users_and_groups() -> Result_type<()> {
     }
 
     {
-        let Users_directory = Directory_type::Open(Virtual_file_system, Users_folder_path)
+        let Users_directory = Directory_type::Open(Virtual_file_system, USERS_FOLDER_PATH)
             .await
             .map_err(Error_type::Failed_to_read_users_directory)?;
 

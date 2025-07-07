@@ -22,7 +22,7 @@ use Users::{
 };
 use Virtual_file_system::{Directory_type, File_type, Virtual_file_system_type};
 
-use crate::{Error_type, Group_folder_path, Result_type};
+use crate::{Error_type, Result_type, GROUP_FOLDER_PATH};
 
 /// Represents a user group with associated metadata and member list.
 ///
@@ -106,7 +106,7 @@ impl Group_type {
 /// Returns `Ok(Path_owned_type)` with the complete path to the group file,
 /// or `Err(Error_type::Failed_to_get_group_file_path)` if path construction fails.
 pub fn Get_group_file_path(Group_name: &str) -> Result_type<Path_owned_type> {
-    Path_type::New(Group_folder_path)
+    Path_type::New(GROUP_FOLDER_PATH)
         .to_owned()
         .Append(Group_name)
         .ok_or(Error_type::Failed_to_get_group_file_path)
@@ -139,7 +139,7 @@ pub async fn Read_group_file<'a>(
     Buffer: &mut Vec<u8>,
     File: &str,
 ) -> Result_type<Group_type> {
-    let Group_file_path = Path_type::New(Group_folder_path)
+    let Group_file_path = Path_type::New(GROUP_FOLDER_PATH)
         .to_owned()
         .Append(File)
         .ok_or(Error_type::Failed_to_get_group_file_path)?;
@@ -147,7 +147,7 @@ pub async fn Read_group_file<'a>(
     let Group_file = File_type::Open(
         Virtual_file_system,
         Group_file_path,
-        Mode_type::Read_only.into(),
+        Mode_type::READ_ONLY.into(),
     )
     .await
     .map_err(Error_type::Failed_to_read_group_directory)?;
@@ -215,7 +215,7 @@ pub async fn Create_group<'a>(
     // - Write group file.
     let Group = Group_type::New(Group_identifier.As_u16(), Group_name.to_string(), vec![]);
 
-    match Directory_type::Create(Virtual_file_system, Group_folder_path).await {
+    match Directory_type::Create(Virtual_file_system, GROUP_FOLDER_PATH).await {
         Ok(_) | Err(File_system::Error_type::Already_exists) => {}
         Err(Error) => Err(Error_type::Failed_to_create_groups_directory(Error))?,
     };
@@ -225,7 +225,7 @@ pub async fn Create_group<'a>(
     let Group_file = File_type::Open(
         Virtual_file_system,
         Group_file_path,
-        Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None),
+        Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None),
     )
     .await
     .map_err(Error_type::Failed_to_open_group_file)?;

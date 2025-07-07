@@ -34,21 +34,21 @@ async fn Test_set_get_owner() {
 
     // Set user and group to root
     Manager
-        .Set_user(Task, User_identifier_type::Root)
+        .Set_user(Task, User_identifier_type::ROOT)
         .await
         .unwrap();
     Manager
-        .Set_group(Task, Group_identifier_type::Root)
+        .Set_group(Task, Group_identifier_type::ROOT)
         .await
         .unwrap();
 
     assert_eq!(
         Get_instance().Get_user(Task).await.unwrap(),
-        User_identifier_type::Root
+        User_identifier_type::ROOT
     );
     assert_eq!(
         Get_instance().Get_group(Task).await.unwrap(),
-        Group_identifier_type::Root
+        Group_identifier_type::ROOT
     );
 }
 
@@ -567,7 +567,7 @@ async fn Test_root_task_parent() {
 
     // Root task should be its own parent
     let Parent = Manager.Get_parent(Root_task).await.unwrap();
-    assert_eq!(Parent, Manager_type::Root_task_identifier);
+    assert_eq!(Parent, Manager_type::ROOT_TASK_IDENTIFIER);
 }
 
 #[Test(Task_path = crate)]

@@ -26,13 +26,13 @@ async fn Mount_and_open(
     let Standard_in = Virtual_file_system::Get_instance()
         .Open(
             &"/Devices/Terminal",
-            Flags_type::New(Mode_type::Read_only, None, None),
+            Flags_type::New(Mode_type::READ_ONLY, None, None),
             Task,
         )
         .await?;
 
     let Standard_out = Virtual_file_system::Get_instance()
-        .Open(&"/Devices/Terminal", Mode_type::Write_only.into(), Task)
+        .Open(&"/Devices/Terminal", Mode_type::WRITE_ONLY.into(), Task)
         .await?;
 
     let Standard_error = Virtual_file_system::Get_instance()

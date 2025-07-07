@@ -45,7 +45,7 @@ pub struct Graphics_bindings;
 
 impl Registrable_trait for Graphics_bindings {
     fn Get_functions(&self) -> &[Function_descriptor_type] {
-        &Graphics_bindings_functions
+        &GRAPHICS_BINDINGS_FUNCTIONS
     }
 
     #[cfg(not(target_arch = "x86_64"))]
@@ -135,7 +135,7 @@ impl Pointer_table_type {
     }
 }
 
-static mut Pointer_table: OnceCell<Pointer_table_type> = OnceCell::new();
+static mut POINTER_TABLE: OnceCell<Pointer_table_type> = OnceCell::new();
 
 /// Call to graphics API
 ///
@@ -163,7 +163,7 @@ pub unsafe fn Call(
 
     let _Lock = block_on(Instance.Lock());
 
-    let Pointer_table_reference = &raw mut Pointer_table;
+    let Pointer_table_reference = &raw mut POINTER_TABLE;
 
     let _ = (*Pointer_table_reference).get_or_init(Pointer_table_type::New);
 
@@ -191,7 +191,7 @@ pub unsafe fn Call(
     // Lock is automatically released here.
 }
 
-const Graphics_bindings_functions: [Function_descriptor_type; 1] = [Function_descriptor_type {
+const GRAPHICS_BINDINGS_FUNCTIONS: [Function_descriptor_type; 1] = [Function_descriptor_type {
     Name: "Xila_graphics_call",
     Pointer: Call as *mut _,
 }];

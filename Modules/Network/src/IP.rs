@@ -5,7 +5,7 @@ use core::fmt::Display;
 pub struct IPv4_type([u8; 4]);
 
 impl IPv4_type {
-    pub const Localhost: Self = Self([127, 0, 0, 1]);
+    pub const LOCALHOST: Self = Self([127, 0, 0, 1]);
 
     pub const fn New(value: [u8; 4]) -> Self {
         Self(value)

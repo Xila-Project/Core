@@ -60,31 +60,31 @@ impl From<File_system::Type_type> for Xila_file_type_type {
 pub type Xila_file_system_mode_type = u8;
 
 #[no_mangle]
-pub static Xila_file_system_mode_read_mask: u8 = File_system::Mode_type::Read_bit;
+pub static XILA_FILE_SYSTEM_MODE_READ_MASK: u8 = File_system::Mode_type::READ_BIT;
 #[no_mangle]
-pub static Xila_file_system_mode_write_mask: u8 = File_system::Mode_type::Write_bit;
+pub static XILA_FILE_SYSTEM_MODE_WRITE_MASK: u8 = File_system::Mode_type::WRITE_BIT;
 
 pub type Xila_file_system_open_type = u8;
 
 #[no_mangle]
-pub static Xila_file_system_open_create_mask: u8 = File_system::Open_type::Create_mask;
+pub static XILA_FILE_SYSTEM_OPEN_CREATE_MASK: u8 = File_system::Open_type::CREATE_MASK;
 #[no_mangle]
-pub static Xila_file_system_open_create_only_mask: u8 = File_system::Open_type::Exclusive_mask;
+pub static XILA_FILE_SYSTEM_OPEN_CREATE_ONLY_MASK: u8 = File_system::Open_type::EXCLUSIVE_MASK;
 #[no_mangle]
-pub static Xila_file_system_open_truncate_mask: u8 = File_system::Open_type::Truncate_mask;
+pub static XILA_FILE_SYSTEM_OPEN_TRUNCATE_MASK: u8 = File_system::Open_type::TRUNCATE_MASK;
 
 pub type Xila_file_system_status_type = u8;
 
 #[no_mangle]
-pub static Xila_file_system_status_append_mask: u8 = File_system::Status_type::Append_bit;
+pub static XILA_FILE_SYSTEM_STATUS_APPEND_MASK: u8 = File_system::Status_type::APPEND_BIT;
 #[no_mangle]
-pub static Xila_file_system_status_non_blocking_mask: u8 =
-    File_system::Status_type::Non_blocking_bit;
+pub static XILA_FILE_SYSTEM_STATUS_NON_BLOCKING_MASK: u8 =
+    File_system::Status_type::NON_BLOCKING_BIT;
 #[no_mangle]
-pub static Xila_file_system_status_synchronous_mask: u8 = File_system::Status_type::Synchronous_bit;
+pub static XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_MASK: u8 = File_system::Status_type::SYNCHRONOUS_BIT;
 #[no_mangle]
-pub static Xila_file_system_status_synchronous_data_only_mask: u8 =
-    File_system::Status_type::Synchronous_data_only_bit;
+pub static XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_DATA_ONLY_MASK: u8 =
+    File_system::Status_type::SYNCHRONOUS_DATA_ONLY_BIT;
 
 pub type Xila_file_system_inode_type = u64;
 

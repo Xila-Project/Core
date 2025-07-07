@@ -1,7 +1,6 @@
 #![no_std]
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
-#![allow(non_upper_case_globals)]
 
 extern crate alloc;
 
@@ -29,7 +28,7 @@ async fn Is_execute_allowed(Statistics: &Statistics_type, User: User_identifier_
     }
 
     // - Check if the user is the owner and has the execute permission
-    if User == User_identifier_type::Root {
+    if User == User_identifier_type::ROOT {
         return true;
     }
     if (Statistics.Get_user() == User) && Statistics.Get_permissions().Get_user().Get_execute() {
@@ -65,7 +64,7 @@ async fn Get_overridden_user(
 
     let New_user = Statistics.Get_user();
 
-    if Current_user != Users::User_identifier_type::Root || New_user != Current_user {
+    if Current_user != Users::User_identifier_type::ROOT || New_user != Current_user {
         return Err(Error_type::Permission_denied);
     }
 
@@ -84,7 +83,7 @@ pub async fn Execute(
     let File = File_type::Open(
         Virtual_file_system::Get_instance(),
         &Path,
-        File_system::Mode_type::Read_write.into(),
+        File_system::Mode_type::READ_WRITE.into(),
     )
     .await?;
 
@@ -152,12 +151,12 @@ mod Tests {
             Time_type::New(0),
             File_system::Type_type::File,
             File_system::Permissions_type::From_octal(0o777).unwrap(),
-            Users::User_identifier_type::Root,
-            Users::Group_identifier_type::Root,
+            Users::User_identifier_type::ROOT,
+            Users::Group_identifier_type::ROOT,
         );
 
-        assert!(Is_execute_allowed(&Statistics, Users::User_identifier_type::Root).await);
-        assert!(Is_execute_allowed(&Statistics, Users::User_identifier_type::Root).await);
-        assert!(Is_execute_allowed(&Statistics, Users::User_identifier_type::Root).await);
+        assert!(Is_execute_allowed(&Statistics, Users::User_identifier_type::ROOT).await);
+        assert!(Is_execute_allowed(&Statistics, Users::User_identifier_type::ROOT).await);
+        assert!(Is_execute_allowed(&Statistics, Users::User_identifier_type::ROOT).await);
     }
 }

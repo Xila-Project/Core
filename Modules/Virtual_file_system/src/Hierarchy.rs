@@ -10,34 +10,34 @@ pub async fn Create_default_hierarchy(
     Task: Task_identifier_type,
 ) -> Result_type<()> {
     Virtual_file_system
-        .Create_directory(&Path_type::System, Task)
+        .Create_directory(&Path_type::SYSTEM, Task)
         .await?;
     Virtual_file_system
-        .Create_directory(&Path_type::Configuration, Task)
+        .Create_directory(&Path_type::CONFIGURATION, Task)
         .await?;
     Virtual_file_system
-        .Create_directory(&Path_type::Shared_configuration, Task)
+        .Create_directory(&Path_type::SHARED_CONFIGURATION, Task)
         .await?;
     Virtual_file_system
-        .Create_directory(&Path_type::Devices, Task)
+        .Create_directory(&Path_type::DEVICES, Task)
         .await?;
     Virtual_file_system
-        .Create_directory(&Path_type::Users, Task)
+        .Create_directory(&Path_type::USERS, Task)
         .await?;
     Virtual_file_system
-        .Create_directory(&Path_type::Data, Task)
+        .Create_directory(&Path_type::DATA, Task)
         .await?;
     Virtual_file_system
-        .Create_directory(&Path_type::Shared_data, Task)
+        .Create_directory(&Path_type::SHARED_DATA, Task)
         .await?;
     Virtual_file_system
-        .Create_directory(&Path_type::Binaries, Task)
+        .Create_directory(&Path_type::BINARIES, Task)
         .await?;
     Virtual_file_system
-        .Create_directory(&Path_type::Temporary, Task)
+        .Create_directory(&Path_type::TEMPORARY, Task)
         .await?;
     Virtual_file_system
-        .Create_directory(&Path_type::Logs, Task)
+        .Create_directory(&Path_type::LOGS, Task)
         .await?;
 
     Ok(())
@@ -79,9 +79,9 @@ pub async fn Clean_devices_in_directory<'a>(
 pub async fn Clean_devices<'a>(
     Virtual_file_system: &'a Virtual_file_system_type<'a>,
 ) -> Result_type<()> {
-    Clean_devices_in_directory(Virtual_file_system, Path_type::Devices).await?;
+    Clean_devices_in_directory(Virtual_file_system, Path_type::DEVICES).await?;
 
-    Clean_devices_in_directory(Virtual_file_system, Path_type::Binaries).await?;
+    Clean_devices_in_directory(Virtual_file_system, Path_type::BINARIES).await?;
 
     Ok(())
 }

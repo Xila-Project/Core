@@ -43,7 +43,7 @@ impl File_manager_type {
 
         let mut Window = Graphics::Get_instance().Create_window().await?;
 
-        Window.Set_icon("Fm", Palette::Get(Hue_type::Cyan, Palette::Tone_type::Main));
+        Window.Set_icon("Fm", Palette::Get(Hue_type::Cyan, Palette::Tone_type::MAIN));
 
         let mut Manager = Self {
             Window,

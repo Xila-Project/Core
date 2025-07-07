@@ -1,5 +1,4 @@
 #![allow(non_camel_case_types)]
-#![allow(non_upper_case_globals)]
 #![allow(non_snake_case)]
 
 use darling::{FromMeta, ast::NestedMeta};
@@ -138,9 +137,9 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
             static mut __Spawner : usize = 0;
 
             unsafe {
-                let __Executor = #Executor;
+                let __EXECUTOR = #Executor;
 
-                __Executor.Run(|Spawner, __Executor| {
+                __EXECUTOR.Run(|Spawner, __executor| {
                     let Manager = #Task_path::Initialize();
 
                     unsafe {
@@ -154,7 +153,7 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                             Some(__Spawner),
                             async move |_task| {
                                 __inner().await;
-                                __Executor.Stop();
+                                __executor.Stop();
                             }
                         ).await
                     }).expect("Failed to spawn task");
@@ -270,9 +269,9 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
             static mut __Spawner : usize = 0;
 
             unsafe {
-                let __Executor : &'static mut _ = #Executor_expression;
+                let __EXECUTOR : &'static mut _ = #Executor_expression;
 
-                __Executor.Run(|Spawner, __Executor| {
+                __EXECUTOR.Run(|Spawner, __EXECUTOR| {
                     let Manager = #Task_path::Initialize();
 
                     unsafe {
@@ -281,12 +280,12 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
 
                     #Task_path::Futures::block_on(async move {
                         Manager.Spawn(
-                            #Task_path::Manager_type::Root_task_identifier,
+                            #Task_path::Manager_type::ROOT_TASK_IDENTIFIER,
                             #Function_name_string,
                             Some(__Spawner),
                             async move |_task| {
                                 __inner().await;
-                                __Executor.Stop();
+                                __EXECUTOR.Stop();
                             }
                         ).await
                     }).expect("Failed to spawn task");
