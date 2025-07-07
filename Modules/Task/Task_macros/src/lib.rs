@@ -260,11 +260,6 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
     let mut Input_function = Input_function.clone();
     Input_function.sig.ident = format_ident!("__inner");
 
-    dbg!(
-        "Generating Run_with_executor for function: {}",
-        Function_name
-    );
-
     // Generate the new function
     quote! {
         fn #Function_name() {

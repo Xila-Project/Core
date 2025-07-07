@@ -5,9 +5,9 @@ pub fn Get() -> TokenStream {
     quote! {
         pub unsafe fn object_delete(__pointer_table : &mut Pointer_table_type, __task: Task_identifier_type, Object: u16) {
 
-            let Object = __pointer_table.Remove(__task, Object).unwrap();
+            let object = __pointer_table.Remove(__task, Object).unwrap();
 
-            lv_obj_delete(Object);
+            lv_obj_delete(object);
         }
 
         pub unsafe fn window_create() -> *mut lv_obj_t {
@@ -25,12 +25,12 @@ pub fn Get() -> TokenStream {
         ) {
             let mut window = Graphics::Window_type::From_raw(window);
 
-            if let Some(Event) = window.Pop_event() {
+            if let Some(event) = window.Pop_event() {
 
-                *Code = Event.Get_code() as u32;
+                *Code = event.Get_code() as u32;
 
                 *Target = __pointer_table
-                    .Get_wasm_pointer(Event.Get_target())
+                    .Get_wasm_pointer(event.Get_target())
                     .unwrap();
             }
 
@@ -40,22 +40,22 @@ pub fn Get() -> TokenStream {
         pub unsafe fn window_get_event_code(window: *mut lv_obj_t) -> u32 {
             let window = Graphics::Window_type::From_raw(window);
 
-            let Code = if let Some(Event) = window.Peek_event() {
-                Event.Get_code() as u32
+            let code = if let Some(event) = window.Peek_event() {
+                event.Get_code() as u32
             } else {
                 Graphics::Event_code_type::All as u32
             };
 
             core::mem::forget(window);
 
-            Code
+            code
         }
 
         pub unsafe fn window_get_event_target(__pointer_table: &mut Pointer_table_type, window: *mut lv_obj_t) -> u16 {
             let window = Graphics::Window_type::From_raw(window);
 
-            let Target = if let Some(Event) = window.Peek_event() {
-                Event.Get_target()
+            let target = if let Some(event) = window.Peek_event() {
+                event.Get_target()
             } else {
                 Log::Warning!("No event available for the window");
                 core::ptr::null_mut()
@@ -63,7 +63,7 @@ pub fn Get() -> TokenStream {
 
             core::mem::forget(window);
 
-            __pointer_table.Get_wasm_pointer(Target)
+            __pointer_table.Get_wasm_pointer(target)
                 .unwrap()
         }
 
@@ -98,16 +98,16 @@ pub fn Get() -> TokenStream {
 
             }
 
-            let Object = __pointer_table.Get_native_pointer(__task, Object).unwrap();
-            lv_buttonmatrix_set_map(Object, v.as_ptr());
+            let object = __pointer_table.Get_native_pointer(__task, Object).unwrap();
+            lv_buttonmatrix_set_map(object, v.as_ptr());
 
             core::mem::forget(v);   // ! : deallocate the vector to avoid memory leaks when the button matrix map is deleted
         }
 
         pub unsafe fn percentage(
-            Value: i32,
+            value: i32,
         ) -> i32 {
-            lv_pct(Value)
+            lv_pct(value)
         }
 
     }
