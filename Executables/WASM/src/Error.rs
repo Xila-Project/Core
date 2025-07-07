@@ -14,7 +14,7 @@ pub enum Error_type {
 
 impl fmt::Display for Error_type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let String = match self {
+        let string = match self {
             Error_type::Invalid_number_of_arguments => "Invalid number of arguments",
             Error_type::Failed_to_get_current_directory => "Failed to get current directory",
             Error_type::Invalid_path => "Invalid path",
@@ -25,12 +25,12 @@ impl fmt::Display for Error_type {
             Error_type::Failed_to_execute => "Failed to execute",
         };
 
-        write!(f, "{String}")
+        write!(f, "{string}")
     }
 }
 
 impl From<Error_type> for NonZeroUsize {
-    fn from(Error: Error_type) -> Self {
-        unsafe { NonZeroUsize::new_unchecked(Error as usize) }
+    fn from(error: Error_type) -> Self {
+        unsafe { NonZeroUsize::new_unchecked(error as usize) }
     }
 }

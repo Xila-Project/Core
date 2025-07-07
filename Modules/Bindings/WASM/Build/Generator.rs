@@ -34,9 +34,9 @@ pub fn Convert_fundamental_type(Type: &str) -> String {
 }
 
 pub fn Convert_type(Type: String) -> String {
-    let Type = Type.split_whitespace().collect::<Vec<_>>();
+    let type_value = Type.split_whitespace().collect::<Vec<_>>();
 
-    let Type = Type
+    let Type = type_value
         .into_iter()
         .filter(|x| *x != "mut" && *x != "core" && *x != "ffi" && *x != "::" && !x.is_empty())
         .rev()
@@ -56,7 +56,7 @@ pub fn Convert_type(Type: String) -> String {
 }
 
 fn Generate_function_signature(Signature: &Signature) -> String {
-    let Identifier = Get_function_name(&Signature.ident.to_string());
+    let identifier = Get_function_name(&Signature.ident.to_string());
 
     let Inputs = Signature.inputs.iter().collect::<Vec<_>>();
 
@@ -64,51 +64,51 @@ fn Generate_function_signature(Signature: &Signature) -> String {
 
     let mut Inputs = Inputs
         .iter()
-        .map(|Argument| match Argument {
-            syn::FnArg::Typed(Pattern) => {
-                let Identifier = Pattern.pat.to_token_stream().to_string();
-                let Type = Convert_type(Pattern.ty.to_token_stream().to_string());
-                format!("{Type} {Identifier}")
+        .map(|argument| match argument {
+            syn::FnArg::Typed(pattern) => {
+                let identifier = pattern.pat.to_token_stream().to_string();
+                let type_value = Convert_type(pattern.ty.to_token_stream().to_string());
+                format!("{type_value} {identifier}")
             }
             _ => panic!("Unsupported argument type"),
         })
         .collect::<Vec<_>>();
 
     if let ReturnType::Type(_, Type) = &Signature.output {
-        let Type = Convert_type(Type.to_token_stream().to_string());
-        Inputs.push(format!("{Type}* __Result"));
+        let type_value = Convert_type(Type.to_token_stream().to_string());
+        Inputs.push(format!("{type_value}* __result"));
     }
 
-    format!("void {}({})", Identifier, Inputs.join(", "))
+    format!("void {}({})", identifier, Inputs.join(", "))
 }
 
 fn Generate_function_declarations(Signatures: Vec<Signature>) -> String {
-    let Functions = Signatures
+    let functions = Signatures
         .iter()
         .map(Generate_function_signature)
         .collect::<Vec<_>>();
 
-    let Functions = Functions.join(";\n");
+    let Functions = functions.join(";\n");
     Functions + ";\n"
 }
 
 fn Generate_opaque_types(Structures: Vec<String>) -> String {
-    let Opaque_types = Structures
+    let opaque_types = Structures
         .iter()
         .filter(|Type| Type.ends_with("dsc_t"))
-        .map(|Type| {
+        .map(|type_value| {
             format!(
                 "typedef struct {{}} {};\n",
-                Type.replace("lv_", "Xila_graphics_"),
+                type_value.replace("lv_", "Xila_graphics_"),
             )
         })
         .collect::<Vec<_>>();
 
-    Opaque_types.join("\n")
+    opaque_types.join("\n")
 }
 
 fn Generate_graphics_call(Signature: &Signature) -> String {
-    let Identifier = Get_enumerate_item(&Signature.ident.to_string());
+    let identifier = Get_enumerate_item(&Signature.ident.to_string());
 
     let Inputs = Signature.inputs.iter().collect::<Vec<_>>();
 
@@ -116,21 +116,21 @@ fn Generate_graphics_call(Signature: &Signature) -> String {
 
     let mut Inputs = Inputs
         .iter()
-        .map(|Argument| match Argument {
-            FnArg::Typed(Pattern) => match &*Pattern.ty {
-                Type::Path(Path) => {
-                    if Path.to_token_stream().to_string() == "lv_color_t"
-                        || Path.to_token_stream().to_string() == "lv_color32_t"
-                        || Path.to_token_stream().to_string() == "lv_color16_t"
-                        || Path.to_token_stream().to_string() == "lv_style_value_t"
+        .map(|argument| match argument {
+            FnArg::Typed(pattern) => match &*pattern.ty {
+                Type::Path(path) => {
+                    if path.to_token_stream().to_string() == "lv_color_t"
+                        || path.to_token_stream().to_string() == "lv_color32_t"
+                        || path.to_token_stream().to_string() == "lv_color16_t"
+                        || path.to_token_stream().to_string() == "lv_style_value_t"
                     {
-                        format!("*(size_t*)&{}", Pattern.pat.to_token_stream())
+                        format!("*(size_t*)&{}", pattern.pat.to_token_stream())
                     } else {
-                        Pattern.pat.to_token_stream().to_string()
+                        pattern.pat.to_token_stream().to_string()
                     }
                 }
                 Type::Ptr(_) => {
-                    format!("(size_t){}", Pattern.pat.to_token_stream())
+                    format!("(size_t){}", pattern.pat.to_token_stream())
                 }
                 Type => panic!("Unsupported argument type : {Type:?}"),
             },
@@ -146,10 +146,10 @@ fn Generate_graphics_call(Signature: &Signature) -> String {
 
     let Declaration = match &Signature.output {
         ReturnType::Default => None,
-        ReturnType::Type(_, Type) => {
-            let Type = Convert_type(Type.to_token_stream().to_string());
+        ReturnType::Type(_, type_value) => {
+            let type_value = Convert_type(type_value.to_token_stream().to_string());
 
-            let Declaration = format!("{Type} __Result;");
+            let Declaration = format!("{type_value} __result;");
 
             Some(Declaration)
         }
@@ -157,12 +157,12 @@ fn Generate_graphics_call(Signature: &Signature) -> String {
 
     format!(
         "Xila_graphics_call({},{}, {}, {});\n",
-        Identifier,
+        identifier,
         Inputs.join(", "),
         Real_arguments_length,
         Declaration
             .as_ref()
-            .map(|_| "(void*)__Result")
+            .map(|_| "(void*)__result")
             .unwrap_or("NULL"),
     )
 }
@@ -237,11 +237,11 @@ pub fn Get_enumerate_item(Item: &str) -> String {
 }
 
 pub fn Generate_code_enumeration(Signatures: Vec<Signature>) -> String {
-    let mut Signatures = Signatures.clone();
+    let mut signatures = Signatures.clone();
 
-    Signatures.sort_by_key(|x| x.ident.to_string().to_lowercase());
+    signatures.sort_by_key(|x| x.ident.to_string().to_lowercase());
 
-    let Function_calls = Signatures
+    let Function_calls = signatures
         .iter()
         .enumerate()
         .map(|(i, x)| format!("{} = {}", Get_enumerate_item(&x.ident.to_string()), i))
@@ -252,11 +252,11 @@ pub fn Generate_code_enumeration(Signatures: Vec<Signature>) -> String {
 }
 
 pub fn Generate_C_function_definition(Signature: &Signature) -> String {
-    let C_signature = Generate_function_signature(Signature);
+    let c_signature = Generate_function_signature(Signature);
 
     let Graphics_call = Generate_graphics_call(Signature);
 
-    format!("{C_signature}\n{{\n{Graphics_call}\n}}\n")
+    format!("{c_signature}\n{{\n{Graphics_call}\n}}\n")
 }
 
 pub fn Generate_source(Output_file: &mut File, Context: &LVGL_context) {
@@ -285,19 +285,19 @@ pub fn Generate_source(Output_file: &mut File, Context: &LVGL_context) {
 }
 
 pub fn Generate(Output_path: &Path, LVGL_functions: &LVGL_context) -> Result<(), String> {
-    let Header_file_path = Output_path.join("Xila_graphics.h");
-    let Source_file_path = Output_path.join("Xila_graphics.c");
+    let header_file_path = Output_path.join("Xila_graphics.h");
+    let source_file_path = Output_path.join("Xila_graphics.c");
 
     let mut Header_file =
-        File::create(&Header_file_path).map_err(|_| "Error creating header file")?;
-    let mut Source_file =
-        File::create(&Source_file_path).map_err(|_| "Error creating source file")?;
+        File::create(&header_file_path).map_err(|_| "Error creating header file")?;
+    let mut source_file =
+        File::create(&source_file_path).map_err(|_| "Error creating source file")?;
 
     Generate_header(&mut Header_file, LVGL_functions);
-    Generate_source(&mut Source_file, LVGL_functions);
+    Generate_source(&mut source_file, LVGL_functions);
 
-    Format_C(&Header_file_path)?;
-    Format_C(&Source_file_path)?;
+    Format_C(&header_file_path)?;
+    Format_C(&source_file_path)?;
 
     Ok(())
 }

@@ -19,10 +19,10 @@ use crate::{Registrable_trait, Result_type};
 pub struct Runtime_builder_type(RuntimeBuilder);
 
 impl Runtime_builder_type {
-    pub fn New() -> Self {
-        let Runtime_builder = Runtime::builder().use_system_allocator();
+    pub fn new() -> Self {
+        let runtime_builder = Runtime::builder().use_system_allocator();
 
-        Self(Runtime_builder)
+        Self(runtime_builder)
     }
 
     pub fn Register_function(self, Name: &str, Function_pointer: *mut c_void) -> Self {
@@ -30,8 +30,8 @@ impl Runtime_builder_type {
     }
 
     pub fn Register(mut self, Registrable: &dyn Registrable_trait) -> Self {
-        for Function_descriptor in Registrable.Get_functions() {
-            self = self.Register_function(Function_descriptor.Name, Function_descriptor.Pointer);
+        for function_descriptor in Registrable.get_functions() {
+            self = self.Register_function(function_descriptor.name, function_descriptor.pointer);
         }
 
         self
@@ -45,8 +45,8 @@ impl Runtime_builder_type {
 pub struct Runtime_type(Runtime);
 
 impl Runtime_type {
-    pub fn Builder() -> Runtime_builder_type {
-        Runtime_builder_type::New()
+    pub fn builder() -> Runtime_builder_type {
+        Runtime_builder_type::new()
     }
 
     pub(crate) fn Get_inner_reference(&self) -> &Runtime {

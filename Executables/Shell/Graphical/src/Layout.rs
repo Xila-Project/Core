@@ -5,18 +5,18 @@ use Shared::Unix_to_human_time;
 use crate::Error::{Error_type, Result_type};
 
 pub struct Layout_type {
-    Window: *mut LVGL::lv_obj_t,
-    _Header: *mut LVGL::lv_obj_t,
-    _Body: *mut LVGL::lv_obj_t,
-    Clock: *mut LVGL::lv_obj_t,
-    Clock_string: String,
-    _Battery: *mut LVGL::lv_obj_t,
-    _WiFi: *mut LVGL::lv_obj_t,
+    window: *mut LVGL::lv_obj_t,
+    _header: *mut LVGL::lv_obj_t,
+    _body: *mut LVGL::lv_obj_t,
+    clock: *mut LVGL::lv_obj_t,
+    clock_string: String,
+    _battery: *mut LVGL::lv_obj_t,
+    _wi_fi: *mut LVGL::lv_obj_t,
 }
 
 impl Drop for Layout_type {
     fn drop(&mut self) {
-        unsafe { LVGL::lv_obj_delete(self.Window) }
+        unsafe { LVGL::lv_obj_delete(self.window) }
     }
 }
 
@@ -30,76 +30,76 @@ impl Layout_type {
         let Current_time = Time::Get_instance().Get_current_time();
 
         if let Ok(Current_time) = Current_time {
-            let (_, _, _, Hour, Minute, _) = Unix_to_human_time(Current_time.As_seconds() as i64);
+            let (_, _, _, hour, minute, _) = Unix_to_human_time(Current_time.As_seconds() as i64);
 
             let _ = Graphics::Get_instance().Lock().await;
 
-            self.Clock_string = format!("{Hour:02}:{Minute:02}\0");
+            self.clock_string = format!("{hour:02}:{minute:02}\0");
 
             unsafe {
-                LVGL::lv_label_set_text_static(self.Clock, self.Clock_string.as_ptr() as *const i8);
+                LVGL::lv_label_set_text_static(self.clock, self.clock_string.as_ptr() as *const i8);
             }
         }
     }
 
     pub fn Get_windows_parent(&self) -> *mut LVGL::lv_obj_t {
-        self.Window
+        self.window
     }
 
     pub async fn New() -> Result_type<Self> {
-        let _Lock = Graphics::Get_instance().Lock().await; // Lock the graphics
+        let _lock = Graphics::Get_instance().Lock().await; // Lock the graphics
 
         // - Create a window
         let Window = unsafe {
-            let Window = LVGL::lv_screen_active();
+            let window = LVGL::lv_screen_active();
 
-            if Window.is_null() {
+            if window.is_null() {
                 return Err(Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_set_size(Window, LVGL::lv_pct(100), LVGL::lv_pct(100));
-            LVGL::lv_obj_set_flex_flow(Window, LVGL::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN);
-            LVGL::lv_obj_set_style_pad_all(Window, 0, LVGL::LV_STATE_DEFAULT);
-            LVGL::lv_obj_set_style_pad_row(Window, 0, LVGL::LV_STATE_DEFAULT);
-            LVGL::lv_obj_set_style_border_width(Window, 0, LVGL::LV_STATE_DEFAULT);
-            LVGL::lv_obj_set_style_radius(Window, 0, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_size(window, LVGL::lv_pct(100), LVGL::lv_pct(100));
+            LVGL::lv_obj_set_flex_flow(window, LVGL::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN);
+            LVGL::lv_obj_set_style_pad_all(window, 0, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_style_pad_row(window, 0, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_style_border_width(window, 0, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_style_radius(window, 0, LVGL::LV_STATE_DEFAULT);
 
-            Window
+            window
         };
 
         // - Create a header
         let Header = unsafe {
-            let Header = LVGL::lv_obj_create(Window);
+            let header = LVGL::lv_obj_create(Window);
 
-            if Header.is_null() {
+            if header.is_null() {
                 return Err(Error_type::Failed_to_create_object);
             }
-            LVGL::lv_obj_set_size(Header, LVGL::lv_pct(100), 32);
-            LVGL::lv_obj_set_style_border_width(Header, 0, LVGL::LV_STATE_DEFAULT); // Remove the default border
-            LVGL::lv_obj_set_style_pad_all(Header, 8, LVGL::LV_STATE_DEFAULT); // Remove the default padding
-            LVGL::lv_obj_set_style_bg_color(Header, LVGL::lv_color_black(), LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_size(header, LVGL::lv_pct(100), 32);
+            LVGL::lv_obj_set_style_border_width(header, 0, LVGL::LV_STATE_DEFAULT); // Remove the default border
+            LVGL::lv_obj_set_style_pad_all(header, 8, LVGL::LV_STATE_DEFAULT); // Remove the default padding
+            LVGL::lv_obj_set_style_bg_color(header, LVGL::lv_color_black(), LVGL::LV_STATE_DEFAULT);
             // Set the background color to black
             LVGL::lv_obj_set_style_text_color(
-                Header,
+                header,
                 LVGL::lv_color_white(),
                 LVGL::LV_STATE_DEFAULT,
             ); // Set the text color to white for children
-            LVGL::lv_obj_set_style_radius(Header, 0, LVGL::LV_STATE_DEFAULT); // Remove the default radius
+            LVGL::lv_obj_set_style_radius(header, 0, LVGL::LV_STATE_DEFAULT); // Remove the default radius
 
-            Header
+            header
         };
 
         // - - Create a label for the clock
         let Clock = unsafe {
-            let Clock = LVGL::lv_label_create(Header);
+            let clock = LVGL::lv_label_create(Header);
 
-            if Clock.is_null() {
+            if clock.is_null() {
                 return Err(Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_set_align(Clock, LVGL::lv_align_t_LV_ALIGN_CENTER);
+            LVGL::lv_obj_set_align(clock, LVGL::lv_align_t_LV_ALIGN_CENTER);
 
-            Clock
+            clock
         };
 
         // - - Create a label for the battery
@@ -151,18 +151,18 @@ impl Layout_type {
             Body
         };
 
-        drop(_Lock); // Unlock the graphics
+        drop(_lock); // Unlock the graphics
 
         Graphics::Get_instance().Set_window_parent(Body).await?;
 
         Ok(Self {
-            Window,
-            _Header: Header,
-            _Body: Body,
-            Clock,
-            Clock_string: String::with_capacity(6),
-            _Battery: Battery,
-            _WiFi: WiFi,
+            window: Window,
+            _header: Header,
+            _body: Body,
+            clock: Clock,
+            clock_string: String::with_capacity(6),
+            _battery: Battery,
+            _wi_fi: WiFi,
         })
     }
 }

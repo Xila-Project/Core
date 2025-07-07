@@ -30,8 +30,8 @@ impl fmt::Display for Error_type {
 }
 
 impl From<Error_type> for NonZeroU32 {
-    fn from(Error: Error_type) -> Self {
-        unsafe { NonZeroU32::new_unchecked(Error as u32) }
+    fn from(error: Error_type) -> Self {
+        unsafe { NonZeroU32::new_unchecked(error as u32) }
     }
 }
 

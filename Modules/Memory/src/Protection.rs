@@ -14,8 +14,8 @@ use core::fmt::Debug;
 pub struct Protection_type(u8);
 
 impl Debug for Protection_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        Formatter
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter
             .debug_struct("Protection_type")
             .field("Read", &self.Get_read())
             .field("Write", &self.Get_write())
@@ -177,14 +177,14 @@ impl Protection_type {
 }
 
 impl From<Protection_type> for u8 {
-    fn from(Protection: Protection_type) -> Self {
-        Protection.0
+    fn from(protection: Protection_type) -> Self {
+        protection.0
     }
 }
 
 impl From<u8> for Protection_type {
-    fn from(Protection: u8) -> Self {
-        Self(Protection)
+    fn from(protection: u8) -> Self {
+        Self(protection)
     }
 }
 

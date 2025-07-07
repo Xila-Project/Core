@@ -6,32 +6,32 @@ use std::sync::{Condvar, Mutex};
 
 /// Single-threaded std-based executor.
 pub struct Executor_type {
-    Inner: raw::Executor,
-    Not_send: PhantomData<*mut ()>,
-    Signaler: &'static Signaler_type,
-    Stop: AtomicBool,
+    inner: raw::Executor,
+    not_send: PhantomData<*mut ()>,
+    signaler: &'static Signaler_type,
+    stop: AtomicBool,
 }
 
 impl Executor_type {
     /// Create a new Executor.
     pub fn New() -> Self {
-        let Signaler = Box::leak(Box::new(Signaler_type::New()));
+        let signaler = Box::leak(Box::new(Signaler_type::new()));
         Self {
-            Inner: raw::Executor::new(Signaler as *mut Signaler_type as *mut ()),
-            Not_send: PhantomData,
-            Signaler,
-            Stop: AtomicBool::new(false),
+            inner: raw::Executor::new(signaler as *mut Signaler_type as *mut ()),
+            not_send: PhantomData,
+            signaler,
+            stop: AtomicBool::new(false),
         }
     }
 
     pub fn Stop(&self) {
-        self.Stop.store(true, std::sync::atomic::Ordering::SeqCst);
-        self.Signaler.Signal();
+        self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
+        self.signaler.Signal();
     }
 
     /// Get a spawner for this executor.
     pub fn Spawner(&'static self) -> Spawner {
-        self.Inner.spawner()
+        self.inner.spawner()
     }
 
     /// Run the executor.
@@ -53,40 +53,40 @@ impl Executor_type {
     ///
     /// This function never returns.
     pub fn Run(&'static self, init: impl FnOnce(Spawner, &'static Self)) {
-        init(self.Inner.spawner(), self);
+        init(self.inner.spawner(), self);
 
-        while !self.Stop.load(std::sync::atomic::Ordering::SeqCst) {
-            unsafe { self.Inner.poll() };
-            self.Signaler.Wait();
+        while !self.stop.load(std::sync::atomic::Ordering::SeqCst) {
+            unsafe { self.inner.poll() };
+            self.signaler.Wait();
         }
     }
 }
 
 struct Signaler_type {
-    Mutex: Mutex<bool>,
-    Condvar: Condvar,
+    mutex: Mutex<bool>,
+    condvar: Condvar,
 }
 
 impl Signaler_type {
-    fn New() -> Self {
+    fn new() -> Self {
         Self {
-            Mutex: Mutex::new(false),
-            Condvar: Condvar::new(),
+            mutex: Mutex::new(false),
+            condvar: Condvar::new(),
         }
     }
 
     fn Wait(&self) {
-        let mut Signaled = self.Mutex.lock().unwrap();
-        while !*Signaled {
-            Signaled = self.Condvar.wait(Signaled).unwrap();
+        let mut signaled = self.mutex.lock().unwrap();
+        while !*signaled {
+            signaled = self.condvar.wait(signaled).unwrap();
         }
-        *Signaled = false;
+        *signaled = false;
     }
 
     fn Signal(&self) {
-        let mut Signaled = self.Mutex.lock().unwrap();
-        *Signaled = true;
-        self.Condvar.notify_one();
+        let mut signaled = self.mutex.lock().unwrap();
+        *signaled = true;
+        self.condvar.notify_one();
     }
 }
 

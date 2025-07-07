@@ -42,13 +42,13 @@ use super::{
 pub struct Unique_file_identifier_type(usize);
 
 impl Debug for Unique_file_identifier_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let (File_system_identifier, File_identifier) = self.Split();
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let (file_system_identifier, file_identifier) = self.Split();
 
-        Formatter
+        formatter
             .debug_struct("Unique_file_identifier_type")
-            .field("File_system_identifier", &File_system_identifier)
-            .field("File_identifier", &File_identifier)
+            .field("File_system_identifier", &file_system_identifier)
+            .field("File_identifier", &file_identifier)
             .finish()
     }
 }
@@ -57,35 +57,35 @@ impl Unique_file_identifier_type {
     const FILE_SYSTEM_IDENTIFIER_POSITION: u8 = File_identifier_type::SIZE_BITS;
 
     pub const fn New(File_system: File_system_identifier_type, File: File_identifier_type) -> Self {
-        let File_system_identifier = File_system.As_inner();
-        let File_identifier = File.Into_inner();
+        let file_system_identifier = File_system.As_inner();
+        let file_identifier = File.Into_inner();
 
         Self(
-            (File_system_identifier as usize) << Self::FILE_SYSTEM_IDENTIFIER_POSITION
-                | File_identifier as usize,
+            (file_system_identifier as usize) << Self::FILE_SYSTEM_IDENTIFIER_POSITION
+                | file_identifier as usize,
         )
     }
 
     pub const fn Split(&self) -> (File_system_identifier_type, File_identifier_type) {
-        let File_system = self.0 >> File_identifier_inner_type::BITS;
-        let File_system =
-            File_system_identifier_type::New(File_system as File_system_identifier_inner_type);
+        let file_system = self.0 >> File_identifier_inner_type::BITS;
+        let file_system =
+            File_system_identifier_type::New(file_system as File_system_identifier_inner_type);
 
         let File = self.0 as File_identifier_inner_type;
-        let File = File_identifier_type::New(File);
+        let file = File_identifier_type::New(File);
 
-        (File_system, File)
+        (file_system, file)
     }
 
     pub const fn Into_local_file_identifier(
         self,
-        Task: Task_identifier_type,
+        task: Task_identifier_type,
     ) -> (File_system_identifier_type, Local_file_identifier_type) {
-        let (File_system, File) = self.Split();
+        let (file_system, file) = self.Split();
 
-        let Local_file = Local_file_identifier_type::New(Task, File);
+        let Local_file = Local_file_identifier_type::New(task, file);
 
-        (File_system, Local_file)
+        (file_system, Local_file)
     }
 
     pub const fn Into_inner(self) -> usize {
@@ -99,14 +99,14 @@ impl Unique_file_identifier_type {
 }
 
 impl From<Unique_file_identifier_type> for usize {
-    fn from(Identifier: Unique_file_identifier_type) -> Self {
-        Identifier.0
+    fn from(identifier: Unique_file_identifier_type) -> Self {
+        identifier.0
     }
 }
 
 impl From<usize> for Unique_file_identifier_type {
-    fn from(Identifier: usize) -> Self {
-        Unique_file_identifier_type(Identifier)
+    fn from(identifier: usize) -> Self {
+        Unique_file_identifier_type(identifier)
     }
 }
 

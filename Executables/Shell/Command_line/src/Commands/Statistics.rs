@@ -4,9 +4,9 @@ use File_system::{Inode_type, Path_type};
 use crate::Shell_type;
 
 impl Shell_type {
-    pub async fn Statistics(&mut self, Arguments: &[&str]) {
+    pub async fn statistics(&mut self, Arguments: &[&str]) {
         if Arguments.len() != 1 {
-            self.Standard
+            self.standard
                 .Print_error_line("Invalid number of arguments")
                 .await;
             return;
@@ -17,10 +17,10 @@ impl Shell_type {
         let Path = if Path.Is_absolute() {
             Path.to_owned()
         } else {
-            match self.Current_directory.clone().Join(Path) {
-                Some(Path) => Path,
+            match self.current_directory.clone().Join(Path) {
+                Some(path) => path,
                 None => {
-                    self.Standard.Print_error_line("Invalid path").await;
+                    self.standard.Print_error_line("Invalid path").await;
                     return;
                 }
             }
@@ -31,8 +31,8 @@ impl Shell_type {
             .await
         {
             Ok(Metadata) => Metadata,
-            Err(Error) => {
-                self.Standard.Print_error_line(&Error.to_string()).await;
+            Err(error) => {
+                self.standard.Print_error_line(&error.to_string()).await;
                 return;
             }
         };
@@ -59,7 +59,7 @@ impl Shell_type {
 
         let Inode = Metadata.Get_inode().unwrap_or(Inode_type::New(0)).As_u64();
 
-        self.Standard
+        self.standard
             .Print_line(&format!(
                 r#"Type: {} - Inode : {}
 User: {} - Group: {} - Permissions: {}

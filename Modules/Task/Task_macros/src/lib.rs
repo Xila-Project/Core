@@ -1,5 +1,4 @@
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 use darling::{FromMeta, ast::NestedMeta};
 use proc_macro::TokenStream;
@@ -17,16 +16,16 @@ fn Default_executor() -> syn::Expr {
 #[derive(Debug, FromMeta, Clone)]
 struct Task_arguments_type {
     #[darling(default = "Default_task_path")]
-    pub Task_path: syn::Expr,
+    pub task_path: syn::Expr,
 
     #[darling(default = "Default_executor")]
-    pub Executor: syn::Expr,
+    pub executor: syn::Expr,
 }
 
 impl Task_arguments_type {
-    fn From_token_stream(Arguments: TokenStream) -> Result<Self, darling::Error> {
-        let Arguments = NestedMeta::parse_meta_list(Arguments.into()).unwrap();
-        Self::from_list(&Arguments.clone())
+    fn from_token_stream(arguments: TokenStream) -> Result<Self, darling::Error> {
+        let arguments = NestedMeta::parse_meta_list(arguments.into()).unwrap();
+        Self::from_list(&arguments.clone())
     }
 }
 
@@ -66,14 +65,14 @@ impl Task_arguments_type {
 #[proc_macro_attribute]
 #[allow(non_snake_case)]
 pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
-    let Arguments = match Task_arguments_type::From_token_stream(Arguments) {
+    let Arguments = match Task_arguments_type::from_token_stream(Arguments) {
         Ok(o) => o,
         Err(e) => return e.write_errors().into(),
     };
     let Input_function = parse_macro_input!(Input as ItemFn);
 
-    let Executor = Arguments.Executor;
-    let Task_path = Arguments.Task_path;
+    let Executor = Arguments.executor;
+    let Task_path = Arguments.task_path;
 
     // Extract function details
     let Function_name = &Input_function.sig.ident;
@@ -200,14 +199,14 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 #[allow(non_snake_case)]
 pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
-    let Arguments = match Task_arguments_type::From_token_stream(Arguments) {
+    let Arguments = match Task_arguments_type::from_token_stream(Arguments) {
         Ok(o) => o,
         Err(e) => return e.write_errors().into(),
     };
     let Input_function = parse_macro_input!(Input as ItemFn);
 
-    let Task_path = Arguments.Task_path;
-    let Executor_expression = Arguments.Executor;
+    let Task_path = Arguments.task_path;
+    let Executor_expression = Arguments.executor;
 
     // Extract function details
     let Function_name = &Input_function.sig.ident;
@@ -261,6 +260,11 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
     let mut Input_function = Input_function.clone();
     Input_function.sig.ident = format_ident!("__inner");
 
+    dbg!(
+        "Generating Run_with_executor for function: {}",
+        Function_name
+    );
+
     // Generate the new function
     quote! {
         fn #Function_name() {
@@ -275,7 +279,7 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                     let Manager = #Task_path::Initialize();
 
                     unsafe {
-                        __Spawner = Manager.Register_spawner(Spawner).expect("Failed to register spawner");
+                        __Spawner = Manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
                     #Task_path::Futures::block_on(async move {

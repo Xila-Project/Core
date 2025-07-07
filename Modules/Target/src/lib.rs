@@ -1,5 +1,4 @@
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 mod Architecture;
 mod Family;
@@ -15,31 +14,31 @@ pub use Vendor::*;
 
 #[derive(Debug, PartialEq)]
 pub struct Target_type {
-    Architecture: Architecture_type,
-    Operating_system: Operating_system_type,
-    Family: Family_type,
-    Vendor: Vendor_type,
+    architecture: Architecture_type,
+    operating_system: Operating_system_type,
+    family: Family_type,
+    vendor: Vendor_type,
 }
 
 impl Target_type {
-    pub fn Get_architecture(&self) -> Architecture_type {
-        self.Architecture
+    pub fn get_architecture(&self) -> Architecture_type {
+        self.architecture
     }
 
     pub fn Get_operating_system(&self) -> Operating_system_type {
-        self.Operating_system
+        self.operating_system
     }
 
     pub fn Get_family(&self) -> Family_type {
-        self.Family
+        self.family
     }
 
     pub fn Get_current() -> Target_type {
         Target_type {
-            Architecture: Architecture_type::from(env::var("CARGO_CFG_TARGET_ARCH").unwrap()),
-            Operating_system: Operating_system_type::from(env::var("CARGO_CFG_TARGET_OS").unwrap()),
-            Family: Family_type::from(env::var("CARGO_CFG_TARGET_FAMILY").unwrap()),
-            Vendor: Vendor_type::from(env::var("CARGO_CFG_TARGET_VENDOR").unwrap()),
+            architecture: Architecture_type::from(env::var("CARGO_CFG_TARGET_ARCH").unwrap()),
+            operating_system: Operating_system_type::from(env::var("CARGO_CFG_TARGET_OS").unwrap()),
+            family: Family_type::from(env::var("CARGO_CFG_TARGET_FAMILY").unwrap()),
+            vendor: Vendor_type::from(env::var("CARGO_CFG_TARGET_VENDOR").unwrap()),
         }
     }
 }

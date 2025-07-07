@@ -87,8 +87,8 @@ impl Mode_type {
 }
 
 impl Debug for Mode_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        Formatter
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter
             .debug_struct("Mode_type")
             .field("Read", &self.Get_read())
             .field("Write", &self.Get_write())
@@ -188,8 +188,8 @@ impl Default for Open_type {
 }
 
 impl Debug for Open_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        Formatter
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter
             .debug_struct("Open_type")
             .field("Create", &self.Get_create())
             .field("Create_only", &self.Get_exclusive())
@@ -235,16 +235,16 @@ impl Status_type {
     pub const NONE: Self = Self::New(false, false, false, false);
 
     pub const fn New(
-        Append: bool,
-        Non_blocking: bool,
-        Synchronous: bool,
-        Synchronous_data_only: bool,
+        append: bool,
+        non_blocking: bool,
+        synchronous: bool,
+        synchronous_data_only: bool,
     ) -> Self {
         Self(0)
-            .Set_append(Append)
-            .Set_non_blocking(Non_blocking)
-            .Set_synchronous(Synchronous)
-            .Set_synchronous_data_only(Synchronous_data_only)
+            .Set_append(append)
+            .Set_non_blocking(non_blocking)
+            .Set_synchronous(synchronous)
+            .Set_synchronous_data_only(synchronous_data_only)
     }
 
     const fn Set_bit(mut self, Mask: u8, Value: bool) -> Self {
@@ -298,8 +298,8 @@ impl Status_type {
 }
 
 impl Debug for Status_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        Formatter
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter
             .debug_struct("Status_type")
             .field("Append", &self.Get_append())
             .field("Non_blocking", &self.Get_non_blocking())
@@ -342,8 +342,8 @@ impl Default for Status_type {
 pub struct Flags_type(u16);
 
 impl Debug for Flags_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        Formatter
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter
             .debug_struct("Flags_type")
             .field("Mode", &self.Get_mode())
             .field("Open", &self.Get_open())
@@ -362,24 +362,24 @@ impl Flags_type {
     const MODE_MASK: u16 = (1 << Mode_type::SIZE) - 1;
 
     pub const fn New(
-        Mode: Mode_type,
-        Open: Option<Open_type>,
-        Status: Option<Status_type>,
+        mode: Mode_type,
+        open: Option<Open_type>,
+        status: Option<Status_type>,
     ) -> Self {
-        let Open = if let Some(Open) = Open {
+        let open = if let Some(Open) = open {
             Open
         } else {
             Open_type::NONE
         };
-        let Status = if let Some(Status) = Status {
+        let Status = if let Some(Status) = status {
             Status
         } else {
             Status_type::NONE
         };
 
         let mut Flags: u16 = 0;
-        Flags |= (Mode.0 as u16) << Self::MODE_POSITION;
-        Flags |= (Open.0 as u16) << Self::OPEN_POSITION;
+        Flags |= (mode.0 as u16) << Self::MODE_POSITION;
+        Flags |= (open.0 as u16) << Self::OPEN_POSITION;
         Flags |= (Status.0 as u16) << Self::STATUS_POSITION;
         Self(Flags)
     }
@@ -415,23 +415,23 @@ impl Flags_type {
     }
 
     pub fn Is_permission_granted(&self, Permission: &Permission_type) -> bool {
-        let Mode = self.Get_mode();
+        let mode = self.Get_mode();
 
-        (Permission.Get_read() && Mode.Get_read()) // Read permission
-            || (Permission.Get_write() && (Mode.Get_write() || self.Get_status().Get_append()))
+        (Permission.Get_read() && mode.Get_read()) // Read permission
+            || (Permission.Get_write() && (mode.Get_write() || self.Get_status().Get_append()))
         // Write permission
     }
 }
 
 impl From<Mode_type> for Flags_type {
-    fn from(Mode: Mode_type) -> Self {
-        Self::New(Mode, None, None)
+    fn from(mode: Mode_type) -> Self {
+        Self::New(mode, None, None)
     }
 }
 
 impl From<Flags_type> for u16 {
-    fn from(Flags: Flags_type) -> Self {
-        Flags.0
+    fn from(flags: Flags_type) -> Self {
+        flags.0
     }
 }
 

@@ -66,7 +66,7 @@ pub fn Get_instance() -> &'static Manager_type {
 /// This struct encapsulates the WASM runtime and provides high-level operations
 /// for executing WASM modules with proper I/O redirection and resource management.
 pub struct Manager_type {
-    Runtime: Runtime_type,
+    runtime: Runtime_type,
 }
 
 unsafe impl Send for Manager_type {}
@@ -94,19 +94,19 @@ impl Manager_type {
     /// - Host function registration fails  
     /// - Module loading fails
     pub fn New(Registrables: &[&dyn Registrable_trait]) -> Result_type<Self> {
-        let mut Runtime_builder = Runtime_type::Builder();
+        let mut runtime_builder = Runtime_type::builder();
 
         for Registrable in Registrables {
-            Runtime_builder = Runtime_builder.Register(*Registrable);
+            runtime_builder = runtime_builder.Register(*Registrable);
         }
 
-        let Runtime = Runtime_builder.Build()?;
+        let Runtime = runtime_builder.Build()?;
 
-        let Manager = Self { Runtime };
+        let Manager = Self { runtime: Runtime };
 
         for Registrable in Registrables {
-            if let Some(Module_binary) = Registrable.Get_binary() {
-                Manager.Load_module(Module_binary, Registrable.Is_XIP(), Registrable.Get_name())?;
+            if let Some(module_binary) = Registrable.Get_binary() {
+                Manager.Load_module(module_binary, Registrable.Is_XIP(), Registrable.Get_name())?;
             }
         }
 
@@ -198,25 +198,25 @@ impl Manager_type {
     /// Returns an error if module loading, instantiation, or execution fails
     pub async fn Execute(
         &'static self,
-        Buffer: Vec<u8>,
-        Stack_size: usize,
-        Standard_in: Unique_file_identifier_type,
-        Standard_out: Unique_file_identifier_type,
-        Standard_error: Unique_file_identifier_type,
+        buffer: Vec<u8>,
+        stack_size: usize,
+        standard_in: Unique_file_identifier_type,
+        standard_out: Unique_file_identifier_type,
+        standard_error: Unique_file_identifier_type,
     ) -> Result_type<Vec<WasmValue>> {
         ABI::Get_instance()
             .Call_ABI(async || {
-                let Module = Module_type::From_buffer(
-                    &self.Runtime,
-                    Buffer,
+                let module = Module_type::From_buffer(
+                    &self.runtime,
+                    buffer,
                     "module",
-                    Standard_in,
-                    Standard_out,
-                    Standard_error,
+                    standard_in,
+                    standard_out,
+                    standard_error,
                 )
                 .await?;
 
-                let Instance = Instance_type::New(&self.Runtime, &Module, Stack_size).unwrap();
+                let Instance = Instance_type::New(&self.runtime, &module, stack_size).unwrap();
 
                 let Result = Instance.Call_main(&vec![])?;
 

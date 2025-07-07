@@ -11,68 +11,68 @@ use crate::{
 };
 
 pub async fn Main(Standard: Standard_type, Arguments: String) -> Result<(), NonZeroUsize> {
-    Shell_type::New(Standard).await.Main(Arguments).await
+    Shell_type::new(Standard).await.Main(Arguments).await
 }
 
 impl Shell_type {
-    pub async fn New(Standard: Standard_type) -> Self {
-        let Layout = Layout_type::New().await.unwrap();
+    pub async fn new(Standard: Standard_type) -> Self {
+        let layout = Layout_type::New().await.unwrap();
 
-        let Login = Box::new(Login_type::New().await.unwrap());
+        let Login = Box::new(Login_type::new().await.unwrap());
 
         Self {
-            _Standard: Standard,
-            Layout,
-            Desk: None,
-            Running: true,
-            _Home: None,
-            Login: Some(Login),
+            _standard: Standard,
+            layout,
+            desk: None,
+            running: true,
+            _home: None,
+            login: Some(Login),
         }
     }
 
     pub async fn Main(&mut self, Arguments: String) -> Result<(), NonZeroUsize> {
-        let Arguments: Vec<&str> = Arguments.split_whitespace().collect();
+        let arguments: Vec<&str> = Arguments.split_whitespace().collect();
 
-        if Arguments.first() == Some(&"add_shortcut") {
-            if Arguments.len() != 2 {
+        if arguments.first() == Some(&"add_shortcut") {
+            if arguments.len() != 2 {
                 return Err(Error_type::Missing_arguments.into());
             }
 
-            Shortcut_type::Add(Path_type::From_str(Arguments[1])).await?;
+            Shortcut_type::add(Path_type::From_str(arguments[1])).await?;
         }
 
-        while self.Running {
-            self.Layout.Loop().await;
+        while self.running {
+            self.layout.Loop().await;
 
-            if let Some(Login) = &mut self.Login {
+            if let Some(Login) = &mut self.login {
                 Login.Event_handler().await;
 
                 if let Some(User) = Login.Get_logged_user() {
-                    let User_name = Users::Get_instance().Get_user_name(User).await.unwrap();
+                    let user_name = Users::Get_instance().Get_user_name(User).await.unwrap();
 
                     Task::Get_instance()
                         .Set_environment_variable(
-                            self._Standard.Get_task(),
+                            self._standard.Get_task(),
                             "User",
-                            User_name.as_str(),
+                            user_name.as_str(),
                         )
                         .await
                         .map_err(Error_type::Failed_to_set_environment_variable)?;
 
-                    self.Desk = Some(Box::new(
-                        Desk_type::New(self.Layout.Get_windows_parent()).await?,
+                    self.desk = Some(Box::new(
+                        Desk_type::New(self.layout.Get_windows_parent()).await?,
                     ));
 
-                    if let Some(Desk) = &mut self.Desk {
-                        self._Home =
-                            Some(Box::new(Home_type::New(Desk.Get_window_object()).await?));
+                    if let Some(Desk) = &mut self.desk {
+                        self._home =
+                            Some(Box::new(Home_type::new(Desk.Get_window_object()).await?));
                     }
 
-                    self.Login = None;
+                    self.login = None;
                 }
             }
 
-            if let Some(Desk) = &mut self.Desk {
+            if let Some(Desk) = &mut self.desk {
                 if !Desk.Is_hidden() {
                     Desk.Event_handler().await;
                 }

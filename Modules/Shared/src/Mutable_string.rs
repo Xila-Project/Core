@@ -18,7 +18,7 @@ where
 {
     Data: &'a mut [u8],
     // This is the actual length of the string, not the size of the buffer.
-    Length: &'a mut S,
+    length: &'a mut S,
 }
 
 impl<'a, S> Mutable_string_type<'a, S>
@@ -29,35 +29,35 @@ where
     ///
     /// This function is unsafe because it does not check if the buffer contains a valid UTF-8 string and if the length is valid.
     pub unsafe fn From_unchecked(String: NonNull<u8>, mut Length: NonNull<S>, Size: S) -> Self {
-        let Data: &'a mut [u8] =
+        let data: &'a mut [u8] =
             unsafe { slice::from_raw_parts_mut(String.as_ptr(), Size.to_usize().unwrap()) };
 
         Self {
-            Data,
-            Length: Length.as_mut(),
+            Data: data,
+            length: Length.as_mut(),
         }
     }
 
     pub fn From(String: NonNull<u8>, mut Length: NonNull<S>, Size: S) -> Result<Self, Error_type> {
-        let Size = Size
+        let size = Size
             .to_usize()
             .ok_or(Error_type::Failed_to_convert_length_to_S)?;
 
         let Casted_length = unsafe { (*Length.as_ref()).to_usize().unwrap() };
 
-        let Data: &'a mut [u8] = unsafe { slice::from_raw_parts_mut(String.as_ptr(), Size) };
+        let Data: &'a mut [u8] = unsafe { slice::from_raw_parts_mut(String.as_ptr(), size) };
 
         if std::str::from_utf8(&Data[..Casted_length]).is_err() {
             return Err(Error_type::Invalid_UTF8_string);
         }
 
-        if Casted_length > Size {
+        if Casted_length > size {
             return Err(Error_type::Invalid_length);
         }
 
         Ok(Self {
             Data,
-            Length: unsafe { Length.as_mut() },
+            length: unsafe { Length.as_mut() },
         })
     }
 
@@ -66,9 +66,9 @@ where
     }
 
     pub fn Concatenate(&mut self, String: &str) -> Result<(), Error_type> {
-        let String = String.as_bytes();
+        let string = String.as_bytes();
 
-        let Length = String.len();
+        let Length = string.len();
 
         if self.Get_length() + Length > self.Get_size() {
             return Err(Error_type::Buffer_too_small);
@@ -76,7 +76,7 @@ where
 
         let Self_length = self.Get_length();
 
-        self.Data[Self_length..Self_length + Length].copy_from_slice(String);
+        self.Data[Self_length..Self_length + Length].copy_from_slice(string);
 
         self.Set_length(
             S::from(self.Get_length() + Length).ok_or(Error_type::Failed_to_convert_length_to_S)?,
@@ -90,7 +90,7 @@ where
     }
 
     fn Set_length(&mut self, Length: S) {
-        *self.Length = Length;
+        *self.length = Length;
     }
 
     pub fn Get_data(&'a mut self) -> &'a mut [u8] {
@@ -98,7 +98,7 @@ where
     }
 
     pub fn Get_length(&self) -> usize {
-        (*self.Length).to_usize().unwrap()
+        (*self.length).to_usize().unwrap()
     }
 
     pub fn Get_size(&self) -> usize {
@@ -142,16 +142,16 @@ where
 }
 
 impl Display for Mutable_string_type<'_> {
-    fn fmt(&self, Formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(Formatter, "{}", self.As_str())
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{}", self.As_str())
     }
 }
 
 impl Eq for Mutable_string_type<'_> {}
 
 impl PartialEq for Mutable_string_type<'_> {
-    fn eq(&self, Other: &Self) -> bool {
-        self.As_str() == Other.As_str()
+    fn eq(&self, other: &Self) -> bool {
+        self.As_str() == other.As_str()
     }
 }
 

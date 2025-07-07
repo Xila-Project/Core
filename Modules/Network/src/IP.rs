@@ -24,22 +24,22 @@ impl TryFrom<&str> for IPv4_type {
     type Error = ();
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let mut Result = [0; 4];
-        let mut Index = 0;
+        let mut result = [0; 4];
+        let mut index = 0;
 
         for Part in value.split('.') {
-            if Index >= 4 {
+            if index >= 4 {
                 return Err(());
             }
             let Part = Part.parse::<u8>().map_err(|_| ())?;
-            Result[Index] = Part;
-            Index += 1;
+            result[index] = Part;
+            index += 1;
         }
-        if Index != 4 {
+        if index != 4 {
             return Err(());
         }
 
-        Ok(Self::New(Result))
+        Ok(Self::New(result))
     }
 }
 
@@ -54,7 +54,7 @@ impl Display for IPv4_type {
 pub struct IPv6_type([u16; 8]);
 
 impl IPv6_type {
-    pub const fn New(value: [u16; 8]) -> Self {
+    pub const fn new(value: [u16; 8]) -> Self {
         Self(value)
     }
 
@@ -71,23 +71,23 @@ impl TryFrom<&str> for IPv6_type {
     type Error = ();
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let mut Result = [0; 8];
-        let mut Index = 0;
+        let mut result = [0; 8];
+        let mut index = 0;
 
         for Part in value.split(':') {
-            if Index >= Result.len() {
+            if index >= result.len() {
                 return Err(());
             }
 
             let Part = u16::from_str_radix(Part, 16).map_err(|_| ())?;
-            Result[Index] = Part;
-            Index += 1;
+            result[index] = Part;
+            index += 1;
         }
-        if Index != Result.len() {
+        if index != result.len() {
             return Err(());
         }
 
-        Ok(Self::New(Result))
+        Ok(Self::new(result))
     }
 }
 
@@ -111,7 +111,7 @@ impl Display for IP_type {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             IP_type::IPv4(Value) => write!(f, "{Value}"),
-            IP_type::IPv6(Value) => write!(f, "{Value}"),
+            IP_type::IPv6(value) => write!(f, "{value}"),
         }
     }
 }

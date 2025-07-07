@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
 extern crate alloc;
@@ -25,7 +24,7 @@ use Xila::Virtual_machine;
 Instantiate_global_allocator!(Drivers::Std::Memory::Memory_manager_type);
 
 #[Task::Run(Executor = Drivers::Std::Executor::Instantiate_static_executor!())]
-async fn Run_graphics() {
+async fn run_graphics() {
     Graphics::Get_instance()
         .Loop(Task::Manager_type::Sleep)
         .await
@@ -46,14 +45,14 @@ async fn Integration_test() {
 
     let Task = Task_instance.Get_current_task_identifier().await;
 
-    Time::Initialize(Create_device!(Time_driver_type::New()))
+    Time::Initialize(Create_device!(Time_driver_type::new()))
         .expect("Error initializing time manager");
 
     let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
     LittleFS::File_system_type::Format(Memory_device.clone(), 512).unwrap();
 
     let Virtual_file_system = Virtual_file_system::Initialize(
-        Create_file_system!(LittleFS::File_system_type::New(Memory_device, 256).unwrap()),
+        Create_file_system!(LittleFS::File_system_type::new(Memory_device, 256).unwrap()),
         None,
     )
     .unwrap();
@@ -89,7 +88,7 @@ async fn Integration_test() {
     Virtual_machine::Initialize(&[&Host_bindings::Graphics_bindings]);
 
     let Virtual_machine = Virtual_machine::Get_instance();
-    const RESOLUTION: Graphics::Point_type = Graphics::Point_type::New(800, 600);
+    const RESOLUTION: Graphics::Point_type = Graphics::Point_type::new(800, 600);
     let (Screen_device, Pointer_device, Keyboard_device) =
         Drivers::Native::Window_screen::New(RESOLUTION).unwrap();
     // - - Initialize the graphics manager
@@ -107,7 +106,7 @@ async fn Integration_test() {
         .await
         .unwrap();
 
-    std::thread::spawn(Run_graphics);
+    std::thread::spawn(run_graphics);
 
     let Task = Task_instance.Get_current_task_identifier().await;
 

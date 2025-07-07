@@ -30,21 +30,21 @@ fn Convert_position(Position: &Position_type) -> (i32, i32) {
 }
 
 struct Inner_type {
-    File: littlefs::lfs_file_t,
-    Flags: Flags_type,
-    Cache_size: usize,
+    file: littlefs::lfs_file_t,
+    flags: Flags_type,
+    cache_size: usize,
 }
 
 impl Drop for Inner_type {
     fn drop(&mut self) {
         unsafe {
-            let Configuration = Box::from_raw(self.File.cfg as *mut littlefs::lfs_file_config);
+            let configuration = Box::from_raw(self.file.cfg as *mut littlefs::lfs_file_config);
 
-            let Attributes = Box::from_raw(Configuration.attrs);
+            let Attributes = Box::from_raw(configuration.attrs);
 
             let _Metadata = Box::from_raw(Attributes.buffer as *mut Metadata_type);
 
-            let _Buffer = Vec::from_raw_parts(Configuration.buffer as *mut u8, 0, self.Cache_size);
+            let _Buffer = Vec::from_raw_parts(configuration.buffer as *mut u8, 0, self.cache_size);
         }
     }
 }
@@ -53,27 +53,27 @@ impl Drop for Inner_type {
 pub struct File_type(Rc<Inner_type>);
 
 impl File_type {
-    pub fn Open(
-        File_system: &mut super::littlefs::lfs_t,
-        Path: &Path_type,
-        Flags: Flags_type,
-        Cache_size: usize,
-        Time: Time_type,
-        User: User_identifier_type,
-        Group: Group_identifier_type,
+    pub fn open(
+        file_system: &mut super::littlefs::lfs_t,
+        path: &Path_type,
+        flags: Flags_type,
+        cache_size: usize,
+        time: Time_type,
+        user: User_identifier_type,
+        group: Group_identifier_type,
     ) -> Result_type<Self> {
-        let Metadata = if Flags.Get_open().Get_create() {
-            Metadata_type::Get_default(Type_type::File, Time, User, Group)
+        let metadata = if flags.Get_open().Get_create() {
+            Metadata_type::Get_default(Type_type::File, time, user, group)
                 .ok_or(Error_type::Invalid_parameter)?
         } else {
-            Self::Get_metadata_from_path(File_system, Path)?
+            Self::Get_metadata_from_path(file_system, path)?
         };
 
-        let Path = CString::new(Path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+        let Path = CString::new(path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
-        let Little_fs_flags = Convert_flags(Flags);
+        let Little_fs_flags = Convert_flags(flags);
 
-        let Metadata_buffer = Box::new(Metadata);
+        let Metadata_buffer = Box::new(metadata);
 
         let Attribute = Box::new(littlefs::lfs_attr {
             type_: Metadata_type::IDENTIFIER,
@@ -81,7 +81,7 @@ impl File_type {
             size: size_of::<Metadata_type>() as u32,
         });
 
-        let mut Buffer = vec![0_u8; Cache_size];
+        let mut Buffer = vec![0_u8; cache_size];
 
         // - Create the configuration
         let Configuration = Box::new(littlefs::lfs_file_config {
@@ -93,17 +93,17 @@ impl File_type {
         forget(Buffer); // Prevent the buffer from being deallocated
 
         let File = unsafe {
-            let File = MaybeUninit::<littlefs::lfs_file_t>::uninit();
+            let file = MaybeUninit::<littlefs::lfs_file_t>::uninit();
 
             let File = Self(Rc::new(Inner_type {
-                File: File.assume_init(),
-                Flags,
-                Cache_size,
+                file: file.assume_init(),
+                flags,
+                cache_size,
             }));
 
             Convert_result(littlefs::lfs_file_opencfg(
-                File_system as *mut _,
-                &File.0.File as *const _ as *mut _,
+                file_system as *mut _,
+                &File.0.file as *const _ as *mut _,
                 Path.as_ptr(),
                 Little_fs_flags,
                 Box::into_raw(Configuration),
@@ -113,8 +113,8 @@ impl File_type {
         };
 
         // Ensure that metadata is written to created files
-        if Flags.Get_open().Get_create() {
-            File.Flush(File_system)?;
+        if flags.Get_open().Get_create() {
+            File.Flush(file_system)?;
         }
 
         Ok(File)
@@ -124,7 +124,7 @@ impl File_type {
         unsafe {
             Convert_result(littlefs::lfs_file_close(
                 File_system as *mut _,
-                &self.0.File as *const _ as *mut _,
+                &self.0.file as *const _ as *mut _,
             ))?;
         }
         Ok(())
@@ -132,51 +132,51 @@ impl File_type {
 
     pub fn Read(
         &mut self,
-        File_system: &mut super::littlefs::lfs_t,
-        Buffer: &mut [u8],
+        file_system: &mut super::littlefs::lfs_t,
+        buffer: &mut [u8],
     ) -> Result_type<Size_type> {
-        let Bytes_read = unsafe {
+        let bytes_read = unsafe {
             Convert_result(littlefs::lfs_file_read(
-                File_system as *mut _,
-                &self.0.File as *const _ as *mut _,
-                Buffer.as_mut_ptr() as *mut _,
-                Buffer.len() as u32,
+                file_system as *mut _,
+                &self.0.file as *const _ as *mut _,
+                buffer.as_mut_ptr() as *mut _,
+                buffer.len() as u32,
             ))?
         };
 
-        Ok(Size_type::from(Bytes_read as usize))
+        Ok(Size_type::from(bytes_read as usize))
     }
 
     pub fn Write(
         &mut self,
-        File_system: &mut super::littlefs::lfs_t,
-        Buffer: &[u8],
+        file_system: &mut super::littlefs::lfs_t,
+        buffer: &[u8],
     ) -> Result_type<Size_type> {
-        let Bytes_written = unsafe {
+        let bytes_written = unsafe {
             Convert_result(littlefs::lfs_file_write(
-                File_system as *mut _,
-                &self.0.File as *const _ as *mut _,
-                Buffer.as_ptr() as *const _,
-                Buffer.len() as u32,
+                file_system as *mut _,
+                &self.0.file as *const _ as *mut _,
+                buffer.as_ptr() as *const _,
+                buffer.len() as u32,
             ))?
         };
 
-        Ok(Size_type::from(Bytes_written as usize))
+        Ok(Size_type::from(bytes_written as usize))
     }
 
     pub fn Set_position(
         &self,
-        File_system: &mut super::littlefs::lfs_t,
-        Position: &Position_type,
+        file_system: &mut super::littlefs::lfs_t,
+        position: &Position_type,
     ) -> Result_type<Size_type> {
-        let (Offset, Whence) = Convert_position(Position);
+        let (offset, whence) = Convert_position(position);
 
         let Offset = unsafe {
             Convert_result(littlefs::lfs_file_seek(
-                File_system as *mut _,
-                &self.0.File as *const _ as *mut _,
-                Offset,
-                Whence,
+                file_system as *mut _,
+                &self.0.file as *const _ as *mut _,
+                offset,
+                whence,
             ))?
         };
 
@@ -187,7 +187,7 @@ impl File_type {
         unsafe {
             Convert_result(littlefs::lfs_file_sync(
                 File_system as *mut _,
-                &self.0.File as *const _ as *mut _,
+                &self.0.file as *const _ as *mut _,
             ))?;
         }
 
@@ -196,37 +196,37 @@ impl File_type {
 
     pub fn Get_statistics(
         &self,
-        File_system: &mut super::littlefs::lfs_t,
+        file_system: &mut super::littlefs::lfs_t,
     ) -> Result_type<Statistics_type> {
-        let Metadata = self.Get_metadata()?;
+        let metadata = self.Get_metadata()?;
 
-        let Size = self.Get_size(File_system)?;
+        let Size = self.Get_size(file_system)?;
 
-        let Statistics = Statistics_type::New(
+        let Statistics = Statistics_type::new(
             File_system_identifier_type::New(0),
             Inode_type::New(0),
             1,
             Size,
-            Metadata.Get_creation_time(),
-            Metadata.Get_modification_time(),
-            Metadata.Get_access_time(),
-            Metadata.Get_type(),
-            Metadata.Get_permissions(),
-            Metadata.Get_user(),
-            Metadata.Get_group(),
+            metadata.Get_creation_time(),
+            metadata.Get_modification_time(),
+            metadata.Get_access_time(),
+            metadata.Get_type(),
+            metadata.Get_permissions(),
+            metadata.Get_user(),
+            metadata.Get_group(),
         );
 
         Ok(Statistics)
     }
 
     pub fn Get_metadata(&self) -> Result_type<&Metadata_type> {
-        let Configuration = unsafe { self.0.File.cfg.read() };
+        let configuration = unsafe { self.0.file.cfg.read() };
 
-        if Configuration.attr_count == 0 {
+        if configuration.attr_count == 0 {
             return Err(Error_type::No_attribute);
         }
 
-        let Attributes = unsafe { Configuration.attrs.read() };
+        let Attributes = unsafe { configuration.attrs.read() };
 
         if Attributes.size != size_of::<Metadata_type>() as u32 {
             return Err(Error_type::No_attribute);
@@ -238,32 +238,32 @@ impl File_type {
     }
 
     pub fn Get_mode(&self) -> Mode_type {
-        self.0.Flags.Get_mode()
+        self.0.flags.Get_mode()
     }
 
     pub fn Get_size(&self, File_system: &mut super::littlefs::lfs_t) -> Result_type<Size_type> {
-        let Size = unsafe {
+        let size = unsafe {
             Convert_result(littlefs::lfs_file_size(
                 File_system as *mut _,
-                &self.0.File as *const _ as *mut _,
+                &self.0.file as *const _ as *mut _,
             ))?
         };
 
-        Ok(Size_type::from(Size as usize))
+        Ok(Size_type::from(size as usize))
     }
 
     pub fn Get_metadata_from_path(
-        File_system: &mut super::littlefs::lfs_t,
-        Path: &Path_type,
+        file_system: &mut super::littlefs::lfs_t,
+        path: &Path_type,
     ) -> Result_type<Metadata_type> {
-        let Path = CString::new(Path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+        let path = CString::new(path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
         let mut Metadata = MaybeUninit::<Metadata_type>::uninit();
 
         Convert_result(unsafe {
             littlefs::lfs_getattr(
-                File_system as *mut _,
-                Path.as_ptr(),
+                file_system as *mut _,
+                path.as_ptr(),
                 Metadata_type::IDENTIFIER,
                 Metadata.as_mut_ptr() as *mut c_void,
                 size_of::<Metadata_type>() as u32,
@@ -274,18 +274,18 @@ impl File_type {
     }
 
     pub fn Set_metadata_from_path(
-        File_system: &mut super::littlefs::lfs_t,
-        Path: &Path_type,
-        Metadata: &Metadata_type,
+        file_system: &mut super::littlefs::lfs_t,
+        path: &Path_type,
+        metadata: &Metadata_type,
     ) -> Result_type<()> {
-        let Path = CString::new(Path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+        let path = CString::new(path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
         Convert_result(unsafe {
             littlefs::lfs_setattr(
-                File_system as *mut _,
-                Path.as_ptr(),
+                file_system as *mut _,
+                path.as_ptr(),
                 Metadata_type::IDENTIFIER,
-                Metadata as *const _ as *const c_void,
+                metadata as *const _ as *const c_void,
                 size_of::<Metadata_type>() as u32,
             )
         })?;

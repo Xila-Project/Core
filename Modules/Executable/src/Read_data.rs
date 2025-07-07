@@ -13,17 +13,17 @@ pub type Main_function_type = Box<
 >;
 
 pub struct Read_data_type {
-    Main: Option<Main_function_type>,
+    main: Option<Main_function_type>,
 }
 
 impl Read_data_type {
-    pub fn New<F>(Main: impl Fn(Standard_type, String) -> F + 'static) -> Self
+    pub fn new<F>(main: impl Fn(Standard_type, String) -> F + 'static) -> Self
     where
         F: Future<Output = Result<(), NonZeroUsize>> + 'static,
     {
         Self {
-            Main: Some(Box::new(move |Standard, Arguments| {
-                Box::pin(Main(Standard, Arguments))
+            main: Some(Box::new(move |Standard, Arguments| {
+                Box::pin(main(Standard, Arguments))
             })),
         }
     }
@@ -37,7 +37,7 @@ impl Read_data_type {
     }
 
     pub fn Get_main(self) -> Option<Main_function_type> {
-        self.Main
+        self.main
     }
 }
 

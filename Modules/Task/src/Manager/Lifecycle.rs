@@ -17,51 +17,51 @@ impl Manager_type {
     // This function is outside the closure that captures SpawnToken,
     // so it can be called safely from nested tasks
     async fn Create_and_run_task<R: 'static, Function_type, Future_type>(
-        Manager: &'static Manager_type,
-        Parent_task_identifier: Task_identifier_type,
-        Name: &str,
-        Function: Function_type,
-        Spawner: Option<usize>,
+        manager: &'static Manager_type,
+        parent_task_identifier: Task_identifier_type,
+        name: &str,
+        function: Function_type,
+        spawner: Option<usize>,
     ) -> Result_type<(Join_handle_type<R>, Task_identifier_type)>
     where
         Function_type: FnOnce(Task_identifier_type) -> Future_type + 'static,
         Future_type: Future<Output = R> + 'static,
     {
-        let Identifier = Manager
-            .Register(Parent_task_identifier, Name)
+        let Identifier = manager
+            .Register(parent_task_identifier, name)
             .await
             .expect("Failed to get new task identifier");
 
         let Pool = Box::new(TaskPool::<_, 1>::new());
-        let Pool = Box::leak(Pool);
+        let pool = Box::leak(Pool);
 
-        let (Join_handle_parent, Join_handle_child) = Join_handle_type::New();
+        let (Join_handle_parent, Join_handle_child) = Join_handle_type::new();
 
         let Task = async move || {
-            let Manager = Get_instance();
+            let manager = Get_instance();
 
             let Internal_identifier = Manager_type::Get_current_internal_identifier().await;
 
-            Manager
+            manager
                 .Set_internal_identifier(Identifier, Internal_identifier)
                 .await
                 .expect("Failed to register task");
 
-            let Result = Function(Identifier).await;
+            let Result = function(Identifier).await;
 
             Join_handle_child.Signal(Result);
 
-            Manager
+            manager
                 .Unregister(Identifier)
                 .await
                 .expect("Failed to unregister task");
         };
 
-        let mut Inner = Manager.0.write().await;
+        let mut Inner = manager.0.write().await;
 
         // Select the best spawner for the new task
-        let Spawner = if let Some(Spawner) = Spawner {
-            if !Inner.Spawners.contains_key(&Spawner) {
+        let Spawner = if let Some(Spawner) = spawner {
+            if !Inner.spawners.contains_key(&Spawner) {
                 return Err(Error_type::Invalid_spawner_identifier);
             }
             Spawner
@@ -70,15 +70,15 @@ impl Manager_type {
         };
 
         Inner
-            .Tasks
+            .tasks
             .get_mut(&Identifier)
             .expect("Failed to get task metadata")
             .Spawner_identifier = Spawner;
 
-        let Token = Pool.spawn(Task);
+        let Token = pool.spawn(Task);
 
         Inner
-            .Spawners
+            .spawners
             .get(&Spawner)
             .expect("Failed to get spawner")
             .spawn(Token)
@@ -90,10 +90,10 @@ impl Manager_type {
     /// Spawn task
     pub async fn Spawn<Function_type, Future_type, Return_type>(
         &'static self,
-        Parent_task: Task_identifier_type,
-        Name: &str,
-        Spawner: Option<usize>,
-        Function: Function_type,
+        parent_task: Task_identifier_type,
+        name: &str,
+        spawner: Option<usize>,
+        function: Function_type,
     ) -> Result_type<(Join_handle_type<Return_type>, Task_identifier_type)>
     where
         Function_type: FnOnce(Task_identifier_type) -> Future_type + 'static,
@@ -101,7 +101,7 @@ impl Manager_type {
         Return_type: 'static,
     {
         // Call the helper function with all our parameters
-        Self::Create_and_run_task(self, Parent_task, Name, Function, Spawner).await
+        Self::Create_and_run_task(self, parent_task, name, function, spawner).await
     }
 
     /// Set the internal identifier of a task.
@@ -110,22 +110,22 @@ impl Manager_type {
     /// however it doesn't check if the parent task exists.
     async fn Set_internal_identifier(
         &self,
-        Identifier: Task_identifier_type,
-        Internal_identifier: usize,
+        identifier: Task_identifier_type,
+        internal_identifier: usize,
     ) -> Result_type<()> {
-        let mut Inner = self.0.write().await;
+        let mut inner = self.0.write().await;
 
-        let Metadata = Self::Get_task_mutable(&mut Inner, Identifier)?;
+        let Metadata = Self::Get_task_mutable(&mut inner, identifier)?;
 
-        Metadata.Internal_identifier = Internal_identifier;
+        Metadata.Internal_identifier = internal_identifier;
 
         // Register the internal identifier of the task
-        if let Some(Old_identifier) = Inner.Identifiers.insert(Internal_identifier, Identifier) {
+        if let Some(Old_identifier) = inner.identifiers.insert(internal_identifier, identifier) {
             // Rollback the task registration if internal identifier registration fails
-            Inner.Identifiers.remove(&Internal_identifier);
-            Inner
-                .Identifiers
-                .insert(Internal_identifier, Old_identifier);
+            inner.identifiers.remove(&internal_identifier);
+            inner
+                .identifiers
+                .insert(internal_identifier, Old_identifier);
             return Err(Error_type::Invalid_task_identifier);
         }
 
@@ -138,16 +138,16 @@ impl Manager_type {
 
     /// Sleep the current thread for a given duration.
     pub async fn Sleep(Duration: Duration) {
-        let Nano_seconds = Duration.as_nanos();
+        let nano_seconds = Duration.as_nanos();
 
-        Timer::after(embassy_time::Duration::from_nanos(Nano_seconds as u64)).await
+        Timer::after(embassy_time::Duration::from_nanos(nano_seconds as u64)).await
     }
 
     pub async fn Get_current_internal_identifier() -> usize {
-        poll_fn(|Context| {
-            let Task_reference = task_from_waker(Context.waker());
+        poll_fn(|context| {
+            let task_reference = task_from_waker(context.waker());
 
-            let Inner: NonNull<u8> = unsafe { core::mem::transmute(Task_reference) };
+            let Inner: NonNull<u8> = unsafe { core::mem::transmute(task_reference) };
 
             let Identifier = Inner.as_ptr() as usize;
 
@@ -157,14 +157,14 @@ impl Manager_type {
     }
 
     pub async fn Get_current_task_identifier(&self) -> Task_identifier_type {
-        let Internal_identifier = Self::Get_current_internal_identifier().await;
+        let internal_identifier = Self::Get_current_internal_identifier().await;
 
         *self
             .0
             .read()
             .await
-            .Identifiers
-            .get(&Internal_identifier)
+            .identifiers
+            .get(&internal_identifier)
             .expect("Failed to get task identifier")
     }
 }

@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
 use core::ffi::c_void;
@@ -20,19 +19,19 @@ use crate::{
 };
 
 pub struct Instance_type<'module> {
-    Instance: Instance<'module>,
+    instance: Instance<'module>,
 }
 
 unsafe impl Send for Instance_type<'_> {}
 
 impl Drop for Instance_type<'_> {
     fn drop(&mut self) {
-        let Instance = self.Get_inner_reference().get_inner_instance();
+        let instance = self.Get_inner_reference().get_inner_instance();
         unsafe {
-            let User_data = wasm_runtime_get_custom_data(Instance) as *mut Custom_data_type;
+            let user_data = wasm_runtime_get_custom_data(instance) as *mut Custom_data_type;
 
-            if !User_data.is_null() {
-                let _ = Box::from_raw(User_data);
+            if !user_data.is_null() {
+                let _ = Box::from_raw(user_data);
             }
         }
 
@@ -42,18 +41,18 @@ impl Drop for Instance_type<'_> {
 
 impl<'module> Instance_type<'module> {
     pub fn New(
-        Runtime: &Runtime_type,
-        Module: &'module Module_type<'module>,
-        Stack_size: usize,
+        runtime: &Runtime_type,
+        module: &'module Module_type<'module>,
+        stack_size: usize,
     ) -> Result_type<Self> {
-        let WAMR_instance = Instance::new(
-            Runtime.Get_inner_reference(),
-            Module.Get_inner_reference(),
-            Stack_size as u32,
+        let wamr_instance = Instance::new(
+            runtime.Get_inner_reference(),
+            module.Get_inner_reference(),
+            stack_size as u32,
         )?;
 
         let Instance = Instance_type {
-            Instance: WAMR_instance,
+            instance: wamr_instance,
         };
 
         Ok(Instance)
@@ -92,7 +91,7 @@ impl<'module> Instance_type<'module> {
     ///
     /// This function is unsafe because it is not checked that the address is valid.
     #[allow(clippy::mut_from_ref)]
-    pub unsafe fn Convert_to_native_pointer<T>(&self, Address: WASM_pointer_type) -> *mut T {
+    pub unsafe fn convert_to_native_pointer<T>(&self, Address: WASM_pointer_type) -> *mut T {
         wasm_runtime_addr_app_to_native(
             self.Get_inner_reference().get_inner_instance(),
             Address as u64,
@@ -101,18 +100,18 @@ impl<'module> Instance_type<'module> {
 
     pub fn Call_export_function(
         &self,
-        Name: &str,
-        Parameters: &Vec<WasmValue>,
+        name: &str,
+        parameters: &Vec<WasmValue>,
     ) -> Result_type<Vec<WasmValue>> {
-        if Parameters.is_empty() {
+        if parameters.is_empty() {
             Ok(
-                Function::find_export_func(self.Get_inner_reference(), Name)?
-                    .call(&self.Instance, &vec![WasmValue::I32(0)])?,
+                Function::find_export_func(self.Get_inner_reference(), name)?
+                    .call(&self.instance, &vec![WasmValue::I32(0)])?,
             )
         } else {
             Ok(
-                Function::find_export_func(self.Get_inner_reference(), Name)?
-                    .call(&self.Instance, Parameters)?,
+                Function::find_export_func(self.Get_inner_reference(), name)?
+                    .call(&self.instance, parameters)?,
             )
         }
     }
@@ -122,12 +121,12 @@ impl<'module> Instance_type<'module> {
     }
 
     pub fn Allocate<T>(&mut self, Size: usize) -> Result_type<*mut T> {
-        let Result = self.Call_export_function("Allocate", &vec![WasmValue::I32(Size as i32)])?;
+        let result = self.Call_export_function("Allocate", &vec![WasmValue::I32(Size as i32)])?;
 
-        if let Some(WasmValue::I32(Pointer)) = Result.first() {
-            let Pointer = unsafe { self.Convert_to_native_pointer(*Pointer as u32) };
+        if let Some(WasmValue::I32(Pointer)) = result.first() {
+            let pointer = unsafe { self.convert_to_native_pointer(*Pointer as u32) };
 
-            Ok(Pointer)
+            Ok(pointer)
         } else {
             Err(Error_type::Allocation_failure)
         }
@@ -138,6 +137,6 @@ impl<'module> Instance_type<'module> {
     }
 
     pub fn Get_inner_reference(&self) -> &Instance {
-        &self.Instance
+        &self.instance
     }
 }

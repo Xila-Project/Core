@@ -223,8 +223,8 @@ impl From<Users::Error_type> for Error_type {
 ///
 /// This conversion is useful for FFI where errors need to be represented as numbers.
 impl From<Error_type> for NonZeroU32 {
-    fn from(Error: Error_type) -> Self {
-        Error.Get_discriminant()
+    fn from(error: Error_type) -> Self {
+        error.Get_discriminant()
     }
 }
 
@@ -232,8 +232,8 @@ impl From<Error_type> for NonZeroU32 {
 ///
 /// Provides human-readable descriptions of all error variants.
 impl Display for Error_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
-        let String = match self {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+        let string = match self {
             Error_type::Failed_to_initialize_file_system => "Failed to initialize file system",
             Error_type::Permission_denied => "Permission denied",
             Error_type::Not_found => "Not found",
@@ -280,7 +280,7 @@ impl Display for Error_type {
             Error_type::Other => "Other",
         };
 
-        write!(Formatter, "{String}")
+        write!(formatter, "{string}")
     }
 }
 

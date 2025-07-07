@@ -8,10 +8,10 @@ pub enum Tab_type {
 }
 
 impl Tab_type {
-    pub fn Create_UI(&mut self, Parent: *mut LVGL::lv_obj_t) -> Result_type<*mut LVGL::lv_obj_t> {
+    pub fn create_ui(&mut self, Parent: *mut LVGL::lv_obj_t) -> Result_type<*mut LVGL::lv_obj_t> {
         match self {
             Tab_type::General_tab(Tab) => Tab.Create_UI(Parent),
-            Tab_type::Password_tab(Tab) => Tab.Create_UI(Parent),
+            Tab_type::Password_tab(tab) => tab.create_ui(Parent),
         }
     }
 

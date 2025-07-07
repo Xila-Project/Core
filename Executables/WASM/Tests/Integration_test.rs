@@ -1,5 +1,4 @@
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 extern crate alloc;
 
@@ -21,7 +20,7 @@ async fn Integration_test() {
 
     let _ = Users::Initialize();
 
-    let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()));
+    let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()));
 
     let _ = Virtual_machine::Initialize(&[]);
 
@@ -29,12 +28,12 @@ async fn Integration_test() {
 
     LittleFS::File_system_type::Format(Memory_device.clone(), 256).unwrap();
 
-    let mut File_system = LittleFS::File_system_type::New(Memory_device, 256).unwrap();
+    let mut File_system = LittleFS::File_system_type::new(Memory_device, 256).unwrap();
 
     let WASM_executable_path = "./Tests/WASM_test/target/wasm32-wasip1/release/WASM_test.wasm";
     let Destination = "/Test.wasm";
 
-    Loader_type::New()
+    Loader_type::new()
         .Add_file(WASM_executable_path, Destination)
         .Load(&mut File_system)
         .unwrap();

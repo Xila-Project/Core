@@ -7,11 +7,11 @@ use crate::Std::IO::Map_error;
 pub struct Standard_in_device_type;
 
 impl Device_trait for Standard_in_device_type {
-    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<Size_type> {
+    fn Read(&self, buffer: &mut [u8]) -> File_system::Result_type<Size_type> {
         #[allow(clippy::unused_io_amount)]
-        stdin().read(Buffer).unwrap();
+        stdin().read(buffer).unwrap();
 
-        Ok(Size_type::New(Buffer.len() as u64))
+        Ok(Size_type::New(buffer.len() as u64))
     }
 
     fn Write(&self, _: &[u8]) -> File_system::Result_type<Size_type> {

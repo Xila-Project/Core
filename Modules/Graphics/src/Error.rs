@@ -19,8 +19,8 @@ pub enum Error_type {
 }
 
 impl Display for Error_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
-        let String = match self {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+        let string = match self {
             Error_type::Invalid_reference => "Invalid reference",
             Error_type::Already_initialized => "Already initialized",
             Error_type::Not_initialized => "Not initialized",
@@ -34,6 +34,6 @@ impl Display for Error_type {
             Error_type::Invalid_window_identifier => "Invalid window identifier",
         };
 
-        write!(Formatter, "{String}")
+        write!(formatter, "{string}")
     }
 }

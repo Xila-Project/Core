@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
 extern crate alloc;
@@ -49,10 +48,10 @@ async fn Is_execute_allowed(Statistics: &Statistics_type, User: User_identifier_
 }
 
 async fn Get_overridden_user(
-    Statistics: &Statistics_type,
-    Task: Task_identifier_type,
+    statistics: &Statistics_type,
+    task: Task_identifier_type,
 ) -> Result_type<Option<User_identifier_type>> {
-    if !Statistics
+    if !statistics
         .Get_permissions()
         .Get_special()
         .Get_set_user_identifier()
@@ -60,9 +59,9 @@ async fn Get_overridden_user(
         return Ok(None);
     }
 
-    let Current_user = Task::Get_instance().Get_user(Task).await?;
+    let Current_user = Task::Get_instance().Get_user(task).await?;
 
-    let New_user = Statistics.Get_user();
+    let New_user = statistics.Get_user();
 
     if Current_user != Users::User_identifier_type::ROOT || New_user != Current_user {
         return Err(Error_type::Permission_denied);
@@ -72,17 +71,17 @@ async fn Get_overridden_user(
 }
 
 pub async fn Execute(
-    Path: impl AsRef<Path_type>,
-    Inputs: String,
-    Standard: Standard_type,
+    path: impl AsRef<Path_type>,
+    inputs: String,
+    standard: Standard_type,
 ) -> Result_type<Join_handle_type<isize>> {
-    let Task_instance = Task::Get_instance();
+    let task_instance = Task::Get_instance();
 
-    let Task = Task_instance.Get_current_task_identifier().await;
+    let Task = task_instance.Get_current_task_identifier().await;
 
     let File = File_type::Open(
         Virtual_file_system::Get_instance(),
-        &Path,
+        &path,
         File_system::Mode_type::READ_WRITE.into(),
     )
     .await?;
@@ -90,7 +89,7 @@ pub async fn Execute(
     // - Check the executable bit
     if !Is_execute_allowed(
         &File.Get_statistics().await?,
-        Task_instance.Get_user(Task).await?,
+        task_instance.Get_user(Task).await?,
     )
     .await
     {
@@ -100,30 +99,30 @@ pub async fn Execute(
     // - Check if the user can override the user identifier
     let New_user = Get_overridden_user(&File.Get_statistics().await?, Task).await?;
 
-    let File_name = Path
+    let File_name = path
         .as_ref()
         .Get_file_name()
         .ok_or(File_system::Error_type::Invalid_path)?;
 
     let mut Read_data = Read_data_type::New_default();
     File.Read(&mut Read_data).await?;
-    let Read_data: Read_data_type = Read_data.try_into().unwrap();
+    let read_data: Read_data_type = Read_data.try_into().unwrap();
 
-    let Main = Read_data
+    let Main = read_data
         .Get_main()
         .ok_or(Error_type::Failed_to_get_main_function)?;
 
-    let (Join_handle, _) = Task_instance
+    let (Join_handle, _) = task_instance
         .Spawn(Task, File_name, None, async move |Task| {
-            if let Some(New_user) = New_user {
-                Task::Get_instance().Set_user(Task, New_user).await.unwrap();
+            if let Some(new_user) = New_user {
+                Task::Get_instance().set_user(Task, new_user).await.unwrap();
             }
 
-            let Standard = Standard.Transfert(Task).await.unwrap();
+            let Standard = standard.Transfert(Task).await.unwrap();
 
-            match Main(Standard, Inputs).await {
+            match Main(Standard, inputs).await {
                 Ok(_) => 0_isize,
-                Err(Error) => -(Error.get() as isize),
+                Err(error) => -(error.get() as isize),
             }
         })
         .await?;
@@ -141,7 +140,7 @@ mod Tests {
 
     #[Test]
     async fn Is_user_allowed_test() {
-        let Statistics = Statistics_type::New(
+        let Statistics = Statistics_type::new(
             File_system::File_system_identifier_type::New(0),
             File_system::Inode_type::New(0),
             1,

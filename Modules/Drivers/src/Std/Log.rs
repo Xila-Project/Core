@@ -5,8 +5,8 @@ use Log::Logger_trait;
 pub struct Logger_type;
 
 impl Logger_trait for Logger_type {
-    fn Enabled(&self, Level: Log::Level_type) -> bool {
-        match Level {
+    fn enabled(&self, level: Log::Level_type) -> bool {
+        match level {
             Log::Level_type::Error => true,
             Log::Level_type::Warn => true,
             Log::Level_type::Info => true,

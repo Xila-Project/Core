@@ -14,55 +14,55 @@ use Graphics::{
 
 #[derive(Default)]
 pub struct Window_type {
-    Resolution: Point_type,
-    Window: Option<Window>,
-    Pixels: Option<Pixels>,
-    Pointer_data: Input_data_type,
-    Keyboard_data: VecDeque<(State_type, Key_type)>,
+    resolution: Point_type,
+    window: Option<Window>,
+    pixels: Option<Pixels>,
+    pointer_data: Input_data_type,
+    keyboard_data: VecDeque<(State_type, Key_type)>,
 }
 
 impl Window_type {
-    pub fn New(Resolution: Point_type) -> Self {
+    pub fn new(resolution: Point_type) -> Self {
         Self {
-            Resolution,
-            Keyboard_data: VecDeque::with_capacity(16),
+            resolution,
+            keyboard_data: VecDeque::with_capacity(16),
             ..Default::default()
         }
     }
 
     pub fn Get_pointer_data(&self) -> &Input_data_type {
-        &self.Pointer_data
+        &self.pointer_data
     }
 
     pub fn Pop_keyboard_data(&mut self) -> Option<(State_type, Key_type, bool)> {
-        let (State, Key) = self.Keyboard_data.pop_front()?;
+        let (state, key) = self.keyboard_data.pop_front()?;
 
-        let Continue = self.Keyboard_data.is_empty();
+        let Continue = self.keyboard_data.is_empty();
 
-        Some((State, Key, Continue))
+        Some((state, key, Continue))
     }
 
     pub fn Get_resolution(&self) -> Option<Point_type> {
-        self.Window.as_ref().map(|Window| {
-            let Size = Window.inner_size();
-            Point_type::New(Size.width as i16, Size.height as i16)
+        self.window.as_ref().map(|window| {
+            let size = window.inner_size();
+            Point_type::new(size.width as i16, size.height as i16)
         })
     }
 
     pub fn Draw(&mut self, Data: &Screen_write_data_type) -> Result<(), String> {
-        let Frame_width = self.Resolution.Get_x() as usize;
-        let Data_area = Data.Get_area();
+        let frame_width = self.resolution.Get_x() as usize;
+        let data_area = Data.get_area();
 
-        let Point_1 = Data_area.Get_point_1();
-        let Point_2 = Data_area.Get_point_2();
+        let Point_1 = data_area.Get_point_1();
+        let point_2 = data_area.Get_point_2();
 
         let Pixels = self
-            .Pixels
+            .pixels
             .as_mut()
             .ok_or_else(|| "Pixels is None.".to_string())?;
 
         let Frame = Pixels.frame_mut();
-        let Frame = unsafe {
+        let frame = unsafe {
             core::slice::from_raw_parts_mut(
                 Frame.as_mut_ptr() as *mut Color_RGBA8888_type,
                 Frame.len() / size_of::<Color_RGBA8888_type>(),
@@ -72,26 +72,26 @@ impl Window_type {
         let Data_buffer = Data.Get_buffer();
 
         let Frame_x_start = Point_1.Get_x() as usize;
-        let Frame_y_start = Point_1.Get_y() as usize;
-        let Width = (Point_2.Get_x() - Point_1.Get_x() + 1) as usize;
-        let Height = (Point_2.Get_y() - Point_1.Get_y() + 1) as usize;
+        let frame_y_start = Point_1.Get_y() as usize;
+        let width = (point_2.Get_x() - Point_1.Get_x() + 1) as usize;
+        let height = (point_2.Get_y() - Point_1.Get_y() + 1) as usize;
 
-        for (y, Data_row) in Data_buffer.chunks(Width).enumerate().take(Height) {
-            let Frame_row_start = (Frame_y_start + y) * Frame_width + Frame_x_start;
-            let Frame_row_end = Frame_row_start + Width;
-            let Frame_row = &mut Frame[Frame_row_start..Frame_row_end];
+        for (y, Data_row) in Data_buffer.chunks(width).enumerate().take(height) {
+            let frame_row_start = (frame_y_start + y) * frame_width + Frame_x_start;
+            let frame_row_end = frame_row_start + width;
+            let frame_row = &mut frame[frame_row_start..frame_row_end];
 
-            Frame_row
+            frame_row
                 .iter_mut()
                 .zip(Data_row.iter())
-                .for_each(|(Destination, &Source)| {
-                    let Source = Color_RGBA8888_type::From_RGB565(Source);
-                    *Destination = Source;
+                .for_each(|(destination, &Source)| {
+                    let source = Color_RGBA8888_type::From_RGB565(Source);
+                    *destination = source;
                 });
         }
 
         // - Request a redraw.
-        self.Window
+        self.window
             .as_ref()
             .ok_or_else(|| "Window is None.".to_string())?
             .request_redraw();
@@ -102,83 +102,83 @@ impl Window_type {
 
 impl ApplicationHandler for Window_type {
     fn about_to_wait(&mut self, _: &ActiveEventLoop) {
-        if let Some(Window) = &self.Window {
-            Window.request_redraw();
+        if let Some(window) = &self.window {
+            window.request_redraw();
         }
     }
 
     fn resumed(&mut self, Event_loop: &ActiveEventLoop) {
-        let Window = {
-            let Size = LogicalSize::new(
-                self.Resolution.Get_x() as f64,
-                self.Resolution.Get_y() as f64,
+        let window = {
+            let size = LogicalSize::new(
+                self.resolution.Get_x() as f64,
+                self.resolution.Get_y() as f64,
             );
 
             let Window_attributes = Window::default_attributes()
                 .with_title("Xila")
-                .with_inner_size(Size)
-                .with_min_inner_size(Size);
+                .with_inner_size(size)
+                .with_min_inner_size(size);
 
             Event_loop.create_window(Window_attributes).unwrap()
         };
 
         let Pixels = {
-            let Surface_texture = SurfaceTexture::new(
-                self.Resolution.Get_x() as u32,
-                self.Resolution.Get_y() as u32,
-                &Window,
+            let surface_texture = SurfaceTexture::new(
+                self.resolution.Get_x() as u32,
+                self.resolution.Get_y() as u32,
+                &window,
             );
 
             Pixels::new(
-                self.Resolution.Get_x() as u32,
-                self.Resolution.Get_y() as u32,
-                Surface_texture,
+                self.resolution.Get_x() as u32,
+                self.resolution.Get_y() as u32,
+                surface_texture,
             )
             .unwrap()
         };
 
-        self.Window = Some(Window);
-        self.Pixels = Some(Pixels);
+        self.window = Some(window);
+        self.pixels = Some(Pixels);
     }
 
     fn window_event(
         &mut self,
         _: &ActiveEventLoop,
-        Window_identifier: WindowId,
-        Event: WindowEvent,
+        window_identifier: WindowId,
+        event: WindowEvent,
     ) {
-        let Window = if let Some(Window) = &self.Window {
+        let Window = if let Some(Window) = &self.window {
             Window
         } else {
             return;
         };
 
-        if Window_identifier != Window.id() {
+        if window_identifier != Window.id() {
             return;
         }
 
-        match Event {
+        match event {
             WindowEvent::RedrawRequested => {
-                if let Some(Pixels) = &mut self.Pixels {
-                    Pixels.render().unwrap();
+                if let Some(pixels) = &mut self.pixels {
+                    pixels.render().unwrap();
                 }
             }
             WindowEvent::KeyboardInput {
                 device_id: _,
-                event: Event,
+                event,
                 is_synthetic: _,
             } => {
-                if let Some(Text) = Event.text {
-                    if Event.state == ElementState::Pressed {
-                        let Key = Text.as_bytes()[0];
+                if let Some(Text) = event.text {
+                    if event.state == ElementState::Pressed {
+                        let key = Text.as_bytes()[0];
 
-                        self.Keyboard_data
-                            .push_back((State_type::Pressed, Key_type::Character(Key)));
-                        self.Keyboard_data
-                            .push_back((State_type::Released, Key_type::Character(Key)));
+                        self.keyboard_data
+                            .push_back((State_type::Pressed, Key_type::Character(key)));
+                        self.keyboard_data
+                            .push_back((State_type::Released, Key_type::Character(key)));
                     }
-                } else if let winit::keyboard::Key::Named(Key) = Event.logical_key {
-                    let State = match Event.state {
+                } else if let winit::keyboard::Key::Named(Key) = event.logical_key {
+                    let state = match event.state {
                         ElementState::Pressed => State_type::Pressed,
                         ElementState::Released => State_type::Released,
                     };
@@ -199,26 +199,26 @@ impl ApplicationHandler for Window_type {
                         _ => Key_type::Character(0),
                     };
 
-                    self.Keyboard_data.push_back((State, Key));
+                    self.keyboard_data.push_back((state, Key));
                 }
             }
             WindowEvent::CursorMoved {
                 device_id: _,
-                position: Position,
+                position,
             } => self
-                .Pointer_data
-                .Set_point((Position.x as i16, Position.y as i16).into()),
+                .pointer_data
+                .Set_point((position.x as i16, position.y as i16).into()),
             WindowEvent::MouseInput {
                 device_id: _,
                 state,
                 button: _,
             } => match state {
                 ElementState::Pressed => {
-                    self.Pointer_data.Set_state(State_type::Pressed);
+                    self.pointer_data.Set_state(State_type::Pressed);
                 }
 
                 ElementState::Released => {
-                    self.Pointer_data.Set_state(State_type::Released);
+                    self.pointer_data.Set_state(State_type::Released);
                 }
             },
             _ => {}

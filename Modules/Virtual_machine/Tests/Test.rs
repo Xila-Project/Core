@@ -1,6 +1,5 @@
 #![no_std]
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 extern crate alloc;
 
@@ -23,7 +22,7 @@ Instantiate_global_allocator!(Memory_manager_type);
 pub struct Registrable;
 
 impl Registrable_trait for Registrable {
-    fn Get_functions(&self) -> &[Function_descriptor_type] {
+    fn get_functions(&self) -> &[Function_descriptor_type] {
         &Functions
     }
 
@@ -45,13 +44,13 @@ async fn Integration_test() {
 
     Users::Initialize();
 
-    Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()))
+    Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()))
         .expect("Failed to initialize time manager");
 
     let Device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
 
     LittleFS::File_system_type::Format(Device.clone(), 512).unwrap();
-    let File_system = Create_file_system!(LittleFS::File_system_type::New(Device, 256).unwrap());
+    let File_system = Create_file_system!(LittleFS::File_system_type::new(Device, 256).unwrap());
 
     let Virtual_file_system = Virtual_file_system::Initialize(File_system, None).unwrap();
 
@@ -129,7 +128,7 @@ async fn Integration_test() {
         .Call_ABI(async || {
             // Register the functions
 
-            let Runtime = Runtime_type::Builder()
+            let Runtime = Runtime_type::builder()
                 .Register(&Registrable)
                 .Build()
                 .unwrap();

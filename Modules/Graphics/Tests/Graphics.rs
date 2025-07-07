@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
 extern crate alloc;
@@ -20,10 +19,10 @@ async fn main() {
 
     let Task_instance = Task::Initialize();
 
-    Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()))
+    Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()))
         .expect("Error initializing time manager");
 
-    const Resolution: Point_type = Point_type::New(800, 480);
+    const Resolution: Point_type = Point_type::new(800, 480);
 
     const Buffer_size: usize = Get_recommended_buffer_size(&Resolution);
 

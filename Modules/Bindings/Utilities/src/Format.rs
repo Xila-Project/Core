@@ -8,7 +8,7 @@ pub fn Format_rust(File_path: &Path) -> Result<(), String> {
                 .ok_or("Error converting path to string")?,
         )
         .status()
-        .map_err(|Code| format!("Error running rustfmt : {Code}"))?;
+        .map_err(|code| format!("Error running rustfmt : {code}"))?;
 
     Ok(())
 }
@@ -22,7 +22,7 @@ pub fn Format_C(File_path: &Path) -> Result<(), String> {
                 .ok_or("Error converting path to string")?,
         )
         .status()
-        .map_err(|Code| format!("Error running clang-format : {Code}"))?;
+        .map_err(|code| format!("Error running clang-format : {code}"))?;
 
     Ok(())
 }
@@ -46,9 +46,9 @@ pub fn Format_identifier(Prefix: &str, Function_name: &str) -> String {
     // - Replace names
     let Function_name = Function_name
         .split("_")
-        .map(|Part| match NAMES.iter().find(|(Old, _)| *Old == Part) {
-            Some((_, New)) => New.to_string(),
-            None => Part.to_string(),
+        .map(|part| match NAMES.iter().find(|(Old, _)| *Old == part) {
+            Some((_, new)) => new.to_string(),
+            None => part.to_string(),
         })
         .collect::<Vec<String>>()
         .join("_");

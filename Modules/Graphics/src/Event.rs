@@ -2,26 +2,30 @@ use crate::{Key_type, LVGL};
 
 #[derive(Debug, Clone)]
 pub struct Event_type {
-    Code: Event_code_type,
-    Target: *mut LVGL::lv_obj_t,
-    Key: Option<Key_type>,
+    code: Event_code_type,
+    target: *mut LVGL::lv_obj_t,
+    key: Option<Key_type>,
 }
 
 impl Event_type {
-    pub fn New(Code: Event_code_type, Target: *mut LVGL::lv_obj_t, Key: Option<Key_type>) -> Self {
-        Self { Code, Target, Key }
+    pub fn new(code: Event_code_type, Target: *mut LVGL::lv_obj_t, Key: Option<Key_type>) -> Self {
+        Self {
+            code,
+            target: Target,
+            key: Key,
+        }
     }
 
     pub fn Get_code(&self) -> Event_code_type {
-        self.Code
+        self.code
     }
 
     pub fn Get_target(&self) -> *mut LVGL::lv_obj_t {
-        self.Target
+        self.target
     }
 
     pub fn Get_key(&self) -> Option<Key_type> {
-        self.Key
+        self.key
     }
 }
 
@@ -128,7 +132,7 @@ pub enum Event_code_type {
 }
 
 impl Event_code_type {
-    pub const fn Into_LVGL_code(self) -> LVGL::lv_event_code_t {
+    pub const fn into_lvgl_code(self) -> LVGL::lv_event_code_t {
         self as LVGL::lv_event_code_t
     }
 
@@ -138,13 +142,13 @@ impl Event_code_type {
 }
 
 impl From<Event_code_type> for LVGL::lv_event_code_t {
-    fn from(Code: Event_code_type) -> Self {
-        Code.Into_LVGL_code()
+    fn from(code: Event_code_type) -> Self {
+        code.into_lvgl_code()
     }
 }
 
 impl From<LVGL::lv_event_code_t> for Event_code_type {
-    fn from(Code: LVGL::lv_event_code_t) -> Self {
-        Event_code_type::From_LVGL_code(Code)
+    fn from(code: LVGL::lv_event_code_t) -> Self {
+        Event_code_type::From_LVGL_code(code)
     }
 }

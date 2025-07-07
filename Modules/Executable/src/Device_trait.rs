@@ -4,9 +4,9 @@ use Task::Task_identifier_type;
 use Virtual_file_system::Virtual_file_system_type;
 
 pub trait Device_executable_trait: Device_trait {
-    fn Mount<'a>(
-        Virtual_file_system: &'a Virtual_file_system_type<'a>,
-        Task: Task_identifier_type,
+    fn mount<'a>(
+        virtual_file_system: &'a Virtual_file_system_type<'a>,
+        task: Task_identifier_type,
     ) -> Result<(), String>;
 }
 
@@ -34,7 +34,7 @@ macro_rules! Implement_executable_device {
         Main_function: $main_function:path,
     ) => {
         impl Executable::Device_executable_trait for $struct_name {
-            fn Mount<'a>(
+            fn mount<'a>(
                 Virtual_file_system: &'a Virtual_file_system::Virtual_file_system_type<'a>,
                 Task: Task::Task_identifier_type,
             ) -> Result<(), alloc::string::String> {
@@ -57,7 +57,7 @@ macro_rules! Implement_executable_device {
                     .try_into()
                     .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
-                *Read_data = Executable::Read_data_type::New($main_function);
+                *Read_data = Executable::Read_data_type::new($main_function);
 
                 Ok(core::mem::size_of::<Executable::Read_data_type>().into())
             }

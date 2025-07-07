@@ -2,9 +2,9 @@ use quote::ToTokens;
 use syn::FnArg;
 
 pub fn Split_inputs<'a>(
-    Inputs: &'a [&'a FnArg],
+    inputs: &'a [&'a FnArg],
 ) -> Result<(&'a [&'a FnArg], &'a [&'a FnArg]), String> {
-    let Index = Inputs
+    let index = inputs
         .iter()
         .position(|Argument| {
             if let FnArg::Typed(Pattern) = Argument {
@@ -15,5 +15,5 @@ pub fn Split_inputs<'a>(
         })
         .unwrap_or(0);
 
-    Ok(Inputs.split_at(Index))
+    Ok(inputs.split_at(index))
 }

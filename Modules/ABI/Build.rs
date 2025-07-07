@@ -1,9 +1,8 @@
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 pub fn main() {
-    let Out_dir = "./include";
-    let Out_file = format!("{Out_dir}/Xila.h");
+    let out_dir = "./include";
+    let out_file = format!("{out_dir}/Xila.h");
 
     let Enumeration_configuration = cbindgen::EnumConfig {
         prefix_with_name: true,
@@ -22,5 +21,5 @@ pub fn main() {
         .with_config(Configuration)
         .generate()
         .expect("Unable to generate bindings")
-        .write_to_file(&Out_file);
+        .write_to_file(&out_file);
 }

@@ -2,7 +2,7 @@ use super::littlefs;
 use File_system::Flags_type;
 
 pub fn Convert_flags(Flags: Flags_type) -> i32 {
-    let mut Little_fs_flags: i32 = if Flags.Get_mode().Get_read() {
+    let mut little_fs_flags: i32 = if Flags.Get_mode().Get_read() {
         if Flags.Get_mode().Get_write() {
             littlefs::lfs_open_flags_LFS_O_RDWR as i32
         } else {
@@ -15,20 +15,20 @@ pub fn Convert_flags(Flags: Flags_type) -> i32 {
     };
 
     if Flags.Get_open().Get_create() {
-        Little_fs_flags |= littlefs::lfs_open_flags_LFS_O_CREAT as i32;
+        little_fs_flags |= littlefs::lfs_open_flags_LFS_O_CREAT as i32;
     }
 
     if Flags.Get_open().Get_exclusive() {
-        Little_fs_flags |= littlefs::lfs_open_flags_LFS_O_EXCL as i32;
+        little_fs_flags |= littlefs::lfs_open_flags_LFS_O_EXCL as i32;
     }
 
     if Flags.Get_open().Get_truncate() {
-        Little_fs_flags |= littlefs::lfs_open_flags_LFS_O_TRUNC as i32;
+        little_fs_flags |= littlefs::lfs_open_flags_LFS_O_TRUNC as i32;
     }
 
     if Flags.Get_status().Get_append() {
-        Little_fs_flags |= littlefs::lfs_open_flags_LFS_O_APPEND as i32;
+        little_fs_flags |= littlefs::lfs_open_flags_LFS_O_APPEND as i32;
     }
 
-    Little_fs_flags
+    little_fs_flags
 }

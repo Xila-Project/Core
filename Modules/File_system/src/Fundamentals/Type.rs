@@ -57,7 +57,7 @@ pub enum Type_type {
 
 impl Display for Type_type {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        let Type = match self {
+        let type_value = match self {
             Type_type::File => "File",
             Type_type::Directory => "Directory",
             Type_type::Block_device => "Block device",
@@ -67,7 +67,7 @@ impl Display for Type_type {
             Type_type::Symbolic_link => "Symbolic link",
         };
 
-        write!(f, "{Type}")
+        write!(f, "{type_value}")
     }
 }
 

@@ -37,10 +37,10 @@ impl Manager_type {
 /// - Memory is properly aligned according to the layout
 /// - Deallocation uses the same layout that was used for allocation
 unsafe impl GlobalAlloc for Manager_type {
-    unsafe fn alloc(&self, Layout: core::alloc::Layout) -> *mut u8 {
+    unsafe fn alloc(&self, layout: core::alloc::Layout) -> *mut u8 {
         self.0
-            .Allocate(Capabilities_type::default(), Layout_type::from(Layout))
-            .map_or(core::ptr::null_mut(), |Pointer| Pointer.as_ptr())
+            .Allocate(Capabilities_type::default(), Layout_type::from(layout))
+            .map_or(core::ptr::null_mut(), |pointer| pointer.as_ptr())
     }
 
     unsafe fn dealloc(&self, Pointer: *mut u8, Layout: core::alloc::Layout) {

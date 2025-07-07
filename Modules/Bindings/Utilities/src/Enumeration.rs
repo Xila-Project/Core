@@ -3,17 +3,17 @@ use quote::{quote, ToTokens};
 use syn::Signature;
 
 pub fn Generate_code(Signatures: Vec<Signature>) -> TokenStream {
-    let mut Signatures = Signatures.clone();
+    let mut signatures = Signatures.clone();
 
-    Signatures.sort_by_key(|x| x.ident.to_string().to_lowercase());
+    signatures.sort_by_key(|x| x.ident.to_string().to_lowercase());
 
-    let Variants = &Signatures
+    let Variants = &signatures
         .into_iter()
         .enumerate()
         .map(|(i, x)| {
-            let Identifier = &x.ident;
+            let identifier = &x.ident;
             let i = Literal::usize_unsuffixed(i);
-            quote! { #Identifier = #i }
+            quote! { #identifier = #i }
         })
         .collect::<Vec<_>>();
 

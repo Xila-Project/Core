@@ -12,40 +12,40 @@ pub fn Get_instance() -> &'static Manager_type {
 }
 
 pub fn Initialize(Driver: Device_type) -> Result_type<&'static Manager_type> {
-    MANAGER.get_or_init(|| Manager_type::New(Driver).expect("Failed to initialize time manager"));
+    MANAGER.get_or_init(|| Manager_type::new(Driver).expect("Failed to initialize time manager"));
 
     Ok(Get_instance())
 }
 
 pub struct Manager_type {
-    Device: Device_type,
-    Start_time: Duration_type,
+    device: Device_type,
+    start_time: Duration_type,
 }
 
 impl Manager_type {
-    pub fn New(Device: Device_type) -> Result_type<Self> {
-        let mut Start_time = Duration_type::default();
+    pub fn new(device: Device_type) -> Result_type<Self> {
+        let mut start_time = Duration_type::default();
 
-        Device
-            .Read(Start_time.as_mut())
+        device
+            .Read(start_time.as_mut())
             .map_err(Error_type::Device_error)?;
 
-        Ok(Self { Device, Start_time })
+        Ok(Self { device, start_time })
     }
 
     pub fn Get_current_time_since_startup(&self) -> Result_type<Duration_type> {
-        let Current_time = self.Get_current_time()?;
+        let current_time = self.Get_current_time()?;
 
-        Ok(Current_time.Get_duration_since(&self.Start_time))
+        Ok(current_time.Get_duration_since(&self.start_time))
     }
 
     pub fn Get_current_time(&self) -> Result_type<Duration_type> {
-        let mut Current_time = Duration_type::default();
+        let mut current_time = Duration_type::default();
 
-        self.Device
-            .Read(Current_time.as_mut())
+        self.device
+            .Read(current_time.as_mut())
             .map_err(Error_type::Device_error)?;
 
-        Ok(Current_time)
+        Ok(current_time)
     }
 }

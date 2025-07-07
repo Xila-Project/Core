@@ -182,7 +182,7 @@ impl Partition_type_type {
             Partition_type_type::Gpt_protective => 0xEE,
             Partition_type_type::Efi_system => 0xEF,
             Partition_type_type::Xila => 0xDA,
-            Partition_type_type::Unknown(Value) => *Value,
+            Partition_type_type::Unknown(value) => *value,
         }
     }
 
@@ -269,10 +269,10 @@ impl Partition_type_type {
 }
 
 impl fmt::Display for Partition_type_type {
-    fn fmt(&self, Formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Partition_type_type::Unknown(Value) => write!(Formatter, "Unknown (0x{Value:02X})"),
-            _ => write!(Formatter, "{} (0x{:02X})", self.Get_name(), self.To_u8()),
+            Partition_type_type::Unknown(Value) => write!(formatter, "Unknown (0x{Value:02X})"),
+            _ => write!(formatter, "{} (0x{:02X})", self.Get_name(), self.To_u8()),
         }
     }
 }

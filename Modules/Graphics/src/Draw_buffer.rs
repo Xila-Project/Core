@@ -4,28 +4,28 @@ use crate::{Color_RGB565_type, Color_type, Point_type, Rendering_color_type};
 
 #[repr(transparent)]
 pub struct Buffer_type {
-    Buffer: Vec<Rendering_color_type>,
+    buffer: Vec<Rendering_color_type>,
 }
 
 impl AsRef<[Color_type]> for Buffer_type {
     fn as_ref(&self) -> &[Color_type] {
         unsafe {
-            let Buffer = self.Buffer.as_ptr() as *const Color_type;
-            core::slice::from_raw_parts(Buffer, self.Buffer.len())
+            let buffer = self.buffer.as_ptr() as *const Color_type;
+            core::slice::from_raw_parts(buffer, self.buffer.len())
         }
     }
 }
 
 impl Buffer_type {
-    pub fn New_from_resolution(Resolution: &Point_type) -> Self {
-        let Buffer_size = Get_minimal_buffer_size(Resolution);
+    pub fn new_from_resolution(Resolution: &Point_type) -> Self {
+        let buffer_size = Get_minimal_buffer_size(Resolution);
 
-        Self::New(Buffer_size)
+        Self::New(buffer_size)
     }
 
     pub fn New(Buffer_size: usize) -> Self {
         Self {
-            Buffer: vec![Color_RGB565_type::New(0, 0, 0); Buffer_size],
+            buffer: vec![Color_RGB565_type::new(0, 0, 0); Buffer_size],
         }
     }
 }

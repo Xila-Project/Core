@@ -10,7 +10,7 @@ pub enum Operating_system_type {
 }
 
 impl Operating_system_type {
-    pub fn Get() -> Operating_system_type {
+    pub fn get() -> Operating_system_type {
         Operating_system_type::from(Self::Get_raw())
     }
 

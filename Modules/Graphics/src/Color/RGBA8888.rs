@@ -7,8 +7,8 @@ use super::{Color_ARGB8888_type, Color_RGB565_type};
 pub struct Color_RGBA8888_type(u32);
 
 impl Debug for Color_RGBA8888_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        Formatter
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter
             .debug_struct("Color_RGBA8888_type")
             .field("Red", &self.Get_red())
             .field("Green", &self.Get_green())
@@ -19,16 +19,16 @@ impl Debug for Color_RGBA8888_type {
 }
 
 impl Color_RGBA8888_type {
-    pub const fn New(Red: u8, Green: u8, Blue: u8, Alpha: u8) -> Self {
+    pub const fn new(red: u8, Green: u8, Blue: u8, Alpha: u8) -> Self {
         Self(0)
-            .Set_red(Red)
+            .Set_red(red)
             .Set_green(Green)
             .Set_blue(Blue)
             .Set_alpha(Alpha)
     }
 
     pub const fn From_RGB565(Value: Color_RGB565_type) -> Self {
-        Self::New(
+        Self::new(
             Value.Get_red() << 3 | Value.Get_red() >> 2,
             Value.Get_green() << 2 | Value.Get_green() >> 4,
             Value.Get_blue() << 3 | Value.Get_blue() >> 2,
@@ -78,31 +78,31 @@ impl Color_RGBA8888_type {
 }
 
 impl From<Color_RGBA8888_type> for u32 {
-    fn from(Value: Color_RGBA8888_type) -> u32 {
-        Value.0
+    fn from(value: Color_RGBA8888_type) -> u32 {
+        value.0
     }
 }
 
 impl From<u32> for Color_RGBA8888_type {
-    fn from(Value: u32) -> Self {
-        Self(Value)
+    fn from(value: u32) -> Self {
+        Self(value)
     }
 }
 
 impl From<Color_ARGB8888_type> for Color_RGBA8888_type {
-    fn from(Value: Color_ARGB8888_type) -> Self {
-        Self::New(
-            Value.Get_red(),
-            Value.Get_green(),
-            Value.Get_blue(),
-            Value.Get_alpha(),
+    fn from(value: Color_ARGB8888_type) -> Self {
+        Self::new(
+            value.Get_red(),
+            value.Get_green(),
+            value.Get_blue(),
+            value.Get_alpha(),
         )
     }
 }
 
 impl From<Color_RGB565_type> for Color_RGBA8888_type {
-    fn from(Value: Color_RGB565_type) -> Self {
-        Self::From_RGB565(Value)
+    fn from(value: Color_RGB565_type) -> Self {
+        Self::From_RGB565(value)
     }
 }
 
@@ -112,7 +112,7 @@ mod Tests {
 
     #[test]
     fn Test_RGBA8888() {
-        let Color = Color_RGBA8888_type::New(255, 255, 255, 255);
+        let Color = Color_RGBA8888_type::new(255, 255, 255, 255);
         assert_eq!(Color.Get_alpha(), 0xFF);
         assert_eq!(Color.Get_red(), 0xFF);
         assert_eq!(Color.Get_green(), 0xFF);
@@ -120,7 +120,7 @@ mod Tests {
         assert_eq!(Color.0, 0xFFFF_FFFF);
         assert_eq!(u32::from(Color), 0xFFFF_FFFF);
 
-        let Color = Color_RGBA8888_type::New(255, 0, 0, 0);
+        let Color = Color_RGBA8888_type::new(255, 0, 0, 0);
         assert_eq!(Color.Get_alpha(), 0);
         assert_eq!(Color.Get_red(), 0xFF);
         assert_eq!(Color.Get_green(), 0);
@@ -128,7 +128,7 @@ mod Tests {
         assert_eq!(Color.0, 0x0000_00FF);
         assert_eq!(u32::from(Color), 0x0000_00FF);
 
-        let Color = Color_RGBA8888_type::New(0, 255, 0, 0);
+        let Color = Color_RGBA8888_type::new(0, 255, 0, 0);
         assert_eq!(Color.Get_alpha(), 0);
         assert_eq!(Color.Get_red(), 0);
         assert_eq!(Color.Get_green(), 0xFF);
@@ -136,7 +136,7 @@ mod Tests {
         assert_eq!(Color.0, 0x0000_FF00);
         assert_eq!(u32::from(Color), 0x0000_FF00);
 
-        let Color = Color_RGBA8888_type::New(0, 0, 255, 0);
+        let Color = Color_RGBA8888_type::new(0, 0, 255, 0);
         assert_eq!(Color.Get_alpha(), 0);
         assert_eq!(Color.Get_red(), 0);
         assert_eq!(Color.Get_green(), 0);
@@ -144,7 +144,7 @@ mod Tests {
         assert_eq!(Color.0, 0x00FF_0000);
         assert_eq!(u32::from(Color), 0x00FF_0000);
 
-        let Color = Color_RGBA8888_type::New(0, 0, 0, 255);
+        let Color = Color_RGBA8888_type::new(0, 0, 0, 255);
         assert_eq!(Color.Get_alpha(), 0xFF);
         assert_eq!(Color.Get_red(), 0);
         assert_eq!(Color.Get_green(), 0);
@@ -152,7 +152,7 @@ mod Tests {
         assert_eq!(Color.0, 0xFF00_0000);
         assert_eq!(u32::from(Color), 0xFF00_0000);
 
-        let Color = Color_RGBA8888_type::New(0, 0, 0, 0);
+        let Color = Color_RGBA8888_type::new(0, 0, 0, 0);
         assert_eq!(Color.Get_alpha(), 0);
         assert_eq!(Color.Get_red(), 0);
         assert_eq!(Color.Get_green(), 0);

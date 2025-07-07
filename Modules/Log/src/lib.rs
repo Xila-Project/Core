@@ -1,6 +1,5 @@
 #![no_std]
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 extern crate alloc;
 
@@ -35,8 +34,8 @@ pub enum Level_type {
 }
 
 impl From<log::Level> for Level_type {
-    fn from(Level: log::Level) -> Self {
-        match Level {
+    fn from(level: log::Level) -> Self {
+        match level {
             log::Level::Error => Level_type::Error,
             log::Level::Warn => Level_type::Warn,
             log::Level::Info => Level_type::Info,
@@ -47,12 +46,12 @@ impl From<log::Level> for Level_type {
 }
 
 pub trait Logger_trait: Send + Sync {
-    fn Enabled(&self, Level: Level_type) -> bool;
+    fn enabled(&self, level: Level_type) -> bool;
 
     fn Write(&self, Arguments: fmt::Arguments);
 
     fn Log(&self, Record: &Record) {
-        let Letter = match Record.level() {
+        let letter = match Record.level() {
             log::Level::Error => "E",
             log::Level::Warn => "W",
             log::Level::Info => "I",
@@ -71,7 +70,7 @@ pub trait Logger_trait: Send + Sync {
         self.Write(format_args!(
             "{} {} {} | {}{}{} | {}",
             Color,
-            Letter,
+            letter,
             RESET,
             BOLD,
             Record.target(),
@@ -88,8 +87,8 @@ pub trait Logger_trait: Send + Sync {
 struct Logger_type(&'static dyn Logger_trait);
 
 impl Log for Logger_type {
-    fn enabled(&self, Metadata: &Metadata) -> bool {
-        self.0.Enabled(Level_type::from(Metadata.level()))
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        self.0.enabled(Level_type::from(metadata.level()))
     }
 
     fn log(&self, Record: &Record) {
@@ -107,9 +106,9 @@ impl Log for Logger_type {
 static LOGGER_INSTANCE: OnceLock<Logger_type> = OnceLock::new();
 
 pub fn Initialize(Logger: &'static dyn Logger_trait) -> Result<(), log::SetLoggerError> {
-    let Logger = LOGGER_INSTANCE.get_or_init(|| Logger_type(Logger));
+    let logger = LOGGER_INSTANCE.get_or_init(|| Logger_type(Logger));
 
-    set_logger(Logger).expect("Failed to set logger");
+    set_logger(logger).expect("Failed to set logger");
     set_max_level(log::LevelFilter::Trace);
     Ok(())
 }

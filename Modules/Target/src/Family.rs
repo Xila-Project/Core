@@ -8,7 +8,7 @@ pub enum Family_type {
 }
 
 impl Family_type {
-    pub fn Get() -> Family_type {
+    pub fn get() -> Family_type {
         Family_type::from(Self::Get_raw())
     }
 

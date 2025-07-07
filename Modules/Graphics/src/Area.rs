@@ -4,8 +4,8 @@ use crate::{Point_type, LVGL};
 pub struct Area_type(Point_type, Point_type);
 
 impl Area_type {
-    pub fn New(Point_1: Point_type, Point_2: Point_type) -> Self {
-        Self(Point_1, Point_2)
+    pub fn new(point_1: Point_type, Point_2: Point_type) -> Self {
+        Self(point_1, Point_2)
     }
 
     pub fn Get_point_1(&self) -> Point_type {
@@ -36,10 +36,10 @@ impl Area_type {
 }
 
 impl From<LVGL::lv_area_t> for Area_type {
-    fn from(Value: LVGL::lv_area_t) -> Self {
-        Self::New(
-            Point_type::New(Value.x1 as i16, Value.y1 as i16),
-            Point_type::New(Value.x2 as i16, Value.y2 as i16),
+    fn from(value: LVGL::lv_area_t) -> Self {
+        Self::new(
+            Point_type::new(value.x1 as i16, value.y1 as i16),
+            Point_type::new(value.x2 as i16, value.y2 as i16),
         )
     }
 }

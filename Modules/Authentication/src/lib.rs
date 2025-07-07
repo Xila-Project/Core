@@ -29,7 +29,6 @@
 
 #![no_std]
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 extern crate alloc;
 
@@ -98,17 +97,17 @@ pub async fn Load_all_users_and_groups() -> Result_type<()> {
 
         // Read all groups.
         for Group_entry in Groups_directory {
-            let Group = if let Ok(Group) =
+            let group = if let Ok(group) =
                 Read_group_file(Virtual_file_system, &mut Buffer, Group_entry.Get_name()).await
             {
-                Group
+                group
             } else {
                 // ? : Log error ?
                 continue;
             };
 
             Users_manager
-                .Add_group(Group.Get_identifier(), Group.Get_name(), Group.Get_users())
+                .Add_group(group.Get_identifier(), group.Get_name(), group.Get_users())
                 .await
                 .map_err(Error_type::Failed_to_add_group)?;
         }
@@ -121,10 +120,10 @@ pub async fn Load_all_users_and_groups() -> Result_type<()> {
 
         // Read all users.
         for User_entry in Users_directory {
-            let User = if let Ok(User) =
+            let user = if let Ok(user) =
                 Read_user_file(Virtual_file_system, &mut Buffer, User_entry.Get_name()).await
             {
-                User
+                user
             } else {
                 // ? : Log error ?
                 continue;
@@ -132,9 +131,9 @@ pub async fn Load_all_users_and_groups() -> Result_type<()> {
 
             Users_manager
                 .Add_user(
-                    User.Get_identifier(),
-                    User.Get_name(),
-                    User.Get_primary_group(),
+                    user.Get_identifier(),
+                    user.Get_name(),
+                    user.Get_primary_group(),
                 )
                 .await
                 .map_err(Error_type::Failed_to_add_user)?;

@@ -227,9 +227,9 @@ pub trait Device_trait: Send + Sync {
     /// This operation can consume significant memory for large devices.
     /// Use with caution on production systems.
     fn Dump_device(&self) -> Result_type<Vec<u8>> {
-        let Size = self.Get_size()?;
+        let size = self.Get_size()?;
 
-        let mut Buffer = vec![0; Size.into()];
+        let mut Buffer = vec![0; size.into()];
 
         self.Read(&mut Buffer)?;
 
@@ -265,8 +265,8 @@ pub trait Device_trait: Send + Sync {
 pub struct Device_type(Arc<dyn Device_trait>);
 
 impl Debug for Device_type {
-    fn fmt(&self, Formatter: &mut Formatter) -> fmt::Result {
-        write!(Formatter, "Device_type")
+    fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
+        write!(formatter, "Device_type")
     }
 }
 

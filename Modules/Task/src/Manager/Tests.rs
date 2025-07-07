@@ -34,7 +34,7 @@ async fn Test_set_get_owner() {
 
     // Set user and group to root
     Manager
-        .Set_user(Task, User_identifier_type::ROOT)
+        .set_user(Task, User_identifier_type::ROOT)
         .await
         .unwrap();
     Manager
@@ -79,7 +79,7 @@ async fn Test_task_owner_inheritance() {
     let User_identifier = User_identifier_type::New(123);
     let Group_identifier = Group_identifier_type::New(456);
 
-    Manager.Set_user(Task, User_identifier).await.unwrap();
+    Manager.set_user(Task, User_identifier).await.unwrap();
     Manager.Set_group(Task, Group_identifier).await.unwrap();
 
     // Get the spawner of the current task
@@ -218,7 +218,7 @@ async fn Test_set_user() {
 
     let User = User_identifier_type::New(123); // Assuming User_identifier_type is i32 for example
 
-    Manager.Set_user(Task, User).await.unwrap();
+    Manager.set_user(Task, User).await.unwrap();
 
     assert_eq!(Manager.Get_user(Task).await.unwrap(), User);
 }
@@ -272,12 +272,12 @@ async fn Test_signal() {
         .unwrap();
 
     Get_instance()
-        .Send_signal(Child_identifier, Signal_type::Kill)
+        .send_signal(Child_identifier, Signal_type::Kill)
         .await
         .unwrap();
 
     Get_instance()
-        .Send_signal(Child_identifier, Signal_type::Hangup)
+        .send_signal(Child_identifier, Signal_type::Hangup)
         .await
         .unwrap();
 
@@ -539,7 +539,7 @@ async fn Test_get_parent_invalid_task() {
     let Manager = Initialize();
 
     // Test with an invalid task identifier
-    let Invalid_task = Task_identifier_type::New(99999);
+    let Invalid_task = Task_identifier_type::new(99999);
     let Result = Manager.Get_parent(Invalid_task).await;
 
     assert!(Result.is_err());
@@ -550,7 +550,7 @@ async fn Test_get_children_invalid_task() {
     let Manager = Initialize();
 
     // Test with an invalid task identifier
-    let Invalid_task = Task_identifier_type::New(99999);
+    let Invalid_task = Task_identifier_type::new(99999);
     let Result = Manager.Get_children(Invalid_task).await;
 
     // Get_children should return an empty vector for invalid task
@@ -790,7 +790,7 @@ async fn Test_get_spawner_invalid_task() {
     let Manager = Initialize();
 
     // Test with an invalid task identifier
-    let Invalid_task = Task_identifier_type::New(99999);
+    let Invalid_task = Task_identifier_type::new(99999);
     let Result = Manager.Get_spawner(Invalid_task).await;
 
     assert!(Result.is_err());

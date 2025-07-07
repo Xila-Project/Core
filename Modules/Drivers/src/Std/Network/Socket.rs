@@ -19,59 +19,59 @@ use crate::Std::Network::Error::Into_socket_error;
 
 struct Inner_type {
     #[cfg(target_family = "unix")]
-    pub Sockets: BTreeMap<Local_file_identifier_type, RawFd>,
+    pub sockets: BTreeMap<Local_file_identifier_type, RawFd>,
 }
 
 pub struct Network_socket_driver_type(RwLock<Inner_type>);
 
 const fn Into_socketaddr(IP: IP_type, Port: Port_type) -> SocketAddr {
-    let IP = match IP {
-        IP_type::IPv4(IP) => {
-            let IP = IP.Into_inner();
+    let ip = match IP {
+        IP_type::IPv4(ip) => {
+            let ip = ip.Into_inner();
 
-            IpAddr::V4(Ipv4Addr::new(IP[0], IP[1], IP[2], IP[3]))
+            IpAddr::V4(Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]))
         }
 
         IP_type::IPv6(IP) => {
-            let IP = IP.Into_inner();
+            let ip = IP.Into_inner();
 
             IpAddr::V6(Ipv6Addr::new(
-                IP[0], IP[1], IP[2], IP[3], IP[4], IP[5], IP[6], IP[7],
+                ip[0], ip[1], ip[2], ip[3], ip[4], ip[5], ip[6], ip[7],
             ))
         }
     };
 
     let Port = Port.Into_inner();
 
-    SocketAddr::new(IP, Port)
+    SocketAddr::new(ip, Port)
 }
 
 const fn Into_IP_and_port(Socket_address: SocketAddr) -> (IP_type, Port_type) {
-    let IP = match Socket_address.ip() {
-        IpAddr::V4(IP) => IP_type::IPv4(IPv4_type::New(IP.octets())),
-        IpAddr::V6(IP) => IP_type::IPv6(IPv6_type::New(IP.segments())),
+    let ip = match Socket_address.ip() {
+        IpAddr::V4(ip) => IP_type::IPv4(IPv4_type::New(ip.octets())),
+        IpAddr::V6(ip) => IP_type::IPv6(IPv6_type::new(ip.segments())),
     };
 
     let Port = Port_type::New(Socket_address.port());
 
-    (IP, Port)
+    (ip, Port)
 }
 
 impl Network_socket_driver_type {
-    pub fn New() -> Self {
+    pub fn new() -> Self {
         Self(RwLock::new(Inner_type {
-            Sockets: BTreeMap::new(),
+            sockets: BTreeMap::new(),
         }))
     }
 
     fn New_socket(&self, Socket: Local_file_identifier_type, Raw_socket: RawFd) -> Result_type<()> {
-        let mut Inner = self.0.write().unwrap();
+        let mut inner = self.0.write().unwrap();
 
-        if Inner.Sockets.contains_key(&Socket) {
+        if inner.sockets.contains_key(&Socket) {
             return Err(Error_type::Duplicate_identifier);
         }
 
-        if Inner.Sockets.insert(Socket, Raw_socket).is_some() {
+        if inner.sockets.insert(Socket, Raw_socket).is_some() {
             unreachable!();
         }
 
@@ -83,7 +83,7 @@ impl Network_socket_driver_type {
             .0
             .read()
             .unwrap()
-            .Sockets
+            .sockets
             .get(&Socket)
             .ok_or(Error_type::Invalid_identifier)?)
     }
@@ -93,7 +93,7 @@ impl Network_socket_driver_type {
             .0
             .write()
             .unwrap()
-            .Sockets
+            .sockets
             .get(&Socket)
             .ok_or(Error_type::Invalid_identifier)?)
     }
@@ -102,27 +102,27 @@ impl Network_socket_driver_type {
         self.0
             .write()
             .unwrap()
-            .Sockets
+            .sockets
             .remove(&Socket)
             .ok_or(Error_type::Invalid_identifier)
     }
 }
 
 impl Network_socket_driver_trait for Network_socket_driver_type {
-    fn Get_new_socket_identifier(
+    fn get_new_socket_identifier(
         &self,
-        mut Iterator: Local_file_identifier_iterator_type,
+        mut iterator: Local_file_identifier_iterator_type,
     ) -> Result_type<Option<Local_file_identifier_type>> {
-        let Inner = self.0.read().unwrap();
+        let inner = self.0.read().unwrap();
 
-        Ok(Iterator.find(|Identifier| !Inner.Sockets.contains_key(Identifier)))
+        Ok(iterator.find(|Identifier| !inner.sockets.contains_key(Identifier)))
     }
 
     fn Close(&self, Socket: Local_file_identifier_type) -> Result_type<()> {
-        let Socket = self.Remove_socket(Socket)?;
+        let socket = self.Remove_socket(Socket)?;
 
         unsafe {
-            let _ = TcpStream::from_raw_fd(Socket);
+            let _ = TcpStream::from_raw_fd(socket);
         }
 
         Ok(())
@@ -130,28 +130,28 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn Bind(
         &self,
-        IP: IP_type,
-        Port: Port_type,
-        Protocol: Protocol_type,
-        Socket: Local_file_identifier_type,
+        ip: IP_type,
+        port: Port_type,
+        protocol: Protocol_type,
+        socket: Local_file_identifier_type,
     ) -> Result_type<()> {
-        match Protocol {
+        match protocol {
             Protocol_type::TCP => {
-                let TCP_listener =
-                    TcpListener::bind(Into_socketaddr(IP, Port)).map_err(Into_socket_error)?;
+                let tcp_listener =
+                    TcpListener::bind(Into_socketaddr(ip, port)).map_err(Into_socket_error)?;
 
-                self.New_socket(Socket, TCP_listener.as_raw_fd())?;
+                self.New_socket(socket, tcp_listener.as_raw_fd())?;
 
-                forget(TCP_listener); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
+                forget(tcp_listener); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
             }
 
             Protocol_type::UDP => {
-                let UDP_socket =
-                    UdpSocket::bind(Into_socketaddr(IP, Port)).map_err(Into_socket_error)?;
+                let udp_socket =
+                    UdpSocket::bind(Into_socketaddr(ip, port)).map_err(Into_socket_error)?;
 
-                self.New_socket(Socket, UDP_socket.as_raw_fd())?;
+                self.New_socket(socket, udp_socket.as_raw_fd())?;
 
-                forget(UDP_socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
+                forget(udp_socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
             }
             _ => return Err(Error_type::Unsupported_protocol),
         };
@@ -161,15 +161,15 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn Connect(
         &self,
-        IP: IP_type,
-        Port: Port_type,
-        Socket: Local_file_identifier_type,
+        ip: IP_type,
+        port: Port_type,
+        socket: Local_file_identifier_type,
     ) -> Result_type<()> {
-        let Address = Into_socketaddr(IP, Port);
+        let address = Into_socketaddr(ip, port);
 
-        let TCP_stream = TcpStream::connect(Address).map_err(Into_socket_error)?;
+        let TCP_stream = TcpStream::connect(address).map_err(Into_socket_error)?;
 
-        self.New_socket(Socket, TCP_stream.as_raw_fd())?;
+        self.New_socket(socket, TCP_stream.as_raw_fd())?;
 
         forget(TCP_stream); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
@@ -178,16 +178,16 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn Accept(
         &self,
-        Socket: Local_file_identifier_type,
-        New_socket: Local_file_identifier_type,
+        socket: Local_file_identifier_type,
+        new_socket: Local_file_identifier_type,
     ) -> Result_type<(IP_type, Port_type)> {
-        let Socket = self.Get_socket_mutable(Socket)?;
+        let socket = self.Get_socket_mutable(socket)?;
 
-        let TCP_listener = unsafe { TcpListener::from_raw_fd(Socket) };
+        let TCP_listener = unsafe { TcpListener::from_raw_fd(socket) };
 
         let (TCP_stream, Address) = TCP_listener.accept().map_err(Into_socket_error)?;
 
-        self.New_socket(New_socket, TCP_stream.as_raw_fd())?;
+        self.New_socket(new_socket, TCP_stream.as_raw_fd())?;
 
         forget(TCP_listener); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
         forget(TCP_stream); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
@@ -196,9 +196,9 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
     }
 
     fn Send(&self, Socket: Local_file_identifier_type, Data: &[u8]) -> Result_type<()> {
-        let Socket = self.Get_socket(Socket)?;
+        let socket = self.Get_socket(Socket)?;
 
-        let mut Socket = unsafe { TcpStream::from_raw_fd(Socket) };
+        let mut Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
         Socket.write_all(Data).map_err(Into_socket_error)?;
 
@@ -208,9 +208,9 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
     }
 
     fn Receive(&self, Socket: Local_file_identifier_type, Data: &mut [u8]) -> Result_type<usize> {
-        let Socket = self.Get_socket(Socket)?;
+        let socket = self.Get_socket(Socket)?;
 
-        let mut Socket = unsafe { TcpStream::from_raw_fd(Socket) };
+        let mut Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
         let Bytes = Socket.read(Data).map_err(Into_socket_error)?;
 
@@ -221,14 +221,14 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn Receive_from(
         &self,
-        Socket: Local_file_identifier_type,
-        Data: &mut [u8],
+        socket: Local_file_identifier_type,
+        data: &mut [u8],
     ) -> Result_type<(usize, IP_type, Port_type)> {
-        let Socket = self.Get_socket(Socket)?;
+        let socket = self.Get_socket(socket)?;
 
-        let Socket = unsafe { UdpSocket::from_raw_fd(Socket) };
+        let Socket = unsafe { UdpSocket::from_raw_fd(socket) };
 
-        let (Bytes, Address) = Socket.recv_from(Data).map_err(Into_socket_error)?;
+        let (Bytes, Address) = Socket.recv_from(data).map_err(Into_socket_error)?;
 
         forget(Socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
@@ -239,18 +239,18 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn Send_to(
         &self,
-        Socket: Local_file_identifier_type,
-        Data: &[u8],
-        IP: IP_type,
-        Port: Port_type,
+        socket: Local_file_identifier_type,
+        data: &[u8],
+        ip: IP_type,
+        port: Port_type,
     ) -> Result_type<()> {
-        let Socket = self.Get_socket(Socket)?;
+        let socket = self.Get_socket(socket)?;
 
-        let Socket = unsafe { UdpSocket::from_raw_fd(Socket) };
+        let Socket = unsafe { UdpSocket::from_raw_fd(socket) };
 
-        let Address = Into_socketaddr(IP, Port);
+        let Address = Into_socketaddr(ip, port);
 
-        Socket.send_to(Data, Address).map_err(Into_socket_error)?;
+        Socket.send_to(data, Address).map_err(Into_socket_error)?;
 
         forget(Socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
@@ -259,11 +259,11 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn Get_local_address(
         &self,
-        Socket: Local_file_identifier_type,
+        socket: Local_file_identifier_type,
     ) -> Result_type<(IP_type, Port_type)> {
-        let Socket = self.Get_socket(Socket)?;
+        let socket = self.Get_socket(socket)?;
 
-        let Socket = unsafe { TcpStream::from_raw_fd(Socket) };
+        let Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
         let Address = Socket.local_addr().map_err(Into_socket_error)?;
 
@@ -274,11 +274,11 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn Get_remote_address(
         &self,
-        Socket: Local_file_identifier_type,
+        socket: Local_file_identifier_type,
     ) -> Result_type<(IP_type, Port_type)> {
-        let Socket = self.Get_socket(Socket)?;
+        let socket = self.Get_socket(socket)?;
 
-        let Socket = unsafe { TcpStream::from_raw_fd(Socket) };
+        let Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
         let Address = Socket.peer_addr().map_err(Into_socket_error)?;
 
@@ -289,15 +289,15 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn Set_send_timeout(
         &self,
-        Socket: Local_file_identifier_type,
-        Timeout: Duration_type,
+        socket: Local_file_identifier_type,
+        timeout: Duration_type,
     ) -> Result_type<()> {
-        let Socket = self.Get_socket(Socket)?;
+        let socket = self.Get_socket(socket)?;
 
-        let Socket = unsafe { TcpStream::from_raw_fd(Socket) };
+        let Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
         Socket
-            .set_write_timeout(Some(Timeout))
+            .set_write_timeout(Some(timeout))
             .map_err(Into_socket_error)?;
 
         forget(Socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
@@ -307,15 +307,15 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn Set_receive_timeout(
         &self,
-        Socket: Local_file_identifier_type,
-        Timeout: Duration_type,
+        socket: Local_file_identifier_type,
+        timeout: Duration_type,
     ) -> Result_type<()> {
-        let Socket = self.Get_socket(Socket)?;
+        let socket = self.Get_socket(socket)?;
 
-        let Socket = unsafe { TcpStream::from_raw_fd(Socket) };
+        let Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
         Socket
-            .set_read_timeout(Some(Timeout))
+            .set_read_timeout(Some(timeout))
             .map_err(Into_socket_error)?;
 
         forget(Socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
@@ -325,11 +325,11 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn Get_send_timeout(
         &self,
-        Socket: Local_file_identifier_type,
+        socket: Local_file_identifier_type,
     ) -> Result_type<Option<Duration_type>> {
-        let Socket = self.Get_socket(Socket)?;
+        let socket = self.Get_socket(socket)?;
 
-        let Socket = unsafe { TcpStream::from_raw_fd(Socket) };
+        let Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
         let Timeout = Socket.write_timeout().map_err(Into_socket_error)?;
 
@@ -340,11 +340,11 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn Get_receive_timeout(
         &self,
-        Socket: Local_file_identifier_type,
+        socket: Local_file_identifier_type,
     ) -> Result_type<Option<Duration_type>> {
-        let Socket = self.Get_socket(Socket)?;
+        let socket = self.Get_socket(socket)?;
 
-        let Socket = unsafe { TcpStream::from_raw_fd(Socket) };
+        let Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
         let Timeout = Socket.read_timeout().map_err(Into_socket_error)?;
 
@@ -366,12 +366,12 @@ mod Tests {
     pub const fn New_socket_identifier(
         Identifier: File_identifier_type,
     ) -> Local_file_identifier_type {
-        Local_file_identifier_type::New(Task_identifier_type::New(1), Identifier)
+        Local_file_identifier_type::New(Task_identifier_type::new(1), Identifier)
     }
 
     #[test]
     fn Test_new_socket() {
-        let Driver = Network_socket_driver_type::New();
+        let Driver = Network_socket_driver_type::new();
         let Socket = TcpListener::bind("127.0.0.1:0").unwrap();
         let Raw_fd = Socket.as_raw_fd();
 
@@ -383,7 +383,7 @@ mod Tests {
 
     #[test]
     fn Test_remove_socket() {
-        let Driver = Network_socket_driver_type::New();
+        let Driver = Network_socket_driver_type::new();
         let Socket = TcpListener::bind("127.0.0.1:0").unwrap();
         let Raw_fd = Socket.as_raw_fd();
 
@@ -396,7 +396,7 @@ mod Tests {
 
     #[test]
     fn Test_bind_tcp() {
-        let Driver = Network_socket_driver_type::New();
+        let Driver = Network_socket_driver_type::new();
 
         let Socket_identifier = New_socket_identifier(1.into());
 
@@ -410,7 +410,7 @@ mod Tests {
 
     #[test]
     fn Test_bind_udp() {
-        let Driver = Network_socket_driver_type::New();
+        let Driver = Network_socket_driver_type::new();
 
         let Socket = New_socket_identifier(1.into());
 
@@ -422,7 +422,7 @@ mod Tests {
 
     #[test]
     fn Test_close() {
-        let Driver = Network_socket_driver_type::New();
+        let Driver = Network_socket_driver_type::new();
 
         let Socket_1 = New_socket_identifier(1.into());
         let Socket_identifier_2 = New_socket_identifier(2.into());
@@ -471,7 +471,7 @@ mod Tests {
 
     #[test]
     fn Test_connect() {
-        let Driver = Network_socket_driver_type::New();
+        let Driver = Network_socket_driver_type::new();
 
         let Socket_1 = New_socket_identifier(1.into());
 
@@ -484,7 +484,7 @@ mod Tests {
 
     #[test]
     fn Test_send_receive() {
-        let Driver = Network_socket_driver_type::New();
+        let Driver = Network_socket_driver_type::new();
 
         let Socket_1_identifier = New_socket_identifier(1.into());
 
@@ -505,7 +505,7 @@ mod Tests {
 
     #[test]
     fn Test_TCP_send_receive_server() {
-        let Driver = Network_socket_driver_type::New();
+        let Driver = Network_socket_driver_type::new();
 
         let Server = New_socket_identifier(1.into());
         let Server_stream = New_socket_identifier(2.into());
@@ -569,7 +569,7 @@ mod Tests {
 
     #[test]
     fn Test_TCP_send_receive_client() {
-        let Driver = Network_socket_driver_type::New();
+        let Driver = Network_socket_driver_type::new();
 
         let Client = New_socket_identifier(1.into());
 
@@ -629,7 +629,7 @@ mod Tests {
 
     #[test]
     fn Test_TCP_send_receive_both_sides() {
-        let Driver = Network_socket_driver_type::New();
+        let Driver = Network_socket_driver_type::new();
 
         let Server_listener = New_socket_identifier(1.into());
         let Server_stream = New_socket_identifier(2.into());
@@ -699,7 +699,7 @@ mod Tests {
 
     #[test]
     fn Test_UDP_send_to_receive_from_one_side() {
-        let Driver = Network_socket_driver_type::New();
+        let Driver = Network_socket_driver_type::new();
 
         let Socket_1 = New_socket_identifier(1.into());
 
@@ -766,7 +766,7 @@ mod Tests {
 
     #[test]
     fn Test_UDP_send_to_receive_from_both_sides() {
-        let Driver = Network_socket_driver_type::New();
+        let Driver = Network_socket_driver_type::new();
 
         let Socket_1_identifier = New_socket_identifier(1.into());
         let Socket_2_identifier = New_socket_identifier(2.into());

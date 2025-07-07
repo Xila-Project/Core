@@ -11,10 +11,10 @@ pub struct Xila_semaphore_type;
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_semaphore_open(
-    _Name: *const c_char,
-    _Open: Xila_file_system_open_type,
-    _Mode: Xila_file_system_mode_type,
-    _Value: isize,
+    _name: *const c_char,
+    _open: Xila_file_system_open_type,
+    _mode: Xila_file_system_mode_type,
+    _value: isize,
 ) -> *mut Xila_semaphore_type {
     todo!()
 }
@@ -50,8 +50,8 @@ pub extern "C" fn Xila_semaphore_post(_Semaphore: *mut Xila_semaphore_type) -> u
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_semaphore_get_value(
-    _Semaphore: *mut Xila_semaphore_type,
-    _Value: *mut isize,
+    _semaphore: *mut Xila_semaphore_type,
+    _value: *mut isize,
 ) -> u32 {
     todo!()
 }

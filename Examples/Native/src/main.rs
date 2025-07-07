@@ -1,6 +1,5 @@
 #![no_std]
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 extern crate alloc;
 
@@ -31,7 +30,7 @@ use alloc::string::String;
 
 Instantiate_global_allocator!(Drivers::Std::Memory::Memory_manager_type);
 
-#[Task::Run(Task_path = Task, Executor = Instantiate_static_executor!())]
+#[Task::Run(task_path = Task, executor = Instantiate_static_executor!())]
 async fn main() {
     // - Initialize the system
     Log::Initialize(&Drivers::Std::Log::Logger_type).unwrap();
@@ -44,12 +43,12 @@ async fn main() {
     // Initialize the users manager
     Users::Initialize();
     // Initialize the time manager
-    Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New())).unwrap();
+    Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new())).unwrap();
 
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
-    const RESOLUTION: Graphics::Point_type = Graphics::Point_type::New(800, 600);
-    let (Screen_device, Pointer_device, Keyboard_device) =
+    const RESOLUTION: Graphics::Point_type = Graphics::Point_type::new(800, 600);
+    let (Screen_device, Pointer_device, keyboard_device) =
         Drivers::Native::Window_screen::New(RESOLUTION).unwrap();
     // - - Initialize the graphics manager
     let Graphics_manager = Graphics::Initialize(
@@ -62,7 +61,7 @@ async fn main() {
     .await;
 
     Graphics_manager
-        .Add_input_device(Keyboard_device, Graphics::Input_type_type::Keypad)
+        .Add_input_device(keyboard_device, Graphics::Input_type_type::Keypad)
         .await
         .unwrap();
 
@@ -75,7 +74,7 @@ async fn main() {
 
     // - Initialize the file system
     // Create a memory device
-    let Drive = Create_device!(Drivers::Std::Drive_file::File_drive_device_type::New(
+    let Drive = Create_device!(Drivers::Std::Drive_file::File_drive_device_type::new(
         &"./Drive.img"
     ));
 
@@ -95,8 +94,8 @@ async fn main() {
     Information!("MBR information: {MBR}");
 
     // Mount the file system
-    let File_system = match LittleFS::File_system_type::New(Partition.clone(), 256) {
-        Ok(File_system) => File_system,
+    let File_system = match LittleFS::File_system_type::new(Partition.clone(), 256) {
+        Ok(file_system) => file_system,
         // If the file system is not found, format it
         Err(_) => {
             Partition
@@ -105,7 +104,7 @@ async fn main() {
 
             LittleFS::File_system_type::Format(Partition.clone(), 256).unwrap();
 
-            LittleFS::File_system_type::New(Partition, 256).unwrap()
+            LittleFS::File_system_type::new(Partition, 256).unwrap()
         }
     };
     // Initialize the virtual file system
@@ -164,7 +163,7 @@ async fn main() {
             ),
             (
                 &"/Binaries/File_manager",
-                File_manager::File_manager_executable_type::New(Virtual_file_system, Task)
+                File_manager::File_manager_executable_type::new(Virtual_file_system, Task)
                     .await
                     .unwrap()
             ),
@@ -174,13 +173,13 @@ async fn main() {
             ),
             (
                 &"/Binaries/Terminal",
-                Terminal::Terminal_executable_type::New(Virtual_file_system::Get_instance(), Task)
+                Terminal::Terminal_executable_type::new(Virtual_file_system::Get_instance(), Task)
                     .await
                     .unwrap()
             ),
             (
                 &"/Binaries/Settings",
-                Settings::Settings_executable_type::New(Virtual_file_system, Task)
+                Settings::Settings_executable_type::new(Virtual_file_system, Task)
                     .await
                     .unwrap()
             ),
@@ -192,7 +191,7 @@ async fn main() {
 
     // - Execute the shell
     // - - Open the standard input, output and error
-    let Standard = Standard_type::Open(
+    let Standard = Standard_type::open(
         &"/Devices/Standard_in",
         &"/Devices/Standard_out",
         &"/Devices/Standard_error",

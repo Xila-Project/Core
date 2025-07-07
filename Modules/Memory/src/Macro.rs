@@ -19,7 +19,7 @@
 #[macro_export]
 macro_rules! Instantiate_global_allocator {
     ($Allocator:ty) => {
-        static A: $Allocator = <$Allocator>::New();
+        static A: $Allocator = <$Allocator>::new();
 
         #[global_allocator]
         #[no_mangle]

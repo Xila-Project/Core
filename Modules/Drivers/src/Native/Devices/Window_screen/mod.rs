@@ -16,13 +16,13 @@ use Window::*;
 use Wrapper::*;
 
 pub fn New(Resolution: Point_type) -> Result<(Device_type, Device_type, Device_type), String> {
-    let Inner = Arc::new(Mutex::new(Inner_type::New(Resolution)?));
+    let inner = Arc::new(Mutex::new(Inner_type::new(Resolution)?));
 
-    let Screen_device = Screen_device_type::New(Inner.clone());
+    let Screen_device = Screen_device_type::new(inner.clone());
 
-    let Pointer_device = Pointer_device_type::New(Inner.clone());
+    let Pointer_device = Pointer_device_type::new(inner.clone());
 
-    let Keyboard_device = Keyboard_device_type::New(Inner);
+    let Keyboard_device = Keyboard_device_type::new(inner);
 
     Ok((
         Create_device!(Screen_device),

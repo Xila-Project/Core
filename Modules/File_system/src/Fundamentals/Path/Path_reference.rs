@@ -79,7 +79,7 @@ impl Path_type {
     }
 
     pub fn Go_parent(&self) -> Option<&Path_type> {
-        let Characters_to_remove = match self.0.rfind(SEPARATOR) {
+        let characters_to_remove = match self.0.rfind(SEPARATOR) {
             Some(index) => index,
             None => {
                 // If there is no separator, the path is either empty or relative to the current directory.
@@ -92,7 +92,7 @@ impl Path_type {
             }
         };
 
-        if Characters_to_remove == 0 {
+        if characters_to_remove == 0 {
             if self.Get_length() == 1 {
                 return None;
             }
@@ -104,58 +104,58 @@ impl Path_type {
             }
         }
 
-        Some(Self::From_str(&self.0[..Characters_to_remove]))
+        Some(Self::From_str(&self.0[..characters_to_remove]))
     }
 
     pub fn Get_file_prefix(&self) -> Option<&str> {
-        let Extension_start = self
+        let extension_start = self
             .0
             .rfind(EXTENSION_SEPARATOR)
             .or_else(|| Some(self.Get_length()))?; // Find the extension separator.
-        let File_prefix_start = self.0.rfind(SEPARATOR).map(|i| i + 1).unwrap_or(0); // Find the file prefix start.
+        let file_prefix_start = self.0.rfind(SEPARATOR).map(|i| i + 1).unwrap_or(0); // Find the file prefix start.
 
-        if Extension_start <= File_prefix_start {
+        if extension_start <= file_prefix_start {
             return None;
         }
 
-        Some(&self.0[File_prefix_start..Extension_start])
+        Some(&self.0[file_prefix_start..extension_start])
     }
 
     pub fn Get_file_name(&self) -> Option<&str> {
-        let File_prefix_start = self.0.rfind(SEPARATOR).map(|i| i + 1).unwrap_or(0); // Find the file prefix start.
+        let file_prefix_start = self.0.rfind(SEPARATOR).map(|i| i + 1).unwrap_or(0); // Find the file prefix start.
 
-        if File_prefix_start >= self.Get_length() {
+        if file_prefix_start >= self.Get_length() {
             return None;
         }
 
-        Some(&self.0[File_prefix_start..])
+        Some(&self.0[file_prefix_start..])
     }
 
     pub fn Get_extension(&self) -> Option<&str> {
-        let Extension_start = self.0.rfind(EXTENSION_SEPARATOR)?;
+        let extension_start = self.0.rfind(EXTENSION_SEPARATOR)?;
 
-        Some(&self.0[Extension_start + 1..])
+        Some(&self.0[extension_start + 1..])
     }
 
     pub fn Set_extension(&self, Extension: &str) -> Option<Path_owned_type> {
-        let Extension_start = self
+        let extension_start = self
             .0
             .rfind(EXTENSION_SEPARATOR)
             .unwrap_or(self.Get_length());
 
         Some(unsafe {
-            Path_owned_type::New_unchecked(format!("{}{}", &self.0[..Extension_start], Extension))
+            Path_owned_type::New_unchecked(format!("{}{}", &self.0[..extension_start], Extension))
         })
     }
 
     pub fn Strip_prefix<'b>(&'b self, Path_prefix: &Path_type) -> Option<&'b Path_type> {
-        let mut Stripped_prefix = self.0.strip_prefix(&Path_prefix.0)?;
+        let mut stripped_prefix = self.0.strip_prefix(&Path_prefix.0)?;
 
-        if Stripped_prefix.starts_with(SEPARATOR) {
-            Stripped_prefix = &Stripped_prefix[1..]
+        if stripped_prefix.starts_with(SEPARATOR) {
+            stripped_prefix = &stripped_prefix[1..]
         }
 
-        Some(Self::From_str(Stripped_prefix))
+        Some(Self::From_str(stripped_prefix))
     }
 
     pub fn Strip_prefix_absolute<'b>(&'b self, Path_prefix: &Path_type) -> Option<&'b Path_type> {
@@ -173,15 +173,15 @@ impl Path_type {
     }
 
     pub fn Strip_suffix<'b>(&'b self, Path_suffix: &Path_type) -> Option<&'b Path_type> {
-        let Stripped_suffix = self.0.strip_suffix(&Path_suffix.0)?;
+        let stripped_suffix = self.0.strip_suffix(&Path_suffix.0)?;
 
-        if Stripped_suffix.ends_with(SEPARATOR) {
+        if stripped_suffix.ends_with(SEPARATOR) {
             return Some(Self::From_str(
-                &Stripped_suffix[..Stripped_suffix.len() - 1],
+                &stripped_suffix[..stripped_suffix.len() - 1],
             ));
         }
 
-        Some(Self::From_str(Stripped_suffix))
+        Some(Self::From_str(stripped_suffix))
     }
 
     pub fn Get_components(&self) -> Components_type {

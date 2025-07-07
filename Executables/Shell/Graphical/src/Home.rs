@@ -5,62 +5,62 @@ use Graphics::LVGL;
 use crate::{Desk::Desk_type, Error::Result_type};
 
 pub struct Home_type {
-    Button: *mut LVGL::lv_obj_t,
+    button: *mut LVGL::lv_obj_t,
 }
 
 impl Drop for Home_type {
     fn drop(&mut self) {
         unsafe {
-            LVGL::lv_obj_delete_async(self.Button);
+            LVGL::lv_obj_delete_async(self.button);
         }
     }
 }
 
 impl Home_type {
-    pub async fn New(Desk: *mut LVGL::lv_obj_t) -> Result_type<Self> {
-        let _Lock = Graphics::Get_instance().Lock().await; // Lock the graphics
+    pub async fn new(Desk: *mut LVGL::lv_obj_t) -> Result_type<Self> {
+        let _lock = Graphics::Get_instance().Lock().await; // Lock the graphics
 
         let Button = unsafe {
-            let Button = LVGL::lv_obj_create(LVGL::lv_layer_top());
+            let button = LVGL::lv_obj_create(LVGL::lv_layer_top());
 
-            if Button.is_null() {
+            if button.is_null() {
                 return Err(crate::Error::Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_set_size(Button, LVGL::lv_pct(40), 8);
-            LVGL::lv_obj_set_style_bg_color(Button, LVGL::lv_color_white(), LVGL::LV_STATE_DEFAULT);
-            LVGL::lv_obj_set_style_bg_opa(Button, LVGL::LV_OPA_50 as u8, LVGL::LV_STATE_DEFAULT);
-            LVGL::lv_obj_set_align(Button, LVGL::lv_align_t_LV_ALIGN_BOTTOM_MID);
-            LVGL::lv_obj_set_y(Button, -5);
+            LVGL::lv_obj_set_size(button, LVGL::lv_pct(40), 8);
+            LVGL::lv_obj_set_style_bg_color(button, LVGL::lv_color_white(), LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_style_bg_opa(button, LVGL::LV_OPA_50 as u8, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_align(button, LVGL::lv_align_t_LV_ALIGN_BOTTOM_MID);
+            LVGL::lv_obj_set_y(button, -5);
 
-            LVGL::lv_obj_set_style_pad_all(Button, 0, LVGL::LV_STATE_DEFAULT);
-            LVGL::lv_obj_set_style_border_width(Button, 0, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_style_pad_all(button, 0, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_style_border_width(button, 0, LVGL::LV_STATE_DEFAULT);
 
-            LVGL::lv_obj_remove_flag(Button, LVGL::lv_obj_flag_t_LV_OBJ_FLAG_GESTURE_BUBBLE);
+            LVGL::lv_obj_remove_flag(button, LVGL::lv_obj_flag_t_LV_OBJ_FLAG_GESTURE_BUBBLE);
 
             LVGL::lv_obj_add_event_cb(
-                Button,
+                button,
                 Some(Handle_pressing),
                 LVGL::lv_event_code_t_LV_EVENT_PRESSING,
                 null_mut(),
             );
 
             LVGL::lv_obj_add_event_cb(
-                Button,
+                button,
                 Some(Handle_released),
                 LVGL::lv_event_code_t_LV_EVENT_RELEASED,
                 Desk as *mut core::ffi::c_void,
             );
 
-            Button
+            button
         };
 
-        Ok(Self { Button })
+        Ok(Self { button: Button })
     }
 }
 
 unsafe extern "C" fn Handle_pressing(Event: *mut LVGL::lv_event_t) {
-    let Object = LVGL::lv_event_get_target(Event) as *mut LVGL::lv_obj_t;
+    let object = LVGL::lv_event_get_target(Event) as *mut LVGL::lv_obj_t;
 
     let Input_device = LVGL::lv_indev_active();
 
@@ -68,26 +68,26 @@ unsafe extern "C" fn Handle_pressing(Event: *mut LVGL::lv_event_t) {
 
     LVGL::lv_indev_get_vect(Input_device, &mut Vector as *mut LVGL::lv_point_t);
 
-    let y = LVGL::lv_obj_get_y_aligned(Object) + Vector.y;
+    let y = LVGL::lv_obj_get_y_aligned(object) + Vector.y;
 
     let y = y.max(-40);
 
-    LVGL::lv_obj_set_y(Object, y);
+    LVGL::lv_obj_set_y(object, y);
 }
 
 unsafe extern "C" fn Handle_released(Event: *mut LVGL::lv_event_t) {
-    let Object = LVGL::lv_event_get_target(Event) as *mut LVGL::lv_obj_t;
+    let object = LVGL::lv_event_get_target(Event) as *mut LVGL::lv_obj_t;
 
-    let y = LVGL::lv_obj_get_y_aligned(Object);
+    let y = LVGL::lv_obj_get_y_aligned(object);
 
-    LVGL::lv_obj_set_y(Object, -5);
+    LVGL::lv_obj_set_y(object, -5);
 
     if y < -20 {
-        let Desk = LVGL::lv_event_get_user_data(Event) as *mut LVGL::lv_obj_t;
+        let desk = LVGL::lv_event_get_user_data(Event) as *mut LVGL::lv_obj_t;
 
-        LVGL::lv_obj_remove_flag(Desk, LVGL::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
-        LVGL::lv_obj_move_foreground(Desk);
+        LVGL::lv_obj_remove_flag(desk, LVGL::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
+        LVGL::lv_obj_move_foreground(desk);
 
-        LVGL::lv_obj_send_event(Desk, Desk_type::HOME_EVENT.Into_LVGL_code(), null_mut());
+        LVGL::lv_obj_send_event(desk, Desk_type::HOME_EVENT.into_lvgl_code(), null_mut());
     }
 }

@@ -6,56 +6,56 @@ use crate::{Directory_type, Virtual_file_system_type};
 
 /// Create the default hierarchy of the file system.
 pub async fn Create_default_hierarchy(
-    Virtual_file_system: &Virtual_file_system_type<'_>,
-    Task: Task_identifier_type,
+    virtual_file_system: &Virtual_file_system_type<'_>,
+    task: Task_identifier_type,
 ) -> Result_type<()> {
-    Virtual_file_system
-        .Create_directory(&Path_type::SYSTEM, Task)
+    virtual_file_system
+        .Create_directory(&Path_type::SYSTEM, task)
         .await?;
-    Virtual_file_system
-        .Create_directory(&Path_type::CONFIGURATION, Task)
+    virtual_file_system
+        .Create_directory(&Path_type::CONFIGURATION, task)
         .await?;
-    Virtual_file_system
-        .Create_directory(&Path_type::SHARED_CONFIGURATION, Task)
+    virtual_file_system
+        .Create_directory(&Path_type::SHARED_CONFIGURATION, task)
         .await?;
-    Virtual_file_system
-        .Create_directory(&Path_type::DEVICES, Task)
+    virtual_file_system
+        .Create_directory(&Path_type::DEVICES, task)
         .await?;
-    Virtual_file_system
-        .Create_directory(&Path_type::USERS, Task)
+    virtual_file_system
+        .Create_directory(&Path_type::USERS, task)
         .await?;
-    Virtual_file_system
-        .Create_directory(&Path_type::DATA, Task)
+    virtual_file_system
+        .Create_directory(&Path_type::DATA, task)
         .await?;
-    Virtual_file_system
-        .Create_directory(&Path_type::SHARED_DATA, Task)
+    virtual_file_system
+        .Create_directory(&Path_type::SHARED_DATA, task)
         .await?;
-    Virtual_file_system
-        .Create_directory(&Path_type::BINARIES, Task)
+    virtual_file_system
+        .Create_directory(&Path_type::BINARIES, task)
         .await?;
-    Virtual_file_system
-        .Create_directory(&Path_type::TEMPORARY, Task)
+    virtual_file_system
+        .Create_directory(&Path_type::TEMPORARY, task)
         .await?;
-    Virtual_file_system
-        .Create_directory(&Path_type::LOGS, Task)
+    virtual_file_system
+        .Create_directory(&Path_type::LOGS, task)
         .await?;
 
     Ok(())
 }
 
 pub async fn Clean_devices_in_directory<'a>(
-    Virtual_file_system: &'a Virtual_file_system_type<'a>,
-    Path: &Path_type,
+    virtual_file_system: &'a Virtual_file_system_type<'a>,
+    path: &Path_type,
 ) -> Result_type<()> {
     // For each entry in the directory.
-    for Entry in Directory_type::Open(Virtual_file_system, Path).await? {
+    for Entry in Directory_type::Open(virtual_file_system, path).await? {
         if Entry.Get_type() != Type_type::File {
             continue;
         }
 
-        let Entry_path = Path.Append(Entry.Get_name()).unwrap();
+        let Entry_path = path.Append(Entry.Get_name()).unwrap();
 
-        let Metadata = Virtual_file_system
+        let Metadata = virtual_file_system
             .Get_metadata_from_path(&Entry_path)
             .await?;
 
@@ -65,10 +65,10 @@ pub async fn Clean_devices_in_directory<'a>(
             continue;
         }
 
-        match Virtual_file_system.Remove(&Entry_path).await {
+        match virtual_file_system.Remove(&Entry_path).await {
             Ok(_) | Err(Error_type::Invalid_identifier) => {}
-            Err(Error) => {
-                return Err(Error);
+            Err(error) => {
+                return Err(error);
             }
         }
     }
@@ -77,11 +77,11 @@ pub async fn Clean_devices_in_directory<'a>(
 }
 
 pub async fn Clean_devices<'a>(
-    Virtual_file_system: &'a Virtual_file_system_type<'a>,
+    virtual_file_system: &'a Virtual_file_system_type<'a>,
 ) -> Result_type<()> {
-    Clean_devices_in_directory(Virtual_file_system, Path_type::DEVICES).await?;
+    Clean_devices_in_directory(virtual_file_system, Path_type::DEVICES).await?;
 
-    Clean_devices_in_directory(Virtual_file_system, Path_type::BINARIES).await?;
+    Clean_devices_in_directory(virtual_file_system, Path_type::BINARIES).await?;
 
     Ok(())
 }

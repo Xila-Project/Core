@@ -39,8 +39,8 @@ impl TryFrom<u8> for Level_type {
 }
 
 impl From<Level_type> for u8 {
-    fn from(Value: Level_type) -> u8 {
-        Value as u8
+    fn from(value: Level_type) -> u8 {
+        value as u8
     }
 }
 
@@ -56,57 +56,57 @@ pub enum Pull_type {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 #[repr(C)]
 pub struct Pin_data_type {
-    Level: Option<Level_type>,
-    Direction: Option<Direction_type>,
-    Pull: Option<Pull_type>,
+    level: Option<Level_type>,
+    direction: Option<Direction_type>,
+    pull: Option<Pull_type>,
 }
 
 impl Pin_data_type {
-    pub const fn New(
-        Level: Option<Level_type>,
-        Direction: Option<Direction_type>,
-        Pull: Option<Pull_type>,
+    pub const fn new(
+        level: Option<Level_type>,
+        direction: Option<Direction_type>,
+        pull: Option<Pull_type>,
     ) -> Self {
         Self {
-            Level,
-            Direction,
-            Pull,
+            level,
+            direction,
+            pull,
         }
     }
 
     pub const fn Get_level(&self) -> Option<Level_type> {
-        self.Level
+        self.level
     }
 
     pub const fn Get_direction(&self) -> Option<Direction_type> {
-        self.Direction
+        self.direction
     }
 
     pub const fn Get_pull(&self) -> Option<Pull_type> {
-        self.Pull
+        self.pull
     }
 
     pub fn Set_level(&mut self, Level: Option<Level_type>) {
-        self.Level = Level;
+        self.level = Level;
     }
 
     pub fn Set_direction(&mut self, Direction: Option<Direction_type>) {
-        self.Direction = Direction;
+        self.direction = Direction;
     }
 
     pub fn Set_pull(&mut self, Pull: Option<Pull_type>) {
-        self.Pull = Pull;
+        self.pull = Pull;
     }
 
     pub fn Set(
         &mut self,
-        Level: Option<Level_type>,
-        Direction: Option<Direction_type>,
-        Pull: Option<Pull_type>,
+        level: Option<Level_type>,
+        direction: Option<Direction_type>,
+        pull: Option<Pull_type>,
     ) {
-        self.Level = Level;
-        self.Direction = Direction;
-        self.Pull = Pull;
+        self.level = level;
+        self.direction = direction;
+        self.pull = pull;
     }
 }
 

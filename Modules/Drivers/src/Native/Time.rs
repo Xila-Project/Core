@@ -6,22 +6,22 @@ use Shared::Duration_type;
 pub struct Time_driver_type;
 
 impl Time_driver_type {
-    pub fn New() -> Self {
+    pub fn new() -> Self {
         Self {}
     }
 }
 
 impl Device_trait for Time_driver_type {
-    fn Read(&self, Buffer: &mut [u8]) -> Result_type<Size_type> {
-        let Duration = SystemTime::now()
+    fn Read(&self, buffer: &mut [u8]) -> Result_type<Size_type> {
+        let duration = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|_| Error_type::Internal_error)?;
 
-        let Duration = Duration_type::New(Duration.as_secs(), Duration.subsec_nanos());
+        let Duration = Duration_type::New(duration.as_secs(), duration.subsec_nanos());
 
-        Buffer.copy_from_slice(Duration.as_ref());
+        buffer.copy_from_slice(Duration.as_ref());
 
-        Ok(Buffer.len().into())
+        Ok(buffer.len().into())
     }
 
     fn Write(&self, _: &[u8]) -> Result_type<File_system::Size_type> {

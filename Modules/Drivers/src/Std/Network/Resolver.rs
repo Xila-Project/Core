@@ -1,7 +1,7 @@
 pub struct Resolver_type;
 
 impl Resolver_type {
-    pub fn New() -> Self {
+    pub fn new() -> Self {
         Self
     }
 }

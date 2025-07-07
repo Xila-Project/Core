@@ -22,14 +22,14 @@ impl Path_owned_type {
     }
 
     pub fn New(Path: String) -> Option<Self> {
-        let Path = if Path.ends_with(SEPARATOR) && Path.len() > 1 {
+        let path = if Path.ends_with(SEPARATOR) && Path.len() > 1 {
             Path[..Path.len() - 1].to_string()
         } else {
             Path
         };
 
-        if Is_valid_string(&Path) {
-            Some(Path_owned_type(Path))
+        if Is_valid_string(&path) {
+            Some(Path_owned_type(path))
         } else {
             None
         }
@@ -61,18 +61,18 @@ impl Path_owned_type {
     }
 
     pub fn Revert_parent_directory(&mut self) -> &mut Self {
-        let mut Last_index = 0;
+        let mut last_index = 0;
         for (i, c) in self.0.chars().enumerate() {
             if c == SEPARATOR {
-                Last_index = i;
+                last_index = i;
             }
         }
-        if Last_index == 0 {
+        if last_index == 0 {
             self.0.clear();
             return self;
         }
 
-        self.0.truncate(Last_index);
+        self.0.truncate(last_index);
         self
     }
 
@@ -88,16 +88,16 @@ impl Path_owned_type {
     }
 
     pub fn Get_file_name(&self) -> &str {
-        let mut Last_index = 0;
+        let mut last_index = 0;
         for (i, c) in self.0.chars().enumerate() {
             if c == SEPARATOR {
-                Last_index = i;
+                last_index = i;
             }
         }
-        if Last_index >= self.0.len() {
-            return &self.0[Last_index..];
+        if last_index >= self.0.len() {
+            return &self.0[last_index..];
         }
-        &self.0[Last_index + 1..]
+        &self.0[last_index + 1..]
     }
 
     pub fn Get_relative_to(&self, Path: &Path_owned_type) -> Option<Path_owned_type> {
@@ -109,34 +109,34 @@ impl Path_owned_type {
     }
 
     pub fn Canonicalize(mut self) -> Self {
-        let mut Stack: Vec<&str> = Vec::new();
+        let mut stack: Vec<&str> = Vec::new();
 
         if self.Is_absolute() {
-            Stack.push("");
+            stack.push("");
         }
 
         for Component in self.0.split(SEPARATOR) {
             match Component {
                 ".." => {
-                    Stack.pop();
+                    stack.pop();
                 }
                 "." | "" => continue,
-                _ => Stack.push(Component),
+                _ => stack.push(Component),
             }
         }
 
-        self.0 = Stack.join("/");
+        self.0 = stack.join("/");
 
         self
     }
 }
 
 pub fn Is_valid_string(String: &str) -> bool {
-    let Invalid = ['\0', ':', '*', '?', '"', '<', '>', '|', ' '];
+    let invalid = ['\0', ':', '*', '?', '"', '<', '>', '|', ' '];
 
     for Character in String.chars() {
         // Check if the string contains invalid characters.
-        if Invalid.contains(&Character) {
+        if invalid.contains(&Character) {
             return false;
         }
     }
@@ -174,8 +174,8 @@ impl TryFrom<String> for Path_owned_type {
 }
 
 impl Display for Path_owned_type {
-    fn fmt(&self, Formatter: &mut Formatter) -> Result<(), core::fmt::Error> {
-        write!(Formatter, "{}", self.0)
+    fn fmt(&self, formatter: &mut Formatter) -> Result<(), core::fmt::Error> {
+        write!(formatter, "{}", self.0)
     }
 }
 

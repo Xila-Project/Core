@@ -30,11 +30,11 @@ pub struct Permissions_type(u16);
 
 impl fmt::Display for Permissions_type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let User = self.Get_user();
-        let Group = self.Get_group();
-        let Others = self.Get_others();
+        let user = self.Get_user();
+        let group = self.Get_group();
+        let others = self.Get_others();
 
-        write!(f, "{User}{Group}{Others}")
+        write!(f, "{user}{group}{others}")
     }
 }
 
@@ -78,16 +78,16 @@ impl Permissions_type {
 
     /// Creates a new permission.
     pub const fn New(
-        User: Permission_type,
-        Group: Permission_type,
-        Others: Permission_type,
-        Special: Special_type,
+        user: Permission_type,
+        group: Permission_type,
+        others: Permission_type,
+        special: Special_type,
     ) -> Self {
         Self(
-            (Special.To_unix() as u16) << 9
-                | (User.To_unix() as u16) << 6
-                | (Group.To_unix() as u16) << 3
-                | Others.To_unix() as u16,
+            (special.To_unix() as u16) << 9
+                | (user.To_unix() as u16) << 6
+                | (group.To_unix() as u16) << 3
+                | others.To_unix() as u16,
         )
     }
 
@@ -194,8 +194,8 @@ pub struct Special_type(u8);
 
 impl fmt::Display for Special_type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let Sticky = if self.Get_sticky() { "t" } else { "-" };
-        let Set_gid = if self.Get_set_group_identifier() {
+        let sticky = if self.Get_sticky() { "t" } else { "-" };
+        let set_gid = if self.Get_set_group_identifier() {
             "u"
         } else {
             "-"
@@ -206,7 +206,7 @@ impl fmt::Display for Special_type {
             "-"
         };
 
-        write!(f, "{Sticky}{Set_gid}{Set_uid}")
+        write!(f, "{sticky}{set_gid}{Set_uid}")
     }
 }
 
@@ -283,11 +283,11 @@ pub struct Permission_type(u8);
 
 impl fmt::Display for Permission_type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let Read = if self.Get_read() { "r" } else { "-" };
-        let Write = if self.Get_write() { "w" } else { "-" };
-        let Execute = if self.Get_execute() { "x" } else { "-" };
+        let read = if self.Get_read() { "r" } else { "-" };
+        let write = if self.Get_write() { "w" } else { "-" };
+        let execute = if self.Get_execute() { "x" } else { "-" };
 
-        write!(f, "{Read}{Write}{Execute}")
+        write!(f, "{read}{write}{execute}")
     }
 }
 

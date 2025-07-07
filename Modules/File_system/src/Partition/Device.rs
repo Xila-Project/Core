@@ -39,13 +39,13 @@ use crate::{Device_trait, Device_type, Result_type, Size_type};
 /// ```
 pub struct Partition_device_type {
     /// Base device containing this partition
-    Base_device: Device_type,
+    base_device: Device_type,
     /// Byte offset from the beginning of the base device
-    Offset: u64,
+    offset: u64,
     /// Size of this partition in bytes
-    Size: u64,
+    size: u64,
     /// Current position within this partition (atomic for thread safety)
-    Position: core::sync::atomic::AtomicU64,
+    position: core::sync::atomic::AtomicU64,
 }
 
 impl Partition_device_type {
@@ -69,10 +69,10 @@ impl Partition_device_type {
     /// ```
     pub fn New(Base_device: Device_type, Offset: u64, Size: u64) -> Self {
         Self {
-            Base_device,
-            Offset,
-            Size,
-            Position: core::sync::atomic::AtomicU64::new(0),
+            base_device: Base_device,
+            offset: Offset,
+            size: Size,
+            position: core::sync::atomic::AtomicU64::new(0),
         }
     }
 
@@ -98,9 +98,9 @@ impl Partition_device_type {
     /// let partition = Partition_device_type::New_from_lba(base_device, 2048, 1024);
     /// ```
     pub fn New_from_lba(Base_device: Device_type, Start_lba: u32, Sector_count: u32) -> Self {
-        let Offset = Start_lba as u64 * 512;
-        let Size = Sector_count as u64 * 512;
-        Self::New(Base_device, Offset, Size)
+        let offset = Start_lba as u64 * 512;
+        let size = Sector_count as u64 * 512;
+        Self::New(Base_device, offset, size)
     }
 
     /// Get the byte offset of this partition within the base device.
@@ -120,7 +120,7 @@ impl Partition_device_type {
     /// assert_eq!(partition.Get_offset(), 100 * 512);
     /// ```
     pub fn Get_offset(&self) -> u64 {
-        self.Offset
+        self.offset
     }
 
     /// Get the size of this partition in bytes.
@@ -140,7 +140,7 @@ impl Partition_device_type {
     /// assert_eq!(partition.Get_partition_size(), 50 * 512);
     /// ```
     pub fn Get_partition_size(&self) -> u64 {
-        self.Size
+        self.size
     }
 
     /// Get the starting LBA (Logical Block Address) of this partition.
@@ -160,7 +160,7 @@ impl Partition_device_type {
     /// assert_eq!(partition.Get_start_lba(), 100);
     /// ```
     pub fn Get_start_lba(&self) -> u32 {
-        (self.Offset / 512) as u32
+        (self.offset / 512) as u32
     }
 
     /// Get the size in sectors of this partition.
@@ -180,69 +180,69 @@ impl Partition_device_type {
     /// assert_eq!(partition.Get_sector_count(), 50);
     /// ```
     pub fn Get_sector_count(&self) -> u32 {
-        (self.Size / 512) as u32
+        (self.size / 512) as u32
     }
 
     /// Get the current position within the partition
     pub fn Get_position(&self) -> u64 {
-        self.Position.load(core::sync::atomic::Ordering::Relaxed)
+        self.position.load(core::sync::atomic::Ordering::Relaxed)
     }
 
     /// Get the base device
     pub fn Get_base_device(&self) -> &Device_type {
-        &self.Base_device
+        &self.base_device
     }
 
     /// Check if the partition device is valid (non-zero size)
     pub fn Is_valid(&self) -> bool {
-        self.Size > 0
+        self.size > 0
     }
 
     /// Get remaining bytes that can be read/written from current position
     pub fn Get_remaining_bytes(&self) -> u64 {
-        let Current_pos = self.Get_position();
-        self.Size.saturating_sub(Current_pos)
+        let current_pos = self.Get_position();
+        self.size.saturating_sub(current_pos)
     }
 
     /// Check if we're at the end of the partition
     pub fn Is_at_end(&self) -> bool {
-        self.Get_position() >= self.Size
+        self.Get_position() >= self.size
     }
 }
 
 impl Clone for Partition_device_type {
     fn clone(&self) -> Self {
         Self {
-            Base_device: self.Base_device.clone(),
-            Offset: self.Offset,
-            Size: self.Size,
-            Position: core::sync::atomic::AtomicU64::new(0), // Reset position for clone
+            base_device: self.base_device.clone(),
+            offset: self.offset,
+            size: self.size,
+            position: core::sync::atomic::AtomicU64::new(0), // Reset position for clone
         }
     }
 }
 
 impl Device_trait for Partition_device_type {
-    fn Read(&self, Buffer: &mut [u8]) -> Result_type<Size_type> {
-        let Current_pos = self.Position.load(core::sync::atomic::Ordering::Relaxed);
+    fn Read(&self, buffer: &mut [u8]) -> Result_type<Size_type> {
+        let current_pos = self.position.load(core::sync::atomic::Ordering::Relaxed);
 
-        if Current_pos >= self.Size {
+        if current_pos >= self.size {
             return Ok(Size_type::New(0));
         }
 
-        let Available = (self.Size - Current_pos).min(Buffer.len() as u64);
-        let Read_size = Available as usize;
+        let Available = (self.size - current_pos).min(buffer.len() as u64);
+        let read_size = Available as usize;
 
         // Set position in base device
-        let Absolute_pos = self.Offset + Current_pos;
-        self.Base_device
+        let Absolute_pos = self.offset + current_pos;
+        self.base_device
             .Set_position(&crate::Position_type::Start(Absolute_pos))?;
 
         // Read from base device
-        let Bytes_read = self.Base_device.Read(&mut Buffer[..Read_size])?;
+        let Bytes_read = self.base_device.Read(&mut buffer[..read_size])?;
 
         // Update position
-        self.Position.store(
-            Current_pos + Bytes_read.As_u64(),
+        self.position.store(
+            current_pos + Bytes_read.As_u64(),
             core::sync::atomic::Ordering::Relaxed,
         );
 
@@ -250,26 +250,26 @@ impl Device_trait for Partition_device_type {
     }
 
     fn Write(&self, Buffer: &[u8]) -> Result_type<Size_type> {
-        let Current_pos = self.Position.load(core::sync::atomic::Ordering::Relaxed);
+        let current_pos = self.position.load(core::sync::atomic::Ordering::Relaxed);
 
-        if Current_pos >= self.Size {
+        if current_pos >= self.size {
             return Ok(Size_type::New(0));
         }
 
-        let Available = (self.Size - Current_pos).min(Buffer.len() as u64);
-        let Write_size = Available as usize;
+        let Available = (self.size - current_pos).min(Buffer.len() as u64);
+        let write_size = Available as usize;
 
         // Set position in base device
-        let Absolute_pos = self.Offset + Current_pos;
-        self.Base_device
+        let Absolute_pos = self.offset + current_pos;
+        self.base_device
             .Set_position(&crate::Position_type::Start(Absolute_pos))?;
 
         // Write to base device
-        let Bytes_written = self.Base_device.Write(&Buffer[..Write_size])?;
+        let Bytes_written = self.base_device.Write(&Buffer[..write_size])?;
 
         // Update position
-        self.Position.store(
-            Current_pos + Bytes_written.As_u64(),
+        self.position.store(
+            current_pos + Bytes_written.As_u64(),
             core::sync::atomic::Ordering::Relaxed,
         );
 
@@ -277,48 +277,48 @@ impl Device_trait for Partition_device_type {
     }
 
     fn Get_size(&self) -> Result_type<Size_type> {
-        Ok(Size_type::New(self.Size))
+        Ok(Size_type::New(self.size))
     }
 
     fn Set_position(&self, Position: &crate::Position_type) -> Result_type<Size_type> {
         use crate::Position_type;
 
         let New_pos = match Position {
-            Position_type::Start(Offset) => *Offset,
-            Position_type::Current(Offset) => {
-                let Current = self.Position.load(core::sync::atomic::Ordering::Relaxed);
-                if *Offset >= 0 {
-                    Current.saturating_add(*Offset as u64)
+            Position_type::Start(offset) => *offset,
+            Position_type::Current(offset) => {
+                let current = self.position.load(core::sync::atomic::Ordering::Relaxed);
+                if *offset >= 0 {
+                    current.saturating_add(*offset as u64)
                 } else {
-                    Current.saturating_sub((-*Offset) as u64)
+                    current.saturating_sub((-*offset) as u64)
                 }
             }
             Position_type::End(Offset) => {
                 if *Offset >= 0 {
-                    self.Size.saturating_add(*Offset as u64)
+                    self.size.saturating_add(*Offset as u64)
                 } else {
-                    self.Size.saturating_sub((-*Offset) as u64)
+                    self.size.saturating_sub((-*Offset) as u64)
                 }
             }
         };
 
-        let Clamped_pos = New_pos.min(self.Size);
-        self.Position
+        let Clamped_pos = New_pos.min(self.size);
+        self.position
             .store(Clamped_pos, core::sync::atomic::Ordering::Relaxed);
 
         Ok(Size_type::New(Clamped_pos))
     }
 
     fn Flush(&self) -> Result_type<()> {
-        self.Base_device.Flush()
+        self.base_device.Flush()
     }
 
     fn Is_a_block_device(&self) -> bool {
-        self.Base_device.Is_a_block_device()
+        self.base_device.Is_a_block_device()
     }
 
     fn Get_block_size(&self) -> Result_type<usize> {
-        self.Base_device.Get_block_size()
+        self.base_device.Get_block_size()
     }
 
     fn Is_a_terminal(&self) -> bool {
@@ -328,16 +328,16 @@ impl Device_trait for Partition_device_type {
     fn Erase(&self) -> Result_type<()> {
         // For partition devices, we delegate erase to the base device
         // But we need to be careful about the range
-        self.Base_device.Erase()
+        self.base_device.Erase()
     }
 }
 
 impl fmt::Debug for Partition_device_type {
-    fn fmt(&self, Formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Formatter
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
             .debug_struct("Partition_device_type")
-            .field("offset", &self.Offset)
-            .field("size", &self.Size)
+            .field("offset", &self.offset)
+            .field("size", &self.size)
             .field("start_lba", &self.Get_start_lba())
             .field("sector_count", &self.Get_sector_count())
             .field("position", &self.Get_position())
@@ -348,15 +348,15 @@ impl fmt::Debug for Partition_device_type {
 }
 
 impl fmt::Display for Partition_device_type {
-    fn fmt(&self, Formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
-            Formatter,
+            formatter,
             "Partition Device: Start LBA={}, Sectors={}, Size={} bytes, Position={}/{}",
             self.Get_start_lba(),
             self.Get_sector_count(),
-            self.Size,
+            self.size,
             self.Get_position(),
-            self.Size
+            self.size
         )
     }
 }

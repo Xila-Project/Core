@@ -55,14 +55,14 @@ impl Add<File_system_identifier_inner_type> for File_system_identifier_type {
 }
 
 impl From<File_system_identifier_inner_type> for File_system_identifier_type {
-    fn from(Internal_file_system_identifier: File_system_identifier_inner_type) -> Self {
-        File_system_identifier_type(Internal_file_system_identifier)
+    fn from(internal_file_system_identifier: File_system_identifier_inner_type) -> Self {
+        File_system_identifier_type(internal_file_system_identifier)
     }
 }
 
 impl From<File_system_identifier_type> for File_system_identifier_inner_type {
-    fn from(Internal_file_system_identifier: File_system_identifier_type) -> Self {
-        Internal_file_system_identifier.0
+    fn from(internal_file_system_identifier: File_system_identifier_type) -> Self {
+        internal_file_system_identifier.0
     }
 }
 

@@ -3,16 +3,16 @@ use File_system::{Device_trait, Size_type};
 pub struct Random_device_type;
 
 impl Random_device_type {
-    pub fn New() -> Self {
+    pub fn new() -> Self {
         Self
     }
 }
 
 impl Device_trait for Random_device_type {
-    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<File_system::Size_type> {
-        rand::fill(Buffer);
+    fn Read(&self, buffer: &mut [u8]) -> File_system::Result_type<File_system::Size_type> {
+        rand::fill(buffer);
 
-        Ok(Buffer.len().into())
+        Ok(buffer.len().into())
     }
 
     fn Write(&self, _Buffer: &[u8]) -> File_system::Result_type<File_system::Size_type> {
@@ -25,7 +25,7 @@ impl Device_trait for Random_device_type {
 
     fn Set_position(
         &self,
-        _Position: &File_system::Position_type,
+        _position: &File_system::Position_type,
     ) -> File_system::Result_type<File_system::Size_type> {
         Err(File_system::Error_type::Unsupported_operation)
     }

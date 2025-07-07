@@ -46,17 +46,17 @@ use crate::{Device_type, Error_type, Partition_device_type, Partition_entry_type
 /// }
 /// ```
 pub fn Create_partition_device(
-    Base_device: Device_type,
-    Partition: &Partition_entry_type,
+    base_device: Device_type,
+    partition: &Partition_entry_type,
 ) -> Result_type<Partition_device_type> {
-    if !Partition.Is_valid() {
+    if !partition.Is_valid() {
         return Err(Error_type::Invalid_parameter);
     }
 
     Ok(Partition_device_type::New_from_lba(
-        Base_device,
-        Partition.Get_start_lba(),
-        Partition.Get_size_sectors(),
+        base_device,
+        partition.Get_start_lba(),
+        partition.Get_size_sectors(),
     ))
 }
 
@@ -94,14 +94,14 @@ pub fn Create_partition_device(
 /// }
 /// ```
 pub fn Scan_mbr_partitions(
-    Device: &Device_type,
+    device: &Device_type,
 ) -> Result_type<Vec<(usize, Partition_entry_type)>> {
-    let Mbr = MBR_type::Read_from_device(Device)?;
+    let mbr = MBR_type::Read_from_device(device)?;
 
     let mut Partitions = Vec::new();
-    for (I, Partition) in Mbr.Partitions.iter().enumerate() {
-        if Partition.Is_valid() {
-            Partitions.push((I, *Partition));
+    for (i, partition) in mbr.Partitions.iter().enumerate() {
+        if partition.Is_valid() {
+            Partitions.push((i, *partition));
         }
     }
 
@@ -187,10 +187,10 @@ pub fn Validate_mbr(Mbr: &crate::MBR_type) -> Result_type<()> {
 /// }
 /// ```
 pub fn Create_all_partition_devices(
-    Base_device: Device_type,
-    Mbr: &super::MBR_type,
+    base_device: Device_type,
+    mbr: &super::MBR_type,
 ) -> Result_type<Vec<Partition_device_type>> {
-    Mbr.Create_all_partition_devices(Base_device)
+    mbr.Create_all_partition_devices(base_device)
 }
 
 /// Find partitions of a specific type within an MBR.
@@ -228,10 +228,10 @@ pub fn Create_all_partition_devices(
 /// println!("Found {} FAT32 partitions", fat32_partitions.len());
 /// ```
 pub fn Find_partitions_by_type(
-    Mbr: &super::MBR_type,
-    Partition_type: crate::Partition_type_type,
+    mbr: &super::MBR_type,
+    partition_type: crate::Partition_type_type,
 ) -> Vec<(usize, &Partition_entry_type)> {
-    Mbr.Find_partitions_by_type(Partition_type)
+    mbr.Find_partitions_by_type(partition_type)
 }
 
 /// Check if a device contains a valid MBR.
@@ -264,7 +264,7 @@ pub fn Find_partitions_by_type(
 /// ```
 pub fn Has_valid_mbr(Device: &Device_type) -> bool {
     match MBR_type::Read_from_device(Device) {
-        Ok(Mbr) => Mbr.Is_valid(),
+        Ok(mbr) => mbr.Is_valid(),
         Err(_) => false,
     }
 }
@@ -300,7 +300,7 @@ pub fn Has_valid_mbr(Device: &Device_type) -> bool {
 /// ```
 pub fn Is_gpt_disk(Device: &Device_type) -> bool {
     match MBR_type::Read_from_device(Device) {
-        Ok(Mbr) => Mbr.Has_gpt_protective_partition(),
+        Ok(mbr) => mbr.Has_gpt_protective_partition(),
         Err(_) => false,
     }
 }
@@ -336,11 +336,11 @@ pub fn Is_gpt_disk(Device: &Device_type) -> bool {
 /// assert_eq!(partitions[0].Get_start_lba(), 2048);
 /// ```
 pub fn Create_basic_mbr(
-    Disk_signature: u32,
-    Partition_type: crate::Partition_type_type,
-    Total_sectors: u32,
+    disk_signature: u32,
+    partition_type: crate::Partition_type_type,
+    total_sectors: u32,
 ) -> Result_type<super::MBR_type> {
-    MBR_type::Create_basic(Disk_signature, Partition_type, Total_sectors)
+    MBR_type::Create_basic(disk_signature, partition_type, total_sectors)
 }
 
 /// Clone an MBR from one device to another.
@@ -380,9 +380,9 @@ pub fn Create_basic_mbr(
 /// assert_eq!(Has_valid_mbr(&source), Has_valid_mbr(&target));
 /// ```
 pub fn Clone_mbr(Source_device: &Device_type, Target_device: &Device_type) -> Result_type<()> {
-    let Mbr = MBR_type::Read_from_device(Source_device)?;
-    Mbr.Validate()?;
-    Mbr.Write_to_device(Target_device)?;
+    let mbr = MBR_type::Read_from_device(Source_device)?;
+    mbr.Validate()?;
+    mbr.Write_to_device(Target_device)?;
     Ok(())
 }
 
@@ -421,8 +421,8 @@ pub fn Clone_mbr(Source_device: &Device_type, Target_device: &Device_type) -> Re
 /// Restore_mbr(&device, &backup).unwrap();
 /// ```
 pub fn Backup_mbr(Device: &Device_type) -> Result_type<[u8; 512]> {
-    let Mbr = MBR_type::Read_from_device(Device)?;
-    Ok(Mbr.To_bytes())
+    let mbr = MBR_type::Read_from_device(Device)?;
+    Ok(mbr.To_bytes())
 }
 
 /// Restore an MBR from a backup byte array.
@@ -462,9 +462,9 @@ pub fn Backup_mbr(Device: &Device_type) -> Result_type<[u8; 512]> {
 /// assert!(Has_valid_mbr(&device));
 /// ```
 pub fn Restore_mbr(Device: &Device_type, Backup: &[u8; 512]) -> Result_type<()> {
-    let Mbr = MBR_type::From_bytes(Backup)?;
-    Mbr.Validate()?;
-    Mbr.Write_to_device(Device)?;
+    let mbr = MBR_type::From_bytes(Backup)?;
+    mbr.Validate()?;
+    mbr.Write_to_device(Device)?;
     Ok(())
 }
 
@@ -482,35 +482,35 @@ pub fn Restore_mbr(Device: &Device_type, Backup: &[u8; 512]) -> Result_type<()> 
 /// # Returns
 /// * `Result_type<Partition_device_type>` - The first partition device
 pub fn Format_disk_and_get_first_partition(
-    Device: &Device_type,
-    Partition_type: crate::Partition_type_type,
-    Disk_signature: Option<u32>,
+    device: &Device_type,
+    partition_type: crate::Partition_type_type,
+    disk_signature: Option<u32>,
 ) -> Result_type<Partition_device_type> {
     // Check if device already has valid MBR
-    let Mbr = if Has_valid_mbr(Device) {
+    let Mbr = if Has_valid_mbr(device) {
         // Read existing MBR
-        MBR_type::Read_from_device(Device)?
+        MBR_type::Read_from_device(device)?
     } else {
         // Get device size in sectors
-        let Device_size = Device.Get_size()?;
-        let Block_size = Device.Get_block_size()?;
-        let Total_sectors = (Device_size.As_u64() / Block_size as u64) as u32;
+        let Device_size = device.Get_size()?;
+        let block_size = device.Get_block_size()?;
+        let total_sectors = (Device_size.As_u64() / block_size as u64) as u32;
 
-        if Total_sectors < 2048 {
+        if total_sectors < 2048 {
             return Err(Error_type::Invalid_parameter);
         }
 
         // Create new MBR with signature
-        let Signature = Disk_signature.unwrap_or({
+        let Signature = disk_signature.unwrap_or({
             // Generate a simple signature based on current time or use a default
             // In a real implementation, you might want to use a proper random number generator
             0x12345678
         });
 
-        let New_mbr = MBR_type::Create_basic(Signature, Partition_type, Total_sectors)?;
+        let New_mbr = MBR_type::Create_basic(Signature, partition_type, total_sectors)?;
 
         // Write the new MBR to device
-        New_mbr.Write_to_device(Device)?;
+        New_mbr.Write_to_device(device)?;
 
         New_mbr
     };
@@ -522,7 +522,7 @@ pub fn Format_disk_and_get_first_partition(
     }
 
     // Create partition device for the first partition
-    Create_partition_device(Device.clone(), Valid_partitions[0])
+    Create_partition_device(device.clone(), Valid_partitions[0])
 }
 
 #[cfg(test)]

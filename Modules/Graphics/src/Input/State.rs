@@ -9,8 +9,8 @@ pub enum State_type {
 }
 
 impl From<State_type> for LVGL::lv_indev_state_t {
-    fn from(Value: State_type) -> LVGL::lv_indev_state_t {
-        match Value {
+    fn from(value: State_type) -> LVGL::lv_indev_state_t {
+        match value {
             State_type::Pressed => LVGL::lv_indev_state_t_LV_INDEV_STATE_PRESSED,
             State_type::Released => LVGL::lv_indev_state_t_LV_INDEV_STATE_RELEASED,
         }
@@ -18,8 +18,8 @@ impl From<State_type> for LVGL::lv_indev_state_t {
 }
 
 impl From<State_type> for u8 {
-    fn from(Value: State_type) -> u8 {
-        Value as u8
+    fn from(value: State_type) -> u8 {
+        value as u8
     }
 }
 

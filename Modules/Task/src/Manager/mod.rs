@@ -38,9 +38,9 @@ pub fn Get_instance() -> &'static Manager_type {
 }
 
 pub(crate) struct Inner_type {
-    pub(crate) Tasks: BTreeMap<Task_identifier_type, Metadata_type>,
-    pub(crate) Identifiers: BTreeMap<usize, Task_identifier_type>,
-    pub(crate) Spawners: BTreeMap<usize, ::embassy_executor::Spawner>,
+    pub(crate) tasks: BTreeMap<Task_identifier_type, Metadata_type>,
+    pub(crate) identifiers: BTreeMap<usize, Task_identifier_type>,
+    pub(crate) spawners: BTreeMap<usize, ::embassy_executor::Spawner>,
 }
 
 unsafe impl Send for Manager_type {}
@@ -49,15 +49,15 @@ unsafe impl Send for Manager_type {}
 pub struct Manager_type(pub(crate) RwLock<CriticalSectionRawMutex, Inner_type>);
 
 impl Manager_type {
-    pub const ROOT_TASK_IDENTIFIER: Task_identifier_type = Task_identifier_type::New(0);
+    pub const ROOT_TASK_IDENTIFIER: Task_identifier_type = Task_identifier_type::new(0);
 
     /// Create a new task manager instance,
     /// create a root task and register current thread as the root task main thread.
     pub(crate) fn New() -> Self {
         Manager_type(RwLock::new(Inner_type {
-            Tasks: BTreeMap::new(),
-            Identifiers: BTreeMap::new(),
-            Spawners: BTreeMap::new(),
+            tasks: BTreeMap::new(),
+            identifiers: BTreeMap::new(),
+            spawners: BTreeMap::new(),
         }))
     }
 }

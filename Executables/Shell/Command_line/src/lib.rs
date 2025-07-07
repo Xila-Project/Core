@@ -1,6 +1,5 @@
 #![no_std]
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 extern crate alloc;
 
@@ -17,11 +16,11 @@ mod Tokenizer;
 use Error::*;
 use File_system::Path_owned_type;
 pub struct Shell_type {
-    Standard: Standard_type,
-    Current_directory: Path_owned_type,
-    Running: bool,
-    User: String,
-    Host: String,
+    standard: Standard_type,
+    current_directory: Path_owned_type,
+    running: bool,
+    user: String,
+    host: String,
 }
 
 pub struct Shell_executable_type;

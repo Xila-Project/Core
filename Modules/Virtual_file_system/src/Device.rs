@@ -20,8 +20,8 @@ pub enum Internal_path_type<'a> {
 }
 
 struct Inner_type<'a> {
-    pub Devices: BTreeMap<Inode_type, Device_inner_type<'a>>,
-    pub Open_devices: BTreeMap<Local_file_identifier_type, Open_device_inner_type>,
+    pub devices: BTreeMap<Inode_type, Device_inner_type<'a>>,
+    pub open_devices: BTreeMap<Local_file_identifier_type, Open_device_inner_type>,
 }
 
 type Device_inner_type<'a> = (Internal_path_type<'a>, Device_type);
@@ -31,76 +31,76 @@ pub struct File_system_type<'a>(RwLock<CriticalSectionRawMutex, Inner_type<'a>>)
 impl<'a> File_system_type<'a> {
     pub fn New() -> Self {
         Self(RwLock::new(Inner_type {
-            Devices: BTreeMap::new(),
-            Open_devices: BTreeMap::new(),
+            devices: BTreeMap::new(),
+            open_devices: BTreeMap::new(),
         }))
     }
 
     fn Borrow_mutable_inner_2_splitted<'b>(
-        Inner: &'b mut Inner_type<'a>,
+        inner: &'b mut Inner_type<'a>,
     ) -> (
         &'b mut BTreeMap<Inode_type, Device_inner_type<'a>>,
         &'b mut BTreeMap<Local_file_identifier_type, Open_device_inner_type>,
     ) {
-        (&mut Inner.Devices, &mut Inner.Open_devices)
+        (&mut inner.devices, &mut inner.open_devices)
     }
 
     pub async fn Get_underlying_file(
         &self,
-        File: Local_file_identifier_type,
+        file: Local_file_identifier_type,
     ) -> Result_type<Unique_file_identifier_type> {
         Ok(self
             .0
             .read()
             .await
-            .Open_devices
-            .get(&File)
+            .open_devices
+            .get(&file)
             .ok_or(Error_type::Invalid_identifier)?
             .2)
     }
 
     pub async fn Mount_device(
         &self,
-        Path: Path_owned_type,
-        Device: Device_type,
+        path: Path_owned_type,
+        device: Device_type,
     ) -> Result_type<Inode_type> {
-        let mut Inner = self.0.write().await;
+        let mut inner = self.0.write().await;
 
-        let (Devices, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
+        let (Devices, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
         let Inode = Get_new_inode(Devices)?;
 
-        Devices.insert(Inode, (Internal_path_type::Owned(Path), Device));
+        Devices.insert(Inode, (Internal_path_type::Owned(path), device));
 
         Ok(Inode)
     }
 
     pub async fn Mount_static_device(
         &self,
-        Path: &'a impl AsRef<Path_type>,
-        Device: Device_type,
+        path: &'a impl AsRef<Path_type>,
+        device: Device_type,
     ) -> Result_type<Inode_type> {
-        let mut Inner = self.0.write().await;
+        let mut inner = self.0.write().await;
 
-        let (Devices, _) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
+        let (Devices, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
         let Inode = Get_new_inode(Devices)?;
 
-        Devices.insert(Inode, (Internal_path_type::Borrowed(Path.as_ref()), Device));
+        Devices.insert(Inode, (Internal_path_type::Borrowed(path.as_ref()), device));
 
         Ok(Inode)
     }
 
     pub async fn Get_path_from_inode(
         &self,
-        Inode: Inode_type,
+        inode: Inode_type,
     ) -> Result_type<Internal_path_type<'a>> {
         Ok(self
             .0
             .read()
             .await
-            .Devices
-            .get(&Inode)
+            .devices
+            .get(&inode)
             .ok_or(Error_type::Invalid_identifier)?
             .0
             .clone())
@@ -108,19 +108,19 @@ impl<'a> File_system_type<'a> {
 
     pub async fn Get_devices_from_path(
         &self,
-        Path: &'static Path_type,
+        path: &'static Path_type,
     ) -> Result_type<Vec<Inode_type>> {
         Ok(self
             .0
             .read()
             .await
-            .Devices
+            .devices
             .iter()
             .filter(|(_, (Device_path, _))| match Device_path {
-                Internal_path_type::Borrowed(Device_path) => {
-                    Device_path.Strip_prefix(Path).is_some()
+                Internal_path_type::Borrowed(device_path) => {
+                    device_path.Strip_prefix(path).is_some()
                 }
-                Internal_path_type::Owned(Device_path) => Device_path.Strip_prefix(Path).is_some(),
+                Internal_path_type::Owned(Device_path) => Device_path.Strip_prefix(path).is_some(),
             })
             .map(|(Inode, _)| *Inode)
             .collect())
@@ -128,22 +128,22 @@ impl<'a> File_system_type<'a> {
 
     pub async fn Open(
         &self,
-        Inode: Inode_type,
-        Task: Task_identifier_type,
-        Flags: Flags_type,
-        Underlying_file: Unique_file_identifier_type,
+        inode: Inode_type,
+        task: Task_identifier_type,
+        flags: Flags_type,
+        underlying_file: Unique_file_identifier_type,
     ) -> Result_type<Local_file_identifier_type> {
-        let mut Inner = self.0.write().await;
+        let mut inner = self.0.write().await;
 
-        let (Devices, Open_pipes) = Self::Borrow_mutable_inner_2_splitted(&mut Inner);
+        let (Devices, Open_pipes) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let Device = Devices.get(&Inode).ok_or(Error_type::Invalid_identifier)?;
+        let Device = Devices.get(&inode).ok_or(Error_type::Invalid_identifier)?;
 
-        let Local_file_identifier = Get_new_file_identifier(Task, None, None, Open_pipes)?;
+        let Local_file_identifier = Get_new_file_identifier(task, None, None, Open_pipes)?;
 
         Open_pipes.insert(
             Local_file_identifier,
-            (Device.1.clone(), Flags, Underlying_file),
+            (Device.1.clone(), flags, underlying_file),
         );
 
         Ok(Local_file_identifier)
@@ -151,25 +151,25 @@ impl<'a> File_system_type<'a> {
 
     pub async fn Close(
         &self,
-        File: Local_file_identifier_type,
+        file: Local_file_identifier_type,
     ) -> Result_type<Unique_file_identifier_type> {
-        let (_, _, Underlying_file) = self
+        let (_, _, underlying_file) = self
             .0
             .write()
             .await
-            .Open_devices
-            .remove(&File)
+            .open_devices
+            .remove(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        Ok(Underlying_file)
+        Ok(underlying_file)
     }
 
     pub async fn Close_all(&self, Task: Task_identifier_type) -> Result_type<()> {
-        let mut Inner = self.0.write().await;
+        let mut inner = self.0.write().await;
 
         // Get all the keys of the open pipes that belong to the task
-        let Keys = Inner
-            .Open_devices
+        let Keys = inner
+            .open_devices
             .keys()
             .filter(|Key| Key.Split().0 == Task)
             .cloned()
@@ -177,8 +177,8 @@ impl<'a> File_system_type<'a> {
 
         // Close all the pipes corresponding to the keys
         for Key in Keys {
-            if let Some((Device, _, _)) = Inner.Open_devices.remove(&Key) {
-                drop(Device);
+            if let Some((device, _, _)) = inner.open_devices.remove(&Key) {
+                drop(device);
             }
         }
 
@@ -187,55 +187,55 @@ impl<'a> File_system_type<'a> {
 
     pub async fn Duplicate(
         &self,
-        File: Local_file_identifier_type,
-        Underlying_file: Unique_file_identifier_type,
+        file: Local_file_identifier_type,
+        underlying_file: Unique_file_identifier_type,
     ) -> Result_type<Local_file_identifier_type> {
-        let mut Inner = self.0.write().await;
+        let mut inner = self.0.write().await;
 
-        let (Device, Flags, _) = Inner
-            .Open_devices
-            .get(&File)
+        let (Device, Flags, _) = inner
+            .open_devices
+            .get(&file)
             .ok_or(Error_type::Invalid_identifier)?
             .clone();
 
-        let New_file = Get_new_file_identifier(File.Split().0, None, None, &Inner.Open_devices)?;
+        let New_file = Get_new_file_identifier(file.Split().0, None, None, &inner.open_devices)?;
 
-        Inner
-            .Open_devices
-            .insert(New_file, (Device.clone(), Flags, Underlying_file));
+        inner
+            .open_devices
+            .insert(New_file, (Device.clone(), Flags, underlying_file));
 
         Ok(New_file)
     }
 
     pub async fn Transfert(
         &self,
-        New_task: Task_identifier_type,
-        File: Local_file_identifier_type,
-        Underlying_file: Unique_file_identifier_type,
-        New_file: Option<File_identifier_type>,
+        new_task: Task_identifier_type,
+        file: Local_file_identifier_type,
+        underlying_file: Unique_file_identifier_type,
+        new_file: Option<File_identifier_type>,
     ) -> Result_type<Local_file_identifier_type> {
-        let mut Inner = self.0.write().await;
+        let mut inner = self.0.write().await;
 
-        let (Device, Flags, _) = Inner
-            .Open_devices
-            .remove(&File)
+        let (Device, Flags, _) = inner
+            .open_devices
+            .remove(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        let New_file = if let Some(New_file) = New_file {
-            let File = Local_file_identifier_type::New(New_task, New_file);
+        let New_file = if let Some(New_file) = new_file {
+            let file = Local_file_identifier_type::New(new_task, New_file);
 
-            if Inner.Open_devices.contains_key(&File) {
+            if inner.open_devices.contains_key(&file) {
                 return Err(Error_type::Invalid_identifier);
             }
 
-            File
+            file
         } else {
-            Get_new_file_identifier(New_task, None, None, &Inner.Open_devices)?
+            Get_new_file_identifier(new_task, None, None, &inner.open_devices)?
         };
 
-        if Inner
-            .Open_devices
-            .insert(New_file, (Device, Flags, Underlying_file))
+        if inner
+            .open_devices
+            .insert(New_file, (Device, Flags, underlying_file))
             .is_some()
         {
             return Err(Error_type::Internal_error); // Should never happen
@@ -248,21 +248,21 @@ impl<'a> File_system_type<'a> {
         self.0
             .write()
             .await
-            .Devices
+            .devices
             .remove(&Inode)
             .ok_or(Error_type::Invalid_inode)
     }
 
     pub async fn Read(
         &self,
-        File: Local_file_identifier_type,
-        Buffer: &mut [u8],
+        file: Local_file_identifier_type,
+        buffer: &mut [u8],
     ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
-        let Inner = self.0.read().await;
+        let inner = self.0.read().await;
 
-        let (Device, Flags, Underlying_file) = Inner
-            .Open_devices
-            .get(&File)
+        let (Device, Flags, Underlying_file) = inner
+            .open_devices
+            .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
         if !Flags.Get_mode().Get_read() {
@@ -270,12 +270,12 @@ impl<'a> File_system_type<'a> {
         }
 
         if Flags.Get_status().Get_non_blocking() {
-            return Ok((Device.Read(Buffer)?, *Underlying_file));
+            return Ok((Device.Read(buffer)?, *Underlying_file));
         }
 
         loop {
             // Wait for the pipe to be ready
-            let Size = Device.Read(Buffer)?;
+            let Size = Device.Read(buffer)?;
 
             if Size != 0 {
                 return Ok((Size, *Underlying_file));
@@ -285,21 +285,21 @@ impl<'a> File_system_type<'a> {
 
     pub async fn Read_line(
         &self,
-        File: Local_file_identifier_type,
-        Buffer: &mut String,
+        file: Local_file_identifier_type,
+        buffer: &mut String,
     ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
-        let Inner = self.0.read().await;
+        let inner = self.0.read().await;
 
-        let (Device, Flags, Underlying_file) = Inner
-            .Open_devices
-            .get(&File)
+        let (Device, Flags, Underlying_file) = inner
+            .open_devices
+            .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
         if !Flags.Get_mode().Get_read() {
             return Err(Error_type::Invalid_mode);
         }
 
-        Buffer.clear();
+        buffer.clear();
 
         let Byte: &mut [u8] = &mut [0; 1];
 
@@ -316,20 +316,20 @@ impl<'a> File_system_type<'a> {
                 return Ok((Size, *Underlying_file));
             }
 
-            Buffer.push(Byte[0] as char);
+            buffer.push(Byte[0] as char);
         }
     }
 
     pub async fn Write(
         &self,
-        File: Local_file_identifier_type,
-        Buffer: &[u8],
+        file: Local_file_identifier_type,
+        buffer: &[u8],
     ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
-        let Inner = self.0.read().await;
+        let inner = self.0.read().await;
 
-        let (Device, Flags, Underlying_file) = Inner
-            .Open_devices
-            .get(&File)
+        let (Device, Flags, Underlying_file) = inner
+            .open_devices
+            .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
         if !Flags.Get_mode().Get_write() {
@@ -337,41 +337,41 @@ impl<'a> File_system_type<'a> {
         }
 
         if Flags.Get_status().Get_non_blocking() {
-            return Ok((Device.Write(Buffer)?, *Underlying_file));
+            return Ok((Device.Write(buffer)?, *Underlying_file));
         }
 
         loop {
             // Wait for the device to be ready
-            if Device.Write(Buffer).is_ok() {
-                return Ok((Buffer.len().into(), *Underlying_file));
+            if Device.Write(buffer).is_ok() {
+                return Ok((buffer.len().into(), *Underlying_file));
             }
         }
     }
 
     pub async fn Set_position(
         &self,
-        File: Local_file_identifier_type,
-        Position: &Position_type,
+        file: Local_file_identifier_type,
+        position: &Position_type,
     ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
-        let Inner = self.0.read().await;
+        let inner = self.0.read().await;
 
-        let (Device, _, Underlying_file) = Inner
-            .Open_devices
-            .get(&File)
+        let (Device, _, Underlying_file) = inner
+            .open_devices
+            .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        Ok((Device.Set_position(Position)?, *Underlying_file))
+        Ok((Device.Set_position(position)?, *Underlying_file))
     }
 
     pub async fn Flush(
         &self,
-        File: Local_file_identifier_type,
+        file: Local_file_identifier_type,
     ) -> Result_type<Unique_file_identifier_type> {
-        let Inner = self.0.read().await;
+        let inner = self.0.read().await;
 
-        let (Device, _, Underlying_file) = Inner
-            .Open_devices
-            .get(&File)
+        let (Device, _, Underlying_file) = inner
+            .open_devices
+            .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
         Device.Flush()?;
@@ -384,7 +384,7 @@ impl<'a> File_system_type<'a> {
             .0
             .read()
             .await
-            .Open_devices
+            .open_devices
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
             .1
@@ -396,7 +396,7 @@ impl<'a> File_system_type<'a> {
             .0
             .read()
             .await
-            .Devices
+            .devices
             .get(&Inode)
             .ok_or(Error_type::Invalid_identifier)?
             .1
@@ -408,7 +408,7 @@ impl<'a> File_system_type<'a> {
             .0
             .read()
             .await
-            .Open_devices
+            .open_devices
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
             .0
@@ -459,7 +459,7 @@ mod tests {
         let file_id = fs
             .Open(
                 Inode,
-                Task_identifier_type::New(0),
+                Task_identifier_type::new(0),
                 Mode_type::READ_ONLY.into(),
                 0_usize.into(),
             )
@@ -483,7 +483,7 @@ mod tests {
         let file_id = fs
             .Open(
                 Inode,
-                Task_identifier_type::New(0),
+                Task_identifier_type::new(0),
                 Mode_type::READ_WRITE.into(),
                 0_usize.into(),
             )
@@ -521,7 +521,7 @@ mod tests {
         let File = File_system
             .Open(
                 Inode,
-                Task_identifier_type::New(0),
+                Task_identifier_type::new(0),
                 Mode_type::READ_ONLY.into(),
                 Underlying_file,
             )
@@ -556,14 +556,14 @@ mod tests {
             .await
             .unwrap();
 
-        let Task = Task_identifier_type::New(0);
+        let Task = Task_identifier_type::new(0);
 
         let File_identifier = File_system
             .Open(Inode, Task, Mode_type::READ_ONLY.into(), 0_usize.into())
             .await
             .unwrap();
 
-        let New_task = Task_identifier_type::New(1);
+        let New_task = Task_identifier_type::new(1);
 
         let New_file_identifier = File_system
             .Transfert(New_task, File_identifier, 0_usize.into(), None)
@@ -605,7 +605,7 @@ mod tests {
         let file_id = fs
             .Open(
                 Inode,
-                Task_identifier_type::New(0),
+                Task_identifier_type::new(0),
                 Mode_type::READ_ONLY.into(),
                 0_usize.into(),
             )
@@ -632,7 +632,7 @@ mod tests {
         let file_id = fs
             .Open(
                 Inode,
-                Task_identifier_type::New(0),
+                Task_identifier_type::new(0),
                 Mode_type::READ_ONLY.into(),
                 0_usize.into(),
             )
@@ -657,7 +657,7 @@ mod tests {
         let file_id = fs
             .Open(
                 Inode,
-                Task_identifier_type::New(0),
+                Task_identifier_type::new(0),
                 Mode_type::READ_ONLY.into(),
                 0_usize.into(),
             )

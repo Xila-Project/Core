@@ -9,27 +9,27 @@ use Users::{Group_identifier_type, User_identifier_type};
 impl Manager_type {
     pub(crate) async fn Register(
         &self,
-        Parent: Task_identifier_type,
-        Name: &str,
+        parent: Task_identifier_type,
+        name: &str,
     ) -> Result_type<Task_identifier_type> {
-        let mut Inner = self.0.write().await;
+        let mut inner = self.0.write().await;
 
         // - Get parent task information if any (inheritance)
         let (Parent_task_identifier, Parent_environment_variables, User, Group) =
-            if Inner.Tasks.is_empty() {
+            if inner.tasks.is_empty() {
                 (
                     Manager_type::ROOT_TASK_IDENTIFIER, // Root task is its own parent
                     Vec::new(),
                     User_identifier_type::ROOT,
                     Group_identifier_type::ROOT,
                 )
-            } else if let Ok(Metadata) = Inner
-                .Tasks
-                .get(&Parent)
+            } else if let Ok(Metadata) = inner
+                .tasks
+                .get(&parent)
                 .ok_or(Error_type::Invalid_task_identifier)
             {
                 (
-                    Parent,
+                    parent,
                     Metadata.Environment_variables.clone(),
                     Metadata.User,
                     Metadata.Group,
@@ -44,11 +44,11 @@ impl Manager_type {
             };
 
         // Truncate the name if it's too long
-        let Name = if Name.len() > 23 {
+        let Name = if name.len() > 23 {
             // Truncate the name to 32 characters if it's too long
-            &Name[..23]
+            &name[..23]
         } else {
-            Name
+            name
         };
 
         let Name = SmolStr::new_inline(Name);
@@ -60,12 +60,12 @@ impl Manager_type {
             User,
             Group,
             Environment_variables: Parent_environment_variables,
-            Signals: Signal_accumulator_type::New(),
+            Signals: Signal_accumulator_type::new(),
             Spawner_identifier: 0, // Will be set later
         };
 
         let Identifier = Self::Find_first_available_identifier(
-            &Inner.Tasks,
+            &inner.tasks,
             (Task_identifier_inner_type::MIN..Task_identifier_inner_type::MAX).step_by(1),
         )
         .ok_or(Error_type::Too_many_tasks)?;
@@ -74,8 +74,8 @@ impl Manager_type {
         //let Expected = Task_identifier_type::New(Identifier);
 
         // Populate the identifier with the first available one
-        if Inner
-            .Tasks
+        if inner
+            .tasks
             .insert(
                 Identifier, Metadata, // We insert None to reserve the identifier
             )
@@ -92,24 +92,24 @@ impl Manager_type {
     /// If the task has children tasks, the root task adopts them.
     pub(crate) async fn Unregister(
         &self,
-        Identifier: Task_identifier_type,
+        identifier: Task_identifier_type,
     ) -> Result_type<Metadata_type> {
-        let mut Inner = self.0.write().await;
+        let mut inner = self.0.write().await;
 
         // Root task adopts all children of the task
-        Inner.Tasks.iter_mut().for_each(|(_, Task)| {
-            if Task.Parent == Identifier {
+        inner.tasks.iter_mut().for_each(|(_, Task)| {
+            if Task.Parent == identifier {
                 Task.Parent = Self::ROOT_TASK_IDENTIFIER;
             }
         });
 
-        let Metadata = Inner
-            .Tasks
-            .remove(&Identifier)
+        let Metadata = inner
+            .tasks
+            .remove(&identifier)
             .ok_or(Error_type::Invalid_task_identifier)?;
 
         // Remove the internal identifier of the task
-        Inner.Identifiers.remove(&Metadata.Internal_identifier);
+        inner.identifiers.remove(&Metadata.Internal_identifier);
 
         Ok(Metadata)
     }

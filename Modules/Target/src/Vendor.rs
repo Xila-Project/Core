@@ -7,7 +7,7 @@ pub enum Vendor_type {
 }
 
 impl Vendor_type {
-    pub fn Get() -> Vendor_type {
+    pub fn get() -> Vendor_type {
         Vendor_type::from(Self::Get_raw())
     }
 

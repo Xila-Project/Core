@@ -1,5 +1,4 @@
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 use core::ffi::c_void;
 
@@ -25,11 +24,11 @@ macro_rules! Function_descriptors {
 }
 
 pub struct Function_descriptor_type {
-    pub Name: &'static str,
-    pub Pointer: Function_pointer,
+    pub name: &'static str,
+    pub pointer: Function_pointer,
 }
 pub trait Registrable_trait {
-    fn Get_functions(&self) -> &[Function_descriptor_type];
+    fn get_functions(&self) -> &[Function_descriptor_type];
 
     fn Is_XIP(&self) -> bool {
         false

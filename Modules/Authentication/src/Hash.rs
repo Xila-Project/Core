@@ -42,7 +42,7 @@ use crate::{Error_type, Result_type, RANDOM_DEVICE_PATH};
 /// The salt generation converts random bytes to lowercase letters (a-z)
 /// for readability while maintaining sufficient entropy for security.
 pub async fn Generate_salt() -> Result_type<String> {
-    let Random_file = File_type::Open(
+    let random_file = File_type::Open(
         Virtual_file_system::Get_instance(),
         RANDOM_DEVICE_PATH,
         Mode_type::READ_ONLY.into(),
@@ -52,7 +52,7 @@ pub async fn Generate_salt() -> Result_type<String> {
 
     let mut Buffer = [0_u8; 16];
 
-    Random_file
+    random_file
         .Read(&mut Buffer)
         .await
         .map_err(Error_type::Failed_to_read_random_device)?;

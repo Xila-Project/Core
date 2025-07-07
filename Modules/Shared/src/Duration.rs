@@ -10,16 +10,16 @@ use core::{
 /// It is deeply inspired by the [`core::time::Duration`] type.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Duration_type {
-    Seconds: u64,
-    Nanoseconds: u32,
+    seconds: u64,
+    nanoseconds: u32,
 }
 
 impl Duration_type {
     /// Creates a new [`Duration_type`] from the specified number of seconds and nanoseconds.
     pub const fn New(Seconds: u64, Nanoseconds: u32) -> Self {
         Duration_type {
-            Seconds,
-            Nanoseconds,
+            seconds: Seconds,
+            nanoseconds: Nanoseconds,
         }
     }
 
@@ -62,13 +62,13 @@ impl Duration_type {
     /// assert_eq!(duration, None);
     /// ```
     pub fn Get_duration_since_checked(&self, Earlier: &Duration_type) -> Option<Duration_type> {
-        let self_duration = Duration::new(self.Seconds, self.Nanoseconds);
-        let earlier_duration = Duration::new(Earlier.Seconds, Earlier.Nanoseconds);
+        let self_duration = Duration::new(self.seconds, self.nanoseconds);
+        let earlier_duration = Duration::new(Earlier.seconds, Earlier.nanoseconds);
         self_duration
             .checked_sub(earlier_duration)
             .map(|d| Duration_type {
-                Seconds: d.as_secs(),
-                Nanoseconds: d.subsec_nanos(),
+                seconds: d.as_secs(),
+                nanoseconds: d.subsec_nanos(),
             })
     }
 
@@ -89,50 +89,50 @@ impl Duration_type {
     /// assert_eq!(duration, Duration_type::default());
     /// ```
     pub fn Get_duration_since_saturating(&self, earlier: &Duration_type) -> Duration_type {
-        let self_duration = Duration::new(self.Seconds, self.Nanoseconds);
-        let earlier_duration = Duration::new(earlier.Seconds, earlier.Nanoseconds);
+        let self_duration = Duration::new(self.seconds, self.nanoseconds);
+        let earlier_duration = Duration::new(earlier.seconds, earlier.nanoseconds);
         let result = self_duration.saturating_sub(earlier_duration);
         Duration_type {
-            Seconds: result.as_secs(),
-            Nanoseconds: result.subsec_nanos(),
+            seconds: result.as_secs(),
+            nanoseconds: result.subsec_nanos(),
         }
     }
 
     pub fn Add_checked(&self, Duration: &Duration_type) -> Option<Duration_type> {
-        let self_duration = Duration::new(self.Seconds, self.Nanoseconds);
-        let duration = Duration::new(Duration.Seconds, Duration.Nanoseconds);
+        let self_duration = Duration::new(self.seconds, self.nanoseconds);
+        let duration = Duration::new(Duration.seconds, Duration.nanoseconds);
         self_duration.checked_add(duration).map(|d| Duration_type {
-            Seconds: d.as_secs(),
-            Nanoseconds: d.subsec_nanos(),
+            seconds: d.as_secs(),
+            nanoseconds: d.subsec_nanos(),
         })
     }
 
     pub fn Substract_checked(&self, Duration: &Duration_type) -> Option<Duration_type> {
-        let self_duration = Duration::new(self.Seconds, self.Nanoseconds);
-        let duration = Duration::new(Duration.Seconds, Duration.Nanoseconds);
+        let self_duration = Duration::new(self.seconds, self.nanoseconds);
+        let duration = Duration::new(Duration.seconds, Duration.nanoseconds);
         self_duration.checked_sub(duration).map(|d| Duration_type {
-            Seconds: d.as_secs(),
-            Nanoseconds: d.subsec_nanos(),
+            seconds: d.as_secs(),
+            nanoseconds: d.subsec_nanos(),
         })
     }
 
     pub fn Add_saturating(&self, Duration: &Duration_type) -> Duration_type {
-        let self_duration = Duration::new(self.Seconds, self.Nanoseconds);
-        let duration = Duration::new(Duration.Seconds, Duration.Nanoseconds);
+        let self_duration = Duration::new(self.seconds, self.nanoseconds);
+        let duration = Duration::new(Duration.seconds, Duration.nanoseconds);
         let result = self_duration.saturating_add(duration);
         Duration_type {
-            Seconds: result.as_secs(),
-            Nanoseconds: result.subsec_nanos(),
+            seconds: result.as_secs(),
+            nanoseconds: result.subsec_nanos(),
         }
     }
 
     pub fn Substract_saturating(&self, duration: &Duration_type) -> Duration_type {
-        let self_duration = Duration::new(self.Seconds, self.Nanoseconds);
-        let duration = Duration::new(duration.Seconds, duration.Nanoseconds);
+        let self_duration = Duration::new(self.seconds, self.nanoseconds);
+        let duration = Duration::new(duration.seconds, duration.nanoseconds);
         let result = self_duration.saturating_sub(duration);
         Duration_type {
-            Seconds: result.as_secs(),
-            Nanoseconds: result.subsec_nanos(),
+            seconds: result.as_secs(),
+            nanoseconds: result.subsec_nanos(),
         }
     }
 
@@ -147,7 +147,7 @@ impl Duration_type {
     /// assert_eq!(duration.As_seconds(), 1);
     /// ```
     pub fn As_seconds(&self) -> u64 {
-        self.Seconds
+        self.seconds
     }
 
     /// Returns the number of milliseconds in the duration.
@@ -190,7 +190,7 @@ impl Duration_type {
     /// assert_eq!(duration.As_nanoseconds(), 1_500_000_000);
     /// ```
     pub fn As_nanoseconds(&self) -> u128 {
-        u128::from(self.Seconds) * 1_000_000_000 + u128::from(self.Nanoseconds)
+        u128::from(self.seconds) * 1_000_000_000 + u128::from(self.nanoseconds)
     }
 }
 
@@ -204,9 +204,9 @@ impl Add<&Duration_type> for Duration_type {
 }
 
 impl AddAssign<&Duration_type> for Duration_type {
-    fn add_assign(&mut self, Duration: &Duration_type) {
+    fn add_assign(&mut self, duration: &Duration_type) {
         *self = self
-            .Add_checked(Duration)
+            .Add_checked(duration)
             .expect("Overflow when adding duration");
     }
 }
@@ -221,9 +221,9 @@ impl Sub<&Duration_type> for Duration_type {
 }
 
 impl SubAssign<&Duration_type> for Duration_type {
-    fn sub_assign(&mut self, Duration: &Duration_type) {
+    fn sub_assign(&mut self, duration: &Duration_type) {
         *self = self
-            .Substract_checked(Duration)
+            .Substract_checked(duration)
             .expect("Overflow when substracting duration");
     }
 }

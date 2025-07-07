@@ -1,19 +1,19 @@
 /// Lightweight ring buffer implementation.
 pub struct Ring_buffer_type<T> {
-    Buffer: Vec<T>,
-    Head: usize,
-    Tail: usize,
-    Full: bool,
+    buffer: Vec<T>,
+    head: usize,
+    tail: usize,
+    full: bool,
 }
 
 impl<T: Copy> Ring_buffer_type<T> {
     /// Create a new ring buffer with the specified capacity.
     pub fn New(Capacity: usize) -> Self {
         Ring_buffer_type {
-            Buffer: Vec::with_capacity(Capacity),
-            Head: 0,
-            Tail: 0,
-            Full: false,
+            buffer: Vec::with_capacity(Capacity),
+            head: 0,
+            tail: 0,
+            full: false,
         }
     }
 
@@ -23,16 +23,16 @@ impl<T: Copy> Ring_buffer_type<T> {
             return false;
         }
 
-        if self.Buffer.len() < self.Buffer.capacity() {
-            self.Buffer.push(Item);
+        if self.buffer.len() < self.buffer.capacity() {
+            self.buffer.push(Item);
         } else {
-            self.Buffer[self.Tail] = Item;
+            self.buffer[self.tail] = Item;
         }
 
-        self.Tail = (self.Tail + 1) % self.Get_capacity();
+        self.tail = (self.tail + 1) % self.Get_capacity();
 
-        if self.Tail == self.Head {
-            self.Full = true;
+        if self.tail == self.head {
+            self.full = true;
         }
 
         true
@@ -43,35 +43,35 @@ impl<T: Copy> Ring_buffer_type<T> {
         if self.Is_empty() {
             return None;
         }
-        let Item = self.Buffer[self.Head]; // The `Copy` trait is required here
-        self.Head = (self.Head + 1) % self.Buffer.capacity();
-        self.Full = false;
+        let Item = self.buffer[self.head]; // The `Copy` trait is required here
+        self.head = (self.head + 1) % self.buffer.capacity();
+        self.full = false;
         Some(Item)
     }
 
     /// Check if the buffer is empty.
     pub fn Is_empty(&self) -> bool {
-        !self.Full && (self.Head == self.Tail)
+        !self.full && (self.head == self.tail)
     }
 
     /// Check if the buffer is full.
     pub fn Is_full(&self) -> bool {
-        self.Full
+        self.full
     }
 
     /// Get the capacity of the buffer.
     pub fn Get_capacity(&self) -> usize {
-        self.Buffer.capacity()
+        self.buffer.capacity()
     }
 
     /// Get the number of elements that are currently in the buffer.
     pub fn Get_used_space(&self) -> usize {
-        if self.Full {
+        if self.full {
             self.Get_capacity()
-        } else if self.Tail >= self.Head {
-            self.Tail - self.Head
+        } else if self.tail >= self.head {
+            self.tail - self.head
         } else {
-            self.Get_capacity() - self.Head + self.Tail
+            self.Get_capacity() - self.head + self.tail
         }
     }
 
@@ -92,114 +92,114 @@ mod Tests {
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_capacity(), 3);
         assert_eq!(Ring_buffer.Get_used_space(), 0);
-        assert_eq!(Ring_buffer.Head, 0);
-        assert_eq!(Ring_buffer.Tail, 0);
+        assert_eq!(Ring_buffer.head, 0);
+        assert_eq!(Ring_buffer.tail, 0);
 
         assert!(Ring_buffer.Push(1));
         assert!(!Ring_buffer.Is_empty());
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 1);
-        assert_eq!(Ring_buffer.Head, 0);
-        assert_eq!(Ring_buffer.Tail, 1);
+        assert_eq!(Ring_buffer.head, 0);
+        assert_eq!(Ring_buffer.tail, 1);
 
         assert!(Ring_buffer.Push(2));
         assert!(!Ring_buffer.Is_empty());
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 2);
-        assert_eq!(Ring_buffer.Head, 0);
-        assert_eq!(Ring_buffer.Tail, 2);
+        assert_eq!(Ring_buffer.head, 0);
+        assert_eq!(Ring_buffer.tail, 2);
 
         assert!(Ring_buffer.Push(3));
         assert!(!Ring_buffer.Is_empty());
         assert!(Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 3);
-        assert_eq!(Ring_buffer.Head, 0);
-        assert_eq!(Ring_buffer.Tail, 0);
+        assert_eq!(Ring_buffer.head, 0);
+        assert_eq!(Ring_buffer.tail, 0);
 
         assert!(!Ring_buffer.Push(4));
         assert!(!Ring_buffer.Is_empty());
         assert!(Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 3);
-        assert_eq!(Ring_buffer.Head, 0);
-        assert_eq!(Ring_buffer.Tail, 0);
+        assert_eq!(Ring_buffer.head, 0);
+        assert_eq!(Ring_buffer.tail, 0);
 
         assert_eq!(Ring_buffer.Pop(), Some(1));
         assert!(!Ring_buffer.Is_empty());
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 2);
-        assert_eq!(Ring_buffer.Head, 1);
-        assert_eq!(Ring_buffer.Tail, 0);
+        assert_eq!(Ring_buffer.head, 1);
+        assert_eq!(Ring_buffer.tail, 0);
 
         assert_eq!(Ring_buffer.Pop(), Some(2));
         assert!(!Ring_buffer.Is_empty());
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 1);
-        assert_eq!(Ring_buffer.Head, 2);
-        assert_eq!(Ring_buffer.Tail, 0);
+        assert_eq!(Ring_buffer.head, 2);
+        assert_eq!(Ring_buffer.tail, 0);
 
         assert_eq!(Ring_buffer.Pop(), Some(3));
         assert!(Ring_buffer.Is_empty());
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 0);
-        assert_eq!(Ring_buffer.Head, 0);
-        assert_eq!(Ring_buffer.Tail, 0);
+        assert_eq!(Ring_buffer.head, 0);
+        assert_eq!(Ring_buffer.tail, 0);
 
         assert_eq!(Ring_buffer.Pop(), None);
         assert!(Ring_buffer.Is_empty());
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_capacity(), 3);
         assert_eq!(Ring_buffer.Get_used_space(), 0);
-        assert_eq!(Ring_buffer.Head, 0);
-        assert_eq!(Ring_buffer.Tail, 0);
+        assert_eq!(Ring_buffer.head, 0);
+        assert_eq!(Ring_buffer.tail, 0);
 
         Ring_buffer.Push(4);
         assert!(!Ring_buffer.Is_empty());
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 1);
-        assert_eq!(Ring_buffer.Head, 0);
-        assert_eq!(Ring_buffer.Tail, 1);
+        assert_eq!(Ring_buffer.head, 0);
+        assert_eq!(Ring_buffer.tail, 1);
 
         Ring_buffer.Push(5);
         assert!(!Ring_buffer.Is_empty());
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 2);
-        assert_eq!(Ring_buffer.Head, 0);
-        assert_eq!(Ring_buffer.Tail, 2);
+        assert_eq!(Ring_buffer.head, 0);
+        assert_eq!(Ring_buffer.tail, 2);
 
         Ring_buffer.Push(6);
         assert!(!Ring_buffer.Is_empty());
         assert!(Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 3);
-        assert_eq!(Ring_buffer.Head, 0);
-        assert_eq!(Ring_buffer.Tail, 0);
+        assert_eq!(Ring_buffer.head, 0);
+        assert_eq!(Ring_buffer.tail, 0);
 
         assert_eq!(Ring_buffer.Pop(), Some(4));
         assert!(!Ring_buffer.Is_empty());
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 2);
-        assert_eq!(Ring_buffer.Head, 1);
-        assert_eq!(Ring_buffer.Tail, 0);
+        assert_eq!(Ring_buffer.head, 1);
+        assert_eq!(Ring_buffer.tail, 0);
 
         assert_eq!(Ring_buffer.Pop(), Some(5));
         assert!(!Ring_buffer.Is_empty());
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 1);
-        assert_eq!(Ring_buffer.Head, 2);
-        assert_eq!(Ring_buffer.Tail, 0);
+        assert_eq!(Ring_buffer.head, 2);
+        assert_eq!(Ring_buffer.tail, 0);
 
         assert_eq!(Ring_buffer.Pop(), Some(6));
         assert!(Ring_buffer.Is_empty());
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_used_space(), 0);
-        assert_eq!(Ring_buffer.Head, 0);
-        assert_eq!(Ring_buffer.Tail, 0);
+        assert_eq!(Ring_buffer.head, 0);
+        assert_eq!(Ring_buffer.tail, 0);
 
         assert_eq!(Ring_buffer.Pop(), None);
         assert!(Ring_buffer.Is_empty());
         assert!(!Ring_buffer.Is_full());
         assert_eq!(Ring_buffer.Get_capacity(), 3);
         assert_eq!(Ring_buffer.Get_used_space(), 0);
-        assert_eq!(Ring_buffer.Head, 0);
-        assert_eq!(Ring_buffer.Tail, 0);
+        assert_eq!(Ring_buffer.head, 0);
+        assert_eq!(Ring_buffer.tail, 0);
     }
 }

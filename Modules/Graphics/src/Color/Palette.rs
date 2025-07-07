@@ -310,7 +310,7 @@ impl Tone_type {
 /// Get a Material Design color from the palette
 /// This function is const-compliant and doesn't rely on LVGL
 pub const fn Get(Hue: Hue_type, Tone: Tone_type) -> Color_type {
-    let Color_index = Hue.Get_color_index();
-    let Tone_index = Tone.Get_tone_index();
-    MATERIAL_COLORS[Color_index][Tone_index]
+    let color_index = Hue.Get_color_index();
+    let tone_index = Tone.Get_tone_index();
+    MATERIAL_COLORS[color_index][tone_index]
 }

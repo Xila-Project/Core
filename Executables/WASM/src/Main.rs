@@ -14,13 +14,13 @@ use Virtual_file_system::File_type;
 use crate::Error_type;
 
 pub async fn Inner_main(Standard: &Standard_type, Arguments: String) -> Result<(), Error_type> {
-    let Arguments = Arguments.split_whitespace().collect::<Vec<&str>>();
+    let arguments = Arguments.split_whitespace().collect::<Vec<&str>>();
 
-    if Arguments.len() != 1 {
+    if arguments.len() != 1 {
         return Err(Error_type::Invalid_number_of_arguments);
     }
 
-    let Path = Path_type::New(Arguments[0]);
+    let Path = Path_type::New(arguments[0]);
 
     match Path.Get_extension() {
         Some("wasm") | Some("WASM") => Ok(()),
@@ -30,12 +30,12 @@ pub async fn Inner_main(Standard: &Standard_type, Arguments: String) -> Result<(
     let Path = if Path.Is_absolute() {
         Path.to_owned()
     } else {
-        let Current_path = Task::Get_instance()
+        let current_path = Task::Get_instance()
             .Get_environment_variable(Standard.Get_task(), "Current_directory")
             .await
             .map_err(|_| Error_type::Failed_to_get_current_directory)?;
 
-        let Current_path = Current_path.Get_value();
+        let Current_path = current_path.Get_value();
 
         let Current_path = Path_type::New(Current_path);
 

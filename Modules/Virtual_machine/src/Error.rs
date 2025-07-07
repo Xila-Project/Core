@@ -68,8 +68,8 @@ pub enum Error_type {
 }
 
 impl From<RuntimeError> for Error_type {
-    fn from(Error: RuntimeError) -> Self {
-        match Error {
+    fn from(error: RuntimeError) -> Self {
+        match error {
             RuntimeError::NotImplemented => Error_type::Not_implemented,
             RuntimeError::InitializationFailure => Error_type::Initialization_failure,
             RuntimeError::WasmFileFSError(_) => Error_type::Initialization_failure,
@@ -81,7 +81,7 @@ impl From<RuntimeError> for Error_type {
     }
 }
 impl From<Task::Error_type> for Error_type {
-    fn from(Error: Task::Error_type) -> Self {
-        Error_type::Failed_to_get_task_informations(Error)
+    fn from(error: Task::Error_type) -> Self {
+        Error_type::Failed_to_get_task_informations(error)
     }
 }

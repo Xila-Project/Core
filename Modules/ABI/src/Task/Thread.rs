@@ -47,10 +47,10 @@ pub extern "C" fn Xila_thread_get_stack_boundary() -> *mut u8 {
 
 #[no_mangle]
 pub extern "C" fn Xila_thread_create(
-    _Function: extern "C" fn(*mut c_void) -> *mut c_void,
-    _Argument: *mut u8,
-    _Stack_size: usize,
-    _Thread_identifier: *mut Xila_thread_identifier_type,
+    _function: extern "C" fn(*mut c_void) -> *mut c_void,
+    _argument: *mut u8,
+    _stack_size: usize,
+    _thread_identifier: *mut Xila_thread_identifier_type,
 ) -> u32 {
     todo!()
 }

@@ -7,20 +7,20 @@ use super::{littlefs, Callbacks};
 
 #[derive(Debug, Clone)]
 pub struct Configuration_type {
-    Context: Device_type,
-    Read_size: usize,
-    Program_size: usize,
-    Block_size: usize,
-    Block_count: usize,
-    Block_cycles: Option<u16>,
-    Maximum_file_size: Option<usize>,
-    Maximum_attributes_size: Option<usize>,
-    Maximum_name_size: Option<usize>,
-    Cache_size: usize,
-    Look_ahead_size: usize,
-    Compact_threshold: Option<usize>,
-    Metadata_maxium: Option<usize>,
-    Inline_maximum: Option<usize>,
+    context: Device_type,
+    read_size: usize,
+    program_size: usize,
+    block_size: usize,
+    block_count: usize,
+    block_cycles: Option<u16>,
+    maximum_file_size: Option<usize>,
+    maximum_attributes_size: Option<usize>,
+    maximum_name_size: Option<usize>,
+    cache_size: usize,
+    look_ahead_size: usize,
+    compact_threshold: Option<usize>,
+    metadata_maxium: Option<usize>,
+    inline_maximum: Option<usize>,
 }
 
 impl Configuration_type {
@@ -49,96 +49,96 @@ impl Configuration_type {
     };
 
     pub fn New(
-        Device: Device_type,
-        Block_size: usize,
-        Total_size: usize,
-        Cache_size: usize,
-        Look_ahead_size: usize,
+        device: Device_type,
+        block_size: usize,
+        total_size: usize,
+        cache_size: usize,
+        look_ahead_size: usize,
     ) -> Option<Self> {
-        if (Total_size % Block_size) != 0 {
+        if (total_size % block_size) != 0 {
             return None;
         }
 
-        if !(Block_size % Cache_size) == 0 {
+        if !(block_size % cache_size) == 0 {
             return None;
         }
 
-        if (Look_ahead_size % 8) != 0 {
+        if (look_ahead_size % 8) != 0 {
             return None;
         }
 
-        let Block_count = Total_size / Block_size;
+        let Block_count = total_size / block_size;
 
         Some(Self {
-            Context: Device,
-            Read_size: 16,
-            Program_size: 16,
-            Block_size,
-            Block_count,
-            Block_cycles: None,
-            Maximum_file_size: None,
-            Maximum_attributes_size: None,
-            Maximum_name_size: None,
-            Cache_size,
-            Look_ahead_size,
-            Compact_threshold: None,
-            Metadata_maxium: None,
-            Inline_maximum: None,
+            context: device,
+            read_size: 16,
+            program_size: 16,
+            block_size,
+            block_count: Block_count,
+            block_cycles: None,
+            maximum_file_size: None,
+            maximum_attributes_size: None,
+            maximum_name_size: None,
+            cache_size,
+            look_ahead_size,
+            compact_threshold: None,
+            metadata_maxium: None,
+            inline_maximum: None,
         })
     }
 
     pub const fn Set_read_size(mut self, Read_size: usize) -> Self {
-        self.Read_size = Read_size;
+        self.read_size = Read_size;
         self
     }
 
     pub const fn Set_program_size(mut self, Program_size: usize) -> Self {
-        self.Program_size = Program_size;
+        self.program_size = Program_size;
         self
     }
 
     pub const fn Set_block_cycles(mut self, Block_cycles: u16) -> Self {
-        self.Block_cycles = Some(Block_cycles);
+        self.block_cycles = Some(Block_cycles);
         self
     }
 
     pub const fn Set_maximum_file_size(mut self, Maximum_file_size: usize) -> Self {
-        self.Maximum_file_size = Some(Maximum_file_size);
+        self.maximum_file_size = Some(Maximum_file_size);
         self
     }
 
     pub const fn Set_maximum_attributes_size(mut self, Maximum_attributes_size: usize) -> Self {
-        self.Maximum_attributes_size = Some(Maximum_attributes_size);
+        self.maximum_attributes_size = Some(Maximum_attributes_size);
         self
     }
 
     pub const fn Set_maximum_name_size(mut self, Maximum_name_size: usize) -> Self {
-        self.Maximum_name_size = Some(Maximum_name_size);
+        self.maximum_name_size = Some(Maximum_name_size);
         self
     }
 
     pub const fn Set_cache_size(mut self, Cache_size: usize) -> Self {
-        self.Cache_size = Cache_size;
+        self.cache_size = Cache_size;
         self
     }
 
     pub const fn Set_look_ahead_size(mut self, Look_ahead_size: usize) -> Self {
-        self.Look_ahead_size = Look_ahead_size;
+        self.look_ahead_size = Look_ahead_size;
         self
     }
 
     pub const fn Set_compact_threshold(mut self, Compact_threshold: usize) -> Self {
-        self.Compact_threshold = Some(Compact_threshold);
+        self.compact_threshold = Some(Compact_threshold);
         self
     }
 
     pub const fn Set_metadata_maximum(mut self, Metadata_maxium: usize) -> Self {
-        self.Metadata_maxium = Some(Metadata_maxium);
+        self.metadata_maxium = Some(Metadata_maxium);
         self
     }
 
     pub const fn Set_inline_maximum(mut self, Inline_maximum: usize) -> Self {
-        self.Inline_maximum = Some(Inline_maximum);
+        self.inline_maximum = Some(Inline_maximum);
         self
     }
 }
@@ -147,40 +147,40 @@ impl TryFrom<Configuration_type> for littlefs::lfs_config {
     type Error = ();
 
     fn try_from(Configuration: Configuration_type) -> Result<Self, Self::Error> {
-        let mut Read_buffer = vec![0_u8; Configuration.Cache_size];
-        let mut Write_buffer = Read_buffer.clone();
-        let mut Look_ahead_buffer = vec![0_u8; Configuration.Look_ahead_size];
+        let mut read_buffer = vec![0_u8; Configuration.cache_size];
+        let mut write_buffer = read_buffer.clone();
+        let mut look_ahead_buffer = vec![0_u8; Configuration.look_ahead_size];
 
         let LFS_Configuration = littlefs::lfs_config {
-            context: Box::into_raw(Box::new(Configuration.Context)) as *mut c_void,
+            context: Box::into_raw(Box::new(Configuration.context)) as *mut c_void,
             read: Some(Callbacks::Read_callback),
             prog: Some(Callbacks::Programm_callback),
             erase: Some(Callbacks::Erase_callback),
             sync: Some(Callbacks::Flush_callback),
-            read_size: Configuration.Read_size as u32,
-            prog_size: Configuration.Program_size as u32,
-            block_size: Configuration.Block_size as u32,
-            block_count: Configuration.Block_count as u32,
-            block_cycles: match Configuration.Block_cycles {
-                Some(Block_cycles) => Block_cycles as i32,
+            read_size: Configuration.read_size as u32,
+            prog_size: Configuration.program_size as u32,
+            block_size: Configuration.block_size as u32,
+            block_count: Configuration.block_count as u32,
+            block_cycles: match Configuration.block_cycles {
+                Some(block_cycles) => block_cycles as i32,
                 None => -1,
             },
-            cache_size: Configuration.Cache_size as u32,
-            lookahead_size: Configuration.Look_ahead_size as u32,
-            read_buffer: Read_buffer.as_mut_ptr() as *mut c_void,
-            prog_buffer: Write_buffer.as_mut_ptr() as *mut c_void,
-            lookahead_buffer: Look_ahead_buffer.as_mut_ptr() as *mut c_void,
-            name_max: Configuration.Maximum_name_size.unwrap_or(0) as u32, // Default value : 255 (LFS_NAME_MAX)
-            file_max: Configuration.Maximum_file_size.unwrap_or(0) as u32, // Default value : 2,147,483,647 (2 GiB) (LFS_FILE_MAX)
-            attr_max: Configuration.Maximum_attributes_size.unwrap_or(0) as u32, // Default value : 1022 (LFS_ATTR_MAX)
-            compact_thresh: Configuration.Compact_threshold.unwrap_or(0) as u32, // Default value : 0 (LFS_COMPACT_THRESH)
-            metadata_max: Configuration.Metadata_maxium.unwrap_or(0) as u32, // Default value : 0 (LFS_METADATA_MAX)
-            inline_max: Configuration.Inline_maximum.unwrap_or(0) as u32, // Default value : 0 (LFS_INLINE_MAX)
+            cache_size: Configuration.cache_size as u32,
+            lookahead_size: Configuration.look_ahead_size as u32,
+            read_buffer: read_buffer.as_mut_ptr() as *mut c_void,
+            prog_buffer: write_buffer.as_mut_ptr() as *mut c_void,
+            lookahead_buffer: look_ahead_buffer.as_mut_ptr() as *mut c_void,
+            name_max: Configuration.maximum_name_size.unwrap_or(0) as u32, // Default value : 255 (LFS_NAME_MAX)
+            file_max: Configuration.maximum_file_size.unwrap_or(0) as u32, // Default value : 2,147,483,647 (2 GiB) (LFS_FILE_MAX)
+            attr_max: Configuration.maximum_attributes_size.unwrap_or(0) as u32, // Default value : 1022 (LFS_ATTR_MAX)
+            compact_thresh: Configuration.compact_threshold.unwrap_or(0) as u32, // Default value : 0 (LFS_COMPACT_THRESH)
+            metadata_max: Configuration.metadata_maxium.unwrap_or(0) as u32, // Default value : 0 (LFS_METADATA_MAX)
+            inline_max: Configuration.inline_maximum.unwrap_or(0) as u32, // Default value : 0 (LFS_INLINE_MAX)
         };
 
-        forget(Read_buffer);
-        forget(Write_buffer);
-        forget(Look_ahead_buffer);
+        forget(read_buffer);
+        forget(write_buffer);
+        forget(look_ahead_buffer);
 
         Ok(LFS_Configuration)
     }

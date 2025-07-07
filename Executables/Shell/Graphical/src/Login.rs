@@ -7,16 +7,16 @@ use Users::User_identifier_type;
 use crate::Error::{Error_type, Result_type};
 
 pub struct Login_type {
-    Window: Window_type,
-    User_name_text_area: *mut LVGL::lv_obj_t,
-    Password_text_area: *mut LVGL::lv_obj_t,
-    Button: *mut LVGL::lv_obj_t,
-    Error_label: *mut LVGL::lv_obj_t,
-    User: Option<User_identifier_type>,
+    window: Window_type,
+    user_name_text_area: *mut LVGL::lv_obj_t,
+    password_text_area: *mut LVGL::lv_obj_t,
+    button: *mut LVGL::lv_obj_t,
+    error_label: *mut LVGL::lv_obj_t,
+    user: Option<User_identifier_type>,
 }
 
 impl Login_type {
-    pub async fn New() -> Result_type<Self> {
+    pub async fn new() -> Result_type<Self> {
         // - Lock the graphics
         let _Lock = Graphics::Get_instance().Lock();
 
@@ -75,51 +75,51 @@ impl Login_type {
         };
 
         Ok(Login_type {
-            Window,
-            User_name_text_area,
-            Password_text_area,
-            Button,
-            Error_label,
-            User: None,
+            window: Window,
+            user_name_text_area: User_name_text_area,
+            password_text_area: Password_text_area,
+            button: Button,
+            error_label: Error_label,
+            user: None,
         })
     }
 
     pub fn Print_error(&mut self, Error: Error_type) {
-        let Error = Error.to_string();
-        let Error = Error.as_bytes();
+        let error = Error.to_string();
+        let error = error.as_bytes();
 
         unsafe {
-            let Error = CStr::from_bytes_with_nul_unchecked(Error);
+            let error = CStr::from_bytes_with_nul_unchecked(error);
 
-            LVGL::lv_label_set_text(self.Error_label, Error.as_ptr());
+            LVGL::lv_label_set_text(self.error_label, error.as_ptr());
         }
     }
 
     pub fn Clear_error(&mut self) {
         unsafe {
-            LVGL::lv_label_set_text(self.Error_label, c"".as_ptr());
+            LVGL::lv_label_set_text(self.error_label, c"".as_ptr());
         }
     }
 
     pub async fn Authenticate(&mut self) -> Result_type<()> {
-        let (User_name, Password) = unsafe {
-            let User_name = LVGL::lv_textarea_get_text(self.User_name_text_area);
-            let User_name = CStr::from_ptr(User_name);
+        let (user_name, password) = unsafe {
+            let user_name = LVGL::lv_textarea_get_text(self.user_name_text_area);
+            let user_name = CStr::from_ptr(user_name);
 
-            let User_name = User_name.to_str().map_err(Error_type::Invalid_UTF_8)?;
+            let User_name = user_name.to_str().map_err(Error_type::Invalid_UTF_8)?;
 
-            let Password = LVGL::lv_textarea_get_text(self.Password_text_area);
-            let Password = CStr::from_ptr(Password);
-            let Password = Password.to_str().map_err(Error_type::Invalid_UTF_8)?;
+            let Password = LVGL::lv_textarea_get_text(self.password_text_area);
+            let password = CStr::from_ptr(Password);
+            let password = password.to_str().map_err(Error_type::Invalid_UTF_8)?;
 
-            (User_name, Password)
+            (User_name, password)
         };
 
         // - Check the user name and the password
         let User_identifier = Authentication::Authenticate_user(
             Virtual_file_system::Get_instance(),
-            User_name,
-            Password,
+            user_name,
+            password,
         )
         .await
         .map_err(Error_type::Authentication_failed)?;
@@ -130,27 +130,27 @@ impl Login_type {
         let Task = Task_manager.Get_current_task_identifier().await;
 
         Task_manager
-            .Set_user(Task, User_identifier)
+            .set_user(Task, User_identifier)
             .await
             .map_err(Error_type::Failed_to_set_task_user)?;
 
-        self.User = Some(User_identifier);
+        self.user = Some(User_identifier);
 
         Ok(())
     }
 
     pub async fn Event_handler(&mut self) {
-        while let Some(Event) = self.Window.Pop_event() {
+        while let Some(event) = self.window.Pop_event() {
             // If we are typing the user name or the password
-            if Event.Get_code() == Event_code_type::Value_changed
-                && (Event.Get_target() == self.User_name_text_area
-                    || Event.Get_target() == self.Password_text_area)
+            if event.Get_code() == Event_code_type::Value_changed
+                && (event.Get_target() == self.user_name_text_area
+                    || event.Get_target() == self.password_text_area)
             {
                 self.Clear_error();
             }
             // If the "Login" button is clicked
-            else if Event.Get_code() == Event_code_type::Clicked
-                && Event.Get_target() == self.Button
+            else if event.Get_code() == Event_code_type::Clicked
+                && event.Get_target() == self.button
             {
                 let Result = self.Authenticate().await;
 
@@ -162,6 +162,6 @@ impl Login_type {
     }
 
     pub fn Get_logged_user(&self) -> Option<User_identifier_type> {
-        self.User
+        self.user
     }
 }

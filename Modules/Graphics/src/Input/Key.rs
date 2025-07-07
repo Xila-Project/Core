@@ -18,8 +18,8 @@ pub enum Key_type {
 }
 
 impl From<u32> for Key_type {
-    fn from(Value: u32) -> Key_type {
-        match Value {
+    fn from(value: u32) -> Key_type {
+        match value {
             LVGL::lv_key_t_LV_KEY_UP => Key_type::Up,
             LVGL::lv_key_t_LV_KEY_DOWN => Key_type::Down,
             LVGL::lv_key_t_LV_KEY_RIGHT => Key_type::Right,
@@ -32,14 +32,14 @@ impl From<u32> for Key_type {
             LVGL::lv_key_t_LV_KEY_PREV => Key_type::Previous,
             LVGL::lv_key_t_LV_KEY_HOME => Key_type::Home,
             LVGL::lv_key_t_LV_KEY_END => Key_type::End,
-            Character => Key_type::Character(Character as u8),
+            character => Key_type::Character(character as u8),
         }
     }
 }
 
 impl From<Key_type> for u32 {
-    fn from(Value: Key_type) -> u32 {
-        match Value {
+    fn from(value: Key_type) -> u32 {
+        match value {
             Key_type::Up => LVGL::lv_key_t_LV_KEY_UP,
             Key_type::Down => LVGL::lv_key_t_LV_KEY_DOWN,
             Key_type::Right => LVGL::lv_key_t_LV_KEY_RIGHT,
@@ -52,7 +52,7 @@ impl From<Key_type> for u32 {
             Key_type::Previous => LVGL::lv_key_t_LV_KEY_PREV,
             Key_type::Home => LVGL::lv_key_t_LV_KEY_HOME,
             Key_type::End => LVGL::lv_key_t_LV_KEY_END,
-            Key_type::Character(Character) => Character as u32,
+            Key_type::Character(character) => character as u32,
         }
     }
 }

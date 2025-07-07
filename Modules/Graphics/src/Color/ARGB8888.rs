@@ -7,8 +7,8 @@ use super::{Color_RGB565_type, Color_RGBA8888_type};
 pub struct Color_ARGB8888_type(u32);
 
 impl Debug for Color_ARGB8888_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        Formatter
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter
             .debug_struct("Color_ARGB8888_type")
             .field("Alpha", &self.Get_alpha())
             .field("Red", &self.Get_red())
@@ -19,16 +19,16 @@ impl Debug for Color_ARGB8888_type {
 }
 
 impl Color_ARGB8888_type {
-    pub const fn New(Alpha: u8, Red: u8, Green: u8, Blue: u8) -> Self {
+    pub const fn new(alpha: u8, Red: u8, Green: u8, Blue: u8) -> Self {
         Self(0)
-            .Set_alpha(Alpha)
+            .Set_alpha(alpha)
             .Set_red(Red)
             .Set_green(Green)
             .Set_blue(Blue)
     }
 
     pub const fn From_RGB565(Value: Color_RGB565_type) -> Self {
-        Self::New(
+        Self::new(
             0xFF,
             Value.Get_red() << 3 | Value.Get_red() >> 2,
             Value.Get_green() << 2 | Value.Get_green() >> 4,
@@ -78,30 +78,30 @@ impl Color_ARGB8888_type {
 }
 
 impl From<Color_ARGB8888_type> for u32 {
-    fn from(Value: Color_ARGB8888_type) -> u32 {
-        Value.0
+    fn from(value: Color_ARGB8888_type) -> u32 {
+        value.0
     }
 }
 
 impl From<u32> for Color_ARGB8888_type {
-    fn from(Value: u32) -> Self {
-        Self(Value)
+    fn from(value: u32) -> Self {
+        Self(value)
     }
 }
 
 impl From<Color_RGB565_type> for Color_ARGB8888_type {
-    fn from(Value: Color_RGB565_type) -> Self {
-        Self::From_RGB565(Value)
+    fn from(value: Color_RGB565_type) -> Self {
+        Self::From_RGB565(value)
     }
 }
 
 impl From<Color_RGBA8888_type> for Color_ARGB8888_type {
-    fn from(Value: Color_RGBA8888_type) -> Self {
-        Self::New(
-            Value.Get_alpha(),
-            Value.Get_red(),
-            Value.Get_green(),
-            Value.Get_blue(),
+    fn from(value: Color_RGBA8888_type) -> Self {
+        Self::new(
+            value.Get_alpha(),
+            value.Get_red(),
+            value.Get_green(),
+            value.Get_blue(),
         )
     }
 }
@@ -112,42 +112,42 @@ mod Tests {
 
     #[test]
     fn Test_ARGB8888() {
-        let Color = Color_ARGB8888_type::New(255, 255, 255, 255);
+        let Color = Color_ARGB8888_type::new(255, 255, 255, 255);
         assert_eq!(Color.Get_alpha(), 0xFF);
         assert_eq!(Color.Get_red(), 0xFF);
         assert_eq!(Color.Get_green(), 0xFF);
         assert_eq!(Color.Get_blue(), 0xFF);
         assert_eq!(Color.0, 0xFFFF_FFFF);
 
-        let Color = Color_ARGB8888_type::New(255, 0, 0, 0);
+        let Color = Color_ARGB8888_type::new(255, 0, 0, 0);
         assert_eq!(Color.Get_alpha(), 0xFF);
         assert_eq!(Color.Get_red(), 0);
         assert_eq!(Color.Get_green(), 0);
         assert_eq!(Color.Get_blue(), 0);
         assert_eq!(Color.0, 0xFF00_0000);
 
-        let Color = Color_ARGB8888_type::New(0, 255, 0, 0);
+        let Color = Color_ARGB8888_type::new(0, 255, 0, 0);
         assert_eq!(Color.Get_alpha(), 0);
         assert_eq!(Color.Get_red(), 0xFF);
         assert_eq!(Color.Get_green(), 0);
         assert_eq!(Color.Get_blue(), 0);
         assert_eq!(Color.0, 0x00FF_0000);
 
-        let Color = Color_ARGB8888_type::New(0, 0, 255, 0);
+        let Color = Color_ARGB8888_type::new(0, 0, 255, 0);
         assert_eq!(Color.Get_alpha(), 0);
         assert_eq!(Color.Get_red(), 0);
         assert_eq!(Color.Get_green(), 0xFF);
         assert_eq!(Color.Get_blue(), 0);
         assert_eq!(Color.0, 0x0000_FF00);
 
-        let Color = Color_ARGB8888_type::New(0, 0, 0, 255);
+        let Color = Color_ARGB8888_type::new(0, 0, 0, 255);
         assert_eq!(Color.Get_alpha(), 0);
         assert_eq!(Color.Get_red(), 0);
         assert_eq!(Color.Get_green(), 0);
         assert_eq!(Color.Get_blue(), 0xFF);
         assert_eq!(Color.0, 0x0000_00FF);
 
-        let Color = Color_ARGB8888_type::New(0, 0, 0, 0);
+        let Color = Color_ARGB8888_type::new(0, 0, 0, 0);
         assert_eq!(Color.Get_alpha(), 0);
         assert_eq!(Color.Get_red(), 0);
         assert_eq!(Color.Get_green(), 0);

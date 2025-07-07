@@ -95,9 +95,9 @@ impl MBR_type {
 
     /// Create a new MBR with a specific disk signature
     pub fn New_with_signature(Disk_signature: u32) -> Self {
-        let mut Mbr = Self::New();
-        Mbr.Set_disk_signature(Disk_signature);
-        Mbr
+        let mut mbr = Self::New();
+        mbr.Set_disk_signature(Disk_signature);
+        mbr
     }
 
     /// Parse MBR from raw bytes
@@ -130,28 +130,28 @@ impl MBR_type {
 
         // Parse partition entries
         for (I, Partition) in Mbr.Partitions.iter_mut().enumerate() {
-            let Offset = 446 + (I * 16);
-            let Partition_data = &Data[Offset..Offset + 16];
+            let offset = 446 + (I * 16);
+            let partition_data = &Data[offset..offset + 16];
 
-            Partition.Bootable = Partition_data[0];
-            Partition.Start_head = Partition_data[1];
-            Partition.Start_sector = Partition_data[2];
-            Partition.Start_cylinder = Partition_data[3];
-            Partition.Partition_type = Partition_data[4];
-            Partition.End_head = Partition_data[5];
-            Partition.End_sector = Partition_data[6];
-            Partition.End_cylinder = Partition_data[7];
+            Partition.Bootable = partition_data[0];
+            Partition.Start_head = partition_data[1];
+            Partition.Start_sector = partition_data[2];
+            Partition.Start_cylinder = partition_data[3];
+            Partition.Partition_type = partition_data[4];
+            Partition.End_head = partition_data[5];
+            Partition.End_sector = partition_data[6];
+            Partition.End_cylinder = partition_data[7];
             Partition.Start_lba = u32::from_le_bytes([
-                Partition_data[8],
-                Partition_data[9],
-                Partition_data[10],
-                Partition_data[11],
+                partition_data[8],
+                partition_data[9],
+                partition_data[10],
+                partition_data[11],
             ]);
             Partition.Size_sectors = u32::from_le_bytes([
-                Partition_data[12],
-                Partition_data[13],
-                Partition_data[14],
-                Partition_data[15],
+                partition_data[12],
+                partition_data[13],
+                partition_data[14],
+                partition_data[15],
             ]);
         }
 
@@ -186,9 +186,9 @@ impl MBR_type {
 
         // Convert to bytes and write
         let Buffer = self.To_bytes();
-        let Bytes_written = Device.Write(&Buffer)?;
+        let bytes_written = Device.Write(&Buffer)?;
 
-        if Bytes_written.As_u64() < Self::SIZE as u64 {
+        if bytes_written.As_u64() < Self::SIZE as u64 {
             return Err(Error_type::Input_output);
         }
 
@@ -213,7 +213,7 @@ impl MBR_type {
     pub fn Get_valid_partitions_mut(&mut self) -> Vec<&mut Partition_entry_type> {
         self.Partitions
             .iter_mut()
-            .filter(|Partition| Partition.Is_valid())
+            .filter(|partition| partition.Is_valid())
             .collect()
     }
 
@@ -221,14 +221,14 @@ impl MBR_type {
     pub fn Get_bootable_partition(&self) -> Option<&Partition_entry_type> {
         self.Partitions
             .iter()
-            .find(|Partition| Partition.Is_bootable())
+            .find(|partition| partition.Is_bootable())
     }
 
     /// Get bootable partition (mutable, if any)
     pub fn Get_bootable_partition_mut(&mut self) -> Option<&mut Partition_entry_type> {
         self.Partitions
             .iter_mut()
-            .find(|Partition| Partition.Is_bootable())
+            .find(|partition| partition.Is_bootable())
     }
 
     /// Set a partition as bootable (clears bootable flag from other partitions)
@@ -251,7 +251,7 @@ impl MBR_type {
     pub fn Has_gpt_protective_partition(&self) -> bool {
         self.Partitions
             .iter()
-            .any(|Partition| Partition.Get_partition_type() == Partition_type_type::Gpt_protective)
+            .any(|partition| partition.Get_partition_type() == Partition_type_type::Gpt_protective)
     }
 
     /// Get disk signature as u32
@@ -274,20 +274,20 @@ impl MBR_type {
     /// Add a new partition
     pub fn Add_partition(
         &mut self,
-        Partition_type: crate::Partition_type_type,
-        Start_lba: u32,
-        Size_sectors: u32,
-        Bootable: bool,
+        partition_type: crate::Partition_type_type,
+        start_lba: u32,
+        size_sectors: u32,
+        bootable: bool,
     ) -> Result_type<usize> {
-        let Slot = self
+        let slot = self
             .Get_free_partition_slot()
             .ok_or(Error_type::File_system_full)?;
 
         let New_partition = Partition_entry_type::New_with_params(
-            Bootable,
-            Partition_type,
-            Start_lba,
-            Size_sectors,
+            bootable,
+            partition_type,
+            start_lba,
+            size_sectors,
         );
 
         // Check for overlaps with existing partitions
@@ -297,14 +297,14 @@ impl MBR_type {
             }
         }
 
-        self.Partitions[Slot] = New_partition;
+        self.Partitions[slot] = New_partition;
 
         // If this is the only bootable partition or no other bootable partition exists
-        if Bootable {
-            self.Set_bootable_partition(Slot)?;
+        if bootable {
+            self.Set_bootable_partition(slot)?;
         }
 
-        Ok(Slot)
+        Ok(slot)
     }
 
     /// Remove a partition by index
@@ -319,11 +319,11 @@ impl MBR_type {
 
     /// Check for partition overlaps
     pub fn Has_overlapping_partitions(&self) -> bool {
-        let Valid_partitions = self.Get_valid_partitions();
+        let valid_partitions = self.Get_valid_partitions();
 
-        for (I, Partition1) in Valid_partitions.iter().enumerate() {
-            for Partition2 in Valid_partitions.iter().skip(I + 1) {
-                if Partition1.Overlaps_with(Partition2) {
+        for (I, Partition1) in valid_partitions.iter().enumerate() {
+            for partition2 in valid_partitions.iter().skip(I + 1) {
+                if Partition1.Overlaps_with(partition2) {
                     return true;
                 }
             }
@@ -334,7 +334,7 @@ impl MBR_type {
 
     /// Get partition count
     pub fn Get_partition_count(&self) -> usize {
-        self.Partitions.iter().filter(|P| P.Is_valid()).count()
+        self.Partitions.iter().filter(|p| p.Is_valid()).count()
     }
 
     /// Create partition devices for all valid partitions in this MBR.
@@ -376,18 +376,18 @@ impl MBR_type {
     /// ```
     pub fn Create_all_partition_devices(
         &self,
-        Base_device: Device_type,
+        base_device: Device_type,
     ) -> Result_type<Vec<Partition_device_type>> {
-        let mut Devices = Vec::new();
+        let mut devices = Vec::new();
 
         for Partition in &self.Partitions {
             if Partition.Is_valid() {
-                let Device = Create_partition_device(Base_device.clone(), Partition)?;
-                Devices.push(Device);
+                let device = Create_partition_device(base_device.clone(), Partition)?;
+                devices.push(device);
             }
         }
 
-        Ok(Devices)
+        Ok(devices)
     }
 
     /// Find partitions of a specific type within this MBR.
@@ -425,13 +425,13 @@ impl MBR_type {
     /// ```
     pub fn Find_partitions_by_type(
         &self,
-        Partition_type: crate::Partition_type_type,
+        partition_type: crate::Partition_type_type,
     ) -> Vec<(usize, &Partition_entry_type)> {
         self.Partitions
             .iter()
             .enumerate()
-            .filter(|(_, Partition)| {
-                Partition.Is_valid() && Partition.Get_partition_type() == Partition_type
+            .filter(|(_, partition)| {
+                partition.Is_valid() && partition.Get_partition_type() == partition_type
             })
             .collect()
     }
@@ -520,32 +520,32 @@ impl MBR_type {
     /// }
     /// ```
     pub fn Generate_statistics(&self) -> Partition_statistics_type {
-        let Valid_partitions: Vec<_> = self.Get_valid_partitions();
+        let valid_partitions: Vec<_> = self.Get_valid_partitions();
 
-        let Total_partitions = Valid_partitions.len();
-        let Bootable_partitions = Valid_partitions.iter().filter(|P| P.Is_bootable()).count();
+        let Total_partitions = valid_partitions.len();
+        let bootable_partitions = valid_partitions.iter().filter(|P| P.Is_bootable()).count();
 
-        let Fat_partitions = Valid_partitions
+        let Fat_partitions = valid_partitions
             .iter()
             .filter(|P| P.Get_partition_type().Is_fat())
             .count();
 
-        let Linux_partitions = Valid_partitions
+        let Linux_partitions = valid_partitions
             .iter()
             .filter(|P| P.Get_partition_type().Is_linux())
             .count();
 
-        let Hidden_partitions = Valid_partitions
+        let Hidden_partitions = valid_partitions
             .iter()
             .filter(|P| P.Get_partition_type().Is_hidden())
             .count();
 
-        let Extended_partitions = Valid_partitions
+        let Extended_partitions = valid_partitions
             .iter()
             .filter(|P| P.Get_partition_type().Is_extended())
             .count();
 
-        let Unknown_partitions = Valid_partitions
+        let Unknown_partitions = valid_partitions
             .iter()
             .filter(|P| {
                 matches!(
@@ -555,26 +555,26 @@ impl MBR_type {
             })
             .count();
 
-        let Total_used_sectors = Valid_partitions
+        let Total_used_sectors = valid_partitions
             .iter()
-            .map(|P| P.Get_size_sectors() as u64)
+            .map(|p| p.Get_size_sectors() as u64)
             .sum();
 
-        let Largest_partition_sectors = Valid_partitions
+        let Largest_partition_sectors = valid_partitions
             .iter()
-            .map(|P| P.Get_size_sectors())
+            .map(|p| p.Get_size_sectors())
             .max()
             .unwrap_or(0);
 
-        let Smallest_partition_sectors = Valid_partitions
+        let Smallest_partition_sectors = valid_partitions
             .iter()
-            .map(|P| P.Get_size_sectors())
+            .map(|p| p.Get_size_sectors())
             .min()
             .unwrap_or(0);
 
         Partition_statistics_type {
             Total_partitions,
-            Bootable_partitions,
+            Bootable_partitions: bootable_partitions,
             Fat_partitions,
             Linux_partitions,
             Hidden_partitions,
@@ -617,61 +617,61 @@ impl MBR_type {
     /// assert_eq!(partitions[0].Get_start_lba(), 2048);
     /// ```
     pub fn Create_basic(
-        Disk_signature: u32,
-        Partition_type: crate::Partition_type_type,
-        Total_sectors: u32,
+        disk_signature: u32,
+        partition_type: crate::Partition_type_type,
+        total_sectors: u32,
     ) -> Result_type<Self> {
-        let mut Mbr = Self::New_with_signature(Disk_signature);
+        let mut mbr = Self::New_with_signature(disk_signature);
 
         // Leave some space at the beginning (typically 2048 sectors for alignment)
         let Start_lba = 2048;
-        let Partition_sectors = Total_sectors.saturating_sub(Start_lba);
+        let partition_sectors = total_sectors.saturating_sub(Start_lba);
 
-        if Partition_sectors == 0 {
+        if partition_sectors == 0 {
             return Err(Error_type::Invalid_parameter);
         }
 
-        Mbr.Add_partition(Partition_type, Start_lba, Partition_sectors, true)?;
+        mbr.Add_partition(partition_type, Start_lba, partition_sectors, true)?;
 
-        Ok(Mbr)
+        Ok(mbr)
     }
 
     /// Convert MBR back to bytes
     pub fn To_bytes(&self) -> [u8; Self::SIZE] {
-        let mut Buffer = [0u8; Self::SIZE];
+        let mut buffer = [0u8; Self::SIZE];
 
         // Copy bootstrap code
-        Buffer[0..440].copy_from_slice(&self.Bootstrap_code);
+        buffer[0..440].copy_from_slice(&self.Bootstrap_code);
 
         // Copy disk signature
-        Buffer[440..444].copy_from_slice(&self.Disk_signature);
+        buffer[440..444].copy_from_slice(&self.Disk_signature);
 
         // Copy reserved bytes
-        Buffer[444..446].copy_from_slice(&self.Reserved);
+        buffer[444..446].copy_from_slice(&self.Reserved);
 
         // Copy partition entries
         for (I, Partition) in self.Partitions.iter().enumerate() {
-            let Offset = 446 + (I * 16);
-            Buffer[Offset] = Partition.Bootable;
-            Buffer[Offset + 1] = Partition.Start_head;
-            Buffer[Offset + 2] = Partition.Start_sector;
-            Buffer[Offset + 3] = Partition.Start_cylinder;
-            Buffer[Offset + 4] = Partition.Partition_type;
-            Buffer[Offset + 5] = Partition.End_head;
-            Buffer[Offset + 6] = Partition.End_sector;
-            Buffer[Offset + 7] = Partition.End_cylinder;
+            let offset = 446 + (I * 16);
+            buffer[offset] = Partition.Bootable;
+            buffer[offset + 1] = Partition.Start_head;
+            buffer[offset + 2] = Partition.Start_sector;
+            buffer[offset + 3] = Partition.Start_cylinder;
+            buffer[offset + 4] = Partition.Partition_type;
+            buffer[offset + 5] = Partition.End_head;
+            buffer[offset + 6] = Partition.End_sector;
+            buffer[offset + 7] = Partition.End_cylinder;
 
             let Start_lba_bytes = Partition.Start_lba.to_le_bytes();
-            Buffer[Offset + 8..Offset + 12].copy_from_slice(&Start_lba_bytes);
+            buffer[offset + 8..offset + 12].copy_from_slice(&Start_lba_bytes);
 
             let Size_bytes = Partition.Size_sectors.to_le_bytes();
-            Buffer[Offset + 12..Offset + 16].copy_from_slice(&Size_bytes);
+            buffer[offset + 12..offset + 16].copy_from_slice(&Size_bytes);
         }
 
         // Copy boot signature
-        Buffer[510..512].copy_from_slice(&self.Boot_signature);
+        buffer[510..512].copy_from_slice(&self.Boot_signature);
 
-        Buffer
+        buffer
     }
 
     /// Find or create a partition with a specific disk signature.
@@ -711,27 +711,27 @@ impl MBR_type {
     /// assert!(partition.Is_valid());
     /// ```
     pub fn Find_or_create_partition_with_signature(
-        Device: &Device_type,
-        Target_signature: u32,
-        Partition_type: crate::Partition_type_type,
+        device: &Device_type,
+        target_signature: u32,
+        partition_type: crate::Partition_type_type,
     ) -> Result_type<Partition_device_type> {
         // Try to read existing MBR from device
-        if let Ok(existing_mbr) = Self::Read_from_device(Device) {
+        if let Ok(existing_mbr) = Self::Read_from_device(device) {
             // Check if the MBR has the target signature
-            if existing_mbr.Get_disk_signature() == Target_signature && existing_mbr.Is_valid() {
+            if existing_mbr.Get_disk_signature() == target_signature && existing_mbr.Is_valid() {
                 // Get valid partitions
                 let valid_partitions = existing_mbr.Get_valid_partitions();
 
                 // If we have at least one valid partition, return it
                 if !valid_partitions.is_empty() {
-                    return Create_partition_device(Device.clone(), valid_partitions[0]);
+                    return Create_partition_device(device.clone(), valid_partitions[0]);
                 }
             }
         }
 
         // Either no MBR found, wrong signature, or no valid partitions
         // Format the disk with new MBR and create partition
-        Self::Format_disk_with_signature_and_partition(Device, Target_signature, Partition_type)
+        Self::Format_disk_with_signature_and_partition(device, target_signature, partition_type)
     }
 
     /// Format a disk with a specific signature and create a single partition.
@@ -771,13 +771,13 @@ impl MBR_type {
     /// assert_eq!(partition.Get_start_lba(), 2048); // Standard alignment
     /// ```
     pub fn Format_disk_with_signature_and_partition(
-        Device: &Device_type,
-        Disk_signature: u32,
-        Partition_type: crate::Partition_type_type,
+        device: &Device_type,
+        disk_signature: u32,
+        partition_type: crate::Partition_type_type,
     ) -> Result_type<Partition_device_type> {
         // Get device size in sectors
-        let device_size = Device.Get_size()?;
-        let block_size = Device.Get_block_size()?;
+        let device_size = device.Get_size()?;
+        let block_size = device.Get_block_size()?;
         let total_sectors = (device_size.As_u64() / block_size as u64) as u32;
 
         // Ensure device is large enough for a meaningful partition
@@ -786,10 +786,10 @@ impl MBR_type {
         }
 
         // Create new MBR with the specified signature
-        let new_mbr = Self::Create_basic(Disk_signature, Partition_type, total_sectors)?;
+        let new_mbr = Self::Create_basic(disk_signature, partition_type, total_sectors)?;
 
         // Write the new MBR to device
-        new_mbr.Write_to_device(Device)?;
+        new_mbr.Write_to_device(device)?;
 
         // Get the first (and only) partition
         let valid_partitions = new_mbr.Get_valid_partitions();
@@ -798,7 +798,7 @@ impl MBR_type {
         }
 
         // Create and return partition device
-        Create_partition_device(Device.clone(), valid_partitions[0])
+        Create_partition_device(device.clone(), valid_partitions[0])
     }
 }
 
@@ -809,41 +809,41 @@ impl Default for MBR_type {
 }
 
 impl fmt::Display for MBR_type {
-    fn fmt(&self, Formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(Formatter, "Master Boot Record:")?;
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(formatter, "Master Boot Record:")?;
         writeln!(
-            Formatter,
+            formatter,
             "  Disk Signature: 0x{:08X}",
             self.Get_disk_signature()
         )?;
         writeln!(
-            Formatter,
+            formatter,
             "  Boot Signature: 0x{:02X}{:02X}",
             self.Boot_signature[1], self.Boot_signature[0]
         )?;
-        writeln!(Formatter, "  Valid: {}", self.Is_valid())?;
+        writeln!(formatter, "  Valid: {}", self.Is_valid())?;
         writeln!(
-            Formatter,
+            formatter,
             "  GPT Protective: {}",
             self.Has_gpt_protective_partition()
         )?;
         writeln!(
-            Formatter,
+            formatter,
             "  Partition Count: {}",
             self.Get_partition_count()
         )?;
         writeln!(
-            Formatter,
+            formatter,
             "  Has Overlaps: {}",
             self.Has_overlapping_partitions()
         )?;
-        writeln!(Formatter, "  Partitions:")?;
+        writeln!(formatter, "  Partitions:")?;
 
         for (I, Partition) in self.Partitions.iter().enumerate() {
             if Partition.Is_valid() {
-                writeln!(Formatter, "    {}: {}", I + 1, Partition)?;
+                writeln!(formatter, "    {}: {}", I + 1, Partition)?;
             } else {
-                writeln!(Formatter, "    {}: Empty", I + 1)?;
+                writeln!(formatter, "    {}: Empty", I + 1)?;
             }
         }
 

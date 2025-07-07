@@ -24,15 +24,15 @@ use super::{
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_open_directory(
-    Path: *const c_char,
-    Directory: *mut Xila_unique_file_identifier_type,
+    path: *const c_char,
+    directory: *mut Xila_unique_file_identifier_type,
 ) -> u32 {
     Into_u32(move || {
-        if Path.is_null() || Directory.is_null() {
+        if path.is_null() || directory.is_null() {
             Err(Error_type::Invalid_parameter)?;
         }
 
-        let Path = CStr::from_ptr(Path)
+        let Path = CStr::from_ptr(path)
             .to_str()
             .map_err(|_| Error_type::Invalid_parameter)?;
 
@@ -40,7 +40,7 @@ pub unsafe extern "C" fn Xila_file_system_open_directory(
 
         Debug!("Opening directory {Path:?} for task {Task:?}");
 
-        *Directory = block_on(Get_file_system_instance().Open_directory(&Path, Task))?.Into_inner();
+        *directory = block_on(Get_file_system_instance().Open_directory(&Path, Task))?.Into_inner();
 
         Ok(())
     })
@@ -53,28 +53,28 @@ pub unsafe extern "C" fn Xila_file_system_open_directory(
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_file_system_read_directory(
-    File: Xila_unique_file_identifier_type,
-    Entry_name: *mut *const c_char,
-    Entry_type: *mut Xila_file_type_type,
-    Entry_size: *mut Xila_file_system_size_type,
-    Entry_inode: *mut Xila_file_system_inode_type,
+    file: Xila_unique_file_identifier_type,
+    entry_name: *mut *const c_char,
+    entry_type: *mut Xila_file_type_type,
+    entry_size: *mut Xila_file_system_size_type,
+    entry_inode: *mut Xila_file_system_inode_type,
 ) -> u32 {
     Into_u32(move || {
-        let Task = Get_context_instance().Get_current_task_identifier();
+        let task = Get_context_instance().Get_current_task_identifier();
 
-        Debug!("Reading directory {File:?} for task {Task:?}");
+        Debug!("Reading directory {file:?} for task {task:?}");
 
-        let File = File_system::Unique_file_identifier_type::From_raw(File);
+        let File = File_system::Unique_file_identifier_type::From_raw(file);
 
-        let Entry = block_on(Get_file_system_instance().Read_directory(File, Task))?;
+        let Entry = block_on(Get_file_system_instance().Read_directory(File, task))?;
 
         if let Some(Entry) = Entry {
-            *Entry_name = CString::new(Entry.Get_name().as_str()).unwrap().into_raw();
-            *Entry_type = Entry.Get_type().into();
-            *Entry_size = Entry.Get_size().As_u64();
-            *Entry_inode = Entry.Get_inode().into();
+            *entry_name = CString::new(Entry.Get_name().as_str()).unwrap().into_raw();
+            *entry_type = Entry.Get_type().into();
+            *entry_size = Entry.Get_size().As_u64();
+            *entry_inode = Entry.Get_inode().into();
         } else {
-            *Entry_name = null_mut();
+            *entry_name = null_mut();
         }
 
         Ok(())
@@ -83,16 +83,16 @@ pub unsafe extern "C" fn Xila_file_system_read_directory(
 
 #[no_mangle]
 pub extern "C" fn Xila_file_system_close_directory(
-    Directory: Xila_unique_file_identifier_type,
+    directory: Xila_unique_file_identifier_type,
 ) -> u32 {
     Into_u32(move || {
-        let Task = Get_context_instance().Get_current_task_identifier();
+        let task = Get_context_instance().Get_current_task_identifier();
 
-        let Directory = File_system::Unique_file_identifier_type::From_raw(Directory);
+        let Directory = File_system::Unique_file_identifier_type::From_raw(directory);
 
-        Debug!("Closing directory {Directory:?} for task {Task:?}");
+        Debug!("Closing directory {Directory:?} for task {task:?}");
 
-        block_on(Get_file_system_instance().Close_directory(Directory, Task))?;
+        block_on(Get_file_system_instance().Close_directory(Directory, task))?;
 
         Ok(())
     })
@@ -100,16 +100,16 @@ pub extern "C" fn Xila_file_system_close_directory(
 
 #[no_mangle]
 pub extern "C" fn Xila_file_system_rewind_directory(
-    Directory: Xila_unique_file_identifier_type,
+    directory: Xila_unique_file_identifier_type,
 ) -> u32 {
     Into_u32(move || {
-        let Task = Get_context_instance().Get_current_task_identifier();
+        let task = Get_context_instance().Get_current_task_identifier();
 
-        let Directory = File_system::Unique_file_identifier_type::From_raw(Directory);
+        let Directory = File_system::Unique_file_identifier_type::From_raw(directory);
 
-        Debug!("Rewinding directory {Directory:?} for task {Task:?}");
+        Debug!("Rewinding directory {Directory:?} for task {task:?}");
 
-        block_on(Get_file_system_instance().Rewind_directory(Directory, Task))?;
+        block_on(Get_file_system_instance().Rewind_directory(Directory, task))?;
 
         Ok(())
     })
@@ -117,20 +117,20 @@ pub extern "C" fn Xila_file_system_rewind_directory(
 
 #[no_mangle]
 pub extern "C" fn Xila_file_system_directory_set_position(
-    Directory: Xila_unique_file_identifier_type,
-    Offset: Xila_file_system_size_type,
+    directory: Xila_unique_file_identifier_type,
+    offset: Xila_file_system_size_type,
 ) -> u32 {
     Into_u32(move || {
-        let Task = Get_context_instance().Get_current_task_identifier();
+        let task = Get_context_instance().Get_current_task_identifier();
 
-        let Directory = File_system::Unique_file_identifier_type::From_raw(Directory);
+        let Directory = File_system::Unique_file_identifier_type::From_raw(directory);
 
-        Debug!("Setting position in directory {Directory:?} to offset {Offset} for task {Task:?}");
+        Debug!("Setting position in directory {Directory:?} to offset {offset} for task {task:?}");
 
         block_on(Get_file_system_instance().Set_position_directory(
             Directory,
-            Offset.into(),
-            Task,
+            offset.into(),
+            task,
         ))?;
 
         Ok(())
@@ -156,7 +156,7 @@ mod Tests {
     ) {
         let _ = Users::Initialize();
 
-        let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()));
+        let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()));
 
         let Task = Task::Get_instance().Get_current_task_identifier().await;
 
@@ -165,7 +165,7 @@ mod Tests {
         let Cache_size = 256;
 
         LittleFS::File_system_type::Format(Device.clone(), Cache_size).unwrap();
-        let File_system = LittleFS::File_system_type::New(Device, Cache_size).unwrap();
+        let File_system = LittleFS::File_system_type::new(Device, Cache_size).unwrap();
 
         let Virtual_file_system =
             Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();

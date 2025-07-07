@@ -161,12 +161,12 @@ pub trait File_system_traits: Send + Sync {
     /// * [`Error_type::Too_many_open_files`] - File descriptor limit reached
     fn Open(
         &self,
-        Task: Task_identifier_type,
-        Path: &Path_type,
-        Flags: Flags_type,
-        Time: Time_type,
-        User: User_identifier_type,
-        Group: Group_identifier_type,
+        task: Task_identifier_type,
+        path: &Path_type,
+        flags: Flags_type,
+        time: Time_type,
+        user: User_identifier_type,
+        group: Group_identifier_type,
     ) -> Result_type<Local_file_identifier_type>;
 
     /// Close a file and release its resources.
@@ -226,7 +226,7 @@ pub trait File_system_traits: Send + Sync {
     /// * [`Error_type::Too_many_open_files`] - File descriptor limit reached
     fn Duplicate(
         &self,
-        File: Local_file_identifier_type,
+        file: Local_file_identifier_type,
     ) -> Result_type<Local_file_identifier_type>;
 
     /// Transfer a file identifier from one task to another.
@@ -251,9 +251,9 @@ pub trait File_system_traits: Send + Sync {
     /// * [`Error_type::Failed_to_get_task_informations`] - Target task is invalid
     fn Transfert(
         &self,
-        New_task: Task_identifier_type,
-        File: Local_file_identifier_type,
-        New_file: Option<File_identifier_type>,
+        new_task: Task_identifier_type,
+        file: Local_file_identifier_type,
+        new_file: Option<File_identifier_type>,
     ) -> Result_type<Local_file_identifier_type>;
 
     /// Remove a file or directory from the file system.
@@ -302,9 +302,9 @@ pub trait File_system_traits: Send + Sync {
     /// * [`Error_type::Input_output`] - I/O error during read
     fn Read(
         &self,
-        File: Local_file_identifier_type,
-        Buffer: &mut [u8],
-        Time_type: Time_type,
+        file: Local_file_identifier_type,
+        buffer: &mut [u8],
+        time_type: Time_type,
     ) -> Result_type<Size_type>;
 
     /// Write data to an open file.
@@ -331,9 +331,9 @@ pub trait File_system_traits: Send + Sync {
     /// * [`Error_type::Input_output`] - I/O error during write
     fn Write(
         &self,
-        File: Local_file_identifier_type,
-        Buffer: &[u8],
-        Time_type: Time_type,
+        file: Local_file_identifier_type,
+        buffer: &[u8],
+        time_type: Time_type,
     ) -> Result_type<Size_type>;
 
     /// Rename or move a file or directory.
@@ -364,8 +364,8 @@ pub trait File_system_traits: Send + Sync {
     /// - If the file is not opened (invalid file identifier).
     fn Set_position(
         &self,
-        File: Local_file_identifier_type,
-        Position: &Position_type,
+        file: Local_file_identifier_type,
+        position: &Position_type,
     ) -> Result_type<Size_type>;
 
     fn Flush(&self, File: Local_file_identifier_type) -> Result_type<()>;
@@ -374,24 +374,24 @@ pub trait File_system_traits: Send + Sync {
 
     fn Create_directory(
         &self,
-        Path: &Path_type,
-        Time: Time_type,
-        User: User_identifier_type,
-        Group: Group_identifier_type,
+        path: &Path_type,
+        time: Time_type,
+        user: User_identifier_type,
+        group: Group_identifier_type,
     ) -> Result_type<()>;
 
     fn Open_directory(
         &self,
-        Path: &Path_type,
-        Task: Task_identifier_type,
+        path: &Path_type,
+        task: Task_identifier_type,
     ) -> Result_type<Local_file_identifier_type>;
 
     fn Read_directory(&self, File: Local_file_identifier_type) -> Result_type<Option<Entry_type>>;
 
     fn Set_position_directory(
         &self,
-        File: Local_file_identifier_type,
-        Position: Size_type,
+        file: Local_file_identifier_type,
+        position: Size_type,
     ) -> Result_type<()>;
 
     fn Get_position_directory(&self, File: Local_file_identifier_type) -> Result_type<Size_type>;
@@ -415,36 +415,36 @@ pub trait File_system_traits: Send + Sync {
 }
 
 pub fn Get_new_file_identifier<T>(
-    Task: Task_identifier_type,
-    Start: Option<File_identifier_type>,
-    End: Option<File_identifier_type>,
-    Map: &BTreeMap<Local_file_identifier_type, T>,
+    task: Task_identifier_type,
+    start: Option<File_identifier_type>,
+    end: Option<File_identifier_type>,
+    map: &BTreeMap<Local_file_identifier_type, T>,
 ) -> Result_type<Local_file_identifier_type> {
-    let Start = Start.unwrap_or(File_identifier_type::MINIMUM);
-    let mut Start = Local_file_identifier_type::New(Task, Start);
+    let start = start.unwrap_or(File_identifier_type::MINIMUM);
+    let mut start = Local_file_identifier_type::New(task, start);
 
-    let End = End.unwrap_or(File_identifier_type::MAXIMUM);
-    let End = Local_file_identifier_type::New(Task, End);
+    let End = end.unwrap_or(File_identifier_type::MAXIMUM);
+    let end = Local_file_identifier_type::New(task, End);
 
-    while Start < End {
-        if !Map.contains_key(&Start) {
-            return Ok(Start);
+    while start < end {
+        if !map.contains_key(&start) {
+            return Ok(start);
         }
 
-        Start += 1;
+        start += 1;
     }
 
     Err(Error_type::Too_many_open_files)
 }
 
 pub fn Get_new_inode<T>(Map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type> {
-    let mut Inode = Inode_type::from(0);
+    let mut inode = Inode_type::from(0);
 
-    while Map.contains_key(&Inode) {
-        Inode += 1;
+    while Map.contains_key(&inode) {
+        inode += 1;
     }
 
-    Ok(Inode)
+    Ok(inode)
 }
 
 pub mod Tests {
@@ -460,7 +460,7 @@ pub mod Tests {
     }
 
     pub async fn Test_open_close_delete(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_open_close_delete").unwrap();
 
@@ -469,7 +469,7 @@ pub mod Tests {
         // - Open
         let File = File_system
             .Open(
-                Task,
+                task,
                 &Path,
                 Flags,
                 Time_type::New(123),
@@ -486,7 +486,7 @@ pub mod Tests {
     }
 
     pub async fn Test_read_write(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_read_write").unwrap();
 
@@ -495,7 +495,7 @@ pub mod Tests {
         // - Open
         let File = File_system
             .Open(
-                Task,
+                task,
                 &Path,
                 Flags,
                 Time_type::New(123),
@@ -506,22 +506,22 @@ pub mod Tests {
 
         // - Write
         let Buffer = [0x01, 0x02, 0x03];
-        let Size = File_system
+        let size = File_system
             .Write(File, &Buffer, Time_type::New(123))
             .unwrap();
 
-        assert_eq!(Size, Size_type::from(Buffer.len()));
+        assert_eq!(size, Size_type::from(Buffer.len()));
         File_system
             .Set_position(File, &Position_type::Start(0))
             .unwrap();
 
         // - Read
         let mut Buffer_read = [0; 3];
-        let Size = File_system
+        let size = File_system
             .Read(File, &mut Buffer_read, Time_type::New(123))
             .unwrap();
         assert_eq!(Buffer, Buffer_read);
-        assert_eq!(Size, Size_type::from(Buffer.len()));
+        assert_eq!(size, Size_type::from(Buffer.len()));
 
         // - Close
         File_system.Close(File).unwrap();
@@ -531,17 +531,17 @@ pub mod Tests {
     }
 
     pub async fn Test_move(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_move").unwrap();
-        let Path_destination = Get_test_path().Append("Test_move_destination").unwrap();
+        let path_destination = Get_test_path().Append("Test_move_destination").unwrap();
 
         let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
         // - Open
         let File = File_system
             .Open(
-                Task,
+                task,
                 &Path,
                 Flags,
                 Time_type::New(123),
@@ -552,21 +552,21 @@ pub mod Tests {
 
         // - Write
         let Buffer = [0x01, 0x02, 0x03];
-        let Size = File_system
+        let size = File_system
             .Write(File, &Buffer, Time_type::New(123))
             .unwrap();
-        assert_eq!(Size, Size_type::from(Buffer.len()));
+        assert_eq!(size, Size_type::from(Buffer.len()));
 
         File_system.Close(File).unwrap();
 
         // - Move
-        File_system.Rename(&Path, &Path_destination).unwrap();
+        File_system.Rename(&Path, &path_destination).unwrap();
 
         // - Open
         let File = File_system
             .Open(
-                Task,
-                &Path_destination,
+                task,
+                &path_destination,
                 Mode_type::READ_ONLY.into(),
                 Time_type::New(123),
                 User_identifier_type::ROOT,
@@ -576,21 +576,21 @@ pub mod Tests {
 
         // - Read
         let mut Buffer_read = [0; 3];
-        let Size = File_system
+        let size = File_system
             .Read(File, &mut Buffer_read, Time_type::New(123))
             .unwrap();
-        assert_eq!(Size, Size_type::from(Buffer.len()));
+        assert_eq!(size, Size_type::from(Buffer.len()));
         assert_eq!(Buffer, Buffer_read);
 
         // - Close
         File_system.Close(File).unwrap();
 
         // - Delete
-        File_system.Remove(&Path_destination).unwrap();
+        File_system.Remove(&path_destination).unwrap();
     }
 
     pub async fn Test_set_position(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_set_position").unwrap();
 
@@ -599,7 +599,7 @@ pub mod Tests {
         // - Open
         let File = File_system
             .Open(
-                Task,
+                task,
                 &Path,
                 Flags,
                 Time_type::New(123),
@@ -610,16 +610,16 @@ pub mod Tests {
 
         // - Write
         let Buffer = [0x01, 0x02, 0x03];
-        let Size = File_system
+        let size = File_system
             .Write(File, &Buffer, Time_type::New(123))
             .unwrap();
-        assert_eq!(Buffer.len(), Size.into());
+        assert_eq!(Buffer.len(), size.into());
 
         // - Set position
         let Position = Position_type::Start(0);
-        let Size = File_system.Set_position(File, &Position).unwrap();
+        let size = File_system.Set_position(File, &Position).unwrap();
         assert_eq!(
-            Size,
+            size,
             File_system
                 .Set_position(File, &Position_type::Current(0))
                 .unwrap()
@@ -627,11 +627,11 @@ pub mod Tests {
 
         // - Read
         let mut Buffer_read = [0; 3];
-        let Size = File_system
+        let size = File_system
             .Read(File, &mut Buffer_read, Time_type::New(123))
             .unwrap();
         assert_eq!(Buffer, Buffer_read);
-        assert_eq!(Buffer.len(), Size.into());
+        assert_eq!(Buffer.len(), size.into());
 
         // - Close
         File_system.Close(File).unwrap();
@@ -641,7 +641,7 @@ pub mod Tests {
     }
 
     pub async fn Test_flush(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_flush").unwrap();
 
@@ -649,7 +649,7 @@ pub mod Tests {
 
         let File = File_system
             .Open(
-                Task,
+                task,
                 &Path,
                 Flags,
                 Time_type::New(123),
@@ -659,10 +659,10 @@ pub mod Tests {
             .unwrap();
 
         let Buffer = [0x01, 0x02, 0x03];
-        let Size = File_system
+        let size = File_system
             .Write(File, &Buffer, Time_type::New(123))
             .unwrap();
-        assert_eq!(Size, Size_type::from(Buffer.len()));
+        assert_eq!(size, Size_type::from(Buffer.len()));
 
         File_system.Flush(File).unwrap();
 
@@ -672,7 +672,7 @@ pub mod Tests {
     }
 
     pub async fn Test_set_get_metadata(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_set_owner").unwrap();
 
@@ -680,7 +680,7 @@ pub mod Tests {
 
         let File = File_system
             .Open(
-                Task,
+                task,
                 &Path,
                 Flags,
                 Time_type::New(123),
@@ -713,65 +713,65 @@ pub mod Tests {
     }
 
     pub async fn Test_read_directory(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::Get_instance().Get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
-            let Flags = Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
-            let File = File_system
+            let flags = Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
+            let file = File_system
                 .Open(
-                    Task,
+                    task,
                     Path_type::From_str(&format!("/Test{i}")),
-                    Flags,
+                    flags,
                     Time_type::New(123),
                     User_identifier_type::ROOT,
                     Group_identifier_type::ROOT,
                 )
                 .unwrap();
-            File_system.Close(File).unwrap();
+            File_system.Close(file).unwrap();
         }
 
         let Path = Path_type::From_str("/");
-        let Directory = File_system.Open_directory(Path, Task).unwrap();
+        let directory = File_system.Open_directory(Path, task).unwrap();
 
-        let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
+        let Current_directory = File_system.Read_directory(directory).unwrap().unwrap();
         assert_eq!(*Current_directory.Get_name(), ".");
         assert_eq!(Current_directory.Get_type(), Type_type::Directory);
 
-        let Parent_directory = File_system.Read_directory(Directory).unwrap().unwrap();
+        let Parent_directory = File_system.Read_directory(directory).unwrap().unwrap();
         assert_eq!(*Parent_directory.Get_name(), "..");
         assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
 
         for i in 0..10 {
-            let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
+            let entry = File_system.Read_directory(directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
-            assert_eq!(Entry.Get_type(), Type_type::File);
+            assert_eq!(*entry.Get_name(), format!("Test{i}"));
+            assert_eq!(entry.Get_type(), Type_type::File);
         }
 
-        File_system.Close_directory(Directory).unwrap();
+        File_system.Close_directory(directory).unwrap();
     }
 
     pub async fn Test_set_position_directory(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::Get_instance().Get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
-            let Flags = Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
-            let File = File_system
+            let flags = Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
+            let file = File_system
                 .Open(
-                    Task,
+                    task,
                     Path_type::From_str(&format!("/Test{i}")),
-                    Flags,
+                    flags,
                     Time_type::New(123),
                     User_identifier_type::ROOT,
                     Group_identifier_type::ROOT,
                 )
                 .unwrap();
-            File_system.Close(File).unwrap();
+            File_system.Close(file).unwrap();
         }
 
-        let Directory = File_system.Open_directory(Path_type::ROOT, Task).unwrap();
+        let Directory = File_system.Open_directory(Path_type::ROOT, task).unwrap();
 
         let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Current_directory.Get_name(), ".");
@@ -784,10 +784,10 @@ pub mod Tests {
         let Position = File_system.Get_position_directory(Directory).unwrap();
 
         for i in 0..10 {
-            let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
+            let entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
-            assert_eq!(Entry.Get_type(), Type_type::File);
+            assert_eq!(*entry.Get_name(), format!("Test{i}"));
+            assert_eq!(entry.Get_type(), Type_type::File);
         }
 
         File_system
@@ -795,33 +795,33 @@ pub mod Tests {
             .unwrap();
 
         for i in 0..10 {
-            let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
+            let entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
-            assert_eq!(Entry.Get_type(), Type_type::File);
+            assert_eq!(*entry.Get_name(), format!("Test{i}"));
+            assert_eq!(entry.Get_type(), Type_type::File);
         }
     }
 
     pub async fn Test_rewind_directory(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::Get_instance().Get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
-            let Flags = Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
-            let File = File_system
+            let flags = Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
+            let file = File_system
                 .Open(
-                    Task,
+                    task,
                     Path_type::From_str(&format!("/Test{i}")),
-                    Flags,
+                    flags,
                     Time_type::New(123),
                     User_identifier_type::ROOT,
                     Group_identifier_type::ROOT,
                 )
                 .unwrap();
-            File_system.Close(File).unwrap();
+            File_system.Close(file).unwrap();
         }
 
-        let Directory = File_system.Open_directory(Path_type::ROOT, Task).unwrap();
+        let Directory = File_system.Open_directory(Path_type::ROOT, task).unwrap();
 
         let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Current_directory.Get_name(), ".");
@@ -832,10 +832,10 @@ pub mod Tests {
         assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
 
         for i in 0..10 {
-            let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
+            let entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
-            assert_eq!(Entry.Get_type(), Type_type::File);
+            assert_eq!(*entry.Get_name(), format!("Test{i}"));
+            assert_eq!(entry.Get_type(), Type_type::File);
         }
 
         File_system.Rewind_directory(Directory).unwrap();
@@ -849,17 +849,17 @@ pub mod Tests {
         assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
 
         for i in 0..10 {
-            let Entry = File_system.Read_directory(Directory).unwrap().unwrap();
+            let entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Entry.Get_name(), format!("Test{i}"));
-            assert_eq!(Entry.Get_type(), Type_type::File);
+            assert_eq!(*entry.Get_name(), format!("Test{i}"));
+            assert_eq!(entry.Get_type(), Type_type::File);
         }
 
         File_system.Close_directory(Directory).unwrap();
     }
 
     pub async fn Test_create_remove_directory(File_system: impl File_system_traits) {
-        let Task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::Get_instance().Get_current_task_identifier().await;
 
         let Path = Get_test_path().Append("Test_create_directory").unwrap();
 
@@ -873,7 +873,7 @@ pub mod Tests {
             .unwrap();
 
         {
-            let Root_directory = File_system.Open_directory(Path_type::ROOT, Task).unwrap();
+            let Root_directory = File_system.Open_directory(Path_type::ROOT, task).unwrap();
 
             let Current_directory = File_system.Read_directory(Root_directory).unwrap().unwrap();
             assert_eq!(*Current_directory.Get_name(), ".");
@@ -891,7 +891,7 @@ pub mod Tests {
         }
 
         {
-            let Directory = File_system.Open_directory(&Path, Task).unwrap();
+            let Directory = File_system.Open_directory(&Path, task).unwrap();
 
             let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
 

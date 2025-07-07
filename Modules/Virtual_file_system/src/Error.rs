@@ -16,34 +16,34 @@ pub enum Error_type {
 }
 
 impl Error_type {
-    pub fn Get_discriminant(&self) -> NonZeroU32 {
+    pub fn get_discriminant(&self) -> NonZeroU32 {
         unsafe { *<*const _>::from(self).cast::<NonZeroU32>() }
     }
 }
 
 impl From<Error_type> for NonZeroU32 {
-    fn from(Value: Error_type) -> Self {
-        let Discriminant = Value.Get_discriminant();
+    fn from(value: Error_type) -> Self {
+        let discriminant = value.get_discriminant();
 
-        let Offset = match Value {
+        let Offset = match value {
             Error_type::File_system(Error_type) => Error_type.Get_discriminant().get(),
-            Error_type::Network(Error_type) => Error_type.Get_discriminant().get() as u32,
+            Error_type::Network(error_type) => error_type.get_discriminant().get() as u32,
             _ => 0,
         };
 
-        Discriminant.saturating_add(Offset)
+        discriminant.saturating_add(Offset)
     }
 }
 
 impl From<File_system::Error_type> for Error_type {
-    fn from(Value: File_system::Error_type) -> Self {
-        Self::File_system(Value)
+    fn from(value: File_system::Error_type) -> Self {
+        Self::File_system(value)
     }
 }
 
 impl From<Network::Error_type> for Error_type {
-    fn from(Value: Network::Error_type) -> Self {
-        Self::Network(Value)
+    fn from(value: Network::Error_type) -> Self {
+        Self::Network(value)
     }
 }
 

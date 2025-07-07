@@ -37,13 +37,13 @@ use super::{Inode_type, Size_type};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Entry_type {
     /// The inode number identifying this file system object
-    Inode: Inode_type,
+    inode: Inode_type,
     /// The name of this directory entry
-    Name: String,
+    name: String,
     /// The type of file system object (file, directory, etc.)
     Type: Type_type,
     /// The size of the file system object in bytes
-    Size: Size_type,
+    size: Size_type,
 }
 
 impl Entry_type {
@@ -72,10 +72,10 @@ impl Entry_type {
     /// ```
     pub fn New(Inode: Inode_type, Name: String, Type: Type_type, Size: Size_type) -> Self {
         Self {
-            Inode,
-            Name,
+            inode: Inode,
+            name: Name,
             Type,
-            Size,
+            size: Size,
         }
     }
 
@@ -85,7 +85,7 @@ impl Entry_type {
     ///
     /// The unique inode number identifying this file system object.
     pub fn Get_inode(&self) -> Inode_type {
-        self.Inode
+        self.inode
     }
 
     /// Get the name of this directory entry.
@@ -94,7 +94,7 @@ impl Entry_type {
     ///
     /// A reference to the string containing the file or directory name.
     pub fn Get_name(&self) -> &String {
-        &self.Name
+        &self.name
     }
 
     /// Get the type of this directory entry.
@@ -113,7 +113,7 @@ impl Entry_type {
     /// For files, this is the size in bytes. For directories, this may represent
     /// the number of entries or be implementation-defined.
     pub fn Get_size(&self) -> Size_type {
-        self.Size
+        self.size
     }
 
     /// Set the inode number for this directory entry.
@@ -122,7 +122,7 @@ impl Entry_type {
     ///
     /// * `Inode` - The new inode number to assign
     pub fn Set_inode(&mut self, Inode: Inode_type) {
-        self.Inode = Inode;
+        self.inode = Inode;
     }
 
     /// Set the name for this directory entry.
@@ -131,7 +131,7 @@ impl Entry_type {
     ///
     /// * `Name` - The new name to assign to this entry
     pub fn Set_name(&mut self, Name: String) {
-        self.Name = Name;
+        self.name = Name;
     }
 
     /// Set the type for this directory entry.
@@ -144,7 +144,7 @@ impl Entry_type {
     }
 
     pub fn Set_size(&mut self, Size: Size_type) {
-        self.Size = Size;
+        self.size = Size;
     }
 }
 

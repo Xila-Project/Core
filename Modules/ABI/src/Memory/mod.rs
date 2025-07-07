@@ -104,7 +104,7 @@ where
     F: FnOnce() -> Option<NonNull<P>>,
 {
     match Function() {
-        Some(Pointer) => Pointer.as_ptr() as *mut c_void,
+        Some(pointer) => pointer.as_ptr() as *mut c_void,
         None => null_mut(),
     }
 }
@@ -159,7 +159,7 @@ pub extern "C" fn Xila_memory_deallocate(Pointer: *mut c_void) {
     }
 
     let Layout = match Write_allocations_table!().remove(&(Pointer as usize)) {
-        Some(Size) => Size,
+        Some(size) => size,
         None => {
             Warning! {
                 "Xila_memory_deallocate called with untracked pointer: {:#x}, ignoring",
@@ -224,18 +224,18 @@ pub extern "C" fn Xila_memory_deallocate(Pointer: *mut c_void) {
 #[no_mangle]
 pub unsafe extern "C" fn Xila_memory_reallocate(Pointer: *mut c_void, Size: usize) -> *mut c_void {
     Into_pointer(|| {
-        let Pointer = NonNull::new(Pointer as *mut u8);
+        let pointer = NonNull::new(Pointer as *mut u8);
 
         let mut Allocation_table = block_on(ALLOCATIONS_TABLE.write());
 
-        let Old_layout = match Pointer {
+        let Old_layout = match pointer {
             None => Layout_type::from_size_align(Size, 1)
                 .expect("Failed to create layout for memory reallocation"),
-            Some(Pointer) =>
+            Some(pointer) =>
             // Get the layout from the allocation table using the pointer's address
             {
                 Allocation_table
-                    .get(&(Pointer.as_ptr() as usize))
+                    .get(&(pointer.as_ptr() as usize))
                     .cloned()?
             }
         };
@@ -244,12 +244,12 @@ pub unsafe extern "C" fn Xila_memory_reallocate(Pointer: *mut c_void, Size: usiz
 
         Debug!(
             "Xila_memory_reallocate called with Pointer: {:#x}, Old_layout: {:?}, New_layout: {:?}",
-            Pointer.map_or(0, |p| p.as_ptr() as usize),
+            pointer.map_or(0, |p| p.as_ptr() as usize),
             Old_layout,
             New_layout
         );
 
-        let Allocated = Memory::Get_instance().Reallocate(Pointer, Old_layout, New_layout)?;
+        let Allocated = Memory::Get_instance().Reallocate(pointer, Old_layout, New_layout)?;
 
         Allocation_table.insert(Allocated.as_ptr() as usize, New_layout);
 
@@ -305,18 +305,18 @@ pub unsafe extern "C" fn Xila_memory_reallocate(Pointer: *mut c_void, Size: usiz
 #[no_mangle]
 pub unsafe extern "C" fn Xila_memory_allocate(
     _: *mut c_void,
-    Size: usize,
-    Alignment: usize,
-    Capabilities: Xila_memory_capabilities_type,
+    size: usize,
+    alignment: usize,
+    capabilities: Xila_memory_capabilities_type,
 ) -> *mut c_void {
     Into_pointer(|| {
         Trace!(
-            "Xila_memory_allocate called with Size: {Size}, Alignment: {Alignment}, Capabilities: {Capabilities:?}"
+            "Xila_memory_allocate called with Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
         );
-        let Layout = Layout_type::from_size_align(Size, Alignment)
+        let Layout = Layout_type::from_size_align(size, alignment)
             .expect("Failed to create layout for memory allocation");
 
-        let Capabilities = Capabilities_type::From_u8(Capabilities);
+        let Capabilities = Capabilities_type::From_u8(capabilities);
 
         let Result = Memory::Get_instance().Allocate(Capabilities, Layout);
 
@@ -324,11 +324,11 @@ pub unsafe extern "C" fn Xila_memory_allocate(
             Write_allocations_table!().insert(Result.unwrap().as_ptr() as usize, Layout);
             Debug! {
                 "Xila_memory_allocate called with Size: {}, Alignment: {}, Capabilities: {:?}, allocated memory at {:#x}",
-                Size, Alignment, Capabilities, Result.unwrap().as_ptr() as usize
+                size, alignment, Capabilities, Result.unwrap().as_ptr() as usize
             };
         } else {
             Warning! {
-                "Xila_memory_allocate failed with Size: {Size}, Alignment: {Alignment}, Capabilities: {Capabilities:?}"
+                "Xila_memory_allocate failed with Size: {size}, Alignment: {alignment}, Capabilities: {Capabilities:?}"
             };
         }
 
@@ -414,9 +414,9 @@ pub extern "C" fn Xila_memory_flush_data_cache() {
 /// ```
 #[no_mangle]
 pub extern "C" fn Xila_memory_flush_instruction_cache(_Address: *mut c_void, _Size: usize) {
-    let Address = NonNull::new(_Address as *mut u8).expect("Failed to flush instruction cache");
+    let address = NonNull::new(_Address as *mut u8).expect("Failed to flush instruction cache");
 
-    Memory::Get_instance().Flush_instruction_cache(Address, _Size);
+    Memory::Get_instance().Flush_instruction_cache(address, _Size);
 }
 
 #[cfg(test)]

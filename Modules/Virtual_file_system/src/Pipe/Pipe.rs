@@ -15,54 +15,54 @@ impl Pipe_type {
     }
 
     pub async fn Write(&self, Data: &[u8]) -> Result_type<Size_type> {
-        let mut Buffer = self.0.write().await;
+        let mut buffer = self.0.write().await;
 
-        let Length = Data.len().min(Buffer.capacity() - Buffer.len());
+        let Length = Data.len().min(buffer.capacity() - buffer.len());
 
         if Length == 0 {
             return Err(Error_type::Ressource_busy);
         }
 
         for Byte in Data {
-            Buffer.push_back(*Byte);
+            buffer.push_back(*Byte);
         }
 
         Ok(Size_type::New(Length as u64))
     }
 
     pub async fn Read(&self, Data: &mut [u8]) -> Result_type<Size_type> {
-        let mut Buffer = self.0.write().await;
+        let mut buffer = self.0.write().await;
 
-        let Length = Data.len().min(Buffer.len());
+        let Length = Data.len().min(buffer.len());
 
         if Length == 0 {
             return Err(Error_type::Ressource_busy);
         }
 
         for Byte in Data {
-            *Byte = Buffer.pop_front().unwrap();
+            *Byte = buffer.pop_front().unwrap();
         }
 
         Ok(Size_type::New(Length as u64))
     }
 
     pub async fn Read_line(&self, Data: &mut String) -> Result_type<Size_type> {
-        let mut Buffer = self.0.write().await;
+        let mut buffer = self.0.write().await;
 
-        let Length = Data.len().min(Buffer.len());
+        let Length = Data.len().min(buffer.len());
 
         if Length == 0 {
             return Err(Error_type::Ressource_busy);
         }
 
         for _ in 0..Length {
-            let Byte = Buffer.pop_front().unwrap();
+            let byte = buffer.pop_front().unwrap();
 
-            if Byte == b'\n' {
+            if byte == b'\n' {
                 break;
             }
 
-            Data.push(Byte as char);
+            Data.push(byte as char);
         }
 
         Ok(Size_type::New(Length as u64))

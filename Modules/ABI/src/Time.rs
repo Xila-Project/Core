@@ -29,8 +29,8 @@ pub extern "C" fn Xila_time_get_cpu() -> u64 {
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
 pub unsafe extern "C" fn Xila_time_get_resolution(
-    _Clock_identifier: Xila_time_clock_identifier_type,
-    _Resolution: *mut Xila_time_type,
+    _clock_identifier: Xila_time_clock_identifier_type,
+    _resolution: *mut Xila_time_type,
 ) -> u32 {
     todo!()
 }
@@ -42,9 +42,9 @@ pub unsafe extern "C" fn Xila_time_get_resolution(
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
 pub extern "C" fn Xila_time_get_time(
-    _Clock_identifier: Xila_time_clock_identifier_type,
-    _Precision: u64,
-    _Time: *mut Xila_time_type,
+    _clock_identifier: Xila_time_clock_identifier_type,
+    _precision: u64,
+    _time: *mut Xila_time_type,
 ) -> u32 {
     todo!()
 }

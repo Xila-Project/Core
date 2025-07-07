@@ -52,13 +52,13 @@ __wasi_filetype_t Into_WASI_file_type(Xila_file_type_type Type)
 
 void Into_WASI_file_statistics(const Xila_file_system_statistics_type *Statistics, __wasi_filestat_t *WASI_Statistics)
 {
-    WASI_Statistics->st_dev = Statistics->File_system;
-    WASI_Statistics->st_ino = Statistics->Inode;
-    WASI_Statistics->st_nlink = Statistics->Links;
-    WASI_Statistics->st_size = Statistics->Size;
-    WASI_Statistics->st_atim = Statistics->Last_access;
-    WASI_Statistics->st_mtim = Statistics->Last_modification;
-    WASI_Statistics->st_ctim = Statistics->Last_status_change;
+    WASI_Statistics->st_dev = Statistics->file_system;
+    WASI_Statistics->st_ino = Statistics->inode;
+    WASI_Statistics->st_nlink = Statistics->links;
+    WASI_Statistics->st_size = Statistics->size;
+    WASI_Statistics->st_atim = Statistics->last_access;
+    WASI_Statistics->st_mtim = Statistics->last_modification;
+    WASI_Statistics->st_ctim = Statistics->last_status_change;
     WASI_Statistics->st_filetype = Into_WASI_file_type(Statistics->Type);
 }
 

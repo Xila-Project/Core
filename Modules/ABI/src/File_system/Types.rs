@@ -30,8 +30,8 @@ pub enum Xila_file_type_type {
 }
 
 impl From<Xila_file_type_type> for File_system::Type_type {
-    fn from(Type: Xila_file_type_type) -> Self {
-        match Type {
+    fn from(type_value: Xila_file_type_type) -> Self {
+        match type_value {
             Xila_file_type_type::File => Type_type::File,
             Xila_file_type_type::Directory => File_system::Type_type::Directory,
             Xila_file_type_type::Block_device => File_system::Type_type::Block_device,
@@ -44,8 +44,8 @@ impl From<Xila_file_type_type> for File_system::Type_type {
 }
 
 impl From<File_system::Type_type> for Xila_file_type_type {
-    fn from(Type: File_system::Type_type) -> Self {
-        match Type {
+    fn from(type_value: File_system::Type_type) -> Self {
+        match type_value {
             File_system::Type_type::File => Xila_file_type_type::File,
             File_system::Type_type::Directory => Xila_file_type_type::Directory,
             File_system::Type_type::Block_device => Xila_file_type_type::Block_device,
@@ -94,48 +94,48 @@ type Permissions_type = u16;
 
 #[repr(C)]
 pub struct Xila_file_system_statistics_type {
-    File_system: Xila_file_system_identifier_type,
-    Inode: Xila_file_system_inode_type,
-    Links: u64,
-    Size: Xila_file_system_size_type,
-    Last_access: Xila_time_type,
-    Last_modification: Xila_time_type,
-    Last_status_change: Xila_time_type,
+    file_system: Xila_file_system_identifier_type,
+    inode: Xila_file_system_inode_type,
+    links: u64,
+    size: Xila_file_system_size_type,
+    last_access: Xila_time_type,
+    last_modification: Xila_time_type,
+    last_status_change: Xila_time_type,
     Type: Xila_file_type_type,
-    Permissions: Permissions_type,
-    User: Xila_user_identifier_type,
-    Group: Xila_group_identifier_type,
+    permissions: Permissions_type,
+    user: Xila_user_identifier_type,
+    group: Xila_group_identifier_type,
 }
 
 impl Xila_file_system_statistics_type {
-    pub fn From_statistics(Statistics: File_system::Statistics_type) -> Self {
+    pub fn from_statistics(statistics: File_system::Statistics_type) -> Self {
         Self {
-            File_system: Statistics.Get_file_system().As_inner(),
-            Inode: Statistics.Get_inode().As_u64(),
-            Links: Statistics.Get_links(),
-            Size: Statistics.Get_size().As_u64(),
-            Last_access: Statistics.Get_last_access().As_u64(),
-            Last_modification: Statistics.Get_last_modification().As_u64(),
-            Last_status_change: Statistics.Get_last_status_change().As_u64(),
-            Type: Statistics.Get_type().into(),
-            Permissions: Statistics.Get_permissions().As_u16(),
-            User: Statistics.Get_user().As_u16(),
-            Group: Statistics.Get_group().As_u16(),
+            file_system: statistics.Get_file_system().As_inner(),
+            inode: statistics.Get_inode().As_u64(),
+            links: statistics.Get_links(),
+            size: statistics.Get_size().As_u64(),
+            last_access: statistics.Get_last_access().As_u64(),
+            last_modification: statistics.Get_last_modification().As_u64(),
+            last_status_change: statistics.Get_last_status_change().As_u64(),
+            Type: statistics.Get_type().into(),
+            permissions: statistics.Get_permissions().As_u16(),
+            user: statistics.Get_user().As_u16(),
+            group: statistics.Get_group().As_u16(),
         }
     }
 
     pub fn From_mutable_pointer(
-        Pointer: *mut Xila_file_system_statistics_type,
+        pointer: *mut Xila_file_system_statistics_type,
     ) -> Option<*mut Xila_file_system_statistics_type> {
-        if Pointer.is_null() {
+        if pointer.is_null() {
             return None;
         }
 
-        if Pointer as usize % align_of::<Xila_file_system_statistics_type>() != 0 {
+        if pointer as usize % align_of::<Xila_file_system_statistics_type>() != 0 {
             return None;
         }
 
-        Some(Pointer)
+        Some(pointer)
     }
 }
 

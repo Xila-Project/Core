@@ -31,8 +31,8 @@ pub trait Manager_trait: Send + Sync {
     /// - The memory is properly deallocated when no longer needed
     unsafe fn Allocate(
         &self,
-        Capabilities: Capabilities_type,
-        Layout: Layout_type,
+        capabilities: Capabilities_type,
+        layout: Layout_type,
     ) -> Option<NonNull<u8>>;
 
     /// Deallocates memory previously allocated by this allocator.
@@ -73,28 +73,28 @@ pub trait Manager_trait: Send + Sync {
     /// - The returned memory is properly initialized before use
     unsafe fn Reallocate(
         &self,
-        Pointer: Option<NonNull<u8>>,
-        Old_layout: Layout_type,
-        New_layout: Layout_type,
+        pointer: Option<NonNull<u8>>,
+        old_layout: Layout_type,
+        new_layout: Layout_type,
     ) -> Option<NonNull<u8>> {
         // Default implementation simply deallocates and allocates again
-        let Memory = self.Allocate(Capabilities_type::default(), New_layout)?;
+        let Memory = self.Allocate(Capabilities_type::default(), new_layout)?;
 
         // Copy the old data to the new memory
-        let Pointer = match Pointer {
+        let Pointer = match pointer {
             Some(ptr) => ptr,
             None => return Some(Memory),
         };
 
-        let Old_size = Old_layout.size();
-        let New_size = New_layout.size();
-        if Old_size > 0 && New_size > 0 {
-            let Old_ptr = Pointer.as_ptr();
-            let New_ptr = Memory.as_ptr();
-            core::ptr::copy_nonoverlapping(Old_ptr, New_ptr, core::cmp::min(Old_size, New_size));
+        let Old_size = old_layout.size();
+        let new_size = new_layout.size();
+        if Old_size > 0 && new_size > 0 {
+            let old_ptr = Pointer.as_ptr();
+            let new_ptr = Memory.as_ptr();
+            core::ptr::copy_nonoverlapping(old_ptr, new_ptr, core::cmp::min(Old_size, new_size));
         }
         // Deallocate the old memory
-        self.Deallocate(Pointer, Old_layout);
+        self.Deallocate(Pointer, old_layout);
 
         Some(Memory)
     }

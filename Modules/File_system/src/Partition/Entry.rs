@@ -127,17 +127,17 @@ impl Partition_entry_type {
     /// assert!(partition.Is_bootable());
     /// ```
     pub fn New_with_params(
-        Bootable: bool,
-        Partition_type: crate::Partition_type_type,
-        Start_lba: u32,
-        Size_sectors: u32,
+        bootable: bool,
+        partition_type: crate::Partition_type_type,
+        start_lba: u32,
+        size_sectors: u32,
     ) -> Self {
-        let mut Entry = Self::New();
-        Entry.Bootable = if Bootable { 0x80 } else { 0x00 };
-        Entry.Set_partition_type(Partition_type);
-        Entry.Start_lba = Start_lba.to_le();
-        Entry.Size_sectors = Size_sectors.to_le();
-        Entry
+        let mut entry = Self::New();
+        entry.Bootable = if bootable { 0x80 } else { 0x00 };
+        entry.Set_partition_type(partition_type);
+        entry.Start_lba = start_lba.to_le();
+        entry.Size_sectors = size_sectors.to_le();
+        entry
     }
 
     /// Check if this partition entry is valid (non-zero)
@@ -207,11 +207,11 @@ impl Partition_entry_type {
         }
 
         let Self_start = self.Get_start_lba();
-        let Self_end = self.Get_end_lba();
-        let Other_start = Other.Get_start_lba();
-        let Other_end = Other.Get_end_lba();
+        let self_end = self.Get_end_lba();
+        let other_start = Other.Get_start_lba();
+        let other_end = Other.Get_end_lba();
 
-        !(Self_end < Other_start || Other_end < Self_start)
+        !(self_end < other_start || other_end < Self_start)
     }
 
     /// Check if a given LBA is within this partition
@@ -221,8 +221,8 @@ impl Partition_entry_type {
         }
 
         let Start = self.Get_start_lba();
-        let End = self.Get_end_lba();
-        Lba >= Start && Lba <= End
+        let end = self.Get_end_lba();
+        Lba >= Start && Lba <= end
     }
 
     /// Clear the partition entry (make it empty)
@@ -238,12 +238,12 @@ impl Default for Partition_entry_type {
 }
 
 impl fmt::Display for Partition_entry_type {
-    fn fmt(&self, Formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         if !self.Is_valid() {
-            write!(Formatter, "Empty partition")
+            write!(formatter, "Empty partition")
         } else {
             write!(
-                Formatter,
+                formatter,
                 "Partition: Type={:02X} ({}), Start_LBA={}, Size={} sectors ({} MB), Bootable={}",
                 self.Partition_type,
                 self.Get_partition_type_name(),

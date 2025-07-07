@@ -12,30 +12,30 @@ unsafe impl Sync for Screen_device_type {}
 unsafe impl Send for Screen_device_type {}
 
 impl Screen_device_type {
-    pub fn New(Inner: Arc<Mutex<Inner_type>>) -> Self {
-        Self(Inner)
+    pub fn new(inner: Arc<Mutex<Inner_type>>) -> Self {
+        Self(inner)
     }
 }
 
 impl Device_trait for Screen_device_type {
-    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<File_system::Size_type> {
-        let Data: &mut Screen_read_data_type = Buffer
+    fn Read(&self, buffer: &mut [u8]) -> File_system::Result_type<File_system::Size_type> {
+        let data: &mut Screen_read_data_type = buffer
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
         let Resolution = self.0.lock().unwrap().Get_resolution().unwrap();
 
-        Data.Set_resolution(Resolution);
+        data.Set_resolution(Resolution);
 
         Ok(Size_type::New(size_of::<Self>() as u64))
     }
 
     fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<File_system::Size_type> {
-        let Data: &Screen_write_data_type = Buffer
+        let data: &Screen_write_data_type = Buffer
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
-        self.0.lock().unwrap().Draw(Data).unwrap();
+        self.0.lock().unwrap().Draw(data).unwrap();
 
         Ok(Size_type::New(size_of::<Self>() as u64))
     }

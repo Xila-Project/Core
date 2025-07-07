@@ -8,15 +8,15 @@ use super::Inner_type;
 pub struct Pointer_device_type(Arc<Mutex<Inner_type>>);
 
 impl Pointer_device_type {
-    pub fn New(Inner: Arc<Mutex<Inner_type>>) -> Self {
-        Self(Inner)
+    pub fn new(inner: Arc<Mutex<Inner_type>>) -> Self {
+        Self(inner)
     }
 }
 
 impl Device_trait for Pointer_device_type {
-    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<Size_type> {
+    fn Read(&self, buffer: &mut [u8]) -> File_system::Result_type<Size_type> {
         // - Cast the pointer data to the buffer.
-        let Data: &mut Input_data_type = Buffer
+        let Data: &mut Input_data_type = buffer
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 

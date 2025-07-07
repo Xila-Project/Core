@@ -9,89 +9,89 @@ use Virtual_file_system::Virtual_file_system_type;
 use crate::Result_type;
 
 pub struct Standard_type {
-    Standard_in: Unique_file_identifier_type,
-    Standard_out: Unique_file_identifier_type,
-    Standard_error: Unique_file_identifier_type,
-    Task: Task_identifier_type,
-    Virtual_file_system: &'static Virtual_file_system_type<'static>,
+    standard_in: Unique_file_identifier_type,
+    standard_out: Unique_file_identifier_type,
+    standard_error: Unique_file_identifier_type,
+    task: Task_identifier_type,
+    virtual_file_system: &'static Virtual_file_system_type<'static>,
 }
 
 impl Drop for Standard_type {
     fn drop(&mut self) {
-        let _ = block_on(self.Virtual_file_system.Close(self.Standard_in, self.Task));
+        let _ = block_on(self.virtual_file_system.Close(self.standard_in, self.task));
 
-        let _ = block_on(self.Virtual_file_system.Close(self.Standard_out, self.Task));
+        let _ = block_on(self.virtual_file_system.Close(self.standard_out, self.task));
 
         let _ = block_on(
-            self.Virtual_file_system
-                .Close(self.Standard_error, self.Task),
+            self.virtual_file_system
+                .Close(self.standard_error, self.task),
         );
     }
 }
 
 impl Standard_type {
-    pub async fn Open(
-        Standard_in: &impl AsRef<Path_type>,
-        Standard_out: &impl AsRef<Path_type>,
-        Standard_error: &impl AsRef<Path_type>,
-        Task: Task_identifier_type,
-        Virtual_file_system: &'static Virtual_file_system_type<'static>,
+    pub async fn open(
+        standard_in: &impl AsRef<Path_type>,
+        standard_out: &impl AsRef<Path_type>,
+        standard_error: &impl AsRef<Path_type>,
+        task: Task_identifier_type,
+        virtual_file_system: &'static Virtual_file_system_type<'static>,
     ) -> Result_type<Self> {
-        let Standard_in = Virtual_file_system
-            .Open(Standard_in, Mode_type::READ_ONLY.into(), Task)
+        let standard_in = virtual_file_system
+            .Open(standard_in, Mode_type::READ_ONLY.into(), task)
             .await?;
 
-        let Standard_out = Virtual_file_system
-            .Open(Standard_out, Mode_type::WRITE_ONLY.into(), Task)
+        let Standard_out = virtual_file_system
+            .Open(standard_out, Mode_type::WRITE_ONLY.into(), task)
             .await?;
 
-        let Standard_error = Virtual_file_system
-            .Open(Standard_error, Mode_type::WRITE_ONLY.into(), Task)
+        let Standard_error = virtual_file_system
+            .Open(standard_error, Mode_type::WRITE_ONLY.into(), task)
             .await?;
 
         Ok(Self::New(
-            Standard_in,
+            standard_in,
             Standard_out,
             Standard_error,
-            Task,
-            Virtual_file_system,
+            task,
+            virtual_file_system,
         ))
     }
 
     pub fn New(
-        Standard_in: Unique_file_identifier_type,
-        Standard_out: Unique_file_identifier_type,
-        Standard_error: Unique_file_identifier_type,
-        Task: Task_identifier_type,
-        Virtual_file_system: &'static Virtual_file_system_type,
+        standard_in: Unique_file_identifier_type,
+        standard_out: Unique_file_identifier_type,
+        standard_error: Unique_file_identifier_type,
+        task: Task_identifier_type,
+        virtual_file_system: &'static Virtual_file_system_type,
     ) -> Self {
         Self {
-            Standard_in,
-            Standard_out,
-            Standard_error,
-            Task,
-            Virtual_file_system,
+            standard_in,
+            standard_out,
+            standard_error,
+            task,
+            virtual_file_system,
         }
     }
 
     pub async fn Print(&self, Arguments: &str) {
         let _ = self
-            .Virtual_file_system
-            .Write(self.Standard_out, Arguments.as_bytes(), self.Task)
+            .virtual_file_system
+            .Write(self.standard_out, Arguments.as_bytes(), self.task)
             .await;
     }
 
     pub async fn Out_flush(&self) {
-        self.Virtual_file_system
-            .Flush(self.Standard_out, self.Task)
+        self.virtual_file_system
+            .Flush(self.standard_out, self.task)
             .await
             .unwrap();
     }
 
     pub async fn Write(&self, Data: &[u8]) -> Size_type {
         match self
-            .Virtual_file_system
-            .Write(self.Standard_out, Data, self.Task)
+            .virtual_file_system
+            .Write(self.standard_out, Data, self.task)
             .await
         {
             Ok(Size) => Size,
@@ -106,8 +106,8 @@ impl Standard_type {
 
     pub async fn Print_error(&self, Arguments: &str) {
         let _ = self
-            .Virtual_file_system
-            .Write(self.Standard_error, Arguments.as_bytes(), self.Task)
+            .virtual_file_system
+            .Write(self.standard_error, Arguments.as_bytes(), self.task)
             .await;
     }
 
@@ -120,37 +120,37 @@ impl Standard_type {
         Buffer.clear();
 
         let _ = self
-            .Virtual_file_system
-            .Read_line(self.Standard_in, self.Task, Buffer)
+            .virtual_file_system
+            .Read_line(self.standard_in, self.task, Buffer)
             .await;
     }
 
     pub fn Get_task(&self) -> Task_identifier_type {
-        self.Task
+        self.task
     }
 
     pub async fn Duplicate(&self) -> Result_type<Self> {
-        let Standard_in = self
-            .Virtual_file_system
-            .Duplicate_file_identifier(self.Standard_in, self.Task)
+        let standard_in = self
+            .virtual_file_system
+            .Duplicate_file_identifier(self.standard_in, self.task)
             .await?;
 
         let Standard_out = self
-            .Virtual_file_system
-            .Duplicate_file_identifier(self.Standard_out, self.Task)
+            .virtual_file_system
+            .Duplicate_file_identifier(self.standard_out, self.task)
             .await?;
 
         let Standard_error = self
-            .Virtual_file_system
-            .Duplicate_file_identifier(self.Standard_error, self.Task)
+            .virtual_file_system
+            .Duplicate_file_identifier(self.standard_error, self.task)
             .await?;
 
         Ok(Self::New(
-            Standard_in,
+            standard_in,
             Standard_out,
             Standard_error,
-            self.Task,
-            self.Virtual_file_system,
+            self.task,
+            self.virtual_file_system,
         ))
     }
 
@@ -161,41 +161,41 @@ impl Standard_type {
         Unique_file_identifier_type,
         Unique_file_identifier_type,
     ) {
-        (self.Standard_in, self.Standard_out, self.Standard_error)
+        (self.standard_in, self.standard_out, self.standard_error)
     }
 
     pub(crate) async fn Transfert(mut self, Task: Task_identifier_type) -> Result_type<Self> {
-        self.Standard_in = self
-            .Virtual_file_system
+        self.standard_in = self
+            .virtual_file_system
             .Transfert(
-                self.Standard_in,
-                self.Task,
+                self.standard_in,
+                self.task,
                 Task,
                 Some(File_identifier_type::STANDARD_IN),
             )
             .await?;
 
-        self.Standard_out = self
-            .Virtual_file_system
+        self.standard_out = self
+            .virtual_file_system
             .Transfert(
-                self.Standard_out,
-                self.Task,
+                self.standard_out,
+                self.task,
                 Task,
                 Some(File_identifier_type::STANDARD_OUT),
             )
             .await?;
 
-        self.Standard_error = self
-            .Virtual_file_system
+        self.standard_error = self
+            .virtual_file_system
             .Transfert(
-                self.Standard_error,
-                self.Task,
+                self.standard_error,
+                self.task,
                 Task,
                 Some(File_identifier_type::STANDARD_ERROR),
             )
             .await?;
 
-        self.Task = Task;
+        self.task = Task;
 
         Ok(self)
     }

@@ -5,8 +5,8 @@ use core::fmt::Debug;
 pub struct Environment_variable_type(Arc<CString>, usize);
 
 impl Debug for Environment_variable_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        Formatter
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter
             .debug_struct("Environment_variable_type")
             .field("Name", &self.Get_name())
             .field("Value", &self.Get_value())
@@ -17,8 +17,8 @@ impl Debug for Environment_variable_type {
 impl Environment_variable_type {
     /// Create a new environment variable.
     pub fn New(Name: &str, Value: &str) -> Self {
-        let Environment_variable = CString::new(format!("{Name}={Value}")).unwrap();
-        Self(Arc::new(Environment_variable), Name.len())
+        let environment_variable = CString::new(format!("{Name}={Value}")).unwrap();
+        Self(Arc::new(environment_variable), Name.len())
     }
 
     /// Create a new environment variable from a raw string.

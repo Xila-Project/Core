@@ -12,7 +12,7 @@ use super::*;
 static MANAGER_INSTANCE: OnceLock<Manager_type> = OnceLock::new();
 
 pub fn Initialize() -> &'static Manager_type {
-    MANAGER_INSTANCE.get_or_init(Manager_type::New)
+    MANAGER_INSTANCE.get_or_init(Manager_type::new)
 }
 
 pub fn Get_instance() -> &'static Manager_type {
@@ -22,30 +22,30 @@ pub fn Get_instance() -> &'static Manager_type {
 }
 
 struct Internal_user_type {
-    pub Name: String,
-    pub Primary_group: Group_identifier_type,
+    pub name: String,
+    pub primary_group: Group_identifier_type,
 }
 
 struct Internal_group_type {
-    pub Name: String,
-    pub Users: BTreeSet<User_identifier_type>,
+    pub name: String,
+    pub users: BTreeSet<User_identifier_type>,
 }
 
 struct Internal_manager_type {
-    pub Users: BTreeMap<User_identifier_type, Internal_user_type>,
-    pub Groups: BTreeMap<Group_identifier_type, Internal_group_type>,
+    pub users: BTreeMap<User_identifier_type, Internal_user_type>,
+    pub groups: BTreeMap<Group_identifier_type, Internal_group_type>,
 }
 
 pub struct Manager_type(RwLock<CriticalSectionRawMutex, Internal_manager_type>);
 
 impl Manager_type {
-    fn New() -> Self {
-        let mut Groups = BTreeMap::new();
-        Groups.insert(
+    fn new() -> Self {
+        let mut groups = BTreeMap::new();
+        groups.insert(
             Group_identifier_type::ROOT,
             Internal_group_type {
-                Name: "Root".to_string(),
-                Users: BTreeSet::new(),
+                name: "Root".to_string(),
+                users: BTreeSet::new(),
             },
         );
 
@@ -53,20 +53,23 @@ impl Manager_type {
         Users.insert(
             User_identifier_type::ROOT,
             Internal_user_type {
-                Name: "Root".to_string(),
-                Primary_group: Group_identifier_type::ROOT,
+                name: "Root".to_string(),
+                primary_group: Group_identifier_type::ROOT,
             },
         );
 
-        Self(RwLock::new(Internal_manager_type { Users, Groups }))
+        Self(RwLock::new(Internal_manager_type {
+            users: Users,
+            groups,
+        }))
     }
 
     pub async fn Get_new_group_identifier(&self) -> Result_type<Group_identifier_type> {
-        let Inner = self.0.read().await;
+        let inner = self.0.read().await;
 
         let mut Identifier = Group_identifier_type::MINIMUM;
 
-        while Inner.Groups.contains_key(&Identifier) {
+        while inner.groups.contains_key(&Identifier) {
             Identifier += 1;
 
             if Identifier == Group_identifier_type::MAXIMUM {
@@ -78,11 +81,11 @@ impl Manager_type {
     }
 
     pub async fn Get_new_user_identifier(&self) -> Result_type<User_identifier_type> {
-        let Inner = self.0.read().await;
+        let inner = self.0.read().await;
 
         let mut Identifier = User_identifier_type::MINIMUM;
 
-        while Inner.Users.contains_key(&Identifier) {
+        while inner.users.contains_key(&Identifier) {
             Identifier += 1;
 
             if Identifier == User_identifier_type::MAXIMUM {
@@ -95,39 +98,39 @@ impl Manager_type {
 
     pub async fn Add_user(
         &self,
-        Identifier: User_identifier_type,
-        Name: &str,
-        Primary_group: Group_identifier_type,
+        identifier: User_identifier_type,
+        name: &str,
+        primary_group: Group_identifier_type,
     ) -> Result_type<()> {
-        let mut Inner = self.0.write().await;
+        let mut inner = self.0.write().await;
 
         // - Check if user identifier is unique
-        if Inner.Users.contains_key(&Identifier) {
+        if inner.users.contains_key(&identifier) {
             return Err(Error_type::Duplicate_user_identifier);
         }
 
         // - Check if user name is unique
-        if Inner.Users.values().any(|User| User.Name == Name) {
+        if inner.users.values().any(|User| User.name == name) {
             return Err(Error_type::Duplicate_user_name);
         }
 
         // - Add user to the users map
         let User = Internal_user_type {
-            Name: Name.to_string(),
-            Primary_group,
+            name: name.to_string(),
+            primary_group,
         };
 
-        if Inner.Users.insert(Identifier, User).is_some() {
+        if inner.users.insert(identifier, User).is_some() {
             return Err(Error_type::Duplicate_user_identifier); // Shouldn't happen
         }
 
         // - Add user to the primary group
-        if !Inner
-            .Groups
-            .get_mut(&Primary_group)
+        if !inner
+            .groups
+            .get_mut(&primary_group)
             .ok_or(Error_type::Invalid_group_identifier)?
-            .Users
-            .insert(Identifier)
+            .users
+            .insert(identifier)
         {
             return Err(Error_type::Duplicate_user_identifier); // Shouldn't happen
         }
@@ -137,28 +140,28 @@ impl Manager_type {
 
     pub async fn Add_group(
         &self,
-        Identifier: Group_identifier_type,
-        Name: &str,
-        Users: &[User_identifier_type],
+        identifier: Group_identifier_type,
+        name: &str,
+        users: &[User_identifier_type],
     ) -> Result_type<()> {
-        let mut Inner = self.0.write().await;
+        let mut inner = self.0.write().await;
 
         // - Check if group identifier is unique
-        if Inner.Groups.contains_key(&Identifier) {
+        if inner.groups.contains_key(&identifier) {
             return Err(Error_type::Duplicate_group_identifier);
         }
 
         // - Check if group name is unique
-        if Inner.Groups.values().any(|Group| Group.Name == Name) {
+        if inner.groups.values().any(|Group| Group.name == name) {
             return Err(Error_type::Duplicate_group_name);
         }
 
         let Group = Internal_group_type {
-            Name: Name.to_string(),
-            Users: BTreeSet::from_iter(Users.iter().cloned()),
+            name: name.to_string(),
+            users: BTreeSet::from_iter(users.iter().cloned()),
         };
 
-        if Inner.Groups.insert(Identifier, Group).is_some() {
+        if inner.groups.insert(identifier, Group).is_some() {
             return Err(Error_type::Duplicate_group_identifier); // Shouldn't happen
         }
 
@@ -171,60 +174,60 @@ impl Manager_type {
 
     pub async fn Is_in_group(
         &self,
-        User_identifier: User_identifier_type,
-        Group_identifier: Group_identifier_type,
+        user_identifier: User_identifier_type,
+        group_identifier: Group_identifier_type,
     ) -> bool {
-        let Inner = self.0.read().await;
-        Inner
-            .Groups
-            .get(&Group_identifier)
+        let inner = self.0.read().await;
+        inner
+            .groups
+            .get(&group_identifier)
             .unwrap()
-            .Users
-            .contains(&User_identifier)
+            .users
+            .contains(&user_identifier)
     }
 
     pub async fn Get_user_groups(
         &self,
-        Identifier: User_identifier_type,
+        identifier: User_identifier_type,
     ) -> Result_type<BTreeSet<Group_identifier_type>> {
-        let Inner = self.0.read().await;
+        let inner = self.0.read().await;
 
         let mut User_groups: BTreeSet<Group_identifier_type> = BTreeSet::new();
 
         User_groups.extend(
-            Inner
-                .Groups
+            inner
+                .groups
                 .iter()
-                .filter(|(_, Group)| Group.Users.contains(&Identifier))
-                .map(|(Identifier, _)| *Identifier),
+                .filter(|(_, Group)| Group.users.contains(&identifier))
+                .map(|(identifier, _)| *identifier),
         );
 
         Ok(User_groups)
     }
 
     pub async fn Exists_group(&self, Identifier: Group_identifier_type) -> Result_type<bool> {
-        Ok(self.0.read().await.Groups.contains_key(&Identifier))
+        Ok(self.0.read().await.groups.contains_key(&Identifier))
     }
 
     pub async fn Exists_user(&self, Identifier: User_identifier_type) -> Result_type<bool> {
-        Ok(self.0.read().await.Users.contains_key(&Identifier))
+        Ok(self.0.read().await.users.contains_key(&Identifier))
     }
 
     pub async fn Add_to_group(
         &self,
-        User_identifier: User_identifier_type,
-        Group_identifier: Group_identifier_type,
+        user_identifier: User_identifier_type,
+        group_identifier: Group_identifier_type,
     ) -> Result_type<()> {
-        if !self.Exists_group(Group_identifier).await? {
+        if !self.Exists_group(group_identifier).await? {
             return Err(Error_type::Invalid_group_identifier);
         }
         let mut Inner = self.0.write().await;
         if !Inner
-            .Groups
-            .get_mut(&Group_identifier)
+            .groups
+            .get_mut(&group_identifier)
             .unwrap()
-            .Users
-            .insert(User_identifier)
+            .users
+            .insert(user_identifier)
         {
             return Err(Error_type::Duplicate_group_identifier);
         }
@@ -236,10 +239,10 @@ impl Manager_type {
             .0
             .read()
             .await
-            .Groups
+            .groups
             .get(&Identifier)
             .unwrap()
-            .Name
+            .name
             .clone())
     }
 
@@ -248,25 +251,25 @@ impl Manager_type {
             .0
             .read()
             .await
-            .Users
+            .users
             .iter()
-            .find(|(_, User)| User.Name == Name)
+            .find(|(_, User)| User.name == Name)
             .ok_or(Error_type::Invalid_user_identifier)?
             .0)
     }
 
     pub async fn Get_group_users(
         &self,
-        Identifier: Group_identifier_type,
+        identifier: Group_identifier_type,
     ) -> Result_type<Vec<User_identifier_type>> {
         Ok(self
             .0
             .read()
             .await
-            .Groups
-            .get(&Identifier)
+            .groups
+            .get(&identifier)
             .ok_or(Error_type::Invalid_group_identifier)?
-            .Users
+            .users
             .clone()
             .into_iter()
             .collect())
@@ -277,25 +280,25 @@ impl Manager_type {
             .0
             .read()
             .await
-            .Users
+            .users
             .get(&Identifier)
             .ok_or(Error_type::Invalid_user_identifier)?
-            .Name
+            .name
             .clone())
     }
 
     pub async fn Get_user_primary_group(
         &self,
-        Identifier: User_identifier_type,
+        identifier: User_identifier_type,
     ) -> Result_type<Group_identifier_type> {
         Ok(self
             .0
             .read()
             .await
-            .Users
-            .get(&Identifier)
+            .users
+            .get(&identifier)
             .ok_or(Error_type::Invalid_user_identifier)?
-            .Primary_group)
+            .primary_group)
     }
 
     pub fn Check_credentials(&self, _User_name: &str, _Password: &str) -> bool {
@@ -311,7 +314,7 @@ mod Tests {
 
     #[Test]
     async fn Create_user() {
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
         let User_name = "Alice";
         let Identifier = User_identifier_type::New(1000);
         Manager
@@ -330,7 +333,7 @@ mod Tests {
         let Identifier_2 = User_identifier_type::New(1001);
 
         // Same identifier
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
 
         Manager
             .Add_user(Identifier_1, User_name_1, Group_identifier_type::ROOT)
@@ -343,7 +346,7 @@ mod Tests {
         assert_eq!(Result, Err(Error_type::Duplicate_user_identifier));
 
         // Same name
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
 
         Manager
             .Add_user(Identifier_1, User_name_1, Group_identifier_type::ROOT)
@@ -356,7 +359,7 @@ mod Tests {
         assert_eq!(Result, Err(Error_type::Duplicate_user_name));
 
         // Same name and identifier
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
 
         Manager
             .Add_user(Identifier_1, User_name_1, Group_identifier_type::ROOT)
@@ -371,7 +374,7 @@ mod Tests {
 
     #[Test]
     async fn Create_group() {
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
         let Group_name = "Developers";
         let Group_id = Group_identifier_type::New(1000);
         let Result = Manager.Add_group(Group_id, Group_name, &[]).await;
@@ -388,7 +391,7 @@ mod Tests {
         let Group_id_2 = Group_identifier_type::New(1001);
 
         // Same identifier
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
 
         Manager
             .Add_group(Group_id_1, Group_name_1, &[])
@@ -399,7 +402,7 @@ mod Tests {
         assert_eq!(Result, Err(Error_type::Duplicate_group_identifier));
 
         // Same name
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
 
         Manager
             .Add_group(Group_id_1, Group_name_1, &[])
@@ -410,7 +413,7 @@ mod Tests {
         assert_eq!(Result, Err(Error_type::Duplicate_group_name));
 
         // Same name and identifier
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
 
         Manager
             .Add_group(Group_id_1, Group_name_1, &[])
@@ -431,7 +434,7 @@ mod Tests {
 
     #[Test]
     async fn Is_in_group() {
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
         let User_name = "Bob";
         let Identifier = User_identifier_type::New(1000);
         Manager
@@ -448,7 +451,7 @@ mod Tests {
 
     #[Test]
     async fn Get_user_groups() {
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
 
         let User_name = "Charlie";
         let Identifier = User_identifier_type::New(1000);
@@ -484,7 +487,7 @@ mod Tests {
 
     #[Test]
     async fn Get_group_name() {
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
         let Group_name = "QA";
         let Group_id = Group_identifier_type::New(1000);
         Manager.Add_group(Group_id, Group_name, &[]).await.unwrap();
@@ -494,7 +497,7 @@ mod Tests {
 
     #[Test]
     async fn Get_group_users() {
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
         let User_name = "Dave";
         let Identifier = User_identifier_type::New(1000);
         Manager
@@ -512,7 +515,7 @@ mod Tests {
 
     #[Test]
     async fn Get_user_name() {
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
         let User_name = "Eve";
         let Identifier = User_identifier_type::New(1000);
         Manager
@@ -525,7 +528,7 @@ mod Tests {
 
     #[Test]
     async fn Check_credentials() {
-        let Manager = Manager_type::New();
+        let Manager = Manager_type::new();
         let User_name = "Frank";
         let Password = "password123";
         assert!(Manager.Check_credentials(User_name, Password));

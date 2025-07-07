@@ -1,6 +1,5 @@
 #![no_std]
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 extern crate alloc;
 
@@ -21,12 +20,12 @@ mod Main;
 mod Shortcut;
 
 pub struct Shell_type {
-    _Standard: Standard_type,
-    Running: bool,
-    Layout: Layout_type,
-    Desk: Option<Box<Desk_type>>,
-    _Home: Option<Box<Home_type>>,
-    Login: Option<Box<Login_type>>,
+    _standard: Standard_type,
+    running: bool,
+    layout: Layout_type,
+    desk: Option<Box<Desk_type>>,
+    _home: Option<Box<Home_type>>,
+    login: Option<Box<Login_type>>,
 }
 
 pub struct Shell_executable_type;

@@ -3,13 +3,16 @@ use core::mem::{size_of, transmute};
 use crate::{Area_type, Point_type, Rendering_color_type};
 
 pub struct Screen_write_data_type<'a> {
-    Area: Area_type,
-    Buffer: &'a [Rendering_color_type],
+    area: Area_type,
+    buffer: &'a [Rendering_color_type],
 }
 
 impl<'a> Screen_write_data_type<'a> {
     pub fn New(Area: Area_type, Buffer: &'a [Rendering_color_type]) -> Self {
-        Self { Area, Buffer }
+        Self {
+            area: Area,
+            buffer: Buffer,
+        }
     }
 }
 
@@ -51,12 +54,12 @@ impl TryFrom<&[u8]> for &Screen_write_data_type<'_> {
 }
 
 impl Screen_write_data_type<'_> {
-    pub fn Get_area(&self) -> Area_type {
-        self.Area
+    pub fn get_area(&self) -> Area_type {
+        self.area
     }
 
     pub fn Get_buffer(&self) -> &[Rendering_color_type] {
-        self.Buffer
+        self.buffer
     }
 }
 
@@ -66,12 +69,12 @@ pub struct Screen_read_data_type(Point_type);
 
 impl Default for Screen_read_data_type {
     fn default() -> Self {
-        Self(Point_type::New(0, 0))
+        Self(Point_type::new(0, 0))
     }
 }
 
 impl Screen_read_data_type {
-    pub fn Get_resolution(&self) -> Point_type {
+    pub fn get_resolution(&self) -> Point_type {
         self.0
     }
 

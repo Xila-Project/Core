@@ -39,14 +39,14 @@ pub enum Error_type {
 }
 
 impl Error_type {
-    pub const fn Get_discriminant(&self) -> NonZeroU8 {
+    pub const fn get_discriminant(&self) -> NonZeroU8 {
         unsafe { NonZeroU8::new_unchecked(*self as u8) }
     }
 }
 
 impl From<Error_type> for NonZeroU8 {
-    fn from(Value: Error_type) -> Self {
-        Value.Get_discriminant()
+    fn from(value: Error_type) -> Self {
+        value.get_discriminant()
     }
 }
 

@@ -80,32 +80,32 @@ impl Signal_type {
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
 pub struct Signal_accumulator_type {
-    Accumulator: u32,
+    accumulator: u32,
 }
 
 impl Signal_accumulator_type {
-    pub const fn New() -> Self {
-        Self { Accumulator: 0 }
+    pub const fn new() -> Self {
+        Self { accumulator: 0 }
     }
 
     pub const fn Send(&mut self, Signal: Signal_type) {
-        self.Accumulator |= 1 << Signal as u32;
+        self.accumulator |= 1 << Signal as u32;
     }
 
     pub const fn Clear(&mut self, Signal: Signal_type) {
-        self.Accumulator &= !(1 << Signal as u32);
+        self.accumulator &= !(1 << Signal as u32);
     }
 
     pub const fn Has_signal(&self, Signal: Signal_type) -> bool {
-        self.Accumulator & (1 << Signal as u32) != 0
+        self.accumulator & (1 << Signal as u32) != 0
     }
 
     pub fn Peek(&self) -> Option<Signal_type> {
-        for Bit in Signal_type::FIRST as u8..=Signal_type::LAST as u8 {
-            let Signal = unsafe { core::mem::transmute::<u8, Signal_type>(Bit) };
+        for bit in Signal_type::FIRST as u8..=Signal_type::LAST as u8 {
+            let signal = unsafe { core::mem::transmute::<u8, Signal_type>(bit) };
 
-            if self.Has_signal(Signal) {
-                return Some(Signal);
+            if self.Has_signal(signal) {
+                return Some(signal);
             }
         }
 
@@ -113,10 +113,10 @@ impl Signal_accumulator_type {
     }
 
     pub fn Pop(&mut self) -> Option<Signal_type> {
-        if let Some(Signal) = self.Peek() {
-            self.Clear(Signal);
+        if let Some(signal) = self.Peek() {
+            self.Clear(signal);
 
-            Some(Signal)
+            Some(signal)
         } else {
             None
         }
@@ -129,14 +129,14 @@ mod Tests {
 
     #[test]
     fn Test_send_and_has_signal() {
-        let mut acc = Signal_accumulator_type::New();
+        let mut acc = Signal_accumulator_type::new();
         acc.Send(Signal_type::Interrupt);
         assert!(acc.Has_signal(Signal_type::Interrupt));
     }
 
     #[test]
     fn Test_clear_signal() {
-        let mut acc = Signal_accumulator_type::New();
+        let mut acc = Signal_accumulator_type::new();
         acc.Send(Signal_type::Quit);
         acc.Clear(Signal_type::Quit);
         assert!(!acc.Has_signal(Signal_type::Quit));
@@ -144,7 +144,7 @@ mod Tests {
 
     #[test]
     fn Test_peek_and_pop() {
-        let mut acc = Signal_accumulator_type::New();
+        let mut acc = Signal_accumulator_type::new();
         acc.Send(Signal_type::Hangup);
         acc.Send(Signal_type::User_1);
         assert_eq!(acc.Peek(), Some(Signal_type::Hangup));

@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
 use core::result::Result;
@@ -30,43 +29,43 @@ pub enum Error_type {
 }
 
 impl From<File_system::Error_type> for Error_type {
-    fn from(Error: File_system::Error_type) -> Self {
-        Self::File_system_error(Error)
+    fn from(error: File_system::Error_type) -> Self {
+        Self::File_system_error(error)
     }
 }
 
 impl From<io::Error> for Error_type {
-    fn from(Error: io::Error) -> Self {
-        Self::Io_error(Error)
+    fn from(error: io::Error) -> Self {
+        Self::Io_error(error)
     }
 }
 
 pub struct Loader_type {
-    Paths: Vec<(PathBuf, Path_owned_type)>,
+    paths: Vec<(PathBuf, Path_owned_type)>,
 }
 
 impl Loader_type {
-    pub fn New() -> Self {
-        Self { Paths: Vec::new() }
+    pub fn new() -> Self {
+        Self { paths: Vec::new() }
     }
 
     pub fn Add_file(
         mut self,
-        Source: impl AsRef<Path>,
-        Destination: impl AsRef<Path_type>,
+        source: impl AsRef<Path>,
+        destination: impl AsRef<Path_type>,
     ) -> Self {
-        self.Paths
-            .push((Source.as_ref().to_owned(), Destination.as_ref().to_owned()));
+        self.paths
+            .push((source.as_ref().to_owned(), destination.as_ref().to_owned()));
 
         self
     }
 
     pub fn Add_files(
         mut self,
-        Files: impl IntoIterator<Item = (PathBuf, Path_owned_type)>,
+        files: impl IntoIterator<Item = (PathBuf, Path_owned_type)>,
     ) -> Self {
-        for File in Files {
-            self = self.Add_file(File.0, File.1);
+        for file in files {
+            self = self.Add_file(file.0, file.1);
         }
 
         self
@@ -74,13 +73,13 @@ impl Loader_type {
 
     pub fn Load(&self, File_system: &mut dyn File_system_traits) -> Result_type<()> {
         // Open file for reading on host
-        for (Source_path, Destination_path) in &self.Paths {
+        for (Source_path, Destination_path) in &self.paths {
             // Open file for reading on host
             let mut Source_file = File::open(Source_path)?;
 
             // Create file on target
             let Destination_file = File_system.Open(
-                Task_identifier_type::New(0),
+                Task_identifier_type::new(0),
                 Destination_path,
                 Flags_type::New(Mode_type::READ_ONLY, Some(Open_type::CREATE), None),
                 Time_type::New(0),
@@ -123,9 +122,9 @@ mod Tests {
         ));
 
         LittleFS::File_system_type::Format(Device.clone(), 256).unwrap();
-        let mut File_system = LittleFS::File_system_type::New(Device, 256).unwrap();
+        let mut File_system = LittleFS::File_system_type::new(Device, 256).unwrap();
 
-        let Loader = Loader_type::New().Add_file(Source_path, Destination_path);
+        let Loader = Loader_type::new().Add_file(Source_path, Destination_path);
 
         Loader.Load(&mut File_system).unwrap();
 
@@ -136,7 +135,7 @@ mod Tests {
 
         let File = File_system
             .Open(
-                Task_identifier_type::New(0),
+                Task_identifier_type::new(0),
                 Path_type::New(Destination_path),
                 Flags_type::New(Mode_type::READ_ONLY, None, None),
                 Time_type::New(0),

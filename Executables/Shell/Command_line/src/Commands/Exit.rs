@@ -1,13 +1,13 @@
 use crate::Shell_type;
 
 impl Shell_type {
-    pub async fn Exit(&mut self, Arguments: &[&str]) {
+    pub async fn exit(&mut self, Arguments: &[&str]) {
         if !Arguments.is_empty() {
-            self.Standard
+            self.standard
                 .Print_error_line("Invalid number of arguments")
                 .await;
         }
 
-        self.Running = false;
+        self.running = false;
     }
 }

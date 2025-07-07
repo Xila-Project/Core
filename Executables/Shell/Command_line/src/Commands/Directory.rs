@@ -4,9 +4,9 @@ use File_system::Path_type;
 use crate::Shell_type;
 
 impl Shell_type {
-    pub async fn Create_directory(&mut self, Arguments: &[&str]) {
+    pub async fn create_directory(&mut self, Arguments: &[&str]) {
         if Arguments.len() != 1 {
-            self.Standard
+            self.standard
                 .Print_error_line("Invalid number of arguments")
                 .await;
             return;
@@ -15,27 +15,27 @@ impl Shell_type {
         let Path = Path_type::From_str(Arguments[0]);
 
         if !Path.Is_valid() {
-            self.Standard.Print_error_line("Invalid path").await;
+            self.standard.Print_error_line("Invalid path").await;
             return;
         }
 
         let Path = if Path.Is_absolute() {
             Path.to_owned()
         } else {
-            match self.Current_directory.clone().Join(Path) {
-                Some(Path) => Path.Canonicalize(),
+            match self.current_directory.clone().Join(Path) {
+                Some(path) => path.Canonicalize(),
                 None => {
-                    self.Standard.Print_error_line("Failed to join paths").await;
+                    self.standard.Print_error_line("Failed to join paths").await;
                     return;
                 }
             }
         };
 
         if let Err(Error) = Virtual_file_system::Get_instance()
-            .Create_directory(&Path, self.Standard.Get_task())
+            .Create_directory(&Path, self.standard.Get_task())
             .await
         {
-            self.Standard
+            self.standard
                 .Print_error_line(&format!("Failed to create directory: {Error}"))
                 .await;
         }
@@ -43,7 +43,7 @@ impl Shell_type {
 
     pub async fn Remove(&mut self, Arguments: &[&str]) {
         if Arguments.len() != 1 {
-            self.Standard
+            self.standard
                 .Print_error_line("Invalid number of arguments")
                 .await;
             return;
@@ -52,24 +52,24 @@ impl Shell_type {
         let Path = Path_type::From_str(Arguments[0]);
 
         if !Path.Is_valid() {
-            self.Standard.Print_error_line("Invalid path").await;
+            self.standard.Print_error_line("Invalid path").await;
             return;
         }
 
         let Path = if Path.Is_absolute() {
             Path.to_owned()
         } else {
-            match self.Current_directory.clone().Join(Path) {
-                Some(Path) => Path.Canonicalize(),
+            match self.current_directory.clone().Join(Path) {
+                Some(path) => path.Canonicalize(),
                 None => {
-                    self.Standard.Print_error_line("Failed to join paths").await;
+                    self.standard.Print_error_line("Failed to join paths").await;
                     return;
                 }
             }
         };
 
         if let Err(Error) = Virtual_file_system::Get_instance().Remove(&Path).await {
-            self.Standard
+            self.standard
                 .Print_error_line(&format!("Failed to remove directory: {Error}"))
                 .await;
         }

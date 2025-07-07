@@ -17,28 +17,28 @@ use Synchronization::blocking_mutex::{CriticalSectionMutex, Mutex};
 const INITIAL_HEAP_SIZE: usize = 1024 * 1024; // 1MB
 
 struct Region_type {
-    pub Heap: Heap,
-    pub Capabilities: Capabilities_type,
-    pub Slice: &'static mut [MaybeUninit<u8>],
+    pub heap: Heap,
+    pub capabilities: Capabilities_type,
+    pub slice: &'static mut [MaybeUninit<u8>],
 }
 
 pub struct Memory_manager_type {
-    Regions: CriticalSectionMutex<RefCell<[Region_type; 2]>>,
+    regions: CriticalSectionMutex<RefCell<[Region_type; 2]>>,
 }
 
 impl Memory_manager_type {
-    pub const fn New() -> Self {
+    pub const fn new() -> Self {
         Memory_manager_type {
-            Regions: Mutex::new(RefCell::new([
+            regions: Mutex::new(RefCell::new([
                 Region_type {
-                    Heap: Heap::empty(),
-                    Capabilities: Capabilities_type::New(false, false),
-                    Slice: &mut [],
+                    heap: Heap::empty(),
+                    capabilities: Capabilities_type::New(false, false),
+                    slice: &mut [],
                 },
                 Region_type {
-                    Heap: Heap::empty(),
-                    Capabilities: Capabilities_type::New(true, false),
-                    Slice: &mut [],
+                    heap: Heap::empty(),
+                    capabilities: Capabilities_type::New(true, false),
+                    slice: &mut [],
                 },
             ])),
         }
@@ -47,12 +47,12 @@ impl Memory_manager_type {
 
 impl Drop for Memory_manager_type {
     fn drop(&mut self) {
-        self.Regions.lock(|Regions| {
-            let mut Regions = Regions.borrow_mut();
-            for Region in Regions.iter_mut() {
-                if !Region.Slice.is_empty() {
+        self.regions.lock(|Regions| {
+            let mut regions = Regions.borrow_mut();
+            for region in regions.iter_mut() {
+                if !region.slice.is_empty() {
                     unsafe {
-                        Unmap(Region.Slice.as_mut_ptr(), Region.Slice.len());
+                        Unmap(region.slice.as_mut_ptr(), region.slice.len());
                     }
                 }
             }
@@ -63,35 +63,35 @@ impl Drop for Memory_manager_type {
 impl Manager_trait for Memory_manager_type {
     unsafe fn Allocate(
         &self,
-        Capabilities: Capabilities_type,
-        Layout: Layout_type,
+        capabilities: Capabilities_type,
+        layout: Layout_type,
     ) -> Option<NonNull<u8>> {
-        self.Regions.lock(|Regions| {
-            let mut Regions = Regions.try_borrow_mut().ok()?;
+        self.regions.lock(|regions| {
+            let mut regions = regions.try_borrow_mut().ok()?;
 
             // Find the first region that can satisfy the allocation request
-            let Capable_regions = Regions
+            let Capable_regions = regions
                 .iter_mut()
-                .filter(|Region| Region.Capabilities.Is_superset_of(Capabilities));
+                .filter(|region| region.capabilities.Is_superset_of(capabilities));
 
             // Try to allocate from the first capable region
             for Region in Capable_regions {
-                let Result = Region.Heap.allocate_first_fit(Layout).ok();
-                if Result.is_some() {
-                    return Result;
+                let result = Region.heap.allocate_first_fit(layout).ok();
+                if result.is_some() {
+                    return result;
                 }
             }
 
-            let Capable_regions = Regions
+            let Capable_regions = regions
                 .iter_mut()
-                .filter(|Region| Region.Capabilities.Is_superset_of(Capabilities));
+                .filter(|region| region.capabilities.Is_superset_of(capabilities));
 
             // If no region could satisfy the request, try to expand existing regions
             for Region in Capable_regions {
                 // Try to expand the region to fit the requested layout
-                if Expand(Region, Layout.size()) {
+                if Expand(Region, layout.size()) {
                     // Try to allocate again after expanding
-                    let Result = Region.Heap.allocate_first_fit(Layout).ok();
+                    let Result = Region.heap.allocate_first_fit(layout).ok();
                     if Result.is_some() {
                         return Result;
                     }
@@ -103,15 +103,15 @@ impl Manager_trait for Memory_manager_type {
     }
 
     unsafe fn Deallocate(&self, Pointer: NonNull<u8>, Layout: Layout_type) {
-        self.Regions.lock(|Regions| {
-            let mut Regions = Regions.borrow_mut();
+        self.regions.lock(|regions| {
+            let mut regions = regions.borrow_mut();
 
-            let Region = Regions
+            let Region = regions
                 .iter_mut()
-                .find(|Region| Is_slice_within_region(Region, Pointer, Layout));
+                .find(|region| Is_slice_within_region(region, Pointer, Layout));
 
             if let Some(Region) = Region {
-                Region.Heap.deallocate(Pointer, Layout);
+                Region.heap.deallocate(Pointer, Layout);
             } else {
                 panic!("Pointer not found in any region");
             }
@@ -119,24 +119,24 @@ impl Manager_trait for Memory_manager_type {
     }
 
     unsafe fn Get_used(&self) -> usize {
-        self.Regions.lock(|Regions| {
-            let Regions = Regions.borrow();
-            let mut Used = 0;
-            for Region in Regions.iter() {
-                Used += Region.Heap.used();
+        self.regions.lock(|regions| {
+            let regions = regions.borrow();
+            let mut used = 0;
+            for region in regions.iter() {
+                used += region.heap.used();
             }
-            Used
+            used
         })
     }
 
     unsafe fn Get_free(&self) -> usize {
-        self.Regions.lock(|Regions| {
-            let Regions = Regions.borrow();
-            let mut Free = 0;
-            for Region in Regions.iter() {
-                Free += Region.Heap.free();
+        self.regions.lock(|regions| {
+            let regions = regions.borrow();
+            let mut free = 0;
+            for region in regions.iter() {
+                free += region.heap.free();
             }
-            Free
+            free
         })
     }
 
@@ -146,42 +146,42 @@ impl Manager_trait for Memory_manager_type {
 }
 
 unsafe fn Is_slice_within_region(
-    Region: &Region_type,
-    Pointer: NonNull<u8>,
-    Layout: Layout_type,
+    region: &Region_type,
+    pointer: NonNull<u8>,
+    layout: Layout_type,
 ) -> bool {
-    let Start = Region.Slice.as_ptr() as usize;
-    let End = Start + Region.Slice.len();
-    let Pointer_start = Pointer.as_ptr() as usize;
-    let Pointer_end = Pointer_start + Layout.size();
+    let start = region.slice.as_ptr() as usize;
+    let end = start + region.slice.len();
+    let pointer_start = pointer.as_ptr() as usize;
+    let pointer_end = pointer_start + layout.size();
 
     // Check if the pointer range is completely contained within the region
-    Pointer_start >= Start && Pointer_end <= End
+    pointer_start >= start && pointer_end <= end
 }
 
 unsafe fn Expand(Region: &mut Region_type, Tried_size: usize) -> bool {
-    let Page_size = Get_page_size();
+    let page_size = Get_page_size();
     // If the region is empty, allocate a new one
-    if Region.Slice.is_empty() {
-        let Size = Round_page_size(Tried_size.max(INITIAL_HEAP_SIZE), Page_size);
-        let New_slice = Map(Size, Region.Capabilities);
-        let New_size = New_slice.len();
+    if Region.slice.is_empty() {
+        let size = Round_page_size(Tried_size.max(INITIAL_HEAP_SIZE), page_size);
+        let new_slice = Map(size, Region.capabilities);
+        let new_size = new_slice.len();
         Region
-            .Heap
-            .init(New_slice.as_mut_ptr() as *mut u8, New_size);
-        Region.Slice = New_slice;
+            .heap
+            .init(new_slice.as_mut_ptr() as *mut u8, new_size);
+        Region.slice = new_slice;
         return true;
     }
     // If the region is not empty, try to expand it
-    let Region_old_size = Region.Slice.len();
-    let New_size = Region_old_size + Tried_size;
-    let New_size = Round_page_size(New_size, Page_size);
+    let Region_old_size = Region.slice.len();
+    let new_size = Region_old_size + Tried_size;
+    let new_size = Round_page_size(new_size, page_size);
 
-    Remap(&mut Region.Slice, New_size);
+    Remap(&mut Region.slice, new_size);
 
-    let Difference = New_size - Region_old_size;
+    let Difference = new_size - Region_old_size;
 
-    Region.Heap.extend(Difference);
+    Region.heap.extend(Difference);
 
     true
 }
@@ -195,8 +195,8 @@ const fn Round_page_size(Size: usize, Page_size: usize) -> usize {
 }
 
 unsafe fn Map(size: usize, Capabilities: Capabilities_type) -> &'static mut [MaybeUninit<u8>] {
-    let Page_size = Get_page_size();
-    let Size = Round_page_size(size, Page_size);
+    let page_size = Get_page_size();
+    let size = Round_page_size(size, page_size);
 
     let Capabilities = if Capabilities.Get_executable() {
         PROT_READ | PROT_WRITE | PROT_EXEC
@@ -206,7 +206,7 @@ unsafe fn Map(size: usize, Capabilities: Capabilities_type) -> &'static mut [May
 
     let Pointer = mmap(
         null_mut(),
-        Size,
+        size,
         Capabilities,
         MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT,
         -1,
@@ -217,22 +217,22 @@ unsafe fn Map(size: usize, Capabilities: Capabilities_type) -> &'static mut [May
         panic!("Failed to allocate memory");
     }
 
-    core::slice::from_raw_parts_mut(Pointer as *mut MaybeUninit<u8>, Size)
+    core::slice::from_raw_parts_mut(Pointer as *mut MaybeUninit<u8>, size)
 }
 
 unsafe fn Remap(Slice: &mut &'static mut [MaybeUninit<u8>], New_size: usize) {
-    let Page_size = Get_page_size();
-    let New_size = Round_page_size(New_size, Page_size);
+    let page_size = Get_page_size();
+    let new_size = Round_page_size(New_size, page_size);
 
     let Old_size = Slice.len();
 
-    let Pointer = mremap(Slice.as_mut_ptr() as *mut c_void, Old_size, New_size, 0);
+    let Pointer = mremap(Slice.as_mut_ptr() as *mut c_void, Old_size, new_size, 0);
 
     if (Pointer == MAP_FAILED) || (Pointer != Slice.as_mut_ptr() as *mut c_void) {
         panic!("Failed to reallocate memory");
     }
 
-    *Slice = core::slice::from_raw_parts_mut(Slice.as_mut_ptr(), New_size);
+    *Slice = core::slice::from_raw_parts_mut(Slice.as_mut_ptr(), new_size);
 }
 
 unsafe fn Unmap(Pointer: *mut MaybeUninit<u8>, Size: usize) {
@@ -251,7 +251,7 @@ mod Tests {
     #[test]
     fn Test_global_allocator() {
         // Create a separate instance for testing to avoid reentrancy issues with the global allocator
-        let Test_manager = Memory_manager_type::New();
+        let Test_manager = Memory_manager_type::new();
 
         // Allocate some memory using the test manager directly
         let Layout = Layout_type::from_size_align(128, 8).unwrap();
@@ -275,7 +275,7 @@ mod Tests {
     #[test]
     fn Test_get_used_free() {
         unsafe {
-            let Manager = Memory_manager_type::New();
+            let Manager = Memory_manager_type::new();
 
             // Allocate some memory
             let Layout = Layout_type::from_size_align(128, 8).unwrap();
@@ -300,7 +300,7 @@ mod Tests {
     #[test]
     fn Test_memory_manager_initialization() {
         unsafe {
-            let Manager = Memory_manager_type::New();
+            let Manager = Memory_manager_type::new();
 
             // Perform an initial allocation to trigger initialization
             let Layout = Layout_type::from(Layout_type::from_size_align(128, 8).unwrap());
@@ -321,12 +321,12 @@ mod Tests {
             }
 
             // Check that regions are initialized
-            Manager.Regions.lock(|Regions| {
+            Manager.regions.lock(|Regions| {
                 let Regions_reference = Regions.borrow();
-                assert!(!Regions_reference[0].Slice.is_empty());
-                assert!(!Regions_reference[1].Slice.is_empty());
-                assert!(!Regions_reference[0].Capabilities.Get_executable());
-                assert!(Regions_reference[1].Capabilities.Get_executable());
+                assert!(!Regions_reference[0].slice.is_empty());
+                assert!(!Regions_reference[1].slice.is_empty());
+                assert!(!Regions_reference[0].capabilities.Get_executable());
+                assert!(Regions_reference[1].capabilities.Get_executable());
             });
         }
     }
@@ -334,7 +334,7 @@ mod Tests {
     #[test]
     fn Test_allocate_deallocate() {
         unsafe {
-            let Manager = Memory_manager_type::New();
+            let Manager = Memory_manager_type::new();
 
             // Allocate some memory
             let Layout = Layout_type::from_size_align(128, 8).unwrap();
@@ -353,7 +353,7 @@ mod Tests {
     #[test]
     fn Test_executable_memory() {
         unsafe {
-            let Manager = Memory_manager_type::New();
+            let Manager = Memory_manager_type::new();
 
             // Allocate some executable memory
             let Layout = Layout_type::from_size_align(128, 8).unwrap();
@@ -372,7 +372,7 @@ mod Tests {
     #[test]
     fn Test_memory_expansion() {
         unsafe {
-            let Manager = Memory_manager_type::New();
+            let Manager = Memory_manager_type::new();
 
             // Allocate a chunk of memory close to the region size
             // to trigger expansion
@@ -400,7 +400,7 @@ mod Tests {
     #[test]
     fn Test_is_slice_within_region() {
         unsafe {
-            let Manager = Memory_manager_type::New();
+            let Manager = Memory_manager_type::new();
 
             // Allocate some memory
             let Layout = Layout_type::from_size_align(128, 8).unwrap();
@@ -409,7 +409,7 @@ mod Tests {
             let Allocation = Manager.Allocate(Capabilities, Layout);
             assert!(Allocation.is_some());
 
-            Manager.Regions.lock(|Regions| {
+            Manager.regions.lock(|Regions| {
                 let Regions_reference = Regions.borrow();
                 if let Some(Pointer) = Allocation {
                     // Check that the pointer is within the region

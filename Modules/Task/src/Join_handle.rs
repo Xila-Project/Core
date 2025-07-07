@@ -7,10 +7,10 @@ unsafe impl<T> Send for Join_handle_type<T> {}
 unsafe impl<T> Sync for Join_handle_type<T> {}
 
 impl<T> Join_handle_type<T> {
-    pub fn New() -> (Self, Self) {
-        let Signal = Signal::<CriticalSectionRawMutex, T>::new();
+    pub fn new() -> (Self, Self) {
+        let signal = Signal::<CriticalSectionRawMutex, T>::new();
 
-        let Arc = Arc::new(Signal);
+        let Arc = Arc::new(signal);
 
         (Self(Arc.clone()), Self(Arc))
     }

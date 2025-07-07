@@ -15,18 +15,18 @@ unsafe impl Sync for Inner_type {}
 unsafe impl Send for Inner_type {}
 
 impl Inner_type {
-    pub fn New(Resolution: Point_type) -> Result<Self, String> {
-        let mut Event_loop = EventLoop::builder()
+    pub fn new(resolution: Point_type) -> Result<Self, String> {
+        let mut event_loop = EventLoop::builder()
             //  .with_wayland()
             .with_any_thread(true)
             .build()
             .map_err(|Error| format!("Error building event loop: {Error:?}"))?;
 
-        let mut Window = Window_type::New(Resolution);
+        let mut Window = Window_type::new(resolution);
 
-        Event_loop.pump_app_events(None, &mut Window);
+        event_loop.pump_app_events(None, &mut Window);
 
-        Ok(Self(Window, Event_loop))
+        Ok(Self(Window, event_loop))
     }
 
     pub fn Get_resolution(&self) -> Option<Point_type> {

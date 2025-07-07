@@ -1,6 +1,5 @@
 #![no_std]
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 extern crate alloc;
 
@@ -19,13 +18,13 @@ async fn Integration_test() {
 
     let _ = Users::Initialize();
 
-    let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()));
+    let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()));
 
     let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
 
     LittleFS::File_system_type::Format(Memory_device.clone(), 256).unwrap();
 
-    let File_system = LittleFS::File_system_type::New(Memory_device, 256).unwrap();
+    let File_system = LittleFS::File_system_type::new(Memory_device, 256).unwrap();
 
     let Virtual_file_system =
         Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();

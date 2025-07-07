@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
 use std::{fs::File, io::Write, path::Path};
@@ -13,72 +12,72 @@ use syn::{FnArg, ItemFn, ReturnType, Signature, TypePath};
 use Bindings_utilities::Type_tree::Type_tree_type;
 
 fn Generate_conversion_for_argument(
-    Type_tree: &Type_tree_type,
-    Argument: &FnArg,
+    type_tree: &Type_tree_type,
+    argument: &FnArg,
 ) -> Result<TokenStream, String> {
-    match Argument {
-        FnArg::Typed(Pattern) => {
-            let Identifier = &*Pattern.pat;
+    match argument {
+        FnArg::Typed(pattern) => {
+            let identifier = &*pattern.pat;
 
-            match &*Pattern.ty {
-                syn::Type::Ptr(Type) => {
-                    let Type_string = Type.elem.to_token_stream().to_string();
+            match &*pattern.ty {
+                syn::Type::Ptr(type_value) => {
+                    let type_string = type_value.elem.to_token_stream().to_string();
 
-                    if Type_string == "lv_obj_t" {
+                    if type_string == "lv_obj_t" {
                         Ok(quote! {
 
-                            let #Identifier = __Pointer_table.Get_native_pointer(
+                            let #identifier = __pointer_table.Get_native_pointer(
                                 __Task,
-                                #Identifier.try_into().map_err(|_| Error_type::Invalid_pointer)?
+                                #identifier.try_into().map_err(|_| Error_type::Invalid_pointer)?
                             )?;
 
                         })
                     } else {
                         Ok(quote! {
-                            let #Identifier : #Type = Convert_to_native_pointer(
-                                &__Environment,
-                                #Identifier
+                            let #identifier : #type_value = Convert_to_native_pointer(
+                                &__environment,
+                                #identifier
                             )?;
                         })
                     }
                 }
                 syn::Type::Path(Path) => {
-                    let Path_string = Type_tree.Resolve(&Path.path);
+                    let path_string = type_tree.Resolve(&Path.path);
 
-                    let Path_string_stripped = Path_string.replace(" ", "");
+                    let Path_string_stripped = path_string.replace(" ", "");
 
-                    let Path_string_identifier: TypePath = syn::parse_str(&Path_string).unwrap();
+                    let Path_string_identifier: TypePath = syn::parse_str(&path_string).unwrap();
 
                     if Path_string_stripped == "bool" {
                         Ok(quote! {
-                            let #Identifier = #Identifier != 0;
+                            let #identifier = #identifier != 0;
                         })
                     } else if Path_string_stripped == "lv_color_t" {
                         Ok(quote! {
-                            let #Identifier = lv_color_t {
-                                blue: #Identifier as u8,
-                                green: (#Identifier >> 8) as u8,
-                                red: (#Identifier >> 16) as u8,
+                            let #identifier = lv_color_t {
+                                blue: #identifier as u8,
+                                green: (#identifier >> 8) as u8,
+                                red: (#identifier >> 16) as u8,
                             };
                         })
                     } else if Path_string_stripped == "lv_color32_t" {
                         Ok(quote! {
-                            let #Identifier = core::mem::transmute::<u32, #Path_string_identifier>(#Identifier);
+                            let #identifier = core::mem::transmute::<u32, #Path_string_identifier>(#identifier);
                         })
                     } else if Path_string_stripped == "lv_color16_t" {
                         Ok(quote! {
-                            let #Identifier = core::mem::transmute::<u16, #Path_string_identifier>(#Identifier as u16);
+                            let #identifier = core::mem::transmute::<u16, #Path_string_identifier>(#identifier as u16);
                         })
                     } else if Path_string_stripped == "lv_style_value_t" {
                         Ok(quote! {
-                            let #Identifier = #Identifier as *mut lv_style_value_t;
-                            let #Identifier = *#Identifier;
+                            let #identifier = #identifier as *mut lv_style_value_t;
+                            let #identifier = *#identifier;
                         })
                     } else if Path_string_stripped == "u32" {
                         Ok(quote! {})
                     } else {
                         Ok(quote! {
-                            let #Identifier = #Identifier as #Path_string_identifier;
+                            let #identifier = #identifier as #Path_string_identifier;
                         })
                     }
                 }
@@ -92,46 +91,46 @@ fn Generate_conversion_for_argument(
 fn Generate_conversion_for_output(Return: &ReturnType) -> Result<Option<TokenStream>, String> {
     match Return {
         ReturnType::Type(_, Type) => {
-            let Conversion = match &**Type {
-                syn::Type::Ptr(Type) => {
-                    let Type_string = Type.elem.to_token_stream().to_string();
+            let conversion = match &**Type {
+                syn::Type::Ptr(type_value) => {
+                    let type_string = type_value.elem.to_token_stream().to_string();
 
-                    if Type_string == "lv_obj_t" {
+                    if type_string == "lv_obj_t" {
                         quote! {
 
-                            let __Result_2 : *mut u16 = Convert_to_native_pointer(&__Environment, __Result)?;
+                            let __result_2 : *mut u16 = Convert_to_native_pointer(&__environment, __result)?;
 
-                            let __Result : *mut u16 = Convert_to_native_pointer(&__Environment, __Result)?;
+                            let __result : *mut u16 = Convert_to_native_pointer(&__environment, __result)?;
 
-                            let __Current_result = __Pointer_table.Insert(
+                            let __current_result = __pointer_table.Insert(
                                 __Task,
-                                __Current_result as *mut core::ffi::c_void
+                                __current_result as *mut core::ffi::c_void
                             )?;
 
 
-                            *__Result = __Current_result;
+                            *__result = __current_result;
                         }
-                    } else if Type_string == "core :: ffi :: c_void" {
+                    } else if type_string == "core :: ffi :: c_void" {
                         quote! {
-                            let __Current_result = __Environment.Convert_to_WASM_pointer(
-                                __Current_result
+                            let __current_result = __environment.Convert_to_WASM_pointer(
+                                __current_result
                             );
 
-                            let __Result : *mut WASM_pointer_type = Convert_to_native_pointer(&__Environment, __Result)?;
+                            let __result : *mut WASM_pointer_type = Convert_to_native_pointer(&__environment, __result)?;
                         }
                     } else {
                         quote! {
-                            let __Current_result = __Environment.Convert_to_WASM_pointer(
-                                __Current_result as *mut core::ffi::c_void
+                            let __current_result = __environment.Convert_to_WASM_pointer(
+                                __current_result as *mut core::ffi::c_void
                             );
 
-                            let __Result : *mut WASM_pointer_type = Convert_to_native_pointer(&__Environment, __Result)?;
+                            let __result : *mut WASM_pointer_type = Convert_to_native_pointer(&__environment, __result)?;
                         }
                     }
                 }
                 syn::Type::Path(Type) => {
                     quote! {
-                        let __Result : *mut #Type = Convert_to_native_pointer(&__Environment, __Result)?;
+                        let __result : *mut #Type = Convert_to_native_pointer(&__environment, __result)?;
                     }
                 }
 
@@ -141,9 +140,9 @@ fn Generate_conversion_for_output(Return: &ReturnType) -> Result<Option<TokenStr
             };
 
             Ok(Some(quote! {
-                #Conversion
+                #conversion
 
-                *__Result = __Current_result;
+                *__result = __current_result;
 
             }))
         }
@@ -154,11 +153,11 @@ fn Generate_conversion_for_output(Return: &ReturnType) -> Result<Option<TokenStr
 
 fn Generate_assign(Index: usize, Argument: &FnArg) -> Result<TokenStream, String> {
     match Argument {
-        FnArg::Typed(Pattern) => {
-            let Identifier = format_ident!("__Argument_{}", Index);
-            let Identifier_real = &*Pattern.pat;
+        FnArg::Typed(pattern) => {
+            let identifier = format_ident!("__Argument_{}", Index);
+            let identifier_real = &*pattern.pat;
             Ok(quote! {
-                let #Identifier_real = #Identifier;
+                let #identifier_real = #identifier;
             })
         }
         _ => Err("Unsupported argument type".to_string()),
@@ -167,10 +166,10 @@ fn Generate_assign(Index: usize, Argument: &FnArg) -> Result<TokenStream, String
 
 fn Generate_call_argument(Argument: &FnArg) -> Result<TokenStream, String> {
     match Argument {
-        FnArg::Typed(Pattern) => {
-            let Identifier = &*Pattern.pat;
+        FnArg::Typed(pattern) => {
+            let identifier = &*pattern.pat;
             Ok(quote! {
-                #Identifier
+                #identifier
             })
         }
         _ => Err("Unsupported argument type".to_string()),
@@ -178,11 +177,11 @@ fn Generate_call_argument(Argument: &FnArg) -> Result<TokenStream, String> {
 }
 
 fn Generate_function_call(
-    Type_tree: &Type_tree_type,
-    Function: &Signature,
+    type_tree: &Type_tree_type,
+    function: &Signature,
 ) -> Result<TokenStream, String> {
     // - Get the inputs
-    let Inputs = Function.inputs.iter().collect::<Vec<_>>();
+    let Inputs = function.inputs.iter().collect::<Vec<_>>();
 
     let (Left_inputs, Right_inputs) = Split_inputs(&Inputs)?;
 
@@ -190,35 +189,35 @@ fn Generate_function_call(
     let Assigns = Right_inputs
         .iter()
         .enumerate()
-        .map(|(i, Argument)| Generate_assign(i, Argument))
+        .map(|(i, argument)| Generate_assign(i, argument))
         .collect::<Result<Vec<_>, _>>()?;
 
     // - Generate the conversion of the arguments to the expected types (let name = name as Type;)
     let Conversion = Right_inputs
         .iter()
-        .map(|Argument| Generate_conversion_for_argument(Type_tree, Argument))
+        .map(|argument| Generate_conversion_for_argument(type_tree, argument))
         .collect::<Result<Vec<_>, _>>()?;
 
     // - Generate the order of the arguments in the function call (name, name, ...)
     let Call_arguments = Left_inputs
         .iter()
         .chain(Right_inputs.iter())
-        .map(|Argument| Generate_call_argument(Argument))
+        .map(|argument| Generate_call_argument(argument))
         .collect::<Result<Vec<_>, _>>()?;
 
     // - Get the number of arguments
     let Arguments_count = Literal::usize_unsuffixed(Right_inputs.len());
 
     // - Get the function identifier
-    let Function_identifier = &Function.ident;
+    let Function_identifier = &function.ident;
 
-    // - Generate the return conversion if needed (let __Result = __Current_result;)
-    let Return = Generate_conversion_for_output(&Function.output)?;
+    // - Generate the return conversion if needed (let __result = __current_result;)
+    let Return = Generate_conversion_for_output(&function.output)?;
 
-    // - Generate the code for the function call (let __Current_result = Function_identifier(arguments);)
+    // - Generate the code for the function call (let __current_result = Function_identifier(arguments);)
     let Function_call = if let Some(Return) = &Return {
         quote! {
-            let __Current_result = #Function_identifier(#(
+            let __current_result = #Function_identifier(#(
                 #Call_arguments,
             )*);
 
@@ -254,23 +253,23 @@ fn Generate_function_call(
 }
 
 pub fn Generate_code(
-    Type_tree: &Type_tree_type,
-    Signatures: Vec<Signature>,
-    Definitions: Vec<ItemFn>,
+    type_tree: &Type_tree_type,
+    signatures: Vec<Signature>,
+    definitions: Vec<ItemFn>,
 ) -> Result<TokenStream, String> {
-    let Functions_call = Signatures
+    let functions_call = signatures
         .iter()
-        .map(|Signature| Generate_function_call(Type_tree, Signature))
+        .map(|signature| Generate_function_call(type_tree, signature))
         .collect::<Result<Vec<_>, _>>()?;
 
     Ok(quote! {
-        #( #Definitions )*
+        #( #definitions )*
 
         #[allow(unused_variables)]
         #[allow(clippy::too_many_arguments)]
         pub unsafe fn Call_function(
-            __Environment: Environment_type,
-            __Pointer_table: &mut Pointer_table_type,
+            __environment: Environment_type,
+            __pointer_table: &mut Pointer_table_type,
             __Function: Function_calls_type,
             __Argument_0: WASM_usize_type,
             __Argument_1: WASM_usize_type,
@@ -280,15 +279,15 @@ pub fn Generate_code(
             __Argument_5: WASM_usize_type,
             __Argument_6: WASM_usize_type,
             __Arguments_count: u8,
-            __Result: WASM_pointer_type,
+            __result: WASM_pointer_type,
         ) -> Result_type<()>
         {
-            let __Custom_data = __Environment.Get_or_initialize_custom_data().map_err(|_| Error_type::Failed_to_get_environment)?;
+            let __Custom_data = __environment.Get_or_initialize_custom_data().map_err(|_| Error_type::Failed_to_get_environment)?;
             let __Task = __Custom_data.Get_task_identifier();
 
             match __Function {
                 #(
-                    #Functions_call
+                    #functions_call
                 )*
 
             }
@@ -303,8 +302,8 @@ pub fn Generate_code(
 pub fn Generate(Output_path: &Path, Context: &LVGL_context) -> Result<(), String> {
     // Open the output file
     let Output_file_path = Output_path.join("Bindings.rs");
-    let mut Output_file = File::create(&Output_file_path)
-        .map_err(|Error| format!("Error creating output file : {Error}"))?;
+    let mut output_file = File::create(&Output_file_path)
+        .map_err(|error| format!("Error creating output file : {error}"))?;
 
     let Enumerations = Enumeration::Generate_code(Context.Get_signatures());
 
@@ -314,7 +313,7 @@ pub fn Generate(Output_path: &Path, Context: &LVGL_context) -> Result<(), String
         Context.Get_definitions(),
     )?;
 
-    Output_file
+    output_file
         .write_all(
             quote! {
                     #Enumerations

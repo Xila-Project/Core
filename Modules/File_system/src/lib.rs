@@ -95,7 +95,6 @@
 //! The [`Error_type`] enum provides comprehensive error reporting for all file system operations.
 
 #![no_std]
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
 extern crate alloc;

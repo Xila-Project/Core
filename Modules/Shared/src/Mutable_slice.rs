@@ -13,7 +13,7 @@ where
     S: Unsigned + Num + NumCast + PartialOrd + ToPrimitive + Copy,
 {
     Data: &'a mut [T],
-    Length: &'a mut S,
+    length: &'a mut S,
 }
 
 impl<'a, T, S> Mutable_slice_type<'a, T, S>
@@ -21,7 +21,7 @@ where
     S: Unsigned + Num + NumCast + Num + PartialOrd + ToPrimitive + Copy,
 {
     pub fn From(Slice: NonNull<T>, mut Length: NonNull<S>, Size: S) -> Result<Self, Error_type> {
-        let Data: &'a mut [T] = unsafe {
+        let data: &'a mut [T] = unsafe {
             std::slice::from_raw_parts_mut(
                 Slice.as_ptr(),
                 Size.to_usize()
@@ -34,8 +34,8 @@ where
         }
 
         Ok(Self {
-            Data,
-            Length: unsafe { Length.as_mut() },
+            Data: data,
+            length: unsafe { Length.as_mut() },
         })
     }
 
@@ -56,7 +56,7 @@ where
             return Err(Error_type::Invalid_length);
         }
 
-        *self.Length = Length as S;
+        *self.length = Length as S;
         Ok(())
     }
 
@@ -69,7 +69,7 @@ where
     }
 
     pub fn Get_length(&self) -> usize {
-        (*self.Length).to_usize().unwrap()
+        (*self.length).to_usize().unwrap()
     }
 
     pub fn Get_size(&self) -> usize {
@@ -82,8 +82,8 @@ where
 }
 
 impl<T: Debug> Display for Mutable_slice_type<'_, T> {
-    fn fmt(&self, Formatter: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(Formatter, "{:?}", self.As_slice())
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{:?}", self.As_slice())
     }
 }
 

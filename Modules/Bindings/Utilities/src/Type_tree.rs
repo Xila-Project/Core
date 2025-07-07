@@ -5,29 +5,29 @@ use syn::Path;
 
 #[derive(Debug)]
 pub struct Type_tree_type {
-    Type_tree: HashMap<String, String>,
+    type_tree: HashMap<String, String>,
 }
 
 impl Default for Type_tree_type {
     fn default() -> Self {
-        let Map = HashMap::new();
+        let map = HashMap::new();
 
-        Self { Type_tree: Map }
+        Self { type_tree: map }
     }
 }
 
 impl Type_tree_type {
-    pub fn Insert(&mut self, Type: String, Alias: String) {
-        self.Type_tree.insert(Type, Alias);
+    pub fn insert(&mut self, Type: String, Alias: String) {
+        self.type_tree.insert(Type, Alias);
     }
 
     pub fn Resolve(&self, Path: &Path) -> String {
-        let Path_string = Path.to_token_stream().to_string();
+        let path_string = Path.to_token_stream().to_string();
 
-        if let Some(Alias) = self.Type_tree.get(&Path_string) {
+        if let Some(Alias) = self.type_tree.get(&path_string) {
             Alias.clone()
         } else {
-            Path_string
+            path_string
         }
     }
 }

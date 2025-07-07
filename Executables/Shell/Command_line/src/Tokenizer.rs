@@ -10,38 +10,38 @@ pub enum Redirect_type_type {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Redirect_type<'a> {
-    pub Left: &'a str,
-    pub Redirect_type: Redirect_type_type,
-    pub Right: &'a str,
+    pub left: &'a str,
+    pub redirect_type: Redirect_type_type,
+    pub right: &'a str,
 }
 
 impl<'a> TryFrom<&'a str> for Redirect_type<'a> {
     type Error = ();
 
     fn try_from(Value: &'a str) -> Result<Self, Self::Error> {
-        if let Some((Left, Right)) = Value.split_once(">>") {
+        if let Some((left, Right)) = Value.split_once(">>") {
             return Ok(Redirect_type {
-                Left,
-                Redirect_type: Redirect_type_type::Output_append,
-                Right,
+                left,
+                redirect_type: Redirect_type_type::Output_append,
+                right: Right,
             });
         } else if let Some((Left, Right)) = Value.split_once("<<") {
             return Ok(Redirect_type {
-                Left,
-                Redirect_type: Redirect_type_type::Here_document,
-                Right,
+                left: Left,
+                redirect_type: Redirect_type_type::Here_document,
+                right: Right,
             });
         } else if let Some((Left, Right)) = Value.split_once(">") {
             return Ok(Redirect_type {
-                Left,
-                Redirect_type: Redirect_type_type::Output,
-                Right,
+                left: Left,
+                redirect_type: Redirect_type_type::Output,
+                right: Right,
             });
         } else if let Some((Left, Right)) = Value.split_once("<") {
             return Ok(Redirect_type {
-                Left,
-                Redirect_type: Redirect_type_type::Input,
-                Right,
+                left: Left,
+                redirect_type: Redirect_type_type::Input,
+                right: Right,
             });
         }
 
@@ -60,11 +60,11 @@ impl<'a> From<&'a str> for Token_type<'a> {
     fn from(Value: &'a str) -> Self {
         match Value {
             "|" => Token_type::Pipe,
-            Value => {
-                if let Ok(Redirect) = Redirect_type::try_from(Value) {
+            value => {
+                if let Ok(Redirect) = Redirect_type::try_from(value) {
                     Token_type::Redirect(Redirect)
                 } else {
-                    Token_type::String(Value)
+                    Token_type::String(value)
                 }
             }
         }
@@ -103,14 +103,14 @@ mod Tests {
             Token_type::String("grep"),
             Token_type::String(".rs"),
             Token_type::Redirect(Redirect_type {
-                Left: "2",
-                Redirect_type: Redirect_type_type::Output,
-                Right: "&1",
+                left: "2",
+                redirect_type: Redirect_type_type::Output,
+                right: "&1",
             }),
             Token_type::Redirect(Redirect_type {
-                Left: "",
-                Redirect_type: Redirect_type_type::Output,
-                Right: "",
+                left: "",
+                redirect_type: Redirect_type_type::Output,
+                right: "",
             }),
             Token_type::String("output.txt"),
         ];
@@ -142,9 +142,9 @@ mod Tests {
             Token_type::String("ls"),
             Token_type::String("-l"),
             Token_type::Redirect(Redirect_type {
-                Left: "",
-                Redirect_type: Redirect_type_type::Output,
-                Right: "",
+                left: "",
+                redirect_type: Redirect_type_type::Output,
+                right: "",
             }),
             Token_type::String("output.txt"),
         ];
@@ -159,9 +159,9 @@ mod Tests {
             Token_type::String("ls"),
             Token_type::String("-l"),
             Token_type::Redirect(Redirect_type {
-                Left: "",
-                Redirect_type: Redirect_type_type::Input,
-                Right: "",
+                left: "",
+                redirect_type: Redirect_type_type::Input,
+                right: "",
             }),
             Token_type::String("input.txt"),
         ];
@@ -176,9 +176,9 @@ mod Tests {
             Token_type::String("ls"),
             Token_type::String("-l"),
             Token_type::Redirect(Redirect_type {
-                Left: "",
-                Redirect_type: Redirect_type_type::Output_append,
-                Right: "",
+                left: "",
+                redirect_type: Redirect_type_type::Output_append,
+                right: "",
             }),
             Token_type::String("output.txt"),
         ];
@@ -191,9 +191,9 @@ mod Tests {
             Token_type::String("ls"),
             Token_type::String("-l"),
             Token_type::Redirect(Redirect_type {
-                Left: "",
-                Redirect_type: Redirect_type_type::Here_document,
-                Right: "",
+                left: "",
+                redirect_type: Redirect_type_type::Here_document,
+                right: "",
             }),
             Token_type::String("EOF"),
         ];
@@ -206,9 +206,9 @@ mod Tests {
             Token_type::String("ls"),
             Token_type::String("-l"),
             Token_type::Redirect(Redirect_type {
-                Left: "2",
-                Redirect_type: Redirect_type_type::Output,
-                Right: "&1",
+                left: "2",
+                redirect_type: Redirect_type_type::Output,
+                right: "&1",
             }),
         ];
 
@@ -222,9 +222,9 @@ mod Tests {
             Token_type::String("ls"),
             Token_type::String("-l"),
             Token_type::Redirect(Redirect_type {
-                Left: "2",
-                Redirect_type: Redirect_type_type::Output,
-                Right: "",
+                left: "2",
+                redirect_type: Redirect_type_type::Output,
+                right: "",
             }),
             Token_type::String("output.txt"),
         ];

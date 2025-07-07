@@ -3,27 +3,27 @@
 use super::*;
 
 impl Manager_type {
-    pub async fn Send_signal(
+    pub async fn send_signal(
         &self,
-        Task_identifier: Task_identifier_type,
-        Signal: Signal_type,
+        task_identifier: Task_identifier_type,
+        signal: Signal_type,
     ) -> Result_type<()> {
-        Self::Get_task_mutable(&mut *self.0.write().await, Task_identifier)
-            .map(|Task| Task.Signals.Send(Signal))
+        Self::Get_task_mutable(&mut *self.0.write().await, task_identifier)
+            .map(|task| task.Signals.Send(signal))
     }
 
     pub async fn Pop_signal(
         &self,
-        Task_identifier: Task_identifier_type,
+        task_identifier: Task_identifier_type,
     ) -> Result_type<Option<Signal_type>> {
-        Self::Get_task_mutable(&mut *self.0.write().await, Task_identifier)
-            .map(|Task| Task.Signals.Pop())
+        Self::Get_task_mutable(&mut *self.0.write().await, task_identifier)
+            .map(|task| task.Signals.Pop())
     }
 
     pub async fn Peek_signal(
         &self,
-        Task_identifier: Task_identifier_type,
+        task_identifier: Task_identifier_type,
     ) -> Result_type<Option<Signal_type>> {
-        Self::Get_task(&*self.0.read().await, Task_identifier).map(|Task| Task.Signals.Peek())
+        Self::Get_task(&*self.0.read().await, task_identifier).map(|Task| Task.Signals.Peek())
     }
 }

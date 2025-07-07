@@ -13,7 +13,7 @@ pub enum Architecture_type {
 }
 
 impl Architecture_type {
-    pub fn Get() -> Architecture_type {
+    pub fn get() -> Architecture_type {
         Architecture_type::from(Self::Get_raw())
     }
 

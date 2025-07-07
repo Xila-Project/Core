@@ -6,47 +6,47 @@ use File_system::{Entry_type, Inode_type, Path_type, Result_type, Size_type, Typ
 use super::{littlefs, Convert_result};
 
 struct Inner_type {
-    Directory: littlefs::lfs_dir_t,
+    directory: littlefs::lfs_dir_t,
 }
 
 #[derive(Clone)]
 pub struct Directory_type(Rc<Inner_type>);
 
 impl Debug for Directory_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        Formatter
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter
             .debug_struct("Directory_type")
-            .field("Inner", &self.0.Directory)
+            .field("Inner", &self.0.directory)
             .finish()
     }
 }
 
 impl Directory_type {
-    pub fn Create_directory(
-        File_system: &mut super::littlefs::lfs_t,
-        Path: &Path_type,
+    pub fn create_directory(
+        file_system: &mut super::littlefs::lfs_t,
+        path: &Path_type,
     ) -> Result_type<()> {
-        let Path = CString::new(Path.As_str()).unwrap();
+        let path = CString::new(path.As_str()).unwrap();
 
-        Convert_result(unsafe { littlefs::lfs_mkdir(File_system as *mut _, Path.as_ptr()) })?;
+        Convert_result(unsafe { littlefs::lfs_mkdir(file_system as *mut _, path.as_ptr()) })?;
 
         Ok(())
     }
 
     pub fn Open(File_system: &mut super::littlefs::lfs_t, Path: &Path_type) -> Result_type<Self> {
-        let Path = CString::new(Path.As_str()).unwrap();
+        let path = CString::new(Path.As_str()).unwrap();
 
         let Directory = MaybeUninit::<littlefs::lfs_dir_t>::uninit();
 
         let Directory = Self(Rc::new(Inner_type {
-            Directory: unsafe { Directory.assume_init() },
+            directory: unsafe { Directory.assume_init() },
         }));
 
         Convert_result(unsafe {
             littlefs::lfs_dir_open(
                 File_system as *mut _,
-                &Directory.0.Directory as *const _ as *mut _,
-                Path.as_ptr(),
+                &Directory.0.directory as *const _ as *mut _,
+                path.as_ptr(),
             )
         })?;
 
@@ -57,7 +57,7 @@ impl Directory_type {
         Convert_result(unsafe {
             littlefs::lfs_dir_rewind(
                 File_system as *mut _,
-                &self.0.Directory as *const _ as *mut _,
+                &self.0.directory as *const _ as *mut _,
             )
         })?;
 
@@ -66,28 +66,28 @@ impl Directory_type {
 
     pub fn Get_position(
         &mut self,
-        File_system: &mut super::littlefs::lfs_t,
+        file_system: &mut super::littlefs::lfs_t,
     ) -> Result_type<Size_type> {
-        let Offset = Convert_result(unsafe {
+        let offset = Convert_result(unsafe {
             littlefs::lfs_dir_tell(
-                File_system as *mut _,
-                &self.0.Directory as *const _ as *mut _,
+                file_system as *mut _,
+                &self.0.directory as *const _ as *mut _,
             )
         })?;
 
-        Ok(Size_type::New(Offset as u64))
+        Ok(Size_type::New(offset as u64))
     }
 
     pub fn Set_position(
         &mut self,
-        File_system: &mut littlefs::lfs_t,
-        Position: Size_type,
+        file_system: &mut littlefs::lfs_t,
+        position: Size_type,
     ) -> Result_type<()> {
         Convert_result(unsafe {
             littlefs::lfs_dir_seek(
-                File_system as *const _ as *mut _,
-                &self.0.Directory as *const _ as *mut _,
-                u64::from(Position) as littlefs::lfs_off_t,
+                file_system as *const _ as *mut _,
+                &self.0.directory as *const _ as *mut _,
+                u64::from(position) as littlefs::lfs_off_t,
             )
         })?;
 
@@ -96,16 +96,16 @@ impl Directory_type {
 
     pub fn Read(
         &mut self,
-        File_system: &mut super::littlefs::lfs_t,
+        file_system: &mut super::littlefs::lfs_t,
     ) -> Result_type<Option<Entry_type>> {
-        let Informations = MaybeUninit::<littlefs::lfs_info>::uninit();
+        let informations = MaybeUninit::<littlefs::lfs_info>::uninit();
 
-        let mut Informations = unsafe { Informations.assume_init() };
+        let mut Informations = unsafe { informations.assume_init() };
 
         let Result = unsafe {
             littlefs::lfs_dir_read(
-                File_system as *mut _,
-                &self.0.Directory as *const _ as *mut _,
+                file_system as *mut _,
+                &self.0.directory as *const _ as *mut _,
                 &mut Informations as *mut _,
             )
         };
@@ -117,7 +117,7 @@ impl Directory_type {
         Convert_result(Result)?;
 
         let Name = unsafe { CStr::from_ptr(Informations.name.as_ptr()) };
-        let Name = Name.to_str().unwrap().to_string();
+        let name = Name.to_str().unwrap().to_string();
 
         let Type = if Informations.type_ == littlefs::lfs_type_LFS_TYPE_DIR as u8 {
             Type_type::Directory
@@ -127,7 +127,7 @@ impl Directory_type {
 
         let Entry = Entry_type::New(
             Inode_type::New(0),
-            Name,
+            name,
             Type,
             Size_type::New(Informations.size as u64),
         );
@@ -139,7 +139,7 @@ impl Directory_type {
         Convert_result(unsafe {
             littlefs::lfs_dir_close(
                 File_system as *mut _,
-                &self.0.Directory as *const _ as *mut _,
+                &self.0.directory as *const _ as *mut _,
             )
         })?;
 

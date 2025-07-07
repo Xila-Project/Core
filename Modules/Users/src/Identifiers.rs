@@ -22,8 +22,8 @@ impl User_identifier_type {
 }
 
 impl AddAssign<User_identifier_inner_type> for User_identifier_type {
-    fn add_assign(&mut self, Other: User_identifier_inner_type) {
-        self.0 += Other;
+    fn add_assign(&mut self, other: User_identifier_inner_type) {
+        self.0 += other;
     }
 }
 
@@ -36,13 +36,13 @@ impl Add<User_identifier_inner_type> for User_identifier_type {
 }
 
 impl From<User_identifier_inner_type> for User_identifier_type {
-    fn from(Value: User_identifier_inner_type) -> Self {
-        User_identifier_type::New(Value)
+    fn from(value: User_identifier_inner_type) -> Self {
+        User_identifier_type::New(value)
     }
 }
 impl From<User_identifier_type> for User_identifier_inner_type {
-    fn from(Value: User_identifier_type) -> Self {
-        Value.As_u16()
+    fn from(value: User_identifier_type) -> Self {
+        value.As_u16()
     }
 }
 
@@ -68,19 +68,19 @@ impl Group_identifier_type {
 }
 
 impl From<Group_identifier_inner_type> for Group_identifier_type {
-    fn from(Value: Group_identifier_inner_type) -> Self {
-        Group_identifier_type::New(Value)
+    fn from(value: Group_identifier_inner_type) -> Self {
+        Group_identifier_type::New(value)
     }
 }
 impl From<Group_identifier_type> for Group_identifier_inner_type {
-    fn from(Value: Group_identifier_type) -> Self {
-        Value.As_u16()
+    fn from(value: Group_identifier_type) -> Self {
+        value.As_u16()
     }
 }
 
 impl AddAssign<Group_identifier_inner_type> for Group_identifier_type {
-    fn add_assign(&mut self, Other: Group_identifier_inner_type) {
-        self.0 += Other;
+    fn add_assign(&mut self, other: Group_identifier_inner_type) {
+        self.0 += other;
     }
 }
 

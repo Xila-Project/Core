@@ -8,28 +8,28 @@ use super::{Key_type, State_type};
 #[repr(C)]
 pub struct Input_data_type {
     pub Continue: bool,
-    pub Point: Point_type,
-    pub State: State_type,
-    pub Key: Key_type,
+    pub point: Point_type,
+    pub state: State_type,
+    pub key: Key_type,
 }
 
 impl Default for Input_data_type {
     fn default() -> Self {
         Self {
-            Point: Point_type::default(),
-            State: State_type::default(),
-            Key: Key_type::Character(0),
+            point: Point_type::default(),
+            state: State_type::default(),
+            key: Key_type::Character(0),
             Continue: false,
         }
     }
 }
 
 impl Input_data_type {
-    pub const fn New(Point: Point_type, State: State_type, Key: Key_type, Continue: bool) -> Self {
+    pub const fn new(point: Point_type, State: State_type, Key: Key_type, Continue: bool) -> Self {
         Self {
-            Point,
-            State,
-            Key,
+            point,
+            state: State,
+            key: Key,
             Continue,
         }
     }
@@ -39,15 +39,15 @@ impl Input_data_type {
     }
 
     pub const fn Get_point(&self) -> &Point_type {
-        &self.Point
+        &self.point
     }
 
     pub const fn Get_touch(&self) -> &State_type {
-        &self.State
+        &self.state
     }
 
     pub const fn Get_key(&self) -> Key_type {
-        self.Key
+        self.key
     }
 
     pub const fn Set_continue(&mut self, Continue: bool) {
@@ -55,20 +55,20 @@ impl Input_data_type {
     }
 
     pub fn Set_point(&mut self, Point: Point_type) {
-        self.Point = Point;
+        self.point = Point;
     }
 
     pub fn Set_state(&mut self, Touch: State_type) {
-        self.State = Touch;
+        self.state = Touch;
     }
 
     pub fn Set_key(&mut self, Key: Key_type) {
-        self.Key = Key;
+        self.key = Key;
     }
 
     pub fn Set(&mut self, Point: Point_type, Touch: State_type) {
-        self.Point = Point;
-        self.State = Touch;
+        self.point = Point;
+        self.state = Touch;
     }
 }
 
@@ -95,18 +95,18 @@ impl AsMut<[u8]> for Input_data_type {
 }
 
 impl From<Input_data_type> for LVGL::lv_indev_data_t {
-    fn from(Value: Input_data_type) -> LVGL::lv_indev_data_t {
-        let mut Input_device_data = LVGL::lv_indev_data_t::default();
+    fn from(value: Input_data_type) -> LVGL::lv_indev_data_t {
+        let mut input_device_data = LVGL::lv_indev_data_t::default();
 
-        let State = Value.Get_touch();
+        let State = value.Get_touch();
 
         if *State == State_type::Pressed {
-            Input_device_data.point = (*Value.Get_point()).into();
+            input_device_data.point = (*value.Get_point()).into();
         }
 
-        Input_device_data.state = (*State).into();
-        Input_device_data.key = Value.Key.into();
+        input_device_data.state = (*State).into();
+        input_device_data.key = value.key.into();
 
-        Input_device_data
+        input_device_data
     }
 }

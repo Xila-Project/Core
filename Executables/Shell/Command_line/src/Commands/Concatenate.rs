@@ -4,45 +4,45 @@ use File_system::{Mode_type, Path_type};
 use crate::Shell_type;
 
 impl Shell_type {
-    async fn Read_file_and_write(&mut self, Path: &Path_type) {
-        let File = match Virtual_file_system::Get_instance()
-            .Open(&Path, Mode_type::READ_ONLY.into(), self.Standard.Get_task())
+    async fn read_file_and_write(&mut self, Path: &Path_type) {
+        let file = match Virtual_file_system::Get_instance()
+            .Open(&Path, Mode_type::READ_ONLY.into(), self.standard.Get_task())
             .await
         {
             Ok(File) => File,
-            Err(Error) => {
-                self.Standard
-                    .Print_error_line(&format!("Failed to open file: {Error:?}"))
+            Err(error) => {
+                self.standard
+                    .Print_error_line(&format!("Failed to open file: {error:?}"))
                     .await;
                 return;
             }
         };
 
         let mut Buffer = [0_u8; 128];
-        while let Ok(Size) = Virtual_file_system::Get_instance()
-            .Read(File, &mut Buffer, self.Standard.Get_task())
+        while let Ok(size) = Virtual_file_system::Get_instance()
+            .Read(file, &mut Buffer, self.standard.Get_task())
             .await
         {
-            if Size == 0 {
+            if size == 0 {
                 break;
             }
 
-            let Size: usize = Size.into();
+            let Size: usize = size.into();
 
-            self.Standard.Write(&Buffer[..Size]).await;
+            self.standard.Write(&Buffer[..Size]).await;
         }
     }
 
     pub async fn Concatenate(&mut self, Arguments: &[&str]) {
-        for Path in Arguments {
-            let Path = Path_type::From_str(Path);
+        for path in Arguments {
+            let path = Path_type::From_str(path);
 
-            if Path.Is_absolute() {
-                self.Read_file_and_write(Path).await;
+            if path.Is_absolute() {
+                self.read_file_and_write(path).await;
             } else {
-                match self.Current_directory.clone().Join(Path) {
-                    Some(Path) => self.Read_file_and_write(&Path).await,
-                    None => self.Standard.Print_error_line("Invalid command").await,
+                match self.current_directory.clone().Join(path) {
+                    Some(path) => self.read_file_and_write(&path).await,
+                    None => self.standard.Print_error_line("Invalid command").await,
                 }
             }
         }

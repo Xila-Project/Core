@@ -4,21 +4,21 @@ use File_system::Path_type;
 use crate::Shell_type;
 
 impl Shell_type {
-    pub async fn List(&mut self, Arguments: &[&str]) {
-        let Path = if Arguments.is_empty() {
-            self.Current_directory.as_ref()
+    pub async fn list(&mut self, Arguments: &[&str]) {
+        let path = if Arguments.is_empty() {
+            self.current_directory.as_ref()
         } else {
             Path_type::From_str(Arguments[0])
         };
 
         let Directory = match Virtual_file_system::Get_instance()
-            .Open_directory(&Path, self.Standard.Get_task())
+            .Open_directory(&path, self.standard.Get_task())
             .await
         {
             Ok(Directory) => Directory,
-            Err(Error) => {
-                self.Standard
-                    .Print_error_line(&format!("Failed to open directory: {Error:?}"))
+            Err(error) => {
+                self.standard
+                    .Print_error_line(&format!("Failed to open directory: {error:?}"))
                     .await;
 
                 return;
@@ -26,11 +26,11 @@ impl Shell_type {
         };
 
         while let Ok(Some(Entry)) = Virtual_file_system::Get_instance()
-            .Read_directory(Directory, self.Standard.Get_task())
+            .Read_directory(Directory, self.standard.Get_task())
             .await
         {
-            self.Standard.Print(Entry.Get_name()).await;
-            self.Standard.Print("\n").await;
+            self.standard.Print(Entry.Get_name()).await;
+            self.standard.Print("\n").await;
         }
     }
 }

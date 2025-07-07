@@ -2,67 +2,67 @@ use super::LVGL;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct Point_type {
-    X: i16,
-    Y: i16,
+    x: i16,
+    y: i16,
 }
 
 impl Point_type {
-    pub const fn New(X: i16, Y: i16) -> Self {
-        Self { X, Y }
+    pub const fn new(X: i16, Y: i16) -> Self {
+        Self { x: X, y: Y }
     }
 
     pub const fn Get_x(&self) -> i16 {
-        self.X
+        self.x
     }
 
     pub const fn Get_y(&self) -> i16 {
-        self.Y
+        self.y
     }
 
     pub fn Split(self) -> (i16, i16) {
-        (self.X, self.Y)
+        (self.x, self.y)
     }
 
     pub fn Set_x(mut self, Value: i16) -> Self {
-        self.X = Value;
+        self.x = Value;
         self
     }
 
     pub fn Set_y(mut self, Value: i16) -> Self {
-        self.Y = Value;
+        self.y = Value;
         self
     }
 
     pub fn Set(mut self, X: i16, Y: i16) -> Self {
-        self.X = X;
-        self.Y = Y;
+        self.x = X;
+        self.y = Y;
         self
     }
 
     pub fn Get_distance(&self, Other: Point_type) -> f32 {
-        let X = (self.X - Other.X) as f32;
-        let Y = (self.Y - Other.Y) as f32;
-        (X * X + Y * Y).sqrt()
+        let x = (self.x - Other.x) as f32;
+        let y = (self.y - Other.y) as f32;
+        (x * x + y * y).sqrt()
     }
 }
 
 impl From<(i16, i16)> for Point_type {
-    fn from((X, Y): (i16, i16)) -> Self {
-        Self::New(X, Y)
+    fn from((x, y): (i16, i16)) -> Self {
+        Self::new(x, y)
     }
 }
 
 impl From<Point_type> for (i16, i16) {
-    fn from(Point: Point_type) -> Self {
-        Point.Split()
+    fn from(point: Point_type) -> Self {
+        point.Split()
     }
 }
 
 impl From<Point_type> for LVGL::lv_point_t {
-    fn from(Point: Point_type) -> Self {
+    fn from(point: Point_type) -> Self {
         Self {
-            x: Point.X as i32,
-            y: Point.Y as i32,
+            x: point.x as i32,
+            y: point.y as i32,
         }
     }
 }

@@ -13,27 +13,27 @@ pub enum Error_type {
 }
 
 impl Display for Error_type {
-    fn fmt(&self, Formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
-            Error_type::File_system(Error) => write!(Formatter, "{Error}"),
-            Error_type::Task(Error) => write!(Formatter, "{Error}"),
+            Error_type::File_system(Error) => write!(formatter, "{Error}"),
+            Error_type::Task(error) => write!(formatter, "{error}"),
             Error_type::Failed_to_get_main_function => {
-                write!(Formatter, "Failed to get main function")
+                write!(formatter, "Failed to get main function")
             }
-            Error_type::Invalid_stack_size => write!(Formatter, "Invalid stack size"),
-            Error_type::Permission_denied => write!(Formatter, "Permission denied"),
+            Error_type::Invalid_stack_size => write!(formatter, "Invalid stack size"),
+            Error_type::Permission_denied => write!(formatter, "Permission denied"),
         }
     }
 }
 
 impl From<File_system::Error_type> for Error_type {
-    fn from(Error: File_system::Error_type) -> Self {
-        Error_type::File_system(Error)
+    fn from(error: File_system::Error_type) -> Self {
+        Error_type::File_system(error)
     }
 }
 
 impl From<Task::Error_type> for Error_type {
-    fn from(Error: Task::Error_type) -> Self {
-        Error_type::Task(Error)
+    fn from(error: Task::Error_type) -> Self {
+        Error_type::Task(error)
     }
 }

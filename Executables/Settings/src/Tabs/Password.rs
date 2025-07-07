@@ -7,23 +7,23 @@ use Users;
 use Virtual_file_system;
 
 pub struct Password_tab_type {
-    Tab_container: *mut LVGL::lv_obj_t,
-    Current_password_text_area: *mut LVGL::lv_obj_t,
-    New_password_text_area: *mut LVGL::lv_obj_t,
-    Confirm_password_text_area: *mut LVGL::lv_obj_t,
-    Change_password_button: *mut LVGL::lv_obj_t,
-    Password_status_label: *mut LVGL::lv_obj_t,
+    tab_container: *mut LVGL::lv_obj_t,
+    current_password_text_area: *mut LVGL::lv_obj_t,
+    new_password_text_area: *mut LVGL::lv_obj_t,
+    confirm_password_text_area: *mut LVGL::lv_obj_t,
+    change_password_button: *mut LVGL::lv_obj_t,
+    password_status_label: *mut LVGL::lv_obj_t,
 }
 
 impl Password_tab_type {
-    pub fn New() -> Self {
+    pub fn new() -> Self {
         Self {
-            Tab_container: core::ptr::null_mut(),
-            Current_password_text_area: core::ptr::null_mut(),
-            New_password_text_area: core::ptr::null_mut(),
-            Confirm_password_text_area: core::ptr::null_mut(),
-            Change_password_button: core::ptr::null_mut(),
-            Password_status_label: core::ptr::null_mut(),
+            tab_container: core::ptr::null_mut(),
+            current_password_text_area: core::ptr::null_mut(),
+            new_password_text_area: core::ptr::null_mut(),
+            confirm_password_text_area: core::ptr::null_mut(),
+            change_password_button: core::ptr::null_mut(),
+            password_status_label: core::ptr::null_mut(),
         }
     }
 
@@ -54,12 +54,12 @@ impl Password_tab_type {
         // Get passwords from text areas
         let (current_password, new_password, confirm_password) = unsafe {
             let current = core::ffi::CStr::from_ptr(LVGL::lv_textarea_get_text(
-                self.Current_password_text_area,
+                self.current_password_text_area,
             ));
-            let New =
-                core::ffi::CStr::from_ptr(LVGL::lv_textarea_get_text(self.New_password_text_area));
+            let new =
+                core::ffi::CStr::from_ptr(LVGL::lv_textarea_get_text(self.new_password_text_area));
             let confirm = core::ffi::CStr::from_ptr(LVGL::lv_textarea_get_text(
-                self.Confirm_password_text_area,
+                self.confirm_password_text_area,
             ));
 
             let current = match current.to_str() {
@@ -71,7 +71,7 @@ impl Password_tab_type {
                 }
             };
 
-            let New = match New.to_str() {
+            let New = match new.to_str() {
                 Ok(s) => s,
                 Err(_) => {
                     self.Set_password_status("Invalid characters in new password", true)
@@ -156,18 +156,18 @@ impl Password_tab_type {
     async fn Set_password_status(&mut self, message: &str, is_error: bool) {
         let message_cstr = CString::new(message).unwrap_or_default();
         unsafe {
-            LVGL::lv_label_set_text(self.Password_status_label, message_cstr.as_ptr());
+            LVGL::lv_label_set_text(self.password_status_label, message_cstr.as_ptr());
 
             // Set color based on whether it's an error or success
             if is_error {
                 LVGL::lv_obj_set_style_text_color(
-                    self.Password_status_label,
+                    self.password_status_label,
                     LVGL::lv_color_hex(0xFF0000), // Red for errors
                     LVGL::LV_STATE_DEFAULT,
                 );
             } else {
                 LVGL::lv_obj_set_style_text_color(
-                    self.Password_status_label,
+                    self.password_status_label,
                     LVGL::lv_color_hex(0x00FF00), // Green for success
                     LVGL::LV_STATE_DEFAULT,
                 );
@@ -177,15 +177,15 @@ impl Password_tab_type {
 
     async fn Clear_password_fields(&mut self) {
         unsafe {
-            LVGL::lv_textarea_set_text(self.Current_password_text_area, c"".as_ptr());
-            LVGL::lv_textarea_set_text(self.New_password_text_area, c"".as_ptr());
-            LVGL::lv_textarea_set_text(self.Confirm_password_text_area, c"".as_ptr());
+            LVGL::lv_textarea_set_text(self.current_password_text_area, c"".as_ptr());
+            LVGL::lv_textarea_set_text(self.new_password_text_area, c"".as_ptr());
+            LVGL::lv_textarea_set_text(self.confirm_password_text_area, c"".as_ptr());
         }
     }
 }
 
 impl Password_tab_type {
-    pub fn Create_UI(
+    pub fn create_ui(
         &mut self,
         parent_tabview: *mut LVGL::lv_obj_t,
     ) -> Result_type<*mut LVGL::lv_obj_t> {
@@ -196,15 +196,15 @@ impl Password_tab_type {
             return Err(crate::Error::Error_type::Failed_to_create_UI_element);
         }
 
-        self.Tab_container = tab_container;
+        self.tab_container = tab_container;
 
         // Create password change interface
         let (
-            Current_password_text_area,
-            New_password_text_area,
-            Confirm_password_text_area,
-            Change_password_button,
-            Password_status_label,
+            current_password_text_area,
+            new_password_text_area,
+            confirm_password_text_area,
+            change_password_button,
+            password_status_label,
         ) = unsafe {
             // Current password
             let Current_password_label = LVGL::lv_label_create(tab_container);
@@ -306,11 +306,11 @@ impl Password_tab_type {
         };
 
         // Store UI components
-        self.Current_password_text_area = Current_password_text_area;
-        self.New_password_text_area = New_password_text_area;
-        self.Confirm_password_text_area = Confirm_password_text_area;
-        self.Change_password_button = Change_password_button;
-        self.Password_status_label = Password_status_label;
+        self.current_password_text_area = current_password_text_area;
+        self.new_password_text_area = new_password_text_area;
+        self.confirm_password_text_area = confirm_password_text_area;
+        self.change_password_button = change_password_button;
+        self.password_status_label = password_status_label;
 
         Ok(tab_container)
     }
@@ -318,7 +318,7 @@ impl Password_tab_type {
     pub async fn Handle_event(&mut self, event: &Event_type) -> bool {
         // Handle password change button click
         if event.Get_code() == Event_code_type::Clicked
-            && event.Get_target() == self.Change_password_button
+            && event.Get_target() == self.change_password_button
         {
             self.Handle_password_change().await;
             return true; // Event was handled

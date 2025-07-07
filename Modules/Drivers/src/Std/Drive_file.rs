@@ -11,15 +11,15 @@ use crate::Std::IO::Map_error;
 pub struct File_drive_device_type(RwLock<File>);
 
 impl File_drive_device_type {
-    pub fn New(Path: &impl AsRef<Path_type>) -> Self {
-        let Path = Path.as_ref().As_str();
+    pub fn new(path: &impl AsRef<Path_type>) -> Self {
+        let path = path.as_ref().As_str();
 
         let File = OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
             .truncate(false)
-            .open(Path)
+            .open(path)
             .expect("Error opening file");
 
         Self(RwLock::new(File))
@@ -27,12 +27,12 @@ impl File_drive_device_type {
 }
 
 impl Device_trait for File_drive_device_type {
-    fn Read(&self, Buffer: &mut [u8]) -> File_system::Result_type<File_system::Size_type> {
+    fn Read(&self, buffer: &mut [u8]) -> File_system::Result_type<File_system::Size_type> {
         self.0
             .try_write()
             .map_err(|_| Error_type::Ressource_busy)?
-            .read(Buffer)
-            .map(|Size| File_system::Size_type::New(Size as u64))
+            .read(buffer)
+            .map(|size| File_system::Size_type::New(size as u64))
             .map_err(Map_error)
     }
 
@@ -41,7 +41,7 @@ impl Device_trait for File_drive_device_type {
             .try_write()
             .map_err(|_| Error_type::Ressource_busy)?
             .write(Buffer)
-            .map(|Size| File_system::Size_type::New(Size as u64))
+            .map(|size| File_system::Size_type::New(size as u64))
             .map_err(Map_error)
     }
 
@@ -51,18 +51,18 @@ impl Device_trait for File_drive_device_type {
 
     fn Set_position(
         &self,
-        Position: &File_system::Position_type,
+        position: &File_system::Position_type,
     ) -> File_system::Result_type<File_system::Size_type> {
-        let Position = match Position {
+        let position = match position {
             File_system::Position_type::Start(Position) => std::io::SeekFrom::Start(*Position),
-            File_system::Position_type::End(Position) => std::io::SeekFrom::End(*Position),
-            File_system::Position_type::Current(Position) => std::io::SeekFrom::Current(*Position),
+            File_system::Position_type::End(position) => std::io::SeekFrom::End(*position),
+            File_system::Position_type::Current(position) => std::io::SeekFrom::Current(*position),
         };
 
         self.0
             .try_write()
             .map_err(|_| Error_type::Ressource_busy)?
-            .seek(Position)
+            .seek(position)
             .map(Size_type::New)
             .map_err(Map_error)
     }
@@ -87,7 +87,7 @@ mod Tests {
 
     #[test]
     fn Test_read_write() {
-        let File = File_drive_device_type::New(&"./Test.img");
+        let File = File_drive_device_type::new(&"./Test.img");
 
         let Data = [1, 2, 3, 4, 5];
 
@@ -104,7 +104,7 @@ mod Tests {
 
     #[test]
     fn Test_read_write_at_position() {
-        let File = File_drive_device_type::New(&"./Test.img");
+        let File = File_drive_device_type::new(&"./Test.img");
 
         File.Set_position(&File_system::Position_type::Start(10))
             .unwrap();
