@@ -3,29 +3,29 @@ use quote::quote;
 
 pub fn Get() -> TokenStream {
     quote! {
-        pub unsafe fn Object_delete(__pointer_table : &mut Pointer_table_type, __Task: Task_identifier_type, Object: u16) {
+        pub unsafe fn object_delete(__pointer_table : &mut Pointer_table_type, __task: Task_identifier_type, Object: u16) {
 
-            let Object = __pointer_table.Remove(__Task, Object).unwrap();
+            let Object = __pointer_table.Remove(__task, Object).unwrap();
 
             lv_obj_delete(Object);
         }
 
-        pub unsafe fn Window_create() -> *mut lv_obj_t {
+        pub unsafe fn window_create() -> *mut lv_obj_t {
             Futures::block_on(
                 Graphics::Get_instance().Create_window()
             ).unwrap().Into_raw()
         }
 
-        pub unsafe fn Window_pop_event(
+        pub unsafe fn window_pop_event(
             __environment: Environment_type,
             __pointer_table: &mut Pointer_table_type,
-            Window: *mut lv_obj_t,
+            window: *mut lv_obj_t,
             Code: *mut u32,
             Target: *mut u16
         ) {
-            let mut Window = Graphics::Window_type::From_raw(Window);
+            let mut window = Graphics::Window_type::From_raw(window);
 
-            if let Some(Event) = Window.Pop_event() {
+            if let Some(Event) = window.Pop_event() {
 
                 *Code = Event.Get_code() as u32;
 
@@ -34,48 +34,48 @@ pub fn Get() -> TokenStream {
                     .unwrap();
             }
 
-            core::mem::forget(Window);
+            core::mem::forget(window);
         }
 
-        pub unsafe fn Window_get_event_code(Window: *mut lv_obj_t) -> u32 {
-            let Window = Graphics::Window_type::From_raw(Window);
+        pub unsafe fn window_get_event_code(window: *mut lv_obj_t) -> u32 {
+            let window = Graphics::Window_type::From_raw(window);
 
-            let Code = if let Some(Event) = Window.Peek_event() {
+            let Code = if let Some(Event) = window.Peek_event() {
                 Event.Get_code() as u32
             } else {
                 Graphics::Event_code_type::All as u32
             };
 
-            core::mem::forget(Window);
+            core::mem::forget(window);
 
             Code
         }
 
-        pub unsafe fn Window_get_event_target(__pointer_table: &mut Pointer_table_type, Window: *mut lv_obj_t) -> u16 {
-            let Window = Graphics::Window_type::From_raw(Window);
+        pub unsafe fn window_get_event_target(__pointer_table: &mut Pointer_table_type, window: *mut lv_obj_t) -> u16 {
+            let window = Graphics::Window_type::From_raw(window);
 
-            let Target = if let Some(Event) = Window.Peek_event() {
+            let Target = if let Some(Event) = window.Peek_event() {
                 Event.Get_target()
             } else {
                 Log::Warning!("No event available for the window");
                 core::ptr::null_mut()
             };
 
-            core::mem::forget(Window);
+            core::mem::forget(window);
 
             __pointer_table.Get_wasm_pointer(Target)
                 .unwrap()
         }
 
-        pub unsafe fn Window_next_event(Window: *mut lv_obj_t) {
-            let mut Window = Graphics::Window_type::From_raw(Window);
+        pub unsafe fn window_next_event(window: *mut lv_obj_t) {
+            let mut window = Graphics::Window_type::From_raw(window);
 
-            Window.Pop_event();
+            window.Pop_event();
 
-            core::mem::forget(Window);
+            core::mem::forget(window);
         }
 
-        pub unsafe fn Buttonmatrix_set_map(__environment : Environment_type, __pointer_table : &mut Pointer_table_type, __Task: Task_identifier_type,  Object: u16, Map: *const *const i8) {
+        pub unsafe fn buttonmatrix_set_map(__environment : Environment_type, __pointer_table : &mut Pointer_table_type, __task: Task_identifier_type,  Object: u16, Map: *const *const i8) {
 
             let mut v : Vec<*const i8> = vec![];
             let mut i = 0;
@@ -98,13 +98,13 @@ pub fn Get() -> TokenStream {
 
             }
 
-            let Object = __pointer_table.Get_native_pointer(__Task, Object).unwrap();
+            let Object = __pointer_table.Get_native_pointer(__task, Object).unwrap();
             lv_buttonmatrix_set_map(Object, v.as_ptr());
 
             core::mem::forget(v);   // ! : deallocate the vector to avoid memory leaks when the button matrix map is deleted
         }
 
-        pub unsafe fn Percentage(
+        pub unsafe fn percentage(
             Value: i32,
         ) -> i32 {
             lv_pct(Value)

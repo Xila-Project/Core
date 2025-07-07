@@ -54,14 +54,14 @@ pub fn Format_identifier(Prefix: &str, Function_name: &str) -> String {
         .join("_");
 
     // - Make first letter uppercase
-    let mut Chars = Function_name.chars();
+    // let mut Chars = Function_name.chars();
 
-    let Function_name = match Chars.next() {
-        None => String::new(),
-        Some(first_char) => {
-            first_char.to_uppercase().collect::<String>() + &Chars.as_str().to_lowercase()
-        }
-    };
+    // let Function_name = match Chars.next() {
+    //     None => String::new(),
+    //     Some(first_char) => {
+    //         first_char.to_uppercase().collect::<String>() + &Chars.as_str().to_lowercase()
+    //     }
+    // };
 
     Function_name
 }

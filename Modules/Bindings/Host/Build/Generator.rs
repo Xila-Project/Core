@@ -27,7 +27,7 @@ fn Generate_conversion_for_argument(
                         Ok(quote! {
 
                             let #identifier = __pointer_table.Get_native_pointer(
-                                __Task,
+                                __task,
                                 #identifier.try_into().map_err(|_| Error_type::Invalid_pointer)?
                             )?;
 
@@ -103,7 +103,7 @@ fn Generate_conversion_for_output(Return: &ReturnType) -> Result<Option<TokenStr
                             let __result : *mut u16 = Convert_to_native_pointer(&__environment, __result)?;
 
                             let __current_result = __pointer_table.Insert(
-                                __Task,
+                                __task,
                                 __current_result as *mut core::ffi::c_void
                             )?;
 
@@ -154,7 +154,7 @@ fn Generate_conversion_for_output(Return: &ReturnType) -> Result<Option<TokenStr
 fn Generate_assign(Index: usize, Argument: &FnArg) -> Result<TokenStream, String> {
     match Argument {
         FnArg::Typed(pattern) => {
-            let identifier = format_ident!("__Argument_{}", Index);
+            let identifier = format_ident!("__argument_{}", Index);
             let identifier_real = &*pattern.pat;
             Ok(quote! {
                 let #identifier_real = #identifier;
@@ -234,7 +234,7 @@ fn Generate_function_call(
     Ok(quote! {
         Function_calls_type::#Function_identifier => {
             // Check arguments count
-            if __Arguments_count != #Arguments_count {
+            if __arguments_count != #Arguments_count {
                 return Err(Error_type::Invalid_arguments_count);
             }
             // Assign arguments
@@ -270,22 +270,22 @@ pub fn Generate_code(
         pub unsafe fn Call_function(
             __environment: Environment_type,
             __pointer_table: &mut Pointer_table_type,
-            __Function: Function_calls_type,
-            __Argument_0: WASM_usize_type,
-            __Argument_1: WASM_usize_type,
-            __Argument_2: WASM_usize_type,
-            __Argument_3: WASM_usize_type,
-            __Argument_4: WASM_usize_type,
-            __Argument_5: WASM_usize_type,
-            __Argument_6: WASM_usize_type,
-            __Arguments_count: u8,
+            __function: Function_calls_type,
+            __argument_0: WASM_usize_type,
+            __argument_1: WASM_usize_type,
+            __argument_2: WASM_usize_type,
+            __argument_3: WASM_usize_type,
+            __argument_4: WASM_usize_type,
+            __argument_5: WASM_usize_type,
+            __argument_6: WASM_usize_type,
+            __arguments_count: u8,
             __result: WASM_pointer_type,
         ) -> Result_type<()>
         {
-            let __Custom_data = __environment.Get_or_initialize_custom_data().map_err(|_| Error_type::Failed_to_get_environment)?;
-            let __Task = __Custom_data.Get_task_identifier();
+            let __custom_data = __environment.Get_or_initialize_custom_data().map_err(|_| Error_type::Failed_to_get_environment)?;
+            let __task = __custom_data.Get_task_identifier();
 
-            match __Function {
+            match __function {
                 #(
                     #functions_call
                 )*
