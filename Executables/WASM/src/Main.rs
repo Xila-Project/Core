@@ -45,7 +45,7 @@ pub async fn Inner_main(Standard: &Standard_type, Arguments: String) -> Result<(
     let File = File_type::Open(
         Virtual_file_system::Get_instance(),
         &Path,
-        Mode_type::Read_only.into(),
+        Mode_type::READ_ONLY.into(),
     )
     .await
     .map_err(|_| Error_type::Failed_to_open_file)?;

@@ -25,7 +25,7 @@ use Virtual_file_system::{Directory_type, File_type, Virtual_file_system_type};
 use crate::{
     Error_type,
     Hash::{Generate_salt, Hash_password},
-    Result_type, Users_folder_path,
+    Result_type, USERS_FOLDER_PATH,
 };
 
 /// Represents a user account with all associated metadata.
@@ -170,7 +170,7 @@ impl User_type {
 /// Returns `Ok(Path_owned_type)` with the complete path to the user file,
 /// or `Err(Error_type::Failed_to_get_user_file_path)` if path construction fails.
 pub fn Get_user_file_path(User_name: &str) -> Result_type<Path_owned_type> {
-    Path_type::New(Users_folder_path)
+    Path_type::New(USERS_FOLDER_PATH)
         .to_owned()
         .Append(User_name)
         .ok_or(Error_type::Failed_to_get_user_file_path)
@@ -207,7 +207,7 @@ pub async fn Authenticate_user<'a>(
 ) -> Result_type<User_identifier_type> {
     let Path = Get_user_file_path(User_name)?;
 
-    let User_file = File_type::Open(Virtual_file_system, Path, Mode_type::Read_only.into())
+    let User_file = File_type::Open(Virtual_file_system, Path, Mode_type::READ_ONLY.into())
         .await
         .map_err(Error_type::Failed_to_open_user_file)?;
 
@@ -295,12 +295,12 @@ pub async fn Create_user<'a>(
         Salt,
     );
 
-    match Directory_type::Create(Virtual_file_system, Users_folder_path).await {
+    match Directory_type::Create(Virtual_file_system, USERS_FOLDER_PATH).await {
         Ok(_) | Err(File_system::Error_type::Already_exists) => {}
         Err(Error) => Err(Error_type::Failed_to_create_users_directory(Error))?,
     }
 
-    let User_file_path = Path_type::New(Users_folder_path)
+    let User_file_path = Path_type::New(USERS_FOLDER_PATH)
         .to_owned()
         .Append(User_name)
         .ok_or(Error_type::Failed_to_get_user_file_path)?;
@@ -308,7 +308,7 @@ pub async fn Create_user<'a>(
     let User_file = File_type::Open(
         Virtual_file_system,
         User_file_path,
-        Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None),
+        Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None),
     )
     .await
     .map_err(Error_type::Failed_to_open_user_file)?;
@@ -357,7 +357,7 @@ pub async fn Change_user_password<'a>(
 
     let Hash = Hash_password(New_password, &Salt);
 
-    let User_file_path = Path_type::New(Users_folder_path)
+    let User_file_path = Path_type::New(USERS_FOLDER_PATH)
         .to_owned()
         .Append(User_name)
         .ok_or(Error_type::Failed_to_get_user_file_path)?;
@@ -365,7 +365,7 @@ pub async fn Change_user_password<'a>(
     let User_file = File_type::Open(
         Virtual_file_system,
         User_file_path,
-        Flags_type::New(Mode_type::Read_write, Some(Open_type::Truncate), None),
+        Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::TRUNCATE), None),
     )
     .await
     .map_err(Error_type::Failed_to_open_user_file)?;
@@ -424,7 +424,7 @@ pub async fn Change_user_name<'a>(
     let User_file = File_type::Open(
         Virtual_file_system,
         File_path,
-        Flags_type::New(Mode_type::Read_write, Some(Open_type::Truncate), None),
+        Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::TRUNCATE), None),
     )
     .await
     .map_err(Error_type::Failed_to_open_user_file)?;
@@ -483,7 +483,7 @@ pub async fn Read_user_file<'a>(
     let User_file = File_type::Open(
         Virtual_file_system,
         User_file_path,
-        Mode_type::Read_only.into(),
+        Mode_type::READ_ONLY.into(),
     )
     .await
     .map_err(Error_type::Failed_to_read_users_directory)?;

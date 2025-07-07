@@ -2,10 +2,10 @@ use Futures::block_on;
 use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use Task::Task_identifier_type;
 
-pub static Context: Context_type = Context_type::New();
+pub static CONTEXT: Context_type = Context_type::New();
 
 pub fn Get_instance() -> &'static Context_type {
-    &Context
+    &CONTEXT
 }
 
 struct Inner_type {

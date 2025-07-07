@@ -4,8 +4,8 @@ use core::fmt::Display;
 pub struct Capabilities_type(u8);
 
 impl Capabilities_type {
-    pub const Executable_flag: u8 = 1 << 0;
-    pub const Direct_memory_access_flag: u8 = 1 << 1;
+    pub const EXECUTABLE_FLAG: u8 = 1 << 0;
+    pub const DIRECT_MEMORY_ACCESS_FLAG: u8 = 1 << 1;
 
     pub const fn New(Executable: bool, Direct_memory_access: bool) -> Self {
         Capabilities_type(0)
@@ -14,27 +14,27 @@ impl Capabilities_type {
     }
 
     pub const fn Get_executable(&self) -> bool {
-        self.0 & Capabilities_type::Executable_flag != 0
+        self.0 & Capabilities_type::EXECUTABLE_FLAG != 0
     }
 
     pub const fn Get_direct_memory_access(&self) -> bool {
-        self.0 & Capabilities_type::Direct_memory_access_flag != 0
+        self.0 & Capabilities_type::DIRECT_MEMORY_ACCESS_FLAG != 0
     }
 
     pub const fn Set_executable(mut self, value: bool) -> Self {
         if value {
-            self.0 |= Capabilities_type::Executable_flag;
+            self.0 |= Capabilities_type::EXECUTABLE_FLAG;
         } else {
-            self.0 &= !Capabilities_type::Executable_flag;
+            self.0 &= !Capabilities_type::EXECUTABLE_FLAG;
         }
         self
     }
 
     pub const fn Set_direct_memory_access(mut self, value: bool) -> Self {
         if value {
-            self.0 |= Capabilities_type::Direct_memory_access_flag;
+            self.0 |= Capabilities_type::DIRECT_MEMORY_ACCESS_FLAG;
         } else {
-            self.0 &= !Capabilities_type::Direct_memory_access_flag;
+            self.0 &= !Capabilities_type::DIRECT_MEMORY_ACCESS_FLAG;
         }
         self
     }

@@ -69,8 +69,8 @@ pub enum Signal_type {
 }
 
 impl Signal_type {
-    pub const First: Self = Self::Hangup;
-    pub const Last: Self = Self::Bad_system_call;
+    pub const FIRST: Self = Self::Hangup;
+    pub const LAST: Self = Self::Bad_system_call;
 
     pub const fn Get_discriminant(&self) -> u8 {
         *self as u8
@@ -101,7 +101,7 @@ impl Signal_accumulator_type {
     }
 
     pub fn Peek(&self) -> Option<Signal_type> {
-        for Bit in Signal_type::First as u8..=Signal_type::Last as u8 {
+        for Bit in Signal_type::FIRST as u8..=Signal_type::LAST as u8 {
             let Signal = unsafe { core::mem::transmute::<u8, Signal_type>(Bit) };
 
             if self.Has_signal(Signal) {

@@ -1,7 +1,6 @@
 #![no_std]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
-#![allow(non_upper_case_globals)]
 
 extern crate alloc;
 
@@ -49,15 +48,15 @@ async fn main() {
 
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
-    const Resolution: Graphics::Point_type = Graphics::Point_type::New(800, 600);
+    const RESOLUTION: Graphics::Point_type = Graphics::Point_type::New(800, 600);
     let (Screen_device, Pointer_device, Keyboard_device) =
-        Drivers::Native::Window_screen::New(Resolution).unwrap();
+        Drivers::Native::Window_screen::New(RESOLUTION).unwrap();
     // - - Initialize the graphics manager
     let Graphics_manager = Graphics::Initialize(
         Screen_device,
         Pointer_device,
         Graphics::Input_type_type::Pointer,
-        Graphics::Get_minimal_buffer_size(&Resolution),
+        Graphics::Get_minimal_buffer_size(&RESOLUTION),
         true,
     )
     .await;

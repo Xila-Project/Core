@@ -1,34 +1,34 @@
 pub fn Unix_to_human_time(Unix_timestamp: i64) -> (u16, u8, u8, u8, u8, u8) {
     // Constants for calculations
-    const Seconds_in_minute: i64 = 60;
-    const Seconds_in_hour: i64 = 60 * Seconds_in_minute;
-    const Seconds_in_day: i64 = 24 * Seconds_in_hour;
-    const Days_in_year: i64 = 365;
-    const Days_in_leap_year: i64 = 366;
+    const SECONDS_IN_MINUTE: i64 = 60;
+    const SECONDS_IN_HOUR: i64 = 60 * SECONDS_IN_MINUTE;
+    const SECONDS_IN_DAY: i64 = 24 * SECONDS_IN_HOUR;
+    const DAYS_IN_YEAR: i64 = 365;
+    const DAYS_IN_LEAP_YEAR: i64 = 366;
 
     // Start from 1970
     let mut Year = 1970;
-    let mut Days_since_epoch = Unix_timestamp / Seconds_in_day;
-    let mut Remaining_seconds = Unix_timestamp % Seconds_in_day;
+    let mut Days_since_epoch = Unix_timestamp / SECONDS_IN_DAY;
+    let mut Remaining_seconds = Unix_timestamp % SECONDS_IN_DAY;
 
     if Remaining_seconds < 0 {
         // Handle negative Unix timestamps
         Days_since_epoch -= 1;
-        Remaining_seconds += Seconds_in_day;
+        Remaining_seconds += SECONDS_IN_DAY;
     }
 
     // Determine the current year
     while Days_since_epoch
         >= if Is_leap_year(Year) {
-            Days_in_leap_year
+            DAYS_IN_LEAP_YEAR
         } else {
-            Days_in_year
+            DAYS_IN_YEAR
         }
     {
         Days_since_epoch -= if Is_leap_year(Year) {
-            Days_in_leap_year
+            DAYS_IN_LEAP_YEAR
         } else {
-            Days_in_year
+            DAYS_IN_YEAR
         };
         Year += 1;
     }
@@ -44,10 +44,10 @@ pub fn Unix_to_human_time(Unix_timestamp: i64) -> (u16, u8, u8, u8, u8, u8) {
     let Day = Days_since_epoch + 1;
 
     // Calculate hour, minute, and second from remaining seconds
-    let Hour = Remaining_seconds / Seconds_in_hour;
-    Remaining_seconds %= Seconds_in_hour;
-    let Minute = Remaining_seconds / Seconds_in_minute;
-    let Second = Remaining_seconds % Seconds_in_minute;
+    let Hour = Remaining_seconds / SECONDS_IN_HOUR;
+    Remaining_seconds %= SECONDS_IN_HOUR;
+    let Minute = Remaining_seconds / SECONDS_IN_MINUTE;
+    let Second = Remaining_seconds % SECONDS_IN_MINUTE;
 
     (
         Year as u16,

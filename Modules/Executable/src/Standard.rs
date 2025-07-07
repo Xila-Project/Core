@@ -38,15 +38,15 @@ impl Standard_type {
         Virtual_file_system: &'static Virtual_file_system_type<'static>,
     ) -> Result_type<Self> {
         let Standard_in = Virtual_file_system
-            .Open(Standard_in, Mode_type::Read_only.into(), Task)
+            .Open(Standard_in, Mode_type::READ_ONLY.into(), Task)
             .await?;
 
         let Standard_out = Virtual_file_system
-            .Open(Standard_out, Mode_type::Write_only.into(), Task)
+            .Open(Standard_out, Mode_type::WRITE_ONLY.into(), Task)
             .await?;
 
         let Standard_error = Virtual_file_system
-            .Open(Standard_error, Mode_type::Write_only.into(), Task)
+            .Open(Standard_error, Mode_type::WRITE_ONLY.into(), Task)
             .await?;
 
         Ok(Self::New(
@@ -171,7 +171,7 @@ impl Standard_type {
                 self.Standard_in,
                 self.Task,
                 Task,
-                Some(File_identifier_type::Standard_in),
+                Some(File_identifier_type::STANDARD_IN),
             )
             .await?;
 
@@ -181,7 +181,7 @@ impl Standard_type {
                 self.Standard_out,
                 self.Task,
                 Task,
-                Some(File_identifier_type::Standard_out),
+                Some(File_identifier_type::STANDARD_OUT),
             )
             .await?;
 
@@ -191,7 +191,7 @@ impl Standard_type {
                 self.Standard_error,
                 self.Task,
                 Task,
-                Some(File_identifier_type::Standard_error),
+                Some(File_identifier_type::STANDARD_ERROR),
             )
             .await?;
 

@@ -14,7 +14,7 @@ pub use Path_owned::*;
 pub use Path_reference::*;
 
 /// Separator character used in paths.
-pub const Separator: char = '/';
+pub const SEPARATOR: char = '/';
 
 /// Extension separator character used in paths.
-pub const Extension_separator: char = '.';
+pub const EXTENSION_SEPARATOR: char = '.';

@@ -1,7 +1,6 @@
 #![no_std]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
-#![allow(non_upper_case_globals)]
 
 extern crate alloc;
 
@@ -18,13 +17,13 @@ use log::set_max_level;
 pub use log::trace as Trace;
 pub use log::warn as Warning;
 
-const Bold: &str = "\x1b[0;1m";
-const Red: &str = "\x1b[0;41m";
-const Yellow: &str = "\x1b[0;43m";
-const Blue: &str = "\x1b[0;46m";
-const Green: &str = "\x1b[0;42m";
-const Grey: &str = "\x1b[0;100m";
-const Reset: &str = "\x1b[0m";
+const BOLD: &str = "\x1b[0;1m";
+const RED: &str = "\x1b[0;41m";
+const YELLOW: &str = "\x1b[0;43m";
+const BLUE: &str = "\x1b[0;46m";
+const GREEN: &str = "\x1b[0;42m";
+const GREY: &str = "\x1b[0;100m";
+const RESET: &str = "\x1b[0m";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Level_type {
@@ -62,21 +61,21 @@ pub trait Logger_trait: Send + Sync {
         };
 
         let Color = match Record.level() {
-            log::Level::Error => Red,
-            log::Level::Warn => Yellow,
-            log::Level::Info => Blue,
-            log::Level::Debug => Green,
-            log::Level::Trace => Grey,
+            log::Level::Error => RED,
+            log::Level::Warn => YELLOW,
+            log::Level::Info => BLUE,
+            log::Level::Debug => GREEN,
+            log::Level::Trace => GREY,
         };
 
         self.Write(format_args!(
             "{} {} {} | {}{}{} | {}",
             Color,
             Letter,
-            Reset,
-            Bold,
+            RESET,
+            BOLD,
             Record.target(),
-            Reset,
+            RESET,
             Record.args()
         ))
     }
@@ -105,10 +104,10 @@ impl Log for Logger_type {
     }
 }
 
-static Logger_instance: OnceLock<Logger_type> = OnceLock::new();
+static LOGGER_INSTANCE: OnceLock<Logger_type> = OnceLock::new();
 
 pub fn Initialize(Logger: &'static dyn Logger_trait) -> Result<(), log::SetLoggerError> {
-    let Logger = Logger_instance.get_or_init(|| Logger_type(Logger));
+    let Logger = LOGGER_INSTANCE.get_or_init(|| Logger_type(Logger));
 
     set_logger(Logger).expect("Failed to set logger");
     set_max_level(log::LevelFilter::Trace);

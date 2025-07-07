@@ -13,8 +13,8 @@ pub struct Module_type<'runtime> {
 
 unsafe impl Send for Module_type<'_> {}
 
-const Directory_paths: [&CStr; 1] = [c"/"];
-const Directory_paths_raw: [*const i8; 1] = [Directory_paths[0].as_ptr()];
+const DIRECTORY_PATHS: [&CStr; 1] = [c"/"];
+const DIRECTORY_PATHS_RAW: [*const i8; 1] = [DIRECTORY_PATHS[0].as_ptr()];
 
 impl<'runtime> Module_type<'runtime> {
     pub async fn From_buffer(
@@ -55,8 +55,8 @@ impl<'runtime> Module_type<'runtime> {
         unsafe {
             wasm_runtime_set_wasi_args_ex(
                 Module.Module.get_inner_module(),
-                Directory_paths_raw.as_ptr() as *mut *const i8,
-                Directory_paths_raw.len() as u32,
+                DIRECTORY_PATHS_RAW.as_ptr() as *mut *const i8,
+                DIRECTORY_PATHS_RAW.len() as u32,
                 null_mut(),
                 0,
                 Environment_variables_raw_pointer,

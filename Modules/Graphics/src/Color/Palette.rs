@@ -27,7 +27,7 @@ pub enum Hue_type {
 // Material Design Color Palette Constants
 // Each color has 10 tones: 50, 100, 200, 300, 400, 500, 600, 700, 800, 900
 // Tone 500 is the main color
-const Material_colors: [[Color_type; 10]; 19] = [
+const MATERIAL_COLORS: [[Color_type; 10]; 19] = [
     // Red
     [
         Color_type::New(0xFF, 0xEB, 0xEE), // 50
@@ -299,7 +299,7 @@ pub enum Tone_type {
 }
 
 impl Tone_type {
-    pub const Main: Tone_type = Tone_type::Tone_500;
+    pub const MAIN: Tone_type = Tone_type::Tone_500;
 
     /// Get the index of this tone in the material colors array
     const fn Get_tone_index(self) -> usize {
@@ -312,5 +312,5 @@ impl Tone_type {
 pub const fn Get(Hue: Hue_type, Tone: Tone_type) -> Color_type {
     let Color_index = Hue.Get_color_index();
     let Tone_index = Tone.Get_tone_index();
-    Material_colors[Color_index][Tone_index]
+    MATERIAL_COLORS[Color_index][Tone_index]
 }

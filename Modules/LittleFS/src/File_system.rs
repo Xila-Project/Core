@@ -161,14 +161,14 @@ impl File_system_type {
     }
 
     #[cfg(target_pointer_width = "64")]
-    const Directory_flag: File_identifier_inner_type = 1 << 31;
+    const DIRECTORY_FLAG: File_identifier_inner_type = 1 << 31;
     #[cfg(target_pointer_width = "32")]
     const Directory_flag: File_identifier_inner_type = 1 << 15;
 
-    const Directory_minimum: File_identifier_type = File_identifier_type::New(Self::Directory_flag);
+    const DIRECTORY_MINIMUM: File_identifier_type = File_identifier_type::New(Self::DIRECTORY_FLAG);
 
     pub fn Is_file(File: Local_file_identifier_type) -> bool {
-        File.Split().1 < Self::Directory_minimum
+        File.Split().1 < Self::DIRECTORY_MINIMUM
     }
 
     fn Read_inner(
@@ -212,8 +212,8 @@ impl File_system_traits for File_system_type {
 
         let File_identifier = Get_new_file_identifier(
             Task,
-            Some(File_identifier_type::Minimum),
-            Some(Self::Directory_minimum),
+            Some(File_identifier_type::MINIMUM),
+            Some(Self::DIRECTORY_MINIMUM),
             &Inner.Open_files,
         )?;
 
@@ -275,8 +275,8 @@ impl File_system_traits for File_system_type {
 
         let File_identifier = Get_new_file_identifier(
             Task,
-            Some(Self::Directory_minimum),
-            Some(File_identifier_type::Maximum),
+            Some(Self::DIRECTORY_MINIMUM),
+            Some(File_identifier_type::MAXIMUM),
             &Inner.Open_files,
         )?;
 
@@ -311,15 +311,15 @@ impl File_system_traits for File_system_type {
         } else if Self::Is_file(File_identifier) {
             Get_new_file_identifier(
                 New_task,
-                Some(File_identifier_type::Minimum),
-                Some(Self::Directory_minimum),
+                Some(File_identifier_type::MINIMUM),
+                Some(Self::DIRECTORY_MINIMUM),
                 &Inner.Open_files,
             )?
         } else {
             Get_new_file_identifier(
                 New_task,
-                Some(Self::Directory_minimum),
-                Some(File_identifier_type::Maximum),
+                Some(Self::DIRECTORY_MINIMUM),
+                Some(File_identifier_type::MAXIMUM),
                 &Inner.Open_directories,
             )?
         };
@@ -469,7 +469,7 @@ impl File_system_traits for File_system_type {
                 .get(&File)
                 .ok_or(Error_type::Invalid_identifier)?;
 
-            Mode_type::Read_only
+            Mode_type::READ_ONLY
         };
 
         Ok(Result)
@@ -486,8 +486,8 @@ impl File_system_traits for File_system_type {
 
         let File_identifier = Get_new_file_identifier(
             Task,
-            Some(Self::Directory_minimum),
-            Some(File_identifier_type::Maximum),
+            Some(Self::DIRECTORY_MINIMUM),
+            Some(File_identifier_type::MAXIMUM),
             &Inner.Open_directories,
         )?;
 

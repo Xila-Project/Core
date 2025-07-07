@@ -18,10 +18,10 @@ impl Manager_type {
         let (Parent_task_identifier, Parent_environment_variables, User, Group) =
             if Inner.Tasks.is_empty() {
                 (
-                    Manager_type::Root_task_identifier, // Root task is its own parent
+                    Manager_type::ROOT_TASK_IDENTIFIER, // Root task is its own parent
                     Vec::new(),
-                    User_identifier_type::Root,
-                    Group_identifier_type::Root,
+                    User_identifier_type::ROOT,
+                    Group_identifier_type::ROOT,
                 )
             } else if let Ok(Metadata) = Inner
                 .Tasks
@@ -36,10 +36,10 @@ impl Manager_type {
                 )
             } else {
                 (
-                    Manager_type::Root_task_identifier, // If parent task not found, use root task
+                    Manager_type::ROOT_TASK_IDENTIFIER, // If parent task not found, use root task
                     Vec::new(),
-                    User_identifier_type::Root,
-                    Group_identifier_type::Root,
+                    User_identifier_type::ROOT,
+                    Group_identifier_type::ROOT,
                 )
             };
 
@@ -99,7 +99,7 @@ impl Manager_type {
         // Root task adopts all children of the task
         Inner.Tasks.iter_mut().for_each(|(_, Task)| {
             if Task.Parent == Identifier {
-                Task.Parent = Self::Root_task_identifier;
+                Task.Parent = Self::ROOT_TASK_IDENTIFIER;
             }
         });
 

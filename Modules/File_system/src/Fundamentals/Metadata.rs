@@ -35,7 +35,7 @@ pub struct Metadata_type {
 }
 
 impl Metadata_type {
-    pub const Identifier: u8 = 0x01;
+    pub const IDENTIFIER: u8 = 0x01;
 
     pub fn Get_default(
         Type: Type_type,
@@ -155,7 +155,7 @@ mod Tests {
 
     #[test]
     fn Test_metadata_identifier() {
-        assert_eq!(Metadata_type::Identifier, 0x01);
+        assert_eq!(Metadata_type::IDENTIFIER, 0x01);
     }
 
     #[test]

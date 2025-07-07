@@ -26,37 +26,37 @@ impl Debug for Protection_type {
 
 impl Protection_type {
     /// Bit flag representing read permission.
-    pub const Read_bit: u8 = 1 << 0;
+    pub const READ_BIT: u8 = 1 << 0;
 
     /// Bit flag representing write permission.
-    pub const Write_bit: u8 = 1 << 1;
+    pub const WRITE_BIT: u8 = 1 << 1;
 
     /// Bit flag representing execute permission.
-    pub const Execute_bit: u8 = 1 << 2;
+    pub const EXECUTE_BIT: u8 = 1 << 2;
 
     /// No memory access permissions.
-    pub const None: Self = Self(0);
+    pub const NONE: Self = Self(0);
 
     /// Read-only memory access.
-    pub const Read: Self = Self(Self::Read_bit);
+    pub const READ: Self = Self(Self::READ_BIT);
 
     /// Write-only memory access.
-    pub const Write: Self = Self(Self::Write_bit);
+    pub const WRITE: Self = Self(Self::WRITE_BIT);
 
     /// Execute-only memory access.
-    pub const Execute: Self = Self(Self::Execute_bit);
+    pub const EXECUTE: Self = Self(Self::EXECUTE_BIT);
 
     /// Read and write memory access.
-    pub const Read_write: Self = Self(Self::Read_bit | Self::Write_bit);
+    pub const READ_WRITE: Self = Self(Self::READ_BIT | Self::WRITE_BIT);
 
     /// Read and execute memory access.
-    pub const Read_execute: Self = Self(Self::Read_bit | Self::Execute_bit);
+    pub const READ_EXECUTE: Self = Self(Self::READ_BIT | Self::EXECUTE_BIT);
 
     /// Write and execute memory access.
-    pub const Write_execute: Self = Self(Self::Write_bit | Self::Execute_bit);
+    pub const WRITE_EXECUTE: Self = Self(Self::WRITE_BIT | Self::EXECUTE_BIT);
 
     /// Full memory access (read, write, and execute).
-    pub const Read_write_execute: Self = Self(Self::Read_bit | Self::Write_bit | Self::Execute_bit);
+    pub const READ_WRITE_EXECUTE: Self = Self(Self::READ_BIT | Self::WRITE_BIT | Self::EXECUTE_BIT);
 
     /// Creates a new protection type with specified permissions.
     ///
@@ -107,7 +107,7 @@ impl Protection_type {
     /// # Returns
     /// A new protection type with the modified read permission.
     pub const fn Set_read(self, Value: bool) -> Self {
-        self.Set_bits(Self::Read_bit, Value)
+        self.Set_bits(Self::READ_BIT, Value)
     }
 
     /// Sets or clears the write permission.
@@ -118,7 +118,7 @@ impl Protection_type {
     /// # Returns
     /// A new protection type with the modified write permission.
     pub const fn Set_write(self, Value: bool) -> Self {
-        self.Set_bits(Self::Write_bit, Value)
+        self.Set_bits(Self::WRITE_BIT, Value)
     }
 
     /// Sets or clears the execute permission.
@@ -129,7 +129,7 @@ impl Protection_type {
     /// # Returns
     /// A new protection type with the modified execute permission.
     pub const fn Set_execute(self, Value: bool) -> Self {
-        self.Set_bits(Self::Execute_bit, Value)
+        self.Set_bits(Self::EXECUTE_BIT, Value)
     }
 
     /// Checks if read permission is granted.
@@ -137,7 +137,7 @@ impl Protection_type {
     /// # Returns
     /// `true` if read permission is granted, `false` otherwise.
     pub const fn Get_read(&self) -> bool {
-        self.Get_bits(Self::Read_bit)
+        self.Get_bits(Self::READ_BIT)
     }
 
     /// Checks if write permission is granted.
@@ -145,7 +145,7 @@ impl Protection_type {
     /// # Returns
     /// `true` if write permission is granted, `false` otherwise.
     pub const fn Get_write(&self) -> bool {
-        self.Get_bits(Self::Write_bit)
+        self.Get_bits(Self::WRITE_BIT)
     }
 
     /// Checks if execute permission is granted.
@@ -153,7 +153,7 @@ impl Protection_type {
     /// # Returns
     /// `true` if execute permission is granted, `false` otherwise.
     pub const fn Get_execute(&self) -> bool {
-        self.Get_bits(Self::Execute_bit)
+        self.Get_bits(Self::EXECUTE_BIT)
     }
 
     /// Converts the protection type to its raw u8 representation.

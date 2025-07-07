@@ -12,39 +12,39 @@ use super::*;
 pub struct Path_type(str);
 
 impl Path_type {
-    pub const Root: &'static Path_type = Self::From_str("/");
-    pub const Empty: &'static Path_type = Self::From_str("");
+    pub const ROOT: &'static Path_type = Self::From_str("/");
+    pub const EMPTY: &'static Path_type = Self::From_str("");
 
     /// Contains the OS core, including the kernel, init system, and critical drivers.
     /// Prevents modification by regular users.
-    pub const System: &'static Path_type = Self::From_str("/System");
+    pub const SYSTEM: &'static Path_type = Self::From_str("/System");
 
     /// Stores system-wide settings in a structured format (e.g., JSON, TOML).
-    pub const Devices: &'static Path_type = Self::From_str("/Devices");
+    pub const DEVICES: &'static Path_type = Self::From_str("/Devices");
 
     /// Hardware devices, symlinks for human-friendly names.
-    pub const Configuration: &'static Path_type = Self::From_str("/Configuration");
+    pub const CONFIGURATION: &'static Path_type = Self::From_str("/Configuration");
 
     /// Contains the shared configurations between applications.
-    pub const Shared_configuration: &'static Path_type = Self::From_str("/Configuration/Shared");
+    pub const SHARED_CONFIGURATION: &'static Path_type = Self::From_str("/Configuration/Shared");
 
     /// Binaries data.
-    pub const Data: &'static Path_type = Self::From_str("/Data");
+    pub const DATA: &'static Path_type = Self::From_str("/Data");
 
     /// Shared data between binaries.
-    pub const Shared_data: &'static Path_type = Self::From_str("/Data/Shared");
+    pub const SHARED_DATA: &'static Path_type = Self::From_str("/Data/Shared");
 
     /// Contains the system's binaries, including the shell and other executables.
-    pub const Binaries: &'static Path_type = Self::From_str("/Binaries");
+    pub const BINARIES: &'static Path_type = Self::From_str("/Binaries");
 
     /// Contains the user's data, including documents, downloads, and other files.
-    pub const Users: &'static Path_type = Self::From_str("/Users");
+    pub const USERS: &'static Path_type = Self::From_str("/Users");
 
     /// Contains temporary files, including logs and caches.
-    pub const Temporary: &'static Path_type = Self::From_str("/Temporary");
+    pub const TEMPORARY: &'static Path_type = Self::From_str("/Temporary");
 
     /// Contains logs, including system logs and application logs.
-    pub const Logs: &'static Path_type = Self::From_str("/Temporary/Logs");
+    pub const LOGS: &'static Path_type = Self::From_str("/Temporary/Logs");
 
     /// # Safety
     /// The caller must ensure that the string is a valid path string.
@@ -79,13 +79,13 @@ impl Path_type {
     }
 
     pub fn Go_parent(&self) -> Option<&Path_type> {
-        let Characters_to_remove = match self.0.rfind(Separator) {
+        let Characters_to_remove = match self.0.rfind(SEPARATOR) {
             Some(index) => index,
             None => {
                 // If there is no separator, the path is either empty or relative to the current directory.
                 if self.Get_length() > 0 {
                     // Relative to the current directory.
-                    return Some(Self::Empty);
+                    return Some(Self::EMPTY);
                 } else {
                     return None;
                 }
@@ -98,7 +98,7 @@ impl Path_type {
             }
 
             if self.Is_absolute() {
-                return Some(Self::Root);
+                return Some(Self::ROOT);
             } else {
                 return Some(Self::From_str(""));
             }
@@ -110,9 +110,9 @@ impl Path_type {
     pub fn Get_file_prefix(&self) -> Option<&str> {
         let Extension_start = self
             .0
-            .rfind(Extension_separator)
+            .rfind(EXTENSION_SEPARATOR)
             .or_else(|| Some(self.Get_length()))?; // Find the extension separator.
-        let File_prefix_start = self.0.rfind(Separator).map(|i| i + 1).unwrap_or(0); // Find the file prefix start.
+        let File_prefix_start = self.0.rfind(SEPARATOR).map(|i| i + 1).unwrap_or(0); // Find the file prefix start.
 
         if Extension_start <= File_prefix_start {
             return None;
@@ -122,7 +122,7 @@ impl Path_type {
     }
 
     pub fn Get_file_name(&self) -> Option<&str> {
-        let File_prefix_start = self.0.rfind(Separator).map(|i| i + 1).unwrap_or(0); // Find the file prefix start.
+        let File_prefix_start = self.0.rfind(SEPARATOR).map(|i| i + 1).unwrap_or(0); // Find the file prefix start.
 
         if File_prefix_start >= self.Get_length() {
             return None;
@@ -132,7 +132,7 @@ impl Path_type {
     }
 
     pub fn Get_extension(&self) -> Option<&str> {
-        let Extension_start = self.0.rfind(Extension_separator)?;
+        let Extension_start = self.0.rfind(EXTENSION_SEPARATOR)?;
 
         Some(&self.0[Extension_start + 1..])
     }
@@ -140,7 +140,7 @@ impl Path_type {
     pub fn Set_extension(&self, Extension: &str) -> Option<Path_owned_type> {
         let Extension_start = self
             .0
-            .rfind(Extension_separator)
+            .rfind(EXTENSION_SEPARATOR)
             .unwrap_or(self.Get_length());
 
         Some(unsafe {
@@ -151,7 +151,7 @@ impl Path_type {
     pub fn Strip_prefix<'b>(&'b self, Path_prefix: &Path_type) -> Option<&'b Path_type> {
         let mut Stripped_prefix = self.0.strip_prefix(&Path_prefix.0)?;
 
-        if Stripped_prefix.starts_with(Separator) {
+        if Stripped_prefix.starts_with(SEPARATOR) {
             Stripped_prefix = &Stripped_prefix[1..]
         }
 
@@ -166,7 +166,7 @@ impl Path_type {
         let Stripped_prefix = self.0.strip_prefix(&Path_prefix.0)?;
 
         if Stripped_prefix.is_empty() {
-            return Some(Self::Root);
+            return Some(Self::ROOT);
         }
 
         Some(Self::From_str(Stripped_prefix))
@@ -175,7 +175,7 @@ impl Path_type {
     pub fn Strip_suffix<'b>(&'b self, Path_suffix: &Path_type) -> Option<&'b Path_type> {
         let Stripped_suffix = self.0.strip_suffix(&Path_suffix.0)?;
 
-        if Stripped_suffix.ends_with(Separator) {
+        if Stripped_suffix.ends_with(SEPARATOR) {
             return Some(Self::From_str(
                 &Stripped_suffix[..Stripped_suffix.len() - 1],
             ));

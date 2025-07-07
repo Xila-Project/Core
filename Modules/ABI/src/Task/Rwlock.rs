@@ -15,13 +15,13 @@ pub struct Raw_rwlock_type {
 }
 
 impl Raw_rwlock_type {
-    const Reading: usize = 2; // Represents the state when there are readers
-    const Writing: usize = 1; // Represents the state when there is a writer
-    const Unlocked: usize = 0; // Represents the state when the rwlock is unlocked
+    const READING: usize = 2; // Represents the state when there are readers
+    const WRITING: usize = 1; // Represents the state when there is a writer
+    const UNLOCKED: usize = 0; // Represents the state when the rwlock is unlocked
 
     pub fn New() -> Self {
         Self {
-            Mutex: Mutex::new(Self::Unlocked), // Initial state: unlocked
+            Mutex: Mutex::new(Self::UNLOCKED), // Initial state: unlocked
         }
     }
 
@@ -61,8 +61,8 @@ impl Raw_rwlock_type {
                 // Can't read if there's a writer (state == 1)
 
                 match *State {
-                    Self::Writing => return false, // Write lock prevents reading
-                    Self::Unlocked => *State = Self::Reading, // Unlocked, can read
+                    Self::WRITING => return false, // Write lock prevents reading
+                    Self::UNLOCKED => *State = Self::READING, // Unlocked, can read
                     _ => *State += 1,              // Already has readers, can add more
                 }
 
@@ -75,11 +75,11 @@ impl Raw_rwlock_type {
         unsafe {
             self.Mutex.lock_mut(|State| {
                 // Can only write if completely unlocked
-                if *State != Self::Unlocked {
+                if *State != Self::UNLOCKED {
                     return false;
                 }
 
-                *State = Self::Writing; // Write lock
+                *State = Self::WRITING; // Write lock
                 true
             })
         }
@@ -89,18 +89,18 @@ impl Raw_rwlock_type {
         unsafe {
             self.Mutex.lock_mut(|State| {
                 match *State {
-                    Self::Unlocked => false, // Not locked
-                    Self::Writing => {
+                    Self::UNLOCKED => false, // Not locked
+                    Self::WRITING => {
                         // Write lock - unlock completely
-                        *State = Self::Unlocked;
+                        *State = Self::UNLOCKED;
                         true
                     }
                     n if n >= 2 => {
                         // Read lock - decrement reader count
                         *State -= 1;
-                        if *State == Self::Writing {
+                        if *State == Self::WRITING {
                             // This shouldn't happen, but fix it
-                            *State = Self::Unlocked;
+                            *State = Self::UNLOCKED;
                         }
                         true
                     }
@@ -112,7 +112,7 @@ impl Raw_rwlock_type {
 }
 
 #[no_mangle]
-pub static Raw_rwlock_size: usize = size_of::<Raw_rwlock_type>();
+pub static RAW_RWLOCK_SIZE: usize = size_of::<Raw_rwlock_type>();
 
 /// This function is used to initialize a rwlock.
 ///

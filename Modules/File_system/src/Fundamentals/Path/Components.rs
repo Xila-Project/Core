@@ -1,6 +1,6 @@
 use core::str::Split;
 
-use super::{Path_type, Separator};
+use super::{Path_type, SEPARATOR};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Component_type<'a> {
@@ -27,7 +27,7 @@ pub struct Components_type<'a>(Split<'a, char>);
 
 impl<'a> Components_type<'a> {
     pub fn New(Path: &Path_type) -> Components_type {
-        Components_type(Path.As_str().split(Separator))
+        Components_type(Path.As_str().split(SEPARATOR))
     }
 
     pub fn Get_common_components(self, Other: Components_type<'a>) -> usize {

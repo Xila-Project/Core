@@ -76,7 +76,7 @@ impl File_type {
         let Metadata_buffer = Box::new(Metadata);
 
         let Attribute = Box::new(littlefs::lfs_attr {
-            type_: Metadata_type::Identifier,
+            type_: Metadata_type::IDENTIFIER,
             buffer: Box::into_raw(Metadata_buffer) as *mut c_void,
             size: size_of::<Metadata_type>() as u32,
         });
@@ -264,7 +264,7 @@ impl File_type {
             littlefs::lfs_getattr(
                 File_system as *mut _,
                 Path.as_ptr(),
-                Metadata_type::Identifier,
+                Metadata_type::IDENTIFIER,
                 Metadata.as_mut_ptr() as *mut c_void,
                 size_of::<Metadata_type>() as u32,
             )
@@ -284,7 +284,7 @@ impl File_type {
             littlefs::lfs_setattr(
                 File_system as *mut _,
                 Path.as_ptr(),
-                Metadata_type::Identifier,
+                Metadata_type::IDENTIFIER,
                 Metadata as *const _ as *const c_void,
                 size_of::<Metadata_type>() as u32,
             )

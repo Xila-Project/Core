@@ -48,11 +48,11 @@ use crate::{Device_trait, Position_type, Size_type};
 ///
 /// The device uses an `RwLock` to ensure thread-safe access to the underlying data.
 /// Multiple readers can access the device simultaneously, but writes are exclusive.
-pub struct Memory_device_type<const Block_size: usize>(
+pub struct Memory_device_type<const BLOCK_SIZE: usize>(
     RwLock<CriticalSectionRawMutex, (Vec<u8>, usize)>,
 );
 
-impl<const Block_size: usize> Memory_device_type<Block_size> {
+impl<const BLOCK_SIZE: usize> Memory_device_type<BLOCK_SIZE> {
     /// Create a new memory device with the specified size.
     ///
     /// The device will be initialized with zeros and have the specified total size.
@@ -76,7 +76,7 @@ impl<const Block_size: usize> Memory_device_type<Block_size> {
     /// let device = Memory_device_type::<512>::New(4096);
     /// ```
     pub fn New(Size: usize) -> Self {
-        assert!(Size % Block_size == 0);
+        assert!(Size % BLOCK_SIZE == 0);
 
         let Data: Vec<u8> = vec![0; Size];
 
@@ -108,7 +108,7 @@ impl<const Block_size: usize> Memory_device_type<Block_size> {
     /// let device = Memory_device_type::<512>::From_vec(data);
     /// ```
     pub fn From_vec(Data: Vec<u8>) -> Self {
-        assert!(Data.len() % Block_size == 0);
+        assert!(Data.len() % BLOCK_SIZE == 0);
 
         Self(RwLock::new((Data, 0)))
     }
@@ -133,11 +133,11 @@ impl<const Block_size: usize> Memory_device_type<Block_size> {
     pub fn Get_block_count(&self) -> usize {
         let Inner = block_on(self.0.read());
 
-        Inner.0.len() / Block_size
+        Inner.0.len() / BLOCK_SIZE
     }
 }
 
-impl<const Block_size: usize> Device_trait for Memory_device_type<Block_size> {
+impl<const BLOCK_SIZE: usize> Device_trait for Memory_device_type<BLOCK_SIZE> {
     /// Read data from the memory device.
     ///
     /// Reads data from the current position into the provided buffer.
@@ -192,7 +192,7 @@ impl<const Block_size: usize> Device_trait for Memory_device_type<Block_size> {
 
         let (Data, Position) = &mut *Inner;
 
-        Data[*Position..*Position + Block_size].fill(0);
+        Data[*Position..*Position + BLOCK_SIZE].fill(0);
 
         Ok(())
     }
@@ -202,12 +202,20 @@ impl<const Block_size: usize> Device_trait for Memory_device_type<Block_size> {
     }
 
     fn Get_block_size(&self) -> crate::Result_type<usize> {
-        Ok(Block_size)
+        Ok(BLOCK_SIZE)
     }
 
     fn Dump_device(&self) -> crate::Result_type<Vec<u8>> {
         let Inner = block_on(self.0.read());
 
         Ok(Inner.0.clone())
+    }
+
+    fn Is_a_terminal(&self) -> bool {
+        false
+    }
+
+    fn Is_a_block_device(&self) -> bool {
+        false
     }
 }

@@ -55,7 +55,7 @@ impl File_system_type {
         let Pipe = Pipe_type::New(Buffer_size);
 
         // - Create the read file
-        let Read_flags = Flags_type::New(Mode_type::Read_only, None, Some(Status));
+        let Read_flags = Flags_type::New(Mode_type::READ_ONLY, None, Some(Status));
 
         let Read_file = Get_new_file_identifier(Task, None, None, &Inner.Open_pipes)?;
 
@@ -68,7 +68,7 @@ impl File_system_type {
         }
 
         // - Create the write file
-        let Write_flags = Flags_type::New(Mode_type::Write_only, None, Some(Status));
+        let Write_flags = Flags_type::New(Mode_type::WRITE_ONLY, None, Some(Status));
 
         let Write_file = Get_new_file_identifier(Task, None, None, &Inner.Open_pipes)?;
 
@@ -371,7 +371,7 @@ mod Tests {
         let fs = File_system_type::New();
         let buffer_size = 1024;
         let task_id = Task_identifier_type::New(0);
-        let flags = Flags_type::New(Mode_type::Read_write, None, None);
+        let flags = Flags_type::New(Mode_type::READ_WRITE, None, None);
 
         let inode = fs.Create_named_pipe(buffer_size).await.unwrap();
         let file_id = fs

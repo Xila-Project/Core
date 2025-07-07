@@ -27,14 +27,14 @@ use Synchronization::{
     blocking_mutex::raw::CriticalSectionRawMutex, once_lock::OnceLock, rwlock::RwLock,
 };
 
-static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
+static MANAGER_INSTANCE: OnceLock<Manager_type> = OnceLock::new();
 
 pub fn Initialize() -> &'static Manager_type {
-    Manager_instance.get_or_init(Manager_type::New)
+    MANAGER_INSTANCE.get_or_init(Manager_type::New)
 }
 
 pub fn Get_instance() -> &'static Manager_type {
-    Manager_instance.try_get().expect("Manager not initialized")
+    MANAGER_INSTANCE.try_get().expect("Manager not initialized")
 }
 
 pub(crate) struct Inner_type {
@@ -49,7 +49,7 @@ unsafe impl Send for Manager_type {}
 pub struct Manager_type(pub(crate) RwLock<CriticalSectionRawMutex, Inner_type>);
 
 impl Manager_type {
-    pub const Root_task_identifier: Task_identifier_type = Task_identifier_type::New(0);
+    pub const ROOT_TASK_IDENTIFIER: Task_identifier_type = Task_identifier_type::New(0);
 
     /// Create a new task manager instance,
     /// create a root task and register current thread as the root task main thread.

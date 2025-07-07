@@ -23,7 +23,7 @@ use crate::Input_type_type;
 use crate::Window::Window_type;
 use crate::{Error_type, Result_type, Screen_read_data_type};
 
-static Manager_instance: OnceLock<Manager_type> = OnceLock::new();
+static MANAGER_INSTANCE: OnceLock<Manager_type> = OnceLock::new();
 
 pub async fn Initialize(
     Screen_device: Device_type,
@@ -42,11 +42,11 @@ pub async fn Initialize(
     )
     .expect("Failed to create manager instance");
 
-    Manager_instance.get_or_init(|| Manager)
+    MANAGER_INSTANCE.get_or_init(|| Manager)
 }
 
 pub fn Get_instance() -> &'static Manager_type {
-    Manager_instance
+    MANAGER_INSTANCE
         .try_get()
         .expect("Graphics manager not initialized")
 }

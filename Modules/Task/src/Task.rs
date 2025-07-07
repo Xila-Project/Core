@@ -8,8 +8,8 @@ pub type Task_identifier_inner_type = u32;
 pub struct Task_identifier_type(Task_identifier_inner_type);
 
 impl Task_identifier_type {
-    pub const Maximum: Task_identifier_inner_type = Task_identifier_inner_type::MAX;
-    pub const Minimum: Task_identifier_inner_type = Task_identifier_inner_type::MIN;
+    pub const MAXIMUM: Task_identifier_inner_type = Task_identifier_inner_type::MAX;
+    pub const MINIMUM: Task_identifier_inner_type = Task_identifier_inner_type::MIN;
 }
 
 impl Task_identifier_type {
@@ -48,11 +48,11 @@ mod Tests {
     #[test]
     fn test_task_identifier_constants() {
         assert_eq!(
-            Task_identifier_type::Maximum,
+            Task_identifier_type::MAXIMUM,
             Task_identifier_inner_type::MAX
         );
         assert_eq!(
-            Task_identifier_type::Minimum,
+            Task_identifier_type::MINIMUM,
             Task_identifier_inner_type::MIN
         );
     }
@@ -149,12 +149,12 @@ mod Tests {
     #[test]
     fn test_edge_cases() {
         // Test minimum value
-        let min_id = Task_identifier_type::New(Task_identifier_type::Minimum);
-        assert_eq!(min_id.Into_inner(), Task_identifier_type::Minimum);
+        let min_id = Task_identifier_type::New(Task_identifier_type::MINIMUM);
+        assert_eq!(min_id.Into_inner(), Task_identifier_type::MINIMUM);
 
         // Test maximum value
-        let max_id = Task_identifier_type::New(Task_identifier_type::Maximum);
-        assert_eq!(max_id.Into_inner(), Task_identifier_type::Maximum);
+        let max_id = Task_identifier_type::New(Task_identifier_type::MAXIMUM);
+        assert_eq!(max_id.Into_inner(), Task_identifier_type::MAXIMUM);
     }
 
     #[test]

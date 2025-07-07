@@ -23,6 +23,6 @@ macro_rules! Instantiate_global_allocator {
 
         #[global_allocator]
         #[no_mangle]
-        pub static __Xila_memory_allocator: $crate::Manager_type = $crate::Manager_type::New(&A);
+        pub static __XILA_MEMORY_ALLOCATOR: $crate::Manager_type = $crate::Manager_type::New(&A);
     };
 }

@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
-#![allow(non_upper_case_globals)]
 
 extern crate alloc;
 
@@ -90,15 +89,15 @@ async fn Integration_test() {
     Virtual_machine::Initialize(&[&Host_bindings::Graphics_bindings]);
 
     let Virtual_machine = Virtual_machine::Get_instance();
-    const Resolution: Graphics::Point_type = Graphics::Point_type::New(800, 600);
+    const RESOLUTION: Graphics::Point_type = Graphics::Point_type::New(800, 600);
     let (Screen_device, Pointer_device, Keyboard_device) =
-        Drivers::Native::Window_screen::New(Resolution).unwrap();
+        Drivers::Native::Window_screen::New(RESOLUTION).unwrap();
     // - - Initialize the graphics manager
     Graphics::Initialize(
         Screen_device,
         Pointer_device,
         Graphics::Input_type_type::Pointer,
-        Graphics::Get_minimal_buffer_size(&Resolution),
+        Graphics::Get_minimal_buffer_size(&RESOLUTION),
         true,
     )
     .await;
@@ -121,7 +120,7 @@ async fn Integration_test() {
     let Standard_in = Virtual_file_system
         .Open(
             &"/Devices/Standard_in",
-            File_system::Mode_type::Read_only.into(),
+            File_system::Mode_type::READ_ONLY.into(),
             Task,
         )
         .await
@@ -130,7 +129,7 @@ async fn Integration_test() {
     let Standard_out = Virtual_file_system
         .Open(
             &"/Devices/Standard_out",
-            File_system::Mode_type::Write_only.into(),
+            File_system::Mode_type::WRITE_ONLY.into(),
             Task,
         )
         .await
@@ -139,7 +138,7 @@ async fn Integration_test() {
     let Standard_error = Virtual_file_system
         .Open(
             &"/Devices/Standard_out",
-            File_system::Mode_type::Write_only.into(),
+            File_system::Mode_type::WRITE_ONLY.into(),
             Task,
         )
         .await

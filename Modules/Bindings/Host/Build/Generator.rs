@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
-#![allow(non_upper_case_globals)]
 
 use std::{fs::File, io::Write, path::Path};
 use Bindings_utilities::{

@@ -30,7 +30,7 @@ impl Settings_type {
 
         let mut Window = Graphics::Get_instance().Create_window().await?;
 
-        Window.Set_icon("Se", Palette::Get(Hue_type::Grey, Palette::Tone_type::Main));
+        Window.Set_icon("Se", Palette::Get(Hue_type::Grey, Palette::Tone_type::MAIN));
 
         // Create tabview
         let Tabview = unsafe {

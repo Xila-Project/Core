@@ -91,7 +91,7 @@ impl Window_type {
         let User_data = User_data_type {
             Queue: VecDeque::with_capacity(10),
             Icon_text: [b'I', b'c'],
-            Icon_color: Color_type::Black,
+            Icon_color: Color_type::BLACK,
         };
 
         let mut User_data = Box::new(User_data);

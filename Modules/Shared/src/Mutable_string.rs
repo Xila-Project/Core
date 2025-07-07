@@ -157,7 +157,6 @@ impl PartialEq for Mutable_string_type<'_> {
 
 #[cfg(test)]
 mod tests {
-    #![allow(non_upper_case_globals)]
 
     const Test_str_1: &str = "Hello, World!";
     const Test_str_2: &str = "This is a new line.";

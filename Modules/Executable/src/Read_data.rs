@@ -48,7 +48,7 @@ impl TryFrom<&mut [u8]> for &mut Read_data_type {
         if Value.len() != size_of::<Read_data_type>() {
             return Err(());
         }
-        if Value.as_ptr() as usize % core::mem::align_of::<Read_data_type>() != 0 {
+        if !(Value.as_ptr() as usize).is_multiple_of(core::mem::align_of::<Read_data_type>()) {
             return Err(());
         }
 

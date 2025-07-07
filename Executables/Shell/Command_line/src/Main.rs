@@ -21,7 +21,7 @@ impl Shell_type {
     pub fn New(Standard: Standard_type) -> Self {
         Self {
             Standard,
-            Current_directory: Path_type::Root.to_owned(),
+            Current_directory: Path_type::ROOT.to_owned(),
             Running: true,
             User: "".to_string(),
             Host: "".to_string(),

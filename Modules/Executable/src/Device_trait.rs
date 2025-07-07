@@ -95,7 +95,7 @@ macro_rules! Mount_static_executables {
 
         $(
             $Virtual_file_system.Mount_static_device($Task_identifier, $Path, Create_device!($Device)).await?;
-            $Virtual_file_system.Set_permissions($Path, Permissions_type::Executable ).await?;
+            $Virtual_file_system.Set_permissions($Path, Permissions_type::EXECUTABLE ).await?;
         )*
 
         Ok(())

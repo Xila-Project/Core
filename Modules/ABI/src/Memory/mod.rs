@@ -50,15 +50,15 @@ pub type Xila_memory_protection_type = u8;
 
 /// Read permission flag - allows reading from memory
 #[no_mangle]
-pub static Xila_memory_protection_read: u8 = Memory::Protection_type::Read_bit;
+pub static XILA_MEMORY_PROTECTION_READ: u8 = Memory::Protection_type::READ_BIT;
 
 /// Write permission flag - allows writing to memory
 #[no_mangle]
-pub static Xila_memory_protection_write: u8 = Memory::Protection_type::Write_bit;
+pub static XILA_MEMORY_PROTECTION_WRITE: u8 = Memory::Protection_type::WRITE_BIT;
 
 /// Execute permission flag - allows executing code from memory
 #[no_mangle]
-pub static Xila_memory_protection_execute: u8 = Memory::Protection_type::Execute_bit;
+pub static XILA_MEMORY_PROTECTION_EXECUTE: u8 = Memory::Protection_type::EXECUTE_BIT;
 
 /// Memory capability flags that specify special requirements for allocated memory.
 /// These flags can be combined using bitwise OR to request multiple capabilities.
@@ -66,17 +66,17 @@ pub type Xila_memory_capabilities_type = u8;
 
 /// Executable capability - memory can be used for code execution
 #[no_mangle]
-pub static Xila_memory_capabilities_execute: Xila_memory_capabilities_type =
-    Memory::Capabilities_type::Executable_flag;
+pub static XILA_MEMORY_CAPABILITIES_EXECUTE: Xila_memory_capabilities_type =
+    Memory::Capabilities_type::EXECUTABLE_FLAG;
 
 /// Direct Memory Access (DMA) capability - memory is accessible by DMA controllers
 #[no_mangle]
-pub static Xila_memory_capabilities_direct_memory_access: Xila_memory_capabilities_type =
-    Memory::Capabilities_type::Direct_memory_access_flag;
+pub static XILA_MEMORY_CAPABILITIES_DIRECT_MEMORY_ACCESS: Xila_memory_capabilities_type =
+    Memory::Capabilities_type::DIRECT_MEMORY_ACCESS_FLAG;
 
 /// No special capabilities required - standard memory allocation
 #[no_mangle]
-pub static Xila_memory_capabilities_none: Xila_memory_capabilities_type = 0;
+pub static XILA_MEMORY_CAPABILITIES_NONE: Xila_memory_capabilities_type = 0;
 
 // - Memory Management Functions
 
@@ -114,7 +114,7 @@ where
 /// This table maps memory addresses to their corresponding memory layouts,
 /// enabling proper deallocation and reallocation operations. The table is
 /// protected by a RwLock to ensure thread safety.
-static Allocations_table: RwLock<CriticalSectionRawMutex, BTreeMap<usize, Layout_type>> =
+static ALLOCATIONS_TABLE: RwLock<CriticalSectionRawMutex, BTreeMap<usize, Layout_type>> =
     RwLock::new(BTreeMap::new());
 
 /// Macro to acquire a write lock on the allocations table.
@@ -123,7 +123,7 @@ static Allocations_table: RwLock<CriticalSectionRawMutex, BTreeMap<usize, Layout
 /// to the allocation tracking table for modification operations.
 macro_rules! Write_allocations_table {
     () => {
-        block_on(Allocations_table.write())
+        block_on(ALLOCATIONS_TABLE.write())
     };
 }
 
@@ -226,7 +226,7 @@ pub unsafe extern "C" fn Xila_memory_reallocate(Pointer: *mut c_void, Size: usiz
     Into_pointer(|| {
         let Pointer = NonNull::new(Pointer as *mut u8);
 
-        let mut Allocation_table = block_on(Allocations_table.write());
+        let mut Allocation_table = block_on(ALLOCATIONS_TABLE.write());
 
         let Old_layout = match Pointer {
             None => Layout_type::from_size_align(Size, 1)
@@ -297,7 +297,7 @@ pub unsafe extern "C" fn Xila_memory_reallocate(Pointer: *mut c_void, Size: usiz
 /// void* ptr = Xila_memory_allocate(NULL, 1024, 8, Xila_memory_capabilities_none);
 ///
 /// // Allocate executable memory for code
-/// void* code_ptr = Xila_memory_allocate(NULL, 4096, 4096, Xila_memory_capabilities_execute);
+/// void* code_ptr = Xila_memory_allocate(NULL, 4096, 4096, XILA_MEMORY_CAPABILITIES_EXECUTE);
 ///
 /// // Allocate DMA-capable memory
 /// void* dma_ptr = Xila_memory_allocate(NULL, 2048, 32, Xila_memory_capabilities_direct_memory_access);
@@ -405,7 +405,7 @@ pub extern "C" fn Xila_memory_flush_data_cache() {
 ///
 /// ```c
 /// // After writing machine code to executable memory
-/// void* code_ptr = Xila_memory_allocate(NULL, 4096, 4096, Xila_memory_capabilities_execute);
+/// void* code_ptr = Xila_memory_allocate(NULL, 4096, 4096, XILA_MEMORY_CAPABILITIES_EXECUTE);
 /// memcpy(code_ptr, machine_code, code_size);
 /// Xila_memory_flush_instruction_cache(code_ptr, code_size);
 ///
@@ -539,7 +539,7 @@ mod Tests {
             // Test allocation with executable capability
             let size = 128;
             let alignment = 8;
-            let capabilities = Xila_memory_capabilities_execute;
+            let capabilities = XILA_MEMORY_CAPABILITIES_EXECUTE;
             let hint_address = core::ptr::null_mut();
 
             let pointer = Xila_memory_allocate(hint_address, size, alignment, capabilities);
@@ -564,7 +564,7 @@ mod Tests {
             // Test allocation with DMA capability
             let size = 128;
             let alignment = 8;
-            let capabilities = Xila_memory_capabilities_direct_memory_access;
+            let capabilities = XILA_MEMORY_CAPABILITIES_DIRECT_MEMORY_ACCESS;
             let hint_address = core::ptr::null_mut();
 
             let pointer = Xila_memory_allocate(hint_address, size, alignment, capabilities);
@@ -757,7 +757,7 @@ mod Tests {
             // Test flushing instruction cache with valid memory
             let size = 128;
             let alignment = 8;
-            let capabilities = Xila_memory_capabilities_execute;
+            let capabilities = XILA_MEMORY_CAPABILITIES_EXECUTE;
             let hint_address = core::ptr::null_mut();
 
             let pointer = Xila_memory_allocate(hint_address, size, alignment, capabilities);

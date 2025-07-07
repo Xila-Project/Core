@@ -3,7 +3,7 @@ use core::{alloc::GlobalAlloc, ptr::NonNull};
 use crate::{Capabilities_type, Layout_type, Manager_trait};
 
 unsafe extern "Rust" {
-    unsafe static __Xila_memory_allocator: &'static dyn Manager_trait;
+    unsafe static __XILA_MEMORY_ALLOCATOR: &'static dyn Manager_trait;
 }
 
 /// A wrapper type that adapts any type implementing `Allocator_trait` to the standard
@@ -52,5 +52,5 @@ unsafe impl GlobalAlloc for Manager_type {
 }
 
 pub fn Get_instance() -> &'static dyn Manager_trait {
-    unsafe { __Xila_memory_allocator }
+    unsafe { __XILA_MEMORY_ALLOCATOR }
 }

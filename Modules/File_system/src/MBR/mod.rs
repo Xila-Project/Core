@@ -74,13 +74,13 @@ pub struct MBR_type {
 
 impl MBR_type {
     /// MBR signature bytes
-    pub const Signature: [u8; 2] = [0x55, 0xAA];
+    pub const SIGNATURE: [u8; 2] = [0x55, 0xAA];
 
     /// Size of MBR in bytes
-    pub const Size: usize = 512;
+    pub const SIZE: usize = 512;
 
     /// Maximum number of primary partitions in MBR
-    pub const Maximum_partitions_count: usize = 4;
+    pub const MAXIMUM_PARTITIONS_COUNT: usize = 4;
 
     /// Create a new empty MBR
     pub fn New() -> Self {
@@ -89,7 +89,7 @@ impl MBR_type {
             Disk_signature: [0; 4],
             Reserved: [0; 2],
             Partitions: [Partition_entry_type::New(); 4],
-            Boot_signature: Self::Signature,
+            Boot_signature: Self::SIGNATURE,
         }
     }
 
@@ -102,12 +102,12 @@ impl MBR_type {
 
     /// Parse MBR from raw bytes
     pub fn From_bytes(Data: &[u8]) -> Result_type<Self> {
-        if Data.len() < Self::Size {
+        if Data.len() < Self::SIZE {
             return Err(Error_type::Invalid_parameter);
         }
 
         // Check MBR signature
-        if Data[510] != Self::Signature[0] || Data[511] != Self::Signature[1] {
+        if Data[510] != Self::SIGNATURE[0] || Data[511] != Self::SIGNATURE[1] {
             return Err(Error_type::Corrupted);
         }
 
@@ -164,7 +164,7 @@ impl MBR_type {
     /// Read and parse MBR from a device
     pub fn Read_from_device(Device: &Device_type) -> Result_type<Self> {
         // Read the first 512 bytes (MBR sector)
-        let mut Buffer = [0u8; Self::Size];
+        let mut Buffer = [0u8; Self::SIZE];
 
         // Set position to the beginning of the device
         Device.Set_position(&crate::Position_type::Start(0))?;
@@ -172,7 +172,7 @@ impl MBR_type {
         // Read MBR data
         let Bytes_read = Device.Read(&mut Buffer)?;
 
-        if Bytes_read.As_u64() < Self::Size as u64 {
+        if Bytes_read.As_u64() < Self::SIZE as u64 {
             return Err(Error_type::Input_output);
         }
 
@@ -188,7 +188,7 @@ impl MBR_type {
         let Buffer = self.To_bytes();
         let Bytes_written = Device.Write(&Buffer)?;
 
-        if Bytes_written.As_u64() < Self::Size as u64 {
+        if Bytes_written.As_u64() < Self::SIZE as u64 {
             return Err(Error_type::Input_output);
         }
 
@@ -198,7 +198,7 @@ impl MBR_type {
 
     /// Check if MBR has a valid signature
     pub fn Is_valid(&self) -> bool {
-        self.Boot_signature == Self::Signature
+        self.Boot_signature == Self::SIGNATURE
     }
 
     /// Get all valid partitions
@@ -233,7 +233,7 @@ impl MBR_type {
 
     /// Set a partition as bootable (clears bootable flag from other partitions)
     pub fn Set_bootable_partition(&mut self, Index: usize) -> Result_type<()> {
-        if Index >= Self::Maximum_partitions_count {
+        if Index >= Self::MAXIMUM_PARTITIONS_COUNT {
             return Err(Error_type::Invalid_parameter);
         }
 
@@ -309,7 +309,7 @@ impl MBR_type {
 
     /// Remove a partition by index
     pub fn Remove_partition(&mut self, Index: usize) -> Result_type<()> {
-        if Index >= Self::Maximum_partitions_count {
+        if Index >= Self::MAXIMUM_PARTITIONS_COUNT {
             return Err(Error_type::Invalid_parameter);
         }
 
@@ -637,8 +637,8 @@ impl MBR_type {
     }
 
     /// Convert MBR back to bytes
-    pub fn To_bytes(&self) -> [u8; Self::Size] {
-        let mut Buffer = [0u8; Self::Size];
+    pub fn To_bytes(&self) -> [u8; Self::SIZE] {
+        let mut Buffer = [0u8; Self::SIZE];
 
         // Copy bootstrap code
         Buffer[0..440].copy_from_slice(&self.Bootstrap_code);
@@ -1167,9 +1167,9 @@ mod Tests {
 
     #[test]
     fn Test_mbr_constants() {
-        assert_eq!(super::MBR_type::Size, 512);
-        assert_eq!(super::MBR_type::Maximum_partitions_count, 4);
-        assert_eq!(super::MBR_type::Signature, [0x55, 0xAA]);
+        assert_eq!(super::MBR_type::SIZE, 512);
+        assert_eq!(super::MBR_type::MAXIMUM_PARTITIONS_COUNT, 4);
+        assert_eq!(super::MBR_type::SIGNATURE, [0x55, 0xAA]);
     }
 
     #[test]

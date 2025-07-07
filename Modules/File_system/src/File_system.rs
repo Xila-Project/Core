@@ -420,10 +420,10 @@ pub fn Get_new_file_identifier<T>(
     End: Option<File_identifier_type>,
     Map: &BTreeMap<Local_file_identifier_type, T>,
 ) -> Result_type<Local_file_identifier_type> {
-    let Start = Start.unwrap_or(File_identifier_type::Minimum);
+    let Start = Start.unwrap_or(File_identifier_type::MINIMUM);
     let mut Start = Local_file_identifier_type::New(Task, Start);
 
-    let End = End.unwrap_or(File_identifier_type::Maximum);
+    let End = End.unwrap_or(File_identifier_type::MAXIMUM);
     let End = Local_file_identifier_type::New(Task, End);
 
     while Start < End {
@@ -456,7 +456,7 @@ pub mod Tests {
     use super::*;
 
     pub fn Get_test_path() -> Path_owned_type {
-        Path_type::Root.to_owned()
+        Path_type::ROOT.to_owned()
     }
 
     pub async fn Test_open_close_delete(File_system: impl File_system_traits) {
@@ -464,7 +464,7 @@ pub mod Tests {
 
         let Path = Get_test_path().Append("Test_open_close_delete").unwrap();
 
-        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+        let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
         // - Open
         let File = File_system
@@ -473,8 +473,8 @@ pub mod Tests {
                 &Path,
                 Flags,
                 Time_type::New(123),
-                User_identifier_type::Root,
-                Group_identifier_type::Root,
+                User_identifier_type::ROOT,
+                Group_identifier_type::ROOT,
             )
             .unwrap();
 
@@ -490,7 +490,7 @@ pub mod Tests {
 
         let Path = Get_test_path().Append("Test_read_write").unwrap();
 
-        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+        let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
         // - Open
         let File = File_system
@@ -499,8 +499,8 @@ pub mod Tests {
                 &Path,
                 Flags,
                 Time_type::New(123),
-                User_identifier_type::Root,
-                Group_identifier_type::Root,
+                User_identifier_type::ROOT,
+                Group_identifier_type::ROOT,
             )
             .unwrap();
 
@@ -536,7 +536,7 @@ pub mod Tests {
         let Path = Get_test_path().Append("Test_move").unwrap();
         let Path_destination = Get_test_path().Append("Test_move_destination").unwrap();
 
-        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+        let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
         // - Open
         let File = File_system
@@ -545,8 +545,8 @@ pub mod Tests {
                 &Path,
                 Flags,
                 Time_type::New(123),
-                User_identifier_type::Root,
-                Group_identifier_type::Root,
+                User_identifier_type::ROOT,
+                Group_identifier_type::ROOT,
             )
             .unwrap();
 
@@ -567,10 +567,10 @@ pub mod Tests {
             .Open(
                 Task,
                 &Path_destination,
-                Mode_type::Read_only.into(),
+                Mode_type::READ_ONLY.into(),
                 Time_type::New(123),
-                User_identifier_type::Root,
-                Group_identifier_type::Root,
+                User_identifier_type::ROOT,
+                Group_identifier_type::ROOT,
             )
             .unwrap();
 
@@ -594,7 +594,7 @@ pub mod Tests {
 
         let Path = Get_test_path().Append("Test_set_position").unwrap();
 
-        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+        let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
         // - Open
         let File = File_system
@@ -603,8 +603,8 @@ pub mod Tests {
                 &Path,
                 Flags,
                 Time_type::New(123),
-                User_identifier_type::Root,
-                Group_identifier_type::Root,
+                User_identifier_type::ROOT,
+                Group_identifier_type::ROOT,
             )
             .unwrap();
 
@@ -645,7 +645,7 @@ pub mod Tests {
 
         let Path = Get_test_path().Append("Test_flush").unwrap();
 
-        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+        let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
         let File = File_system
             .Open(
@@ -653,8 +653,8 @@ pub mod Tests {
                 &Path,
                 Flags,
                 Time_type::New(123),
-                User_identifier_type::Root,
-                Group_identifier_type::Root,
+                User_identifier_type::ROOT,
+                Group_identifier_type::ROOT,
             )
             .unwrap();
 
@@ -676,7 +676,7 @@ pub mod Tests {
 
         let Path = Get_test_path().Append("Test_set_owner").unwrap();
 
-        let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None);
+        let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
         let File = File_system
             .Open(
@@ -684,8 +684,8 @@ pub mod Tests {
                 &Path,
                 Flags,
                 Time_type::New(123),
-                User_identifier_type::Root,
-                Group_identifier_type::Root,
+                User_identifier_type::ROOT,
+                Group_identifier_type::ROOT,
             )
             .unwrap();
 
@@ -694,8 +694,8 @@ pub mod Tests {
         let Metadata = Metadata_type::Get_default(
             Type_type::File,
             Time,
-            User_identifier_type::Root,
-            Group_identifier_type::Root,
+            User_identifier_type::ROOT,
+            Group_identifier_type::ROOT,
         )
         .unwrap();
 
@@ -717,15 +717,15 @@ pub mod Tests {
 
         // Create multiple files
         for i in 0..10 {
-            let Flags = Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None);
+            let Flags = Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
             let File = File_system
                 .Open(
                     Task,
                     Path_type::From_str(&format!("/Test{i}")),
                     Flags,
                     Time_type::New(123),
-                    User_identifier_type::Root,
-                    Group_identifier_type::Root,
+                    User_identifier_type::ROOT,
+                    Group_identifier_type::ROOT,
                 )
                 .unwrap();
             File_system.Close(File).unwrap();
@@ -757,21 +757,21 @@ pub mod Tests {
 
         // Create multiple files
         for i in 0..10 {
-            let Flags = Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None);
+            let Flags = Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
             let File = File_system
                 .Open(
                     Task,
                     Path_type::From_str(&format!("/Test{i}")),
                     Flags,
                     Time_type::New(123),
-                    User_identifier_type::Root,
-                    Group_identifier_type::Root,
+                    User_identifier_type::ROOT,
+                    Group_identifier_type::ROOT,
                 )
                 .unwrap();
             File_system.Close(File).unwrap();
         }
 
-        let Directory = File_system.Open_directory(Path_type::Root, Task).unwrap();
+        let Directory = File_system.Open_directory(Path_type::ROOT, Task).unwrap();
 
         let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Current_directory.Get_name(), ".");
@@ -807,21 +807,21 @@ pub mod Tests {
 
         // Create multiple files
         for i in 0..10 {
-            let Flags = Flags_type::New(Mode_type::Write_only, Some(Open_type::Create_only), None);
+            let Flags = Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
             let File = File_system
                 .Open(
                     Task,
                     Path_type::From_str(&format!("/Test{i}")),
                     Flags,
                     Time_type::New(123),
-                    User_identifier_type::Root,
-                    Group_identifier_type::Root,
+                    User_identifier_type::ROOT,
+                    Group_identifier_type::ROOT,
                 )
                 .unwrap();
             File_system.Close(File).unwrap();
         }
 
-        let Directory = File_system.Open_directory(Path_type::Root, Task).unwrap();
+        let Directory = File_system.Open_directory(Path_type::ROOT, Task).unwrap();
 
         let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
         assert_eq!(*Current_directory.Get_name(), ".");
@@ -867,13 +867,13 @@ pub mod Tests {
             .Create_directory(
                 &Path,
                 Time_type::New(123),
-                User_identifier_type::Root,
-                Group_identifier_type::Root,
+                User_identifier_type::ROOT,
+                Group_identifier_type::ROOT,
             )
             .unwrap();
 
         {
-            let Root_directory = File_system.Open_directory(Path_type::Root, Task).unwrap();
+            let Root_directory = File_system.Open_directory(Path_type::ROOT, Task).unwrap();
 
             let Current_directory = File_system.Read_directory(Root_directory).unwrap().unwrap();
             assert_eq!(*Current_directory.Get_name(), ".");

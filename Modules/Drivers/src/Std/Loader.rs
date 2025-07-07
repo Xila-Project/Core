@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
-#![allow(non_upper_case_globals)]
 
 use core::result::Result;
 
@@ -83,10 +82,10 @@ impl Loader_type {
             let Destination_file = File_system.Open(
                 Task_identifier_type::New(0),
                 Destination_path,
-                Flags_type::New(Mode_type::Read_only, Some(Open_type::Create), None),
+                Flags_type::New(Mode_type::READ_ONLY, Some(Open_type::CREATE), None),
                 Time_type::New(0),
-                User_identifier_type::Root,
-                Group_identifier_type::Root,
+                User_identifier_type::ROOT,
+                Group_identifier_type::ROOT,
             )?;
 
             // Read and write file content block by block
@@ -139,10 +138,10 @@ mod Tests {
             .Open(
                 Task_identifier_type::New(0),
                 Path_type::New(Destination_path),
-                Flags_type::New(Mode_type::Read_only, None, None),
+                Flags_type::New(Mode_type::READ_ONLY, None, None),
                 Time_type::New(0),
-                User_identifier_type::Root,
-                Group_identifier_type::Root,
+                User_identifier_type::ROOT,
+                Group_identifier_type::ROOT,
             )
             .unwrap();
 

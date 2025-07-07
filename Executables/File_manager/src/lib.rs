@@ -1,7 +1,6 @@
 #![no_std]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
-#![allow(non_upper_case_globals)]
 
 extern crate alloc;
 
@@ -16,7 +15,7 @@ use File_system::{Flags_type, Mode_type, Open_type};
 use Task::Task_identifier_type;
 use Virtual_file_system::{File_type, Virtual_file_system_type};
 
-pub const Shortcut: &str = r#"
+pub const SHORTCUT: &str = r#"
 {
     "Name": "File manager",
     "Command": "/Binaries/File_manager",
@@ -40,7 +39,7 @@ impl File_manager_executable_type {
         let File = match File_type::Open(
             Virtual_file_system,
             "/Configuration/Shared/Shortcuts/File_manager.json",
-            Flags_type::New(Mode_type::Write_only, Open_type::Create_only.into(), None),
+            Flags_type::New(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
         )
         .await
         {
@@ -51,7 +50,7 @@ impl File_manager_executable_type {
             Err(Error) => Err(Error.to_string())?,
         };
 
-        File.Write(crate::Shortcut.as_bytes())
+        File.Write(crate::SHORTCUT.as_bytes())
             .await
             .map_err(|Error| Error.to_string())?;
 

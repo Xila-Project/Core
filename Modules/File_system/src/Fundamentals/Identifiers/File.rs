@@ -52,25 +52,25 @@ pub struct File_identifier_type(File_identifier_inner_type);
 
 impl File_identifier_type {
     /// Size in bits of the underlying identifier type.
-    pub const Size_bits: u8 = core::mem::size_of::<File_identifier_inner_type>() as u8 * 8;
+    pub const SIZE_BITS: u8 = core::mem::size_of::<File_identifier_inner_type>() as u8 * 8;
 
     /// Standard input file identifier (traditionally 0).
-    pub const Standard_in: File_identifier_type = File_identifier_type::New(0);
+    pub const STANDARD_IN: File_identifier_type = File_identifier_type::New(0);
 
     /// Standard output file identifier (traditionally 1).
-    pub const Standard_out: File_identifier_type = File_identifier_type::New(1);
+    pub const STANDARD_OUT: File_identifier_type = File_identifier_type::New(1);
 
     /// Standard error file identifier (traditionally 2).
-    pub const Standard_error: File_identifier_type = File_identifier_type::New(2);
+    pub const STANDARD_ERROR: File_identifier_type = File_identifier_type::New(2);
 
     /// Minimum file identifier available for regular files.
     ///
     /// Regular files should use identifiers starting from this value to avoid
     /// conflicts with standard file identifiers.
-    pub const Minimum: File_identifier_type = File_identifier_type::New(3);
+    pub const MINIMUM: File_identifier_type = File_identifier_type::New(3);
 
     /// Maximum possible file identifier value.
-    pub const Maximum: File_identifier_type =
+    pub const MAXIMUM: File_identifier_type =
         File_identifier_type::New(File_identifier_inner_type::MAX);
 
     /// Create a new file identifier from a raw value.

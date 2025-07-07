@@ -169,7 +169,7 @@ Xila_memory_capabilities_type To_xila_memory_capability(int prot)
     Xila_memory_capabilities_type Xila_protection = 0;
 
     if (prot & MMAP_PROT_EXEC)
-        Xila_protection |= Xila_memory_capabilities_execute;
+        Xila_protection |= XILA_MEMORY_CAPABILITIES_EXECUTE;
 
     return Xila_protection;
 }
