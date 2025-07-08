@@ -1,3 +1,3 @@
-pub mod Chips;
+pub mod chips;
 
-pub mod Shared;
+pub mod shared;

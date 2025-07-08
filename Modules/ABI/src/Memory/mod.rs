@@ -36,13 +36,13 @@
 use alloc::collections::BTreeMap;
 use core::ptr::null_mut;
 use core::{ffi::c_void, ptr::NonNull};
-use Futures::block_on;
-use Log::{Debug, Trace, Warning};
-use Synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
+use futures::block_on;
+use log::{Debug, Trace, Warning};
+use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 
-use Synchronization::rwlock::RwLock;
+use synchronization::rwlock::RwLock;
 
-use Memory::{Capabilities_type, Layout_type};
+use memory::{Capabilities_type, Layout_type};
 
 /// Memory protection flags that can be combined using bitwise OR.
 /// These flags determine what operations are allowed on memory regions.

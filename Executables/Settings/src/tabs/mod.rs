@@ -1,5 +1,5 @@
 use crate::error::Result_type;
-use Graphics::{Event_type, LVGL};
+use graphics::{Event_type, LVGL};
 
 /// Enum to hold all tab types (avoids dyn compatibility issues with async traits)
 pub enum Tab_type {
@@ -24,8 +24,8 @@ impl Tab_type {
 }
 
 // Re-export tab modules
-pub mod Password;
+pub mod password;
 pub mod general;
 
 pub use general::General_tab_type;
-pub use Password::Password_tab_type;
+pub use password::Password_tab_type;

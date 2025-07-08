@@ -1,4 +1,4 @@
-use Users::{Group_identifier_type, User_identifier_type};
+use users::{Group_identifier_type, User_identifier_type};
 
 use crate::{Permissions_type, Time_type, Type_type};
 

@@ -3,19 +3,19 @@
 
 extern crate alloc;
 
-mod Cache;
-mod Capability;
-mod Macro;
-mod Manager;
-mod Protection;
-mod Statistics;
-mod Trait;
+mod cache;
+mod capability;
+mod macro;
+mod manager;
+mod protection;
+mod statistics;
+mod trait;
 
-pub use Cache::*;
-pub use Capability::*;
-pub use Manager::*;
-pub use Protection::*;
-pub use Statistics::*;
-pub use Trait::*;
+pub use cache::*;
+pub use capability::*;
+pub use manager::*;
+pub use protection::*;
+pub use statistics::*;
+pub use trait::*;
 
 pub type Layout_type = core::alloc::Layout;

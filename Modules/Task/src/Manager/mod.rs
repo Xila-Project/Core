@@ -2,28 +2,28 @@
 use super::*;
 
 // - Submodules
-mod Lifecycle;
-mod Metadata;
-mod Properties;
-mod Registration;
-mod Relationships;
-mod Signals;
-mod Spawner;
-mod Utilities;
+mod lifecycle;
+mod metadata;
+mod properties;
+mod registration;
+mod relationships;
+mod signals;
+mod spawner;
+mod utilities;
 
 #[cfg(test)]
-mod Tests;
+mod tests;
 
 // - Re-exports
 
-pub(crate) use Metadata::*;
+pub(crate) use metadata::*;
 
 // Manager module - core Manager structure and initialization
 
 use crate::Manager::Metadata_type;
 
 use alloc::collections::BTreeMap;
-use Synchronization::{
+use synchronization::{
     blocking_mutex::raw::CriticalSectionRawMutex, once_lock::OnceLock, rwlock::RwLock,
 };
 

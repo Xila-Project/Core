@@ -4,27 +4,27 @@
 //! including paths, sizes, positions, metadata, permissions, and other essential
 //! building blocks for file system operations.
 
-mod Entry;
-mod Flags;
-mod Identifiers;
-mod Path;
-mod Position;
-mod Size;
-mod Statistics;
-mod Type;
+mod entry;
+mod flags;
+mod identifiers;
+mod path;
+mod position;
+mod size;
+mod statistics;
+mod type;
 mod metadata;
 mod permission;
 
 pub use metadata::*;
 pub use permission::*;
-pub use Entry::*;
-pub use Flags::*;
-pub use Identifiers::*;
-pub use Path::*;
-pub use Position::*;
-pub use Size::*;
-pub use Statistics::*;
-pub use Type::*;
+pub use entry::*;
+pub use flags::*;
+pub use identifiers::*;
+pub use path::*;
+pub use position::*;
+pub use size::*;
+pub use statistics::*;
+pub use type::*;
 
 /// Standard block size representation for file system operations.
 ///
@@ -36,7 +36,7 @@ pub use Type::*;
 ///
 /// ```rust
 /// # extern crate alloc;
-/// use File_system::Block_type;
+/// use file_system::Block_type;
 ///
 /// let block = Block_type::default();
 /// assert_eq!(block.0.len(), 512);

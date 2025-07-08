@@ -1,5 +1,5 @@
 #![allow(non_camel_case_types)]
 
-mod Pin;
+mod pin;
 
-pub use Pin::*;
+pub use pin::*;

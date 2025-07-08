@@ -1,16 +1,16 @@
 #![allow(non_camel_case_types)]
 
-mod Architecture;
-mod Family;
-mod Operating_system;
-mod Vendor;
+mod architecture;
+mod family;
+mod operating_system;
+mod vendor;
 
 use std::env;
 
-pub use Architecture::*;
-pub use Family::*;
-pub use Operating_system::*;
-pub use Vendor::*;
+pub use architecture::*;
+pub use family::*;
+pub use operating_system::*;
+pub use vendor::*;
 
 #[derive(Debug, PartialEq)]
 pub struct Target_type {

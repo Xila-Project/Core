@@ -4,12 +4,12 @@
 
 use env_logger::{Builder, Env};
 use std::{collections::VecDeque, io::Write, process};
-use Command::Command_type;
-use Target::Target_type;
+use command::Command_type;
+use target::Target_type;
 
-mod Target;
+mod target;
 
-mod Command;
+mod command;
 
 fn Initialize_logger() {
     Builder::from_env(Env::default().default_filter_or("info"))

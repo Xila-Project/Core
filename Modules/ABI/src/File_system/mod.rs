@@ -1,9 +1,9 @@
-mod Directory;
-mod Functions;
-mod Socket;
-mod Types;
+mod directory;
+mod functions;
+mod socket;
+mod types;
 
-pub use Directory::*;
-pub use Functions::*;
-pub use Socket::*;
-pub use Types::*;
+pub use directory::*;
+pub use functions::*;
+pub use socket::*;
+pub use types::*;

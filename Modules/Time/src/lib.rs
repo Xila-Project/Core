@@ -1,9 +1,9 @@
 #![allow(non_camel_case_types)]
 
-mod Error;
-mod Manager;
+mod error;
+mod manager;
 
-pub use Error::*;
-pub use Manager::*;
+pub use error::*;
+pub use manager::*;
 
 pub type Duration_type = core::time::Duration;

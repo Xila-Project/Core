@@ -3,12 +3,12 @@
 
 extern crate alloc;
 
-mod Error;
-mod Main;
+mod error;
+mod main;
 
-pub use Error::*;
-use Executable::Implement_executable_device;
-pub use Main::*;
+pub use error::*;
+use executable::Implement_executable_device;
+pub use main::*;
 
 pub struct WASM_device_type;
 

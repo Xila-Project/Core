@@ -1,15 +1,15 @@
-pub mod Network;
+pub mod network;
 
-pub mod Memory;
+pub mod memory;
 
-pub mod IO;
+pub mod io;
 
-pub mod Executor;
+pub mod executor;
 
-pub mod Log;
+pub mod log;
 
-pub mod Loader;
+pub mod loader;
 
-pub mod Drive_file;
+pub mod drive_file;
 
-pub mod Console;
+pub mod console;

@@ -1,4 +1,4 @@
-use File_system::{Path_owned_type, Path_type};
+use file_system::{Path_owned_type, Path_type};
 
 use crate::error::{Error_type, Result_type};
 

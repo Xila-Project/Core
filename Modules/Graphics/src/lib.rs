@@ -3,28 +3,28 @@
 
 extern crate alloc;
 
-mod Area;
-mod Color;
-mod Display;
-mod Draw_buffer;
-mod Error;
-mod Event;
-mod Input;
-mod Manager;
-mod Point;
-mod Screen;
-mod Window;
+mod area;
+mod color;
+mod display;
+mod draw_buffer;
+mod error;
+mod event;
+mod input;
+mod manager;
+mod point;
+mod screen;
+mod window;
 
-pub mod LVGL;
+pub mod lvgl;
 
-pub use Area::*;
-pub use Color::*;
-pub use Display::*;
-pub use Draw_buffer::*;
-pub use Error::*;
-pub use Event::*;
-pub use Input::*;
-pub use Manager::*;
-pub use Point::*;
-pub use Screen::*;
-pub use Window::*;
+pub use area::*;
+pub use color::*;
+pub use display::*;
+pub use draw_buffer::*;
+pub use error::*;
+pub use event::*;
+pub use input::*;
+pub use manager::*;
+pub use point::*;
+pub use screen::*;
+pub use window::*;

@@ -5,16 +5,16 @@
 //! These identifiers ensure type safety and provide a consistent way to reference
 //! file system entities across different operations.
 
-mod Entry;
-mod File;
-mod File_system;
-mod Inode;
-mod Local_file;
-mod Unique_file;
+mod entry;
+mod file;
+mod file_system;
+mod inode;
+mod local_file;
+mod unique_file;
 
-pub use Entry::*;
-pub use File::*;
-pub use File_system::*;
-pub use Inode::*;
-pub use Local_file::*;
-pub use Unique_file::*;
+pub use entry::*;
+pub use file::*;
+pub use file_system::*;
+pub use inode::*;
+pub use local_file::*;
+pub use unique_file::*;

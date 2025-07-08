@@ -17,7 +17,7 @@
 //! ```rust
 //! extern crate alloc;
 //!
-//! use File_system::*;
+//! use file_system::*;
 //!
 //! let device = Create_device!(Memory_device_type::<512>::New(512));
 //!
@@ -49,8 +49,8 @@ use core::fmt;
 
 use crate::{Partition_device_type, Partition_statistics_type};
 
-mod Utilities;
-pub use Utilities::*;
+mod utilities;
+pub use utilities::*;
 
 use crate::{Device_type, Error_type, Partition_entry_type, Partition_type_type, Result_type};
 
@@ -356,7 +356,7 @@ impl MBR_type {
     ///
     /// ```rust
     /// extern crate alloc;
-    /// use File_system::*;
+    /// use file_system::*;
     ///
     /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
     /// // Create an MBR with multiple partitions
@@ -410,7 +410,7 @@ impl MBR_type {
     ///
     /// ```rust
     /// extern crate alloc;
-    /// use File_system::*;
+    /// use file_system::*;
     ///
     /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
     /// // Create an MBR with FAT32 partition
@@ -452,7 +452,7 @@ impl MBR_type {
     ///
     /// ```rust
     /// extern crate alloc;
-    /// use File_system::*;
+    /// use file_system::*;
     ///
     /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
     /// // First create and write a valid MBR
@@ -502,7 +502,7 @@ impl MBR_type {
     ///
     /// ```rust
     /// extern crate alloc;
-    /// use File_system::*;
+    /// use file_system::*;
     ///
     /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
     /// // Create an MBR with some partitions
@@ -606,7 +606,7 @@ impl MBR_type {
     /// # Examples
     ///
     /// ```rust
-    /// use File_system::*;
+    /// use file_system::*;
     ///
     /// // Create MBR for a 4MB device (8192 sectors)
     /// let mbr = MBR_type::Create_basic(0x12345678, Partition_type_type::Fat32_lba, 8192).unwrap();
@@ -696,7 +696,7 @@ impl MBR_type {
     ///
     /// ```rust
     /// extern crate alloc;
-    /// use File_system::*;
+    /// use file_system::*;
     ///
     /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
     ///
@@ -755,7 +755,7 @@ impl MBR_type {
     ///
     /// ```rust
     /// extern crate alloc;
-    /// use File_system::*;
+    /// use file_system::*;
     ///
     /// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
     ///

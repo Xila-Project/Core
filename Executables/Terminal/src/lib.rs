@@ -3,14 +3,14 @@
 
 extern crate alloc;
 
-mod Device;
-mod Executable;
-mod Main;
+mod device;
+mod executable;
+mod main;
 mod terminal;
 
-mod Error;
+mod error;
 
-pub use Executable::*;
+pub use executable::*;
 
 pub const SHORTCUT: &str = r#"
 {

@@ -14,11 +14,11 @@ pub use error::*;
 pub use read_data::*;
 pub use standard::*;
 
-use Task::{Join_handle_type, Task_identifier_type};
-use Users::User_identifier_type;
-use Virtual_file_system::File_type;
+use task::{Join_handle_type, Task_identifier_type};
+use users::User_identifier_type;
+use virtual_file_system::File_type;
 
-use File_system::{Path_type, Statistics_type};
+use file_system::{Path_type, Statistics_type};
 
 async fn is_execute_allowed(Statistics: &Statistics_type, User: User_identifier_type) -> bool {
     // - Check if the file can executed by anyone
@@ -132,9 +132,9 @@ pub async fn execute(
 
 #[cfg(test)]
 mod tests {
-    use File_system::Time_type;
+    use file_system::Time_type;
 
-    use Task::Test;
+    use task::Test;
 
     use super::*;
 

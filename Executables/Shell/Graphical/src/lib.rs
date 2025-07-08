@@ -4,20 +4,20 @@
 extern crate alloc;
 
 use alloc::boxed::Box;
-use Desk::Desk_type;
-use Executable::Standard_type;
-use Home::Home_type;
-use Layout::Layout_type;
-use Login::Login_type;
+use desk::Desk_type;
+use executable::Standard_type;
+use home::Home_type;
+use layout::Layout_type;
+use login::Login_type;
 
-mod Desk;
-mod Error;
-mod Home;
-mod Icon;
-mod Layout;
-mod Login;
-mod Main;
-mod Shortcut;
+mod desk;
+mod error;
+mod home;
+mod icon;
+mod layout;
+mod login;
+mod main;
+mod shortcut;
 
 pub struct Shell_type {
     _standard: Standard_type,

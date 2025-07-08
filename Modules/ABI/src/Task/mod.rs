@@ -1,11 +1,11 @@
-mod Condition_variable;
-mod Mutex;
-mod Rwlock;
-mod Semaphore;
-mod Thread;
+mod condition_variable;
+mod mutex;
+mod rwlock;
+mod semaphore;
+mod thread;
 
-pub use Condition_variable::*;
-pub use Mutex::*;
-pub use Rwlock::*;
-pub use Semaphore::*;
-pub use Thread::*;
+pub use condition_variable::*;
+pub use mutex::*;
+pub use rwlock::*;
+pub use semaphore::*;
+pub use thread::*;

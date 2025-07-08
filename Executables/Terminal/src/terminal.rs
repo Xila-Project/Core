@@ -1,8 +1,8 @@
 use alloc::string::String;
 use core::ffi::CStr;
-use File_system::Size_type;
-use Graphics::{Color_type, Event_code_type, Key_type, Window_type, LVGL};
-use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
+use file_system::Size_type;
+use graphics::{Color_type, Event_code_type, Key_type, Window_type, LVGL};
+use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
 use crate::Error::Result_type;
 

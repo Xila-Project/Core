@@ -10,7 +10,7 @@ use crate::Type_type;
 /// # Examples
 ///
 /// ```rust
-/// use File_system::{Permissions_type, Permission_type, Special_type};
+/// use file_system::{Permissions_type, Permission_type, Special_type};
 ///
 /// let user = Permission_type::New(true, false, false); // Read only
 /// let group = Permission_type::New(false, true, false); // Write only
@@ -267,7 +267,7 @@ impl Special_type {
 /// # Examples
 ///
 /// ```rust
-/// use File_system::Permission_type;
+/// use file_system::Permission_type;
 ///
 /// let read = Permission_type::Read_only;
 /// let write = Permission_type::Write_only;

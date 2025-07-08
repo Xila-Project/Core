@@ -1,11 +1,11 @@
 use alloc::string::String;
 
-use File_system::{
+use file_system::{
     File_identifier_type, Mode_type, Path_type, Size_type, Unique_file_identifier_type,
 };
-use Futures::block_on;
-use Task::Task_identifier_type;
-use Virtual_file_system::Virtual_file_system_type;
+use futures::block_on;
+use task::Task_identifier_type;
+use virtual_file_system::Virtual_file_system_type;
 
 use crate::Result_type;
 

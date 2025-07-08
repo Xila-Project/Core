@@ -8,16 +8,16 @@ mod settings;
 mod tabs;
 use core::num::NonZeroUsize;
 
-use Executable::Standard_type;
+use executable::Standard_type;
 
 use crate::settings::Settings_type;
 
 use alloc::string::{String, ToString};
 pub use error::*;
 pub use settings::*;
-use File_system::{Flags_type, Mode_type, Open_type};
-use Task::Task_identifier_type;
-use Virtual_file_system::{File_type, Virtual_file_system_type};
+use file_system::{Flags_type, Mode_type, Open_type};
+use task::Task_identifier_type;
+use virtual_file_system::{File_type, Virtual_file_system_type};
 
 pub const SHORTCUT: &str = r#"
 {

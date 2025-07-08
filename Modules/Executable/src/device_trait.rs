@@ -1,7 +1,7 @@
 use alloc::string::String;
-use File_system::Device_trait;
-use Task::Task_identifier_type;
-use Virtual_file_system::Virtual_file_system_type;
+use file_system::Device_trait;
+use task::Task_identifier_type;
+use virtual_file_system::Virtual_file_system_type;
 
 pub trait Device_executable_trait: Device_trait {
     fn mount<'a>(
@@ -91,7 +91,7 @@ macro_rules! Mount_static_executables {
 
     async || -> Result<(), File_system::Error_type>
     {
-        use File_system::{Create_device, Permissions_type};
+        use file_system::{Create_device, Permissions_type};
 
         $(
             $Virtual_file_system.mount_static_device($Task_identifier, $Path, Create_device!($Device)).await?;

@@ -1,5 +1,5 @@
 use crate::error::Result_type;
-use Graphics::{Event_type, LVGL};
+use graphics::{Event_type, LVGL};
 
 pub struct General_tab_type {
     tab_container: *mut LVGL::lv_obj_t,

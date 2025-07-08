@@ -3,24 +3,24 @@
 
 extern crate alloc;
 
-mod Context;
-mod File_system;
-mod Memory;
-mod Task;
-mod Time;
-mod User;
+mod context;
+mod file_system;
+mod memory;
+mod task;
+mod time;
+mod user;
 
-pub use Context::*;
-pub use File_system::*;
-pub use Memory::*;
-pub use Task::*;
-pub use Time::*;
-pub use User::*;
+pub use context::*;
+pub use file_system::*;
+pub use memory::*;
+pub use task::*;
+pub use time::*;
+pub use user::*;
 
 #[cfg(test)]
 mod tests {
-    use Drivers::Std::Memory::Memory_manager_type;
-    use Memory::Instantiate_global_allocator;
+    use drivers::Std::Memory::Memory_manager_type;
+    use memory::Instantiate_global_allocator;
 
     Instantiate_global_allocator!(Memory_manager_type);
 }

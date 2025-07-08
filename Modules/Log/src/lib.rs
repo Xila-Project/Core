@@ -3,7 +3,7 @@
 
 extern crate alloc;
 
-use Synchronization::once_lock::OnceLock;
+use synchronization::once_lock::OnceLock;
 use alloc::fmt;
 use log::Log;
 use log::Metadata;

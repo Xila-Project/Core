@@ -32,15 +32,15 @@
 
 extern crate alloc;
 
-mod Error;
-mod Group;
-mod Hash;
-mod User;
+mod error;
+mod group;
+mod hash;
+mod user;
 
 use alloc::{vec, vec::Vec};
-pub use Error::*;
-pub use Group::*;
-pub use User::*;
+pub use error::*;
+pub use group::*;
+pub use user::*;
 
 /// Path to the users directory in the filesystem
 const USERS_FOLDER_PATH: &str = "/System/Users";
@@ -72,7 +72,7 @@ const RANDOM_DEVICE_PATH: &str = "/Devices/Random";
 /// # Examples
 ///
 /// ```rust
-/// use Authentication::Load_all_users_and_groups;
+/// use authentication::Load_all_users_and_groups;
 ///
 /// # async fn example() -> Result<(), Authentication::Error_type> {
 /// Load_all_users_and_groups().await?;
@@ -80,9 +80,9 @@ const RANDOM_DEVICE_PATH: &str = "/Devices/Random";
 /// # }
 /// ```
 pub async fn load_all_users_and_groups() -> Result_type<()> {
-    use Group::read_group_file;
-    use User::read_user_file;
-    use Virtual_file_system::Directory_type;
+    use group::read_group_file;
+    use user::read_user_file;
+    use virtual_file_system::Directory_type;
     // Open Xila users folder.
     let Virtual_file_system = Virtual_file_system::get_instance();
 

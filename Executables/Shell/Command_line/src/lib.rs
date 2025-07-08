@@ -3,7 +3,7 @@
 
 extern crate alloc;
 
-use Executable::Standard_type;
+use executable::Standard_type;
 
 use core::num::NonZeroUsize;
 
@@ -13,8 +13,8 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use Executable::execute;
-use File_system::Path_type;
+use executable::execute;
+use file_system::Path_type;
 
 use crate::{parser::parse, resolver::resolve, tokenizer::tokenize, Error_type, Result_type};
 
@@ -26,7 +26,7 @@ mod resolver;
 mod tokenizer;
 
 use error::*;
-use File_system::Path_owned_type;
+use file_system::Path_owned_type;
 
 pub struct Shell_type {
     standard: Standard_type,

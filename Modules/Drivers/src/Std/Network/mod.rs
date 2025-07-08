@@ -1,7 +1,7 @@
-mod Error;
-mod Resolver;
-mod Socket;
+mod error;
+mod resolver;
+mod socket;
 
-pub use Error::*;
-pub use Resolver::*;
-pub use Socket::*;
+pub use error::*;
+pub use resolver::*;
+pub use socket::*;

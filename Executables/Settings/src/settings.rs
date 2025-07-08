@@ -1,8 +1,8 @@
 use alloc::string::String;
 use core::time::Duration;
 
-use File_system::Type_type;
-use Graphics::{
+use file_system::Type_type;
+use graphics::{
     Event_code_type,
     Palette::{self, Hue_type},
     Window_type, LVGL,

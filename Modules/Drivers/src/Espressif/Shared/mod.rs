@@ -1,5 +1,5 @@
-mod Pin;
-pub use Pin::*;
+mod pin;
+pub use pin::*;
 
-mod Error;
-pub use Error::*;
+mod error;
+pub use error::*;

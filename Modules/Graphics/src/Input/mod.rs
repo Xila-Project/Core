@@ -1,16 +1,16 @@
-mod Binding;
-mod Data;
+mod binding;
+mod data;
 
 #[allow(clippy::module_inception)]
-mod Input;
+mod input;
 
-mod Key;
-mod State;
-mod Type;
+mod key;
+mod state;
+mod type;
 
-use Binding::*;
-pub use Data::*;
-pub use Input::*;
-pub use Key::*;
-pub use State::*;
-pub use Type::*;
+use binding::*;
+pub use data::*;
+pub use input::*;
+pub use key::*;
+pub use state::*;
+pub use type::*;

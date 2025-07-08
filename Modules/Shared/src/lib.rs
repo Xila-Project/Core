@@ -1,17 +1,17 @@
 #![allow(non_camel_case_types)]
 
-mod Duration;
-mod Error;
-mod Mutable_slice;
-mod Mutable_string;
-mod Ring_buffer;
-mod Size;
-mod Time;
+mod duration;
+mod error;
+mod mutable_slice;
+mod mutable_string;
+mod ring_buffer;
+mod size;
+mod time;
 
-pub use Duration::*;
-pub use Error::*;
-pub use Mutable_slice::*;
-pub use Mutable_string::*;
-pub use Ring_buffer::*;
-pub use Size::*;
-pub use Time::*;
+pub use duration::*;
+pub use error::*;
+pub use mutable_slice::*;
+pub use mutable_string::*;
+pub use ring_buffer::*;
+pub use size::*;
+pub use time::*;

@@ -1,6 +1,6 @@
-mod Devices;
-mod Time;
+mod devices;
+mod time;
 
-pub use Devices::*;
+pub use devices::*;
 
-pub use Time::*;
+pub use time::*;

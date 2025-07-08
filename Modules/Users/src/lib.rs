@@ -3,10 +3,10 @@
 
 extern crate alloc;
 
-mod Manager;
+mod manager;
 mod error;
 mod identifiers;
 
 pub use error::*;
 pub use identifiers::*;
-pub use Manager::*;
+pub use manager::*;

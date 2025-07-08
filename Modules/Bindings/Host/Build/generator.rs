@@ -1,15 +1,15 @@
 #![allow(non_camel_case_types)]
 
 use std::{fs::File, io::Write, path::Path};
-use Bindings_utilities::{
-    Context::LVGL_context, Enumeration, Format::format_rust, Function::Split_inputs,
+use bindings_utilities::{
+    context::LVGL_context, enumeration, Format::format_rust, function::Split_inputs,
 };
 
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::{FnArg, ItemFn, ReturnType, Signature, TypePath};
 
-use Bindings_utilities::Type_tree::Type_tree_type;
+use bindings_utilities::type_tree::Type_tree_type;
 
 fn generate_conversion_for_argument(
     type_tree: &Type_tree_type,
@@ -305,7 +305,7 @@ pub fn generate(output_path: &Path, context: &LVGL_context) -> Result<(), String
     let mut output_file = File::create(&output_file_path)
         .map_err(|error| format!("Error creating output file : {error}"))?;
 
-    let enumerations = Enumeration::Generate_code(context.get_signatures());
+    let enumerations = enumeration::Generate_code(context.get_signatures());
 
     let functions = generate_code(
         context.get_type_tree(),

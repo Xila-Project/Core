@@ -6,13 +6,13 @@ use alloc::{
 };
 use core::{ptr::null_mut, time::Duration};
 
-use File_system::{Path_owned_type, Path_type, Type_type};
-use Graphics::{
+use file_system::{Path_owned_type, Path_type, Type_type};
+use graphics::{
     Event_code_type,
     Palette::{self, Hue_type},
     Window_type, LVGL,
 };
-use Virtual_file_system::{get_instance, Directory_type};
+use virtual_file_system::{get_instance, Directory_type};
 
 use crate::error::{Error_type, Result_type};
 

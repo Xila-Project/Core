@@ -1,5 +1,5 @@
-mod Random;
+mod random;
 
-pub mod Window_screen;
+pub mod window_screen;
 
-pub use Random::*;
+pub use random::*;

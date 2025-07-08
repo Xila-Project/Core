@@ -1,13 +1,13 @@
-mod ARGB8888;
-pub mod Palette;
-mod RGB565;
-mod RGB888;
-mod RGBA8888;
+mod argb8888;
+pub mod palette;
+mod rgb565;
+mod rgb888;
+mod rgba8888;
 
-pub use ARGB8888::*;
-pub use RGB565::*;
-pub use RGB888::*;
-pub use RGBA8888::*;
+pub use argb8888::*;
+pub use rgb565::*;
+pub use rgb888::*;
+pub use rgba8888::*;
 
 pub type Color_type = Color_RGB888_type;
 
