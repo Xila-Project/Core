@@ -40,19 +40,19 @@ where
     }
 
     pub fn Push(&mut self, Value: T) -> Result<(), Error_type> {
-        if self.Get_length() >= self.Get_size() {
+        if self.get_length() >= self.get_size() {
             return Err(Error_type::Buffer_too_small);
         }
 
-        self.Data[self.Get_length()] = Value;
+        self.Data[self.get_length()] = Value;
         self.Set_length(
-            S::from(self.Get_length()).ok_or(Error_type::Failed_to_convert_length_to_S)?
+            S::from(self.get_length()).ok_or(Error_type::Failed_to_convert_length_to_S)?
                 + S::from(1).unwrap(),
         )
     }
 
     fn Set_length(&mut self, Length: S) -> Result<(), Error_type> {
-        if Length.to_usize().unwrap() > self.Get_size() {
+        if Length.to_usize().unwrap() > self.get_size() {
             return Err(Error_type::Invalid_length);
         }
 
@@ -64,20 +64,20 @@ where
         self.Set_length(S::from(0).unwrap()).unwrap();
     }
 
-    pub fn Is_empty(&self) -> bool {
-        self.Get_length() == 0
+    pub fn is_empty(&self) -> bool {
+        self.get_length() == 0
     }
 
-    pub fn Get_length(&self) -> usize {
+    pub fn get_length(&self) -> usize {
         (*self.length).to_usize().unwrap()
     }
 
-    pub fn Get_size(&self) -> usize {
+    pub fn get_size(&self) -> usize {
         self.Data.len()
     }
 
     pub fn As_slice(&self) -> &[T] {
-        &self.Data[..self.Get_length()]
+        &self.Data[..self.get_length()]
     }
 }
 
@@ -92,7 +92,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn Test_mutable_slice() {
+    fn test_mutable_slice() {
         let mut Data = [1, 2, 3, 4, 5];
         let mut Length: u32 = 3;
 
@@ -101,23 +101,23 @@ mod tests {
 
         let mut Slice = Mutable_slice_type::From(Raw_slice, Length, 5).unwrap();
 
-        assert_eq!(Slice.Get_length(), 3);
-        assert_eq!(Slice.Get_size(), 5);
+        assert_eq!(Slice.get_length(), 3);
+        assert_eq!(Slice.get_size(), 5);
         assert_eq!(Slice.As_slice(), &[1, 2, 3]);
 
         Slice.Clear();
 
-        assert_eq!(Slice.Get_length(), 0);
-        assert!(Slice.Is_empty());
+        assert_eq!(Slice.get_length(), 0);
+        assert!(Slice.is_empty());
 
         Slice.Push(1).unwrap();
 
-        assert_eq!(Slice.Get_length(), 1);
+        assert_eq!(Slice.get_length(), 1);
         assert_eq!(Slice.As_slice(), &[1]);
 
         Slice.Push(2).unwrap();
 
-        assert_eq!(Slice.Get_length(), 2);
+        assert_eq!(Slice.get_length(), 2);
         assert_eq!(Slice.As_slice(), &[1, 2]);
     }
 }

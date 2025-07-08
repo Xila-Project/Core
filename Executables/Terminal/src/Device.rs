@@ -2,22 +2,22 @@ use alloc::string::String;
 use File_system::Device_trait;
 use Futures::block_on;
 
-use crate::Terminal::Terminal_type;
+use crate::terminal::Terminal_type;
 
 impl Device_trait for Terminal_type {
     fn Read(&self, buffer: &mut [u8]) -> File_system::Result_type<File_system::Size_type> {
-        block_on(self.Read_input(buffer)).map_err(|_| File_system::Error_type::Internal_error)
+        block_on(self.read_input(buffer)).map_err(|_| File_system::Error_type::Internal_error)
     }
 
-    fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<File_system::Size_type> {
-        let string = String::from_utf8_lossy(Buffer);
+    fn Write(&self, buffer: &[u8]) -> File_system::Result_type<File_system::Size_type> {
+        let string = String::from_utf8_lossy(buffer);
 
-        block_on(self.Print(&string)).map_err(|_| File_system::Error_type::Internal_error)?;
+        block_on(self.print(&string)).map_err(|_| File_system::Error_type::Internal_error)?;
 
-        Ok(Buffer.len().into())
+        Ok(buffer.len().into())
     }
 
-    fn Get_size(&self) -> File_system::Result_type<File_system::Size_type> {
+    fn get_size(&self) -> File_system::Result_type<File_system::Size_type> {
         Ok(0_usize.into())
     }
 

@@ -36,6 +36,6 @@ pub unsafe fn lv_obj_set_style_pad_all(
 ///
 /// This function is unsafe because it may dereference raw pointers (e.g. `Object`).
 ///
-pub unsafe fn lv_obj_move_foreground(Object: *mut lv_obj_t) {
-    lv_obj_move_to_index(Object, -1);
+pub unsafe fn lv_obj_move_foreground(object: *mut lv_obj_t) {
+    lv_obj_move_to_index(object, -1);
 }

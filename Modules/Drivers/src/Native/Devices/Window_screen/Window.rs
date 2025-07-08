@@ -30,62 +30,62 @@ impl Window_type {
         }
     }
 
-    pub fn Get_pointer_data(&self) -> &Input_data_type {
+    pub fn get_pointer_data(&self) -> &Input_data_type {
         &self.pointer_data
     }
 
-    pub fn Pop_keyboard_data(&mut self) -> Option<(State_type, Key_type, bool)> {
+    pub fn pop_keyboard_data(&mut self) -> Option<(State_type, Key_type, bool)> {
         let (state, key) = self.keyboard_data.pop_front()?;
 
-        let Continue = self.keyboard_data.is_empty();
+        let r#continue = self.keyboard_data.is_empty();
 
-        Some((state, key, Continue))
+        Some((state, key, r#continue))
     }
 
-    pub fn Get_resolution(&self) -> Option<Point_type> {
+    pub fn get_resolution(&self) -> Option<Point_type> {
         self.window.as_ref().map(|window| {
             let size = window.inner_size();
             Point_type::new(size.width as i16, size.height as i16)
         })
     }
 
-    pub fn Draw(&mut self, Data: &Screen_write_data_type) -> Result<(), String> {
-        let frame_width = self.resolution.Get_x() as usize;
-        let data_area = Data.get_area();
+    pub fn draw(&mut self, data: &Screen_write_data_type) -> Result<(), String> {
+        let frame_width = self.resolution.get_x() as usize;
+        let data_area = data.get_area();
 
-        let Point_1 = data_area.Get_point_1();
-        let point_2 = data_area.Get_point_2();
+        let point_1 = data_area.get_point_1();
+        let point_2 = data_area.get_point_2();
 
-        let Pixels = self
+        let pixels = self
             .pixels
             .as_mut()
             .ok_or_else(|| "Pixels is None.".to_string())?;
 
-        let Frame = Pixels.frame_mut();
+        let frame = pixels.frame_mut();
         let frame = unsafe {
             core::slice::from_raw_parts_mut(
-                Frame.as_mut_ptr() as *mut Color_RGBA8888_type,
-                Frame.len() / size_of::<Color_RGBA8888_type>(),
+                frame.as_mut_ptr() as *mut Color_RGBA8888_type,
+                frame.len() / size_of::<Color_RGBA8888_type>(),
             )
         };
 
-        let Data_buffer = Data.Get_buffer();
+        let data_buffer = data.get_buffer();
 
-        let Frame_x_start = Point_1.Get_x() as usize;
-        let frame_y_start = Point_1.Get_y() as usize;
-        let width = (point_2.Get_x() - Point_1.Get_x() + 1) as usize;
-        let height = (point_2.Get_y() - Point_1.Get_y() + 1) as usize;
+        let frame_x_start = point_1.get_x() as usize;
+        let frame_y_start = point_1.get_y() as usize;
+        let width = (point_2.get_x() - point_1.get_x() + 1) as usize;
+        let height = (point_2.get_y() - point_1.get_y() + 1) as usize;
 
-        for (y, Data_row) in Data_buffer.chunks(width).enumerate().take(height) {
-            let frame_row_start = (frame_y_start + y) * frame_width + Frame_x_start;
+        for (y, data_row) in data_buffer.chunks(width).enumerate().take(height) {
+            let frame_row_start = (frame_y_start + y) * frame_width + frame_x_start;
             let frame_row_end = frame_row_start + width;
             let frame_row = &mut frame[frame_row_start..frame_row_end];
 
             frame_row
                 .iter_mut()
-                .zip(Data_row.iter())
-                .for_each(|(destination, &Source)| {
-                    let source = Color_RGBA8888_type::From_RGB565(Source);
+                .zip(data_row.iter())
+                .for_each(|(destination, &source)| {
+                    let source = Color_RGBA8888_type::from_rgb565(source);
                     *destination = source;
                 });
         }
@@ -107,38 +107,38 @@ impl ApplicationHandler for Window_type {
         }
     }
 
-    fn resumed(&mut self, Event_loop: &ActiveEventLoop) {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let window = {
             let size = LogicalSize::new(
-                self.resolution.Get_x() as f64,
-                self.resolution.Get_y() as f64,
+                self.resolution.get_x() as f64,
+                self.resolution.get_y() as f64,
             );
 
-            let Window_attributes = Window::default_attributes()
+            let window_attributes = Window::default_attributes()
                 .with_title("Xila")
                 .with_inner_size(size)
                 .with_min_inner_size(size);
 
-            Event_loop.create_window(Window_attributes).unwrap()
+            event_loop.create_window(window_attributes).unwrap()
         };
 
-        let Pixels = {
+        let pixels = {
             let surface_texture = SurfaceTexture::new(
-                self.resolution.Get_x() as u32,
-                self.resolution.Get_y() as u32,
+                self.resolution.get_x() as u32,
+                self.resolution.get_y() as u32,
                 &window,
             );
 
             Pixels::new(
-                self.resolution.Get_x() as u32,
-                self.resolution.Get_y() as u32,
+                self.resolution.get_x() as u32,
+                self.resolution.get_y() as u32,
                 surface_texture,
             )
             .unwrap()
         };
 
         self.window = Some(window);
-        self.pixels = Some(Pixels);
+        self.pixels = Some(pixels);
     }
 
     fn window_event(
@@ -147,13 +147,13 @@ impl ApplicationHandler for Window_type {
         window_identifier: WindowId,
         event: WindowEvent,
     ) {
-        let Window = if let Some(Window) = &self.window {
-            Window
+        let window = if let Some(window) = &self.window {
+            window
         } else {
             return;
         };
 
-        if window_identifier != Window.id() {
+        if window_identifier != window.id() {
             return;
         }
 
@@ -168,22 +168,22 @@ impl ApplicationHandler for Window_type {
                 event,
                 is_synthetic: _,
             } => {
-                if let Some(Text) = event.text {
+                if let Some(text) = event.text {
                     if event.state == ElementState::Pressed {
-                        let key = Text.as_bytes()[0];
+                        let key = text.as_bytes()[0];
 
                         self.keyboard_data
                             .push_back((State_type::Pressed, Key_type::Character(key)));
                         self.keyboard_data
                             .push_back((State_type::Released, Key_type::Character(key)));
                     }
-                } else if let winit::keyboard::Key::Named(Key) = event.logical_key {
+                } else if let winit::keyboard::Key::Named(key) = event.logical_key {
                     let state = match event.state {
                         ElementState::Pressed => State_type::Pressed,
                         ElementState::Released => State_type::Released,
                     };
 
-                    let Key = match Key {
+                    let key = match key {
                         winit::keyboard::NamedKey::ArrowUp => Key_type::Up,
                         winit::keyboard::NamedKey::ArrowDown => Key_type::Down,
                         winit::keyboard::NamedKey::ArrowLeft => Key_type::Left,
@@ -199,7 +199,7 @@ impl ApplicationHandler for Window_type {
                         _ => Key_type::Character(0),
                     };
 
-                    self.keyboard_data.push_back((state, Key));
+                    self.keyboard_data.push_back((state, key));
                 }
             }
             WindowEvent::CursorMoved {

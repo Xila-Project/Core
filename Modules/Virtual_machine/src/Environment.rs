@@ -45,7 +45,7 @@ impl Environment_type<'_> {
     }
 
     pub fn From_instance(Instance: &Instance_type) -> Result_type<Self> {
-        let instance_pointer = Instance.Get_inner_reference().get_inner_instance();
+        let instance_pointer = Instance.get_inner_reference().get_inner_instance();
 
         if instance_pointer.is_null() {
             return Err(Error_type::Invalid_pointer);
@@ -56,22 +56,22 @@ impl Environment_type<'_> {
         ))
     }
 
-    pub fn Get_or_initialize_custom_data(&self) -> Result_type<&Custom_data_type> {
+    pub fn get_or_initialize_custom_data(&self) -> Result_type<&Custom_data_type> {
         unsafe {
-            let custom_data = wasm_runtime_get_custom_data(self.Get_instance_pointer())
+            let custom_data = wasm_runtime_get_custom_data(self.get_instance_pointer())
                 as *const Custom_data_type;
 
             let Custom_data = if custom_data.is_null() {
-                let task = ABI::Get_instance().Get_current_task_identifier();
+                let task = ABI::get_instance().get_current_task_identifier();
 
                 let Custom_data = Box::new(Custom_data_type::new(task));
 
                 wasm_runtime_set_custom_data(
-                    self.Get_instance_pointer(),
+                    self.get_instance_pointer(),
                     Box::into_raw(Custom_data) as *mut c_void,
                 );
 
-                wasm_runtime_get_custom_data(self.Get_instance_pointer()) as *const Custom_data_type
+                wasm_runtime_get_custom_data(self.get_instance_pointer()) as *const Custom_data_type
             } else {
                 custom_data
             };
@@ -88,7 +88,7 @@ impl Environment_type<'_> {
         &self,
         address: WASM_pointer_type,
     ) -> Option<*mut T> {
-        let pointer = wasm_runtime_addr_app_to_native(self.Get_instance_pointer(), address as u64);
+        let pointer = wasm_runtime_addr_app_to_native(self.get_instance_pointer(), address as u64);
 
         if pointer.is_null() {
             return None;
@@ -102,20 +102,20 @@ impl Environment_type<'_> {
     /// This function is unsafe because it is not checked that the address is valid.
     /// Please use `Validate_WASM_pointer` to check the address.
     pub unsafe fn Convert_to_WASM_pointer<T>(&self, Pointer: *const T) -> WASM_pointer_type {
-        wasm_runtime_addr_native_to_app(self.Get_instance_pointer(), Pointer as *mut c_void)
+        wasm_runtime_addr_native_to_app(self.get_instance_pointer(), Pointer as *mut c_void)
             as WASM_pointer_type
     }
 
     pub fn Validate_WASM_pointer(&self, Address: WASM_pointer_type, Size: WASM_usize_type) -> bool {
         unsafe {
-            wasm_runtime_validate_app_addr(self.Get_instance_pointer(), Address as u64, Size as u64)
+            wasm_runtime_validate_app_addr(self.get_instance_pointer(), Address as u64, Size as u64)
         }
     }
 
     pub fn Validate_native_pointer<T>(&self, Pointer: *const T, Size: u64) -> bool {
         unsafe {
             wasm_runtime_validate_native_addr(
-                self.Get_instance_pointer(),
+                self.get_instance_pointer(),
                 Pointer as *mut c_void,
                 Size,
             )
@@ -148,7 +148,7 @@ impl Environment_type<'_> {
             )
         } {
             let Exception_message =
-                unsafe { wasm_runtime_get_exception(self.Get_instance_pointer()) };
+                unsafe { wasm_runtime_get_exception(self.get_instance_pointer()) };
             let exception_message = unsafe { CStr::from_ptr(Exception_message) };
             let exception_message =
                 String::from_utf8_lossy(exception_message.to_bytes()).to_string();
@@ -163,7 +163,7 @@ impl Environment_type<'_> {
     /// This environment should be initialized with `Initialize_thread_environment` and deinitialized with `Deinitialize_thread_environment`.
     pub fn Create_environment(&self, Stack_size: usize) -> Result_type<Self> {
         let execution_environment =
-            unsafe { wasm_runtime_create_exec_env(self.Get_instance_pointer(), Stack_size as u32) };
+            unsafe { wasm_runtime_create_exec_env(self.get_instance_pointer(), Stack_size as u32) };
 
         if execution_environment.is_null() {
             return Err(Error_type::Execution_error(
@@ -183,7 +183,7 @@ impl Environment_type<'_> {
         }
     }
 
-    fn Get_instance_pointer(&self) -> wasm_module_inst_t {
+    fn get_instance_pointer(&self) -> wasm_module_inst_t {
         unsafe { wasm_runtime_get_module_inst(self.0) }
     }
 

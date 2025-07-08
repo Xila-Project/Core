@@ -1,9 +1,9 @@
 use std::{path::Path, process::Command};
 
-pub fn Format_rust(File_path: &Path) -> Result<(), String> {
+pub fn format_rust(file_path: &Path) -> Result<(), String> {
     Command::new("rustfmt")
         .arg(
-            File_path
+            file_path
                 .to_str()
                 .ok_or("Error converting path to string")?,
         )
@@ -13,7 +13,7 @@ pub fn Format_rust(File_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-pub fn Format_C(File_path: &Path) -> Result<(), String> {
+pub fn format_c(File_path: &Path) -> Result<(), String> {
     Command::new("clang-format")
         .arg("-i")
         .arg(
@@ -29,22 +29,22 @@ pub fn Format_C(File_path: &Path) -> Result<(), String> {
 
 const NAMES: [(&str, &str); 1] = [("obj", "object")];
 
-pub fn Format_identifier(Prefix: &str, Function_name: &str) -> String {
+pub fn format_identifier(Prefix: &str, function_name: &str) -> String {
     // - Remove prefix
-    let Function_name = if Function_name.starts_with("lv_") {
-        Function_name.replacen("lv_", "", 1)
+    let function_name = if function_name.starts_with("lv_") {
+        function_name.replacen("lv_", "", 1)
     } else {
-        Function_name.to_string()
+        function_name.to_string()
     };
 
-    let Function_name = if !Function_name.starts_with(Prefix) {
-        format!("{Prefix}{Function_name}")
+    let function_name = if !function_name.starts_with(Prefix) {
+        format!("{Prefix}{function_name}")
     } else {
-        Function_name
+        function_name
     };
 
     // - Replace names
-    let Function_name = Function_name
+    let function_name = function_name
         .split("_")
         .map(|part| match NAMES.iter().find(|(Old, _)| *Old == part) {
             Some((_, new)) => new.to_string(),
@@ -63,5 +63,5 @@ pub fn Format_identifier(Prefix: &str, Function_name: &str) -> String {
     //     }
     // };
 
-    Function_name
+    function_name
 }

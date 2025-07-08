@@ -5,7 +5,7 @@ use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLo
 use Task::Task_identifier_type;
 
 use File_system::{
-    Error_type, File_identifier_type, Flags_type, Get_new_file_identifier, Get_new_inode,
+    get_new_file_identifier, get_new_inode, Error_type, File_identifier_type, Flags_type,
     Inode_type, Local_file_identifier_type, Mode_type, Result_type, Size_type, Status_type,
     Unique_file_identifier_type,
 };
@@ -29,7 +29,7 @@ impl File_system_type {
         }))
     }
 
-    pub async fn Get_underlying_file(
+    pub async fn get_underlying_file(
         &self,
         file: Local_file_identifier_type,
     ) -> Result_type<Option<Unique_file_identifier_type>> {
@@ -57,7 +57,7 @@ impl File_system_type {
         // - Create the read file
         let Read_flags = Flags_type::New(Mode_type::READ_ONLY, None, Some(status));
 
-        let Read_file = Get_new_file_identifier(task, None, None, &inner.open_pipes)?;
+        let Read_file = get_new_file_identifier(task, None, None, &inner.open_pipes)?;
 
         if inner
             .open_pipes
@@ -70,7 +70,7 @@ impl File_system_type {
         // - Create the write file
         let Write_flags = Flags_type::New(Mode_type::WRITE_ONLY, None, Some(status));
 
-        let Write_file = Get_new_file_identifier(task, None, None, &inner.open_pipes)?;
+        let Write_file = get_new_file_identifier(task, None, None, &inner.open_pipes)?;
 
         if inner
             .open_pipes
@@ -95,7 +95,7 @@ impl File_system_type {
     pub async fn Create_named_pipe(&self, Buffer_size: usize) -> Result_type<Inode_type> {
         let mut inner = self.0.write().await;
 
-        let Inode = Get_new_inode(&inner.named_pipes)?;
+        let Inode = get_new_inode(&inner.named_pipes)?;
 
         let Pipe = Pipe_type::New(Buffer_size);
 
@@ -121,7 +121,7 @@ impl File_system_type {
             .get(&inode)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        let Local_file_identifier = Get_new_file_identifier(task, None, None, Open_pipes)?;
+        let Local_file_identifier = get_new_file_identifier(task, None, None, Open_pipes)?;
 
         Open_pipes.insert(
             Local_file_identifier,
@@ -180,7 +180,7 @@ impl File_system_type {
             .ok_or(Error_type::Invalid_identifier)?
             .clone();
 
-        let New_file = Get_new_file_identifier(file.Split().0, None, None, &inner.open_pipes)?;
+        let New_file = get_new_file_identifier(file.Split().0, None, None, &inner.open_pipes)?;
 
         inner
             .open_pipes
@@ -211,7 +211,7 @@ impl File_system_type {
 
             file
         } else {
-            Get_new_file_identifier(new_task, None, None, &inner.open_pipes)?
+            get_new_file_identifier(new_task, None, None, &inner.open_pipes)?
         };
 
         if inner
@@ -248,11 +248,11 @@ impl File_system_type {
             .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        if !Flags.Get_mode().Get_read() {
+        if !Flags.get_mode().get_read() {
             return Err(Error_type::Invalid_mode);
         }
 
-        if Flags.Get_status().Get_non_blocking() {
+        if Flags.get_status().get_non_blocking() {
             return Ok((Pipe.Read(buffer).await?, *Underlying_file));
         }
 
@@ -276,11 +276,11 @@ impl File_system_type {
             .get_mut(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        if !Flags.Get_mode().Get_read() {
+        if !Flags.get_mode().get_read() {
             return Err(Error_type::Invalid_mode);
         }
 
-        if Flags.Get_status().Get_non_blocking() {
+        if Flags.get_status().get_non_blocking() {
             return Ok((Pipe.Read_line(buffer).await?, *Underlying_file));
         }
 
@@ -304,11 +304,11 @@ impl File_system_type {
             .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        if !Flags.Get_mode().Get_write() {
+        if !Flags.get_mode().get_write() {
             return Err(Error_type::Invalid_mode);
         }
 
-        if Flags.Get_status().Get_non_blocking() {
+        if Flags.get_status().get_non_blocking() {
             return Ok((Pipe.Write(buffer).await?, *Underlying_file));
         }
 
@@ -320,7 +320,7 @@ impl File_system_type {
         }
     }
 
-    pub async fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
+    pub async fn get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
         Ok(self
             .0
             .read()
@@ -329,18 +329,18 @@ impl File_system_type {
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
             .1
-            .Get_mode())
+            .get_mode())
     }
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use Task::Test;
 
     use super::*;
 
     #[Test]
-    async fn Test_create_unnamed_pipe() {
+    async fn test_create_unnamed_pipe() {
         let fs = File_system_type::new();
         let task_id = Task_identifier_type::new(0);
         let status = Status_type::default();
@@ -355,7 +355,7 @@ mod Tests {
     }
 
     #[Test]
-    async fn Test_create_named_pipe() {
+    async fn test_create_named_pipe() {
         let fs = File_system_type::new();
         let buffer_size = 1024;
 
@@ -367,7 +367,7 @@ mod Tests {
     }
 
     #[Test]
-    async fn Test_open_and_close_named_pipe() {
+    async fn test_open_and_close_named_pipe() {
         let fs = File_system_type::new();
         let buffer_size = 1024;
         let task_id = Task_identifier_type::new(0);
@@ -386,7 +386,7 @@ mod Tests {
     }
 
     #[Test]
-    async fn Test_duplicate_file_identifier() {
+    async fn test_duplicate_file_identifier() {
         let fs = File_system_type::new();
         let task_id = Task_identifier_type::new(0);
         let status = Status_type::default();
@@ -403,7 +403,7 @@ mod Tests {
     }
 
     #[Test]
-    async fn Test_transfert_file_identifier() {
+    async fn test_transfert_file_identifier() {
         let fs = File_system_type::new();
         let task_id = Task_identifier_type::new(0);
         let new_task_id = Task_identifier_type::new(1);
@@ -421,7 +421,7 @@ mod Tests {
     }
 
     #[Test]
-    async fn Test_delete_named_pipe() {
+    async fn test_delete_named_pipe() {
         let fs = File_system_type::new();
         let buffer_size = 1024;
 
@@ -432,7 +432,7 @@ mod Tests {
     }
 
     #[Test]
-    async fn Test_read_and_write_pipe() {
+    async fn test_read_and_write_pipe() {
         let fs = File_system_type::new();
         let task_id = Task_identifier_type::new(0);
         let status = Status_type::default();
@@ -454,7 +454,7 @@ mod Tests {
     }
 
     #[Test]
-    async fn Test_get_mode() {
+    async fn test_get_mode() {
         let fs = File_system_type::new();
         let task_id = Task_identifier_type::new(0);
         let status = Status_type::default();
@@ -464,9 +464,9 @@ mod Tests {
             .Create_unnamed_pipe(task_id, status, buffer_size)
             .await
             .unwrap();
-        let mode = fs.Get_mode(read_file).await.unwrap();
+        let mode = fs.get_mode(read_file).await.unwrap();
 
-        assert!(mode.Get_read());
-        assert!(!mode.Get_write());
+        assert!(mode.get_read());
+        assert!(!mode.get_write());
     }
 }

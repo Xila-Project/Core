@@ -17,9 +17,9 @@ impl Debug for Protection_type {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Protection_type")
-            .field("Read", &self.Get_read())
-            .field("Write", &self.Get_write())
-            .field("Execute", &self.Get_execute())
+            .field("Read", &self.get_read())
+            .field("Write", &self.get_write())
+            .field("Execute", &self.get_execute())
             .finish()
     }
 }
@@ -95,7 +95,7 @@ impl Protection_type {
     ///
     /// # Returns
     /// `true` if any of the specified bits are set, `false` otherwise.
-    const fn Get_bits(&self, Bits: u8) -> bool {
+    const fn get_bits(&self, Bits: u8) -> bool {
         self.0 & Bits != 0
     }
 
@@ -136,24 +136,24 @@ impl Protection_type {
     ///
     /// # Returns
     /// `true` if read permission is granted, `false` otherwise.
-    pub const fn Get_read(&self) -> bool {
-        self.Get_bits(Self::READ_BIT)
+    pub const fn get_read(&self) -> bool {
+        self.get_bits(Self::READ_BIT)
     }
 
     /// Checks if write permission is granted.
     ///
     /// # Returns
     /// `true` if write permission is granted, `false` otherwise.
-    pub const fn Get_write(&self) -> bool {
-        self.Get_bits(Self::WRITE_BIT)
+    pub const fn get_write(&self) -> bool {
+        self.get_bits(Self::WRITE_BIT)
     }
 
     /// Checks if execute permission is granted.
     ///
     /// # Returns
     /// `true` if execute permission is granted, `false` otherwise.
-    pub const fn Get_execute(&self) -> bool {
-        self.Get_bits(Self::EXECUTE_BIT)
+    pub const fn get_execute(&self) -> bool {
+        self.get_bits(Self::EXECUTE_BIT)
     }
 
     /// Converts the protection type to its raw u8 representation.

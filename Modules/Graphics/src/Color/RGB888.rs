@@ -19,15 +19,15 @@ impl Color_RGB888_type {
         }
     }
 
-    pub const fn Get_red(&self) -> u8 {
+    pub const fn get_red(&self) -> u8 {
         self.red
     }
 
-    pub const fn Get_green(&self) -> u8 {
+    pub const fn get_green(&self) -> u8 {
         self.green
     }
 
-    pub const fn Get_blue(&self) -> u8 {
+    pub const fn get_blue(&self) -> u8 {
         self.blue
     }
 
@@ -52,9 +52,9 @@ impl Color_RGB888_type {
 
     pub const fn Into_LVGL_color(self) -> LVGL::lv_color_t {
         LVGL::lv_color_t {
-            red: self.Get_red(),
-            green: self.Get_green(),
-            blue: self.Get_blue(),
+            red: self.get_red(),
+            green: self.get_green(),
+            blue: self.get_blue(),
         }
     }
 }

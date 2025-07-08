@@ -8,8 +8,8 @@ impl Debug for Environment_variable_type {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Environment_variable_type")
-            .field("Name", &self.Get_name())
-            .field("Value", &self.Get_value())
+            .field("Name", &self.get_name())
+            .field("Value", &self.get_value())
             .finish()
     }
 }
@@ -30,9 +30,9 @@ impl Environment_variable_type {
     ///
     /// let Environment_variable = Environment_variable_type::New("Name", "Value");
     ///
-    /// assert_eq!(Environment_variable.Get_name(), "Name");
+    /// assert_eq!(Environment_variable.get_name(), "Name");
     /// ```
-    pub fn Get_name(&self) -> &str {
+    pub fn get_name(&self) -> &str {
         self.0.to_str().unwrap()[..self.1].trim_end_matches('\0')
     }
 
@@ -45,96 +45,96 @@ impl Environment_variable_type {
     ///
     /// let Environment_variable = Environment_variable_type::New("Name", "Value");
     ///
-    /// assert_eq!(Environment_variable.Get_value(), "Value");
+    /// assert_eq!(Environment_variable.get_value(), "Value");
     /// ```
-    pub fn Get_value(&self) -> &str {
+    pub fn get_value(&self) -> &str {
         self.0.to_str().unwrap()[self.1 + 1..].trim_end_matches('\0')
     }
 
     /// Get the inner raw CString.
-    pub fn Get_raw(&self) -> &CString {
+    pub fn get_raw(&self) -> &CString {
         &self.0
     }
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
 
     #[test]
-    fn Test_environment_variable_creation() {
+    fn test_environment_variable_creation() {
         let env_var = Environment_variable_type::New("PATH", "/usr/bin:/bin");
 
-        assert_eq!(env_var.Get_name(), "PATH");
-        assert_eq!(env_var.Get_value(), "/usr/bin:/bin");
+        assert_eq!(env_var.get_name(), "PATH");
+        assert_eq!(env_var.get_value(), "/usr/bin:/bin");
     }
 
     #[test]
-    fn Test_environment_variable_empty_name() {
+    fn test_environment_variable_empty_name() {
         let env_var = Environment_variable_type::New("", "some_value");
 
-        assert_eq!(env_var.Get_name(), "");
-        assert_eq!(env_var.Get_value(), "some_value");
+        assert_eq!(env_var.get_name(), "");
+        assert_eq!(env_var.get_value(), "some_value");
     }
 
     #[test]
-    fn Test_environment_variable_empty_value() {
+    fn test_environment_variable_empty_value() {
         let env_var = Environment_variable_type::New("EMPTY_VAR", "");
 
-        assert_eq!(env_var.Get_name(), "EMPTY_VAR");
-        assert_eq!(env_var.Get_value(), "");
+        assert_eq!(env_var.get_name(), "EMPTY_VAR");
+        assert_eq!(env_var.get_value(), "");
     }
 
     #[test]
-    fn Test_environment_variable_both_empty() {
+    fn test_environment_variable_both_empty() {
         let env_var = Environment_variable_type::New("", "");
 
-        assert_eq!(env_var.Get_name(), "");
-        assert_eq!(env_var.Get_value(), "");
+        assert_eq!(env_var.get_name(), "");
+        assert_eq!(env_var.get_value(), "");
     }
 
     #[test]
-    fn Test_environment_variable_special_characters() {
+    fn test_environment_variable_special_characters() {
         let name = "TEST_VAR";
         let value = "value with spaces and !@#$%^&*()";
         let env_var = Environment_variable_type::New(name, value);
 
-        assert_eq!(env_var.Get_name(), name);
-        assert_eq!(env_var.Get_value(), value);
+        assert_eq!(env_var.get_name(), name);
+        assert_eq!(env_var.get_value(), value);
     }
 
     #[test]
-    fn Test_environment_variable_equals_in_value() {
+    fn test_environment_variable_equals_in_value() {
         let name = "CONFIG";
         let value = "key=value=another=part";
         let env_var = Environment_variable_type::New(name, value);
 
-        assert_eq!(env_var.Get_name(), name);
-        assert_eq!(env_var.Get_value(), value);
+        assert_eq!(env_var.get_name(), name);
+        assert_eq!(env_var.get_value(), value);
     }
 
     #[test]
-    fn Test_environment_variable_unicode() {
+    fn test_environment_variable_unicode() {
         let name = "UNICODE_VAR";
         let value = "🦀 Rust is awesome! 中文测试";
         let env_var = Environment_variable_type::New(name, value);
 
-        assert_eq!(env_var.Get_name(), name);
-        assert_eq!(env_var.Get_value(), value);
+        assert_eq!(env_var.get_name(), name);
+        assert_eq!(env_var.get_value(), value);
     }
 
     #[test]
-    fn Test_environment_variable_clone() {
+    fn test_environment_variable_clone() {
         let env_var1 = Environment_variable_type::New("HOME", "/home/user");
         let env_var2 = env_var1.clone();
 
-        assert_eq!(env_var1.Get_name(), env_var2.Get_name());
-        assert_eq!(env_var1.Get_value(), env_var2.Get_value());
+        assert_eq!(env_var1.get_name(), env_var2.get_name());
+        assert_eq!(env_var1.get_value(), env_var2.get_value());
         assert_eq!(env_var1, env_var2);
     }
 
     #[test]
-    fn Test_environment_variable_equality() {
+    fn test_environment_variable_equality() {
         let env_var1 = Environment_variable_type::New("USER", "alice");
         let env_var2 = Environment_variable_type::New("USER", "alice");
         let env_var3 = Environment_variable_type::New("USER", "bob");
@@ -146,7 +146,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_environment_variable_hash() {
+    fn test_environment_variable_hash() {
         use std::collections::HashMap;
 
         let env_var1 = Environment_variable_type::New("PATH", "/usr/bin");
@@ -167,7 +167,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_environment_variable_debug_format() {
+    fn test_environment_variable_debug_format() {
         let env_var = Environment_variable_type::New("DEBUG_VAR", "debug_value");
         let debug_string = format!("{env_var:?}");
 
@@ -177,45 +177,45 @@ mod Tests {
     }
 
     #[test]
-    fn Test_environment_variable_get_raw() {
+    fn test_environment_variable_get_raw() {
         let name = "RAW_TEST";
         let value = "raw_value";
         let env_var = Environment_variable_type::New(name, value);
-        let raw_cstring = env_var.Get_raw();
+        let raw_cstring = env_var.get_raw();
 
         assert_eq!(raw_cstring.to_str().unwrap(), "RAW_TEST=raw_value");
     }
 
     #[test]
-    fn Test_environment_variable_long_name_and_value() {
+    fn test_environment_variable_long_name_and_value() {
         let long_name = "A".repeat(1000);
         let long_value = "B".repeat(2000);
         let env_var = Environment_variable_type::New(&long_name, &long_value);
 
-        assert_eq!(env_var.Get_name(), long_name);
-        assert_eq!(env_var.Get_value(), long_value);
+        assert_eq!(env_var.get_name(), long_name);
+        assert_eq!(env_var.get_value(), long_value);
     }
 
     #[test]
-    fn Test_environment_variable_single_character() {
+    fn test_environment_variable_single_character() {
         let env_var = Environment_variable_type::New("A", "B");
 
-        assert_eq!(env_var.Get_name(), "A");
-        assert_eq!(env_var.Get_value(), "B");
+        assert_eq!(env_var.get_name(), "A");
+        assert_eq!(env_var.get_value(), "B");
     }
 
     #[test]
-    fn Test_environment_variable_newlines_and_tabs() {
+    fn test_environment_variable_newlines_and_tabs() {
         let name = "MULTILINE";
         let value = "line1\nline2\tvalue";
         let env_var = Environment_variable_type::New(name, value);
 
-        assert_eq!(env_var.Get_name(), name);
-        assert_eq!(env_var.Get_value(), value);
+        assert_eq!(env_var.get_name(), name);
+        assert_eq!(env_var.get_value(), value);
     }
 
     #[test]
-    fn Test_environment_variable_arc_sharing() {
+    fn test_environment_variable_arc_sharing() {
         let env_var1 = Environment_variable_type::New("SHARED", "value");
         let env_var2 = env_var1.clone();
 
@@ -223,7 +223,7 @@ mod Tests {
         assert_eq!(Arc::as_ptr(&env_var1.0), Arc::as_ptr(&env_var2.0));
 
         // Values should be identical
-        assert_eq!(env_var1.Get_name(), env_var2.Get_name());
-        assert_eq!(env_var1.Get_value(), env_var2.Get_value());
+        assert_eq!(env_var1.get_name(), env_var2.get_name());
+        assert_eq!(env_var1.get_value(), env_var2.get_value());
     }
 }

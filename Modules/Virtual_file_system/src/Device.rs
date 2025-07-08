@@ -6,8 +6,8 @@ use Synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLo
 use Task::Task_identifier_type;
 
 use File_system::{
-    Device_type, Error_type, File_identifier_type, Flags_type, Get_new_file_identifier,
-    Get_new_inode, Inode_type, Local_file_identifier_type, Mode_type, Path_owned_type, Path_type,
+    get_new_file_identifier, get_new_inode, Device_type, Error_type, File_identifier_type,
+    Flags_type, Inode_type, Local_file_identifier_type, Mode_type, Path_owned_type, Path_type,
     Position_type, Result_type, Size_type, Unique_file_identifier_type,
 };
 
@@ -45,7 +45,7 @@ impl<'a> File_system_type<'a> {
         (&mut inner.devices, &mut inner.open_devices)
     }
 
-    pub async fn Get_underlying_file(
+    pub async fn get_underlying_file(
         &self,
         file: Local_file_identifier_type,
     ) -> Result_type<Unique_file_identifier_type> {
@@ -68,7 +68,7 @@ impl<'a> File_system_type<'a> {
 
         let (Devices, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let Inode = Get_new_inode(Devices)?;
+        let Inode = get_new_inode(Devices)?;
 
         Devices.insert(Inode, (Internal_path_type::Owned(path), device));
 
@@ -84,14 +84,14 @@ impl<'a> File_system_type<'a> {
 
         let (Devices, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let Inode = Get_new_inode(Devices)?;
+        let Inode = get_new_inode(Devices)?;
 
         Devices.insert(Inode, (Internal_path_type::Borrowed(path.as_ref()), device));
 
         Ok(Inode)
     }
 
-    pub async fn Get_path_from_inode(
+    pub async fn get_path_from_inode(
         &self,
         inode: Inode_type,
     ) -> Result_type<Internal_path_type<'a>> {
@@ -106,7 +106,7 @@ impl<'a> File_system_type<'a> {
             .clone())
     }
 
-    pub async fn Get_devices_from_path(
+    pub async fn get_devices_from_path(
         &self,
         path: &'static Path_type,
     ) -> Result_type<Vec<Inode_type>> {
@@ -139,7 +139,7 @@ impl<'a> File_system_type<'a> {
 
         let Device = Devices.get(&inode).ok_or(Error_type::Invalid_identifier)?;
 
-        let Local_file_identifier = Get_new_file_identifier(task, None, None, Open_pipes)?;
+        let Local_file_identifier = get_new_file_identifier(task, None, None, Open_pipes)?;
 
         Open_pipes.insert(
             Local_file_identifier,
@@ -198,7 +198,7 @@ impl<'a> File_system_type<'a> {
             .ok_or(Error_type::Invalid_identifier)?
             .clone();
 
-        let New_file = Get_new_file_identifier(file.Split().0, None, None, &inner.open_devices)?;
+        let New_file = get_new_file_identifier(file.Split().0, None, None, &inner.open_devices)?;
 
         inner
             .open_devices
@@ -230,7 +230,7 @@ impl<'a> File_system_type<'a> {
 
             file
         } else {
-            Get_new_file_identifier(new_task, None, None, &inner.open_devices)?
+            get_new_file_identifier(new_task, None, None, &inner.open_devices)?
         };
 
         if inner
@@ -265,11 +265,11 @@ impl<'a> File_system_type<'a> {
             .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        if !Flags.Get_mode().Get_read() {
+        if !Flags.get_mode().get_read() {
             return Err(Error_type::Invalid_mode);
         }
 
-        if Flags.Get_status().Get_non_blocking() {
+        if Flags.get_status().get_non_blocking() {
             return Ok((Device.Read(buffer)?, *Underlying_file));
         }
 
@@ -295,7 +295,7 @@ impl<'a> File_system_type<'a> {
             .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        if !Flags.Get_mode().Get_read() {
+        if !Flags.get_mode().get_read() {
             return Err(Error_type::Invalid_mode);
         }
 
@@ -332,11 +332,11 @@ impl<'a> File_system_type<'a> {
             .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        if !Flags.Get_mode().Get_write() {
+        if !Flags.get_mode().get_write() {
             return Err(Error_type::Invalid_mode);
         }
 
-        if Flags.Get_status().Get_non_blocking() {
+        if Flags.get_status().get_non_blocking() {
             return Ok((Device.Write(buffer)?, *Underlying_file));
         }
 
@@ -379,7 +379,7 @@ impl<'a> File_system_type<'a> {
         Ok(*Underlying_file)
     }
 
-    pub async fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
+    pub async fn get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
         Ok(self
             .0
             .read()
@@ -388,10 +388,10 @@ impl<'a> File_system_type<'a> {
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
             .1
-            .Get_mode())
+            .get_mode())
     }
 
-    pub async fn Get_raw_device(&self, Inode: Inode_type) -> Result_type<Device_type> {
+    pub async fn get_raw_device(&self, Inode: Inode_type) -> Result_type<Device_type> {
         Ok(self
             .0
             .read()
@@ -403,7 +403,7 @@ impl<'a> File_system_type<'a> {
             .clone())
     }
 
-    pub async fn Is_a_terminal(&self, File: Local_file_identifier_type) -> Result_type<bool> {
+    pub async fn is_a_terminal(&self, File: Local_file_identifier_type) -> Result_type<bool> {
         Ok(self
             .0
             .read()
@@ -412,7 +412,7 @@ impl<'a> File_system_type<'a> {
             .get(&File)
             .ok_or(Error_type::Invalid_identifier)?
             .0
-            .Is_a_terminal())
+            .is_a_terminal())
     }
 }
 
@@ -430,7 +430,7 @@ mod tests {
     pub const MEMORY_DEVICE_BLOCK_SIZE: usize = 512;
 
     #[Test]
-    async fn Test_mount_device() {
+    async fn test_mount_device() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
@@ -441,11 +441,11 @@ mod tests {
             .Mount_static_device(&"Memory_device", Memory_device)
             .await
             .unwrap();
-        assert!(fs.Get_raw_device(Inode).await.is_ok());
+        assert!(fs.get_raw_device(Inode).await.is_ok());
     }
 
     #[Test]
-    async fn Test_open_close_device() {
+    async fn test_open_close_device() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
@@ -469,7 +469,7 @@ mod tests {
     }
 
     #[Test]
-    async fn Test_read_write_device() {
+    async fn test_read_write_device() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
@@ -504,7 +504,7 @@ mod tests {
     }
 
     #[Test]
-    async fn Test_duplicate_file_identifier() {
+    async fn test_duplicate_file_identifier() {
         let File_system = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
@@ -536,7 +536,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            File_system.Get_underlying_file(New_file).await.unwrap(),
+            File_system.get_underlying_file(New_file).await.unwrap(),
             New_underlying_file
         );
 
@@ -544,7 +544,7 @@ mod tests {
     }
 
     #[Test]
-    async fn Test_transfert_file_identifier() {
+    async fn test_transfert_file_identifier() {
         let File_system = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
@@ -576,7 +576,7 @@ mod tests {
     }
 
     #[Test]
-    async fn Test_delete_device() {
+    async fn test_delete_device() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
@@ -591,7 +591,7 @@ mod tests {
     }
 
     #[Test]
-    async fn Test_set_position() {
+    async fn test_set_position() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
@@ -618,7 +618,7 @@ mod tests {
     }
 
     #[Test]
-    async fn Test_flush() {
+    async fn test_flush() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
@@ -643,7 +643,7 @@ mod tests {
     }
 
     #[Test]
-    async fn Test_get_mode() {
+    async fn test_get_mode() {
         let fs = File_system_type::New();
 
         let Memory_device = Create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::New(
@@ -664,6 +664,6 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(fs.Get_mode(file_id).await.is_ok());
+        assert!(fs.get_mode(file_id).await.is_ok());
     }
 }

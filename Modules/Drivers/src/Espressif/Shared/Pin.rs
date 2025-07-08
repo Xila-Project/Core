@@ -74,7 +74,7 @@ impl Device_trait for Pin_device_type {
 
         let Pin = self.0.read()? as i32;
 
-        if let Some(Pin) = Data.Get_direction() {
+        if let Some(Pin) = Data.get_direction() {
             match Pin {
                 Direction_type::Input => unsafe {
                     esp_idf_sys::gpio_set_direction(
@@ -91,13 +91,13 @@ impl Device_trait for Pin_device_type {
             }
         }
 
-        if let Some(Level) = Data.Get_level() {
+        if let Some(Level) = Data.get_level() {
             unsafe {
                 esp_idf_sys::gpio_set_level(Pin, Level.into() as u32);
             }
         }
 
-        if let Some(Pull) = Data.Get_pull() {
+        if let Some(Pull) = Data.get_pull() {
             match Pull {
                 Pull_type::None => unsafe {
                     esp_idf_sys::gpio_set_pull_mode(
@@ -129,7 +129,7 @@ impl Device_trait for Pin_device_type {
         Ok(size_of::<Pin_data_type>())
     }
 
-    fn Get_size(&self) -> File_system::Result_type<usize> {
+    fn get_size(&self) -> File_system::Result_type<usize> {
         Ok(size_of::<Pin_data_type>())
     }
 

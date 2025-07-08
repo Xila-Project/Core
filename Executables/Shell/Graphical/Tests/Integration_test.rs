@@ -22,7 +22,7 @@ async fn main() {
     use Virtual_file_system::{File_type, Mount_static_devices};
 
     // - Initialize the task manager.
-    let Task_instance = Task::Initialize();
+    let task_instance = Task::Initialize();
 
     // - Initialize the user manager.
     let _ = Users::Initialize();
@@ -34,51 +34,51 @@ async fn main() {
 
     const RESOLUTION: Point_type = Point_type::new(800, 480);
 
-    let (Screen_device, Pointer_device, Keyboard_device) = Window_screen::New(RESOLUTION).unwrap();
+    let (screen_device, pointer_device, keyboard_device) = Window_screen::New(RESOLUTION).unwrap();
 
-    const BUFFER_SIZE: usize = Get_minimal_buffer_size(&RESOLUTION);
+    const BUFFER_SIZE: usize = get_minimal_buffer_size(&RESOLUTION);
 
-    Graphics::Initialize(
-        Screen_device,
-        Pointer_device,
+    Graphics::initialize(
+        screen_device,
+        pointer_device,
         Input_type_type::Pointer,
         BUFFER_SIZE,
         true,
     )
     .await;
 
-    Graphics::Get_instance()
-        .Add_input_device(Keyboard_device, Input_type_type::Keypad)
+    Graphics::get_instance()
+        .add_input_device(keyboard_device, Input_type_type::Keypad)
         .await
         .unwrap();
 
     // - Initialize the virtual file system.
-    let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
+    let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
 
-    LittleFS::File_system_type::Format(Memory_device.clone(), 256).unwrap();
+    LittleFS::File_system_type::format(memory_device.clone(), 256).unwrap();
 
-    let File_system = LittleFS::File_system_type::new(Memory_device, 256).unwrap();
+    let file_system = LittleFS::File_system_type::new(memory_device, 256).unwrap();
 
-    let Virtual_file_system =
-        Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
+    let virtual_file_system =
+        Virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
 
-    let Task = Task_instance.Get_current_task_identifier().await;
+    let task = task_instance.get_current_task_identifier().await;
 
-    Virtual_file_system::Create_default_hierarchy(Virtual_file_system, Task)
+    Virtual_file_system::create_default_hierarchy(virtual_file_system, task)
         .await
         .unwrap();
 
     Mount_static_executables!(
-        Virtual_file_system,
-        Task,
+        virtual_file_system,
+        task,
         &[(&"/Binaries/Graphical_shell", Shell_executable_type),]
     )
     .await
     .unwrap();
 
     Mount_static_devices!(
-        Virtual_file_system,
-        Task,
+        virtual_file_system,
+        task,
         &[
             (
                 &"/Devices/Standard_in",
@@ -100,8 +100,8 @@ async fn main() {
     .await
     .unwrap();
 
-    Virtual_file_system
-        .Create_directory(&"/Configuration/Shared/Shortcuts", Task)
+    virtual_file_system
+        .create_directory(&"/Configuration/Shared/Shortcuts", task)
         .await
         .unwrap();
 
@@ -109,14 +109,14 @@ async fn main() {
     for i in 0..20 {
         use alloc::format;
 
-        File_type::Open(
-            Virtual_file_system,
+        File_type::open(
+            virtual_file_system,
             format!("/Configuration/Shared/Shortcuts/Test{i}.json").as_str(),
             Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE), None),
         )
         .await
         .unwrap()
-        .Write(
+        .write(
             format!(
                 r#"
     {{
@@ -135,47 +135,47 @@ async fn main() {
         .unwrap();
     }
 
-    let Group_identifier = Group_identifier_type::New(1000);
+    let group_identifier = Group_identifier_type::New(1000);
 
-    Authentication::Create_group(Virtual_file_system, "alix_anneraud", Some(Group_identifier))
+    Authentication::create_group(virtual_file_system, "alix_anneraud", Some(group_identifier))
         .await
         .unwrap();
 
-    Authentication::Create_user(
-        Virtual_file_system,
+    Authentication::create_user(
+        virtual_file_system,
         "alix_anneraud",
         "password",
-        Group_identifier,
+        group_identifier,
         None,
     )
     .await
     .unwrap();
 
-    let Standard = Standard_type::open(
+    let standard = Standard_type::open(
         &"/Devices/Standard_in",
         &"/Devices/Standard_out",
         &"/Devices/Standard_error",
-        Task,
-        Virtual_file_system,
+        task,
+        virtual_file_system,
     )
     .await
     .unwrap();
 
-    Task_instance
-        .Set_environment_variable(Task, "Paths", "/")
+    task_instance
+        .Set_environment_variable(task, "Paths", "/")
         .await
         .unwrap();
 
-    Task_instance
-        .Set_environment_variable(Task, "Host", "xila")
+    task_instance
+        .Set_environment_variable(task, "Host", "xila")
         .await
         .unwrap();
 
-    let Result = Executable::Execute("/Binaries/Graphical_shell", "".to_string(), Standard)
+    let result = Executable::execute("/Binaries/Graphical_shell", "".to_string(), standard)
         .await
         .unwrap()
         .Join()
         .await;
 
-    assert!(Result == 0);
+    assert!(result == 0);
 }

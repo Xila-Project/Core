@@ -9,35 +9,35 @@ use Executable::{Mount_static_executables, Standard_type};
 use File_system::{Create_device, Create_file_system, Memory_device_type, Mode_type};
 use Task::Test;
 use Users::Group_identifier_type;
-use Virtual_file_system::{Create_default_hierarchy, Mount_static_devices};
+use Virtual_file_system::{create_default_hierarchy, Mount_static_devices};
 
 #[ignore]
 #[Test]
-async fn Integration_test() {
-    let Task_instance = Task::Initialize();
+async fn integration_test() {
+    let task_instance = Task::Initialize();
 
     let _ = Users::Initialize();
 
     let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()));
 
-    let Memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
+    let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
 
-    LittleFS::File_system_type::Format(Memory_device.clone(), 256).unwrap();
+    LittleFS::File_system_type::format(memory_device.clone(), 256).unwrap();
 
-    let File_system = LittleFS::File_system_type::new(Memory_device, 256).unwrap();
+    let file_system = LittleFS::File_system_type::new(memory_device, 256).unwrap();
 
-    let Virtual_file_system =
-        Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
+    let virtual_file_system =
+        Virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
 
-    let Task = Task_instance.Get_current_task_identifier().await;
+    let task = task_instance.get_current_task_identifier().await;
 
-    Create_default_hierarchy(Virtual_file_system, Task)
+    create_default_hierarchy(virtual_file_system, task)
         .await
         .unwrap();
 
     Mount_static_devices!(
-        Virtual_file_system,
-        Task,
+        virtual_file_system,
+        task,
         &[
             (
                 &"/Devices/Standard_in",
@@ -60,71 +60,71 @@ async fn Integration_test() {
     .unwrap();
 
     Mount_static_executables!(
-        Virtual_file_system,
-        Task,
+        virtual_file_system,
+        task,
         &[(&"/Binaries/Command_line_shell", Shell_executable_type)]
     )
     .await
     .unwrap();
 
-    let Group_identifier = Group_identifier_type::New(1000);
+    let group_identifier = Group_identifier_type::New(1000);
 
-    Authentication::Create_group(Virtual_file_system, "alix_anneraud", Some(Group_identifier))
+    Authentication::create_group(virtual_file_system, "alix_anneraud", Some(group_identifier))
         .await
         .unwrap();
 
-    Authentication::Create_user(
-        Virtual_file_system,
+    Authentication::create_user(
+        virtual_file_system,
         "alix_anneraud",
         "password",
-        Group_identifier,
+        group_identifier,
         None,
     )
     .await
     .unwrap();
 
-    let Standard_in = Virtual_file_system
-        .Open(&"/Devices/Standard_in", Mode_type::READ_ONLY.into(), Task)
+    let standard_in = virtual_file_system
+        .open(&"/Devices/Standard_in", Mode_type::READ_ONLY.into(), task)
         .await
         .unwrap();
 
-    let Standard_out = Virtual_file_system
-        .Open(&"/Devices/Standard_out", Mode_type::WRITE_ONLY.into(), Task)
+    let standard_out = virtual_file_system
+        .open(&"/Devices/Standard_out", Mode_type::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
-    let Standard_error = Virtual_file_system
-        .Open(
+    let standard_error = virtual_file_system
+        .open(
             &"/Devices/Standard_error",
             Mode_type::WRITE_ONLY.into(),
-            Task,
+            task,
         )
         .await
         .unwrap();
 
-    let Standard = Standard_type::New(
-        Standard_in,
-        Standard_out,
-        Standard_error,
-        Task,
-        Virtual_file_system,
+    let standard = Standard_type::new(
+        standard_in,
+        standard_out,
+        standard_error,
+        task,
+        virtual_file_system,
     );
 
-    Task_instance
-        .Set_environment_variable(Task, "Paths", "/")
+    task_instance
+        .Set_environment_variable(task, "Paths", "/")
         .await
         .unwrap();
 
-    Task_instance
-        .Set_environment_variable(Task, "Host", "xila")
+    task_instance
+        .Set_environment_variable(task, "Host", "xila")
         .await
         .unwrap();
 
-    let Result = Executable::Execute("/Binaries/Command_line_shell", "".to_string(), Standard)
+    let result = Executable::execute("/Binaries/Command_line_shell", "".to_string(), standard)
         .await
         .unwrap()
         .Join()
         .await;
 
-    assert!(Result == 0);
+    assert!(result == 0);
 }

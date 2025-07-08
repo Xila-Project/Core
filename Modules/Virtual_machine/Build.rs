@@ -12,17 +12,17 @@ fn main() -> Result<(), ()> {
         return Ok(());
     }
 
-    let output = Command::new("cargo")
-        .args(["build", "--release"])
-        .current_dir("Tests/WASM_test")
-        .output()
-        .unwrap();
-
-    if !output.status.success() {
-        println! {"cargo:warning=stderr: {}", String::from_utf8_lossy(&output.stderr)};
-        println! {"cargo:warning=status: {}", output.status};
-        return Err(());
-    }
+    //    let output = Command::new("cargo")
+    //        .args(["build", "--release"])
+    //        .current_dir("Tests/WASM_test")
+    //        .output()
+    //        .unwrap();
+    //
+    //    if !output.status.success() {
+    //        println! {"cargo:warning=stderr: {}", String::from_utf8_lossy(&output.stderr)};
+    //        println! {"cargo:warning=status: {}", output.status};
+    //        return Err(());
+    //    }
 
     Ok(())
 }

@@ -11,7 +11,7 @@ impl Device_trait for Null_device_type {
         Ok(Size_type::New(Buffer.len() as u64))
     }
 
-    fn Get_size(&self) -> File_system::Result_type<File_system::Size_type> {
+    fn get_size(&self) -> File_system::Result_type<File_system::Size_type> {
         Ok(Size_type::New(0))
     }
 

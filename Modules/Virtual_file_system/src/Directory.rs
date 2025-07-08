@@ -30,18 +30,18 @@ impl Directory_type<'_> {
         virtual_file_system: &'a Virtual_file_system_type<'a>,
         path: impl AsRef<Path_type>,
     ) -> Result_type<()> {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::get_instance().get_current_task_identifier().await;
 
-        virtual_file_system.Create_directory(&path, task).await
+        virtual_file_system.create_directory(&path, task).await
     }
 
-    pub async fn Open<'a>(
+    pub async fn open<'a>(
         virtual_file_system: &'a Virtual_file_system_type<'a>,
         path: impl AsRef<Path_type>,
     ) -> Result_type<Directory_type<'a>> {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::get_instance().get_current_task_identifier().await;
 
-        let Directory_identifier = virtual_file_system.Open_directory(&path, task).await?;
+        let Directory_identifier = virtual_file_system.open_directory(&path, task).await?;
 
         Ok(Directory_type {
             directory_identifier: Directory_identifier,
@@ -50,9 +50,9 @@ impl Directory_type<'_> {
         })
     }
 
-    pub async fn Read(&self) -> Result_type<Option<Entry_type>> {
+    pub async fn read(&self) -> Result_type<Option<Entry_type>> {
         self.virtual_file_system
-            .Read_directory(self.directory_identifier, self.task)
+            .read_directory(self.directory_identifier, self.task)
             .await
     }
 }
@@ -61,7 +61,7 @@ impl Drop for Directory_type<'_> {
     fn drop(&mut self) {
         block_on(
             self.virtual_file_system
-                .Close_directory(self.directory_identifier, self.task),
+                .close_directory(self.directory_identifier, self.task),
         )
         .unwrap();
     }
@@ -71,6 +71,6 @@ impl Iterator for Directory_type<'_> {
     type Item = Entry_type;
 
     fn next(&mut self) -> Option<Self::Item> {
-        block_on(self.Read()).unwrap()
+        block_on(self.read()).unwrap()
     }
 }

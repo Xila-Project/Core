@@ -7,7 +7,7 @@ macro_rules! Mount_static_devices {
     {
         use File_system::Create_device;
 
-        $( $Virtual_file_system.Mount_static_device($Task_identifier, $Path, Create_device!($Device)).await?; )*
+        $( $Virtual_file_system.mount_static_device($Task_identifier, $Path, Create_device!($Device)).await?; )*
 
         Ok(())
     }()

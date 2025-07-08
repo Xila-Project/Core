@@ -279,7 +279,7 @@ const MATERIAL_COLORS: [[Color_type; 10]; 19] = [
 
 impl Hue_type {
     /// Get the index of this hue in the material colors array
-    const fn Get_color_index(self) -> usize {
+    const fn get_color_index(self) -> usize {
         self as usize
     }
 }
@@ -302,7 +302,7 @@ impl Tone_type {
     pub const MAIN: Tone_type = Tone_type::Tone_500;
 
     /// Get the index of this tone in the material colors array
-    const fn Get_tone_index(self) -> usize {
+    const fn get_tone_index(self) -> usize {
         self as usize
     }
 }
@@ -310,7 +310,7 @@ impl Tone_type {
 /// Get a Material Design color from the palette
 /// This function is const-compliant and doesn't rely on LVGL
 pub const fn Get(Hue: Hue_type, Tone: Tone_type) -> Color_type {
-    let color_index = Hue.Get_color_index();
-    let tone_index = Tone.Get_tone_index();
+    let color_index = Hue.get_color_index();
+    let tone_index = Tone.get_tone_index();
     MATERIAL_COLORS[color_index][tone_index]
 }

@@ -16,15 +16,15 @@ impl Event_type {
         }
     }
 
-    pub fn Get_code(&self) -> Event_code_type {
+    pub fn get_code(&self) -> Event_code_type {
         self.code
     }
 
-    pub fn Get_target(&self) -> *mut LVGL::lv_obj_t {
+    pub fn get_target(&self) -> *mut LVGL::lv_obj_t {
         self.target
     }
 
-    pub fn Get_key(&self) -> Option<Key_type> {
+    pub fn get_key(&self) -> Option<Key_type> {
         self.key
     }
 }
@@ -81,7 +81,7 @@ pub enum Event_code_type {
     Size_changed = LVGL::lv_event_code_t_LV_EVENT_SIZE_CHANGED as u16,
     Style_changed = LVGL::lv_event_code_t_LV_EVENT_STYLE_CHANGED as u16,
     Layout_changed = LVGL::lv_event_code_t_LV_EVENT_LAYOUT_CHANGED as u16,
-    Get_self_size = LVGL::lv_event_code_t_LV_EVENT_GET_SELF_SIZE as u16,
+    get_self_size = LVGL::lv_event_code_t_LV_EVENT_GET_SELF_SIZE as u16,
     Invalidate_area = LVGL::lv_event_code_t_LV_EVENT_INVALIDATE_AREA as u16,
     Resolution_changed = LVGL::lv_event_code_t_LV_EVENT_RESOLUTION_CHANGED as u16,
     Color_format_changed = LVGL::lv_event_code_t_LV_EVENT_COLOR_FORMAT_CHANGED as u16,

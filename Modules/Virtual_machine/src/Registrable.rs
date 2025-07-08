@@ -30,13 +30,13 @@ pub struct Function_descriptor_type {
 pub trait Registrable_trait {
     fn get_functions(&self) -> &[Function_descriptor_type];
 
-    fn Is_XIP(&self) -> bool {
+    fn is_XIP(&self) -> bool {
         false
     }
 
-    fn Get_binary(&self) -> Option<&'static [u8]> {
+    fn get_binary(&self) -> Option<&'static [u8]> {
         None
     }
 
-    fn Get_name(&self) -> &'static str;
+    fn get_name(&self) -> &'static str;
 }

@@ -6,7 +6,7 @@ extern crate alloc;
 mod Device;
 mod Executable;
 mod Main;
-mod Terminal;
+mod terminal;
 
 mod Error;
 

@@ -28,7 +28,7 @@ impl Path_owned_type {
             Path
         };
 
-        if Is_valid_string(&path) {
+        if is_valid_string(&path) {
             Some(Path_owned_type(path))
         } else {
             None
@@ -40,11 +40,11 @@ impl Path_owned_type {
     }
 
     pub fn Join(mut self, Path: impl AsRef<Path_type>) -> Option<Self> {
-        if Path.as_ref().Is_absolute() {
+        if Path.as_ref().is_absolute() {
             return None;
         }
 
-        if Path.as_ref().Is_empty() {
+        if Path.as_ref().is_empty() {
             return Some(self);
         }
 
@@ -76,7 +76,7 @@ impl Path_owned_type {
         self
     }
 
-    pub fn Get_extension(&self) -> Option<&str> {
+    pub fn get_extension(&self) -> Option<&str> {
         let mut extension = None;
 
         for (i, c) in self.0.char_indices() {
@@ -87,7 +87,7 @@ impl Path_owned_type {
         extension
     }
 
-    pub fn Get_file_name(&self) -> &str {
+    pub fn get_file_name(&self) -> &str {
         let mut last_index = 0;
         for (i, c) in self.0.chars().enumerate() {
             if c == SEPARATOR {
@@ -100,7 +100,7 @@ impl Path_owned_type {
         &self.0[last_index + 1..]
     }
 
-    pub fn Get_relative_to(&self, Path: &Path_owned_type) -> Option<Path_owned_type> {
+    pub fn get_relative_to(&self, Path: &Path_owned_type) -> Option<Path_owned_type> {
         if !self.0.starts_with(Path.0.as_str()) {
             return None;
         }
@@ -111,7 +111,7 @@ impl Path_owned_type {
     pub fn Canonicalize(mut self) -> Self {
         let mut stack: Vec<&str> = Vec::new();
 
-        if self.Is_absolute() {
+        if self.is_absolute() {
             stack.push("");
         }
 
@@ -131,7 +131,7 @@ impl Path_owned_type {
     }
 }
 
-pub fn Is_valid_string(String: &str) -> bool {
+pub fn is_valid_string(String: &str) -> bool {
     let invalid = ['\0', ':', '*', '?', '"', '<', '>', '|', ' '];
 
     for Character in String.chars() {
@@ -153,7 +153,7 @@ impl TryFrom<&str> for Path_owned_type {
     type Error = ();
 
     fn try_from(item: &str) -> Result<Self, Self::Error> {
-        if Is_valid_string(item) {
+        if is_valid_string(item) {
             Ok(Path_owned_type(item.to_string()))
         } else {
             Err(())
@@ -165,7 +165,7 @@ impl TryFrom<String> for Path_owned_type {
     type Error = ();
 
     fn try_from(item: String) -> Result<Self, Self::Error> {
-        if Is_valid_string(&item) {
+        if is_valid_string(&item) {
             Ok(Path_owned_type(item))
         } else {
             Err(())
@@ -200,11 +200,11 @@ impl AsRef<Path_type> for Path_owned_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
 
     #[test]
-    fn Test_path_addition() {
+    fn test_path_addition() {
         let Path = Path_owned_type::try_from("/").unwrap();
         assert_eq!(Path.As_str(), "/");
         let Path = Path.Append("Folder").unwrap();
@@ -214,26 +214,26 @@ mod Tests {
     }
 
     #[test]
-    fn Test_valid_string() {
-        assert!(Is_valid_string("Hello"));
-        assert!(Is_valid_string("Hello/World"));
-        assert!(Is_valid_string("Hello/World.txt"));
-        assert!(!Is_valid_string("Hello/World.txt/"));
-        assert!(!Is_valid_string("Hello/World.txt:"));
-        assert!(!Is_valid_string("Hello/World.txt*"));
-        assert!(!Is_valid_string("Hello/World.txt?"));
-        assert!(!Is_valid_string("Hello/World.txt\""));
-        assert!(!Is_valid_string("Hello/World.txt<"));
-        assert!(!Is_valid_string("Hello/World.txt>"));
-        assert!(!Is_valid_string("Hello/World.txt|"));
-        assert!(!Is_valid_string("Hello/World.txt "));
-        assert!(!Is_valid_string("Hello/World.txt\0"));
-        assert!(Is_valid_string(""));
-        assert!(!Is_valid_string("Hello/Wo rld.txt/"));
+    fn test_valid_string() {
+        assert!(is_valid_string("Hello"));
+        assert!(is_valid_string("Hello/World"));
+        assert!(is_valid_string("Hello/World.txt"));
+        assert!(!is_valid_string("Hello/World.txt/"));
+        assert!(!is_valid_string("Hello/World.txt:"));
+        assert!(!is_valid_string("Hello/World.txt*"));
+        assert!(!is_valid_string("Hello/World.txt?"));
+        assert!(!is_valid_string("Hello/World.txt\""));
+        assert!(!is_valid_string("Hello/World.txt<"));
+        assert!(!is_valid_string("Hello/World.txt>"));
+        assert!(!is_valid_string("Hello/World.txt|"));
+        assert!(!is_valid_string("Hello/World.txt "));
+        assert!(!is_valid_string("Hello/World.txt\0"));
+        assert!(is_valid_string(""));
+        assert!(!is_valid_string("Hello/Wo rld.txt/"));
     }
 
     #[test]
-    fn Test_canonicalize() {
+    fn test_canonicalize() {
         let Path = Path_owned_type::try_from("/home/../home/user/./file.txt").unwrap();
         assert_eq!(Path.Canonicalize().As_str(), "/home/user/file.txt");
 

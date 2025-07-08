@@ -64,7 +64,7 @@ impl Directory_type {
         Ok(())
     }
 
-    pub fn Get_position(
+    pub fn get_position(
         &mut self,
         file_system: &mut super::littlefs::lfs_t,
     ) -> Result_type<Size_type> {

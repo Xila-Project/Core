@@ -33,15 +33,15 @@ impl Duration_type {
     /// let earlier = Duration_type::New(1, 0);
     /// let later = Duration_type::New(2, 0);
     ///
-    /// let duration = later.Get_duration_since(&earlier);
+    /// let duration = later.get_duration_since(&earlier);
     ///
     /// assert_eq!(duration, Duration_type::New(1, 0));
     ///
-    /// let duration = earlier.Get_duration_since(&later);
+    /// let duration = earlier.get_duration_since(&later);
     /// assert_eq!(duration, Duration_type::New(0, 0));
     /// ```
-    pub fn Get_duration_since(&self, Earlier: &Duration_type) -> Duration_type {
-        self.Get_duration_since_checked(Earlier).unwrap_or_default()
+    pub fn get_duration_since(&self, Earlier: &Duration_type) -> Duration_type {
+        self.get_duration_since_checked(Earlier).unwrap_or_default()
     }
 
     /// Returns the duration between the two instants, or `None` if the duration is negative.
@@ -55,13 +55,13 @@ impl Duration_type {
     /// let earlier = Duration_type::New(1, 0);
     /// let later = Duration_type::New(2, 0);
     ///
-    /// let duration = later.Get_duration_since_checked(&earlier);
+    /// let duration = later.get_duration_since_checked(&earlier);
     /// assert_eq!(duration, Some(Duration_type::New(1, 0)));
     ///
-    /// let duration = earlier.Get_duration_since_checked(&later);
+    /// let duration = earlier.get_duration_since_checked(&later);
     /// assert_eq!(duration, None);
     /// ```
-    pub fn Get_duration_since_checked(&self, Earlier: &Duration_type) -> Option<Duration_type> {
+    pub fn get_duration_since_checked(&self, Earlier: &Duration_type) -> Option<Duration_type> {
         let self_duration = Duration::new(self.seconds, self.nanoseconds);
         let earlier_duration = Duration::new(Earlier.seconds, Earlier.nanoseconds);
         self_duration
@@ -82,13 +82,13 @@ impl Duration_type {
     /// let earlier = Duration_type::New(1, 0);
     /// let later = Duration_type::New(2, 0);
     ///
-    /// let duration = later.Get_duration_since_saturating(&earlier);
+    /// let duration = later.get_duration_since_saturating(&earlier);
     /// assert_eq!(duration, Duration_type::New(1, 0));
     ///
-    /// let duration = earlier.Get_duration_since_saturating(&later);
+    /// let duration = earlier.get_duration_since_saturating(&later);
     /// assert_eq!(duration, Duration_type::default());
     /// ```
-    pub fn Get_duration_since_saturating(&self, earlier: &Duration_type) -> Duration_type {
+    pub fn get_duration_since_saturating(&self, earlier: &Duration_type) -> Duration_type {
         let self_duration = Duration::new(self.seconds, self.nanoseconds);
         let earlier_duration = Duration::new(earlier.seconds, earlier.nanoseconds);
         let result = self_duration.saturating_sub(earlier_duration);

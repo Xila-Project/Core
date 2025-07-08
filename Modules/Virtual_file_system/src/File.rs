@@ -32,14 +32,14 @@ impl Debug for File_type<'_> {
 }
 
 impl<'a> File_type<'a> {
-    pub async fn Open(
+    pub async fn open(
         file_system: &'a Virtual_file_system_type<'a>,
         path: impl AsRef<Path_type>,
         flags: Flags_type,
     ) -> Result_type<Self> {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+        let task = Task::get_instance().get_current_task_identifier().await;
 
-        let File_identifier = file_system.Open(&path, flags, task).await?;
+        let File_identifier = file_system.open(&path, flags, task).await?;
 
         Ok(File_type {
             file_identifier: File_identifier,
@@ -48,14 +48,14 @@ impl<'a> File_type<'a> {
         })
     }
 
-    pub async fn Create_unnamed_pipe(
+    pub async fn create_unnamed_pipe(
         file_system: &'a Virtual_file_system_type<'a>,
         size: usize,
         status: Status_type,
         task: Task_identifier_type,
     ) -> Result_type<(Self, Self)> {
         let (file_identifier_read, file_identifier_write) =
-            file_system.Create_unnamed_pipe(task, status, size).await?;
+            file_system.create_unnamed_pipe(task, status, size).await?;
 
         Ok((
             File_type {
@@ -72,39 +72,39 @@ impl<'a> File_type<'a> {
     }
 
     // - Setters
-    pub async fn Set_position(&self, Position: &Position_type) -> Result_type<Size_type> {
+    pub async fn set_position(&self, Position: &Position_type) -> Result_type<Size_type> {
         self.file_system
-            .Set_position(self.Get_file_identifier(), Position, self.task)
+            .set_position(self.get_file_identifier(), Position, self.task)
             .await
     }
 
     // - Getters
-    pub const fn Get_file_identifier(&self) -> Unique_file_identifier_type {
+    pub const fn get_file_identifier(&self) -> Unique_file_identifier_type {
         self.file_identifier
     }
 
     // - Operations
 
-    pub async fn Write(&self, Buffer: &[u8]) -> Result_type<Size_type> {
+    pub async fn write(&self, Buffer: &[u8]) -> Result_type<Size_type> {
         self.file_system
-            .Write(self.Get_file_identifier(), Buffer, self.task)
+            .write(self.get_file_identifier(), Buffer, self.task)
             .await
     }
 
-    pub async fn Write_line(&self, Buffer: &[u8]) -> Result_type<Size_type> {
-        let size = self.Write(Buffer).await? + self.Write(b"\n").await?;
+    pub async fn write_line(&self, Buffer: &[u8]) -> Result_type<Size_type> {
+        let size = self.write(Buffer).await? + self.write(b"\n").await?;
         Ok(size)
     }
 
-    pub async fn Read(&self, Buffer: &mut [u8]) -> Result_type<Size_type> {
+    pub async fn read(&self, Buffer: &mut [u8]) -> Result_type<Size_type> {
         self.file_system
-            .Read(self.Get_file_identifier(), Buffer, self.task)
+            .read(self.get_file_identifier(), Buffer, self.task)
             .await
     }
-    pub async fn Read_line(&self, Buffer: &mut [u8]) -> Result_type<()> {
+    pub async fn read_line(&self, Buffer: &mut [u8]) -> Result_type<()> {
         let mut index = 0;
         loop {
-            let Size: usize = self.Read(&mut Buffer[index..index + 1]).await?.into();
+            let Size: usize = self.read(&mut Buffer[index..index + 1]).await?.into();
             if Size == 0 {
                 break;
             }
@@ -116,15 +116,15 @@ impl<'a> File_type<'a> {
         Ok(())
     }
 
-    pub async fn Read_to_end(&self, Buffer: &mut Vec<u8>) -> Result_type<Size_type> {
+    pub async fn read_to_end(&self, Buffer: &mut Vec<u8>) -> Result_type<Size_type> {
         self.file_system
-            .Read_to_end(self.Get_file_identifier(), self.task, Buffer)
+            .read_to_end(self.get_file_identifier(), self.task, Buffer)
             .await
     }
 
-    pub async fn Get_statistics(&self) -> Result_type<Statistics_type> {
+    pub async fn get_statistics(&self) -> Result_type<Statistics_type> {
         self.file_system
-            .Get_statistics(self.Get_file_identifier(), self.task)
+            .get_statistics(self.get_file_identifier(), self.task)
             .await
     }
 }
@@ -133,7 +133,7 @@ impl Drop for File_type<'_> {
     fn drop(&mut self) {
         let _ = block_on(
             self.file_system
-                .Close(self.Get_file_identifier(), self.task),
+                .close(self.get_file_identifier(), self.task),
         );
     }
 }

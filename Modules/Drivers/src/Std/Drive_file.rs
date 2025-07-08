@@ -45,7 +45,7 @@ impl Device_trait for File_drive_device_type {
             .map_err(Map_error)
     }
 
-    fn Get_size(&self) -> File_system::Result_type<File_system::Size_type> {
+    fn get_size(&self) -> File_system::Result_type<File_system::Size_type> {
         Ok((1024 * 1024 * 1024 * 4_usize).into())
     }
 
@@ -75,18 +75,18 @@ impl Device_trait for File_drive_device_type {
         Ok(())
     }
 
-    fn Get_block_size(&self) -> File_system::Result_type<usize> {
+    fn get_block_size(&self) -> File_system::Result_type<usize> {
         Ok(4096)
     }
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
     use File_system::Device_trait;
 
     #[test]
-    fn Test_read_write() {
+    fn test_read_write() {
         let File = File_drive_device_type::new(&"./Test.img");
 
         let Data = [1, 2, 3, 4, 5];
@@ -103,7 +103,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_read_write_at_position() {
+    fn test_read_write_at_position() {
         let File = File_drive_device_type::new(&"./Test.img");
 
         File.Set_position(&File_system::Position_type::Start(10))

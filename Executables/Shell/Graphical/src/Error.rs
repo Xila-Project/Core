@@ -48,8 +48,8 @@ impl From<Graphics::Error_type> for Error_type {
 impl Display for Error_type {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
-            Self::Graphics(Error) => {
-                write!(formatter, "Graphics error: {Error}")
+            Self::Graphics(error) => {
+                write!(formatter, "Graphics error: {error}")
             }
             Self::Failed_to_create_object => {
                 write!(formatter, "Failed to create object")
@@ -57,47 +57,47 @@ impl Display for Error_type {
             Self::Failed_to_get_child => {
                 write!(formatter, "Failed to get child")
             }
-            Self::Failed_to_set_environment_variable(Error) => {
-                write!(formatter, "Failed to set environment variable: {Error}")
+            Self::Failed_to_set_environment_variable(error) => {
+                write!(formatter, "Failed to set environment variable: {error}")
             }
-            Self::Invalid_UTF_8(Error) => {
-                write!(formatter, "Invalid UTF-8: {Error}")
+            Self::Invalid_UTF_8(error) => {
+                write!(formatter, "Invalid UTF-8: {error}")
             }
-            Self::Authentication_failed(Error) => {
-                write!(formatter, "Authentication failed: {Error}")
+            Self::Authentication_failed(error) => {
+                write!(formatter, "Authentication failed: {error}")
             }
-            Self::Failed_to_set_task_user(Error) => {
-                write!(formatter, "Failed to set task user: {Error}")
+            Self::Failed_to_set_task_user(error) => {
+                write!(formatter, "Failed to set task user: {error}")
             }
-            Self::Failed_to_deserialize_shortcut(Error) => {
-                write!(formatter, "Failed to deserialize shortcut: {Error}")
+            Self::Failed_to_deserialize_shortcut(error) => {
+                write!(formatter, "Failed to deserialize shortcut: {error}")
             }
-            Self::Failed_to_get_current_task_identifier(Error) => {
-                write!(formatter, "Failed to get current task identifier: {Error}")
+            Self::Failed_to_get_current_task_identifier(error) => {
+                write!(formatter, "Failed to get current task identifier: {error}")
             }
-            Self::Failed_to_read_shortcut_directory(Error) => {
-                write!(formatter, "Failed to read shortcut directory: {Error}")
+            Self::Failed_to_read_shortcut_directory(error) => {
+                write!(formatter, "Failed to read shortcut directory: {error}")
             }
             Self::Failed_to_get_shortcut_file_path => {
                 write!(formatter, "Failed to get shortcut file path")
             }
-            Self::Failed_to_read_shortcut_file(Error) => {
-                write!(formatter, "Failed to read shortcut file: {Error}")
+            Self::Failed_to_read_shortcut_file(error) => {
+                write!(formatter, "Failed to read shortcut file: {error}")
             }
-            Self::Failed_to_open_standard_file(Error) => {
-                write!(formatter, "Failed to open standard file: {Error}")
+            Self::Failed_to_open_standard_file(error) => {
+                write!(formatter, "Failed to open standard file: {error}")
             }
-            Self::Failed_to_execute_shortcut(Error) => {
-                write!(formatter, "Failed to execute shortcut: {Error}")
+            Self::Failed_to_execute_shortcut(error) => {
+                write!(formatter, "Failed to execute shortcut: {error}")
             }
-            Self::Null_character_in_string(Error) => {
-                write!(formatter, "Null character in string: {Error}")
+            Self::Null_character_in_string(error) => {
+                write!(formatter, "Null character in string: {error}")
             }
             Self::Missing_arguments => {
                 write!(formatter, "Missing arguments")
             }
-            Self::Failed_to_add_shortcut(Error) => {
-                write!(formatter, "Failed to add shortcut: {Error}")
+            Self::Failed_to_add_shortcut(error) => {
+                write!(formatter, "Failed to add shortcut: {error}")
             }
         }
     }

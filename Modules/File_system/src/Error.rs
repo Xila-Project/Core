@@ -52,7 +52,7 @@ pub type Result_type<T> = core::result::Result<T, Error_type>;
 /// - [`Invalid_directory`] - Directory is corrupted or invalid
 /// - [`Invalid_symbolic_link`] - Symbolic link is invalid
 /// - [`Not_directory`] - Expected directory but found file
-/// - [`Is_directory`] - Expected file but found directory
+/// - [`is_directory`] - Expected file but found directory
 /// - [`Directory_not_empty`] - Cannot remove non-empty directory
 ///
 /// ## Resource and Capacity Errors
@@ -151,7 +151,7 @@ pub enum Error_type {
     /// Expected a directory but found a file.
     Not_directory,
     /// Expected a file but found a directory.
-    Is_directory,
+    is_directory,
     /// Input/output error during operation.
     Input_output,
     /// Directory is not empty and cannot be removed.
@@ -193,10 +193,10 @@ impl Error_type {
     /// use File_system::Error_type;
     ///
     /// let error = Error_type::Permission_denied;
-    /// let code = error.Get_discriminant();
+    /// let code = error.get_discriminant();
     /// assert_eq!(code.get(), 2); // Permission_denied has discriminant 2
     /// ```
-    pub fn Get_discriminant(&self) -> NonZeroU32 {
+    pub fn get_discriminant(&self) -> NonZeroU32 {
         unsafe { NonZeroU32::new_unchecked(*self as u32) }
     }
 }
@@ -224,7 +224,7 @@ impl From<Users::Error_type> for Error_type {
 /// This conversion is useful for FFI where errors need to be represented as numbers.
 impl From<Error_type> for NonZeroU32 {
     fn from(error: Error_type) -> Self {
-        error.Get_discriminant()
+        error.get_discriminant()
     }
 }
 
@@ -266,7 +266,7 @@ impl Display for Error_type {
             Error_type::Invalid_parameter => "Invalid parameter",
             Error_type::Invalid_flags => "Invalid flags",
             Error_type::Not_directory => "Not directory",
-            Error_type::Is_directory => "Is directory",
+            Error_type::is_directory => "Is directory",
             Error_type::Input_output => "Input output",
             Error_type::Directory_not_empty => "Directory not empty",
             Error_type::File_too_large => "File too large",
@@ -285,37 +285,37 @@ impl Display for Error_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
     use alloc::format;
 
     #[test]
-    fn Test_error_discriminants() {
+    fn test_error_discriminants() {
         // Test that each error has a unique discriminant
         assert_eq!(
             Error_type::Failed_to_initialize_file_system
-                .Get_discriminant()
+                .get_discriminant()
                 .get(),
             1
         );
-        assert_eq!(Error_type::Permission_denied.Get_discriminant().get(), 2);
-        assert_eq!(Error_type::Not_found.Get_discriminant().get(), 3);
-        assert_eq!(Error_type::Already_exists.Get_discriminant().get(), 4);
+        assert_eq!(Error_type::Permission_denied.get_discriminant().get(), 2);
+        assert_eq!(Error_type::Not_found.get_discriminant().get(), 3);
+        assert_eq!(Error_type::Already_exists.get_discriminant().get(), 4);
         assert_eq!(
             Error_type::Directory_already_exists
-                .Get_discriminant()
+                .get_discriminant()
                 .get(),
             5
         );
 
         // Test a few more to ensure discriminants are sequential
-        assert_eq!(Error_type::File_system_full.Get_discriminant().get(), 6);
-        assert_eq!(Error_type::File_system_error.Get_discriminant().get(), 7);
-        assert_eq!(Error_type::Invalid_path.Get_discriminant().get(), 8);
+        assert_eq!(Error_type::File_system_full.get_discriminant().get(), 6);
+        assert_eq!(Error_type::File_system_error.get_discriminant().get(), 7);
+        assert_eq!(Error_type::Invalid_path.get_discriminant().get(), 8);
     }
 
     #[test]
-    fn Test_error_display() {
+    fn test_error_display() {
         // Test display formatting for all error types
         assert_eq!(
             format!("{}", Error_type::Failed_to_initialize_file_system),
@@ -399,7 +399,7 @@ mod Tests {
         );
         assert_eq!(format!("{}", Error_type::Invalid_flags), "Invalid flags");
         assert_eq!(format!("{}", Error_type::Not_directory), "Not directory");
-        assert_eq!(format!("{}", Error_type::Is_directory), "Is directory");
+        assert_eq!(format!("{}", Error_type::is_directory), "Is directory");
         assert_eq!(format!("{}", Error_type::Input_output), "Input output");
         assert_eq!(
             format!("{}", Error_type::Directory_not_empty),
@@ -417,7 +417,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_error_debug() {
+    fn test_error_debug() {
         // Test debug formatting
         let error = Error_type::Permission_denied;
         let debug_str = format!("{error:?}");
@@ -425,7 +425,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_error_equality() {
+    fn test_error_equality() {
         // Test equality and cloning
         let error1 = Error_type::Not_found;
         let error2 = Error_type::Not_found;
@@ -439,18 +439,18 @@ mod Tests {
     }
 
     #[test]
-    fn Test_error_conversions() {
+    fn test_error_conversions() {
         // Test conversion to NonZeroU32
         let error = Error_type::Not_found;
         let discriminant: NonZeroU32 = error.into();
         assert_eq!(discriminant.get(), 3);
 
         // Test explicit discriminant access
-        assert_eq!(error.Get_discriminant().get(), 3);
+        assert_eq!(error.get_discriminant().get(), 3);
     }
 
     #[test]
-    fn Test_result_type() {
+    fn test_result_type() {
         // Test the Result_type alias
         let success: Result_type<i32> = Ok(42);
         let failure: Result_type<i32> = Err(Error_type::Permission_denied);
@@ -461,51 +461,51 @@ mod Tests {
     }
 
     #[test]
-    fn Test_error_categories() {
+    fn test_error_categories() {
         // Test that errors can be categorized by their discriminant ranges
 
         // Initialization errors (1-3 range roughly)
         assert!(matches!(
             Error_type::Failed_to_initialize_file_system
-                .Get_discriminant()
+                .get_discriminant()
                 .get(),
             1
         ));
         assert!(matches!(
-            Error_type::Already_initialized.Get_discriminant().get(),
+            Error_type::Already_initialized.get_discriminant().get(),
             22
         ));
         assert!(matches!(
-            Error_type::Not_initialized.Get_discriminant().get(),
+            Error_type::Not_initialized.get_discriminant().get(),
             23
         ));
 
         // Permission errors
         assert!(matches!(
-            Error_type::Permission_denied.Get_discriminant().get(),
+            Error_type::Permission_denied.get_discriminant().get(),
             2
         ));
         assert!(matches!(
-            Error_type::Invalid_mode.Get_discriminant().get(),
+            Error_type::Invalid_mode.get_discriminant().get(),
             19
         ));
 
         // File/Directory errors
-        assert!(matches!(Error_type::Not_found.Get_discriminant().get(), 3));
+        assert!(matches!(Error_type::Not_found.get_discriminant().get(), 3));
         assert!(matches!(
-            Error_type::Already_exists.Get_discriminant().get(),
+            Error_type::Already_exists.get_discriminant().get(),
             4
         ));
         assert!(matches!(
             Error_type::Directory_already_exists
-                .Get_discriminant()
+                .get_discriminant()
                 .get(),
             5
         ));
     }
 
     #[test]
-    fn Test_error_copy_semantics() {
+    fn test_error_copy_semantics() {
         // Test that Error_type implements Copy
         let error = Error_type::File_system_full;
         let copied = error; // This should work due to Copy trait
@@ -517,7 +517,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_error_size() {
+    fn test_error_size() {
         // Ensure Error_type has a reasonable size for an enum
         use core::mem::size_of;
 
@@ -526,7 +526,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_nonzero_conversion() {
+    fn test_nonzero_conversion() {
         // Test that all errors convert to valid NonZeroU32
         let errors = [
             Error_type::Failed_to_initialize_file_system,
@@ -557,7 +557,7 @@ mod Tests {
             Error_type::Invalid_parameter,
             Error_type::Invalid_flags,
             Error_type::Not_directory,
-            Error_type::Is_directory,
+            Error_type::is_directory,
             Error_type::Input_output,
             Error_type::Directory_not_empty,
             Error_type::File_too_large,
@@ -572,7 +572,7 @@ mod Tests {
         ];
 
         for error in errors.iter() {
-            let discriminant = error.Get_discriminant();
+            let discriminant = error.get_discriminant();
             assert!(discriminant.get() > 0);
 
             let converted: NonZeroU32 = (*error).into();

@@ -15,5 +15,5 @@ pub struct WASM_device_type;
 Implement_executable_device!(
     Structure: WASM_device_type,
     Mount_path: "/Binaries/WASM",
-    Main_function: Main::Main,
+    Main_function: Main::main,
 );

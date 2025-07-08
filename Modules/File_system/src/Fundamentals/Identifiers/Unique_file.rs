@@ -111,11 +111,11 @@ impl From<usize> for Unique_file_identifier_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
 
     #[test]
-    fn Test_unique_file_identifier() {
+    fn test_unique_file_identifier() {
         let Identifier = Unique_file_identifier_type::New(
             File_system_identifier_type::from(0x1234),
             File_identifier_type::from(0x5678),

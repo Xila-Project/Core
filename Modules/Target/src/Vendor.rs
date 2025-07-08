@@ -8,10 +8,10 @@ pub enum Vendor_type {
 
 impl Vendor_type {
     pub fn get() -> Vendor_type {
-        Vendor_type::from(Self::Get_raw())
+        Vendor_type::from(Self::get_raw())
     }
 
-    pub fn Get_raw() -> String {
+    pub fn get_raw() -> String {
         env::var("CARGO_CFG_TARGET_VENDOR").unwrap()
     }
 }

@@ -33,7 +33,7 @@ pub fn Initialize() -> &'static Manager_type {
     MANAGER_INSTANCE.get_or_init(Manager_type::New)
 }
 
-pub fn Get_instance() -> &'static Manager_type {
+pub fn get_instance() -> &'static Manager_type {
     MANAGER_INSTANCE.try_get().expect("Manager not initialized")
 }
 

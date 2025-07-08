@@ -18,74 +18,74 @@ pub struct Login_type {
 impl Login_type {
     pub async fn new() -> Result_type<Self> {
         // - Lock the graphics
-        let _Lock = Graphics::Get_instance().Lock();
+        let _lock = Graphics::get_instance().lock();
 
         // - Create a window
-        let Window = Graphics::Get_instance().Create_window().await?;
+        let window = Graphics::get_instance().create_window().await?;
 
         unsafe {
-            LVGL::lv_obj_set_flex_flow(Window.Get_object(), LVGL::LV_FLEX_COLUMN);
+            LVGL::lv_obj_set_flex_flow(window.get_object(), LVGL::LV_FLEX_COLUMN);
             LVGL::lv_obj_set_flex_align(
-                Window.Get_object(),
+                window.get_object(),
                 LVGL::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
                 LVGL::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
                 LVGL::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
             );
         }
 
-        let User_name_text_area = unsafe {
+        let user_name_text_area = unsafe {
             // - Create a text area for the user name
-            let User_name_text_area = LVGL::lv_textarea_create(Window.Get_object());
+            let user_name_text_area = LVGL::lv_textarea_create(window.get_object());
 
-            LVGL::lv_textarea_set_placeholder_text(User_name_text_area, c"User name".as_ptr());
-            LVGL::lv_textarea_set_one_line(User_name_text_area, true);
+            LVGL::lv_textarea_set_placeholder_text(user_name_text_area, c"User name".as_ptr());
+            LVGL::lv_textarea_set_one_line(user_name_text_area, true);
 
-            User_name_text_area
+            user_name_text_area
         };
 
-        let Password_text_area = unsafe {
+        let password_text_area = unsafe {
             // - Create a text area for the password
-            let Password_text_area = LVGL::lv_textarea_create(Window.Get_object());
+            let password_text_area = LVGL::lv_textarea_create(window.get_object());
 
-            LVGL::lv_textarea_set_placeholder_text(Password_text_area, c"Password".as_ptr());
-            LVGL::lv_textarea_set_one_line(Password_text_area, true);
-            LVGL::lv_textarea_set_password_mode(Password_text_area, true);
+            LVGL::lv_textarea_set_placeholder_text(password_text_area, c"Password".as_ptr());
+            LVGL::lv_textarea_set_one_line(password_text_area, true);
+            LVGL::lv_textarea_set_password_mode(password_text_area, true);
 
-            Password_text_area
+            password_text_area
         };
 
-        let Error_label = unsafe {
+        let error_label = unsafe {
             // - Create a label for the error
-            let Error_label = LVGL::lv_label_create(Window.Get_object());
+            let error_label = LVGL::lv_label_create(window.get_object());
 
-            LVGL::lv_label_set_text(Error_label, c"".as_ptr());
+            LVGL::lv_label_set_text(error_label, c"".as_ptr());
 
-            Error_label
+            error_label
         };
 
-        let Button = unsafe {
+        let button = unsafe {
             // - Create a button
-            let Button = LVGL::lv_button_create(Window.Get_object());
+            let button = LVGL::lv_button_create(window.get_object());
 
-            let Label = LVGL::lv_label_create(Button);
+            let label = LVGL::lv_label_create(button);
 
-            LVGL::lv_label_set_text(Label, c"Login".as_ptr());
+            LVGL::lv_label_set_text(label, c"Login".as_ptr());
 
-            Button
+            button
         };
 
         Ok(Login_type {
-            window: Window,
-            user_name_text_area: User_name_text_area,
-            password_text_area: Password_text_area,
-            button: Button,
-            error_label: Error_label,
+            window,
+            user_name_text_area,
+            password_text_area,
+            button,
+            error_label,
             user: None,
         })
     }
 
-    pub fn Print_error(&mut self, Error: Error_type) {
-        let error = Error.to_string();
+    pub fn print_error(&mut self, error: Error_type) {
+        let error = error.to_string();
         let error = error.as_bytes();
 
         unsafe {
@@ -95,29 +95,29 @@ impl Login_type {
         }
     }
 
-    pub fn Clear_error(&mut self) {
+    pub fn clear_error(&mut self) {
         unsafe {
             LVGL::lv_label_set_text(self.error_label, c"".as_ptr());
         }
     }
 
-    pub async fn Authenticate(&mut self) -> Result_type<()> {
+    pub async fn authenticate(&mut self) -> Result_type<()> {
         let (user_name, password) = unsafe {
             let user_name = LVGL::lv_textarea_get_text(self.user_name_text_area);
             let user_name = CStr::from_ptr(user_name);
 
-            let User_name = user_name.to_str().map_err(Error_type::Invalid_UTF_8)?;
+            let user_name = user_name.to_str().map_err(Error_type::Invalid_UTF_8)?;
 
-            let Password = LVGL::lv_textarea_get_text(self.password_text_area);
-            let password = CStr::from_ptr(Password);
+            let password = LVGL::lv_textarea_get_text(self.password_text_area);
+            let password = CStr::from_ptr(password);
             let password = password.to_str().map_err(Error_type::Invalid_UTF_8)?;
 
-            (User_name, password)
+            (user_name, password)
         };
 
         // - Check the user name and the password
-        let User_identifier = Authentication::Authenticate_user(
-            Virtual_file_system::Get_instance(),
+        let user_identifier = Authentication::authenticate_user(
+            Virtual_file_system::get_instance(),
             user_name,
             password,
         )
@@ -125,43 +125,43 @@ impl Login_type {
         .map_err(Error_type::Authentication_failed)?;
 
         // - Set the user
-        let Task_manager = Task::Get_instance();
+        let task_manager = Task::get_instance();
 
-        let Task = Task_manager.Get_current_task_identifier().await;
+        let task = task_manager.get_current_task_identifier().await;
 
-        Task_manager
-            .set_user(Task, User_identifier)
+        task_manager
+            .set_user(task, user_identifier)
             .await
             .map_err(Error_type::Failed_to_set_task_user)?;
 
-        self.user = Some(User_identifier);
+        self.user = Some(user_identifier);
 
         Ok(())
     }
 
-    pub async fn Event_handler(&mut self) {
-        while let Some(event) = self.window.Pop_event() {
+    pub async fn event_handler(&mut self) {
+        while let Some(event) = self.window.pop_event() {
             // If we are typing the user name or the password
-            if event.Get_code() == Event_code_type::Value_changed
-                && (event.Get_target() == self.user_name_text_area
-                    || event.Get_target() == self.password_text_area)
+            if event.get_code() == Event_code_type::Value_changed
+                && (event.get_target() == self.user_name_text_area
+                    || event.get_target() == self.password_text_area)
             {
-                self.Clear_error();
+                self.clear_error();
             }
             // If the "Login" button is clicked
-            else if event.Get_code() == Event_code_type::Clicked
-                && event.Get_target() == self.button
+            else if event.get_code() == Event_code_type::Clicked
+                && event.get_target() == self.button
             {
-                let Result = self.Authenticate().await;
+                let result = self.authenticate().await;
 
-                if let Err(Error) = Result {
-                    self.Print_error(Error);
+                if let Err(error) = result {
+                    self.print_error(error);
                 }
             }
         }
     }
 
-    pub fn Get_logged_user(&self) -> Option<User_identifier_type> {
+    pub fn get_logged_user(&self) -> Option<User_identifier_type> {
         self.user
     }
 }

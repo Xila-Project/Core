@@ -79,26 +79,26 @@ const RANDOM_DEVICE_PATH: &str = "/Devices/Random";
 /// # Ok(())
 /// # }
 /// ```
-pub async fn Load_all_users_and_groups() -> Result_type<()> {
-    use Group::Read_group_file;
-    use User::Read_user_file;
+pub async fn load_all_users_and_groups() -> Result_type<()> {
+    use Group::read_group_file;
+    use User::read_user_file;
     use Virtual_file_system::Directory_type;
     // Open Xila users folder.
-    let Virtual_file_system = Virtual_file_system::Get_instance();
+    let Virtual_file_system = Virtual_file_system::get_instance();
 
-    let Users_manager = Users::Get_instance();
+    let Users_manager = Users::get_instance();
 
     let mut Buffer: Vec<u8> = vec![];
 
     {
-        let Groups_directory = Directory_type::Open(Virtual_file_system, GROUP_FOLDER_PATH)
+        let Groups_directory = Directory_type::open(Virtual_file_system, GROUP_FOLDER_PATH)
             .await
             .map_err(Error_type::Failed_to_read_group_directory)?;
 
         // Read all groups.
         for Group_entry in Groups_directory {
             let group = if let Ok(group) =
-                Read_group_file(Virtual_file_system, &mut Buffer, Group_entry.Get_name()).await
+                read_group_file(Virtual_file_system, &mut Buffer, Group_entry.get_name()).await
             {
                 group
             } else {
@@ -107,21 +107,21 @@ pub async fn Load_all_users_and_groups() -> Result_type<()> {
             };
 
             Users_manager
-                .Add_group(group.Get_identifier(), group.Get_name(), group.Get_users())
+                .Add_group(group.get_identifier(), group.get_name(), group.get_users())
                 .await
                 .map_err(Error_type::Failed_to_add_group)?;
         }
     }
 
     {
-        let Users_directory = Directory_type::Open(Virtual_file_system, USERS_FOLDER_PATH)
+        let Users_directory = Directory_type::open(Virtual_file_system, USERS_FOLDER_PATH)
             .await
             .map_err(Error_type::Failed_to_read_users_directory)?;
 
         // Read all users.
         for User_entry in Users_directory {
             let user = if let Ok(user) =
-                Read_user_file(Virtual_file_system, &mut Buffer, User_entry.Get_name()).await
+                read_user_file(Virtual_file_system, &mut Buffer, User_entry.get_name()).await
             {
                 user
             } else {
@@ -131,9 +131,9 @@ pub async fn Load_all_users_and_groups() -> Result_type<()> {
 
             Users_manager
                 .Add_user(
-                    user.Get_identifier(),
-                    user.Get_name(),
-                    user.Get_primary_group(),
+                    user.get_identifier(),
+                    user.get_name(),
+                    user.get_primary_group(),
                 )
                 .await
                 .map_err(Error_type::Failed_to_add_user)?;

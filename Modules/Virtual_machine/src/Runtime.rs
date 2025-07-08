@@ -25,13 +25,13 @@ impl Runtime_builder_type {
         Self(runtime_builder)
     }
 
-    pub fn Register_function(self, Name: &str, Function_pointer: *mut c_void) -> Self {
+    pub fn register_function(self, Name: &str, Function_pointer: *mut c_void) -> Self {
         Self(self.0.register_host_function(Name, Function_pointer))
     }
 
-    pub fn Register(mut self, Registrable: &dyn Registrable_trait) -> Self {
+    pub fn register(mut self, Registrable: &dyn Registrable_trait) -> Self {
         for function_descriptor in Registrable.get_functions() {
-            self = self.Register_function(function_descriptor.name, function_descriptor.pointer);
+            self = self.register_function(function_descriptor.name, function_descriptor.pointer);
         }
 
         self
@@ -49,7 +49,7 @@ impl Runtime_type {
         Runtime_builder_type::new()
     }
 
-    pub(crate) fn Get_inner_reference(&self) -> &Runtime {
+    pub(crate) fn get_inner_reference(&self) -> &Runtime {
         &self.0
     }
 

@@ -30,7 +30,7 @@ impl Manager_type {
         range.next().map(|Key| Key.into())
     }
 
-    pub(crate) fn Get_task(
+    pub(crate) fn get_task(
         inner: &Inner_type,
         task_identifier: Task_identifier_type,
     ) -> Result_type<&Metadata_type> {
@@ -40,7 +40,7 @@ impl Manager_type {
             .ok_or(Error_type::Invalid_task_identifier)
     }
 
-    pub(crate) fn Get_task_mutable(
+    pub(crate) fn get_task_mutable(
         inner: &mut Inner_type,
         task_identifier: Task_identifier_type,
     ) -> Result_type<&mut Metadata_type> {

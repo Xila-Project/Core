@@ -128,7 +128,7 @@ pub trait Device_trait: Send + Sync {
     ///
     /// * `Ok(Size_type)` - Total device size in bytes
     /// * `Err(Error_type)` - Error if size cannot be determined
-    fn Get_size(&self) -> Result_type<Size_type>;
+    fn get_size(&self) -> Result_type<Size_type>;
 
     /// Set the current position cursor for read/write operations.
     ///
@@ -185,7 +185,7 @@ pub trait Device_trait: Send + Sync {
     ///
     /// * `Ok(usize)` - Block size in bytes
     /// * `Err(Error_type::Unsupported_operation)` - Device doesn't have a block size
-    fn Get_block_size(&self) -> Result_type<usize> {
+    fn get_block_size(&self) -> Result_type<usize> {
         Err(Error_type::Unsupported_operation)
     }
 
@@ -195,7 +195,7 @@ pub trait Device_trait: Send + Sync {
     ///
     /// * `true` - Device is a terminal
     /// * `false` - Device is not a terminal
-    fn Is_a_terminal(&self) -> bool {
+    fn is_a_terminal(&self) -> bool {
         false
     }
 
@@ -208,7 +208,7 @@ pub trait Device_trait: Send + Sync {
     ///
     /// * `true` - Device is a block device
     /// * `false` - Device is not a block device
-    fn Is_a_block_device(&self) -> bool {
+    fn is_a_block_device(&self) -> bool {
         false
     }
 
@@ -227,7 +227,7 @@ pub trait Device_trait: Send + Sync {
     /// This operation can consume significant memory for large devices.
     /// Use with caution on production systems.
     fn Dump_device(&self) -> Result_type<Vec<u8>> {
-        let size = self.Get_size()?;
+        let size = self.get_size()?;
 
         let mut Buffer = vec![0; size.into()];
 
@@ -307,9 +307,9 @@ impl Device_type {
 
     /// Get the total size of the device in bytes.
     ///
-    /// See [`Device_trait::Get_size`] for detailed documentation.
-    pub fn Get_size(&self) -> Result_type<Size_type> {
-        self.0.Get_size()
+    /// See [`Device_trait::get_size`] for detailed documentation.
+    pub fn get_size(&self) -> Result_type<Size_type> {
+        self.0.get_size()
     }
 
     /// Set the current position cursor for read/write operations.
@@ -335,23 +335,23 @@ impl Device_type {
 
     /// Get the block size of the device in bytes.
     ///
-    /// See [`Device_trait::Get_block_size`] for detailed documentation.
-    pub fn Get_block_size(&self) -> Result_type<usize> {
-        self.0.Get_block_size()
+    /// See [`Device_trait::get_block_size`] for detailed documentation.
+    pub fn get_block_size(&self) -> Result_type<usize> {
+        self.0.get_block_size()
     }
 
     /// Check if this device represents a terminal/console device.
     ///
-    /// See [`Device_trait::Is_a_terminal`] for detailed documentation.
-    pub fn Is_a_terminal(&self) -> bool {
-        self.0.Is_a_terminal()
+    /// See [`Device_trait::is_a_terminal`] for detailed documentation.
+    pub fn is_a_terminal(&self) -> bool {
+        self.0.is_a_terminal()
     }
 
     /// Check if this device is a block device.
     ///
-    /// See [`Device_trait::Is_a_block_device`] for detailed documentation.
-    pub fn Is_a_block_device(&self) -> bool {
-        self.0.Is_a_block_device()
+    /// See [`Device_trait::is_a_block_device`] for detailed documentation.
+    pub fn is_a_block_device(&self) -> bool {
+        self.0.is_a_block_device()
     }
 
     /// Create a complete dump of the device contents.

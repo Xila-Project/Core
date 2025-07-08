@@ -25,15 +25,15 @@ impl Target_type {
         self.architecture
     }
 
-    pub fn Get_operating_system(&self) -> Operating_system_type {
+    pub fn get_operating_system(&self) -> Operating_system_type {
         self.operating_system
     }
 
-    pub fn Get_family(&self) -> Family_type {
+    pub fn get_family(&self) -> Family_type {
         self.family
     }
 
-    pub fn Get_current() -> Target_type {
+    pub fn get_current() -> Target_type {
         Target_type {
             architecture: Architecture_type::from(env::var("CARGO_CFG_TARGET_ARCH").unwrap()),
             operating_system: Operating_system_type::from(env::var("CARGO_CFG_TARGET_OS").unwrap()),

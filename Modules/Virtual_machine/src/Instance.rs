@@ -26,7 +26,7 @@ unsafe impl Send for Instance_type<'_> {}
 
 impl Drop for Instance_type<'_> {
     fn drop(&mut self) {
-        let instance = self.Get_inner_reference().get_inner_instance();
+        let instance = self.get_inner_reference().get_inner_instance();
         unsafe {
             let user_data = wasm_runtime_get_custom_data(instance) as *mut Custom_data_type;
 
@@ -46,8 +46,8 @@ impl<'module> Instance_type<'module> {
         stack_size: usize,
     ) -> Result_type<Self> {
         let wamr_instance = Instance::new(
-            runtime.Get_inner_reference(),
-            module.Get_inner_reference(),
+            runtime.get_inner_reference(),
+            module.get_inner_reference(),
             stack_size as u32,
         )?;
 
@@ -61,7 +61,7 @@ impl<'module> Instance_type<'module> {
     pub fn Validate_native_pointer<T>(&self, Pointer: *const T, Size: usize) -> bool {
         unsafe {
             wasm_runtime_validate_native_addr(
-                self.Get_inner_reference().get_inner_instance(),
+                self.get_inner_reference().get_inner_instance(),
                 Pointer as *mut c_void,
                 Size as u64,
             )
@@ -71,7 +71,7 @@ impl<'module> Instance_type<'module> {
     pub fn Validate_WASM_pointer(&self, Address: WASM_pointer_type, Size: usize) -> bool {
         unsafe {
             wasm_runtime_validate_native_addr(
-                self.Get_inner_reference().get_inner_instance(),
+                self.get_inner_reference().get_inner_instance(),
                 Address as *mut c_void,
                 Size as u64,
             )
@@ -81,7 +81,7 @@ impl<'module> Instance_type<'module> {
     pub fn Convert_to_WASM_pointer<T>(&self, Pointer: *const T) -> WASM_pointer_type {
         unsafe {
             wasm_runtime_addr_native_to_app(
-                self.Get_inner_reference().get_inner_instance(),
+                self.get_inner_reference().get_inner_instance(),
                 Pointer as *mut c_void,
             ) as WASM_pointer_type
         }
@@ -93,7 +93,7 @@ impl<'module> Instance_type<'module> {
     #[allow(clippy::mut_from_ref)]
     pub unsafe fn convert_to_native_pointer<T>(&self, Address: WASM_pointer_type) -> *mut T {
         wasm_runtime_addr_app_to_native(
-            self.Get_inner_reference().get_inner_instance(),
+            self.get_inner_reference().get_inner_instance(),
             Address as u64,
         ) as *mut T
     }
@@ -105,12 +105,12 @@ impl<'module> Instance_type<'module> {
     ) -> Result_type<Vec<WasmValue>> {
         if parameters.is_empty() {
             Ok(
-                Function::find_export_func(self.Get_inner_reference(), name)?
+                Function::find_export_func(self.get_inner_reference(), name)?
                     .call(&self.instance, &vec![WasmValue::I32(0)])?,
             )
         } else {
             Ok(
-                Function::find_export_func(self.Get_inner_reference(), name)?
+                Function::find_export_func(self.get_inner_reference(), name)?
                     .call(&self.instance, parameters)?,
             )
         }
@@ -136,7 +136,7 @@ impl<'module> Instance_type<'module> {
         let _ = self.Call_export_function("Deallocate", &vec![WasmValue::I32(Data as i32)]);
     }
 
-    pub fn Get_inner_reference(&self) -> &Instance {
+    pub fn get_inner_reference(&self) -> &Instance {
         &self.instance
     }
 }

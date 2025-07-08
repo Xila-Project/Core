@@ -18,7 +18,7 @@ pub use Time::*;
 pub use User::*;
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use Drivers::Std::Memory::Memory_manager_type;
     use Memory::Instantiate_global_allocator;
 

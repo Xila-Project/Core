@@ -20,7 +20,7 @@ pub struct Local_socket_manager_type<'a> {
 }
 
 impl<'a> Local_socket_manager_type<'a> {
-    pub fn Is_socket_identifier_used(
+    pub fn is_socket_identifier_used(
         &self,
         Socket: Local_file_identifier_type,
     ) -> Result_type<bool> {

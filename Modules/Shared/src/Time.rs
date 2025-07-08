@@ -19,13 +19,13 @@ pub fn Unix_to_human_time(Unix_timestamp: i64) -> (u16, u8, u8, u8, u8, u8) {
 
     // Determine the current year
     while days_since_epoch
-        >= if Is_leap_year(Year) {
+        >= if is_leap_year(Year) {
             DAYS_IN_LEAP_YEAR
         } else {
             DAYS_IN_YEAR
         }
     {
-        days_since_epoch -= if Is_leap_year(Year) {
+        days_since_epoch -= if is_leap_year(Year) {
             DAYS_IN_LEAP_YEAR
         } else {
             DAYS_IN_YEAR
@@ -59,7 +59,7 @@ pub fn Unix_to_human_time(Unix_timestamp: i64) -> (u16, u8, u8, u8, u8, u8) {
     )
 }
 
-pub fn Is_leap_year(Year: i64) -> bool {
+pub fn is_leap_year(Year: i64) -> bool {
     (Year % 4 == 0 && Year % 100 != 0) || (Year % 400 == 0)
 }
 
@@ -67,7 +67,7 @@ pub fn Days_in_month(Year: i64, Month: usize) -> i64 {
     // Number of days in each month (non-leap year)
     const DAYS_IN_MONTH: [i64; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
-    if Month == 1 && Is_leap_year(Year) {
+    if Month == 1 && is_leap_year(Year) {
         // February in a leap year
         29
     } else {

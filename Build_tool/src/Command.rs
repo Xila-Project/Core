@@ -33,7 +33,7 @@ impl TryFrom<&str> for Command_type {
 }
 
 impl Command_type {
-    pub fn Get_cargo_command(&self) -> Option<String> {
+    pub fn get_cargo_command(&self) -> Option<String> {
         Some(match self {
             Command_type::Build => "build".to_string(),
             Command_type::Clean => "clean".to_string(),
@@ -48,7 +48,7 @@ impl Command_type {
         })
     }
 
-    pub fn Is_target_needed(&self) -> bool {
+    pub fn is_target_needed(&self) -> bool {
         match self {
             Command_type::Clean | Command_type::Format | Command_type::Doc | Command_type::Help => {
                 false

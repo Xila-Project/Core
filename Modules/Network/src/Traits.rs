@@ -52,12 +52,12 @@ pub trait Network_socket_driver_trait: Send + Sync {
         data: &mut [u8],
     ) -> Result_type<(usize, IP_type, Port_type)>;
 
-    fn Get_local_address(
+    fn get_local_address(
         &self,
         socket: Local_file_identifier_type,
     ) -> Result_type<(IP_type, Port_type)>;
 
-    fn Get_remote_address(
+    fn get_remote_address(
         &self,
         socket: Local_file_identifier_type,
     ) -> Result_type<(IP_type, Port_type)>;
@@ -74,15 +74,15 @@ pub trait Network_socket_driver_trait: Send + Sync {
         timeout: Duration_type,
     ) -> Result_type<()>;
 
-    fn Get_send_timeout(
+    fn get_send_timeout(
         &self,
         socket: Local_file_identifier_type,
     ) -> Result_type<Option<Duration_type>>;
 
-    fn Get_receive_timeout(
+    fn get_receive_timeout(
         &self,
         socket: Local_file_identifier_type,
     ) -> Result_type<Option<Duration_type>>;
 }
 
-mod Tests {}
+mod tests {}

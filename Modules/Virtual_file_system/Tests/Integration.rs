@@ -24,7 +24,7 @@ async fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>
     let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()));
 
     let Task = Task_instance
-        .Get_current_task_identifier()
+        .get_current_task_identifier()
         .expect("Failed to get current task identifier");
 
     let Device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
@@ -36,8 +36,8 @@ async fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>
 
     let Virtual_file_system = Virtual_file_system_type::New(
         Task_instance,
-        Users::Get_instance(),
-        Time::Get_instance(),
+        Users::get_instance(),
+        Time::get_instance(),
         Create_file_system!(File_system),
         None,
     ).await
@@ -48,7 +48,7 @@ async fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>
 
 #[cfg(target_os = "linux")]
 #[Test]
-async fn Test_file() {
+async fn test_file() {
     let (_, Virtual_file_system) = Initialize();
 
     let File_path = "/file";
@@ -79,7 +79,7 @@ async fn Test_file() {
 
 #[cfg(target_os = "linux")]
 #[Test]
-async fn Test_unnamed_pipe() {
+async fn test_unnamed_pipe() {
     let (Task, Virtual_file_system) = Initialize();
 
     let (Pipe_read, Pipe_write) =
@@ -99,7 +99,7 @@ async fn Test_unnamed_pipe() {
 
 #[cfg(target_os = "linux")]
 #[Test]
-async fn Test_named_pipe() {
+async fn test_named_pipe() {
     let (Task, Virtual_file_system) = Initialize();
 
     let Pipe_path = "/pipe";
@@ -135,7 +135,7 @@ async fn Test_named_pipe() {
 
 #[cfg(target_os = "linux")]
 #[Test]
-fn Test_device() {
+fn test_device() {
     let (Task, Virtual_file_system) = Initialize();
 
     const Device_path: &Path_type = Path_type::From_str("/Device");

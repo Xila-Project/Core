@@ -26,15 +26,15 @@ impl<'runtime> Module_type<'runtime> {
         standard_error: Unique_file_identifier_type,
     ) -> Result_type<Self> {
         // - Environment variables.
-        let Task_instance = Task::Get_instance();
+        let Task_instance = Task::get_instance();
 
-        let Task = Task_instance.Get_current_task_identifier().await;
+        let Task = Task_instance.get_current_task_identifier().await;
         let mut environment_variables_raw: Vec<*const i8> = Task_instance
-            .Get_environment_variables(Task)
+            .get_environment_variables(Task)
             .await
             .map_err(Error_type::Failed_to_get_task_informations)?
             .into_iter()
-            .map(|x| x.Get_raw().as_ptr())
+            .map(|x| x.get_raw().as_ptr())
             .collect();
 
         let Environment_variables_raw_pointer = environment_variables_raw.as_mut_ptr();
@@ -43,7 +43,7 @@ impl<'runtime> Module_type<'runtime> {
 
         // - Create the module.
         let Module = Module_type {
-            module: Module::from_vec(runtime.Get_inner_reference(), buffer, name)?,
+            module: Module::from_vec(runtime.get_inner_reference(), buffer, name)?,
             _environment_variables_raw: environment_variables_raw,
         };
 
@@ -72,7 +72,7 @@ impl<'runtime> Module_type<'runtime> {
         Ok(Module)
     }
 
-    pub(crate) fn Get_inner_reference(&self) -> &Module {
+    pub(crate) fn get_inner_reference(&self) -> &Module {
         &self.module
     }
 }

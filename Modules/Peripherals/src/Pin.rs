@@ -74,15 +74,15 @@ impl Pin_data_type {
         }
     }
 
-    pub const fn Get_level(&self) -> Option<Level_type> {
+    pub const fn get_level(&self) -> Option<Level_type> {
         self.level
     }
 
-    pub const fn Get_direction(&self) -> Option<Direction_type> {
+    pub const fn get_direction(&self) -> Option<Direction_type> {
         self.direction
     }
 
-    pub const fn Get_pull(&self) -> Option<Pull_type> {
+    pub const fn get_pull(&self) -> Option<Pull_type> {
         self.pull
     }
 

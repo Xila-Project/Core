@@ -43,7 +43,7 @@ pub fn Initialize(Registrables: &[&dyn Registrable_trait]) -> &'static Manager_t
         Manager_type::New(Registrables).expect("Cannot create virtual machine manager")
     });
 
-    Get_instance()
+    get_instance()
 }
 
 /// Get a reference to the initialized Virtual Machine Manager instance.
@@ -55,7 +55,7 @@ pub fn Initialize(Registrables: &[&dyn Registrable_trait]) -> &'static Manager_t
 /// # Returns
 ///
 /// A static reference to the Manager instance
-pub fn Get_instance() -> &'static Manager_type {
+pub fn get_instance() -> &'static Manager_type {
     MANAGER_INSTANCE
         .try_get()
         .expect("Cannot get virtual machine manager instance before initialization")
@@ -97,7 +97,7 @@ impl Manager_type {
         let mut runtime_builder = Runtime_type::builder();
 
         for Registrable in Registrables {
-            runtime_builder = runtime_builder.Register(*Registrable);
+            runtime_builder = runtime_builder.register(*Registrable);
         }
 
         let Runtime = runtime_builder.Build()?;
@@ -105,8 +105,8 @@ impl Manager_type {
         let Manager = Self { runtime: Runtime };
 
         for Registrable in Registrables {
-            if let Some(module_binary) = Registrable.Get_binary() {
-                Manager.Load_module(module_binary, Registrable.Is_XIP(), Registrable.Get_name())?;
+            if let Some(module_binary) = Registrable.get_binary() {
+                Manager.Load_module(module_binary, Registrable.is_XIP(), Registrable.get_name())?;
             }
         }
 
@@ -204,8 +204,8 @@ impl Manager_type {
         standard_out: Unique_file_identifier_type,
         standard_error: Unique_file_identifier_type,
     ) -> Result_type<Vec<WasmValue>> {
-        ABI::Get_instance()
-            .Call_ABI(async || {
+        ABI::get_instance()
+            .call_abi(async || {
                 let module = Module_type::From_buffer(
                     &self.runtime,
                     buffer,

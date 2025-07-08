@@ -10,8 +10,8 @@ pub type Xila_thread_identifier_type = usize;
 
 #[no_mangle]
 pub extern "C" fn Xila_get_current_thread_identifier() -> usize {
-    Context::Get_instance()
-        .Get_current_task_identifier()
+    Context::get_instance()
+        .get_current_task_identifier()
         .Into_inner() as usize
 }
 

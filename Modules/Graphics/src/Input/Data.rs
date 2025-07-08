@@ -34,19 +34,19 @@ impl Input_data_type {
         }
     }
 
-    pub const fn Get_continue(&self) -> bool {
+    pub const fn get_continue(&self) -> bool {
         self.Continue
     }
 
-    pub const fn Get_point(&self) -> &Point_type {
+    pub const fn get_point(&self) -> &Point_type {
         &self.point
     }
 
-    pub const fn Get_touch(&self) -> &State_type {
+    pub const fn get_touch(&self) -> &State_type {
         &self.state
     }
 
-    pub const fn Get_key(&self) -> Key_type {
+    pub const fn get_key(&self) -> Key_type {
         self.key
     }
 
@@ -98,10 +98,10 @@ impl From<Input_data_type> for LVGL::lv_indev_data_t {
     fn from(value: Input_data_type) -> LVGL::lv_indev_data_t {
         let mut input_device_data = LVGL::lv_indev_data_t::default();
 
-        let State = value.Get_touch();
+        let State = value.get_touch();
 
         if *State == State_type::Pressed {
-            input_device_data.point = (*value.Get_point()).into();
+            input_device_data.point = (*value.get_point()).into();
         }
 
         input_device_data.state = (*State).into();

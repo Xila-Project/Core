@@ -25,26 +25,26 @@ unsafe impl Send for Display_type {}
 
 unsafe impl Sync for Display_type {}
 
-unsafe extern "C" fn Binding_callback_function(
+unsafe extern "C" fn binding_callback_function(
     display: *mut LVGL::lv_disp_t,
     area: *const LVGL::lv_area_t,
     data: *mut u8,
 ) {
-    let Area: Area_type = unsafe { *area }.into();
+    let area: Area_type = unsafe { *area }.into();
 
-    let Buffer_size: usize = (Area.Get_width()) as usize * (Area.Get_height()) as usize;
+    let buffer_size: usize = (area.get_width()) as usize * (area.get_height()) as usize;
 
-    let Buffer =
-        unsafe { slice::from_raw_parts_mut(data as *mut Rendering_color_type, Buffer_size) };
+    let buffer =
+        unsafe { slice::from_raw_parts_mut(data as *mut Rendering_color_type, buffer_size) };
 
-    let Screen_write_data = Screen_write_data_type::New(Area, Buffer);
+    let screen_write_data = Screen_write_data_type::new(area, buffer);
 
-    let User_data = unsafe { &*(LVGL::lv_display_get_user_data(display) as *mut User_data) };
+    let user_data = unsafe { &*(LVGL::lv_display_get_user_data(display) as *mut User_data) };
 
-    let Device = &User_data.device;
+    let device = &user_data.device;
 
-    Device
-        .Write(Screen_write_data.as_ref())
+    device
+        .Write(screen_write_data.as_ref())
         .expect("Error writing to display");
 
     LVGL::lv_display_flush_ready(display);
@@ -66,14 +66,14 @@ impl Display_type {
         double_buffered: bool,
     ) -> Result_type<Self> {
         // Create the display.
-        let LVGL_display = unsafe {
-            LVGL::lv_display_create(resolution.Get_x() as i32, resolution.Get_y() as i32)
+        let lvgl_display: *mut lvgl_rust_sys::_lv_display_t = unsafe {
+            LVGL::lv_display_create(resolution.get_x() as i32, resolution.get_y() as i32)
         };
 
         // Set the buffer(s) and the render mode.
-        let Buffer_1 = Buffer_type::New(buffer_size);
+        let buffer_1 = Buffer_type::New(buffer_size);
 
-        let Buffer_2 = if double_buffered {
+        let buffer_2 = if double_buffered {
             Some(Buffer_type::New(buffer_size))
         } else {
             None
@@ -81,34 +81,34 @@ impl Display_type {
 
         unsafe {
             LVGL::lv_display_set_buffers(
-                LVGL_display,
-                Buffer_1.as_ref().as_ptr() as *mut c_void,
-                Buffer_2
+                lvgl_display,
+                buffer_1.as_ref().as_ptr() as *mut c_void,
+                buffer_2
                     .as_ref()
-                    .map_or(null_mut(), |Buffer| Buffer.as_ref().as_ptr() as *mut c_void),
+                    .map_or(null_mut(), |buffer| buffer.as_ref().as_ptr() as *mut c_void),
                 buffer_size as u32,
                 LVGL::lv_display_render_mode_t_LV_DISPLAY_RENDER_MODE_PARTIAL,
             )
         }
 
         // Set the user data.
-        let User_data = Box::new(User_data { device: file });
+        let user_data = Box::new(User_data { device: file });
 
         unsafe {
-            LVGL::lv_display_set_user_data(LVGL_display, Box::into_raw(User_data) as *mut c_void)
+            LVGL::lv_display_set_user_data(lvgl_display, Box::into_raw(user_data) as *mut c_void)
         };
 
         // Set the flush callback.
-        unsafe { LVGL::lv_display_set_flush_cb(LVGL_display, Some(Binding_callback_function)) }
+        unsafe { LVGL::lv_display_set_flush_cb(lvgl_display, Some(binding_callback_function)) }
 
         Ok(Self {
-            display: LVGL_display,
-            _buffer_1: Buffer_1,
-            _buffer_2: Buffer_2,
+            display: lvgl_display,
+            _buffer_1: buffer_1,
+            _buffer_2: buffer_2,
         })
     }
 
-    pub fn Get_object(&self) -> *mut LVGL::lv_obj_t {
+    pub fn get_object(&self) -> *mut LVGL::lv_obj_t {
         unsafe { LVGL::lv_display_get_screen_active(self.display) }
     }
 }

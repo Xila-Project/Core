@@ -38,9 +38,9 @@ impl Manager_type {
         let (Join_handle_parent, Join_handle_child) = Join_handle_type::new();
 
         let Task = async move || {
-            let manager = Get_instance();
+            let manager = get_instance();
 
-            let Internal_identifier = Manager_type::Get_current_internal_identifier().await;
+            let Internal_identifier = Manager_type::get_current_internal_identifier().await;
 
             manager
                 .Set_internal_identifier(Identifier, Internal_identifier)
@@ -115,7 +115,7 @@ impl Manager_type {
     ) -> Result_type<()> {
         let mut inner = self.0.write().await;
 
-        let Metadata = Self::Get_task_mutable(&mut inner, identifier)?;
+        let Metadata = Self::get_task_mutable(&mut inner, identifier)?;
 
         Metadata.Internal_identifier = internal_identifier;
 
@@ -143,7 +143,7 @@ impl Manager_type {
         Timer::after(embassy_time::Duration::from_nanos(nano_seconds as u64)).await
     }
 
-    pub async fn Get_current_internal_identifier() -> usize {
+    pub async fn get_current_internal_identifier() -> usize {
         poll_fn(|context| {
             let task_reference = task_from_waker(context.waker());
 
@@ -156,8 +156,8 @@ impl Manager_type {
         .await
     }
 
-    pub async fn Get_current_task_identifier(&self) -> Task_identifier_type {
-        let internal_identifier = Self::Get_current_internal_identifier().await;
+    pub async fn get_current_task_identifier(&self) -> Task_identifier_type {
+        let internal_identifier = Self::get_current_internal_identifier().await;
 
         *self
             .0

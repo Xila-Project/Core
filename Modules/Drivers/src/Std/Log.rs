@@ -21,24 +21,24 @@ impl Logger_trait for Logger_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
     use Log;
 
     static Logger: Logger_type = Logger_type;
 
     #[test]
-    fn Test_write() {
+    fn test_write() {
         Log::Test_write(&Logger);
     }
 
     #[test]
-    fn Test_log() {
+    fn test_log() {
         Log::Test_log(&Logger);
     }
 
     #[test]
-    fn Test_flush() {
+    fn test_flush() {
         Log::Test_flush(&Logger);
     }
 }

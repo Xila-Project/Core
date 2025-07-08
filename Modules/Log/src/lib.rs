@@ -113,13 +113,13 @@ pub fn Initialize(Logger: &'static dyn Logger_trait) -> Result<(), log::SetLogge
     Ok(())
 }
 
-pub fn Test_write(Logger: &impl Logger_trait) {
+pub fn test_write(Logger: &impl Logger_trait) {
     for i in 0..5 {
         Logger.Write(format_args!("This is a test message number {i}."));
     }
 }
 
-pub fn Test_log(Logger: &impl Logger_trait) {
+pub fn test_log(Logger: &impl Logger_trait) {
     Logger.Log(
         &Record::builder()
             .level(log::Level::Info)
@@ -152,6 +152,6 @@ pub fn Test_log(Logger: &impl Logger_trait) {
     );
 }
 
-pub fn Test_flush(Logger: &impl Logger_trait) {
+pub fn test_flush(Logger: &impl Logger_trait) {
     Logger.Flush();
 }

@@ -36,14 +36,14 @@ impl From<Error_type> for NonZeroU32 {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
     use std::format;
     use std::string::{String, ToString};
     use std::vec;
 
     #[test]
-    fn Test_error_type_display() {
+    fn test_error_type_display() {
         let error = Error_type::Invalid_task_identifier;
         let display_string = format!("{error}");
         assert_eq!(display_string, "Invalid_task_identifier");
@@ -54,7 +54,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_error_type_debug() {
+    fn test_error_type_debug() {
         let error = Error_type::Invalid_spawner_identifier;
         let debug_string = format!("{error:?}");
         assert_eq!(debug_string, "Invalid_spawner_identifier");
@@ -65,7 +65,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_error_type_clone() {
+    fn test_error_type_clone() {
         let error1 = Error_type::Failed_to_create_thread;
         let error2 = error1.clone();
 
@@ -73,7 +73,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_all_error_variants() {
+    fn test_all_error_variants() {
         let errors = vec![
             Error_type::Invalid_task_identifier,
             Error_type::Invalid_spawner_identifier,
@@ -103,7 +103,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_error_to_nonzero_u32_conversion() {
+    fn test_error_to_nonzero_u32_conversion() {
         let errors_and_expected_values = vec![
             (Error_type::Invalid_task_identifier, 1u32),
             (Error_type::Invalid_spawner_identifier, 2u32),
@@ -128,7 +128,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_result_type_ok() {
+    fn test_result_type_ok() {
         let result: Result_type<i32> = Ok(42);
         assert!(result.is_ok());
         if let Ok(value) = result {
@@ -137,7 +137,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_result_type_err() {
+    fn test_result_type_err() {
         let result: Result_type<i32> = Err(Error_type::Invalid_task_identifier);
         assert!(result.is_err());
 
@@ -147,7 +147,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_error_in_result_chain() {
+    fn test_error_in_result_chain() {
         fn might_fail(should_fail: bool) -> Result_type<String> {
             if should_fail {
                 Err(Error_type::Too_many_tasks)
@@ -171,7 +171,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_error_propagation() {
+    fn test_error_propagation() {
         fn inner_function() -> Result_type<i32> {
             Err(Error_type::Not_initialized)
         }
@@ -190,13 +190,13 @@ mod Tests {
     }
 
     #[test]
-    fn Test_error_size() {
+    fn test_error_size() {
         // Ensure the error type has a reasonable size
         assert!(std::mem::size_of::<Error_type>() <= 8);
     }
 
     #[test]
-    fn Test_error_repr_c() {
+    fn test_error_repr_c() {
         // Test that the error can be used in FFI contexts
         // This mainly ensures the #[repr(C)] attribute works as expected
         let error = Error_type::Invalid_task_identifier;
@@ -209,7 +209,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_specific_error_scenarios() {
+    fn test_specific_error_scenarios() {
         // Test environment variable error specifically
         let env_error = Error_type::Invalid_environment_variable;
         let display_str = format!("{env_error}");

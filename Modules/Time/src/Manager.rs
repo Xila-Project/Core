@@ -7,14 +7,14 @@ use crate::{Error_type, Result_type};
 
 pub static MANAGER: OnceLock<Manager_type> = OnceLock::new();
 
-pub fn Get_instance() -> &'static Manager_type {
+pub fn get_instance() -> &'static Manager_type {
     MANAGER.get().expect("Time manager is not initialized")
 }
 
 pub fn Initialize(Driver: Device_type) -> Result_type<&'static Manager_type> {
     MANAGER.get_or_init(|| Manager_type::new(Driver).expect("Failed to initialize time manager"));
 
-    Ok(Get_instance())
+    Ok(get_instance())
 }
 
 pub struct Manager_type {
@@ -33,13 +33,13 @@ impl Manager_type {
         Ok(Self { device, start_time })
     }
 
-    pub fn Get_current_time_since_startup(&self) -> Result_type<Duration_type> {
-        let current_time = self.Get_current_time()?;
+    pub fn get_current_time_since_startup(&self) -> Result_type<Duration_type> {
+        let current_time = self.get_current_time()?;
 
-        Ok(current_time.Get_duration_since(&self.start_time))
+        Ok(current_time.get_duration_since(&self.start_time))
     }
 
-    pub fn Get_current_time(&self) -> Result_type<Duration_type> {
+    pub fn get_current_time(&self) -> Result_type<Duration_type> {
         let mut current_time = Duration_type::default();
 
         self.device

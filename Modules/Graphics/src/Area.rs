@@ -8,20 +8,20 @@ impl Area_type {
         Self(point_1, Point_2)
     }
 
-    pub fn Get_point_1(&self) -> Point_type {
+    pub fn get_point_1(&self) -> Point_type {
         self.0
     }
 
-    pub fn Get_point_2(&self) -> Point_type {
+    pub fn get_point_2(&self) -> Point_type {
         self.1
     }
 
-    pub fn Get_width(&self) -> u16 {
-        (self.1.Get_x() - self.0.Get_x()).unsigned_abs() + 1
+    pub fn get_width(&self) -> u16 {
+        (self.1.get_x() - self.0.get_x()).unsigned_abs() + 1
     }
 
-    pub fn Get_height(&self) -> u16 {
-        (self.1.Get_y() - self.0.Get_y()).unsigned_abs() + 1
+    pub fn get_height(&self) -> u16 {
+        (self.1.get_y() - self.0.get_y()).unsigned_abs() + 1
     }
 
     pub fn Set_point_1(mut self, Value: Point_type) -> Self {

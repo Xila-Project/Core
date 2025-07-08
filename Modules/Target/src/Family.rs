@@ -9,10 +9,10 @@ pub enum Family_type {
 
 impl Family_type {
     pub fn get() -> Family_type {
-        Family_type::from(Self::Get_raw())
+        Family_type::from(Self::get_raw())
     }
 
-    pub fn Get_raw() -> String {
+    pub fn get_raw() -> String {
         env::var("CARGO_CFG_TARGET_FAMILY").unwrap()
     }
 }

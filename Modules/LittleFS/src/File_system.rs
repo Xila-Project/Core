@@ -2,9 +2,9 @@ use core::mem::MaybeUninit;
 
 use alloc::{boxed::Box, collections::btree_map::BTreeMap, ffi::CString, vec::Vec};
 use File_system::{
-    Device_type, Entry_type, File_identifier_inner_type, File_identifier_type,
-    File_system_identifier_type, File_system_traits, Flags_type, Get_new_file_identifier,
-    Inode_type, Local_file_identifier_type, Metadata_type, Mode_type, Path_type, Permissions_type,
+    get_new_file_identifier, Device_type, Entry_type, File_identifier_inner_type,
+    File_identifier_type, File_system_identifier_type, File_system_traits, Flags_type, Inode_type,
+    Local_file_identifier_type, Metadata_type, Mode_type, Path_type, Permissions_type,
     Position_type, Size_type, Statistics_type, Time_type, Type_type,
 };
 use Futures::block_on;
@@ -29,48 +29,48 @@ pub struct File_system_type {
 impl Drop for File_system_type {
     fn drop(&mut self) {
         // - Close all the open files
-        let mut Inner = self.Write_inner();
+        let mut inner = self.Write_inner();
 
-        let Keys = Inner.open_files.keys().cloned().collect::<Vec<_>>();
+        let keys = inner.open_files.keys().cloned().collect::<Vec<_>>();
 
-        for Key in Keys {
-            if let Some(file) = Inner.open_files.remove(&Key) {
-                let _ = file.Close(&mut Inner.file_system);
+        for key in keys {
+            if let Some(file) = inner.open_files.remove(&key) {
+                let _ = file.close(&mut inner.file_system);
             }
         }
 
-        let Configuration =
-            unsafe { Box::from_raw(Inner.file_system.cfg as *mut littlefs::lfs_config) };
+        let configuration =
+            unsafe { Box::from_raw(inner.file_system.cfg as *mut littlefs::lfs_config) };
 
-        let _Read_buffer = unsafe {
+        let _read_buffer = unsafe {
             Vec::from_raw_parts(
-                Configuration.read_buffer as *mut u8,
+                configuration.read_buffer as *mut u8,
                 0,
-                Configuration.cache_size as usize,
+                configuration.cache_size as usize,
             )
         };
-        let _Write_buffer = unsafe {
+        let _write_buffer = unsafe {
             Vec::from_raw_parts(
-                Configuration.prog_buffer as *mut u8,
+                configuration.prog_buffer as *mut u8,
                 0,
-                Configuration.cache_size as usize,
+                configuration.cache_size as usize,
             )
         };
-        let _Look_ahead_buffer = unsafe {
+        let _look_ahead_buffer = unsafe {
             Vec::from_raw_parts(
-                Configuration.lookahead_buffer as *mut u8,
+                configuration.lookahead_buffer as *mut u8,
                 0,
-                Configuration.lookahead_size as usize,
+                configuration.lookahead_size as usize,
             )
         };
 
         // Get the device
-        let _Device =
-            unsafe { Box::from_raw(Inner.file_system.cfg.read().context as *mut Device_type) };
+        let _device =
+            unsafe { Box::from_raw(inner.file_system.cfg.read().context as *mut Device_type) };
 
         // - Unmount the file system
         unsafe {
-            littlefs::lfs_unmount(&mut Inner.file_system as *mut _);
+            littlefs::lfs_unmount(&mut inner.file_system as *mut _);
         }
 
         // Configuration, Buffer sand Device are dropped here
@@ -78,53 +78,53 @@ impl Drop for File_system_type {
 }
 
 impl File_system_type {
-    pub fn new(device: Device_type, Cache_size: usize) -> Result_type<Self> {
+    pub fn new(device: Device_type, cache_size: usize) -> Result_type<Self> {
         let block_size = device
-            .Get_block_size()
+            .get_block_size()
             .map_err(|_| Error_type::Input_output)?;
-        let size = device.Get_size().map_err(|_| Error_type::Input_output)?;
+        let size = device.get_size().map_err(|_| Error_type::Input_output)?;
 
-        let Configuration: littlefs::lfs_config = Configuration_type::New(
+        let configuration: littlefs::lfs_config = Configuration_type::New(
             device,
             block_size,
             usize::from(size),
-            Cache_size,
-            Cache_size,
+            cache_size,
+            cache_size,
         )
         .ok_or(Error_type::Invalid_parameter)?
         .try_into()
         .map_err(|_| Error_type::Invalid_parameter)?;
 
-        let Configuration = Box::new(Configuration);
+        let configuration = Box::new(configuration);
 
-        let mut File_system = MaybeUninit::<littlefs::lfs_t>::uninit();
+        let mut file_system = MaybeUninit::<littlefs::lfs_t>::uninit();
 
         Convert_result(unsafe {
             littlefs::lfs_mount(
-                File_system.as_mut_ptr() as *mut _,
-                Box::into_raw(Configuration),
+                file_system.as_mut_ptr() as *mut _,
+                Box::into_raw(configuration),
             )
         })?;
 
-        let Inner = Inner_type {
-            file_system: unsafe { File_system.assume_init() },
+        let inner = Inner_type {
+            file_system: unsafe { file_system.assume_init() },
             open_files: BTreeMap::new(),
             open_directories: BTreeMap::new(),
         };
 
         Ok(Self {
-            inner: RwLock::new(Inner),
-            cache_size: Cache_size,
+            inner: RwLock::new(inner),
+            cache_size,
         })
     }
 
-    pub fn Format(Device: Device_type, Cache_size: usize) -> Result_type<()> {
+    pub fn format(Device: Device_type, Cache_size: usize) -> Result_type<()> {
         let block_size = Device
-            .Get_block_size()
+            .get_block_size()
             .map_err(|_| Error_type::Input_output)?;
-        let size = Device.Get_size().map_err(|_| Error_type::Input_output)?;
+        let size = Device.get_size().map_err(|_| Error_type::Input_output)?;
 
-        let Configuration: littlefs::lfs_config = Configuration_type::New(
+        let configuration: littlefs::lfs_config = Configuration_type::New(
             Device,
             block_size,
             usize::from(size),
@@ -135,12 +135,12 @@ impl File_system_type {
         .try_into()
         .map_err(|_| Error_type::Invalid_parameter)?;
 
-        let Configuration = Box::new(Configuration);
+        let configuration = Box::new(configuration);
 
-        let mut File_system = MaybeUninit::<littlefs::lfs_t>::uninit();
+        let mut file_system = MaybeUninit::<littlefs::lfs_t>::uninit();
 
         Convert_result(unsafe {
-            littlefs::lfs_format(File_system.as_mut_ptr(), Box::into_raw(Configuration))
+            littlefs::lfs_format(file_system.as_mut_ptr(), Box::into_raw(configuration))
         })?;
 
         Ok(())
@@ -167,7 +167,7 @@ impl File_system_type {
 
     const DIRECTORY_MINIMUM: File_identifier_type = File_identifier_type::New(Self::DIRECTORY_FLAG);
 
-    pub fn Is_file(File: Local_file_identifier_type) -> bool {
+    pub fn is_file(File: Local_file_identifier_type) -> bool {
         File.Split().1 < Self::DIRECTORY_MINIMUM
     }
 
@@ -200,7 +200,7 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<Local_file_identifier_type> {
         let mut inner = self.Write_inner();
 
-        let File = File_type::open(
+        let file = File_type::open(
             &mut inner.file_system,
             path,
             flags,
@@ -210,29 +210,29 @@ impl File_system_traits for File_system_type {
             group,
         )?;
 
-        let File_identifier = Get_new_file_identifier(
+        let file_identifier = get_new_file_identifier(
             task,
             Some(File_identifier_type::MINIMUM),
             Some(Self::DIRECTORY_MINIMUM),
             &inner.open_files,
         )?;
 
-        if inner.open_files.insert(File_identifier, File).is_some() {
+        if inner.open_files.insert(file_identifier, file).is_some() {
             return Err(Error_type::Internal_error);
         }
 
-        Ok(File_identifier)
+        Ok(file_identifier)
     }
 
-    fn Close(&self, File: Local_file_identifier_type) -> Result_type<()> {
+    fn Close(&self, file: Local_file_identifier_type) -> Result_type<()> {
         let mut inner = self.Write_inner();
 
-        let File = inner
+        let file = inner
             .open_files
-            .remove(&File)
+            .remove(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        File.Close(&mut inner.file_system)?;
+        file.close(&mut inner.file_system)?;
 
         Ok(())
     }
@@ -241,7 +241,7 @@ impl File_system_traits for File_system_type {
         let mut inner = self.Write_inner();
 
         // Get all the keys of the open files that belong to the task
-        let Keys = inner
+        let keys = inner
             .open_files
             .keys()
             .filter(|Key| Key.Split().0 == Task)
@@ -249,9 +249,9 @@ impl File_system_traits for File_system_type {
             .collect::<Vec<_>>();
 
         // Close all the files corresponding to the keys
-        for Key in Keys {
-            if let Some(file) = inner.open_files.remove(&Key) {
-                file.Close(&mut inner.file_system)?;
+        for key in keys {
+            if let Some(file) = inner.open_files.remove(&key) {
+                file.close(&mut inner.file_system)?;
             }
         }
 
@@ -264,27 +264,27 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<Local_file_identifier_type> {
         let (task, _) = file.Split();
 
-        let mut Inner = self.Write_inner();
+        let mut inner = self.Write_inner();
 
-        let File = Inner
+        let file = inner
             .open_files
             .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        let File = File.clone();
+        let file = file.clone();
 
-        let File_identifier = Get_new_file_identifier(
+        let file_identifier = get_new_file_identifier(
             task,
             Some(Self::DIRECTORY_MINIMUM),
             Some(File_identifier_type::MAXIMUM),
-            &Inner.open_files,
+            &inner.open_files,
         )?;
 
-        if Inner.open_files.insert(File_identifier, File).is_some() {
+        if inner.open_files.insert(file_identifier, file).is_some() {
             return Err(Error_type::Internal_error);
         }
 
-        Ok(File_identifier)
+        Ok(file_identifier)
     }
 
     fn Transfert(
@@ -295,28 +295,28 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<Local_file_identifier_type> {
         let mut inner = self.Write_inner();
 
-        let File = inner
+        let file = inner
             .open_files
             .remove(&file_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        let File_identifier = if let Some(New_file) = new_file {
-            let file = Local_file_identifier_type::New(new_task, New_file);
+        let file_identifier = if let Some(new_file) = new_file {
+            let file = Local_file_identifier_type::New(new_task, new_file);
 
             if inner.open_files.contains_key(&file) {
                 return Err(Error_type::Invalid_identifier);
             }
 
             file
-        } else if Self::Is_file(file_identifier) {
-            Get_new_file_identifier(
+        } else if Self::is_file(file_identifier) {
+            get_new_file_identifier(
                 new_task,
                 Some(File_identifier_type::MINIMUM),
                 Some(Self::DIRECTORY_MINIMUM),
                 &inner.open_files,
             )?
         } else {
-            Get_new_file_identifier(
+            get_new_file_identifier(
                 new_task,
                 Some(Self::DIRECTORY_MINIMUM),
                 Some(File_identifier_type::MAXIMUM),
@@ -324,20 +324,20 @@ impl File_system_traits for File_system_type {
             )?
         };
 
-        if inner.open_files.insert(File_identifier, File).is_some() {
+        if inner.open_files.insert(file_identifier, file).is_some() {
             return Err(Error_type::Internal_error); // Should never happen
         }
 
-        Ok(File_identifier)
+        Ok(file_identifier)
     }
 
     fn Remove(&self, Path: &Path_type) -> Result_type<()> {
         let path = CString::new(Path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
-        let mut Inner = self.Write_inner();
+        let mut inner = self.Write_inner();
 
         Convert_result(unsafe {
-            littlefs::lfs_remove(&mut Inner.file_system as *mut _, path.as_ptr())
+            littlefs::lfs_remove(&mut inner.file_system as *mut _, path.as_ptr())
         })?;
 
         Ok(())
@@ -351,13 +351,13 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<Size_type> {
         let mut inner = self.Write_inner();
 
-        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
+        let (file_system, open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let File = Open_files
+        let file = open_files
             .get_mut(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        File.Read(File_system, buffer)
+        file.read(file_system, buffer)
     }
 
     fn Write(
@@ -368,28 +368,28 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<Size_type> {
         let mut inner = self.Write_inner();
 
-        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
+        let (file_system, open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let File = Open_files
+        let file = open_files
             .get_mut(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        File.Write(File_system, buffer)
+        file.write(file_system, buffer)
     }
 
     fn Rename(&self, Source: &Path_type, Destination: &Path_type) -> Result_type<()> {
         let source = CString::new(Source.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
-        let Destination =
+        let destination =
             CString::new(Destination.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
-        let mut Inner = self.Write_inner();
+        let mut inner = self.Write_inner();
 
         Convert_result(unsafe {
             littlefs::lfs_rename(
-                &mut Inner.file_system as *mut _,
+                &mut inner.file_system as *mut _,
                 source.as_ptr(),
-                Destination.as_ptr(),
+                destination.as_ptr(),
             )
         })?;
 
@@ -403,36 +403,36 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<Size_type> {
         let mut inner = self.Write_inner();
 
-        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
+        let (file_system, open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let File = Open_files
+        let file = open_files
             .get_mut(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        File.Set_position(File_system, position)
+        file.set_position(file_system, position)
     }
 
-    fn Flush(&self, File: Local_file_identifier_type) -> Result_type<()> {
+    fn Flush(&self, file: Local_file_identifier_type) -> Result_type<()> {
         let mut inner = self.Write_inner();
 
-        let (File_system, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
+        let (file_system, open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let File = Open_files
-            .get_mut(&File)
+        let file = open_files
+            .get_mut(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        File.Flush(File_system)
+        file.flush(file_system)
     }
 
-    fn Get_statistics(&self, File: Local_file_identifier_type) -> Result_type<Statistics_type> {
+    fn get_statistics(&self, File: Local_file_identifier_type) -> Result_type<Statistics_type> {
         let mut inner = self.Write_inner();
 
-        let (File_system, Open_files, Open_directories) =
+        let (file_system, open_files, open_directories) =
             Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        // TODO : Find a way to get the metadata of the directories
-        if Open_directories.get_mut(&File).is_some() {
-            let current_time: Time_type = Time::Get_instance().Get_current_time().unwrap().into();
+        // open_directoriesy to get the metadata of the directories
+        if open_directories.get_mut(&File).is_some() {
+            let current_time: Time_type = Time::get_instance().get_current_time().unwrap().into();
 
             Ok(Statistics_type::new(
                 File_system_identifier_type::New(0),
@@ -447,22 +447,22 @@ impl File_system_traits for File_system_type {
                 User_identifier_type::New(0),
                 Group_identifier_type::New(0),
             ))
-        } else if let Some(File) = Open_files.get_mut(&File) {
-            Ok(File.Get_statistics(File_system)?)
+        } else if let Some(file) = open_files.get_mut(&File) {
+            Ok(file.get_statistics(file_system)?)
         } else {
             Err(Error_type::Invalid_identifier)
         }
     }
 
-    fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
+    fn get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
         let inner = self.Read_inner();
 
-        let Result = if Self::Is_file(File) {
+        let result = if Self::is_file(File) {
             inner
                 .open_files
                 .get(&File)
                 .ok_or(Error_type::Invalid_identifier)?
-                .Get_mode()
+                .get_mode()
         } else {
             inner
                 .open_directories
@@ -472,7 +472,7 @@ impl File_system_traits for File_system_type {
             Mode_type::READ_ONLY
         };
 
-        Ok(Result)
+        Ok(result)
     }
 
     fn Open_directory(
@@ -482,9 +482,9 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<Local_file_identifier_type> {
         let mut inner = self.Write_inner();
 
-        let Directory = Directory_type::Open(&mut inner.file_system, path)?;
+        let directory = Directory_type::Open(&mut inner.file_system, path)?;
 
-        let File_identifier = Get_new_file_identifier(
+        let file_identifier = get_new_file_identifier(
             task,
             Some(Self::DIRECTORY_MINIMUM),
             Some(File_identifier_type::MAXIMUM),
@@ -493,25 +493,25 @@ impl File_system_traits for File_system_type {
 
         if inner
             .open_directories
-            .insert(File_identifier, Directory)
+            .insert(file_identifier, directory)
             .is_some()
         {
             return Err(Error_type::Internal_error);
         }
 
-        Ok(File_identifier)
+        Ok(file_identifier)
     }
 
     fn Read_directory(&self, File: Local_file_identifier_type) -> Result_type<Option<Entry_type>> {
         let mut inner = self.Write_inner();
 
-        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
+        let (file_system, _, open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let Directory = Open_directories
+        let directory = open_directories
             .get_mut(&File)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        Directory.Read(File_system)
+        directory.Read(file_system)
     }
 
     fn Set_position_directory(
@@ -521,25 +521,25 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<()> {
         let mut inner = self.Write_inner();
 
-        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
+        let (file_system, _, open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let Directory = Open_directories
+        let directory = open_directories
             .get_mut(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        Directory.Set_position(File_system, position)
+        directory.Set_position(file_system, position)
     }
 
     fn Rewind_directory(&self, File: Local_file_identifier_type) -> Result_type<()> {
         let mut inner = self.Write_inner();
 
-        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
+        let (file_system, _, open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let Directory = Open_directories
+        let directory = open_directories
             .get_mut(&File)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        Directory.Rewind(File_system)?;
+        directory.Rewind(file_system)?;
 
         Ok(())
     }
@@ -547,13 +547,13 @@ impl File_system_traits for File_system_type {
     fn Close_directory(&self, File: Local_file_identifier_type) -> Result_type<()> {
         let mut inner = self.Write_inner();
 
-        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
+        let (file_system, _, open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let mut Directory = Open_directories
+        let mut directory = open_directories
             .remove(&File)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        Directory.Close(File_system)?;
+        directory.Close(file_system)?;
 
         Ok(())
     }
@@ -570,24 +570,24 @@ impl File_system_traits for File_system_type {
 
         Directory_type::create_directory(&mut inner.file_system, path)?;
 
-        let Metadata = Metadata_type::Get_default(Type_type::Directory, Time, user, group)
+        let metadata = Metadata_type::get_default(Type_type::Directory, Time, user, group)
             .ok_or(Error_type::Invalid_parameter)?;
 
-        File_type::Set_metadata_from_path(&mut inner.file_system, path, &Metadata)?;
+        File_type::set_metadata_from_path(&mut inner.file_system, path, &metadata)?;
 
         Ok(())
     }
 
-    fn Get_position_directory(&self, File: Local_file_identifier_type) -> Result_type<Size_type> {
+    fn get_position_directory(&self, File: Local_file_identifier_type) -> Result_type<Size_type> {
         let mut inner = self.Write_inner();
 
-        let (File_system, _, Open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
+        let (file_system, _, open_directories) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let Directory = Open_directories
+        let directory = open_directories
             .get_mut(&File)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        Directory.Get_position(File_system)
+        directory.get_position(file_system)
     }
 
     fn Set_metadata_from_path(
@@ -597,27 +597,27 @@ impl File_system_traits for File_system_type {
     ) -> Result_type<()> {
         let mut inner = self.Write_inner();
 
-        File_type::Set_metadata_from_path(&mut inner.file_system, path, metadata)?;
+        File_type::set_metadata_from_path(&mut inner.file_system, path, metadata)?;
 
         Ok(())
     }
 
-    fn Get_metadata_from_path(&self, Path: &Path_type) -> Result_type<Metadata_type> {
+    fn get_metadata_from_path(&self, Path: &Path_type) -> Result_type<Metadata_type> {
         let mut inner = self.Write_inner();
 
-        File_type::Get_metadata_from_path(&mut inner.file_system, Path)
+        File_type::get_metadata_from_path(&mut inner.file_system, Path)
     }
 
-    fn Get_metadata(&self, File: Local_file_identifier_type) -> Result_type<Metadata_type> {
+    fn get_metadata(&self, File: Local_file_identifier_type) -> Result_type<Metadata_type> {
         let mut inner = self.Write_inner();
 
-        let (_, Open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
+        let (_, open_files, _) = Self::Borrow_mutable_inner_2_splitted(&mut inner);
 
-        let File = Open_files
+        let file = open_files
             .get_mut(&File)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        Ok(File.Get_metadata()?.clone())
+        Ok(file.get_metadata()?.clone())
     }
 }
 
@@ -637,70 +637,70 @@ mod tests {
 
         Task::Initialize();
 
-        let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()));
+        let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()));
 
-        let Mock_device = Memory_device_type::<512>::New(2048 * 512);
+        let mock_device = Memory_device_type::<512>::New(2048 * 512);
 
-        let Device = Device_type::New(Arc::new(Mock_device));
+        let device = Device_type::New(Arc::new(mock_device));
 
-        File_system_type::Format(Device.clone(), Cache_size).unwrap();
+        File_system_type::format(device.clone(), Cache_size).unwrap();
 
-        File_system_type::new(Device, Cache_size).unwrap()
+        File_system_type::new(device, Cache_size).unwrap()
     }
 
     #[Test]
     async fn test_open_close_delete() {
-        File_system::Tests::Test_open_close_delete(Initialize()).await;
+        File_system::tests::Test_open_close_delete(Initialize()).await;
     }
 
     #[Test]
     async fn test_read_write() {
-        File_system::Tests::Test_read_write(Initialize()).await;
+        File_system::tests::Test_read_write(Initialize()).await;
     }
 
     #[Test]
     async fn test_move() {
-        File_system::Tests::Test_move(Initialize()).await;
+        File_system::tests::Test_move(Initialize()).await;
     }
 
     #[Test]
     async fn test_set_position() {
-        File_system::Tests::Test_set_position(Initialize()).await;
+        File_system::tests::Test_set_position(Initialize()).await;
     }
 
     #[Test]
     async fn test_flush() {
-        File_system::Tests::Test_flush(Initialize()).await;
+        File_system::tests::Test_flush(Initialize()).await;
     }
 
     #[Test]
     async fn test_set_get_metadata() {
-        File_system::Tests::Test_set_get_metadata(Initialize()).await;
+        File_system::tests::Test_set_get_metadata(Initialize()).await;
     }
 
     #[Test]
     async fn test_read_directory() {
-        File_system::Tests::Test_read_directory(Initialize()).await;
+        File_system::tests::Test_read_directory(Initialize()).await;
     }
 
     #[Test]
     async fn test_set_position_directory() {
-        File_system::Tests::Test_set_position_directory(Initialize()).await;
+        File_system::tests::Test_set_position_directory(Initialize()).await;
     }
 
     #[Test]
     async fn test_rewind_directory() {
-        File_system::Tests::Test_rewind_directory(Initialize()).await;
+        File_system::tests::Test_rewind_directory(Initialize()).await;
     }
 
     #[Test]
     async fn test_create_remove_directory() {
-        File_system::Tests::Test_create_remove_directory(Initialize()).await;
+        File_system::tests::Test_create_remove_directory(Initialize()).await;
     }
 
     #[cfg(feature = "std")]
     #[Test]
     async fn test_loader() {
-        File_system::Tests::Test_loader(Initialize());
+        File_system::tests::Test_loader(Initialize());
     }
 }

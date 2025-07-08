@@ -129,11 +129,11 @@ impl From<IPv6_type> for IP_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
 
     #[test]
-    fn Test_ipv4_try_from() {
+    fn test_ipv4_try_from() {
         let IP = IPv4_type::try_from("0.0.0.0").unwrap();
 
         assert_eq!(IP.0, [0, 0, 0, 0]);
@@ -150,7 +150,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_ipv6_try_from() {
+    fn test_ipv6_try_from() {
         let IP = IPv6_type::try_from("0:0:0:0:0:0:0:0").unwrap();
 
         assert_eq!(IP.0, [0; 8]);

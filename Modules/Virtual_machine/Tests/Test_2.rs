@@ -12,7 +12,7 @@ use File_system::{Create_device, Create_file_system, Memory_device_type};
 use Log::Information;
 use Memory::Instantiate_global_allocator;
 use Task::Test;
-use Virtual_file_system::{Create_default_hierarchy, Mount_static_devices};
+use Virtual_file_system::{create_default_hierarchy, Mount_static_devices};
 use Virtual_machine::{
     Environment_type, Function_descriptor_type, Function_descriptors, Instance_type, Module_type,
     Registrable_trait, Runtime_type,
@@ -24,47 +24,47 @@ pub struct Registrable;
 
 impl Registrable_trait for Registrable {
     fn get_functions(&self) -> &[Function_descriptor_type] {
-        &Functions
+        &FUNCTIONS
     }
 
-    fn Get_name(&self) -> &'static str {
+    fn get_name(&self) -> &'static str {
         "Virtual_machine_WASM_test"
     }
 }
 
-const Functions: [Function_descriptor_type; 0] = Function_descriptors! {};
+const FUNCTIONS: [Function_descriptor_type; 0] = Function_descriptors! {};
 
 #[ignore]
 #[Test]
-async fn Integration_test() {
-    let Task_instance = Task::Initialize();
+async fn integration_test() {
+    let task_instance = Task::Initialize();
 
-    static Logger: Drivers::Std::Log::Logger_type = Drivers::Std::Log::Logger_type;
+    static LOGGER: Drivers::Std::Log::Logger_type = Drivers::Std::Log::Logger_type;
 
-    Log::Initialize(&Logger).expect("Failed to initialize logger");
+    Log::Initialize(&LOGGER).expect("Failed to initialize logger");
 
     Users::Initialize();
 
     Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()))
         .expect("Failed to initialize time manager");
 
-    let Device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
+    let device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
 
-    LittleFS::File_system_type::Format(Device.clone(), 512).unwrap();
-    let File_system = Create_file_system!(LittleFS::File_system_type::new(Device, 256).unwrap());
+    LittleFS::File_system_type::format(device.clone(), 512).unwrap();
+    let file_system = Create_file_system!(LittleFS::File_system_type::new(device, 256).unwrap());
 
-    let Virtual_file_system = Virtual_file_system::Initialize(File_system, None).unwrap();
+    let virtual_file_system = Virtual_file_system::initialize(file_system, None).unwrap();
 
     // Set environment variables
-    let Task = Task_instance.Get_current_task_identifier().await;
+    let task = task_instance.get_current_task_identifier().await;
 
-    Create_default_hierarchy(Virtual_file_system, Task)
+    create_default_hierarchy(virtual_file_system, task)
         .await
         .unwrap();
 
     Mount_static_devices!(
-        Virtual_file_system,
-        Task,
+        virtual_file_system,
+        task,
         &[
             (
                 &"/Devices/Standard_in",
@@ -86,107 +86,107 @@ async fn Integration_test() {
     .await
     .unwrap();
 
-    Task_instance
-        .Set_environment_variable(Task, "Path", "/:/bin:/usr/bin")
+    task_instance
+        .Set_environment_variable(task, "Path", "/:/bin:/usr/bin")
         .await
         .unwrap();
 
     // Load the WASM binary
-    let Binary_buffer =
+    let binary_buffer =
         include_bytes!("./WASM_test/target/wasm32-wasip1/release/Virtual_machine_WASM_test.wasm");
 
-    let Standard_in = Virtual_file_system
-        .Open(
+    let standard_in = virtual_file_system
+        .open(
             &"/Devices/Standard_in",
             File_system::Mode_type::READ_ONLY.into(),
-            Task,
+            task,
         )
         .await
         .expect("Failed to open stdin");
-    let Standard_out = Virtual_file_system
-        .Open(
+    let standard_out = virtual_file_system
+        .open(
             &"/Devices/Standard_out",
             File_system::Mode_type::WRITE_ONLY.into(),
-            Task,
+            task,
         )
         .await
         .expect("Failed to open stdout");
-    let Standard_error = Virtual_file_system
-        .Open(
+    let standard_error = virtual_file_system
+        .open(
             &"/Devices/Standard_error",
             File_system::Mode_type::WRITE_ONLY.into(),
-            Task,
+            task,
         )
         .await
         .expect("Failed to open stderr");
 
-    let (Standard_in, Standard_out, Standard_error) = Virtual_file_system
-        .Create_new_task_standard_io(Standard_in, Standard_error, Standard_out, Task, Task, false)
+    let (standard_in, standard_out, standard_error) = virtual_file_system
+        .create_new_task_standard_io(standard_in, standard_error, standard_out, task, task, false)
         .await
         .unwrap();
 
-    ABI::Get_instance()
-        .Call_ABI(async || {
+    ABI::get_instance()
+        .call_abi(async || {
             // Register the functions
 
-            let Runtime = Runtime_type::builder()
-                .Register(&Registrable)
+            let runtime = Runtime_type::builder()
+                .register(&Registrable)
                 .Build()
                 .unwrap();
 
-            let Module = Module_type::From_buffer(
-                &Runtime,
-                Binary_buffer.to_vec(),
+            let module = Module_type::From_buffer(
+                &runtime,
+                binary_buffer.to_vec(),
                 "main",
-                Standard_in,
-                Standard_out,
-                Standard_error,
+                standard_in,
+                standard_out,
+                standard_error,
             )
             .await
             .unwrap();
 
-            let mut Instance = Instance_type::New(&Runtime, &Module, 1024 * 4)
+            let mut instance = Instance_type::New(&runtime, &module, 1024 * 4)
                 .expect("Failed to instantiate module");
 
-            let Environment = Environment_type::From_instance(&Instance)
+            let environment = Environment_type::From_instance(&instance)
                 .expect("Failed to get execution environment");
 
-            let Function = Function::find_export_func(Instance.Get_inner_reference(), "_start")
+            let function = Function::find_export_func(instance.get_inner_reference(), "_start")
                 .expect("Failed to find _start function");
 
             loop {
                 // Reset instruction limit before each call
-                Environment.Set_instruction_count_limit(Some(100));
+                environment.Set_instruction_count_limit(Some(100));
 
-                let Result = Function.call(Instance.Get_inner_reference(), &vec![]);
+                let result = function.call(instance.get_inner_reference(), &vec![]);
 
-                println!("Result: {Result:?}");
+                println!("Result: {result:?}");
 
-                match Result {
-                    Ok(Values) => {
-                        if Values == [WasmValue::Void] {
+                match result {
+                    Ok(values) => {
+                        if values == [WasmValue::Void] {
                             Information!("Function returned without qnything successfully.");
                         } else {
-                            assert_eq!(Values.len(), 1);
-                            assert_eq!(Values[0], WasmValue::Void);
+                            assert_eq!(values.len(), 1);
+                            assert_eq!(values[0], WasmValue::Void);
                             break;
                         }
                     }
-                    Err(RuntimeError::ExecutionError(E)) => {
-                        if E.message != "Exception: instruction limit exceeded" {
-                            panic!("Unexpected exception: {}", E.message);
+                    Err(RuntimeError::ExecutionError(e)) => {
+                        if e.message != "Exception: instruction limit exceeded" {
+                            panic!("Unexpected exception: {}", e.message);
                         }
 
-                        Information!("Caught exception: {}", E.message);
+                        Information!("Caught exception: {}", e.message);
                     }
-                    Err(Error) => {
-                        panic!("Unexpected error: {Error:?}");
+                    Err(error) => {
+                        panic!("Unexpected error: {error:?}");
                     }
                 }
             }
 
             assert_eq!(
-                Instance
+                instance
                     .Call_export_function("GCD", &vec![WasmValue::I32(9), WasmValue::I32(27)])
                     .unwrap(),
                 [WasmValue::I32(9)]
@@ -194,15 +194,15 @@ async fn Integration_test() {
 
             // Test allocation and deallocation
 
-            let Pointer = Instance.Allocate::<u32>(4).unwrap();
+            let pointer = instance.Allocate::<u32>(4).unwrap();
 
             unsafe {
-                Pointer.write(1234);
+                pointer.write(1234);
 
-                assert_eq!(1234, Pointer.read());
+                assert_eq!(1234, pointer.read());
             }
 
-            Instance.Deallocate(Pointer);
+            instance.Deallocate(pointer);
         })
         .await;
 }

@@ -19,7 +19,7 @@ impl Device_trait for Random_device_type {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
-    fn Get_size(&self) -> File_system::Result_type<File_system::Size_type> {
+    fn get_size(&self) -> File_system::Result_type<File_system::Size_type> {
         Ok(Size_type::New(0))
     }
 

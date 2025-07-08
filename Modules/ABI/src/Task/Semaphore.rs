@@ -21,7 +21,8 @@ pub unsafe extern "C" fn Xila_semaphore_open(
 
 /// This function is used to close a semaphore.
 #[no_mangle]
-pub extern "C" fn Xila_semaphore_close(_Semaphore: *mut Xila_semaphore_type) -> u32 {
+pub extern "C" fn Xila_semaphore_close(_semaphore: *mut Xila_semaphore_type) -> u32 {
+    let _ = _semaphore;
     todo!()
 }
 

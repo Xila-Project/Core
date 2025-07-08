@@ -18,7 +18,7 @@ impl AsRef<[Color_type]> for Buffer_type {
 
 impl Buffer_type {
     pub fn new_from_resolution(Resolution: &Point_type) -> Self {
-        let buffer_size = Get_minimal_buffer_size(Resolution);
+        let buffer_size = get_minimal_buffer_size(Resolution);
 
         Self::New(buffer_size)
     }
@@ -30,14 +30,14 @@ impl Buffer_type {
     }
 }
 
-pub const fn Get_recommended_buffer_size(Resolution: &Point_type) -> usize {
-    Resolution.Get_x() as usize * Resolution.Get_y() as usize
+pub const fn get_recommended_buffer_size(Resolution: &Point_type) -> usize {
+    Resolution.get_x() as usize * Resolution.get_y() as usize
 }
 
-pub const fn Get_minimal_buffer_size(Resolution: &Point_type) -> usize {
-    if Resolution.Get_x() < Resolution.Get_y() {
-        Resolution.Get_y() as usize * Resolution.Get_y() as usize / 10
+pub const fn get_minimal_buffer_size(Resolution: &Point_type) -> usize {
+    if Resolution.get_x() < Resolution.get_y() {
+        Resolution.get_y() as usize * Resolution.get_y() as usize / 10
     } else {
-        Resolution.Get_x() as usize * Resolution.Get_x() as usize / 10
+        Resolution.get_x() as usize * Resolution.get_x() as usize / 10
     }
 }

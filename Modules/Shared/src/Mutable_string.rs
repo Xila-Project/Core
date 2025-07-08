@@ -70,16 +70,16 @@ where
 
         let Length = string.len();
 
-        if self.Get_length() + Length > self.Get_size() {
+        if self.get_length() + Length > self.get_size() {
             return Err(Error_type::Buffer_too_small);
         }
 
-        let Self_length = self.Get_length();
+        let Self_length = self.get_length();
 
         self.Data[Self_length..Self_length + Length].copy_from_slice(string);
 
         self.Set_length(
-            S::from(self.Get_length() + Length).ok_or(Error_type::Failed_to_convert_length_to_S)?,
+            S::from(self.get_length() + Length).ok_or(Error_type::Failed_to_convert_length_to_S)?,
         );
 
         Ok(())
@@ -93,27 +93,27 @@ where
         *self.length = Length;
     }
 
-    pub fn Get_data(&'a mut self) -> &'a mut [u8] {
+    pub fn get_data(&'a mut self) -> &'a mut [u8] {
         self.Data
     }
 
-    pub fn Get_length(&self) -> usize {
+    pub fn get_length(&self) -> usize {
         (*self.length).to_usize().unwrap()
     }
 
-    pub fn Get_size(&self) -> usize {
+    pub fn get_size(&self) -> usize {
         self.Data.len()
     }
 
-    pub fn Get_characters(&self) -> Chars {
+    pub fn get_characters(&self) -> Chars {
         self.As_str().chars()
     }
 
-    pub fn Get_characters_indices(&self) -> impl Iterator<Item = (usize, char)> + '_ {
+    pub fn get_characters_indices(&self) -> impl Iterator<Item = (usize, char)> + '_ {
         self.As_str().char_indices()
     }
 
-    pub fn Get_lines(&'a self) -> Lines<'a> {
+    pub fn get_lines(&'a self) -> Lines<'a> {
         self.As_str().lines()
     }
 
@@ -121,7 +121,7 @@ where
         unsafe {
             std::str::from_utf8_unchecked(slice::from_raw_parts(
                 self.Data.as_ptr(),
-                self.Get_length(),
+                self.get_length(),
             ))
         }
     }
@@ -166,7 +166,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn Test_all() {
+    fn test_all() {
         let Test_string_4 = Test_str_4.to_string();
 
         let mut Buffer = [0u8; 100];
@@ -181,19 +181,19 @@ mod tests {
             )
         };
 
-        assert_eq!(String.Get_size(), 100);
+        assert_eq!(String.get_size(), 100);
 
-        assert_eq!(String.Get_length(), 0);
+        assert_eq!(String.get_length(), 0);
 
-        assert_eq!(String.Get_characters().count(), 0);
+        assert_eq!(String.get_characters().count(), 0);
 
         assert_eq!(String.As_str(), "");
 
         String += Test_str_1;
 
-        assert_eq!(String.Get_length(), Test_str_1.len());
+        assert_eq!(String.get_length(), Test_str_1.len());
 
-        assert_eq!(String.Get_characters().count(), Test_str_1.chars().count());
+        assert_eq!(String.get_characters().count(), Test_str_1.chars().count());
 
         assert_eq!(String.As_str(), Test_str_1);
 
@@ -204,7 +204,7 @@ mod tests {
         String += "\n";
         String += &Test_string_4;
 
-        for (i, Line) in String.Get_lines().enumerate() {
+        for (i, Line) in String.get_lines().enumerate() {
             match i {
                 0 => assert_eq!(Line, Test_str_1),
                 1 => assert_eq!(Line, Test_str_2),
@@ -215,12 +215,12 @@ mod tests {
         }
 
         assert_eq!(
-            String.Get_length(),
+            String.get_length(),
             Test_str_1.len() + Test_str_2.len() + Test_str_3.len() + Test_str_4.len() + 3
         );
 
         assert_eq!(
-            String.Get_characters().count(),
+            String.get_characters().count(),
             Test_str_1.chars().count()
                 + Test_str_2.chars().count()
                 + Test_str_3.chars().count()
@@ -230,9 +230,9 @@ mod tests {
 
         String.Clear();
 
-        assert_eq!(String.Get_length(), 0);
+        assert_eq!(String.get_length(), 0);
 
-        assert_eq!(String.Get_characters().count(), 0);
+        assert_eq!(String.get_characters().count(), 0);
 
         assert_eq!(String.As_str(), "");
     }

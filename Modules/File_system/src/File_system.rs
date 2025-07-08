@@ -118,14 +118,14 @@ macro_rules! Create_file_system {
 /// #    fn Open_directory(&self, _: &Path_type, _: Task_identifier_type) -> Result_type<Local_file_identifier_type> { todo!() }
 /// #    fn Read_directory(&self, _: Local_file_identifier_type) -> Result_type<Option<Entry_type>> { todo!() }
 /// #    fn Set_position_directory(&self, _: Local_file_identifier_type, _: Size_type) -> Result_type<()> { todo!() }
-/// #    fn Get_position_directory(&self, _: Local_file_identifier_type) -> Result_type<Size_type> { todo!() }
+/// #    fn get_position_directory(&self, _: Local_file_identifier_type) -> Result_type<Size_type> { todo!() }
 /// #    fn Rewind_directory(&self, _: Local_file_identifier_type) -> Result_type<()> { todo!() }
 /// #    fn Close_directory(&self, _: Local_file_identifier_type) -> Result_type<()> { todo!() }
-/// #    fn Get_metadata(&self, _: Local_file_identifier_type) -> Result_type<Metadata_type> { todo!() }
+/// #    fn get_metadata(&self, _: Local_file_identifier_type) -> Result_type<Metadata_type> { todo!() }
 /// #    fn Set_metadata_from_path(&self, _: &Path_type, _: &Metadata_type) -> Result_type<()> { todo!() }
-/// #    fn Get_metadata_from_path(&self, _: &Path_type) -> Result_type<Metadata_type> { todo!() }
-/// #    fn Get_statistics(&self, _: Local_file_identifier_type) -> Result_type<Statistics_type> { todo!() }
-/// #    fn Get_mode(&self, _: Local_file_identifier_type) -> Result_type<Mode_type> { todo!() }
+/// #    fn get_metadata_from_path(&self, _: &Path_type) -> Result_type<Metadata_type> { todo!() }
+/// #    fn get_statistics(&self, _: Local_file_identifier_type) -> Result_type<Statistics_type> { todo!() }
+/// #    fn get_mode(&self, _: Local_file_identifier_type) -> Result_type<Mode_type> { todo!() }
 /// }
 /// ```
 pub trait File_system_traits: Send + Sync {
@@ -394,7 +394,7 @@ pub trait File_system_traits: Send + Sync {
         position: Size_type,
     ) -> Result_type<()>;
 
-    fn Get_position_directory(&self, File: Local_file_identifier_type) -> Result_type<Size_type>;
+    fn get_position_directory(&self, File: Local_file_identifier_type) -> Result_type<Size_type>;
 
     fn Rewind_directory(&self, File: Local_file_identifier_type) -> Result_type<()>;
 
@@ -402,19 +402,19 @@ pub trait File_system_traits: Send + Sync {
 
     // - Metadata
 
-    fn Get_metadata(&self, File: Local_file_identifier_type) -> Result_type<Metadata_type>;
+    fn get_metadata(&self, File: Local_file_identifier_type) -> Result_type<Metadata_type>;
 
     fn Set_metadata_from_path(&self, Path: &Path_type, Metadata: &Metadata_type)
         -> Result_type<()>;
 
-    fn Get_metadata_from_path(&self, Path: &Path_type) -> Result_type<Metadata_type>;
+    fn get_metadata_from_path(&self, Path: &Path_type) -> Result_type<Metadata_type>;
 
-    fn Get_statistics(&self, File: Local_file_identifier_type) -> Result_type<Statistics_type>;
+    fn get_statistics(&self, File: Local_file_identifier_type) -> Result_type<Statistics_type>;
 
-    fn Get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type>;
+    fn get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type>;
 }
 
-pub fn Get_new_file_identifier<T>(
+pub fn get_new_file_identifier<T>(
     task: Task_identifier_type,
     start: Option<File_identifier_type>,
     end: Option<File_identifier_type>,
@@ -437,7 +437,7 @@ pub fn Get_new_file_identifier<T>(
     Err(Error_type::Too_many_open_files)
 }
 
-pub fn Get_new_inode<T>(Map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type> {
+pub fn get_new_inode<T>(Map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type> {
     let mut inode = Inode_type::from(0);
 
     while Map.contains_key(&inode) {
@@ -447,7 +447,7 @@ pub fn Get_new_inode<T>(Map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type
     Ok(inode)
 }
 
-pub mod Tests {
+pub mod tests {
 
     use crate::{Open_type, Path_owned_type, Time_type, Type_type};
 
@@ -455,14 +455,14 @@ pub mod Tests {
 
     use super::*;
 
-    pub fn Get_test_path() -> Path_owned_type {
+    pub fn get_test_path() -> Path_owned_type {
         Path_type::ROOT.to_owned()
     }
 
-    pub async fn Test_open_close_delete(File_system: impl File_system_traits) {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+    pub async fn test_open_close_delete(File_system: impl File_system_traits) {
+        let task = Task::get_instance().get_current_task_identifier().await;
 
-        let Path = Get_test_path().Append("Test_open_close_delete").unwrap();
+        let Path = get_test_path().Append("Test_open_close_delete").unwrap();
 
         let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
@@ -485,10 +485,10 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub async fn Test_read_write(File_system: impl File_system_traits) {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+    pub async fn test_read_write(File_system: impl File_system_traits) {
+        let task = Task::get_instance().get_current_task_identifier().await;
 
-        let Path = Get_test_path().Append("Test_read_write").unwrap();
+        let Path = get_test_path().Append("Test_read_write").unwrap();
 
         let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
@@ -530,11 +530,11 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub async fn Test_move(File_system: impl File_system_traits) {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+    pub async fn test_move(File_system: impl File_system_traits) {
+        let task = Task::get_instance().get_current_task_identifier().await;
 
-        let Path = Get_test_path().Append("Test_move").unwrap();
-        let path_destination = Get_test_path().Append("Test_move_destination").unwrap();
+        let Path = get_test_path().Append("Test_move").unwrap();
+        let path_destination = get_test_path().Append("Test_move_destination").unwrap();
 
         let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
@@ -589,10 +589,10 @@ pub mod Tests {
         File_system.Remove(&path_destination).unwrap();
     }
 
-    pub async fn Test_set_position(File_system: impl File_system_traits) {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+    pub async fn test_set_position(File_system: impl File_system_traits) {
+        let task = Task::get_instance().get_current_task_identifier().await;
 
-        let Path = Get_test_path().Append("Test_set_position").unwrap();
+        let Path = get_test_path().Append("Test_set_position").unwrap();
 
         let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
@@ -640,10 +640,10 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub async fn Test_flush(File_system: impl File_system_traits) {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+    pub async fn test_flush(File_system: impl File_system_traits) {
+        let task = Task::get_instance().get_current_task_identifier().await;
 
-        let Path = Get_test_path().Append("Test_flush").unwrap();
+        let Path = get_test_path().Append("Test_flush").unwrap();
 
         let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
@@ -671,10 +671,10 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub async fn Test_set_get_metadata(File_system: impl File_system_traits) {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+    pub async fn test_set_get_metadata(File_system: impl File_system_traits) {
+        let task = Task::get_instance().get_current_task_identifier().await;
 
-        let Path = Get_test_path().Append("Test_set_owner").unwrap();
+        let Path = get_test_path().Append("Test_set_owner").unwrap();
 
         let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
@@ -691,7 +691,7 @@ pub mod Tests {
 
         let Time = Time_type::New(123);
 
-        let Metadata = Metadata_type::Get_default(
+        let Metadata = Metadata_type::get_default(
             Type_type::File,
             Time,
             User_identifier_type::ROOT,
@@ -703,7 +703,7 @@ pub mod Tests {
             .Set_metadata_from_path(&Path, &Metadata)
             .unwrap();
 
-        let Metadata_read = File_system.Get_metadata_from_path(&Path).unwrap();
+        let Metadata_read = File_system.get_metadata_from_path(&Path).unwrap();
 
         assert_eq!(Metadata, Metadata_read);
 
@@ -712,8 +712,8 @@ pub mod Tests {
         File_system.Remove(&Path).unwrap();
     }
 
-    pub async fn Test_read_directory(File_system: impl File_system_traits) {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+    pub async fn test_read_directory(File_system: impl File_system_traits) {
+        let task = Task::get_instance().get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
@@ -735,25 +735,25 @@ pub mod Tests {
         let directory = File_system.Open_directory(Path, task).unwrap();
 
         let Current_directory = File_system.Read_directory(directory).unwrap().unwrap();
-        assert_eq!(*Current_directory.Get_name(), ".");
-        assert_eq!(Current_directory.Get_type(), Type_type::Directory);
+        assert_eq!(*Current_directory.get_name(), ".");
+        assert_eq!(Current_directory.get_type(), Type_type::Directory);
 
         let Parent_directory = File_system.Read_directory(directory).unwrap().unwrap();
-        assert_eq!(*Parent_directory.Get_name(), "..");
-        assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
+        assert_eq!(*Parent_directory.get_name(), "..");
+        assert_eq!(Parent_directory.get_type(), Type_type::Directory);
 
         for i in 0..10 {
             let entry = File_system.Read_directory(directory).unwrap().unwrap();
 
-            assert_eq!(*entry.Get_name(), format!("Test{i}"));
-            assert_eq!(entry.Get_type(), Type_type::File);
+            assert_eq!(*entry.get_name(), format!("Test{i}"));
+            assert_eq!(entry.get_type(), Type_type::File);
         }
 
         File_system.Close_directory(directory).unwrap();
     }
 
-    pub async fn Test_set_position_directory(File_system: impl File_system_traits) {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+    pub async fn test_set_position_directory(File_system: impl File_system_traits) {
+        let task = Task::get_instance().get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
@@ -774,20 +774,20 @@ pub mod Tests {
         let Directory = File_system.Open_directory(Path_type::ROOT, task).unwrap();
 
         let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
-        assert_eq!(*Current_directory.Get_name(), ".");
-        assert_eq!(Current_directory.Get_type(), Type_type::Directory);
+        assert_eq!(*Current_directory.get_name(), ".");
+        assert_eq!(Current_directory.get_type(), Type_type::Directory);
 
         let Parent_directory = File_system.Read_directory(Directory).unwrap().unwrap();
-        assert_eq!(*Parent_directory.Get_name(), "..");
-        assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
+        assert_eq!(*Parent_directory.get_name(), "..");
+        assert_eq!(Parent_directory.get_type(), Type_type::Directory);
 
-        let Position = File_system.Get_position_directory(Directory).unwrap();
+        let Position = File_system.get_position_directory(Directory).unwrap();
 
         for i in 0..10 {
             let entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*entry.Get_name(), format!("Test{i}"));
-            assert_eq!(entry.Get_type(), Type_type::File);
+            assert_eq!(*entry.get_name(), format!("Test{i}"));
+            assert_eq!(entry.get_type(), Type_type::File);
         }
 
         File_system
@@ -797,13 +797,13 @@ pub mod Tests {
         for i in 0..10 {
             let entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*entry.Get_name(), format!("Test{i}"));
-            assert_eq!(entry.Get_type(), Type_type::File);
+            assert_eq!(*entry.get_name(), format!("Test{i}"));
+            assert_eq!(entry.get_type(), Type_type::File);
         }
     }
 
-    pub async fn Test_rewind_directory(File_system: impl File_system_traits) {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+    pub async fn test_rewind_directory(File_system: impl File_system_traits) {
+        let task = Task::get_instance().get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
@@ -824,44 +824,44 @@ pub mod Tests {
         let Directory = File_system.Open_directory(Path_type::ROOT, task).unwrap();
 
         let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
-        assert_eq!(*Current_directory.Get_name(), ".");
-        assert_eq!(Current_directory.Get_type(), Type_type::Directory);
+        assert_eq!(*Current_directory.get_name(), ".");
+        assert_eq!(Current_directory.get_type(), Type_type::Directory);
 
         let Parent_directory = File_system.Read_directory(Directory).unwrap().unwrap();
-        assert_eq!(*Parent_directory.Get_name(), "..");
-        assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
+        assert_eq!(*Parent_directory.get_name(), "..");
+        assert_eq!(Parent_directory.get_type(), Type_type::Directory);
 
         for i in 0..10 {
             let entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*entry.Get_name(), format!("Test{i}"));
-            assert_eq!(entry.Get_type(), Type_type::File);
+            assert_eq!(*entry.get_name(), format!("Test{i}"));
+            assert_eq!(entry.get_type(), Type_type::File);
         }
 
         File_system.Rewind_directory(Directory).unwrap();
 
         let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
-        assert_eq!(*Current_directory.Get_name(), ".");
-        assert_eq!(Current_directory.Get_type(), Type_type::Directory);
+        assert_eq!(*Current_directory.get_name(), ".");
+        assert_eq!(Current_directory.get_type(), Type_type::Directory);
 
         let Parent_directory = File_system.Read_directory(Directory).unwrap().unwrap();
-        assert_eq!(*Parent_directory.Get_name(), "..");
-        assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
+        assert_eq!(*Parent_directory.get_name(), "..");
+        assert_eq!(Parent_directory.get_type(), Type_type::Directory);
 
         for i in 0..10 {
             let entry = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*entry.Get_name(), format!("Test{i}"));
-            assert_eq!(entry.Get_type(), Type_type::File);
+            assert_eq!(*entry.get_name(), format!("Test{i}"));
+            assert_eq!(entry.get_type(), Type_type::File);
         }
 
         File_system.Close_directory(Directory).unwrap();
     }
 
-    pub async fn Test_create_remove_directory(File_system: impl File_system_traits) {
-        let task = Task::Get_instance().Get_current_task_identifier().await;
+    pub async fn test_create_remove_directory(File_system: impl File_system_traits) {
+        let task = Task::get_instance().get_current_task_identifier().await;
 
-        let Path = Get_test_path().Append("Test_create_directory").unwrap();
+        let Path = get_test_path().Append("Test_create_directory").unwrap();
 
         File_system
             .Create_directory(
@@ -876,16 +876,16 @@ pub mod Tests {
             let Root_directory = File_system.Open_directory(Path_type::ROOT, task).unwrap();
 
             let Current_directory = File_system.Read_directory(Root_directory).unwrap().unwrap();
-            assert_eq!(*Current_directory.Get_name(), ".");
-            assert_eq!(Current_directory.Get_type(), Type_type::Directory);
+            assert_eq!(*Current_directory.get_name(), ".");
+            assert_eq!(Current_directory.get_type(), Type_type::Directory);
 
             let Parent_directory = File_system.Read_directory(Root_directory).unwrap().unwrap();
-            assert_eq!(*Parent_directory.Get_name(), "..");
-            assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
+            assert_eq!(*Parent_directory.get_name(), "..");
+            assert_eq!(Parent_directory.get_type(), Type_type::Directory);
 
             let Directory = File_system.Read_directory(Root_directory).unwrap().unwrap();
-            assert_eq!(*Directory.Get_name(), "Test_create_directory");
-            assert_eq!(Directory.Get_type(), Type_type::Directory);
+            assert_eq!(*Directory.get_name(), "Test_create_directory");
+            assert_eq!(Directory.get_type(), Type_type::Directory);
 
             File_system.Close_directory(Root_directory).unwrap();
         }
@@ -895,12 +895,12 @@ pub mod Tests {
 
             let Current_directory = File_system.Read_directory(Directory).unwrap().unwrap();
 
-            assert_eq!(*Current_directory.Get_name(), ".");
-            assert_eq!(Current_directory.Get_type(), Type_type::Directory);
+            assert_eq!(*Current_directory.get_name(), ".");
+            assert_eq!(Current_directory.get_type(), Type_type::Directory);
 
             let Parent_directory = File_system.Read_directory(Directory).unwrap().unwrap();
-            assert_eq!(*Parent_directory.Get_name(), "..");
-            assert_eq!(Parent_directory.Get_type(), Type_type::Directory);
+            assert_eq!(*Parent_directory.get_name(), "..");
+            assert_eq!(Parent_directory.get_type(), Type_type::Directory);
 
             File_system.Close_directory(Directory).unwrap();
         }

@@ -72,7 +72,7 @@ impl Signal_type {
     pub const FIRST: Self = Self::Hangup;
     pub const LAST: Self = Self::Bad_system_call;
 
-    pub const fn Get_discriminant(&self) -> u8 {
+    pub const fn get_discriminant(&self) -> u8 {
         *self as u8
     }
 }
@@ -124,18 +124,18 @@ impl Signal_accumulator_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
 
     #[test]
-    fn Test_send_and_has_signal() {
+    fn test_send_and_has_signal() {
         let mut acc = Signal_accumulator_type::new();
         acc.Send(Signal_type::Interrupt);
         assert!(acc.Has_signal(Signal_type::Interrupt));
     }
 
     #[test]
-    fn Test_clear_signal() {
+    fn test_clear_signal() {
         let mut acc = Signal_accumulator_type::new();
         acc.Send(Signal_type::Quit);
         acc.Clear(Signal_type::Quit);
@@ -143,7 +143,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_peek_and_pop() {
+    fn test_peek_and_pop() {
         let mut acc = Signal_accumulator_type::new();
         acc.Send(Signal_type::Hangup);
         acc.Send(Signal_type::User_1);
@@ -155,9 +155,9 @@ mod Tests {
     }
 
     #[test]
-    fn Test_signal_discriminant() {
+    fn test_signal_discriminant() {
         assert_eq!(
-            Signal_type::Power_failure.Get_discriminant(),
+            Signal_type::Power_failure.get_discriminant(),
             Signal_type::Power_failure as u8
         );
     }

@@ -9,9 +9,9 @@ use File_system::{Device_type, Flags_type, Mode_type, Unique_file_identifier_typ
 use Futures::yield_now;
 use Task::Task_identifier_type;
 
-use crate::{Error::Result_type, Terminal::Terminal_type};
+use crate::{terminal::Terminal_type, Error::Result_type};
 
-async fn Mount_and_open(
+async fn mount_and_open(
     task: Task_identifier_type,
     terminal: Arc<Terminal_type>,
 ) -> Result_type<(
@@ -19,57 +19,57 @@ async fn Mount_and_open(
     Unique_file_identifier_type,
     Unique_file_identifier_type,
 )> {
-    Virtual_file_system::Get_instance()
-        .Mount_device(task, &"/Devices/Terminal", Device_type::New(terminal))
+    Virtual_file_system::get_instance()
+        .mount_device(task, &"/Devices/Terminal", Device_type::New(terminal))
         .await?;
 
-    let Standard_in = Virtual_file_system::Get_instance()
-        .Open(
+    let standard_in = Virtual_file_system::get_instance()
+        .open(
             &"/Devices/Terminal",
             Flags_type::New(Mode_type::READ_ONLY, None, None),
             task,
         )
         .await?;
 
-    let Standard_out = Virtual_file_system::Get_instance()
-        .Open(&"/Devices/Terminal", Mode_type::WRITE_ONLY.into(), task)
+    let standard_out = Virtual_file_system::get_instance()
+        .open(&"/Devices/Terminal", Mode_type::WRITE_ONLY.into(), task)
         .await?;
 
-    let Standard_error = Virtual_file_system::Get_instance()
-        .Duplicate_file_identifier(Standard_out, task)
+    let standard_error = Virtual_file_system::get_instance()
+        .duplicate_file_identifier(standard_out, task)
         .await?;
 
-    Ok((Standard_in, Standard_out, Standard_error))
+    Ok((standard_in, standard_out, standard_error))
 }
 
-async fn Inner_main(Task: Task_identifier_type) -> Result_type<()> {
-    let terminal = Terminal_type::New().await?;
+async fn inner_main(task: Task_identifier_type) -> Result_type<()> {
+    let terminal = Terminal_type::new().await?;
 
-    let Terminal = Arc::new(terminal);
+    let terminal: Arc<Terminal_type> = Arc::new(terminal);
 
-    let (Standard_in, Standard_out, Standard_error) =
-        Mount_and_open(Task, Terminal.clone()).await?;
+    let (standard_in, standard_out, standard_error) =
+        mount_and_open(task, terminal.clone()).await?;
 
-    let Standard = Standard_type::New(
-        Standard_in,
-        Standard_out,
-        Standard_error,
-        Task::Get_instance().Get_current_task_identifier().await,
-        Virtual_file_system::Get_instance(),
+    let standard = Standard_type::new(
+        standard_in,
+        standard_out,
+        standard_error,
+        Task::get_instance().get_current_task_identifier().await,
+        Virtual_file_system::get_instance(),
     );
 
-    Executable::Execute("/Binaries/Command_line_shell", "".to_string(), Standard).await?;
+    Executable::execute("/Binaries/Command_line_shell", "".to_string(), standard).await?;
 
-    while Terminal.Event_handler().await? {
+    while terminal.event_handler().await? {
         yield_now().await;
     }
 
     Ok(())
 }
 
-pub async fn Main(Standard: Standard_type, _: String) -> Result<(), NonZeroUsize> {
-    if let Err(error) = Inner_main(Standard.Get_task()).await {
-        Standard.Print_error(&error.to_string()).await;
+pub async fn main(standard: Standard_type, _: String) -> Result<(), NonZeroUsize> {
+    if let Err(error) = inner_main(standard.get_task()).await {
+        standard.print_error(&error.to_string()).await;
         return Err(error.into());
     }
 

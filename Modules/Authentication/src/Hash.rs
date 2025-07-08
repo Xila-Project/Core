@@ -41,9 +41,9 @@ use crate::{Error_type, Result_type, RANDOM_DEVICE_PATH};
 ///
 /// The salt generation converts random bytes to lowercase letters (a-z)
 /// for readability while maintaining sufficient entropy for security.
-pub async fn Generate_salt() -> Result_type<String> {
-    let random_file = File_type::Open(
-        Virtual_file_system::Get_instance(),
+pub async fn generate_salt() -> Result_type<String> {
+    let random_file = File_type::open(
+        Virtual_file_system::get_instance(),
         RANDOM_DEVICE_PATH,
         Mode_type::READ_ONLY.into(),
     )
@@ -53,7 +53,7 @@ pub async fn Generate_salt() -> Result_type<String> {
     let mut Buffer = [0_u8; 16];
 
     random_file
-        .Read(&mut Buffer)
+        .read(&mut Buffer)
         .await
         .map_err(Error_type::Failed_to_read_random_device)?;
 
@@ -84,7 +84,7 @@ pub async fn Generate_salt() -> Result_type<String> {
 /// This function uses SHA-512, which is cryptographically secure and resistant
 /// to collision attacks. The salt prevents rainbow table attacks and ensures
 /// that identical passwords have different hashes.
-pub fn Hash_password(Password: &str, Salt: &str) -> String {
+pub fn hash_password(Password: &str, Salt: &str) -> String {
     use sha2::Digest;
 
     let mut Hasher = sha2::Sha512::new();

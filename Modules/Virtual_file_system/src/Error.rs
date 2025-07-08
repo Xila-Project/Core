@@ -26,7 +26,7 @@ impl From<Error_type> for NonZeroU32 {
         let discriminant = value.get_discriminant();
 
         let Offset = match value {
-            Error_type::File_system(Error_type) => Error_type.Get_discriminant().get(),
+            Error_type::File_system(Error_type) => Error_type.get_discriminant().get(),
             Error_type::Network(error_type) => error_type.get_discriminant().get() as u32,
             _ => 0,
         };

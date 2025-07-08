@@ -24,14 +24,14 @@ impl TryFrom<&str> for Target_type {
 }
 
 impl Target_type {
-    pub fn Get_toolchain(&self) -> String {
+    pub fn get_toolchain(&self) -> String {
         match self {
             Target_type::ESP32 | Target_type::ESP32_S3 => "+esp".to_string(),
             _ => "+stable".to_string(),
         }
     }
 
-    pub fn Get_environment_variables(&self) -> Vec<(String, String)> {
+    pub fn get_environment_variables(&self) -> Vec<(String, String)> {
         match self {
             Target_type::ESP32 => vec![("MCU".to_string(), "esp32".to_string())],
             Target_type::ESP32_S3 => vec![("MCU".to_string(), "esp32s3".to_string())],
@@ -39,7 +39,7 @@ impl Target_type {
         }
     }
 
-    pub fn Get_arguments(&self) -> Vec<String> {
+    pub fn get_arguments(&self) -> Vec<String> {
         match self {
             Target_type::ESP32 => vec![
                 "--target".to_string(),

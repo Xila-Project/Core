@@ -34,10 +34,10 @@ use super::{
 /// assert_eq!(Task, Task_identifier_type::from(0x1234));
 /// assert_eq!(File, File_identifier_type::from(0x5678));
 ///
-/// let Minimum = Local_file_identifier_type::Get_minimum(Task);
+/// let Minimum = Local_file_identifier_type::get_minimum(Task);
 /// assert_eq!(Minimum, Local_file_identifier_type::New(Task, File_identifier_type::Minimum));
 ///
-/// let Maximum = Local_file_identifier_type::Get_maximum(Task);
+/// let Maximum = Local_file_identifier_type::get_maximum(Task);
 /// assert_eq!(Maximum, Local_file_identifier_type::New(Task, File_identifier_type::Maximum));
 ///
 /// let (Task, Unique_file_identifier) = Identifier.Into_unique_file_identifier(File_system_identifier_type::from(0x9ABC));
@@ -69,11 +69,11 @@ impl Local_file_identifier_type {
         (task, file)
     }
 
-    pub const fn Get_minimum(Task: Task_identifier_type) -> Self {
+    pub const fn get_minimum(Task: Task_identifier_type) -> Self {
         Self::New(Task, File_identifier_type::MINIMUM)
     }
 
-    pub const fn Get_maximum(Task: Task_identifier_type) -> Self {
+    pub const fn get_maximum(Task: Task_identifier_type) -> Self {
         Self::New(Task, File_identifier_type::MAXIMUM)
     }
 
@@ -128,7 +128,7 @@ impl IntoIterator for Local_file_identifier_type {
 
         Local_file_identifier_iterator_type {
             current: self,
-            end: Local_file_identifier_type::Get_maximum(task),
+            end: Local_file_identifier_type::get_maximum(task),
         }
     }
 }

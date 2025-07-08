@@ -72,12 +72,12 @@ impl Display for Type_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
     use alloc::format;
 
     #[test]
-    fn Test_type_variants() {
+    fn test_type_variants() {
         // Test that all variants can be created
         let file = Type_type::File;
         let directory = Type_type::Directory;
@@ -97,7 +97,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_type_equality() {
+    fn test_type_equality() {
         let file1 = Type_type::File;
         let file2 = Type_type::File;
         let directory = Type_type::Directory;
@@ -107,7 +107,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_type_clone_copy() {
+    fn test_type_clone_copy() {
         let original = Type_type::File;
         let cloned = original;
         let copied = original;
@@ -118,7 +118,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_type_debug() {
+    fn test_type_debug() {
         let file_type = Type_type::File;
         let debug_str = format!("{file_type:?}");
         assert_eq!(debug_str, "File");
@@ -129,7 +129,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_type_display() {
+    fn test_type_display() {
         assert_eq!(format!("{}", Type_type::File), "File");
         assert_eq!(format!("{}", Type_type::Directory), "Directory");
         assert_eq!(format!("{}", Type_type::Block_device), "Block device");
@@ -143,7 +143,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_type_repr() {
+    fn test_type_repr() {
         // Test that the enum has a specific memory representation
         use core::mem::size_of;
 
@@ -152,7 +152,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_type_discriminants() {
+    fn test_type_discriminants() {
         // Test that different variants have different discriminants
         let file = Type_type::File as u8;
         let directory = Type_type::Directory as u8;
@@ -184,7 +184,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_type_pattern_matching() {
+    fn test_type_pattern_matching() {
         let file_type = Type_type::File;
 
         let description = match file_type {
@@ -201,7 +201,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_type_all_variants_pattern_matching() {
+    fn test_type_all_variants_pattern_matching() {
         let types = [
             Type_type::File,
             Type_type::Directory,
@@ -227,7 +227,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_type_in_collections() {
+    fn test_type_in_collections() {
         let types = [
             Type_type::File,
             Type_type::Directory,
@@ -241,7 +241,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_type_is_specific_type() {
+    fn test_type_is_specific_type() {
         // Helper functions that might be useful
         fn is_file(t: Type_type) -> bool {
             matches!(t, Type_type::File)
@@ -267,7 +267,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_type_default_behavior() {
+    fn test_type_default_behavior() {
         // Test that we can use Type_type in various contexts
         let mut type_counts = alloc::collections::BTreeMap::new();
 

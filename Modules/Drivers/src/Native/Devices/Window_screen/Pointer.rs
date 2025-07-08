@@ -16,12 +16,12 @@ impl Pointer_device_type {
 impl Device_trait for Pointer_device_type {
     fn Read(&self, buffer: &mut [u8]) -> File_system::Result_type<Size_type> {
         // - Cast the pointer data to the buffer.
-        let Data: &mut Input_data_type = buffer
+        let data: &mut Input_data_type = buffer
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
         // Copy the pointer data.
-        *Data = *self.0.lock().unwrap().Get_pointer_data().unwrap();
+        *data = *self.0.lock().unwrap().get_pointer_data().unwrap();
 
         Ok(size_of::<Input_data_type>().into())
     }
@@ -30,7 +30,7 @@ impl Device_trait for Pointer_device_type {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
-    fn Get_size(&self) -> File_system::Result_type<Size_type> {
+    fn get_size(&self) -> File_system::Result_type<Size_type> {
         Ok(size_of::<Input_data_type>().into())
     }
 

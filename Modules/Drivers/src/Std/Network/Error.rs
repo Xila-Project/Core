@@ -2,8 +2,8 @@ use std::io::{self, ErrorKind};
 
 use Network::Error_type;
 
-pub fn Into_socket_error(Error: io::Error) -> Error_type {
-    match Error.kind() {
+pub fn Into_socket_error(error: io::Error) -> Error_type {
+    match error.kind() {
         ErrorKind::NotFound => Error_type::Not_found,
         ErrorKind::PermissionDenied => Error_type::Permission_denied,
         ErrorKind::ConnectionRefused => Error_type::Connection_refused,

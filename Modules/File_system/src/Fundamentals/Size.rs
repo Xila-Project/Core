@@ -181,24 +181,24 @@ impl AddAssign<Size_type> for usize {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
     use alloc::format;
 
     #[test]
-    fn Test_size_creation() {
+    fn test_size_creation() {
         let size = Size_type::New(1024);
         assert_eq!(size.As_u64(), 1024);
     }
 
     #[test]
-    fn Test_size_default() {
+    fn test_size_default() {
         let size = Size_type::default();
         assert_eq!(size.As_u64(), 0);
     }
 
     #[test]
-    fn Test_size_conversions() {
+    fn test_size_conversions() {
         // From usize
         let size_from_usize: Size_type = 512usize.into();
         assert_eq!(size_from_usize.As_u64(), 512);
@@ -217,7 +217,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_equality() {
+    fn test_size_equality() {
         let size1 = Size_type::New(100);
         let size2 = Size_type::New(100);
         let size3 = Size_type::New(200);
@@ -231,7 +231,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_comparison() {
+    fn test_size_comparison() {
         let small = Size_type::New(100);
         let large = Size_type::New(200);
 
@@ -244,7 +244,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_addition_with_size() {
+    fn test_size_addition_with_size() {
         let size1 = Size_type::New(100);
         let size2 = Size_type::New(200);
         let result = size1 + size2;
@@ -252,7 +252,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_addition_with_usize() {
+    fn test_size_addition_with_usize() {
         let size = Size_type::New(100);
         let result = size + 50usize;
         assert_eq!(result.As_u64(), 150);
@@ -263,7 +263,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_addition_with_u64() {
+    fn test_size_addition_with_u64() {
         let size = Size_type::New(100);
         let result = size + 75u64;
         assert_eq!(result.As_u64(), 175);
@@ -274,7 +274,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_add_assign_with_size() {
+    fn test_size_add_assign_with_size() {
         let mut size = Size_type::New(100);
         let other = Size_type::New(50);
         size += other;
@@ -282,7 +282,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_add_assign_with_usize() {
+    fn test_size_add_assign_with_usize() {
         let mut size = Size_type::New(100);
         size += 25usize;
         assert_eq!(size.As_u64(), 125);
@@ -294,28 +294,28 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_add_assign_with_u64() {
+    fn test_size_add_assign_with_u64() {
         let mut size = Size_type::New(100);
         size += 30u64;
         assert_eq!(size.As_u64(), 130);
     }
 
     #[test]
-    fn Test_size_display() {
+    fn test_size_display() {
         let size = Size_type::New(12345);
         let display_str = format!("{size}");
         assert_eq!(display_str, "12345");
     }
 
     #[test]
-    fn Test_size_debug() {
+    fn test_size_debug() {
         let size = Size_type::New(67890);
         let debug_str = format!("{size:?}");
         assert_eq!(debug_str, "Size_type(67890)");
     }
 
     #[test]
-    fn Test_size_clone_copy() {
+    fn test_size_clone_copy() {
         let original = Size_type::New(999);
         let cloned = original;
         let copied = original;
@@ -329,7 +329,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_zero() {
+    fn test_size_zero() {
         let zero = Size_type::New(0);
         assert_eq!(zero.As_u64(), 0);
         assert_eq!(zero, 0usize);
@@ -337,13 +337,13 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_max_value() {
+    fn test_size_max_value() {
         let max_size = Size_type::New(u64::MAX);
         assert_eq!(max_size.As_u64(), u64::MAX);
     }
 
     #[test]
-    fn Test_size_arithmetic_overflow_safety() {
+    fn test_size_arithmetic_overflow_safety() {
         // Test large values that might overflow in some operations
         let large1 = Size_type::New(u64::MAX / 2);
         let large2 = Size_type::New(u64::MAX / 2);
@@ -354,7 +354,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_type_safety() {
+    fn test_size_type_safety() {
         // Verify that Size_type is a zero-cost abstraction
         use core::mem::{align_of, size_of};
 
@@ -363,7 +363,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_const_operations() {
+    fn test_size_const_operations() {
         // Test that New and As_u64 are const functions
         const SIZE: Size_type = Size_type::New(42);
         const VALUE: u64 = SIZE.As_u64();
@@ -373,7 +373,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_mixed_arithmetic() {
+    fn test_size_mixed_arithmetic() {
         let size = Size_type::New(100);
 
         // Chain multiple additions
@@ -382,7 +382,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_compound_assignments() {
+    fn test_size_compound_assignments() {
         let mut size = Size_type::New(10);
 
         size += 5usize;
@@ -393,7 +393,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_comparison_edge_cases() {
+    fn test_size_comparison_edge_cases() {
         let zero = Size_type::New(0);
         let one = Size_type::New(1);
         let max = Size_type::New(u64::MAX);
@@ -408,7 +408,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_conversion_edge_cases() {
+    fn test_size_conversion_edge_cases() {
         // Test conversion from max usize
         let max_usize_as_size: Size_type = usize::MAX.into();
         let back_to_usize: usize = max_usize_as_size.into();
@@ -421,7 +421,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_size_ordering() {
+    fn test_size_ordering() {
         let mut sizes = [
             Size_type::New(300),
             Size_type::New(100),

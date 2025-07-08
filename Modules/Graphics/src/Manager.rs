@@ -25,15 +25,15 @@ use crate::{Error_type, Result_type, Screen_read_data_type};
 
 static MANAGER_INSTANCE: OnceLock<Manager_type> = OnceLock::new();
 
-pub async fn Initialize(
+pub async fn initialize(
     screen_device: Device_type,
     input_device: Device_type,
     input_device_type: Input_type_type,
     buffer_size: usize,
     double_buffered: bool,
 ) -> &'static Manager_type {
-    let Manager = Manager_type::new(
-        Time::Get_instance(),
+    let manager = Manager_type::new(
+        Time::get_instance(),
         screen_device,
         input_device,
         input_device_type,
@@ -42,10 +42,10 @@ pub async fn Initialize(
     )
     .expect("Failed to create manager instance");
 
-    MANAGER_INSTANCE.get_or_init(|| Manager)
+    MANAGER_INSTANCE.get_or_init(|| manager)
 }
 
-pub fn Get_instance() -> &'static Manager_type {
+pub fn get_instance() -> &'static Manager_type {
     MANAGER_INSTANCE
         .try_get()
         .expect("Graphics manager not initialized")
@@ -70,9 +70,9 @@ impl Drop for Manager_type {
     }
 }
 
-extern "C" fn Binding_tick_callback_function() -> u32 {
-    Time::Get_instance()
-        .Get_current_time()
+extern "C" fn binding_tick_callback_function() -> u32 {
+    Time::get_instance()
+        .get_current_time()
         .unwrap_or_default()
         .As_milliseconds() as u32
 }
@@ -97,10 +97,10 @@ impl Manager_type {
                 panic!("Failed to initialize lvgl");
             }
 
-            LVGL::lv_tick_set_cb(Some(Binding_tick_callback_function));
+            LVGL::lv_tick_set_cb(Some(binding_tick_callback_function));
         }
 
-        let (Display, Input) = Self::Create_display(
+        let (display, input) = Self::create_display(
             screen_device,
             buffer_size,
             input_device,
@@ -108,7 +108,7 @@ impl Manager_type {
             double_buffered,
         )?;
 
-        let Screen = Display.Get_object();
+        let screen = display.get_object();
 
         unsafe {
             let group = LVGL::lv_group_create();
@@ -117,45 +117,46 @@ impl Manager_type {
 
         Ok(Self {
             inner: RwLock::new(Inner_type {
-                _inputs: vec![Input],
-                _displays: vec![Display],
+                _inputs: vec![input],
+                _displays: vec![display],
 
-                window_parent: Screen,
+                window_parent: screen,
             }),
             global_lock: Mutex::new(()),
         })
     }
 
-    pub async fn Loop<F>(&self, Sleep: impl Fn(Duration) -> F + Send + 'static) -> Result_type<()>
+    pub async fn r#loop<F>(&self, sleep: impl Fn(Duration) -> F + Send + 'static) -> Result_type<()>
     where
         F: Future<Output = ()> + Send + 'static,
     {
         loop {
-            let Time_until_next = unsafe {
+            let time_until_next = unsafe {
                 let _lock = self.global_lock.lock().await;
                 LVGL::lv_timer_handler()
             };
 
-            Sleep(Duration::from_millis(Time_until_next as u64)).await;
+            sleep(Duration::from_millis(time_until_next as u64)).await;
         }
     }
 
-    pub async fn Set_window_parent(&self, Window_parent: *mut LVGL::lv_obj_t) -> Result_type<()> {
-        self.inner.write().await.window_parent = Window_parent;
+    pub async fn set_window_parent(&self, window_parent: *mut LVGL::lv_obj_t) -> Result_type<()> {
+        self.inner.write().await.window_parent = window_parent;
 
         Ok(())
     }
 
-    pub async fn Create_window(&self) -> Result_type<Window_type> {
+    pub async fn create_window(&self) -> Result_type<Window_type> {
         let parent_object = self.inner.write().await.window_parent;
 
-        let Window = unsafe { Window_type::New(parent_object)? };
+        let window = unsafe { Window_type::new(parent_object)? };
 
-        Ok(Window)
+        Ok(window)
     }
 
-    pub async fn Add_input_device(
+    pub async fn add_input_device(
         &self,
+
         input_device: Device_type,
         input_type: Input_type_type,
     ) -> Result_type<()> {
@@ -166,7 +167,7 @@ impl Manager_type {
         Ok(())
     }
 
-    fn Create_display(
+    fn create_display(
         screen_device: Device_type,
         buffer_size: usize,
         input_device: Device_type,
@@ -179,60 +180,60 @@ impl Manager_type {
             .Read(screen_read_data.as_mut())
             .map_err(|_| Error_type::Failed_to_get_resolution)?;
 
-        let Resolution: Point_type = screen_read_data.get_resolution();
+        let resolution: Point_type = screen_read_data.get_resolution();
 
-        let Display = Display_type::new(screen_device, Resolution, buffer_size, double_buffered)?;
+        let display = Display_type::new(screen_device, resolution, buffer_size, double_buffered)?;
 
-        let Input = Input_type::new(input_device, input_device_type)?;
+        let input = Input_type::new(input_device, input_device_type)?;
 
-        Ok((Display, Input))
+        Ok((display, input))
     }
 
-    pub async fn Get_window_count(&self) -> Result_type<usize> {
+    pub async fn get_window_count(&self) -> Result_type<usize> {
         let window_parent = self.inner.read().await.window_parent;
         unsafe { Ok(LVGL::lv_obj_get_child_count(window_parent) as usize) }
     }
 
-    pub async fn Get_window_icon(&self, Index: usize) -> Result_type<(String, Color_type)> {
+    pub async fn get_window_icon(&self, index: usize) -> Result_type<(String, Color_type)> {
         let window_parent = self.inner.read().await.window_parent;
 
-        let Window = unsafe {
-            let child = LVGL::lv_obj_get_child(window_parent, Index as i32);
+        let window = unsafe {
+            let child = LVGL::lv_obj_get_child(window_parent, index as i32);
 
-            Window_type::From_raw(child)
+            Window_type::from_raw(child)
         };
 
-        let Icon = Window.Get_icon();
+        let icon = window.get_icon();
 
-        let Icon = (Icon.0.to_string(), Icon.1);
+        let icon = (icon.0.to_string(), icon.1);
 
-        forget(Window);
+        forget(window);
 
-        Ok(Icon)
+        Ok(icon)
     }
 
-    pub async fn Get_window_identifier(&self, Index: usize) -> Result_type<usize> {
+    pub async fn get_window_identifier(&self, index: usize) -> Result_type<usize> {
         let window_parent = self.inner.read().await.window_parent;
 
-        let Window = unsafe { LVGL::lv_obj_get_child(window_parent, Index as i32) as usize };
+        let window = unsafe { LVGL::lv_obj_get_child(window_parent, index as i32) as usize };
 
-        Ok(Window)
+        Ok(window)
     }
 
-    pub async fn Maximize_window(&self, Identifier: usize) -> Result_type<()> {
-        let window_count = self.Get_window_count().await?;
+    pub async fn maximize_window(&self, identifier: usize) -> Result_type<()> {
+        let window_count = self.get_window_count().await?;
 
-        let Window_parent = self.inner.read().await.window_parent;
+        let window_parent = self.inner.read().await.window_parent;
 
-        let Found = (0..window_count).find(|Index| unsafe {
-            let child = LVGL::lv_obj_get_child(Window_parent, *Index as i32);
+        let found = (0..window_count).find(|index| unsafe {
+            let child = LVGL::lv_obj_get_child(window_parent, *index as i32);
 
-            child == Identifier as *mut LVGL::lv_obj_t
+            child == identifier as *mut LVGL::lv_obj_t
         });
 
-        if Found.is_some() {
+        if found.is_some() {
             unsafe {
-                LVGL::lv_obj_move_foreground(Identifier as *mut LVGL::lv_obj_t);
+                LVGL::lv_obj_move_foreground(identifier as *mut LVGL::lv_obj_t);
             }
 
             Ok(())
@@ -241,7 +242,7 @@ impl Manager_type {
         }
     }
 
-    pub async fn Lock_function<T>(
+    pub async fn lock_function<T>(
         &self,
         function: impl FnOnce() -> Result_type<T>,
     ) -> Result_type<T> {
@@ -250,11 +251,11 @@ impl Manager_type {
         function()
     }
 
-    pub async fn Lock(&self) -> MutexGuard<'_, CriticalSectionRawMutex, ()> {
+    pub async fn lock(&self) -> MutexGuard<'_, CriticalSectionRawMutex, ()> {
         self.global_lock.lock().await
     }
 
-    pub fn Get_current_screen(&self) -> Result_type<*mut LVGL::lv_obj_t> {
+    pub fn get_current_screen(&self) -> Result_type<*mut LVGL::lv_obj_t> {
         Ok(unsafe { LVGL::lv_screen_active() })
     }
 }

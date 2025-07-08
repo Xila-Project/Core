@@ -21,18 +21,18 @@ impl Drop for Layout_type {
 }
 
 impl Layout_type {
-    pub async fn Loop(&mut self) {
-        self.Update_clock().await;
+    pub async fn r#loop(&mut self) {
+        self.update_clock().await;
     }
 
-    async fn Update_clock(&mut self) {
+    async fn update_clock(&mut self) {
         // - Update the clock
-        let Current_time = Time::Get_instance().Get_current_time();
+        let current_time = Time::get_instance().get_current_time();
 
-        if let Ok(Current_time) = Current_time {
-            let (_, _, _, hour, minute, _) = Unix_to_human_time(Current_time.As_seconds() as i64);
+        if let Ok(current_time) = current_time {
+            let (_, _, _, hour, minute, _) = Unix_to_human_time(current_time.As_seconds() as i64);
 
-            let _ = Graphics::Get_instance().Lock().await;
+            let _ = Graphics::get_instance().lock().await;
 
             self.clock_string = format!("{hour:02}:{minute:02}\0");
 
@@ -42,15 +42,15 @@ impl Layout_type {
         }
     }
 
-    pub fn Get_windows_parent(&self) -> *mut LVGL::lv_obj_t {
+    pub fn get_windows_parent(&self) -> *mut LVGL::lv_obj_t {
         self.window
     }
 
-    pub async fn New() -> Result_type<Self> {
-        let _lock = Graphics::Get_instance().Lock().await; // Lock the graphics
+    pub async fn new() -> Result_type<Self> {
+        let _lock = Graphics::get_instance().lock().await; // Lock the graphics
 
         // - Create a window
-        let Window = unsafe {
+        let window = unsafe {
             let window = LVGL::lv_screen_active();
 
             if window.is_null() {
@@ -68,8 +68,8 @@ impl Layout_type {
         };
 
         // - Create a header
-        let Header = unsafe {
-            let header = LVGL::lv_obj_create(Window);
+        let header = unsafe {
+            let header = LVGL::lv_obj_create(window);
 
             if header.is_null() {
                 return Err(Error_type::Failed_to_create_object);
@@ -90,8 +90,8 @@ impl Layout_type {
         };
 
         // - - Create a label for the clock
-        let Clock = unsafe {
-            let clock = LVGL::lv_label_create(Header);
+        let clock = unsafe {
+            let clock = LVGL::lv_label_create(header);
 
             if clock.is_null() {
                 return Err(Error_type::Failed_to_create_object);
@@ -103,66 +103,66 @@ impl Layout_type {
         };
 
         // - - Create a label for the battery
-        let Battery = unsafe {
+        let battery = unsafe {
             // - - Create a label for the battery
-            let Battery = LVGL::lv_label_create(Header);
+            let battery = LVGL::lv_label_create(header);
 
-            if Battery.is_null() {
+            if battery.is_null() {
                 return Err(Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_set_align(Battery, LVGL::lv_align_t_LV_ALIGN_RIGHT_MID);
-            LVGL::lv_label_set_text(Battery, LVGL::LV_SYMBOL_BATTERY_3 as *const u8 as *const i8);
+            LVGL::lv_obj_set_align(battery, LVGL::lv_align_t_LV_ALIGN_RIGHT_MID);
+            LVGL::lv_label_set_text(battery, LVGL::LV_SYMBOL_BATTERY_3 as *const u8 as *const i8);
 
-            Battery
+            battery
         };
 
         // - - Create a label for the WiFi
 
-        let WiFi = unsafe {
+        let wi_fi = unsafe {
             // - - Create a label for the WiFi
 
-            let WiFi = LVGL::lv_label_create(Header);
+            let wi_fi = LVGL::lv_label_create(header);
 
-            if WiFi.is_null() {
+            if wi_fi.is_null() {
                 return Err(Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_align_to(WiFi, Battery, LVGL::lv_align_t_LV_ALIGN_OUT_LEFT_MID, 0, 0);
-            LVGL::lv_label_set_text(WiFi, LVGL::LV_SYMBOL_WIFI as *const u8 as *const i8);
+            LVGL::lv_obj_align_to(wi_fi, battery, LVGL::lv_align_t_LV_ALIGN_OUT_LEFT_MID, 0, 0);
+            LVGL::lv_label_set_text(wi_fi, LVGL::LV_SYMBOL_WIFI as *const u8 as *const i8);
 
-            WiFi
+            wi_fi
         };
 
         // - - Create a body object
-        let Body = unsafe {
+        let body = unsafe {
             // - Create a body
-            let Body = LVGL::lv_obj_create(Window);
+            let body = LVGL::lv_obj_create(window);
 
-            if Body.is_null() {
+            if body.is_null() {
                 return Err(Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_set_width(Body, LVGL::lv_pct(100));
-            LVGL::lv_obj_set_flex_grow(Body, 1);
-            LVGL::lv_obj_set_style_pad_all(Body, 0, LVGL::LV_STATE_DEFAULT);
-            LVGL::lv_obj_set_style_border_width(Body, 0, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_width(body, LVGL::lv_pct(100));
+            LVGL::lv_obj_set_flex_grow(body, 1);
+            LVGL::lv_obj_set_style_pad_all(body, 0, LVGL::LV_STATE_DEFAULT);
+            LVGL::lv_obj_set_style_border_width(body, 0, LVGL::LV_STATE_DEFAULT);
 
-            Body
+            body
         };
 
         drop(_lock); // Unlock the graphics
 
-        Graphics::Get_instance().Set_window_parent(Body).await?;
+        Graphics::get_instance().set_window_parent(body).await?;
 
         Ok(Self {
-            window: Window,
-            _header: Header,
-            _body: Body,
-            clock: Clock,
+            window,
+            _header: header,
+            _body: body,
+            clock,
             clock_string: String::with_capacity(6),
-            _battery: Battery,
-            _wi_fi: WiFi,
+            _battery: battery,
+            _wi_fi: wi_fi,
         })
     }
 }

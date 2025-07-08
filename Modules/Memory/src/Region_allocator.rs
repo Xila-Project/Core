@@ -50,8 +50,8 @@ impl<const Regions: usize> Allocator_trait for Region_allocator_type<Regions> {
         self.Deallocate(Pointer, Layout)
     }
 
-    unsafe fn Get_statistics(&self) -> Statistics_type {
-        self.Get_statistics()
+    unsafe fn get_statistics(&self) -> Statistics_type {
+        self.get_statistics()
     }
 }
 
@@ -69,7 +69,7 @@ impl<const Regions_count: usize> Region_allocator_type<Regions_count> {
         }
     }
 
-    pub fn Get_statistics(&self) -> Statistics_type {
+    pub fn get_statistics(&self) -> Statistics_type {
         const EMPTY_REGION_STAT: Option<Region_statistics_type> = None;
         let mut region_stats: [Option<Region_statistics_type>; 3] = [EMPTY_REGION_STAT; 3];
 
@@ -148,7 +148,7 @@ impl<const Regions_count: usize> Region_allocator_type<Regions_count> {
                     }
 
                     let Region = Region.as_mut().unwrap();
-                    if Region.Get_capabilities().is_superset(capabilities) {
+                    if Region.get_capabilities().is_superset(capabilities) {
                         Region.Allocate(layout)
                     } else {
                         None

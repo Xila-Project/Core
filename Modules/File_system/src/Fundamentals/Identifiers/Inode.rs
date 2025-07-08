@@ -109,23 +109,23 @@ impl AddAssign<u64> for Inode_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
     use alloc::format;
 
     #[test]
-    fn Test_inode_creation() {
+    fn test_inode_creation() {
         let inode = Inode_type::New(42);
         assert_eq!(inode.As_u64(), 42);
     }
 
     #[test]
-    fn Test_inode_minimum() {
+    fn test_inode_minimum() {
         assert_eq!(Inode_type::MAXIMUM.As_u64(), 1);
     }
 
     #[test]
-    fn Test_inode_const_operations() {
+    fn test_inode_const_operations() {
         // Test that New and As_u64 are const functions
         const INODE: Inode_type = Inode_type::New(123);
         const VALUE: u64 = INODE.As_u64();
@@ -135,7 +135,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_inode_conversions() {
+    fn test_inode_conversions() {
         // From u64
         let inode_from_u64: Inode_type = 456u64.into();
         assert_eq!(inode_from_u64.As_u64(), 456);
@@ -146,7 +146,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_inode_comparison() {
+    fn test_inode_comparison() {
         let small = Inode_type::New(10);
         let large = Inode_type::New(20);
 
@@ -161,7 +161,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_inode_ordering() {
+    fn test_inode_ordering() {
         let mut inodes = [
             Inode_type::New(100),
             Inode_type::New(50),
@@ -178,21 +178,21 @@ mod Tests {
     }
 
     #[test]
-    fn Test_inode_addition() {
+    fn test_inode_addition() {
         let inode = Inode_type::New(100);
         let result = inode + 50;
         assert_eq!(result.As_u64(), 150);
     }
 
     #[test]
-    fn Test_inode_add_assign() {
+    fn test_inode_add_assign() {
         let mut inode = Inode_type::New(100);
         inode += 25;
         assert_eq!(inode.As_u64(), 125);
     }
 
     #[test]
-    fn Test_inode_debug() {
+    fn test_inode_debug() {
         let inode = Inode_type::New(789);
         let debug_str = format!("{inode:?}");
         assert!(debug_str.contains("Inode_type"));
@@ -200,7 +200,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_inode_clone_copy() {
+    fn test_inode_clone_copy() {
         let original = Inode_type::New(999);
         let cloned = original;
         let copied = original;
@@ -214,20 +214,20 @@ mod Tests {
     }
 
     #[test]
-    fn Test_inode_zero() {
+    fn test_inode_zero() {
         let zero = Inode_type::New(0);
         assert_eq!(zero.As_u64(), 0);
         assert!(zero < Inode_type::MAXIMUM);
     }
 
     #[test]
-    fn Test_inode_max_value() {
+    fn test_inode_max_value() {
         let max_inode = Inode_type::New(u64::MAX);
         assert_eq!(max_inode.As_u64(), u64::MAX);
     }
 
     #[test]
-    fn Test_inode_arithmetic_edge_cases() {
+    fn test_inode_arithmetic_edge_cases() {
         // Test addition near max value
         let near_max = Inode_type::New(u64::MAX - 10);
         let result = near_max + 5;
@@ -235,7 +235,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_inode_type_safety() {
+    fn test_inode_type_safety() {
         // Verify that Inode_type is a zero-cost abstraction
         use core::mem::{align_of, size_of};
 
@@ -244,7 +244,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_inode_sequence_operations() {
+    fn test_inode_sequence_operations() {
         let start = Inode_type::New(1000);
         let mut current = start;
 
@@ -256,7 +256,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_inode_round_trip_conversion() {
+    fn test_inode_round_trip_conversion() {
         let original_value = 12345u64;
         let inode = Inode_type::New(original_value);
         let converted: u64 = inode.into();
@@ -267,7 +267,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_inode_minimum_comparison() {
+    fn test_inode_minimum_comparison() {
         let minimum = Inode_type::MAXIMUM;
         let zero = Inode_type::New(0);
         let two = Inode_type::New(2);
@@ -278,7 +278,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_inode_large_additions() {
+    fn test_inode_large_additions() {
         let inode = Inode_type::New(1000);
         let large_add = 1_000_000u64;
         let result = inode + large_add;
@@ -287,7 +287,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_inode_multiple_operations() {
+    fn test_inode_multiple_operations() {
         let mut inode = Inode_type::New(100);
 
         inode += 10;

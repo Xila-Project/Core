@@ -32,10 +32,10 @@
 //! // Define host functions that WASM can call
 //! struct MyRegistrable;
 //! impl Registrable_trait for MyRegistrable {
-//!     fn Get_functions(&self) -> &[Function_descriptor_type] {
+//!     fn get_functions(&self) -> &[Function_descriptor_type] {
 //!         &[Function_descriptor!(my_host_function)]
 //!     }
-//!     fn Get_name(&self) -> &'static str { "my_module" }
+//!     fn get_name(&self) -> &'static str { "my_module" }
 //! }
 //!
 //! // Initialize the virtual machine manager

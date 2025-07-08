@@ -78,7 +78,7 @@ impl Network_socket_driver_type {
         Ok(())
     }
 
-    fn Get_socket(&self, Socket: Local_file_identifier_type) -> Result_type<RawFd> {
+    fn get_socket(&self, Socket: Local_file_identifier_type) -> Result_type<RawFd> {
         Ok(*self
             .0
             .read()
@@ -88,7 +88,7 @@ impl Network_socket_driver_type {
             .ok_or(Error_type::Invalid_identifier)?)
     }
 
-    fn Get_socket_mutable(&self, Socket: Local_file_identifier_type) -> Result_type<RawFd> {
+    fn get_socket_mutable(&self, Socket: Local_file_identifier_type) -> Result_type<RawFd> {
         Ok(*self
             .0
             .write()
@@ -181,7 +181,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         socket: Local_file_identifier_type,
         new_socket: Local_file_identifier_type,
     ) -> Result_type<(IP_type, Port_type)> {
-        let socket = self.Get_socket_mutable(socket)?;
+        let socket = self.get_socket_mutable(socket)?;
 
         let TCP_listener = unsafe { TcpListener::from_raw_fd(socket) };
 
@@ -196,7 +196,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
     }
 
     fn Send(&self, Socket: Local_file_identifier_type, Data: &[u8]) -> Result_type<()> {
-        let socket = self.Get_socket(Socket)?;
+        let socket = self.get_socket(Socket)?;
 
         let mut Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
@@ -208,7 +208,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
     }
 
     fn Receive(&self, Socket: Local_file_identifier_type, Data: &mut [u8]) -> Result_type<usize> {
-        let socket = self.Get_socket(Socket)?;
+        let socket = self.get_socket(Socket)?;
 
         let mut Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
@@ -224,7 +224,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         socket: Local_file_identifier_type,
         data: &mut [u8],
     ) -> Result_type<(usize, IP_type, Port_type)> {
-        let socket = self.Get_socket(socket)?;
+        let socket = self.get_socket(socket)?;
 
         let Socket = unsafe { UdpSocket::from_raw_fd(socket) };
 
@@ -244,7 +244,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         ip: IP_type,
         port: Port_type,
     ) -> Result_type<()> {
-        let socket = self.Get_socket(socket)?;
+        let socket = self.get_socket(socket)?;
 
         let Socket = unsafe { UdpSocket::from_raw_fd(socket) };
 
@@ -257,11 +257,11 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(())
     }
 
-    fn Get_local_address(
+    fn get_local_address(
         &self,
         socket: Local_file_identifier_type,
     ) -> Result_type<(IP_type, Port_type)> {
-        let socket = self.Get_socket(socket)?;
+        let socket = self.get_socket(socket)?;
 
         let Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
@@ -272,11 +272,11 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(Into_IP_and_port(Address))
     }
 
-    fn Get_remote_address(
+    fn get_remote_address(
         &self,
         socket: Local_file_identifier_type,
     ) -> Result_type<(IP_type, Port_type)> {
-        let socket = self.Get_socket(socket)?;
+        let socket = self.get_socket(socket)?;
 
         let Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
@@ -292,7 +292,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         socket: Local_file_identifier_type,
         timeout: Duration_type,
     ) -> Result_type<()> {
-        let socket = self.Get_socket(socket)?;
+        let socket = self.get_socket(socket)?;
 
         let Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
@@ -310,7 +310,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         socket: Local_file_identifier_type,
         timeout: Duration_type,
     ) -> Result_type<()> {
-        let socket = self.Get_socket(socket)?;
+        let socket = self.get_socket(socket)?;
 
         let Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
@@ -323,11 +323,11 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(())
     }
 
-    fn Get_send_timeout(
+    fn get_send_timeout(
         &self,
         socket: Local_file_identifier_type,
     ) -> Result_type<Option<Duration_type>> {
-        let socket = self.Get_socket(socket)?;
+        let socket = self.get_socket(socket)?;
 
         let Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
@@ -338,11 +338,11 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(Timeout)
     }
 
-    fn Get_receive_timeout(
+    fn get_receive_timeout(
         &self,
         socket: Local_file_identifier_type,
     ) -> Result_type<Option<Duration_type>> {
-        let socket = self.Get_socket(socket)?;
+        let socket = self.get_socket(socket)?;
 
         let Socket = unsafe { TcpStream::from_raw_fd(socket) };
 
@@ -355,7 +355,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use File_system::File_identifier_type;
     use Task::Task_identifier_type;
 
@@ -370,7 +370,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_new_socket() {
+    fn test_new_socket() {
         let Driver = Network_socket_driver_type::new();
         let Socket = TcpListener::bind("127.0.0.1:0").unwrap();
         let Raw_fd = Socket.as_raw_fd();
@@ -378,11 +378,11 @@ mod Tests {
         let Socket_identifier = New_socket_identifier(1.into());
 
         Driver.New_socket(Socket_identifier, Raw_fd).unwrap();
-        assert_eq!(Driver.Get_socket(Socket_identifier).unwrap(), Raw_fd);
+        assert_eq!(Driver.get_socket(Socket_identifier).unwrap(), Raw_fd);
     }
 
     #[test]
-    fn Test_remove_socket() {
+    fn test_remove_socket() {
         let Driver = Network_socket_driver_type::new();
         let Socket = TcpListener::bind("127.0.0.1:0").unwrap();
         let Raw_fd = Socket.as_raw_fd();
@@ -391,11 +391,11 @@ mod Tests {
 
         Driver.New_socket(Socket_identifier, Raw_fd).unwrap();
         assert_eq!(Driver.Remove_socket(Socket_identifier).unwrap(), Raw_fd);
-        assert!(Driver.Get_socket(Socket_identifier).is_err());
+        assert!(Driver.get_socket(Socket_identifier).is_err());
     }
 
     #[test]
-    fn Test_bind_tcp() {
+    fn test_bind_tcp() {
         let Driver = Network_socket_driver_type::new();
 
         let Socket_identifier = New_socket_identifier(1.into());
@@ -409,7 +409,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_bind_udp() {
+    fn test_bind_udp() {
         let Driver = Network_socket_driver_type::new();
 
         let Socket = New_socket_identifier(1.into());
@@ -421,7 +421,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_close() {
+    fn test_close() {
         let Driver = Network_socket_driver_type::new();
 
         let Socket_1 = New_socket_identifier(1.into());
@@ -447,7 +447,7 @@ mod Tests {
             .unwrap();
 
         // - Get local addresses
-        let (IP_2, Port_2) = Driver.Get_local_address(Socket_identifier_2).unwrap();
+        let (IP_2, Port_2) = Driver.get_local_address(Socket_identifier_2).unwrap();
 
         // - Send data from socket 1 to socket 2
         Driver
@@ -470,7 +470,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_connect() {
+    fn test_connect() {
         let Driver = Network_socket_driver_type::new();
 
         let Socket_1 = New_socket_identifier(1.into());
@@ -483,7 +483,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_send_receive() {
+    fn test_send_receive() {
         let Driver = Network_socket_driver_type::new();
 
         let Socket_1_identifier = New_socket_identifier(1.into());
@@ -504,7 +504,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_TCP_send_receive_server() {
+    fn test_tcp_send_receive_server() {
         let Driver = Network_socket_driver_type::new();
 
         let Server = New_socket_identifier(1.into());
@@ -520,7 +520,7 @@ mod Tests {
             )
             .unwrap();
 
-        let (IP_server, Port_server) = Driver.Get_local_address(Server).unwrap();
+        let (IP_server, Port_server) = Driver.get_local_address(Server).unwrap();
         let Server_address = Into_socketaddr(IP_server.clone(), Port_server);
 
         // - Connect to server
@@ -529,7 +529,7 @@ mod Tests {
         let (IP_client, Port_client) = Driver.Accept(Server, Server_stream).unwrap();
 
         assert_eq!(
-            Driver.Get_remote_address(Server_stream).unwrap(),
+            Driver.get_remote_address(Server_stream).unwrap(),
             (IP_client, Port_client)
         );
         assert_eq!(Client.peer_addr().unwrap(), Server_address);
@@ -568,7 +568,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_TCP_send_receive_client() {
+    fn test_TCP_send_receive_client() {
         let Driver = Network_socket_driver_type::new();
 
         let Client = New_socket_identifier(1.into());
@@ -586,11 +586,11 @@ mod Tests {
         let (mut Server_stream, Client_address) = Server_listener.accept().unwrap();
 
         assert_eq!(
-            Driver.Get_remote_address(Client).unwrap(),
+            Driver.get_remote_address(Client).unwrap(),
             (IP_server.clone(), Port_server)
         );
         assert_eq!(
-            Driver.Get_local_address(Client).unwrap(),
+            Driver.get_local_address(Client).unwrap(),
             Into_IP_and_port(Client_address)
         );
 
@@ -628,7 +628,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_TCP_send_receive_both_sides() {
+    fn test_TCP_send_receive_both_sides() {
         let Driver = Network_socket_driver_type::new();
 
         let Server_listener = New_socket_identifier(1.into());
@@ -645,7 +645,7 @@ mod Tests {
             )
             .unwrap();
 
-        let (IP_server, Port_server) = Driver.Get_local_address(Server_listener).unwrap();
+        let (IP_server, Port_server) = Driver.get_local_address(Server_listener).unwrap();
 
         // - Connect to server
         Driver
@@ -655,11 +655,11 @@ mod Tests {
         let (IP_client, Port_client) = Driver.Accept(Server_listener, Server_stream).unwrap();
 
         assert_eq!(
-            Driver.Get_local_address(Client).unwrap(),
+            Driver.get_local_address(Client).unwrap(),
             (IP_client.clone(), Port_client)
         );
         assert_eq!(
-            Driver.Get_remote_address(Client).unwrap(),
+            Driver.get_remote_address(Client).unwrap(),
             (IP_server.clone(), Port_server)
         );
 
@@ -698,7 +698,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_UDP_send_to_receive_from_one_side() {
+    fn test_UDP_send_to_receive_from_one_side() {
         let Driver = Network_socket_driver_type::new();
 
         let Socket_1 = New_socket_identifier(1.into());
@@ -716,7 +716,7 @@ mod Tests {
         let Socket_2 = UdpSocket::bind("127.0.0.1:0").unwrap();
 
         // - Get local addresses
-        let (IP_1, Port_1) = Driver.Get_local_address(Socket_1).unwrap();
+        let (IP_1, Port_1) = Driver.get_local_address(Socket_1).unwrap();
         let Socket_1_address = Into_socketaddr(IP_1, Port_1);
         let Socket_2_address = Socket_2.local_addr().unwrap();
         let (IP_2, Port_2) = Into_IP_and_port(Socket_2_address);
@@ -765,7 +765,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_UDP_send_to_receive_from_both_sides() {
+    fn test_UDP_send_to_receive_from_both_sides() {
         let Driver = Network_socket_driver_type::new();
 
         let Socket_1_identifier = New_socket_identifier(1.into());
@@ -791,8 +791,8 @@ mod Tests {
             .unwrap();
 
         // - Get local addresses
-        let (IP_1, Port_1) = Driver.Get_local_address(Socket_1_identifier).unwrap();
-        let (IP_2, Port_2) = Driver.Get_local_address(Socket_2_identifier).unwrap();
+        let (IP_1, Port_1) = Driver.get_local_address(Socket_1_identifier).unwrap();
+        let (IP_2, Port_2) = Driver.get_local_address(Socket_2_identifier).unwrap();
 
         // - Send data from socket 1 to socket 2
         let Data = b"hello";

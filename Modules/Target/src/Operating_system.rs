@@ -11,10 +11,10 @@ pub enum Operating_system_type {
 
 impl Operating_system_type {
     pub fn get() -> Operating_system_type {
-        Operating_system_type::from(Self::Get_raw())
+        Operating_system_type::from(Self::get_raw())
     }
 
-    pub fn Get_raw() -> String {
+    pub fn get_raw() -> String {
         env::var("CARGO_CFG_TARGET_OS").unwrap()
     }
 }

@@ -51,6 +51,6 @@ unsafe impl GlobalAlloc for Manager_type {
     }
 }
 
-pub fn Get_instance() -> &'static dyn Manager_trait {
+pub fn get_instance() -> &'static dyn Manager_trait {
     unsafe { __XILA_MEMORY_ALLOCATOR }
 }

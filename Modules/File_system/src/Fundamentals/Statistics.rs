@@ -64,47 +64,47 @@ impl Statistics_type {
         }
     }
 
-    pub const fn Get_file_system(&self) -> File_system_identifier_type {
+    pub const fn get_file_system(&self) -> File_system_identifier_type {
         self.file_system
     }
 
-    pub const fn Get_inode(&self) -> Inode_type {
+    pub const fn get_inode(&self) -> Inode_type {
         self.inode
     }
 
-    pub const fn Get_links(&self) -> u64 {
+    pub const fn get_links(&self) -> u64 {
         self.links
     }
 
-    pub const fn Get_size(&self) -> Size_type {
+    pub const fn get_size(&self) -> Size_type {
         self.size
     }
 
-    pub const fn Get_last_access(&self) -> Time_type {
+    pub const fn get_last_access(&self) -> Time_type {
         self.last_access
     }
 
-    pub const fn Get_last_modification(&self) -> Time_type {
+    pub const fn get_last_modification(&self) -> Time_type {
         self.last_modification
     }
 
-    pub const fn Get_last_status_change(&self) -> Time_type {
+    pub const fn get_last_status_change(&self) -> Time_type {
         self.last_status_change
     }
 
-    pub const fn Get_type(&self) -> Type_type {
+    pub const fn get_type(&self) -> Type_type {
         self.Type
     }
 
-    pub const fn Get_permissions(&self) -> Permissions_type {
+    pub const fn get_permissions(&self) -> Permissions_type {
         self.permissions
     }
 
-    pub const fn Get_user(&self) -> User_identifier_type {
+    pub const fn get_user(&self) -> User_identifier_type {
         self.user
     }
 
-    pub const fn Get_group(&self) -> Group_identifier_type {
+    pub const fn get_group(&self) -> Group_identifier_type {
         self.group
     }
 

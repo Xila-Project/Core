@@ -107,7 +107,7 @@ pub trait Manager_trait: Send + Sync {
     /// # Safety
     /// This function is unsafe because it may rely on internal allocator state
     /// that could be concurrently modified by other threads.
-    unsafe fn Get_used(&self) -> usize;
+    unsafe fn get_used(&self) -> usize;
 
     /// Returns the amount of memory currently available in this allocator.
     ///
@@ -117,7 +117,7 @@ pub trait Manager_trait: Send + Sync {
     /// # Safety
     /// This function is unsafe because it may rely on internal allocator state
     /// that could be concurrently modified by other threads.
-    unsafe fn Get_free(&self) -> usize;
+    unsafe fn get_free(&self) -> usize;
 
     /// Flushes the instruction cache for a specific memory region.
     ///
@@ -165,7 +165,7 @@ pub trait Manager_trait: Send + Sync {
     /// The default implementation returns 4096 bytes (4 KiB), which is a common
     /// page size on many architectures. Specific allocators can override this
     /// to return the actual page size of their underlying memory management system.
-    fn Get_page_size(&self) -> usize {
+    fn get_page_size(&self) -> usize {
         // Default implementation returns a common page size, can be overridden by specific allocators
         4096 // 4 KiB is a common page size
     }

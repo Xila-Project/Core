@@ -16,14 +16,14 @@ impl Keyboard_device_type {
 impl Device_trait for Keyboard_device_type {
     fn Read(&self, buffer: &mut [u8]) -> File_system::Result_type<Size_type> {
         // - Cast
-        let Data: &mut Input_data_type = buffer
+        let data: &mut Input_data_type = buffer
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
-        if let Some((State, Key, Continue)) = self.0.lock().unwrap().Pop_keyboard_data() {
-            Data.Set_state(State);
-            Data.Set_key(Key);
-            Data.Set_continue(Continue);
+        if let Some((state, key, r#continue)) = self.0.lock().unwrap().pop_keyboard_data() {
+            data.Set_state(state);
+            data.Set_key(key);
+            data.Set_continue(r#continue);
         }
 
         Ok(size_of::<Input_data_type>().into())
@@ -33,7 +33,7 @@ impl Device_trait for Keyboard_device_type {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
-    fn Get_size(&self) -> File_system::Result_type<Size_type> {
+    fn get_size(&self) -> File_system::Result_type<Size_type> {
         Ok(size_of::<Input_data_type>().into())
     }
 

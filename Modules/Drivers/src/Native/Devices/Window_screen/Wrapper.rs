@@ -20,32 +20,32 @@ impl Inner_type {
             //  .with_wayland()
             .with_any_thread(true)
             .build()
-            .map_err(|Error| format!("Error building event loop: {Error:?}"))?;
+            .map_err(|error| format!("Error building event loop: {error:?}"))?;
 
-        let mut Window = Window_type::new(resolution);
+        let mut window = Window_type::new(resolution);
 
-        event_loop.pump_app_events(None, &mut Window);
+        event_loop.pump_app_events(None, &mut window);
 
-        Ok(Self(Window, event_loop))
+        Ok(Self(window, event_loop))
     }
 
-    pub fn Get_resolution(&self) -> Option<Point_type> {
-        self.0.Get_resolution()
+    pub fn get_resolution(&self) -> Option<Point_type> {
+        self.0.get_resolution()
     }
 
-    pub fn Draw(&mut self, Data: &Screen_write_data_type) -> Result<(), String> {
-        self.0.Draw(Data)
+    pub fn draw(&mut self, data: &Screen_write_data_type) -> Result<(), String> {
+        self.0.draw(data)
     }
 
-    pub fn Get_pointer_data(&mut self) -> Result<&Input_data_type, String> {
+    pub fn get_pointer_data(&mut self) -> Result<&Input_data_type, String> {
         self.1.pump_app_events(Some(Duration::ZERO), &mut self.0);
 
-        Ok(self.0.Get_pointer_data())
+        Ok(self.0.get_pointer_data())
     }
 
-    pub fn Pop_keyboard_data(&mut self) -> Option<(State_type, Key_type, bool)> {
+    pub fn pop_keyboard_data(&mut self) -> Option<(State_type, Key_type, bool)> {
         self.1.pump_app_events(Some(Duration::ZERO), &mut self.0);
 
-        self.0.Pop_keyboard_data()
+        self.0.pop_keyboard_data()
     }
 }

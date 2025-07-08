@@ -10,7 +10,7 @@ pub enum Error_type {
     No_Entry,            // No directory entry
     Entry_exists,        // Entry already exists
     Not_directory,       // Entry is not a dir
-    Is_directory,        // Entry is a dir
+    is_directory,        // Entry is a dir
     Directory_not_empty, // Dir is not empty
     Bad_file_number,     // Bad file number
     File_too_large,      // File too large
@@ -34,7 +34,7 @@ pub(crate) fn Convert_result(Error: i32) -> Result_type<u32> {
         littlefs::lfs_error_LFS_ERR_NOENT => Err(Error_type::Not_found),
         littlefs::lfs_error_LFS_ERR_EXIST => Err(Error_type::Already_exists),
         littlefs::lfs_error_LFS_ERR_NOTDIR => Err(Error_type::Not_directory),
-        littlefs::lfs_error_LFS_ERR_ISDIR => Err(Error_type::Is_directory),
+        littlefs::lfs_error_LFS_ERR_ISDIR => Err(Error_type::is_directory),
         littlefs::lfs_error_LFS_ERR_NOTEMPTY => Err(Error_type::Directory_not_empty),
         littlefs::lfs_error_LFS_ERR_BADF => Err(Error_type::Invalid_identifier),
         littlefs::lfs_error_LFS_ERR_FBIG => Err(Error_type::File_too_large),
@@ -61,7 +61,7 @@ impl From<Error_type> for crate::Error_type {
             Error_type::No_Entry => Self::Not_found,
             Error_type::Entry_exists => Self::Already_exists,
             Error_type::Not_directory => Self::Not_directory,
-            Error_type::Is_directory => Self::Is_directory,
+            Error_type::is_directory => Self::is_directory,
             Error_type::Directory_not_empty => Self::Directory_not_empty,
             Error_type::Bad_file_number => Self::Invalid_identifier,
             Error_type::File_too_large => Self::File_too_large,

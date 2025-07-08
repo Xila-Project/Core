@@ -18,7 +18,7 @@ impl Device_trait for Standard_in_device_type {
         Err(File_system::Error_type::Unsupported_operation)
     }
 
-    fn Get_size(&self) -> File_system::Result_type<Size_type> {
+    fn get_size(&self) -> File_system::Result_type<Size_type> {
         Ok(Size_type::New(0))
     }
 
@@ -30,7 +30,7 @@ impl Device_trait for Standard_in_device_type {
         Ok(())
     }
 
-    fn Is_a_terminal(&self) -> bool {
+    fn is_a_terminal(&self) -> bool {
         true
     }
 }
@@ -48,7 +48,7 @@ impl Device_trait for Standard_out_device_type {
         ))
     }
 
-    fn Get_size(&self) -> File_system::Result_type<Size_type> {
+    fn get_size(&self) -> File_system::Result_type<Size_type> {
         Ok(Size_type::New(0))
     }
 
@@ -60,7 +60,7 @@ impl Device_trait for Standard_out_device_type {
         stdout().flush().map_err(Map_error)
     }
 
-    fn Is_a_terminal(&self) -> bool {
+    fn is_a_terminal(&self) -> bool {
         true
     }
 }
@@ -78,7 +78,7 @@ impl Device_trait for Standard_error_device_type {
         ))
     }
 
-    fn Get_size(&self) -> File_system::Result_type<Size_type> {
+    fn get_size(&self) -> File_system::Result_type<Size_type> {
         Ok(Size_type::New(0))
     }
 
@@ -90,7 +90,7 @@ impl Device_trait for Standard_error_device_type {
         stderr().flush().map_err(Map_error)
     }
 
-    fn Is_a_terminal(&self) -> bool {
+    fn is_a_terminal(&self) -> bool {
         true
     }
 }

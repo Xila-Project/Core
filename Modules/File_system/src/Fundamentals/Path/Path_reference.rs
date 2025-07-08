@@ -58,23 +58,23 @@ impl Path_type {
         unsafe { &*(Path.as_ref() as *const str as *const Path_type) }
     }
 
-    pub fn Is_valid(&self) -> bool {
-        Is_valid_string(&self.0)
+    pub fn is_valid(&self) -> bool {
+        is_valid_string(&self.0)
     }
 
-    pub fn Is_absolute(&self) -> bool {
+    pub fn is_absolute(&self) -> bool {
         self.0.starts_with('/')
     }
 
-    pub fn Is_root(&self) -> bool {
+    pub fn is_root(&self) -> bool {
         &self.0 == "/"
     }
 
-    pub fn Is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
-    pub fn Is_canonical(&self) -> bool {
+    pub fn is_canonical(&self) -> bool {
         self.0.chars().all(|c| c != '.')
     }
 
@@ -83,7 +83,7 @@ impl Path_type {
             Some(index) => index,
             None => {
                 // If there is no separator, the path is either empty or relative to the current directory.
-                if self.Get_length() > 0 {
+                if self.get_length() > 0 {
                     // Relative to the current directory.
                     return Some(Self::EMPTY);
                 } else {
@@ -93,11 +93,11 @@ impl Path_type {
         };
 
         if characters_to_remove == 0 {
-            if self.Get_length() == 1 {
+            if self.get_length() == 1 {
                 return None;
             }
 
-            if self.Is_absolute() {
+            if self.is_absolute() {
                 return Some(Self::ROOT);
             } else {
                 return Some(Self::From_str(""));
@@ -107,11 +107,11 @@ impl Path_type {
         Some(Self::From_str(&self.0[..characters_to_remove]))
     }
 
-    pub fn Get_file_prefix(&self) -> Option<&str> {
+    pub fn get_file_prefix(&self) -> Option<&str> {
         let extension_start = self
             .0
             .rfind(EXTENSION_SEPARATOR)
-            .or_else(|| Some(self.Get_length()))?; // Find the extension separator.
+            .or_else(|| Some(self.get_length()))?; // Find the extension separator.
         let file_prefix_start = self.0.rfind(SEPARATOR).map(|i| i + 1).unwrap_or(0); // Find the file prefix start.
 
         if extension_start <= file_prefix_start {
@@ -121,17 +121,17 @@ impl Path_type {
         Some(&self.0[file_prefix_start..extension_start])
     }
 
-    pub fn Get_file_name(&self) -> Option<&str> {
+    pub fn get_file_name(&self) -> Option<&str> {
         let file_prefix_start = self.0.rfind(SEPARATOR).map(|i| i + 1).unwrap_or(0); // Find the file prefix start.
 
-        if file_prefix_start >= self.Get_length() {
+        if file_prefix_start >= self.get_length() {
             return None;
         }
 
         Some(&self.0[file_prefix_start..])
     }
 
-    pub fn Get_extension(&self) -> Option<&str> {
+    pub fn get_extension(&self) -> Option<&str> {
         let extension_start = self.0.rfind(EXTENSION_SEPARATOR)?;
 
         Some(&self.0[extension_start + 1..])
@@ -141,7 +141,7 @@ impl Path_type {
         let extension_start = self
             .0
             .rfind(EXTENSION_SEPARATOR)
-            .unwrap_or(self.Get_length());
+            .unwrap_or(self.get_length());
 
         Some(unsafe {
             Path_owned_type::New_unchecked(format!("{}{}", &self.0[..extension_start], Extension))
@@ -159,7 +159,7 @@ impl Path_type {
     }
 
     pub fn Strip_prefix_absolute<'b>(&'b self, Path_prefix: &Path_type) -> Option<&'b Path_type> {
-        if Path_prefix.Is_root() {
+        if Path_prefix.is_root() {
             return Some(self);
         }
 
@@ -184,7 +184,7 @@ impl Path_type {
         Some(Self::From_str(stripped_suffix))
     }
 
-    pub fn Get_components(&self) -> Components_type {
+    pub fn get_components(&self) -> Components_type {
         Components_type::New(self)
     }
 
@@ -196,7 +196,7 @@ impl Path_type {
         self.to_owned().Append(Path)
     }
 
-    pub fn Get_length(&self) -> usize {
+    pub fn get_length(&self) -> usize {
         self.0.len()
     }
 
@@ -249,11 +249,11 @@ impl AsRef<Path_type> for Path_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
 
     #[test]
-    fn Test_strip_prefix() {
+    fn test_strip_prefix() {
         let Path = Path_type::From_str("/home/user/file.txt");
         let Prefix = Path_type::From_str("/home/user");
         assert_eq!(Path.Strip_prefix(Prefix).unwrap().As_str(), "file.txt");
@@ -270,7 +270,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_strip_prefix_absolute() {
+    fn test_strip_prefix_absolute() {
         let Path = Path_type::From_str("/");
         let Prefix = Path_type::From_str("/");
         assert_eq!(Path.Strip_prefix_absolute(Prefix).unwrap().As_str(), "/");
@@ -298,7 +298,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_strip_suffix() {
+    fn test_strip_suffix() {
         let Path = Path_type::From_str("/home/user/file.txt");
         let Suffix = Path_type::From_str("user/file.txt");
         assert_eq!(Path.Strip_suffix(Suffix).unwrap().As_str(), "/home");
@@ -308,7 +308,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_go_parent() {
+    fn test_go_parent() {
         let Path = Path_type::From_str("/home/user/file.txt");
         assert_eq!(&Path.Go_parent().unwrap().0, "/home/user");
         assert_eq!(&Path.Go_parent().unwrap().Go_parent().unwrap().0, "/home");
@@ -351,35 +351,35 @@ mod Tests {
     }
 
     #[test]
-    fn Test_path_file() {
+    fn test_path_file() {
         // Regular case
         let Path = Path_type::From_str("/Directory/File.txt");
-        assert_eq!(Path.Get_extension(), Some("txt"));
-        assert_eq!(Path.Get_file_prefix(), Some("File"));
-        assert_eq!(Path.Get_file_name(), Some("File.txt"));
+        assert_eq!(Path.get_extension(), Some("txt"));
+        assert_eq!(Path.get_file_prefix(), Some("File"));
+        assert_eq!(Path.get_file_name(), Some("File.txt"));
 
         // No extension
         let Path = Path_type::From_str("/Directory/File");
-        assert_eq!(Path.Get_extension(), None);
-        assert_eq!(Path.Get_file_prefix(), Some("File"));
-        assert_eq!(Path.Get_file_name(), Some("File"));
+        assert_eq!(Path.get_extension(), None);
+        assert_eq!(Path.get_file_prefix(), Some("File"));
+        assert_eq!(Path.get_file_name(), Some("File"));
 
         // No file prefix
         let Path = Path_type::From_str("File.txt");
-        assert_eq!(Path.Get_extension(), Some("txt"));
-        assert_eq!(Path.Get_file_prefix(), Some("File"));
-        assert_eq!(Path.Get_file_name(), Some("File.txt"));
+        assert_eq!(Path.get_extension(), Some("txt"));
+        assert_eq!(Path.get_file_prefix(), Some("File"));
+        assert_eq!(Path.get_file_name(), Some("File.txt"));
 
         // No file prefix or extension
         let Path = Path_type::From_str("/");
-        assert_eq!(Path.Get_extension(), None);
-        assert_eq!(Path.Get_file_prefix(), None);
-        assert_eq!(Path.Get_file_name(), None);
+        assert_eq!(Path.get_extension(), None);
+        assert_eq!(Path.get_file_prefix(), None);
+        assert_eq!(Path.get_file_name(), None);
 
         // No file prefix or extension
         let Path = Path_type::From_str("File");
-        assert_eq!(Path.Get_extension(), None);
-        assert_eq!(Path.Get_file_prefix(), Some("File"));
-        assert_eq!(Path.Get_file_name(), Some("File"));
+        assert_eq!(Path.get_extension(), None);
+        assert_eq!(Path.get_file_prefix(), Some("File"));
+        assert_eq!(Path.get_file_name(), Some("File"));
     }
 }

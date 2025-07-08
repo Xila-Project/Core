@@ -93,13 +93,13 @@ impl Signaler_type {
 #[macro_export]
 macro_rules! Instantiate_static_executor {
     () => {{
-        static mut __Executor: Option<$crate::Std::Executor::Executor_type> = None;
+        static mut __EXECUTOR: Option<$crate::Std::Executor::Executor_type> = None;
 
         unsafe {
-            if __Executor.is_none() {
-                __Executor = Some($crate::Std::Executor::Executor_type::New());
+            if __EXECUTOR.is_none() {
+                __EXECUTOR = Some($crate::Std::Executor::Executor_type::New());
             }
-            __Executor.as_mut().expect("Executor is not initialized")
+            __EXECUTOR.as_mut().expect("Executor is not initialized")
         }
     }};
 }

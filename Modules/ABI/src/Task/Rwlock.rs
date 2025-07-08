@@ -25,7 +25,7 @@ impl Raw_rwlock_type {
         }
     }
 
-    pub fn Is_valid_pointer(pointer: *const Raw_rwlock_type) -> bool {
+    pub fn is_valid_pointer(pointer: *const Raw_rwlock_type) -> bool {
         !pointer.is_null() && (pointer as usize % align_of::<Self>() == 0)
     }
 
@@ -36,7 +36,7 @@ impl Raw_rwlock_type {
     /// This function is unsafe because it dereferences a raw pointer.
     /// The caller must ensure the pointer is valid and points to properly initialized memory.
     pub unsafe fn From_pointer<'a>(pointer: *const Raw_rwlock_type) -> Option<&'a Self> {
-        if !Self::Is_valid_pointer(pointer) {
+        if !Self::is_valid_pointer(pointer) {
             return None;
         }
         Some(&*pointer)
@@ -49,7 +49,7 @@ impl Raw_rwlock_type {
     /// This function is unsafe because it dereferences a raw pointer.
     /// The caller must ensure the pointer is valid and points to properly initialized memory.
     pub unsafe fn From_mutable_pointer<'a>(pointer: *mut Raw_rwlock_type) -> Option<&'a mut Self> {
-        if !Self::Is_valid_pointer(pointer) {
+        if !Self::is_valid_pointer(pointer) {
             return None;
         }
         Some(&mut *pointer)

@@ -4,7 +4,7 @@ use File_system::{Flags_type, Mode_type, Open_type};
 use Task::Task_identifier_type;
 use Virtual_file_system::{File_type, Virtual_file_system_type};
 
-use crate::Main::Main;
+use crate::Main::main;
 
 pub struct Terminal_executable_type;
 
@@ -14,10 +14,10 @@ impl Terminal_executable_type {
         task: Task_identifier_type,
     ) -> Result<Self, String> {
         let _ = virtual_file_system
-            .Create_directory(&"/Configuration/Shared/Shortcuts", task)
+            .create_directory(&"/Configuration/Shared/Shortcuts", task)
             .await;
 
-        let File = match File_type::Open(
+        let File = match File_type::open(
             virtual_file_system,
             "/Configuration/Shared/Shortcuts/Terminal.json",
             Flags_type::New(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
@@ -28,10 +28,10 @@ impl Terminal_executable_type {
             Err(File_system::Error_type::Already_exists) => {
                 return Ok(Self);
             }
-            Err(Error) => Err(Error.to_string())?,
+            Err(error) => Err(error.to_string())?,
         };
 
-        File.Write(crate::SHORTCUT.as_bytes())
+        File.write(crate::SHORTCUT.as_bytes())
             .await
             .map_err(|Error| Error.to_string())?;
 
@@ -42,5 +42,5 @@ impl Terminal_executable_type {
 Implement_executable_device!(
     Structure: Terminal_executable_type,
     Mount_path: "/Binaries/Terminal",
-    Main_function: Main,
+    Main_function: main,
 );

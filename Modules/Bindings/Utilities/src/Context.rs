@@ -15,31 +15,31 @@ pub struct LVGL_context {
 }
 
 impl LVGL_context {
-    pub fn set_function_filtering(&mut self, Function_filtering: Option<fn(&Signature) -> bool>) {
-        self.function_filtering = Function_filtering;
+    pub fn set_function_filtering(&mut self, function_filtering: Option<fn(&Signature) -> bool>) {
+        self.function_filtering = function_filtering;
     }
 
-    pub fn Get_signatures(&self) -> Vec<Signature> {
+    pub fn get_signatures(&self) -> Vec<Signature> {
         self.signatures.clone()
     }
 
-    pub fn Get_definitions(&self) -> Vec<ItemFn> {
+    pub fn get_definitions(&self) -> Vec<ItemFn> {
         self.definitions.clone()
     }
 
-    pub fn Get_type_tree(&self) -> &Type_tree_type {
+    pub fn get_type_tree(&self) -> &Type_tree_type {
         &self.type_tree
     }
 
-    pub fn Get_types(&self) -> &Vec<ItemType> {
+    pub fn get_types(&self) -> &Vec<ItemType> {
         &self.types
     }
 
-    pub fn Get_structures(&self) -> &Vec<ItemStruct> {
+    pub fn get_structures(&self) -> &Vec<ItemStruct> {
         &self.structures
     }
 
-    pub fn Get_unions(&self) -> &Vec<ItemUnion> {
+    pub fn get_unions(&self) -> &Vec<ItemUnion> {
         &self.unions
     }
 

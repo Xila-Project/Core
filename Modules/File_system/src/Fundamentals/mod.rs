@@ -7,20 +7,20 @@
 mod Entry;
 mod Flags;
 mod Identifiers;
-mod Metadata;
 mod Path;
-mod Permission;
 mod Position;
 mod Size;
 mod Statistics;
 mod Type;
+mod metadata;
+mod permission;
 
+pub use metadata::*;
+pub use permission::*;
 pub use Entry::*;
 pub use Flags::*;
 pub use Identifiers::*;
-pub use Metadata::*;
 pub use Path::*;
-pub use Permission::*;
 pub use Position::*;
 pub use Size::*;
 pub use Statistics::*;

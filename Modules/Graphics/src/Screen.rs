@@ -8,11 +8,8 @@ pub struct Screen_write_data_type<'a> {
 }
 
 impl<'a> Screen_write_data_type<'a> {
-    pub fn New(Area: Area_type, Buffer: &'a [Rendering_color_type]) -> Self {
-        Self {
-            area: Area,
-            buffer: Buffer,
-        }
+    pub fn new(area: Area_type, buffer: &'a [Rendering_color_type]) -> Self {
+        Self { area, buffer }
     }
 }
 
@@ -39,17 +36,17 @@ impl TryFrom<&[u8]> for &Screen_write_data_type<'_> {
     ///
     /// This function is unsafe because it dereferences a raw pointer.
     ///
-    fn try_from(Value: &[u8]) -> Result<Self, Self::Error> {
-        if Value.len() != size_of::<Screen_write_data_type>() {
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() != size_of::<Screen_write_data_type>() {
             return Err(());
         }
 
-        if Value.as_ptr() as usize % align_of::<Screen_write_data_type>() != 0 {
+        if value.as_ptr() as usize % align_of::<Screen_write_data_type>() != 0 {
             return Err(());
         }
 
         #[allow(clippy::transmute_ptr_to_ref)]
-        Ok(unsafe { transmute::<*const u8, Self>(Value.as_ptr()) })
+        Ok(unsafe { transmute::<*const u8, Self>(value.as_ptr()) })
     }
 }
 
@@ -58,7 +55,7 @@ impl Screen_write_data_type<'_> {
         self.area
     }
 
-    pub fn Get_buffer(&self) -> &[Rendering_color_type] {
+    pub fn get_buffer(&self) -> &[Rendering_color_type] {
         self.buffer
     }
 }
@@ -78,8 +75,8 @@ impl Screen_read_data_type {
         self.0
     }
 
-    pub fn Set_resolution(&mut self, Value: Point_type) {
-        self.0 = Value;
+    pub fn set_resolution(&mut self, value: Point_type) {
+        self.0 = value;
     }
 }
 
@@ -92,15 +89,15 @@ impl AsMut<[u8]> for Screen_read_data_type {
 impl TryFrom<&mut [u8]> for &mut Screen_read_data_type {
     type Error = ();
 
-    fn try_from(Value: &mut [u8]) -> Result<Self, Self::Error> {
-        if Value.len() != size_of::<Screen_read_data_type>() {
+    fn try_from(value: &mut [u8]) -> Result<Self, Self::Error> {
+        if value.len() != size_of::<Screen_read_data_type>() {
             return Err(());
         }
-        if Value.as_ptr() as usize % align_of::<Screen_read_data_type>() != 0 {
+        if value.as_ptr() as usize % align_of::<Screen_read_data_type>() != 0 {
             return Err(());
         }
 
         #[allow(clippy::transmute_ptr_to_ref)]
-        Ok(unsafe { transmute::<*mut u8, Self>(Value.as_mut_ptr()) })
+        Ok(unsafe { transmute::<*mut u8, Self>(value.as_mut_ptr()) })
     }
 }

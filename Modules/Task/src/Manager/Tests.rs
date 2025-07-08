@@ -6,18 +6,18 @@ use alloc::{collections::BTreeMap, format, vec::Vec};
 use core::time::Duration;
 use Users::{Group_identifier_type, User_identifier_type};
 
-#[Test(Task_path = crate)]
-async fn Test_get_task_name() {
+#[Test(task_path = crate)]
+async fn test_get_task_name() {
     let Manager = Initialize();
 
     let Task_name = "Test Task";
-    let Task = Manager.Get_current_task_identifier().await;
+    let Task = Manager.get_current_task_identifier().await;
 
-    let Spawner = Manager.Get_spawner(Task).await.unwrap();
+    let Spawner = Manager.get_spawner(Task).await.unwrap();
 
     let _ = Manager
         .Spawn(Task, Task_name, Some(Spawner), async move |Task| {
-            assert_eq!(Get_instance().Get_name(Task).await.unwrap(), Task_name);
+            assert_eq!(get_instance().get_name(Task).await.unwrap(), Task_name);
         })
         .await
         .unwrap()
@@ -26,11 +26,11 @@ async fn Test_get_task_name() {
         .await;
 }
 
-#[Test(Task_path = crate)]
-async fn Test_set_get_owner() {
+#[Test(task_path = crate)]
+async fn test_set_get_owner() {
     let Manager = Initialize();
 
-    let Task = Manager.Get_current_task_identifier().await;
+    let Task = Manager.get_current_task_identifier().await;
 
     // Set user and group to root
     Manager
@@ -43,26 +43,26 @@ async fn Test_set_get_owner() {
         .unwrap();
 
     assert_eq!(
-        Get_instance().Get_user(Task).await.unwrap(),
+        get_instance().get_user(Task).await.unwrap(),
         User_identifier_type::ROOT
     );
     assert_eq!(
-        Get_instance().Get_group(Task).await.unwrap(),
+        get_instance().get_group(Task).await.unwrap(),
         Group_identifier_type::ROOT
     );
 }
 
-#[Test(Task_path = crate)]
-async fn Test_get_current_task_identifier() {
+#[Test(task_path = crate)]
+async fn test_get_current_task_identifier() {
     let Manager = Initialize();
 
-    let Task = Manager.Get_current_task_identifier().await;
+    let Task = Manager.get_current_task_identifier().await;
 
-    let Spawner = Manager.Get_spawner(Task).await.unwrap();
+    let Spawner = Manager.get_spawner(Task).await.unwrap();
 
     Manager
         .Spawn(Task, "Current Task", Some(Spawner), async move |Task| {
-            assert_eq!(Get_instance().Get_current_task_identifier().await, Task);
+            assert_eq!(get_instance().get_current_task_identifier().await, Task);
         })
         .await
         .unwrap()
@@ -71,11 +71,11 @@ async fn Test_get_current_task_identifier() {
         .await;
 }
 
-#[Test(Task_path = crate)]
-async fn Test_task_owner_inheritance() {
+#[Test(task_path = crate)]
+async fn test_task_owner_inheritance() {
     let Manager = Initialize();
 
-    let Task = Manager.Get_current_task_identifier().await;
+    let Task = Manager.get_current_task_identifier().await;
     let User_identifier = User_identifier_type::New(123);
     let Group_identifier = Group_identifier_type::New(456);
 
@@ -83,22 +83,22 @@ async fn Test_task_owner_inheritance() {
     Manager.Set_group(Task, Group_identifier).await.unwrap();
 
     // Get the spawner of the current task
-    let Spawner = Manager.Get_spawner(Task).await.unwrap();
+    let Spawner = Manager.get_spawner(Task).await.unwrap();
 
     // Spawn first task that verifies inheritance
     Manager
         .Spawn(Task, "Task 1", Some(Spawner), async move |Task_1| {
             assert_eq!(
-                Get_instance().Get_user(Task_1).await.unwrap(),
+                get_instance().get_user(Task_1).await.unwrap(),
                 User_identifier
             );
             assert_eq!(
-                Get_instance().Get_group(Task_1).await.unwrap(),
+                get_instance().get_group(Task_1).await.unwrap(),
                 Group_identifier
             );
 
             // Get the spawner of Task_1 to inherit to Task_2
-            let Task_1_spawner = Get_instance().Get_spawner(Task_1).await.unwrap();
+            let Task_1_spawner = get_instance().get_spawner(Task_1).await.unwrap();
 
             // Spawn second task as a child of the first task
             let _ = Manager
@@ -109,11 +109,11 @@ async fn Test_task_owner_inheritance() {
                     async move |Task_2| {
                         // Verify that the child task inherits the user and group
                         assert_eq!(
-                            Get_instance().Get_user(Task_2).await.unwrap(),
+                            get_instance().get_user(Task_2).await.unwrap(),
                             User_identifier
                         );
                         assert_eq!(
-                            Get_instance().Get_group(Task_2).await.unwrap(),
+                            get_instance().get_group(Task_2).await.unwrap(),
                             Group_identifier
                         );
 
@@ -133,11 +133,11 @@ async fn Test_task_owner_inheritance() {
         .await;
 }
 
-#[Test(Task_path = crate)]
-async fn Test_environment_variables() {
+#[Test(task_path = crate)]
+async fn test_environment_variables() {
     let Manager = Initialize();
 
-    let Task_identifier = Manager.Get_current_task_identifier().await;
+    let Task_identifier = Manager.get_current_task_identifier().await;
     let Name = "Key";
     let Value = "Value";
 
@@ -147,10 +147,10 @@ async fn Test_environment_variables() {
         .unwrap();
     assert_eq!(
         Manager
-            .Get_environment_variable(Task_identifier, Name)
+            .get_environment_variable(Task_identifier, Name)
             .await
             .unwrap()
-            .Get_value(),
+            .get_value(),
         Value
     );
     Manager
@@ -158,34 +158,34 @@ async fn Test_environment_variables() {
         .await
         .unwrap();
     assert!(Manager
-        .Get_environment_variable(Task_identifier, Name)
+        .get_environment_variable(Task_identifier, Name)
         .await
         .is_err());
 }
 
-#[Test(Task_path = crate)]
-async fn Test_environment_variable_inheritance() {
+#[Test(task_path = crate)]
+async fn test_environment_variable_inheritance() {
     let Manager = Initialize();
 
-    let Task = Manager.Get_current_task_identifier().await;
+    let Task = Manager.get_current_task_identifier().await;
 
-    Get_instance()
+    get_instance()
         .Set_environment_variable(Task, "Key", "Value")
         .await
         .unwrap();
 
     // Get the spawner of the current task
-    let Spawner = Manager.Get_spawner(Task).await.unwrap();
+    let Spawner = Manager.get_spawner(Task).await.unwrap();
 
     // Then spawn the grandchild task with the returned task ID
     Manager
         .Spawn(Task, "Grand child Task", Some(Spawner), async move |Task| {
             assert_eq!(
-                Get_instance()
-                    .Get_environment_variable(Task, "Key")
+                get_instance()
+                    .get_environment_variable(Task, "Key")
                     .await
                     .unwrap()
-                    .Get_value(),
+                    .get_value(),
                 "Value"
             );
         })
@@ -196,13 +196,13 @@ async fn Test_environment_variable_inheritance() {
         .await;
 }
 
-#[Test(Task_path = crate)]
-async fn Test_join_handle() {
+#[Test(task_path = crate)]
+async fn test_join_handle() {
     let Manager = Initialize();
 
-    let Task = Manager.Get_current_task_identifier().await;
+    let Task = Manager.get_current_task_identifier().await;
 
-    let Spawner = Manager.Get_spawner(Task).await.unwrap();
+    let Spawner = Manager.get_spawner(Task).await.unwrap();
     let Join_handle = Manager
         .Spawn(Task, "Task with join handle", Some(Spawner), async |_| 42)
         .await
@@ -210,73 +210,73 @@ async fn Test_join_handle() {
     assert_eq!(Join_handle.0.Join().await, 42);
 }
 
-#[Test(Task_path = crate)]
-async fn Test_set_user() {
+#[Test(task_path = crate)]
+async fn test_set_user() {
     let Manager = Initialize();
 
-    let Task = Manager.Get_current_task_identifier().await;
+    let Task = Manager.get_current_task_identifier().await;
 
     let User = User_identifier_type::New(123); // Assuming User_identifier_type is i32 for example
 
     Manager.set_user(Task, User).await.unwrap();
 
-    assert_eq!(Manager.Get_user(Task).await.unwrap(), User);
+    assert_eq!(Manager.get_user(Task).await.unwrap(), User);
 }
 
-#[Test(Task_path = crate)]
-async fn Test_set_group() {
+#[Test(task_path = crate)]
+async fn test_set_group() {
     let Manager = Initialize();
 
-    let Task = Manager.Get_current_task_identifier().await;
+    let Task = Manager.get_current_task_identifier().await;
 
     let Group = Group_identifier_type::New(456); // Assuming Group_identifier_type is i32 for example
 
     Manager.Set_group(Task, Group).await.unwrap();
 
-    assert_eq!(Manager.Get_group(Task).await.unwrap(), Group);
+    assert_eq!(Manager.get_group(Task).await.unwrap(), Group);
 }
 
-#[Test(Task_path = crate)]
-async fn Test_signal() {
+#[Test(task_path = crate)]
+async fn test_signal() {
     let Manager = Initialize();
 
-    let Task = Manager.Get_current_task_identifier().await;
+    let Task = Manager.get_current_task_identifier().await;
 
-    let Spawner = Manager.Get_spawner(Task).await.unwrap();
+    let Spawner = Manager.get_spawner(Task).await.unwrap();
 
     let (Child_handle, Child_identifier) = Manager
         .Spawn(Task, "Task with signal", Some(Spawner), async |Task| {
             Manager_type::Sleep(Duration::from_millis(10)).await; // Allow the parent task to set signals
 
             assert_eq!(
-                Get_instance().Peek_signal(Task).await.unwrap(),
+                get_instance().Peek_signal(Task).await.unwrap(),
                 Some(Signal_type::Hangup)
             );
 
             assert_eq!(
-                Get_instance().Pop_signal(Task).await.unwrap(),
+                get_instance().Pop_signal(Task).await.unwrap(),
                 Some(Signal_type::Hangup)
             );
 
             assert_eq!(
-                Get_instance().Peek_signal(Task).await.unwrap(),
+                get_instance().Peek_signal(Task).await.unwrap(),
                 Some(Signal_type::Kill)
             );
 
             assert_eq!(
-                Get_instance().Pop_signal(Task).await.unwrap(),
+                get_instance().Pop_signal(Task).await.unwrap(),
                 Some(Signal_type::Kill)
             );
         })
         .await
         .unwrap();
 
-    Get_instance()
+    get_instance()
         .send_signal(Child_identifier, Signal_type::Kill)
         .await
         .unwrap();
 
-    Get_instance()
+    get_instance()
         .send_signal(Child_identifier, Signal_type::Hangup)
         .await
         .unwrap();
@@ -397,14 +397,14 @@ fn test_find_first_available_identifier_empty_range() {
     assert_eq!(result, None);
 }
 
-#[Test(Task_path = crate)]
-async fn Test_spawn() {
+#[Test(task_path = crate)]
+async fn test_spawn() {
     let Manager = Initialize();
 
     let Task_name = "Child Task";
-    let Task = Manager.Get_current_task_identifier().await;
+    let Task = Manager.get_current_task_identifier().await;
 
-    let Spawner = Manager.Get_spawner(Task).await.unwrap();
+    let Spawner = Manager.get_spawner(Task).await.unwrap();
 
     let _ = Manager
         .Spawn(Task, Task_name, Some(Spawner), async |_| {})
@@ -415,12 +415,12 @@ async fn Test_spawn() {
         .await;
 }
 
-#[Test(Task_path = crate)]
-async fn Test_get_parent() {
+#[Test(task_path = crate)]
+async fn test_get_parent() {
     let Manager = Initialize();
 
-    let Root_task = Manager.Get_current_task_identifier().await;
-    let Spawner = Manager.Get_spawner(Root_task).await.unwrap();
+    let Root_task = Manager.get_current_task_identifier().await;
+    let Spawner = Manager.get_spawner(Root_task).await.unwrap();
 
     let (Child_handle, _Child_task) = Manager
         .Spawn(
@@ -430,7 +430,7 @@ async fn Test_get_parent() {
             async move |Child_task| {
                 // Test that child task's parent is the root task
                 assert_eq!(
-                    Get_instance().Get_parent(Child_task).await.unwrap(),
+                    get_instance().get_parent(Child_task).await.unwrap(),
                     Root_task
                 );
             },
@@ -441,15 +441,15 @@ async fn Test_get_parent() {
     Child_handle.Join().await;
 }
 
-#[Test(Task_path = crate)]
-async fn Test_get_children() {
+#[Test(task_path = crate)]
+async fn test_get_children() {
     let Manager = Initialize();
 
-    let Root_task = Manager.Get_current_task_identifier().await;
-    let Spawner = Manager.Get_spawner(Root_task).await.unwrap();
+    let Root_task = Manager.get_current_task_identifier().await;
+    let Spawner = Manager.get_spawner(Root_task).await.unwrap();
 
     // Initially, root task should have no children
-    let Initial_children = Manager.Get_children(Root_task).await.unwrap();
+    let Initial_children = Manager.get_children(Root_task).await.unwrap();
     let Initial_count = Initial_children.len();
     assert_eq!(Initial_count, 0);
 
@@ -470,7 +470,7 @@ async fn Test_get_children() {
         .unwrap();
 
     // Check that root task has exactly 2 more children
-    let Children = Manager.Get_children(Root_task).await.unwrap();
+    let Children = Manager.get_children(Root_task).await.unwrap();
     assert_eq!(Children.len(), Initial_count + 2);
     assert!(Children.contains(&Child1_task));
     assert!(Children.contains(&Child2_task));
@@ -480,16 +480,16 @@ async fn Test_get_children() {
     Child2_handle.Join().await;
 
     // After children complete, they should no longer be in the children list
-    let Final_children = Manager.Get_children(Root_task).await.unwrap();
+    let Final_children = Manager.get_children(Root_task).await.unwrap();
     assert_eq!(Final_children.len(), Initial_count);
 }
 
-#[Test(Task_path = crate)]
-async fn Test_get_children_with_nested_tasks() {
+#[Test(task_path = crate)]
+async fn test_get_children_with_nested_tasks() {
     let Manager = Initialize();
 
-    let Root_task = Manager.Get_current_task_identifier().await;
-    let Spawner = Manager.Get_spawner(Root_task).await.unwrap();
+    let Root_task = Manager.get_current_task_identifier().await;
+    let Spawner = Manager.get_spawner(Root_task).await.unwrap();
 
     let (Parent_handle, _Parent_task) = Manager
         .Spawn(
@@ -497,14 +497,14 @@ async fn Test_get_children_with_nested_tasks() {
             "Parent Task",
             Some(Spawner),
             async move |Parent_task| {
-                let Parent_spawner = Get_instance().Get_spawner(Parent_task).await.unwrap();
+                let Parent_spawner = get_instance().get_spawner(Parent_task).await.unwrap();
 
                 // Parent task should initially have no children
-                let Initial_children = Get_instance().Get_children(Parent_task).await.unwrap();
+                let Initial_children = get_instance().get_children(Parent_task).await.unwrap();
                 assert_eq!(Initial_children.len(), 0);
 
                 // Spawn child from parent task
-                let (Child_handle, Child_task) = Get_instance()
+                let (Child_handle, Child_task) = get_instance()
                     .Spawn(
                         Parent_task,
                         "Nested Child",
@@ -512,7 +512,7 @@ async fn Test_get_children_with_nested_tasks() {
                         async move |Child_task| {
                             // Verify parent-child relationship
                             assert_eq!(
-                                Get_instance().Get_parent(Child_task).await.unwrap(),
+                                get_instance().get_parent(Child_task).await.unwrap(),
                                 Parent_task
                             );
                         },
@@ -521,7 +521,7 @@ async fn Test_get_children_with_nested_tasks() {
                     .unwrap();
 
                 // Parent should now have one child
-                let Children = Get_instance().Get_children(Parent_task).await.unwrap();
+                let Children = get_instance().get_children(Parent_task).await.unwrap();
                 assert_eq!(Children.len(), 1);
                 assert!(Children.contains(&Child_task));
 
@@ -534,48 +534,48 @@ async fn Test_get_children_with_nested_tasks() {
     Parent_handle.Join().await;
 }
 
-#[Test(Task_path = crate)]
-async fn Test_get_parent_invalid_task() {
+#[Test(task_path = crate)]
+async fn test_get_parent_invalid_task() {
     let Manager = Initialize();
 
     // Test with an invalid task identifier
     let Invalid_task = Task_identifier_type::new(99999);
-    let Result = Manager.Get_parent(Invalid_task).await;
+    let Result = Manager.get_parent(Invalid_task).await;
 
     assert!(Result.is_err());
 }
 
-#[Test(Task_path = crate)]
-async fn Test_get_children_invalid_task() {
+#[Test(task_path = crate)]
+async fn test_get_children_invalid_task() {
     let Manager = Initialize();
 
     // Test with an invalid task identifier
     let Invalid_task = Task_identifier_type::new(99999);
-    let Result = Manager.Get_children(Invalid_task).await;
+    let Result = Manager.get_children(Invalid_task).await;
 
-    // Get_children should return an empty vector for invalid task
+    // get_children should return an empty vector for invalid task
     // since it filters by parent, not checking if the task exists
     assert!(Result.is_ok());
     assert_eq!(Result.unwrap().len(), 0);
 }
 
-#[Test(Task_path = crate)]
-async fn Test_root_task_parent() {
+#[Test(task_path = crate)]
+async fn test_root_task_parent() {
     let Manager = Initialize();
 
-    let Root_task = Manager.Get_current_task_identifier().await;
+    let Root_task = Manager.get_current_task_identifier().await;
 
     // Root task should be its own parent
-    let Parent = Manager.Get_parent(Root_task).await.unwrap();
+    let Parent = Manager.get_parent(Root_task).await.unwrap();
     assert_eq!(Parent, Manager_type::ROOT_TASK_IDENTIFIER);
 }
 
-#[Test(Task_path = crate)]
-async fn Test_multiple_generation_relationships() {
+#[Test(task_path = crate)]
+async fn test_multiple_generation_relationships() {
     let Manager = Initialize();
 
-    let Root_task = Manager.Get_current_task_identifier().await;
-    let Spawner = Manager.Get_spawner(Root_task).await.unwrap();
+    let Root_task = Manager.get_current_task_identifier().await;
+    let Spawner = Manager.get_spawner(Root_task).await.unwrap();
 
     let (Level1_handle, Level1_task) = Manager
         .Spawn(
@@ -585,13 +585,13 @@ async fn Test_multiple_generation_relationships() {
             async move |Level1_task| {
                 // Verify Level 1 parent is root
                 assert_eq!(
-                    Get_instance().Get_parent(Level1_task).await.unwrap(),
+                    get_instance().get_parent(Level1_task).await.unwrap(),
                     Root_task
                 );
 
-                let Level1_spawner = Get_instance().Get_spawner(Level1_task).await.unwrap();
+                let Level1_spawner = get_instance().get_spawner(Level1_task).await.unwrap();
 
-                let (Level2_handle, Level2_task) = Get_instance()
+                let (Level2_handle, Level2_task) = get_instance()
                     .Spawn(
                         Level1_task,
                         "Level 2 Task",
@@ -599,14 +599,14 @@ async fn Test_multiple_generation_relationships() {
                         async move |Level2_task| {
                             // Verify Level 2 parent is Level 1
                             assert_eq!(
-                                Get_instance().Get_parent(Level2_task).await.unwrap(),
+                                get_instance().get_parent(Level2_task).await.unwrap(),
                                 Level1_task
                             );
 
                             let Level2_spawner =
-                                Get_instance().Get_spawner(Level2_task).await.unwrap();
+                                get_instance().get_spawner(Level2_task).await.unwrap();
 
-                            let (Level3_handle, Level3_task) = Get_instance()
+                            let (Level3_handle, Level3_task) = get_instance()
                                 .Spawn(
                                     Level2_task,
                                     "Level 3 Task",
@@ -614,7 +614,7 @@ async fn Test_multiple_generation_relationships() {
                                     async move |Level3_task| {
                                         // Verify Level 3 parent is Level 2
                                         assert_eq!(
-                                            Get_instance().Get_parent(Level3_task).await.unwrap(),
+                                            get_instance().get_parent(Level3_task).await.unwrap(),
                                             Level2_task
                                         );
                                     },
@@ -624,7 +624,7 @@ async fn Test_multiple_generation_relationships() {
 
                             // Level 2 should have Level 3 as child
                             let Level2_children =
-                                Get_instance().Get_children(Level2_task).await.unwrap();
+                                get_instance().get_children(Level2_task).await.unwrap();
                             assert!(Level2_children.contains(&Level3_task));
 
                             Level3_handle.Join().await;
@@ -634,7 +634,7 @@ async fn Test_multiple_generation_relationships() {
                     .unwrap();
 
                 // Level 1 should have Level 2 as child
-                let Level1_children = Get_instance().Get_children(Level1_task).await.unwrap();
+                let Level1_children = get_instance().get_children(Level1_task).await.unwrap();
                 assert!(Level1_children.contains(&Level2_task));
 
                 Level2_handle.Join().await;
@@ -644,19 +644,19 @@ async fn Test_multiple_generation_relationships() {
         .unwrap();
 
     // Root should have Level 1 as child
-    let Root_children = Manager.Get_children(Root_task).await.unwrap();
+    let Root_children = Manager.get_children(Root_task).await.unwrap();
     assert!(Root_children.contains(&Level1_task));
 
     Level1_handle.Join().await;
 }
 
-#[Test(Task_path = crate)]
-async fn Test_register_spawner() {
+#[Test(task_path = crate)]
+async fn test_register_spawner() {
     let Manager = Initialize();
 
     // Get current task and its spawner
-    let Current_task = Manager.Get_current_task_identifier().await;
-    let Current_spawner_id = Manager.Get_spawner(Current_task).await.unwrap();
+    let Current_task = Manager.get_current_task_identifier().await;
+    let Current_spawner_id = Manager.get_spawner(Current_task).await.unwrap();
 
     // We can't easily create new spawners in tests due to lifetime requirements,
     // but we can test the registration logic by verifying the current spawner exists
@@ -677,8 +677,8 @@ async fn Test_register_spawner() {
     ));
 }
 
-#[Test(Task_path = crate)]
-async fn Test_unregister_spawner() {
+#[Test(task_path = crate)]
+async fn test_unregister_spawner() {
     let Manager = Initialize();
 
     // Test unregistering a non-existent spawner
@@ -699,8 +699,8 @@ async fn Test_unregister_spawner() {
     ));
 }
 
-#[Test(Task_path = crate)]
-async fn Test_unregister_nonexistent_spawner() {
+#[Test(task_path = crate)]
+async fn test_unregister_nonexistent_spawner() {
     let Manager = Initialize();
 
     // Try to unregister a nonexistent spawner
@@ -714,13 +714,13 @@ async fn Test_unregister_nonexistent_spawner() {
     ));
 }
 
-#[Test(Task_path = crate)]
-async fn Test_register_multiple_spawners() {
+#[Test(task_path = crate)]
+async fn test_register_multiple_spawners() {
     let Manager = Initialize();
 
     // Test the ID assignment logic by checking the current spawner
-    let Current_task = Manager.Get_current_task_identifier().await;
-    let Current_spawner_id = Manager.Get_spawner(Current_task).await.unwrap();
+    let Current_task = Manager.get_current_task_identifier().await;
+    let Current_spawner_id = Manager.get_spawner(Current_task).await.unwrap();
 
     // The spawner ID should be valid
     assert!(Current_spawner_id != usize::MAX);
@@ -737,7 +737,7 @@ async fn Test_register_multiple_spawners() {
     }
 }
 
-//#[Test(Task_path = crate)]
+//#[Test(task_path = crate)]
 async fn _Test_spawner_load_balancing() {
     let Manager = Initialize();
 
@@ -745,8 +745,8 @@ async fn _Test_spawner_load_balancing() {
     // Since we can't easily create multiple spawners in tests, we test that
     // the Select_best_spawner function works with the available spawners
 
-    let Parent_task = Manager.Get_current_task_identifier().await;
-    let Current_spawner = Manager.Get_spawner(Parent_task).await.unwrap();
+    let Parent_task = Manager.get_current_task_identifier().await;
+    let Current_spawner = Manager.get_spawner(Parent_task).await.unwrap();
 
     // Spawn multiple tasks and verify they all get valid spawner assignments
     let mut Handles = Vec::new();
@@ -756,7 +756,7 @@ async fn _Test_spawner_load_balancing() {
         let (Handle, _) = Manager
             .Spawn(Parent_task, &Task_name, None, async move |Task| {
                 Manager_type::Sleep(core::time::Duration::from_millis(10)).await;
-                Get_instance().Get_spawner(Task).await.unwrap()
+                get_instance().get_spawner(Task).await.unwrap()
             })
             .await
             .unwrap();
@@ -785,13 +785,13 @@ async fn _Test_spawner_load_balancing() {
     }
 }
 
-#[Test(Task_path = crate)]
-async fn Test_get_spawner_invalid_task() {
+#[Test(task_path = crate)]
+async fn test_get_spawner_invalid_task() {
     let Manager = Initialize();
 
     // Test with an invalid task identifier
     let Invalid_task = Task_identifier_type::new(99999);
-    let Result = Manager.Get_spawner(Invalid_task).await;
+    let Result = Manager.get_spawner(Invalid_task).await;
 
     assert!(Result.is_err());
     assert!(matches!(
@@ -800,23 +800,23 @@ async fn Test_get_spawner_invalid_task() {
     ));
 }
 
-#[Test(Task_path = crate)]
-async fn Test_get_spawner_valid_task() {
+#[Test(task_path = crate)]
+async fn test_get_spawner_valid_task() {
     let Manager = Initialize();
 
-    let Task = Manager.Get_current_task_identifier().await;
-    let Spawner_result = Manager.Get_spawner(Task).await;
+    let Task = Manager.get_current_task_identifier().await;
+    let Spawner_result = Manager.get_spawner(Task).await;
 
     // Root task should have a spawner
     assert!(Spawner_result.is_ok());
 }
 
-#[Test(Task_path = crate)]
-async fn Test_spawner_with_explicit_selection() {
+#[Test(task_path = crate)]
+async fn test_spawner_with_explicit_selection() {
     let Manager = Initialize();
 
-    let Parent_task = Manager.Get_current_task_identifier().await;
-    let Current_spawner_id = Manager.Get_spawner(Parent_task).await.unwrap();
+    let Parent_task = Manager.get_current_task_identifier().await;
+    let Current_spawner_id = Manager.get_spawner(Parent_task).await.unwrap();
 
     // Spawn task with explicitly selected spawner
     let (Handle, _) = Manager
@@ -824,7 +824,7 @@ async fn Test_spawner_with_explicit_selection() {
             Parent_task,
             "Explicit Spawner Task",
             Some(Current_spawner_id),
-            async move |Task| Get_instance().Get_spawner(Task).await.unwrap(),
+            async move |Task| get_instance().get_spawner(Task).await.unwrap(),
         )
         .await
         .unwrap();
@@ -833,11 +833,11 @@ async fn Test_spawner_with_explicit_selection() {
     assert_eq!(Used_spawner, Current_spawner_id);
 }
 
-#[Test(Task_path = crate)]
-async fn Test_spawner_with_invalid_selection() {
+#[Test(task_path = crate)]
+async fn test_spawner_with_invalid_selection() {
     let Manager = Initialize();
 
-    let Parent_task = Manager.Get_current_task_identifier().await;
+    let Parent_task = Manager.get_current_task_identifier().await;
     let Invalid_spawner = 99999;
 
     // Try to spawn task with invalid spawner ID
@@ -856,8 +856,8 @@ async fn Test_spawner_with_invalid_selection() {
     }
 }
 
-#[Test(Task_path = crate)]
-async fn Test_spawner_reuse_after_unregister() {
+#[Test(task_path = crate)]
+async fn test_spawner_reuse_after_unregister() {
     let Manager = Initialize();
 
     // Test the ID reuse behavior by testing with invalid spawner IDs
@@ -882,7 +882,7 @@ async fn Test_spawner_reuse_after_unregister() {
     ));
 
     // Verify that valid spawner operations still work
-    let Current_task = Manager.Get_current_task_identifier().await;
-    let Current_spawner = Manager.Get_spawner(Current_task).await.unwrap();
+    let Current_task = Manager.get_current_task_identifier().await;
+    let Current_spawner = Manager.get_spawner(Current_task).await.unwrap();
     assert!(Current_spawner != usize::MAX);
 }

@@ -41,7 +41,7 @@ impl PartialEq<Task_identifier_inner_type> for Task_identifier_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
     use std::format;
 

@@ -49,7 +49,7 @@ impl Loader_type {
         Self { paths: Vec::new() }
     }
 
-    pub fn Add_file(
+    pub fn add_file(
         mut self,
         source: impl AsRef<Path>,
         destination: impl AsRef<Path_type>,
@@ -60,27 +60,27 @@ impl Loader_type {
         self
     }
 
-    pub fn Add_files(
+    pub fn add_files(
         mut self,
         files: impl IntoIterator<Item = (PathBuf, Path_owned_type)>,
     ) -> Self {
         for file in files {
-            self = self.Add_file(file.0, file.1);
+            self = self.add_file(file.0, file.1);
         }
 
         self
     }
 
-    pub fn Load(&self, File_system: &mut dyn File_system_traits) -> Result_type<()> {
+    pub fn load(&self, file_system: &mut dyn File_system_traits) -> Result_type<()> {
         // Open file for reading on host
-        for (Source_path, Destination_path) in &self.paths {
+        for (source_path, destination_path) in &self.paths {
             // Open file for reading on host
-            let mut Source_file = File::open(Source_path)?;
+            let mut source_file = File::open(source_path)?;
 
             // Create file on target
-            let Destination_file = File_system.Open(
+            let destination_file = file_system.Open(
                 Task_identifier_type::new(0),
-                Destination_path,
+                destination_path,
                 Flags_type::New(Mode_type::READ_ONLY, Some(Open_type::CREATE), None),
                 Time_type::New(0),
                 User_identifier_type::ROOT,
@@ -88,18 +88,18 @@ impl Loader_type {
             )?;
 
             // Read and write file content block by block
-            let mut Buffer = [0; 1024];
+            let mut buffer = [0; 1024];
             loop {
-                let Read = Source_file.read(&mut Buffer)?;
+                let read = source_file.read(&mut buffer)?;
 
-                if Read == 0 {
+                if read == 0 {
                     break;
                 }
 
-                File_system.Write(Destination_file, &Buffer[..Read], Time_type::New(0))?;
+                file_system.Write(destination_file, &buffer[..read], Time_type::New(0))?;
             }
 
-            File_system.Close(Destination_file)?;
+            file_system.Close(destination_file)?;
         }
 
         Ok(())
@@ -107,36 +107,36 @@ impl Loader_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
     use File_system::File_system_traits;
 
     #[test]
-    fn Test_loader() {
+    fn test_loader() {
         // - Load the file in the file system
-        let Source_path = "Cargo.toml";
-        let Destination_path = "/Cargo.toml";
+        let source_path = "Cargo.toml";
+        let destination_path = "/Cargo.toml";
 
-        let Device = File_system::Create_device!(File_system::Memory_device_type::<512>::New(
+        let device = File_system::Create_device!(File_system::Memory_device_type::<512>::New(
             1024 * 1024 * 512
         ));
 
-        LittleFS::File_system_type::Format(Device.clone(), 256).unwrap();
-        let mut File_system = LittleFS::File_system_type::new(Device, 256).unwrap();
+        LittleFS::File_system_type::format(device.clone(), 256).unwrap();
+        let mut file_system = LittleFS::File_system_type::new(device, 256).unwrap();
 
-        let Loader = Loader_type::new().Add_file(Source_path, Destination_path);
+        let loader = Loader_type::new().add_file(source_path, destination_path);
 
-        Loader.Load(&mut File_system).unwrap();
+        loader.load(&mut file_system).unwrap();
 
         // - Read the file and compare it with the original
-        let Test_file = std::fs::read_to_string(Source_path).unwrap();
+        let test_file = std::fs::read_to_string(source_path).unwrap();
 
-        let mut Buffer = vec![0; Test_file.len()];
+        let mut buffer = vec![0; test_file.len()];
 
-        let File = File_system
+        let file: File_system::Local_file_identifier_type = file_system
             .Open(
                 Task_identifier_type::new(0),
-                Path_type::New(Destination_path),
+                Path_type::New(destination_path),
                 Flags_type::New(Mode_type::READ_ONLY, None, None),
                 Time_type::New(0),
                 User_identifier_type::ROOT,
@@ -144,11 +144,11 @@ mod Tests {
             )
             .unwrap();
 
-        let Read = File_system
-            .Read(File, &mut Buffer, Time_type::New(0))
+        let read = file_system
+            .Read(file, &mut buffer, Time_type::New(0))
             .unwrap();
 
-        assert_eq!(Read, Test_file.len());
-        assert_eq!(Buffer, Test_file.as_bytes());
+        assert_eq!(read, test_file.len());
+        assert_eq!(buffer, test_file.as_bytes());
     }
 }

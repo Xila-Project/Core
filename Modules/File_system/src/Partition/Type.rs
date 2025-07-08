@@ -41,8 +41,8 @@ use core::fmt;
 /// use File_system::*;
 ///
 /// let partition_type = Partition_type_type::Fat32_lba;
-/// assert!(partition_type.Is_fat());
-/// assert!(!partition_type.Is_extended());
+/// assert!(partition_type.is_fat());
+/// assert!(!partition_type.is_extended());
 ///
 /// let linux_type = Partition_type_type::From_u8(0x83);
 /// assert_eq!(linux_type, Partition_type_type::Linux);
@@ -187,7 +187,7 @@ impl Partition_type_type {
     }
 
     /// Get the human-readable name of the partition type
-    pub fn Get_name(&self) -> &'static str {
+    pub fn get_name(&self) -> &'static str {
         match self {
             Partition_type_type::Empty => "Empty",
             Partition_type_type::Fat12 => "FAT12",
@@ -217,7 +217,7 @@ impl Partition_type_type {
     }
 
     /// Check if this partition type is a FAT filesystem
-    pub fn Is_fat(&self) -> bool {
+    pub fn is_fat(&self) -> bool {
         matches!(
             self,
             Partition_type_type::Fat12
@@ -236,7 +236,7 @@ impl Partition_type_type {
     }
 
     /// Check if this partition type is hidden
-    pub fn Is_hidden(&self) -> bool {
+    pub fn is_hidden(&self) -> bool {
         matches!(
             self,
             Partition_type_type::Hidden_fat12
@@ -250,7 +250,7 @@ impl Partition_type_type {
     }
 
     /// Check if this partition type is an extended partition
-    pub fn Is_extended(&self) -> bool {
+    pub fn is_extended(&self) -> bool {
         matches!(
             self,
             Partition_type_type::Extended | Partition_type_type::Extended_lba
@@ -258,7 +258,7 @@ impl Partition_type_type {
     }
 
     /// Check if this partition type is Linux-related
-    pub fn Is_linux(&self) -> bool {
+    pub fn is_linux(&self) -> bool {
         matches!(
             self,
             Partition_type_type::Linux
@@ -272,18 +272,18 @@ impl fmt::Display for Partition_type_type {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Partition_type_type::Unknown(Value) => write!(formatter, "Unknown (0x{Value:02X})"),
-            _ => write!(formatter, "{} (0x{:02X})", self.Get_name(), self.To_u8()),
+            _ => write!(formatter, "{} (0x{:02X})", self.get_name(), self.To_u8()),
         }
     }
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
     use alloc::{format, vec};
 
     #[test]
-    fn Test_partition_type_from_u8() {
+    fn test_partition_type_from_u8() {
         assert_eq!(
             Partition_type_type::From_u8(0x00),
             Partition_type_type::Empty
@@ -307,7 +307,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_partition_type_to_u8() {
+    fn test_partition_type_to_u8() {
         assert_eq!(Partition_type_type::Empty.To_u8(), 0x00);
         assert_eq!(Partition_type_type::Fat32_lba.To_u8(), 0x0C);
         assert_eq!(Partition_type_type::Linux.To_u8(), 0x83);
@@ -316,7 +316,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_partition_type_round_trip() {
+    fn test_partition_type_round_trip() {
         let Types = vec![
             0x00, 0x01, 0x04, 0x05, 0x06, 0x07, 0x0B, 0x0C, 0x0E, 0x0F, 0x11, 0x14, 0x16, 0x17,
             0x1B, 0x1C, 0x1E, 0x82, 0x83, 0x8E, 0xEE, 0xEF, 0xFF, 0x42, 0x99,
@@ -329,51 +329,51 @@ mod Tests {
     }
 
     #[test]
-    fn Test_partition_type_properties() {
+    fn test_partition_type_properties() {
         // Test FAT detection
-        assert!(Partition_type_type::Fat12.Is_fat());
-        assert!(Partition_type_type::Fat16.Is_fat());
-        assert!(Partition_type_type::Fat32.Is_fat());
-        assert!(Partition_type_type::Fat32_lba.Is_fat());
-        assert!(Partition_type_type::Hidden_fat32.Is_fat());
-        assert!(!Partition_type_type::Linux.Is_fat());
-        assert!(!Partition_type_type::Ntfs_exfat.Is_fat());
+        assert!(Partition_type_type::Fat12.is_fat());
+        assert!(Partition_type_type::Fat16.is_fat());
+        assert!(Partition_type_type::Fat32.is_fat());
+        assert!(Partition_type_type::Fat32_lba.is_fat());
+        assert!(Partition_type_type::Hidden_fat32.is_fat());
+        assert!(!Partition_type_type::Linux.is_fat());
+        assert!(!Partition_type_type::Ntfs_exfat.is_fat());
 
         // Test hidden detection
-        assert!(Partition_type_type::Hidden_fat12.Is_hidden());
-        assert!(Partition_type_type::Hidden_fat32.Is_hidden());
-        assert!(Partition_type_type::Hidden_ntfs_exfat.Is_hidden());
-        assert!(!Partition_type_type::Fat32.Is_hidden());
-        assert!(!Partition_type_type::Linux.Is_hidden());
+        assert!(Partition_type_type::Hidden_fat12.is_hidden());
+        assert!(Partition_type_type::Hidden_fat32.is_hidden());
+        assert!(Partition_type_type::Hidden_ntfs_exfat.is_hidden());
+        assert!(!Partition_type_type::Fat32.is_hidden());
+        assert!(!Partition_type_type::Linux.is_hidden());
 
         // Test extended detection
-        assert!(Partition_type_type::Extended.Is_extended());
-        assert!(Partition_type_type::Extended_lba.Is_extended());
-        assert!(!Partition_type_type::Fat32.Is_extended());
-        assert!(!Partition_type_type::Linux.Is_extended());
+        assert!(Partition_type_type::Extended.is_extended());
+        assert!(Partition_type_type::Extended_lba.is_extended());
+        assert!(!Partition_type_type::Fat32.is_extended());
+        assert!(!Partition_type_type::Linux.is_extended());
 
         // Test Linux detection
-        assert!(Partition_type_type::Linux.Is_linux());
-        assert!(Partition_type_type::Linux_swap.Is_linux());
-        assert!(Partition_type_type::Linux_lvm.Is_linux());
-        assert!(!Partition_type_type::Fat32.Is_linux());
-        assert!(!Partition_type_type::Ntfs_exfat.Is_linux());
+        assert!(Partition_type_type::Linux.is_linux());
+        assert!(Partition_type_type::Linux_swap.is_linux());
+        assert!(Partition_type_type::Linux_lvm.is_linux());
+        assert!(!Partition_type_type::Fat32.is_linux());
+        assert!(!Partition_type_type::Ntfs_exfat.is_linux());
     }
 
     #[test]
-    fn Test_partition_type_names() {
-        assert_eq!(Partition_type_type::Empty.Get_name(), "Empty");
-        assert_eq!(Partition_type_type::Fat32_lba.Get_name(), "FAT32 LBA");
-        assert_eq!(Partition_type_type::Linux.Get_name(), "Linux");
+    fn test_partition_type_names() {
+        assert_eq!(Partition_type_type::Empty.get_name(), "Empty");
+        assert_eq!(Partition_type_type::Fat32_lba.get_name(), "FAT32 LBA");
+        assert_eq!(Partition_type_type::Linux.get_name(), "Linux");
         assert_eq!(
-            Partition_type_type::Gpt_protective.Get_name(),
+            Partition_type_type::Gpt_protective.get_name(),
             "GPT protective"
         );
-        assert_eq!(Partition_type_type::Unknown(0x42).Get_name(), "Unknown");
+        assert_eq!(Partition_type_type::Unknown(0x42).get_name(), "Unknown");
     }
 
     #[test]
-    fn Test_partition_type_display() {
+    fn test_partition_type_display() {
         let Fat32_variant = Partition_type_type::Fat32_lba;
         let Display_string = format!("{Fat32_variant}");
         assert!(Display_string.contains("FAT32 LBA"));

@@ -25,7 +25,7 @@ impl Raw_mutex_type {
         }
     }
 
-    pub fn Is_valid_pointer(pointer: *const Raw_mutex_type) -> bool {
+    pub fn is_valid_pointer(pointer: *const Raw_mutex_type) -> bool {
         !pointer.is_null() && (pointer as usize % align_of::<Self>() == 0)
     }
 
@@ -36,7 +36,7 @@ impl Raw_mutex_type {
     /// This function is unsafe because it dereferences a raw pointer.
     /// The caller must ensure the pointer is valid and points to properly initialized memory.
     pub unsafe fn From_pointer<'a>(pointer: *const Raw_mutex_type) -> Option<&'a Self> {
-        if !Self::Is_valid_pointer(pointer) {
+        if !Self::is_valid_pointer(pointer) {
             return None;
         }
         Some(&*pointer)
@@ -49,15 +49,15 @@ impl Raw_mutex_type {
     /// This function is unsafe because it dereferences a raw pointer.
     /// The caller must ensure the pointer is valid and points to properly initialized memory.
     pub unsafe fn From_mutable_pointer<'a>(pointer: *mut Raw_mutex_type) -> Option<&'a mut Self> {
-        if !Self::Is_valid_pointer(pointer) {
+        if !Self::is_valid_pointer(pointer) {
             return None;
         }
         Some(&mut *pointer)
     }
 
     pub fn Lock(&self) -> bool {
-        let current_task = Context::Get_instance()
-            .Get_current_task_identifier()
+        let current_task = Context::get_instance()
+            .get_current_task_identifier()
             .Into_inner() as usize;
 
         unsafe {
@@ -80,9 +80,9 @@ impl Raw_mutex_type {
         }
     }
 
-    pub fn Unlock(&self) -> bool {
-        let current_task = Context::Get_instance()
-            .Get_current_task_identifier()
+    pub fn unlock(&self) -> bool {
+        let current_task = Context::get_instance()
+            .get_current_task_identifier()
             .Into_inner() as usize;
 
         unsafe {
@@ -165,8 +165,8 @@ pub unsafe extern "C" fn Xila_initialize_recursive_mutex(Mutex: *mut Raw_mutex_t
 /// - `mutex` points to a valid, initialized `Raw_mutex_type`
 /// - The mutex remains valid for the duration of the call
 #[no_mangle]
-pub unsafe extern "C" fn Xila_lock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
-    let mutex = match Raw_mutex_type::From_mutable_pointer(Mutex) {
+pub unsafe extern "C" fn Xila_lock_mutex(mutex: *mut Raw_mutex_type) -> bool {
+    let mutex = match Raw_mutex_type::From_mutable_pointer(mutex) {
         Some(mutex) => mutex,
         None => return false,
     };
@@ -189,7 +189,7 @@ pub unsafe extern "C" fn Xila_unlock_mutex(Mutex: *mut Raw_mutex_type) -> bool {
         None => return false,
     };
 
-    mutex.Unlock()
+    mutex.unlock()
 }
 
 /// Destroy a mutex.

@@ -1,7 +1,7 @@
-use super::{Into_u32, Xila_file_system_result_type, Xila_unique_file_identifier_type};
+use super::{into_u32, Xila_file_system_result_type, Xila_unique_file_identifier_type};
 use Futures::block_on;
-use Task::Get_instance as Get_task_manager_instance;
-use Virtual_file_system::{Error_type, Get_instance as Get_file_system_instance};
+use Task::get_instance as get_task_manager_instance;
+use Virtual_file_system::{get_instance as get_file_system_instance, Error_type};
 
 /// This function is used to send data through a socket.
 ///
@@ -14,18 +14,18 @@ pub unsafe extern "C" fn Xila_file_system_send(
     buffer: *const u8,
     size: usize,
 ) -> Xila_file_system_result_type {
-    Into_u32(|| {
-        let task = block_on(Get_task_manager_instance().Get_current_task_identifier());
+    into_u32(|| {
+        let task = block_on(get_task_manager_instance().get_current_task_identifier());
 
-        let Socket = File_system::Unique_file_identifier_type::From_raw(socket);
+        let socket = File_system::Unique_file_identifier_type::From_raw(socket);
 
         if buffer.is_null() {
             Err(Error_type::Invalid_parameter)?;
         }
 
-        let Buffer = core::slice::from_raw_parts(buffer, size);
+        let buffer = core::slice::from_raw_parts(buffer, size);
 
-        block_on(Get_file_system_instance().Send(task, Socket, Buffer))?;
+        block_on(get_file_system_instance().send(task, socket, buffer))?;
 
         Ok(())
     })
@@ -46,18 +46,18 @@ pub unsafe extern "C" fn Xila_file_system_receive(
     buffer: *mut u8,
     size: usize,
 ) -> Xila_file_system_result_type {
-    Into_u32(|| {
-        let task = block_on(Get_task_manager_instance().Get_current_task_identifier());
+    into_u32(|| {
+        let task = block_on(get_task_manager_instance().get_current_task_identifier());
 
-        let Socket = File_system::Unique_file_identifier_type::From_raw(socket);
+        let socket = File_system::Unique_file_identifier_type::From_raw(socket);
 
         if buffer.is_null() {
             Err(Error_type::Invalid_parameter)?;
         }
 
-        let Buffer = core::slice::from_raw_parts_mut(buffer, size);
+        let buffer = core::slice::from_raw_parts_mut(buffer, size);
 
-        block_on(Get_file_system_instance().Receive(task, Socket, Buffer))?;
+        block_on(get_file_system_instance().receive(task, socket, buffer))?;
 
         Ok(())
     })

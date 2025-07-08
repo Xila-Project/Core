@@ -3,15 +3,19 @@
 
 extern crate alloc;
 
-mod Error;
-mod Main;
-mod Settings;
-mod Tabs;
+mod error;
+mod settings;
+mod tabs;
+use core::num::NonZeroUsize;
+
+use Executable::Standard_type;
+
+use crate::settings::Settings_type;
 
 use alloc::string::{String, ToString};
-pub use Error::*;
+pub use error::*;
+pub use settings::*;
 use File_system::{Flags_type, Mode_type, Open_type};
-pub use Settings::*;
 use Task::Task_identifier_type;
 use Virtual_file_system::{File_type, Virtual_file_system_type};
 
@@ -33,26 +37,26 @@ impl Settings_executable_type {
         task: Task_identifier_type,
     ) -> Result<Self, String> {
         let _ = virtual_file_system
-            .Create_directory(&"/Configuration/Shared/Shortcuts", task)
+            .create_directory(&"/Configuration/Shared/Shortcuts", task)
             .await;
 
-        let File = match File_type::Open(
+        let file = match File_type::open(
             virtual_file_system,
             "/Configuration/Shared/Shortcuts/Settings.json",
             Flags_type::New(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
         )
         .await
         {
-            Ok(File) => File,
+            Ok(file) => file,
             Err(File_system::Error_type::Already_exists) => {
                 return Ok(Self);
             }
-            Err(Error) => Err(Error.to_string())?,
+            Err(error) => Err(error.to_string())?,
         };
 
-        File.Write(crate::SHORTCUT.as_bytes())
+        file.write(crate::SHORTCUT.as_bytes())
             .await
-            .map_err(|Error| Error.to_string())?;
+            .map_err(|error| error.to_string())?;
 
         Ok(Self)
     }
@@ -61,5 +65,16 @@ impl Settings_executable_type {
 Executable::Implement_executable_device!(
     Structure: Settings_executable_type,
     Mount_path: "/Binaries/Settings",
-    Main_function: Main::Main,
+    Main_function: main,
 );
+
+pub async fn main(_: Standard_type, _: String) -> Result<(), NonZeroUsize> {
+    let mut settings = Settings_type::new()
+        .await
+        .map_err(|_| NonZeroUsize::new(1).unwrap())?;
+
+    // Run the main loop
+    settings.run().await;
+
+    Ok(())
+}

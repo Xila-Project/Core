@@ -152,10 +152,10 @@ impl Lexer_type {
 
         loop {
             let Token = self.next_token();
-            let Is_eof = Token == Token_type::EOF;
+            let is_eof = Token == Token_type::EOF;
             Tokens.push(Token);
 
-            if Is_eof {
+            if is_eof {
                 break;
             }
         }

@@ -128,9 +128,9 @@ impl<const BLOCK_SIZE: usize> Memory_device_type<BLOCK_SIZE> {
     /// # use File_system::Memory_device_type;
     ///
     /// let device = Memory_device_type::<512>::New(2048);
-    /// assert_eq!(device.Get_block_count(), 4); // 2048 / 512 = 4
+    /// assert_eq!(device.get_block_count(), 4); // 2048 / 512 = 4
     /// ```
-    pub fn Get_block_count(&self) -> usize {
+    pub fn get_block_count(&self) -> usize {
         let inner = block_on(self.0.read());
 
         inner.0.len() / BLOCK_SIZE
@@ -164,7 +164,7 @@ impl<const BLOCK_SIZE: usize> Device_trait for Memory_device_type<BLOCK_SIZE> {
         Ok(Buffer.len().into())
     }
 
-    fn Get_size(&self) -> crate::Result_type<Size_type> {
+    fn get_size(&self) -> crate::Result_type<Size_type> {
         let inner = block_on(self.0.read());
 
         Ok(Size_type::New(inner.0.len() as u64))
@@ -201,7 +201,7 @@ impl<const BLOCK_SIZE: usize> Device_trait for Memory_device_type<BLOCK_SIZE> {
         Ok(())
     }
 
-    fn Get_block_size(&self) -> crate::Result_type<usize> {
+    fn get_block_size(&self) -> crate::Result_type<usize> {
         Ok(BLOCK_SIZE)
     }
 
@@ -211,11 +211,11 @@ impl<const BLOCK_SIZE: usize> Device_trait for Memory_device_type<BLOCK_SIZE> {
         Ok(inner.0.clone())
     }
 
-    fn Is_a_terminal(&self) -> bool {
+    fn is_a_terminal(&self) -> bool {
         false
     }
 
-    fn Is_a_block_device(&self) -> bool {
+    fn is_a_block_device(&self) -> bool {
         false
     }
 }

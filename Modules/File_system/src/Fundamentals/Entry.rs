@@ -30,9 +30,9 @@ use super::{Inode_type, Size_type};
 ///     Size_type::New(1024)
 /// );
 ///
-/// assert_eq!(file_entry.Get_name(), "document.txt");
-/// assert_eq!(file_entry.Get_type(), Type_type::File);
-/// assert_eq!(file_entry.Get_size().As_u64(), 1024);
+/// assert_eq!(file_entry.get_name(), "document.txt");
+/// assert_eq!(file_entry.get_type(), Type_type::File);
+/// assert_eq!(file_entry.get_size().As_u64(), 1024);
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Entry_type {
@@ -84,7 +84,7 @@ impl Entry_type {
     /// # Returns
     ///
     /// The unique inode number identifying this file system object.
-    pub fn Get_inode(&self) -> Inode_type {
+    pub fn get_inode(&self) -> Inode_type {
         self.inode
     }
 
@@ -93,7 +93,7 @@ impl Entry_type {
     /// # Returns
     ///
     /// A reference to the string containing the file or directory name.
-    pub fn Get_name(&self) -> &String {
+    pub fn get_name(&self) -> &String {
         &self.name
     }
 
@@ -102,7 +102,7 @@ impl Entry_type {
     /// # Returns
     ///
     /// The type of file system object (file, directory, symbolic link, etc.).
-    pub fn Get_type(&self) -> Type_type {
+    pub fn get_type(&self) -> Type_type {
         self.Type
     }
 
@@ -112,7 +112,7 @@ impl Entry_type {
     ///
     /// For files, this is the size in bytes. For directories, this may represent
     /// the number of entries or be implementation-defined.
-    pub fn Get_size(&self) -> Size_type {
+    pub fn get_size(&self) -> Size_type {
         self.size
     }
 
@@ -176,12 +176,12 @@ impl TryFrom<&mut [u8]> for &mut Entry_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
     use alloc::string::String;
 
     #[test]
-    fn Test_entry_creation() {
+    fn test_entry_creation() {
         let entry = Entry_type::New(
             Inode_type::New(42),
             String::from("test.txt"),
@@ -189,14 +189,14 @@ mod Tests {
             Size_type::New(1024),
         );
 
-        assert_eq!(entry.Get_inode(), Inode_type::New(42));
-        assert_eq!(entry.Get_name(), "test.txt");
-        assert_eq!(entry.Get_type(), Type_type::File);
-        assert_eq!(entry.Get_size(), Size_type::New(1024));
+        assert_eq!(entry.get_inode(), Inode_type::New(42));
+        assert_eq!(entry.get_name(), "test.txt");
+        assert_eq!(entry.get_type(), Type_type::File);
+        assert_eq!(entry.get_size(), Size_type::New(1024));
     }
 
     #[test]
-    fn Test_entry_getters() {
+    fn test_entry_getters() {
         let entry = Entry_type::New(
             Inode_type::New(123),
             String::from("directory"),
@@ -205,14 +205,14 @@ mod Tests {
         );
 
         // Test individual getters
-        assert_eq!(entry.Get_inode().As_u64(), 123);
-        assert_eq!(entry.Get_name(), "directory");
-        assert_eq!(entry.Get_type(), Type_type::Directory);
-        assert_eq!(entry.Get_size().As_u64(), 0);
+        assert_eq!(entry.get_inode().As_u64(), 123);
+        assert_eq!(entry.get_name(), "directory");
+        assert_eq!(entry.get_type(), Type_type::Directory);
+        assert_eq!(entry.get_size().As_u64(), 0);
     }
 
     #[test]
-    fn Test_entry_setters() {
+    fn test_entry_setters() {
         let mut entry = Entry_type::New(
             Inode_type::New(1),
             String::from("old_name"),
@@ -227,14 +227,14 @@ mod Tests {
         entry.Set_size(Size_type::New(2048));
 
         // Verify changes
-        assert_eq!(entry.Get_inode().As_u64(), 999);
-        assert_eq!(entry.Get_name(), "new_name.txt");
-        assert_eq!(entry.Get_type(), Type_type::Directory);
-        assert_eq!(entry.Get_size().As_u64(), 2048);
+        assert_eq!(entry.get_inode().As_u64(), 999);
+        assert_eq!(entry.get_name(), "new_name.txt");
+        assert_eq!(entry.get_type(), Type_type::Directory);
+        assert_eq!(entry.get_size().As_u64(), 2048);
     }
 
     #[test]
-    fn Test_entry_clone() {
+    fn test_entry_clone() {
         let original = Entry_type::New(
             Inode_type::New(456),
             String::from("clone_test.dat"),
@@ -245,17 +245,17 @@ mod Tests {
         let cloned = original.clone();
 
         // Verify clone has same values
-        assert_eq!(original.Get_inode(), cloned.Get_inode());
-        assert_eq!(original.Get_name(), cloned.Get_name());
-        assert_eq!(original.Get_type(), cloned.Get_type());
-        assert_eq!(original.Get_size(), cloned.Get_size());
+        assert_eq!(original.get_inode(), cloned.get_inode());
+        assert_eq!(original.get_name(), cloned.get_name());
+        assert_eq!(original.get_type(), cloned.get_type());
+        assert_eq!(original.get_size(), cloned.get_size());
 
         // Verify they are equal
         assert_eq!(original, cloned);
     }
 
     #[test]
-    fn Test_entry_debug() {
+    fn test_entry_debug() {
         let entry = Entry_type::New(
             Inode_type::New(789),
             String::from("debug_test"),
@@ -270,7 +270,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_entry_equality() {
+    fn test_entry_equality() {
         let entry1 = Entry_type::New(
             Inode_type::New(100),
             String::from("same.txt"),
@@ -297,7 +297,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_entry_different_types() {
+    fn test_entry_different_types() {
         // Test entries with different file types
         let file_entry = Entry_type::New(
             Inode_type::New(1),
@@ -320,9 +320,9 @@ mod Tests {
             Size_type::New(32),
         );
 
-        assert_eq!(file_entry.Get_type(), Type_type::File);
-        assert_eq!(dir_entry.Get_type(), Type_type::Directory);
-        assert_eq!(symlink_entry.Get_type(), Type_type::Symbolic_link);
+        assert_eq!(file_entry.get_type(), Type_type::File);
+        assert_eq!(dir_entry.get_type(), Type_type::Directory);
+        assert_eq!(symlink_entry.get_type(), Type_type::Symbolic_link);
 
         assert_ne!(file_entry, dir_entry);
         assert_ne!(dir_entry, symlink_entry);
@@ -330,7 +330,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_entry_empty_name() {
+    fn test_entry_empty_name() {
         let entry = Entry_type::New(
             Inode_type::New(0),
             String::new(),
@@ -338,12 +338,12 @@ mod Tests {
             Size_type::New(0),
         );
 
-        assert_eq!(entry.Get_name(), "");
-        assert_eq!(entry.Get_name().len(), 0);
+        assert_eq!(entry.get_name(), "");
+        assert_eq!(entry.get_name().len(), 0);
     }
 
     #[test]
-    fn Test_entry_large_values() {
+    fn test_entry_large_values() {
         let entry = Entry_type::New(
             Inode_type::New(u64::MAX),
             String::from("large_file.bin"),
@@ -351,12 +351,12 @@ mod Tests {
             Size_type::New(u64::MAX),
         );
 
-        assert_eq!(entry.Get_inode().As_u64(), u64::MAX);
-        assert_eq!(entry.Get_size().As_u64(), u64::MAX);
+        assert_eq!(entry.get_inode().As_u64(), u64::MAX);
+        assert_eq!(entry.get_size().As_u64(), u64::MAX);
     }
 
     #[test]
-    fn Test_entry_as_mut_slice() {
+    fn test_entry_as_mut_slice() {
         let mut entry = Entry_type::New(
             Inode_type::New(42),
             String::from("test"),
@@ -369,14 +369,14 @@ mod Tests {
     }
 
     #[test]
-    fn Test_entry_from_slice_invalid_size() {
+    fn test_entry_from_slice_invalid_size() {
         let mut buffer = [0u8; 10]; // Too small
         let result = <&mut Entry_type>::try_from(buffer.as_mut_slice());
         assert!(result.is_err());
     }
 
     #[test]
-    fn Test_entry_from_slice_valid() {
+    fn test_entry_from_slice_valid() {
         // Create a properly sized and aligned buffer
         let mut buffer = alloc::vec![0u8; core::mem::size_of::<Entry_type>()];
 
@@ -389,7 +389,7 @@ mod Tests {
     }
 
     #[test]
-    fn Test_entry_modification_after_creation() {
+    fn test_entry_modification_after_creation() {
         let mut entry = Entry_type::New(
             Inode_type::New(1),
             String::from("initial"),
@@ -403,14 +403,14 @@ mod Tests {
             entry.Set_name(alloc::format!("name_{i}"));
             entry.Set_size(Size_type::New(i * 100));
 
-            assert_eq!(entry.Get_inode().As_u64(), i);
-            assert_eq!(entry.Get_name(), &alloc::format!("name_{i}"));
-            assert_eq!(entry.Get_size().As_u64(), i * 100);
+            assert_eq!(entry.get_inode().As_u64(), i);
+            assert_eq!(entry.get_name(), &alloc::format!("name_{i}"));
+            assert_eq!(entry.get_size().As_u64(), i * 100);
         }
     }
 
     #[test]
-    fn Test_entry_unicode_names() {
+    fn test_entry_unicode_names() {
         let entry = Entry_type::New(
             Inode_type::New(1),
             String::from("файл.txt"), // Cyrillic
@@ -418,7 +418,7 @@ mod Tests {
             Size_type::New(256),
         );
 
-        assert_eq!(entry.Get_name(), "файл.txt");
+        assert_eq!(entry.get_name(), "файл.txt");
 
         let entry2 = Entry_type::New(
             Inode_type::New(2),
@@ -427,6 +427,6 @@ mod Tests {
             Size_type::New(512),
         );
 
-        assert_eq!(entry2.Get_name(), "文件.dat");
+        assert_eq!(entry2.get_name(), "文件.dat");
     }
 }

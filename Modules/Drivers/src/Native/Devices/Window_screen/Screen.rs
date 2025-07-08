@@ -23,24 +23,24 @@ impl Device_trait for Screen_device_type {
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
-        let Resolution = self.0.lock().unwrap().Get_resolution().unwrap();
+        let resolution = self.0.lock().unwrap().get_resolution().unwrap();
 
-        data.Set_resolution(Resolution);
+        data.set_resolution(resolution);
 
         Ok(Size_type::New(size_of::<Self>() as u64))
     }
 
-    fn Write(&self, Buffer: &[u8]) -> File_system::Result_type<File_system::Size_type> {
-        let data: &Screen_write_data_type = Buffer
+    fn Write(&self, buffer: &[u8]) -> File_system::Result_type<File_system::Size_type> {
+        let data: &Screen_write_data_type = buffer
             .try_into()
             .map_err(|_| File_system::Error_type::Invalid_parameter)?;
 
-        self.0.lock().unwrap().Draw(data).unwrap();
+        self.0.lock().unwrap().draw(data).unwrap();
 
         Ok(Size_type::New(size_of::<Self>() as u64))
     }
 
-    fn Get_size(&self) -> File_system::Result_type<File_system::Size_type> {
+    fn get_size(&self) -> File_system::Result_type<File_system::Size_type> {
         Ok(Size_type::New(size_of::<Self>() as u64))
     }
 

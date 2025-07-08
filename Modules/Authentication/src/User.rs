@@ -24,7 +24,7 @@ use Virtual_file_system::{Directory_type, File_type, Virtual_file_system_type};
 
 use crate::{
     Error_type,
-    Hash::{Generate_salt, Hash_password},
+    Hash::{generate_salt, hash_password},
     Result_type, USERS_FOLDER_PATH,
 };
 
@@ -61,7 +61,7 @@ impl User_type {
     /// # Returns
     ///
     /// A new `User_type` instance with the provided data.
-    pub fn New(
+    pub fn new(
         identifier: User_identifier_inner_type,
         name: String,
         primary_group: Group_identifier_inner_type,
@@ -82,7 +82,7 @@ impl User_type {
     /// # Returns
     ///
     /// A `User_identifier_type` containing the user's unique ID.
-    pub fn Get_identifier(&self) -> User_identifier_type {
+    pub fn get_identifier(&self) -> User_identifier_type {
         User_identifier_type::New(self.identifier)
     }
 
@@ -91,7 +91,7 @@ impl User_type {
     /// # Returns
     ///
     /// A `Group_identifier_type` containing the user's primary group ID.
-    pub fn Get_primary_group(&self) -> Group_identifier_type {
+    pub fn get_primary_group(&self) -> Group_identifier_type {
         Group_identifier_type::New(self.primary_group)
     }
 
@@ -100,7 +100,7 @@ impl User_type {
     /// # Returns
     ///
     /// A string slice containing the username.
-    pub fn Get_name(&self) -> &str {
+    pub fn get_name(&self) -> &str {
         &self.name
     }
 
@@ -109,7 +109,7 @@ impl User_type {
     /// # Returns
     ///
     /// A string slice containing the SHA-512 hash of password+salt.
-    pub fn Get_hash(&self) -> &str {
+    pub fn get_hash(&self) -> &str {
         &self.hash
     }
 
@@ -118,7 +118,7 @@ impl User_type {
     /// # Returns
     ///
     /// A string slice containing the random salt used for password hashing.
-    pub fn Get_salt(&self) -> &str {
+    pub fn get_salt(&self) -> &str {
         &self.salt
     }
 
@@ -127,7 +127,7 @@ impl User_type {
     /// # Arguments
     ///
     /// * `Hash` - New SHA-512 hash to store
-    pub fn Set_hash(&mut self, Hash: String) {
+    pub fn set_hash(&mut self, Hash: String) {
         self.hash = Hash;
     }
 
@@ -136,7 +136,7 @@ impl User_type {
     /// # Arguments
     ///
     /// * `Salt` - New salt to store
-    pub fn Set_salt(&mut self, Salt: String) {
+    pub fn set_salt(&mut self, Salt: String) {
         self.salt = Salt;
     }
 
@@ -145,7 +145,7 @@ impl User_type {
     /// # Arguments
     ///
     /// * `Primary_group` - New primary group identifier
-    pub fn Set_primary_group(&mut self, Primary_group: Group_identifier_inner_type) {
+    pub fn set_primary_group(&mut self, Primary_group: Group_identifier_inner_type) {
         self.primary_group = Primary_group;
     }
 
@@ -154,7 +154,7 @@ impl User_type {
     /// # Arguments
     ///
     /// * `Name` - New username to store
-    pub fn Set_name(&mut self, Name: String) {
+    pub fn set_name(&mut self, Name: String) {
         self.name = Name;
     }
 }
@@ -169,7 +169,7 @@ impl User_type {
 ///
 /// Returns `Ok(Path_owned_type)` with the complete path to the user file,
 /// or `Err(Error_type::Failed_to_get_user_file_path)` if path construction fails.
-pub fn Get_user_file_path(User_name: &str) -> Result_type<Path_owned_type> {
+pub fn get_user_file_path(User_name: &str) -> Result_type<Path_owned_type> {
     Path_type::New(USERS_FOLDER_PATH)
         .to_owned()
         .Append(User_name)
@@ -200,29 +200,29 @@ pub fn Get_user_file_path(User_name: &str) -> Result_type<Path_owned_type> {
 /// - `Failed_to_read_user_file` - I/O error reading user file
 /// - `Failed_to_parse_user_file` - Invalid JSON format in user file
 /// - `Invalid_password` - Password doesn't match stored hash
-pub async fn Authenticate_user<'a>(
+pub async fn authenticate_user<'a>(
     virtual_file_system: &'a Virtual_file_system_type<'a>,
     user_name: &str,
     password: &str,
 ) -> Result_type<User_identifier_type> {
-    let path = Get_user_file_path(user_name)?;
+    let path = get_user_file_path(user_name)?;
 
-    let User_file = File_type::Open(virtual_file_system, path, Mode_type::READ_ONLY.into())
+    let User_file = File_type::open(virtual_file_system, path, Mode_type::READ_ONLY.into())
         .await
         .map_err(Error_type::Failed_to_open_user_file)?;
 
     let mut Buffer = Vec::new();
 
     User_file
-        .Read_to_end(&mut Buffer)
+        .read_to_end(&mut Buffer)
         .await
         .map_err(Error_type::Failed_to_read_user_file)?;
 
     let User: User_type = miniserde::json::from_str(core::str::from_utf8(&Buffer).unwrap())
         .map_err(Error_type::Failed_to_parse_user_file)?;
 
-    if Hash_password(password, User.Get_salt()) == User.Get_hash() {
-        Ok(User.Get_identifier())
+    if hash_password(password, User.get_salt()) == User.get_hash() {
+        Ok(User.get_identifier())
     } else {
         Err(Error_type::Invalid_password)
     }
@@ -256,21 +256,21 @@ pub async fn Authenticate_user<'a>(
 /// - File system operations (directory creation, file writing)
 /// - Users manager operations (adding user)
 /// - Random salt generation failures
-pub async fn Create_user<'a>(
+pub async fn create_user<'a>(
     virtual_file_system: &'a Virtual_file_system_type<'a>,
     user_name: &str,
     password: &str,
     primary_group: Group_identifier_type,
     user_identifier: Option<User_identifier_type>,
 ) -> Result_type<User_identifier_type> {
-    let users_manager = Users::Get_instance();
+    let users_manager = Users::get_instance();
 
     // - New user identifier if not provided.
     let User_identifier = if let Some(User_identifier) = user_identifier {
         User_identifier
     } else {
         users_manager
-            .Get_new_user_identifier()
+            .get_new_user_identifier()
             .await
             .map_err(Error_type::Failed_to_get_new_user_identifier)?
     };
@@ -282,12 +282,12 @@ pub async fn Create_user<'a>(
         .map_err(Error_type::Failed_to_create_user)?;
 
     // - Hash password.
-    let Salt = Generate_salt().await?;
+    let Salt = generate_salt().await?;
 
-    let Hash = Hash_password(password, &Salt);
+    let Hash = hash_password(password, &Salt);
 
     // - Write user file.
-    let User = User_type::New(
+    let User = User_type::new(
         User_identifier.As_u16(),
         user_name.to_string(),
         primary_group.As_u16(),
@@ -305,7 +305,7 @@ pub async fn Create_user<'a>(
         .Append(user_name)
         .ok_or(Error_type::Failed_to_get_user_file_path)?;
 
-    let User_file = File_type::Open(
+    let User_file = File_type::open(
         virtual_file_system,
         User_file_path,
         Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None),
@@ -316,7 +316,7 @@ pub async fn Create_user<'a>(
     let User_json = miniserde::json::to_string(&User);
 
     User_file
-        .Write(User_json.as_bytes())
+        .write(User_json.as_bytes())
         .await
         .map_err(Error_type::Failed_to_write_user_file)?;
 
@@ -348,21 +348,21 @@ pub async fn Create_user<'a>(
 /// - File system errors (opening, reading, writing user file)
 /// - Salt generation failures
 /// - JSON parsing errors
-pub async fn Change_user_password<'a>(
+pub async fn change_user_password<'a>(
     virtual_file_system: &'a Virtual_file_system_type<'a>,
     user_name: &str,
     new_password: &str,
 ) -> Result_type<()> {
-    let salt = Generate_salt().await?;
+    let salt = generate_salt().await?;
 
-    let Hash = Hash_password(new_password, &salt);
+    let Hash = hash_password(new_password, &salt);
 
     let User_file_path = Path_type::New(USERS_FOLDER_PATH)
         .to_owned()
         .Append(user_name)
         .ok_or(Error_type::Failed_to_get_user_file_path)?;
 
-    let User_file = File_type::Open(
+    let User_file = File_type::open(
         virtual_file_system,
         User_file_path,
         Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::TRUNCATE), None),
@@ -373,20 +373,20 @@ pub async fn Change_user_password<'a>(
     let mut Buffer = Vec::new();
 
     User_file
-        .Read_to_end(&mut Buffer)
+        .read_to_end(&mut Buffer)
         .await
         .map_err(Error_type::Failed_to_read_user_file)?;
 
     let mut User: User_type = miniserde::json::from_str(core::str::from_utf8(&Buffer).unwrap())
         .map_err(Error_type::Failed_to_parse_user_file)?;
 
-    User.Set_hash(Hash);
-    User.Set_salt(salt);
+    User.set_hash(Hash);
+    User.set_salt(salt);
 
     let User_json = miniserde::json::to_string(&User);
 
     User_file
-        .Write(User_json.as_bytes())
+        .write(User_json.as_bytes())
         .await
         .map_err(Error_type::Failed_to_write_user_file)?;
 
@@ -414,14 +414,14 @@ pub async fn Change_user_password<'a>(
 /// - File system errors (opening, reading, writing user file)
 /// - JSON parsing errors
 /// - Path construction failures
-pub async fn Change_user_name<'a>(
+pub async fn change_user_name<'a>(
     virtual_file_system: &'a Virtual_file_system_type<'a>,
     current_name: &str,
     new_name: &str,
 ) -> Result_type<()> {
-    let file_path = Get_user_file_path(current_name)?;
+    let file_path = get_user_file_path(current_name)?;
 
-    let User_file = File_type::Open(
+    let User_file = File_type::open(
         virtual_file_system,
         file_path,
         Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::TRUNCATE), None),
@@ -432,19 +432,19 @@ pub async fn Change_user_name<'a>(
     let mut Buffer = Vec::new();
 
     User_file
-        .Read_to_end(&mut Buffer)
+        .read_to_end(&mut Buffer)
         .await
         .map_err(Error_type::Failed_to_read_user_file)?;
 
     let mut User: User_type = miniserde::json::from_str(core::str::from_utf8(&Buffer).unwrap())
         .map_err(Error_type::Failed_to_parse_user_file)?;
 
-    User.Set_name(new_name.to_string());
+    User.set_name(new_name.to_string());
 
     let User_json = miniserde::json::to_string(&User);
 
     User_file
-        .Write(User_json.as_bytes())
+        .write(User_json.as_bytes())
         .await
         .map_err(Error_type::Failed_to_write_user_file)?;
 
@@ -473,14 +473,14 @@ pub async fn Change_user_name<'a>(
 /// - Path construction failures
 /// - File system errors (opening, reading)
 /// - JSON parsing errors
-pub async fn Read_user_file<'a>(
+pub async fn read_user_file<'a>(
     virtual_file_system: &'a Virtual_file_system_type<'a>,
     buffer: &mut Vec<u8>,
     file: &str,
 ) -> Result_type<User_type> {
-    let user_file_path = Get_user_file_path(file)?;
+    let user_file_path = get_user_file_path(file)?;
 
-    let User_file = File_type::Open(
+    let User_file = File_type::open(
         virtual_file_system,
         user_file_path,
         Mode_type::READ_ONLY.into(),
@@ -491,7 +491,7 @@ pub async fn Read_user_file<'a>(
     buffer.clear();
 
     User_file
-        .Read_to_end(buffer)
+        .read_to_end(buffer)
         .await
         .map_err(Error_type::Failed_to_read_user_file)?;
 

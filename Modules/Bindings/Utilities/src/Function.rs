@@ -7,8 +7,8 @@ pub fn Split_inputs<'a>(
     let index = inputs
         .iter()
         .position(|Argument| {
-            if let FnArg::Typed(Pattern) = Argument {
-                !Pattern.pat.to_token_stream().to_string().starts_with("__")
+            if let FnArg::Typed(pattern) = Argument {
+                !pattern.pat.to_token_stream().to_string().starts_with("__")
             } else {
                 false
             }

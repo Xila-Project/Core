@@ -11,11 +11,11 @@ impl Point_type {
         Self { x: X, y: Y }
     }
 
-    pub const fn Get_x(&self) -> i16 {
+    pub const fn get_x(&self) -> i16 {
         self.x
     }
 
-    pub const fn Get_y(&self) -> i16 {
+    pub const fn get_y(&self) -> i16 {
         self.y
     }
 
@@ -39,7 +39,7 @@ impl Point_type {
         self
     }
 
-    pub fn Get_distance(&self, Other: Point_type) -> f32 {
+    pub fn get_distance(&self, Other: Point_type) -> f32 {
         let x = (self.x - Other.x) as f32;
         let y = (self.y - Other.y) as f32;
         (x * x + y * y).sqrt()

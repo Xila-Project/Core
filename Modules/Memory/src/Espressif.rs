@@ -20,7 +20,7 @@ impl Memory_allocator_trait for Memory_allocator_type {
         Protection: Protection_type,
         _: Flags_type,
     ) -> Option<NonNull<u8>> {
-        let _Caps = if Protection.Get_execute() {
+        let _Caps = if Protection.get_execute() {
             MALLOC_CAP_EXEC
         } else {
             MALLOC_CAP_8BIT
@@ -29,7 +29,7 @@ impl Memory_allocator_trait for Memory_allocator_type {
         let _Caps = esp_idf_sys::MALLOC_CAP_SPIRAM;
 
         let Address =
-            heap_caps_aligned_alloc(Layout.Get_alignment() as usize, Layout.Get_size(), _Caps);
+            heap_caps_aligned_alloc(Layout.get_alignment() as usize, Layout.get_size(), _Caps);
 
         if Address.is_null() {
             None
@@ -48,7 +48,7 @@ impl Memory_allocator_trait for Memory_allocator_type {
         true
     }
 
-    fn Get_page_size(&self) -> usize {
+    fn get_page_size(&self) -> usize {
         4 * 1024
     }
 

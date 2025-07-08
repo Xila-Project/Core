@@ -4,7 +4,7 @@ use Task::Task_identifier_type;
 
 pub static CONTEXT: Context_type = Context_type::new();
 
-pub fn Get_instance() -> &'static Context_type {
+pub fn get_instance() -> &'static Context_type {
     &CONTEXT
 }
 
@@ -19,7 +19,7 @@ impl Context_type {
         Self(RwLock::new(Inner_type { task: None }))
     }
 
-    pub fn Get_current_task_identifier(&self) -> Task_identifier_type {
+    pub fn get_current_task_identifier(&self) -> Task_identifier_type {
         block_on(self.0.read()).task.expect("No current task set")
     }
 
@@ -39,12 +39,12 @@ impl Context_type {
         inner.task.take();
     }
 
-    pub async fn Call_ABI<F, Fut, R>(&self, Function: F) -> R
+    pub async fn call_abi<F, Fut, R>(&self, Function: F) -> R
     where
         F: FnOnce() -> Fut,
         Fut: core::future::Future<Output = R>,
     {
-        let Task = Task::Get_instance().Get_current_task_identifier().await;
+        let Task = Task::get_instance().get_current_task_identifier().await;
         self.Set_task(Task).await;
         let result = Function().await;
         self.Clear_task().await;

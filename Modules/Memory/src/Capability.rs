@@ -13,11 +13,11 @@ impl Capabilities_type {
             .Set_direct_memory_access(Direct_memory_access)
     }
 
-    pub const fn Get_executable(&self) -> bool {
+    pub const fn get_executable(&self) -> bool {
         self.0 & Capabilities_type::EXECUTABLE_FLAG != 0
     }
 
-    pub const fn Get_direct_memory_access(&self) -> bool {
+    pub const fn get_direct_memory_access(&self) -> bool {
         self.0 & Capabilities_type::DIRECT_MEMORY_ACCESS_FLAG != 0
     }
 
@@ -39,11 +39,11 @@ impl Capabilities_type {
         self
     }
 
-    pub const fn Is_subset_of(&self, Other: Capabilities_type) -> bool {
+    pub const fn is_subset_of(&self, Other: Capabilities_type) -> bool {
         (self.0 & Other.0) == self.0
     }
 
-    pub const fn Is_superset_of(&self, Other: Capabilities_type) -> bool {
+    pub const fn is_superset_of(&self, Other: Capabilities_type) -> bool {
         (self.0 & Other.0) == Other.0
     }
 
@@ -59,10 +59,10 @@ impl Capabilities_type {
 impl Display for Capabilities_type {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Capabilities: ")?;
-        if self.Get_executable() {
+        if self.get_executable() {
             write!(f, "Executable ")?;
         }
-        if self.Get_direct_memory_access() {
+        if self.get_direct_memory_access() {
             write!(f, "Direct memory access ")?;
         }
         Ok(())

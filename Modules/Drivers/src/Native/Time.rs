@@ -28,7 +28,7 @@ impl Device_trait for Time_driver_type {
         Err(Error_type::Unsupported_operation)
     }
 
-    fn Get_size(&self) -> File_system::Result_type<File_system::Size_type> {
+    fn get_size(&self) -> File_system::Result_type<File_system::Size_type> {
         Ok(size_of::<Duration_type>().into())
     }
 

@@ -30,7 +30,7 @@ impl<'a> Components_type<'a> {
         Components_type(Path.As_str().split(SEPARATOR))
     }
 
-    pub fn Get_common_components(self, Other: Components_type<'a>) -> usize {
+    pub fn get_common_components(self, Other: Components_type<'a>) -> usize {
         self.zip(Other).take_while(|(a, b)| a == b).count()
     }
 }
@@ -50,14 +50,14 @@ impl DoubleEndedIterator for Components_type<'_> {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
 
     use alloc::{vec, vec::Vec};
 
     use super::*;
 
     #[test]
-    fn Test_components() {
+    fn test_components() {
         assert_eq!(
             Components_type::New(Path_type::From_str("/a/b/c")).collect::<Vec<_>>(),
             vec![

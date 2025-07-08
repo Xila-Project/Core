@@ -25,11 +25,11 @@ pub enum Error_type {
 
 pub type Result_type<T> = Result<T, Error_type>;
 
-mod Generated_bindings {
+mod generated_bindings {
     use super::{Error_type, Pointer_table_type, Result_type, Task_identifier_type, LVGL::*};
     use Virtual_machine::{Environment_type, WASM_pointer_type, WASM_usize_type};
 
-    unsafe fn Convert_to_native_pointer<T>(
+    unsafe fn convert_to_native_pointer<T>(
         environment: &Environment_type,
         pointer: WASM_pointer_type,
     ) -> Result_type<*mut T> {
@@ -49,11 +49,11 @@ impl Registrable_trait for Graphics_bindings {
     }
 
     #[cfg(not(target_arch = "x86_64"))]
-    fn Is_XIP(&self) -> bool {
+    fn is_XIP(&self) -> bool {
         true
     }
 
-    fn Get_name(&self) -> &'static str {
+    fn get_name(&self) -> &'static str {
         "Xila_graphics\0"
     }
 }
@@ -71,22 +71,22 @@ impl Pointer_table_type {
         }
     }
 
-    const fn Get_identifier(Task: Task_identifier_type, Identifier: u16) -> usize {
-        (Task.Into_inner() as usize) << 32 | Identifier as usize
+    const fn get_identifier(task: Task_identifier_type, identifier: u16) -> usize {
+        (task.Into_inner() as usize) << 32 | identifier as usize
     }
 
-    pub fn Insert(&mut self, Task: Task_identifier_type, Pointer: *mut c_void) -> Result_type<u16> {
+    pub fn insert(&mut self, task: Task_identifier_type, pointer: *mut c_void) -> Result_type<u16> {
         for i in u16::MIN..u16::MAX {
-            let identifier = Self::Get_identifier(Task, i);
+            let identifier = Self::get_identifier(task, i);
 
             match self.to_native_pointer.entry(identifier) {
                 Entry::Vacant(entry) => {
-                    entry.insert(Pointer);
-                    self.to_wasm_pointer.insert(Pointer, i);
+                    entry.insert(pointer);
+                    self.to_wasm_pointer.insert(pointer, i);
                     return Ok(i);
                 }
-                Entry::Occupied(Entry_pointer) => {
-                    if *Entry_pointer.get() == Pointer {
+                Entry::Occupied(entry_pointer) => {
+                    if *entry_pointer.get() == pointer {
                         return Ok(i);
                     }
                 }
@@ -96,12 +96,12 @@ impl Pointer_table_type {
         Err(Error_type::Pointer_table_full)
     }
 
-    pub fn Get_native_pointer<T>(
+    pub fn get_native_pointer<T>(
         &self,
         task: Task_identifier_type,
         identifier: u16,
     ) -> Result_type<*mut T> {
-        let identifier = Self::Get_identifier(task, identifier);
+        let identifier = Self::get_identifier(task, identifier);
 
         self.to_native_pointer
             .get(&identifier)
@@ -109,29 +109,29 @@ impl Pointer_table_type {
             .ok_or(Error_type::Native_pointer_not_found)
     }
 
-    pub fn Get_wasm_pointer<T>(&self, Pointer: *mut T) -> Result_type<u16> {
+    pub fn get_wasm_pointer<T>(&self, pointer: *mut T) -> Result_type<u16> {
         self.to_wasm_pointer
-            .get(&(Pointer as *mut c_void))
+            .get(&(pointer as *mut c_void))
             .cloned()
             .ok_or(Error_type::WASM_pointer_not_found)
     }
 
-    pub fn Remove<T>(
+    pub fn remove<T>(
         &mut self,
         task: Task_identifier_type,
         identifier: u16,
     ) -> Result_type<*mut T> {
-        let identifier = Self::Get_identifier(task, identifier);
+        let identifier = Self::get_identifier(task, identifier);
 
-        let Pointer = self
+        let pointer = self
             .to_native_pointer
             .remove(&identifier)
             .map(|pointer| pointer as *mut T)
             .ok_or(Error_type::Native_pointer_not_found)?;
 
-        self.to_wasm_pointer.remove(&(Pointer as *mut _));
+        self.to_wasm_pointer.remove(&(pointer as *mut _));
 
-        Ok(Pointer)
+        Ok(pointer)
     }
 }
 
@@ -146,7 +146,7 @@ static mut POINTER_TABLE: OnceCell<Pointer_table_type> = OnceCell::new();
 #[allow(clippy::too_many_arguments)]
 pub unsafe fn call(
     environment: Environment_pointer_type,
-    function: Generated_bindings::Function_calls_type,
+    function: generated_bindings::Function_calls_type,
     argument_0: WASM_usize_type,
     argument_1: WASM_usize_type,
     argument_2: WASM_usize_type,
@@ -157,21 +157,21 @@ pub unsafe fn call(
     arguments_count: u8,
     result: WASM_pointer_type,
 ) {
-    let Environment = Environment_type::from_raw_pointer(environment).unwrap();
+    let environment = Environment_type::from_raw_pointer(environment).unwrap();
 
-    let Instance = Graphics::Get_instance();
+    let instance = Graphics::get_instance();
 
-    let _Lock = block_on(Instance.Lock());
+    let _lock = block_on(instance.lock());
 
-    let Pointer_table_reference = &raw mut POINTER_TABLE;
+    let pointer_table_reference = &raw mut POINTER_TABLE;
 
-    let _ = (*Pointer_table_reference).get_or_init(Pointer_table_type::new);
+    let _ = (*pointer_table_reference).get_or_init(Pointer_table_type::new);
 
-    let Pointer_table_reference = (*Pointer_table_reference).get_mut().unwrap();
+    let pointer_table_reference = (*pointer_table_reference).get_mut().unwrap();
 
-    if let Err(Error) = Generated_bindings::Call_function(
-        Environment,
-        Pointer_table_reference,
+    if let Err(error) = generated_bindings::Call_function(
+        environment,
+        pointer_table_reference,
         function,
         argument_0,
         argument_1,
@@ -184,7 +184,7 @@ pub unsafe fn call(
         result,
     ) {
         Log::Error!(
-            "Error {Error:?} durring graphics call: {function:?} with arguments: {argument_0:x}, {argument_1:x}, {argument_2:x}, {argument_3:x}, {argument_4:x}, {argument_5:x}, {argument_6:x}",
+            "Error {error:?} durring graphics call: {function:?} with arguments: {argument_0:x}, {argument_1:x}, {argument_2:x}, {argument_3:x}, {argument_4:x}, {argument_5:x}, {argument_6:x}",
         );
     }
 

@@ -17,18 +17,18 @@ use super::Permission_type;
 ///
 /// let Mode = Mode_type::New(true, false);
 ///
-/// assert_eq!(Mode.Get_read(), true);
-/// assert_eq!(Mode.Get_write(), false);
+/// assert_eq!(Mode.get_read(), true);
+/// assert_eq!(Mode.get_write(), false);
 ///
 /// let Mode = Mode_type::New(false, true);
 ///
-/// assert_eq!(Mode.Get_read(), false);
-/// assert_eq!(Mode.Get_write(), true);
+/// assert_eq!(Mode.get_read(), false);
+/// assert_eq!(Mode.get_write(), true);
 ///
 /// let Mode = Mode_type::New(true, true);
 ///
-/// assert_eq!(Mode.Get_read(), true);
-/// assert_eq!(Mode.Get_write(), true);
+/// assert_eq!(Mode.get_read(), true);
+/// assert_eq!(Mode.get_write(), true);
 /// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
@@ -65,16 +65,16 @@ impl Mode_type {
         self.Set_bit(Self::WRITE_BIT, Value)
     }
 
-    pub const fn Get_bit(&self, Mask: u8) -> bool {
+    pub const fn get_bit(&self, Mask: u8) -> bool {
         self.0 & Mask != 0
     }
 
-    pub const fn Get_read(&self) -> bool {
-        self.Get_bit(Self::READ_BIT)
+    pub const fn get_read(&self) -> bool {
+        self.get_bit(Self::READ_BIT)
     }
 
-    pub const fn Get_write(&self) -> bool {
-        self.Get_bit(Self::WRITE_BIT)
+    pub const fn get_write(&self) -> bool {
+        self.get_bit(Self::WRITE_BIT)
     }
 
     pub const fn From_u8(Value: u8) -> Self {
@@ -90,8 +90,8 @@ impl Debug for Mode_type {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Mode_type")
-            .field("Read", &self.Get_read())
-            .field("Write", &self.Get_write())
+            .field("Read", &self.get_read())
+            .field("Write", &self.get_write())
             .finish()
     }
 }
@@ -111,9 +111,9 @@ impl Debug for Mode_type {
 ///
 /// let Open = Open_type::New(true, true, false);
 ///
-/// assert_eq!(Open.Get_create(), true);
-/// assert_eq!(Open.Get_exclusive(), true);
-/// assert_eq!(Open.Get_truncate(), false);
+/// assert_eq!(Open.get_create(), true);
+/// assert_eq!(Open.get_exclusive(), true);
+/// assert_eq!(Open.get_truncate(), false);
 /// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
@@ -139,7 +139,7 @@ impl Open_type {
             .Set_truncate(Truncate)
     }
 
-    pub const fn Get_bit(&self, Mask: u8) -> bool {
+    pub const fn get_bit(&self, Mask: u8) -> bool {
         self.0 & Mask != 0
     }
 
@@ -152,24 +152,24 @@ impl Open_type {
         self
     }
 
-    pub const fn Get_create(&self) -> bool {
-        self.Get_bit(Self::CREATE_MASK)
+    pub const fn get_create(&self) -> bool {
+        self.get_bit(Self::CREATE_MASK)
     }
 
     pub const fn Set_create(self, Value: bool) -> Self {
         self.Set_bit(Self::CREATE_MASK, Value)
     }
 
-    pub const fn Get_exclusive(&self) -> bool {
-        self.Get_bit(Self::EXCLUSIVE_MASK)
+    pub const fn get_exclusive(&self) -> bool {
+        self.get_bit(Self::EXCLUSIVE_MASK)
     }
 
     pub const fn Set_exclusive(self, Value: bool) -> Self {
         self.Set_bit(Self::EXCLUSIVE_MASK, Value)
     }
 
-    pub const fn Get_truncate(&self) -> bool {
-        self.Get_bit(Self::TRUNCATE_MASK)
+    pub const fn get_truncate(&self) -> bool {
+        self.get_bit(Self::TRUNCATE_MASK)
     }
 
     pub const fn Set_truncate(self, Value: bool) -> Self {
@@ -191,9 +191,9 @@ impl Debug for Open_type {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Open_type")
-            .field("Create", &self.Get_create())
-            .field("Create_only", &self.Get_exclusive())
-            .field("Truncate", &self.Get_truncate())
+            .field("Create", &self.get_create())
+            .field("Create_only", &self.get_exclusive())
+            .field("Truncate", &self.get_truncate())
             .finish()
     }
 }
@@ -213,10 +213,10 @@ impl Debug for Open_type {
 ///
 /// let Status = Status_type::New(true, false, true, false);
 ///
-/// assert_eq!(Status.Get_append(), true);
-/// assert_eq!(Status.Get_non_blocking(), false);
-/// assert_eq!(Status.Get_synchronous(), true);
-/// assert_eq!(Status.Get_synchronous_data_only(), false);
+/// assert_eq!(Status.get_append(), true);
+/// assert_eq!(Status.get_non_blocking(), false);
+/// assert_eq!(Status.get_synchronous(), true);
+/// assert_eq!(Status.get_synchronous_data_only(), false);
 /// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
@@ -256,7 +256,7 @@ impl Status_type {
         self
     }
 
-    const fn Get_bit(&self, Mask: u8) -> bool {
+    const fn get_bit(&self, Mask: u8) -> bool {
         self.0 & Mask != 0
     }
 
@@ -264,32 +264,32 @@ impl Status_type {
         self.Set_bit(Self::NON_BLOCKING_BIT, Value)
     }
 
-    pub fn Get_non_blocking(&self) -> bool {
-        self.Get_bit(Self::NON_BLOCKING_BIT)
+    pub fn get_non_blocking(&self) -> bool {
+        self.get_bit(Self::NON_BLOCKING_BIT)
     }
 
     pub const fn Set_append(self, Value: bool) -> Self {
         self.Set_bit(Self::APPEND_BIT, Value)
     }
 
-    pub const fn Get_append(&self) -> bool {
-        self.Get_bit(Self::APPEND_BIT)
+    pub const fn get_append(&self) -> bool {
+        self.get_bit(Self::APPEND_BIT)
     }
 
     pub const fn Set_synchronous(self, Value: bool) -> Self {
         self.Set_bit(Self::SYNCHRONOUS_BIT, Value)
     }
 
-    pub const fn Get_synchronous(&self) -> bool {
-        self.Get_bit(Self::SYNCHRONOUS_BIT)
+    pub const fn get_synchronous(&self) -> bool {
+        self.get_bit(Self::SYNCHRONOUS_BIT)
     }
 
     pub const fn Set_synchronous_data_only(self, Value: bool) -> Self {
         self.Set_bit(Self::SYNCHRONOUS_DATA_ONLY_BIT, Value)
     }
 
-    pub const fn Get_synchronous_data_only(&self) -> bool {
-        self.Get_bit(Self::SYNCHRONOUS_DATA_ONLY_BIT)
+    pub const fn get_synchronous_data_only(&self) -> bool {
+        self.get_bit(Self::SYNCHRONOUS_DATA_ONLY_BIT)
     }
 
     pub const fn From_u8(Value: u8) -> Self {
@@ -301,12 +301,12 @@ impl Debug for Status_type {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Status_type")
-            .field("Append", &self.Get_append())
-            .field("Non_blocking", &self.Get_non_blocking())
-            .field("Synchronous", &self.Get_bit(Self::SYNCHRONOUS_BIT))
+            .field("Append", &self.get_append())
+            .field("Non_blocking", &self.get_non_blocking())
+            .field("Synchronous", &self.get_bit(Self::SYNCHRONOUS_BIT))
             .field(
                 "Synchronous_data_only",
-                &self.Get_bit(Self::SYNCHRONOUS_DATA_ONLY_BIT),
+                &self.get_bit(Self::SYNCHRONOUS_DATA_ONLY_BIT),
             )
             .finish()
     }
@@ -333,9 +333,9 @@ impl Default for Status_type {
 ///     
 /// let Flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), Some(Status_type::Non_blocking));
 ///
-/// assert_eq!(Flags.Get_mode(), Mode_type::Read_write);
-/// assert_eq!(Flags.Get_open(), Open_type::Create_only);
-/// assert_eq!(Flags.Get_status(), Status_type::Non_blocking);
+/// assert_eq!(Flags.get_mode(), Mode_type::Read_write);
+/// assert_eq!(Flags.get_open(), Open_type::Create_only);
+/// assert_eq!(Flags.get_status(), Status_type::Non_blocking);
 /// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
@@ -345,9 +345,9 @@ impl Debug for Flags_type {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Flags_type")
-            .field("Mode", &self.Get_mode())
-            .field("Open", &self.Get_open())
-            .field("Status", &self.Get_status())
+            .field("Mode", &self.get_mode())
+            .field("Open", &self.get_open())
+            .field("Status", &self.get_status())
             .finish()
     }
 }
@@ -384,15 +384,15 @@ impl Flags_type {
         Self(Flags)
     }
 
-    pub const fn Get_mode(&self) -> Mode_type {
+    pub const fn get_mode(&self) -> Mode_type {
         Mode_type(((self.0 >> Self::MODE_POSITION) & Self::MODE_MASK) as u8)
     }
 
-    pub const fn Get_open(&self) -> Open_type {
+    pub const fn get_open(&self) -> Open_type {
         Open_type(((self.0 >> Self::OPEN_POSITION) & Self::OPEN_MASK) as u8)
     }
 
-    pub const fn Get_status(&self) -> Status_type {
+    pub const fn get_status(&self) -> Status_type {
         Status_type(((self.0 >> Self::STATUS_POSITION) & Self::STATUS_MASK) as u8)
     }
 
@@ -414,11 +414,11 @@ impl Flags_type {
         self
     }
 
-    pub fn Is_permission_granted(&self, Permission: &Permission_type) -> bool {
-        let mode = self.Get_mode();
+    pub fn is_permission_granted(&self, Permission: &Permission_type) -> bool {
+        let mode = self.get_mode();
 
-        (Permission.Get_read() && mode.Get_read()) // Read permission
-            || (Permission.Get_write() && (mode.Get_write() || self.Get_status().Get_append()))
+        (Permission.get_read() && mode.get_read()) // Read permission
+            || (Permission.get_write() && (mode.get_write() || self.get_status().get_append()))
         // Write permission
     }
 }
@@ -436,138 +436,138 @@ impl From<Flags_type> for u16 {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
 
     #[test]
-    fn Test_mode_type_new() {
+    fn test_mode_type_new() {
         let Read_only = Mode_type::New(true, false);
-        assert!(Read_only.Get_read());
-        assert!(!Read_only.Get_write());
+        assert!(Read_only.get_read());
+        assert!(!Read_only.get_write());
 
         let Write_only = Mode_type::New(false, true);
-        assert!(!Write_only.Get_read());
-        assert!(Write_only.Get_write());
+        assert!(!Write_only.get_read());
+        assert!(Write_only.get_write());
 
         let Read_write = Mode_type::New(true, true);
-        assert!(Read_write.Get_read());
-        assert!(Read_write.Get_write());
+        assert!(Read_write.get_read());
+        assert!(Read_write.get_write());
     }
 
     #[test]
-    fn Test_mode_type_set_get() {
+    fn test_mode_type_set_get() {
         let mut Mode = Mode_type(0);
         Mode = Mode.Set_read(true);
-        assert!(Mode.Get_read());
-        assert!(!Mode.Get_write());
+        assert!(Mode.get_read());
+        assert!(!Mode.get_write());
 
         Mode = Mode.Set_write(true);
-        assert!(Mode.Get_read());
-        assert!(Mode.Get_write());
+        assert!(Mode.get_read());
+        assert!(Mode.get_write());
 
         Mode = Mode.Set_read(false);
-        assert!(!Mode.Get_read());
-        assert!(Mode.Get_write());
+        assert!(!Mode.get_read());
+        assert!(Mode.get_write());
     }
 
     #[test]
-    fn Test_open_type_new() {
+    fn test_open_type_new() {
         let Open = Open_type::New(true, false, true);
-        assert!(Open.Get_create());
-        assert!(!Open.Get_exclusive());
-        assert!(Open.Get_truncate());
+        assert!(Open.get_create());
+        assert!(!Open.get_exclusive());
+        assert!(Open.get_truncate());
     }
 
     #[test]
-    fn Test_open_type_set_get() {
+    fn test_open_type_set_get() {
         let mut Open = Open_type(0);
         Open = Open.Set_create(true);
-        assert!(Open.Get_create());
-        assert!(!Open.Get_exclusive());
+        assert!(Open.get_create());
+        assert!(!Open.get_exclusive());
 
         Open = Open.Set_exclusive(true);
-        assert!(Open.Get_create());
-        assert!(Open.Get_exclusive());
+        assert!(Open.get_create());
+        assert!(Open.get_exclusive());
 
         Open = Open.Set_truncate(true);
-        assert!(Open.Get_truncate());
+        assert!(Open.get_truncate());
     }
 
     #[test]
-    fn Test_status_type_new() {
+    fn test_status_type_new() {
         let Status = Status_type::New(true, false, true, false);
-        assert!(Status.Get_append());
-        assert!(!Status.Get_non_blocking());
-        assert!(Status.Get_synchronous());
-        assert!(!Status.Get_synchronous_data_only());
+        assert!(Status.get_append());
+        assert!(!Status.get_non_blocking());
+        assert!(Status.get_synchronous());
+        assert!(!Status.get_synchronous_data_only());
     }
 
     #[test]
-    fn Test_status_type_set_get() {
+    fn test_status_type_set_get() {
         let mut Status = Status_type(0);
         Status = Status.Set_append(true);
-        assert!(Status.Get_append());
-        assert!(!Status.Get_non_blocking());
+        assert!(Status.get_append());
+        assert!(!Status.get_non_blocking());
 
         Status = Status.Set_non_blocking(true);
-        assert!(Status.Get_non_blocking());
+        assert!(Status.get_non_blocking());
 
         Status = Status.Set_synchronous(true);
-        assert!(Status.Get_synchronous());
+        assert!(Status.get_synchronous());
 
         Status = Status.Set_synchronous_data_only(true);
-        assert!(Status.Get_synchronous_data_only());
+        assert!(Status.get_synchronous_data_only());
     }
 
     #[test]
-    fn Test_flags_type_new() {
+    fn test_flags_type_new() {
         let Mode = Mode_type::READ_WRITE;
         let Open = Open_type::New(true, false, true);
         let Status = Status_type::New(true, false, true, false);
 
         let Flags = Flags_type::New(Mode, Some(Open), Some(Status));
-        assert_eq!(Flags.Get_mode(), Mode);
-        assert_eq!(Flags.Get_open(), Open);
-        assert_eq!(Flags.Get_status(), Status);
+        assert_eq!(Flags.get_mode(), Mode);
+        assert_eq!(Flags.get_open(), Open);
+        assert_eq!(Flags.get_status(), Status);
     }
 
     #[test]
-    fn Test_flags_type_set_get() {
+    fn test_flags_type_set_get() {
         let Flags = Flags_type::New(Mode_type::READ_ONLY, None, None);
 
         let New_mode = Mode_type::WRITE_ONLY;
         let Flags = Flags.Set_mode(New_mode);
-        assert_eq!(Flags.Get_mode(), New_mode);
+        assert_eq!(Flags.get_mode(), New_mode);
 
         let New_open = Open_type::New(true, true, false);
         let Flags = Flags.Set_open(New_open);
-        assert_eq!(Flags.Get_open(), New_open);
+        assert_eq!(Flags.get_open(), New_open);
 
         let New_status = Status_type::New(false, true, false, true);
         let Flags = Flags.Set_status(New_status);
-        assert_eq!(Flags.Get_status(), New_status);
+        assert_eq!(Flags.get_status(), New_status);
     }
 
     #[test]
-    fn Test_flags_type_is_permission_granted() {
+    fn test_flags_type_is_permission_granted() {
         let Mode = Mode_type::READ_WRITE;
         let Status = Status_type::New(true, false, false, false);
         let Flags = Flags_type::New(Mode, None, Some(Status));
 
-        assert!(Flags.Is_permission_granted(&Permission_type::READ_ONLY));
-        assert!(Flags.Is_permission_granted(&Permission_type::WRITE_ONLY));
-        assert!(Flags.Is_permission_granted(&Permission_type::READ_WRITE));
+        assert!(Flags.is_permission_granted(&Permission_type::READ_ONLY));
+        assert!(Flags.is_permission_granted(&Permission_type::WRITE_ONLY));
+        assert!(Flags.is_permission_granted(&Permission_type::READ_WRITE));
     }
 
     #[test]
-    fn Test_flags_type_from_mode_type() {
+    fn test_flags_type_from_mode_type() {
         let Mode = Mode_type::READ_WRITE;
         let Flags: Flags_type = Mode.into();
-        assert_eq!(Flags.Get_mode(), Mode);
+        assert_eq!(Flags.get_mode(), Mode);
     }
 
     #[test]
-    fn Test_flags_type_into_u16() {
+    fn test_flags_type_into_u16() {
         let Mode = Mode_type::READ_WRITE;
         let Flags = Flags_type::New(Mode, None, None);
         let Flags_u16: u16 = Flags.into();

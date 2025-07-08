@@ -17,10 +17,10 @@ impl Drop for Home_type {
 }
 
 impl Home_type {
-    pub async fn new(Desk: *mut LVGL::lv_obj_t) -> Result_type<Self> {
-        let _lock = Graphics::Get_instance().Lock().await; // Lock the graphics
+    pub async fn new(desk: *mut LVGL::lv_obj_t) -> Result_type<Self> {
+        let _lock = Graphics::get_instance().lock().await; // Lock the graphics
 
-        let Button = unsafe {
+        let button = unsafe {
             let button = LVGL::lv_obj_create(LVGL::lv_layer_top());
 
             if button.is_null() {
@@ -40,50 +40,50 @@ impl Home_type {
 
             LVGL::lv_obj_add_event_cb(
                 button,
-                Some(Handle_pressing),
+                Some(handle_pressing),
                 LVGL::lv_event_code_t_LV_EVENT_PRESSING,
                 null_mut(),
             );
 
             LVGL::lv_obj_add_event_cb(
                 button,
-                Some(Handle_released),
+                Some(handle_released),
                 LVGL::lv_event_code_t_LV_EVENT_RELEASED,
-                Desk as *mut core::ffi::c_void,
+                desk as *mut core::ffi::c_void,
             );
 
             button
         };
 
-        Ok(Self { button: Button })
+        Ok(Self { button })
     }
 }
 
-unsafe extern "C" fn Handle_pressing(Event: *mut LVGL::lv_event_t) {
-    let object = LVGL::lv_event_get_target(Event) as *mut LVGL::lv_obj_t;
+unsafe extern "C" fn handle_pressing(event: *mut LVGL::lv_event_t) {
+    let object = LVGL::lv_event_get_target(event) as *mut LVGL::lv_obj_t;
 
-    let Input_device = LVGL::lv_indev_active();
+    let input_device = LVGL::lv_indev_active();
 
-    let mut Vector = LVGL::lv_point_t::default();
+    let mut vector = LVGL::lv_point_t::default();
 
-    LVGL::lv_indev_get_vect(Input_device, &mut Vector as *mut LVGL::lv_point_t);
+    LVGL::lv_indev_get_vect(input_device, &mut vector as *mut LVGL::lv_point_t);
 
-    let y = LVGL::lv_obj_get_y_aligned(object) + Vector.y;
+    let y = LVGL::lv_obj_get_y_aligned(object) + vector.y;
 
     let y = y.max(-40);
 
     LVGL::lv_obj_set_y(object, y);
 }
 
-unsafe extern "C" fn Handle_released(Event: *mut LVGL::lv_event_t) {
-    let object = LVGL::lv_event_get_target(Event) as *mut LVGL::lv_obj_t;
+unsafe extern "C" fn handle_released(event: *mut LVGL::lv_event_t) {
+    let object = LVGL::lv_event_get_target(event) as *mut LVGL::lv_obj_t;
 
     let y = LVGL::lv_obj_get_y_aligned(object);
 
     LVGL::lv_obj_set_y(object, -5);
 
     if y < -20 {
-        let desk = LVGL::lv_event_get_user_data(Event) as *mut LVGL::lv_obj_t;
+        let desk = LVGL::lv_event_get_user_data(event) as *mut LVGL::lv_obj_t;
 
         LVGL::lv_obj_remove_flag(desk, LVGL::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
         LVGL::lv_obj_move_foreground(desk);

@@ -65,8 +65,8 @@ impl Manager_type {
         Ok(Best_index)
     }
 
-    pub async fn Get_spawner(&self, Task: Task_identifier_type) -> Result_type<usize> {
-        Self::Get_task(&*self.0.read().await, Task)
+    pub async fn get_spawner(&self, Task: Task_identifier_type) -> Result_type<usize> {
+        Self::get_task(&*self.0.read().await, Task)
             .map(|task| task.Spawner_identifier)
             .map_err(|_| Error_type::Invalid_task_identifier)
     }

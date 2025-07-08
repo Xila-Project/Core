@@ -123,11 +123,11 @@ impl From<File_identifier_type> for File_identifier_inner_type {
 }
 
 #[cfg(test)]
-mod Tests {
+mod tests {
     use super::*;
 
     #[test]
-    fn Test_file_identifier() {
+    fn test_file_identifier() {
         let Identifier = File_identifier_type::from(0x1234);
         assert_eq!(Identifier, File_identifier_type::New(0x1234));
         assert_eq!(File_identifier_inner_type::from(Identifier), 0x1234);

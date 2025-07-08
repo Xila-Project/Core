@@ -7,10 +7,10 @@ use Log::Information;
 use Shared::Duration_type;
 
 #[test]
-fn Test_get_current_time() {
+fn test_get_current_time() {
     let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()));
 
-    let Current_time = Time::Get_instance().Get_current_time().unwrap();
+    let Current_time = Time::get_instance().get_current_time().unwrap();
 
     Information!("Current time : {Current_time:?}");
 
@@ -18,11 +18,11 @@ fn Test_get_current_time() {
 }
 
 #[test]
-fn Test_get_current_time_since_startup() {
+fn test_get_current_time_since_startup() {
     let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()));
 
-    let Current_time = Time::Get_instance()
-        .Get_current_time_since_startup()
+    let Current_time = Time::get_instance()
+        .get_current_time_since_startup()
         .unwrap();
 
     Information!("Time since startup : {Current_time:?}");

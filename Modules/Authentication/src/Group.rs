@@ -51,7 +51,7 @@ impl Group_type {
     /// # Returns
     ///
     /// A new `Group_type` instance with the provided data.
-    pub fn New(
+    pub fn new(
         identifier: Group_identifier_inner_type,
         name: String,
         users: Vec<User_identifier_inner_type>,
@@ -68,7 +68,7 @@ impl Group_type {
     /// # Returns
     ///
     /// A `Group_identifier_type` containing the group's unique ID.
-    pub fn Get_identifier(&self) -> Group_identifier_type {
+    pub fn get_identifier(&self) -> Group_identifier_type {
         Group_identifier_type::New(self.identifier)
     }
 
@@ -77,7 +77,7 @@ impl Group_type {
     /// # Returns
     ///
     /// A string slice containing the group name.
-    pub fn Get_name(&self) -> &str {
+    pub fn get_name(&self) -> &str {
         &self.name
     }
 
@@ -89,7 +89,7 @@ impl Group_type {
     /// # Returns
     ///
     /// A slice of `User_identifier_type` containing all group members.
-    pub fn Get_users(&self) -> &[User_identifier_type] {
+    pub fn get_users(&self) -> &[User_identifier_type] {
         // Avoid to copy the vector since User_identifier_type is transparent to User_identifier_inner_type.
         unsafe { core::mem::transmute(self.users.as_slice()) }
     }
@@ -105,7 +105,7 @@ impl Group_type {
 ///
 /// Returns `Ok(Path_owned_type)` with the complete path to the group file,
 /// or `Err(Error_type::Failed_to_get_group_file_path)` if path construction fails.
-pub fn Get_group_file_path(Group_name: &str) -> Result_type<Path_owned_type> {
+pub fn get_group_file_path(Group_name: &str) -> Result_type<Path_owned_type> {
     Path_type::New(GROUP_FOLDER_PATH)
         .to_owned()
         .Append(Group_name)
@@ -134,7 +134,7 @@ pub fn Get_group_file_path(Group_name: &str) -> Result_type<Path_owned_type> {
 /// - Path construction failures
 /// - File system errors (opening, reading)
 /// - JSON parsing errors
-pub async fn Read_group_file<'a>(
+pub async fn read_group_file<'a>(
     virtual_file_system: &'a Virtual_file_system_type<'a>,
     buffer: &mut Vec<u8>,
     file: &str,
@@ -144,7 +144,7 @@ pub async fn Read_group_file<'a>(
         .Append(file)
         .ok_or(Error_type::Failed_to_get_group_file_path)?;
 
-    let Group_file = File_type::Open(
+    let Group_file = File_type::open(
         virtual_file_system,
         group_file_path,
         Mode_type::READ_ONLY.into(),
@@ -155,7 +155,7 @@ pub async fn Read_group_file<'a>(
     buffer.clear();
 
     Group_file
-        .Read_to_end(buffer)
+        .read_to_end(buffer)
         .await
         .map_err(Error_type::Failed_to_read_group_file)?;
 
@@ -189,19 +189,19 @@ pub async fn Read_group_file<'a>(
 /// - Group identifier generation or assignment failures
 /// - File system operations (directory creation, file writing)
 /// - Users manager operations (adding group)
-pub async fn Create_group<'a>(
+pub async fn create_group<'a>(
     virtual_file_system: &'a Virtual_file_system_type<'a>,
     group_name: &str,
     group_identifier: Option<Group_identifier_type>,
 ) -> Result_type<Group_identifier_type> {
-    let users_manager = Users::Get_instance();
+    let users_manager = Users::get_instance();
 
     // - New group identifier if not provided.
     let Group_identifier = if let Some(Group_identifier) = group_identifier {
         Group_identifier
     } else {
         users_manager
-            .Get_new_group_identifier()
+            .get_new_group_identifier()
             .await
             .map_err(Error_type::Failed_to_get_new_group_identifier)?
     };
@@ -213,16 +213,16 @@ pub async fn Create_group<'a>(
         .map_err(Error_type::Failed_to_add_group)?;
 
     // - Write group file.
-    let Group = Group_type::New(Group_identifier.As_u16(), group_name.to_string(), vec![]);
+    let Group = Group_type::new(Group_identifier.As_u16(), group_name.to_string(), vec![]);
 
     match Directory_type::create(virtual_file_system, GROUP_FOLDER_PATH).await {
         Ok(_) | Err(File_system::Error_type::Already_exists) => {}
         Err(error) => Err(Error_type::Failed_to_create_groups_directory(error))?,
     };
 
-    let Group_file_path = Get_group_file_path(group_name)?;
+    let Group_file_path = get_group_file_path(group_name)?;
 
-    let Group_file = File_type::Open(
+    let Group_file = File_type::open(
         virtual_file_system,
         Group_file_path,
         Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None),
@@ -233,7 +233,7 @@ pub async fn Create_group<'a>(
     let Group_json = miniserde::json::to_string(&Group);
 
     Group_file
-        .Write(Group_json.as_bytes())
+        .write(Group_json.as_bytes())
         .await
         .map_err(Error_type::Failed_to_write_group_file)?;
 

@@ -80,9 +80,9 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
     let Function_name_string = Function_name.to_string();
 
     // Check if function is async
-    let Is_asynchronous = Input_function.sig.asyncness.is_some();
+    let is_asynchronous = Input_function.sig.asyncness.is_some();
 
-    if !Is_asynchronous {
+    if !is_asynchronous {
         return syn::Error::new_spanned(
             Input_function.sig.fn_token,
             "Test functions must be async",
@@ -142,12 +142,12 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                     let Manager = #Task_path::Initialize();
 
                     unsafe {
-                        __Spawner = Manager.Register_spawner(Spawner).expect("Failed to register spawner");
+                        __Spawner = Manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
                     #Task_path::Futures::block_on(async move {
                         Manager.Spawn(
-                            #Task_path::Manager_type::Root_task_identifier,
+                            #Task_path::Manager_type::ROOT_TASK_IDENTIFIER,
                             #Function_name_string,
                             Some(__Spawner),
                             async move |_task| {
@@ -159,7 +159,7 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                 });
             }
             unsafe {
-                #Task_path::Get_instance().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
+                #Task_path::get_instance().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
             }
 
         }
@@ -213,9 +213,9 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
     let Function_name_string = Function_name.to_string();
 
     // Check if function is async
-    let Is_asynchronous = Input_function.sig.asyncness.is_some();
+    let is_asynchronous = Input_function.sig.asyncness.is_some();
 
-    if !Is_asynchronous {
+    if !is_asynchronous {
         return syn::Error::new_spanned(
             Input_function.sig.fn_token,
             "Functions with Run_with_executor must be async",
@@ -291,7 +291,7 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                 });
             }
             unsafe {
-                #Task_path::Get_instance().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
+                #Task_path::get_instance().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
             }
         }
     }

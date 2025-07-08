@@ -27,7 +27,7 @@ fn main() {
     let Out_directory = env::var("OUT_DIR").unwrap();
     let out_directory = Path::new(Out_directory.as_str());
 
-    Generator::Generate(out_directory, &Context).expect("Error generating WASM bindings");
+    Generator::generate(out_directory, &Context).expect("Error generating WASM bindings");
 
     cc::Build::new()
         .file(out_directory.join("Xila_graphics.c"))

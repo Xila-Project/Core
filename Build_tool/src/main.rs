@@ -27,7 +27,7 @@ fn Initialize_logger() {
         .init();
 }
 
-fn Get_usage() -> &'static str {
+fn get_usage() -> &'static str {
     "Usage: xila [command] [target] [args]
     Commands:
         build       Compile the current project.
@@ -66,7 +66,7 @@ fn Parse_arguments() -> Result<(Command_type, Option<Target_type>, Vec<String>),
     // Get the command
     let Command = Command::Command_type::try_from(Command.as_str())?;
 
-    let Target = if Command.Is_target_needed() && !Arguments.is_empty() {
+    let Target = if Command.is_target_needed() && !Arguments.is_empty() {
         let Target: &String = Arguments.front().unwrap();
 
         let Target = Target::Target_type::try_from(Target.as_str())?;
@@ -80,7 +80,7 @@ fn Parse_arguments() -> Result<(Command_type, Option<Target_type>, Vec<String>),
     Ok((Command, Target, Arguments.into_iter().collect()))
 }
 
-fn Get_cargo_arguments(
+fn get_cargo_arguments(
     Command: Command_type,
     Target: Option<Target_type>,
     Arguments: &mut Vec<String>,
@@ -89,17 +89,17 @@ fn Get_cargo_arguments(
 
     // Add the toolchain like +esp
     if let Some(Target) = Target {
-        Cargo_arguments.push(Target.Get_toolchain());
-        log::trace!("Toolchain : {}", Target.Get_toolchain());
+        Cargo_arguments.push(Target.get_toolchain());
+        log::trace!("Toolchain : {}", Target.get_toolchain());
     }
 
     // Add the cargo command like build, clean, run, test, fmt, doc
-    Cargo_arguments.push(Command.Get_cargo_command().expect("Unknown command"));
+    Cargo_arguments.push(Command.get_cargo_command().expect("Unknown command"));
 
     // Add the target arguments like --target, -Z build-std=std,panic_abort
     if let Some(Target) = Target {
-        Cargo_arguments.append(&mut Target.Get_arguments());
-        log::trace!("Target arguments : {:?}", Target.Get_arguments());
+        Cargo_arguments.append(&mut Target.get_arguments());
+        log::trace!("Target arguments : {:?}", Target.get_arguments());
     }
 
     // Add the remaining additional arguments
@@ -114,14 +114,14 @@ fn main() -> Result<(), ()> {
 
     let (Command, Target, mut Arguments) = match Parse_arguments() {
         Ok(Arguments) => Arguments,
-        Err(Error) => {
-            log::error!("{}\n{}", Error, Get_usage());
+        Err(error) => {
+            log::error!("{}\n{}", Error, get_usage());
             return Err(());
         }
     };
 
     if Command == Command_type::Help {
-        println!("{}", Get_usage());
+        println!("{}", get_usage());
         return Ok(());
     }
 
@@ -138,18 +138,18 @@ fn main() -> Result<(), ()> {
     if let Some(Target) = Target {
         log::trace!(
             "Environment variables : {:?}",
-            Target.Get_environment_variables()
+            Target.get_environment_variables()
         );
 
         // Add the environment variables like MCU=esp32
-        Shell_command.envs(Target.Get_environment_variables());
+        Shell_command.envs(Target.get_environment_variables());
     }
 
     log::trace!("Full command : {:?}", Shell_command);
 
     let mut Child = match Shell_command.spawn() {
         Ok(Child) => Child,
-        Err(Error) => {
+        Err(error) => {
             log::error!("Failed to spawn the cargo command : {}", Error);
             return Err(());
         }
@@ -157,7 +157,7 @@ fn main() -> Result<(), ()> {
 
     let Status = match Child.wait() {
         Ok(Status) => Status,
-        Err(Error) => {
+        Err(error) => {
             log::error!("Failed to wait for the cargo command : {}", Error);
             return Err(());
         }

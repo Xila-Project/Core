@@ -6,7 +6,7 @@ use super::*;
 
 impl Manager_type {
     /// Get the children tasks of a task.
-    pub async fn Get_children(
+    pub async fn get_children(
         &self,
         task_identifier: Task_identifier_type,
     ) -> Result_type<Vec<Task_identifier_type>> {
@@ -22,10 +22,10 @@ impl Manager_type {
     }
 
     /// Get the parent task of a task.
-    pub async fn Get_parent(
+    pub async fn get_parent(
         &self,
         task_identifier: Task_identifier_type,
     ) -> Result_type<Task_identifier_type> {
-        Self::Get_task(&*self.0.read().await, task_identifier).map(|Task| Task.Parent)
+        Self::get_task(&*self.0.read().await, task_identifier).map(|Task| Task.Parent)
     }
 }

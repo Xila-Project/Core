@@ -33,5 +33,5 @@ pub struct Shell_executable_type;
 Executable::Implement_executable_device!(
     Structure: Shell_executable_type,
     Mount_path: "/Binaries/Graphical_shell",
-    Main_function: Main::Main,
+    Main_function: Main::main,
 );
