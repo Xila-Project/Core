@@ -67,7 +67,7 @@ impl Partition_device_type {
     /// // Create a partition starting at 64KB with 128KB size
     /// let partition = Partition_device_type::New(base_device, 64 * 1024, 128 * 1024);
     /// ```
-    pub fn New(Base_device: Device_type, Offset: u64, Size: u64) -> Self {
+    pub fn new(Base_device: Device_type, Offset: u64, Size: u64) -> Self {
         Self {
             base_device: Base_device,
             offset: Offset,
@@ -97,10 +97,10 @@ impl Partition_device_type {
     /// // Create a partition starting at sector 2048 with 1024 sectors (512KB)
     /// let partition = Partition_device_type::New_from_lba(base_device, 2048, 1024);
     /// ```
-    pub fn New_from_lba(Base_device: Device_type, Start_lba: u32, Sector_count: u32) -> Self {
+    pub fn new_from_lba(Base_device: Device_type, Start_lba: u32, Sector_count: u32) -> Self {
         let offset = Start_lba as u64 * 512;
         let size = Sector_count as u64 * 512;
-        Self::New(Base_device, offset, size)
+        Self::new(Base_device, offset, size)
     }
 
     /// Get the byte offset of this partition within the base device.
@@ -367,15 +367,15 @@ mod tests {
     use crate::{Device_trait, Device_type, Memory_device_type, Position_type};
 
     /// Create a mock memory device for testing
-    fn Create_test_device() -> Device_type {
+    fn create_test_device() -> Device_type {
         let Memory_device = Memory_device_type::<512>::New(4096);
         crate::Create_device!(Memory_device)
     }
 
     #[test]
     fn test_partition_device_creation() {
-        let Base_device = Create_test_device();
-        let Partition = Partition_device_type::New(Base_device, 512, 1024);
+        let Base_device = create_test_device();
+        let Partition = Partition_device_type::new(Base_device, 512, 1024);
 
         assert_eq!(Partition.get_offset(), 512);
         assert_eq!(Partition.get_partition_size(), 1024);
@@ -385,8 +385,8 @@ mod tests {
 
     #[test]
     fn test_partition_device_from_lba() {
-        let Base_device = Create_test_device();
-        let Partition = Partition_device_type::New_from_lba(Base_device, 4, 8);
+        let Base_device = create_test_device();
+        let Partition = Partition_device_type::new_from_lba(Base_device, 4, 8);
 
         assert_eq!(Partition.get_offset(), 4 * 512); // 2048
         assert_eq!(Partition.get_partition_size(), 8 * 512); // 4096
@@ -396,8 +396,8 @@ mod tests {
 
     #[test]
     fn test_partition_device_lba_calculations() {
-        let Base_device = Create_test_device();
-        let Partition = Partition_device_type::New(Base_device, 1024, 2048);
+        let Base_device = create_test_device();
+        let Partition = Partition_device_type::new(Base_device, 1024, 2048);
 
         assert_eq!(Partition.get_start_lba(), 2); // 1024 / 512
         assert_eq!(Partition.get_sector_count(), 4); // 2048 / 512
@@ -405,19 +405,19 @@ mod tests {
 
     #[test]
     fn test_partition_device_validity() {
-        let Base_device = Create_test_device();
+        let Base_device = create_test_device();
 
-        let Valid_partition = Partition_device_type::New(Base_device.clone(), 0, 1024);
+        let Valid_partition = Partition_device_type::new(Base_device.clone(), 0, 1024);
         assert!(Valid_partition.is_valid());
 
-        let Invalid_partition = Partition_device_type::New(Base_device, 0, 0);
+        let Invalid_partition = Partition_device_type::new(Base_device, 0, 0);
         assert!(!Invalid_partition.is_valid());
     }
 
     #[test]
     fn test_partition_device_remaining_bytes() {
-        let Base_device = Create_test_device();
-        let Partition = Partition_device_type::New(Base_device, 0, 1000);
+        let Base_device = create_test_device();
+        let Partition = Partition_device_type::new(Base_device, 0, 1000);
 
         // Initially, all bytes are available
         assert_eq!(Partition.get_remaining_bytes(), 1000);
@@ -441,8 +441,8 @@ mod tests {
 
     #[test]
     fn test_partition_device_position_setting() {
-        let Base_device = Create_test_device();
-        let Partition = Partition_device_type::New(Base_device, 0, 1000);
+        let Base_device = create_test_device();
+        let Partition = Partition_device_type::new(Base_device, 0, 1000);
 
         // Test Start position
         let Result = Partition.Set_position(&Position_type::Start(100));
@@ -483,8 +483,8 @@ mod tests {
 
     #[test]
     fn test_partition_device_get_size() {
-        let Base_device = Create_test_device();
-        let Partition = Partition_device_type::New(Base_device, 100, 1500);
+        let Base_device = create_test_device();
+        let Partition = Partition_device_type::new(Base_device, 100, 1500);
 
         let Size_result = Partition.get_size();
         assert!(Size_result.is_ok());
@@ -493,8 +493,8 @@ mod tests {
 
     #[test]
     fn test_partition_device_read() {
-        let Base_device = Create_test_device();
-        let Partition = Partition_device_type::New(Base_device, 0, 100);
+        let Base_device = create_test_device();
+        let Partition = Partition_device_type::new(Base_device, 0, 100);
 
         // Test normal read
         let mut Buffer = [0u8; 50];
@@ -520,8 +520,8 @@ mod tests {
 
     #[test]
     fn test_partition_device_write() {
-        let Base_device = Create_test_device();
-        let Partition = Partition_device_type::New(Base_device, 0, 100);
+        let Base_device = create_test_device();
+        let Partition = Partition_device_type::new(Base_device, 0, 100);
 
         // Test normal write
         let Buffer = [0x42u8; 30];
@@ -548,8 +548,8 @@ mod tests {
 
     #[test]
     fn test_partition_device_block_operations() {
-        let Base_device = Create_test_device();
-        let Partition = Partition_device_type::New(Base_device, 0, 1000);
+        let Base_device = create_test_device();
+        let Partition = Partition_device_type::new(Base_device, 0, 1000);
 
         // Test block device properties (should delegate to base device)
         let is_block = Partition.is_a_block_device();
@@ -566,8 +566,8 @@ mod tests {
 
     #[test]
     fn test_partition_device_flush_and_erase() {
-        let Base_device = Create_test_device();
-        let Partition = Partition_device_type::New(Base_device, 0, 1000);
+        let Base_device = create_test_device();
+        let Partition = Partition_device_type::new(Base_device, 0, 1000);
 
         // Test flush (should delegate to base device)
         let Flush_result = Partition.Flush();
@@ -580,8 +580,8 @@ mod tests {
 
     #[test]
     fn test_partition_device_debug_display() {
-        let Base_device = Create_test_device();
-        let Partition = Partition_device_type::New_from_lba(Base_device, 10, 20);
+        let Base_device = create_test_device();
+        let Partition = Partition_device_type::new_from_lba(Base_device, 10, 20);
 
         // Test Debug formatting
         let Debug_str = alloc::format!("{Partition:?}");
@@ -599,28 +599,28 @@ mod tests {
 
     #[test]
     fn test_partition_device_edge_cases() {
-        let Base_device = Create_test_device();
+        let Base_device = create_test_device();
 
         // Test zero offset partition
-        let Partition1 = Partition_device_type::New(Base_device.clone(), 0, 512);
+        let Partition1 = Partition_device_type::new(Base_device.clone(), 0, 512);
         assert_eq!(Partition1.get_start_lba(), 0);
         assert_eq!(Partition1.get_sector_count(), 1);
 
         // Test single byte partition
-        let Partition2 = Partition_device_type::New(Base_device.clone(), 512, 1);
+        let Partition2 = Partition_device_type::new(Base_device.clone(), 512, 1);
         assert_eq!(Partition2.get_partition_size(), 1);
         assert!(Partition2.is_valid());
 
         // Test large LBA values
-        let Partition3 = Partition_device_type::New_from_lba(Base_device, 0xFFFFFFFF - 1, 1);
+        let Partition3 = Partition_device_type::new_from_lba(Base_device, 0xFFFFFFFF - 1, 1);
         assert_eq!(Partition3.get_start_lba(), 0xFFFFFFFF - 1);
         assert_eq!(Partition3.get_sector_count(), 1);
     }
 
     #[test]
     fn test_partition_device_concurrent_access() {
-        let Base_device = Create_test_device();
-        let Partition = Partition_device_type::New(Base_device, 0, 1000);
+        let Base_device = create_test_device();
+        let Partition = Partition_device_type::new(Base_device, 0, 1000);
 
         // Test that position is thread-safe (atomic operations)
         let _ = Partition.Set_position(&Position_type::Start(100));
@@ -634,8 +634,8 @@ mod tests {
 
     #[test]
     fn test_partition_device_clone() {
-        let Base_device = Create_test_device();
-        let Original = Partition_device_type::New(Base_device, 512, 1024);
+        let Base_device = create_test_device();
+        let Original = Partition_device_type::new(Base_device, 512, 1024);
         let Cloned = Original.clone();
 
         // Test that cloned partition has same properties

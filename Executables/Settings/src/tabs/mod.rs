@@ -17,7 +17,7 @@ impl Tab_type {
 
     pub async fn handle_event(&mut self, event: &Event_type) -> bool {
         match self {
-            Tab_type::General_tab(tab) => tab.Handle_event(event).await,
+            Tab_type::General_tab(tab) => tab.handle_event(event).await,
             Tab_type::Password_tab(tab) => tab.handle_event(event).await,
         }
     }

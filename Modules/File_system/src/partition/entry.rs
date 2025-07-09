@@ -81,7 +81,7 @@ impl Partition_entry_type {
     /// assert!(!partition.is_valid());
     /// assert!(!partition.is_bootable());
     /// ```
-    pub fn New() -> Self {
+    pub fn new() -> Self {
         Self {
             Bootable: 0,
             Start_head: 0,
@@ -126,15 +126,15 @@ impl Partition_entry_type {
     /// assert!(partition.is_valid());
     /// assert!(partition.is_bootable());
     /// ```
-    pub fn New_with_params(
+    pub fn new_with_params(
         bootable: bool,
         partition_type: crate::Partition_type_type,
         start_lba: u32,
         size_sectors: u32,
     ) -> Self {
-        let mut entry = Self::New();
+        let mut entry = Self::new();
         entry.Bootable = if bootable { 0x80 } else { 0x00 };
-        entry.Set_partition_type(partition_type);
+        entry.set_partition_type(partition_type);
         entry.Start_lba = start_lba.to_le();
         entry.Size_sectors = size_sectors.to_le();
         entry
@@ -151,7 +151,7 @@ impl Partition_entry_type {
     }
 
     /// Set the bootable flag
-    pub fn Set_bootable(&mut self, Bootable: bool) {
+    pub fn set_bootable(&mut self, Bootable: bool) {
         self.Bootable = if Bootable { 0x80 } else { 0x00 };
     }
 
@@ -161,7 +161,7 @@ impl Partition_entry_type {
     }
 
     /// Set the starting LBA of this partition
-    pub fn Set_start_lba(&mut self, Start_lba: u32) {
+    pub fn set_start_lba(&mut self, Start_lba: u32) {
         self.Start_lba = Start_lba.to_le();
     }
 
@@ -171,7 +171,7 @@ impl Partition_entry_type {
     }
 
     /// Set the size in sectors of this partition
-    pub fn Set_size_sectors(&mut self, Size_sectors: u32) {
+    pub fn set_size_sectors(&mut self, Size_sectors: u32) {
         self.Size_sectors = Size_sectors.to_le();
     }
 
@@ -181,7 +181,7 @@ impl Partition_entry_type {
     }
 
     /// Set the partition type from an enum
-    pub fn Set_partition_type(&mut self, Partition_type: crate::Partition_type_type) {
+    pub fn set_partition_type(&mut self, Partition_type: crate::Partition_type_type) {
         self.Partition_type = Partition_type.To_u8();
     }
 
@@ -201,7 +201,7 @@ impl Partition_entry_type {
     }
 
     /// Check if this partition overlaps with another partition
-    pub fn Overlaps_with(&self, Other: &Self) -> bool {
+    pub fn overlaps_with(&self, Other: &Self) -> bool {
         if !self.is_valid() || !Other.is_valid() {
             return false;
         }
@@ -215,7 +215,7 @@ impl Partition_entry_type {
     }
 
     /// Check if a given LBA is within this partition
-    pub fn Contains_lba(&self, Lba: u32) -> bool {
+    pub fn contains_lba(&self, Lba: u32) -> bool {
         if !self.is_valid() {
             return false;
         }
@@ -226,14 +226,14 @@ impl Partition_entry_type {
     }
 
     /// Clear the partition entry (make it empty)
-    pub fn Clear(&mut self) {
-        *self = Self::New();
+    pub fn clear(&mut self) {
+        *self = Self::new();
     }
 }
 
 impl Default for Partition_entry_type {
     fn default() -> Self {
-        Self::New()
+        Self::new()
     }
 }
 
@@ -262,8 +262,8 @@ mod tests {
     use crate::Partition_type_type;
     use alloc::format;
 
-    fn Create_test_partition() -> Partition_entry_type {
-        Partition_entry_type::New_with_params(
+    fn create_test_partition() -> Partition_entry_type {
+        Partition_entry_type::new_with_params(
             true,                           // Bootable
             Partition_type_type::Fat32_lba, // Type
             2048,                           // Start LBA
@@ -273,7 +273,7 @@ mod tests {
 
     #[test]
     fn test_partition_entry_new() {
-        let Entry = Partition_entry_type::New();
+        let Entry = Partition_entry_type::new();
         assert!(!Entry.is_valid());
         assert!(!Entry.is_bootable());
         assert_eq!(Entry.get_start_lba(), 0);
@@ -283,7 +283,7 @@ mod tests {
 
     #[test]
     fn test_partition_entry_new_with_params() {
-        let Entry = Create_test_partition();
+        let Entry = create_test_partition();
         assert!(Entry.is_valid());
         assert!(Entry.is_bootable());
         assert_eq!(Entry.get_start_lba(), 2048);
@@ -293,60 +293,60 @@ mod tests {
 
     #[test]
     fn test_partition_entry_bootable() {
-        let mut Entry = Partition_entry_type::New();
+        let mut Entry = Partition_entry_type::new();
         assert!(!Entry.is_bootable());
 
-        Entry.Set_bootable(true);
+        Entry.set_bootable(true);
         assert!(Entry.is_bootable());
         assert_eq!(Entry.Bootable, 0x80);
 
-        Entry.Set_bootable(false);
+        Entry.set_bootable(false);
         assert!(!Entry.is_bootable());
         assert_eq!(Entry.Bootable, 0x00);
     }
 
     #[test]
     fn test_partition_entry_lba() {
-        let mut Entry = Partition_entry_type::New();
+        let mut Entry = Partition_entry_type::new();
         assert_eq!(Entry.get_start_lba(), 0);
 
-        Entry.Set_start_lba(12345);
+        Entry.set_start_lba(12345);
         assert_eq!(Entry.get_start_lba(), 12345);
     }
 
     #[test]
     fn test_partition_entry_size() {
-        let mut Entry = Partition_entry_type::New();
+        let mut Entry = Partition_entry_type::new();
         assert_eq!(Entry.get_size_sectors(), 0);
 
-        Entry.Set_size_sectors(67890);
+        Entry.set_size_sectors(67890);
         assert_eq!(Entry.get_size_sectors(), 67890);
         assert_eq!(Entry.get_size_bytes(), 67890 * 512);
     }
 
     #[test]
     fn test_partition_entry_type() {
-        let mut Entry = Partition_entry_type::New();
+        let mut Entry = Partition_entry_type::new();
         assert_eq!(Entry.get_partition_type(), Partition_type_type::Empty);
 
-        Entry.Set_partition_type(Partition_type_type::Linux);
+        Entry.set_partition_type(Partition_type_type::Linux);
         assert_eq!(Entry.get_partition_type(), Partition_type_type::Linux);
         assert_eq!(Entry.Partition_type, 0x83);
     }
 
     #[test]
     fn test_partition_entry_end_lba() {
-        let Entry = Create_test_partition();
+        let Entry = create_test_partition();
         assert_eq!(Entry.get_end_lba(), 2048 + 204800 - 1);
     }
 
     #[test]
     fn test_partition_entry_overlaps() {
         let Partition1 =
-            Partition_entry_type::New_with_params(false, Partition_type_type::Fat32, 1000, 2000);
+            Partition_entry_type::new_with_params(false, Partition_type_type::Fat32, 1000, 2000);
         let Partition2 =
-            Partition_entry_type::New_with_params(false, Partition_type_type::Linux, 2400, 1000);
-        let Partition3 = Partition_entry_type::New_with_params(
+            Partition_entry_type::new_with_params(false, Partition_type_type::Linux, 2400, 1000);
+        let Partition3 = Partition_entry_type::new_with_params(
             false,
             Partition_type_type::Linux_swap,
             1500,
@@ -354,40 +354,40 @@ mod tests {
         );
 
         // Partition1: 1000-2999, Partition2: 2400-3399, Partition3: 1500-2499
-        assert!(Partition1.Overlaps_with(&Partition3)); // 1000-2999 overlaps 1500-2499
-        assert!(Partition2.Overlaps_with(&Partition3)); // 2400-3399 overlaps 1500-2499 (overlap: 2400-2499)
-        assert!(Partition1.Overlaps_with(&Partition2)); // 1000-2999 overlaps 2400-3399 (overlap: 2400-2999)
+        assert!(Partition1.overlaps_with(&Partition3)); // 1000-2999 overlaps 1500-2499
+        assert!(Partition2.overlaps_with(&Partition3)); // 2400-3399 overlaps 1500-2499 (overlap: 2400-2499)
+        assert!(Partition1.overlaps_with(&Partition2)); // 1000-2999 overlaps 2400-3399 (overlap: 2400-2999)
     }
 
     #[test]
     fn test_partition_entry_no_overlap() {
         let Partition1 =
-            Partition_entry_type::New_with_params(false, Partition_type_type::Fat32, 1000, 1000);
+            Partition_entry_type::new_with_params(false, Partition_type_type::Fat32, 1000, 1000);
         let Partition2 =
-            Partition_entry_type::New_with_params(false, Partition_type_type::Linux, 2000, 1000);
+            Partition_entry_type::new_with_params(false, Partition_type_type::Linux, 2000, 1000);
 
         // Partition1: 1000-1999, Partition2: 2000-2999
-        assert!(!Partition1.Overlaps_with(&Partition2));
-        assert!(!Partition2.Overlaps_with(&Partition1));
+        assert!(!Partition1.overlaps_with(&Partition2));
+        assert!(!Partition2.overlaps_with(&Partition1));
     }
 
     #[test]
     fn test_partition_entry_contains_lba() {
-        let Entry = Create_test_partition();
+        let Entry = create_test_partition();
 
-        assert!(!Entry.Contains_lba(2047)); // Before start
-        assert!(Entry.Contains_lba(2048)); // At start
-        assert!(Entry.Contains_lba(100000)); // In middle
-        assert!(Entry.Contains_lba(206847)); // At end (2048 + 204800 - 1)
-        assert!(!Entry.Contains_lba(206848)); // After end
+        assert!(!Entry.contains_lba(2047)); // Before start
+        assert!(Entry.contains_lba(2048)); // At start
+        assert!(Entry.contains_lba(100000)); // In middle
+        assert!(Entry.contains_lba(206847)); // At end (2048 + 204800 - 1)
+        assert!(!Entry.contains_lba(206848)); // After end
     }
 
     #[test]
     fn test_partition_entry_clear() {
-        let mut Entry = Create_test_partition();
+        let mut Entry = create_test_partition();
         assert!(Entry.is_valid());
 
-        Entry.Clear();
+        Entry.clear();
         assert!(!Entry.is_valid());
         assert!(!Entry.is_bootable());
         assert_eq!(Entry.get_start_lba(), 0);
@@ -403,7 +403,7 @@ mod tests {
 
     #[test]
     fn test_partition_entry_display() {
-        let Entry = Create_test_partition();
+        let Entry = create_test_partition();
         let Display_string = format!("{Entry}");
 
         assert!(Display_string.contains("Type=0C"));
@@ -412,7 +412,7 @@ mod tests {
         assert!(Display_string.contains("Size=204800"));
         assert!(Display_string.contains("Bootable=true"));
 
-        let Empty_entry = Partition_entry_type::New();
+        let Empty_entry = Partition_entry_type::new();
         let Empty_string = format!("{Empty_entry}");
         assert!(Empty_string.contains("Empty partition"));
     }
@@ -420,7 +420,7 @@ mod tests {
     #[test]
     fn test_partition_entry_size_bytes() {
         let Entry =
-            Partition_entry_type::New_with_params(false, Partition_type_type::Linux, 0, 2048);
+            Partition_entry_type::new_with_params(false, Partition_type_type::Linux, 0, 2048);
         assert_eq!(Entry.get_size_bytes(), 2048 * 512); // 1MB
     }
 
@@ -428,17 +428,17 @@ mod tests {
     fn test_partition_entry_validity() {
         // Valid partition must have non-zero type and size
         let Valid =
-            Partition_entry_type::New_with_params(false, Partition_type_type::Linux, 100, 200);
+            Partition_entry_type::new_with_params(false, Partition_type_type::Linux, 100, 200);
         assert!(Valid.is_valid());
 
         // Zero size makes it invalid
         let Zero_size =
-            Partition_entry_type::New_with_params(false, Partition_type_type::Linux, 100, 0);
+            Partition_entry_type::new_with_params(false, Partition_type_type::Linux, 100, 0);
         assert!(!Zero_size.is_valid());
 
         // Empty type makes it invalid
         let Empty_type =
-            Partition_entry_type::New_with_params(false, Partition_type_type::Empty, 100, 200);
+            Partition_entry_type::new_with_params(false, Partition_type_type::Empty, 100, 200);
         assert!(!Empty_type.is_valid());
     }
 }

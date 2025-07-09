@@ -11,7 +11,7 @@ pub fn get_instance() -> &'static Manager_type {
     MANAGER.get().expect("Time manager is not initialized")
 }
 
-pub fn Initialize(Driver: Device_type) -> Result_type<&'static Manager_type> {
+pub fn initialize(Driver: Device_type) -> Result_type<&'static Manager_type> {
     MANAGER.get_or_init(|| Manager_type::new(Driver).expect("Failed to initialize time manager"));
 
     Ok(get_instance())

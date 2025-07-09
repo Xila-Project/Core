@@ -14,7 +14,7 @@ pub struct Executor_type {
 
 impl Executor_type {
     /// Create a new Executor.
-    pub fn New() -> Self {
+    pub fn new() -> Self {
         let signaler = Box::leak(Box::new(Signaler_type::new()));
         Self {
             inner: raw::Executor::new(signaler as *mut Signaler_type as *mut ()),
@@ -24,13 +24,13 @@ impl Executor_type {
         }
     }
 
-    pub fn Stop(&self) {
+    pub fn stop(&self) {
         self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
-        self.signaler.Signal();
+        self.signaler.signal();
     }
 
     /// Get a spawner for this executor.
-    pub fn Spawner(&'static self) -> Spawner {
+    pub fn spawner(&'static self) -> Spawner {
         self.inner.spawner()
     }
 
@@ -52,12 +52,12 @@ impl Executor_type {
     /// - a local variable in a function you know never returns (like `fn main() -> !`), upgrading its lifetime with `transmute`. (unsafe)
     ///
     /// This function never returns.
-    pub fn Run(&'static self, init: impl FnOnce(Spawner, &'static Self)) {
+    pub fn run(&'static self, init: impl FnOnce(Spawner, &'static Self)) {
         init(self.inner.spawner(), self);
 
         while !self.stop.load(std::sync::atomic::Ordering::SeqCst) {
             unsafe { self.inner.poll() };
-            self.signaler.Wait();
+            self.signaler.wait();
         }
     }
 }
@@ -75,7 +75,7 @@ impl Signaler_type {
         }
     }
 
-    fn Wait(&self) {
+    fn wait(&self) {
         let mut signaled = self.mutex.lock().unwrap();
         while !*signaled {
             signaled = self.condvar.wait(signaled).unwrap();
@@ -83,7 +83,7 @@ impl Signaler_type {
         *signaled = false;
     }
 
-    fn Signal(&self) {
+    fn signal(&self) {
         let mut signaled = self.mutex.lock().unwrap();
         *signaled = true;
         self.condvar.notify_one();
@@ -97,7 +97,7 @@ macro_rules! Instantiate_static_executor {
 
         unsafe {
             if __EXECUTOR.is_none() {
-                __EXECUTOR = Some($crate::standard_library::executor::Executor_type::New());
+                __EXECUTOR = Some($crate::standard_library::executor::Executor_type::new());
             }
             __EXECUTOR.as_mut().expect("Executor is not initialized")
         }

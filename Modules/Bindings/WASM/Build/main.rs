@@ -22,7 +22,7 @@ fn main() {
     ));
     context.visit_file(&parsed_input);
     context.set_function_filtering(None);
-    context.visit_file(&syn::parse2(bindings_utilities::additional::Get()).unwrap());
+    context.visit_file(&syn::parse2(bindings_utilities::additional::get()).unwrap());
 
     let out_directory = env::var("OUT_DIR").unwrap();
     let out_directory = Path::new(out_directory.as_str());

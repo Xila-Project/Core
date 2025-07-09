@@ -186,7 +186,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let group = users::get_instance().get_user_primary_group(user).await?;
 
-        parent_file_system.Create_directory(relative_path, time, user, group)?;
+        parent_file_system.create_directory(relative_path, time, user, group)?;
 
         // Create a directory at the mount point
         let file_system_identifier = Self::get_new_file_system_identifier(&file_systems)
@@ -231,12 +231,12 @@ impl<'a> Virtual_file_system_type<'a> {
             .remove(&file_system_identifier)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        file_system.inner.Close_all(task)?;
+        file_system.inner.close_all(task)?;
 
         let (_, parent_file_system, relative_path) =
             Self::get_file_system_from_path(&file_systems, &file_system.mount_point)?;
 
-        parent_file_system.Remove(relative_path)?;
+        parent_file_system.remove(relative_path)?;
 
         Ok(())
     }
@@ -306,7 +306,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let group = users::get_instance().get_user_primary_group(user).await?;
 
-        let local_file = file_system.Open(task, relative_path, flags, time, user, group)?;
+        let local_file = file_system.open(task, relative_path, flags, time, user, group)?;
 
         let metadata = file_system.get_metadata(local_file)?;
 
@@ -380,7 +380,7 @@ impl<'a> Virtual_file_system_type<'a> {
                     .get(&file_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .inner
-                    .Close(local_file)?;
+                    .close(local_file)?;
 
                 return Ok(());
             }
@@ -395,7 +395,7 @@ impl<'a> Virtual_file_system_type<'a> {
             .get(&file_system)
             .ok_or(Error_type::Invalid_identifier)?
             .inner
-            .Close(local_file)?;
+            .close(local_file)?;
 
         Ok(())
     }
@@ -434,7 +434,7 @@ impl<'a> Virtual_file_system_type<'a> {
                     .get(&file_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .inner
-                    .Read(local_file_identifier, buffer, time)
+                    .read(local_file_identifier, buffer, time)
             }
         };
 
@@ -448,7 +448,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 .get(&file_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .inner
-                .Read(local_file_identifier, &mut [0; 0], time)?;
+                .read(local_file_identifier, &mut [0; 0], time)?;
         }
         Ok(size)
     }
@@ -501,7 +501,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 .get(&file_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .inner
-                .Read(local_file_identifier, &mut [0; 0], time)?;
+                .read(local_file_identifier, &mut [0; 0], time)?;
         }
 
         Ok(size)
@@ -568,7 +568,7 @@ impl<'a> Virtual_file_system_type<'a> {
                     .get(&file_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .inner
-                    .Write(local_file_identifier, buffer, time)
+                    .write(local_file_identifier, buffer, time)
             }
         };
 
@@ -582,7 +582,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 .get(&file_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .inner
-                .Write(local_file_identifier, &[0; 0], time)?;
+                .write(local_file_identifier, &[0; 0], time)?;
         }
 
         Ok(size)
@@ -612,7 +612,7 @@ impl<'a> Virtual_file_system_type<'a> {
                     .get(&file_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .inner
-                    .Set_position(local_file, position)?;
+                    .set_position(local_file, position)?;
 
                 Ok(size)
             }
@@ -623,7 +623,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 .get(&file_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .inner
-                .Set_position(local_file, position),
+                .set_position(local_file, position),
         }
     }
 
@@ -641,14 +641,14 @@ impl<'a> Virtual_file_system_type<'a> {
         let mut metadata = file_system.get_metadata_from_path(relative_path)?;
 
         if let Some(user) = user {
-            metadata.Set_owner(user);
+            metadata.set_owner(user);
         }
 
         if let Some(group) = group {
             metadata.set_group(group);
         }
 
-        file_system.Set_metadata_from_path(relative_path, &metadata)
+        file_system.set_metadata_from_path(relative_path, &metadata)
     }
 
     pub async fn set_permissions(
@@ -663,16 +663,16 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let mut metadata = file_system.get_metadata_from_path(relative_path)?;
 
-        metadata.Set_permissions(permissions);
+        metadata.set_permissions(permissions);
 
-        file_system.Set_metadata_from_path(relative_path, &metadata)
+        file_system.set_metadata_from_path(relative_path, &metadata)
     }
 
     pub async fn close_all(&self, task_identifier: Task_identifier_type) -> Result_type<()> {
         let file_systems = self.file_systems.read().await; // Get the file systems
 
         for file_system in file_systems.values() {
-            file_system.inner.Close_all(task_identifier)?;
+            file_system.inner.close_all(task_identifier)?;
         }
 
         self.device_file_system.Close_all(task_identifier).await?;
@@ -702,7 +702,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let group = users::get_instance().get_user_primary_group(user).await?;
 
-        let file = file_system.Open(
+        let file = file_system.open(
             task,
             relative_path,
             Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None),
@@ -711,7 +711,7 @@ impl<'a> Virtual_file_system_type<'a> {
             group,
         )?;
 
-        file_system.Close(file)?;
+        file_system.close(file)?;
 
         let inode = self
             .device_file_system
@@ -729,9 +729,9 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let mut metadata = Metadata_type::get_default(Type_type::Block_device, time, user, group)
             .ok_or(Error_type::Invalid_parameter)?;
-        metadata.Set_inode(inode);
+        metadata.set_inode(inode);
 
-        file_system.Set_metadata_from_path(relative_path, &metadata)?;
+        file_system.set_metadata_from_path(relative_path, &metadata)?;
 
         Ok(())
     }
@@ -757,7 +757,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let group = users::get_instance().get_user_primary_group(user).await?;
 
-        let file = file_system.Open(
+        let file = file_system.open(
             task,
             relative_path,
             Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None),
@@ -766,7 +766,7 @@ impl<'a> Virtual_file_system_type<'a> {
             group,
         )?;
 
-        file_system.Close(file)?;
+        file_system.close(file)?;
 
         let r#type = if device.is_a_block_device() {
             Type_type::Block_device
@@ -792,9 +792,9 @@ impl<'a> Virtual_file_system_type<'a> {
         // Set the metadata of the special file.
         let mut metadata = Metadata_type::get_default(r#type, time, user, group)
             .ok_or(Error_type::Invalid_parameter)?;
-        metadata.Set_inode(inode);
+        metadata.set_inode(inode);
 
-        file_system.Set_metadata_from_path(relative_path, &metadata)?;
+        file_system.set_metadata_from_path(relative_path, &metadata)?;
 
         Ok(())
     }
@@ -818,7 +818,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let group = users::get_instance().get_user_primary_group(user).await?;
 
-        let file = file_system.Open(
+        let file = file_system.open(
             task,
             relative_path,
             Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None),
@@ -827,7 +827,7 @@ impl<'a> Virtual_file_system_type<'a> {
             group,
         )?;
 
-        file_system.Close(file)?;
+        file_system.close(file)?;
 
         let inode = self.pipe_file_system.Create_named_pipe(size).await?;
 
@@ -842,9 +842,9 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let mut metadata = Metadata_type::get_default(Type_type::Pipe, time, user, group)
             .ok_or(Error_type::Invalid_parameter)?;
-        metadata.Set_inode(inode);
+        metadata.set_inode(inode);
 
-        file_system.Set_metadata_from_path(relative_path, &metadata)?;
+        file_system.set_metadata_from_path(relative_path, &metadata)?;
 
         Ok(())
     }
@@ -877,7 +877,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let metadata = file_system.get_metadata_from_path(relative_path)?;
 
-        file_system.Remove(relative_path)?;
+        file_system.remove(relative_path)?;
 
         match metadata.get_type() {
             Type_type::Pipe => {
@@ -947,7 +947,7 @@ impl<'a> Virtual_file_system_type<'a> {
                     .get(&file_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .inner
-                    .Transfert(new_task, local_file, new_file)?
+                    .transfert(new_task, local_file, new_file)?
                     .Into_unique_file_identifier(file_system)
                     .1,
             )
@@ -970,7 +970,7 @@ impl<'a> Virtual_file_system_type<'a> {
             }
             _ => Self::get_file_system_from_identifier(&file_systems, file_system)?
                 .inner
-                .Transfert(new_task, file, new_file)?,
+                .transfert(new_task, file, new_file)?,
         };
 
         let (_, new_file) = new_file.Into_unique_file_identifier(file_system);
@@ -999,7 +999,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 .get(&file_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .inner
-                .Flush(local_file)?;
+                .flush(local_file)?;
 
             Ok(())
         } else {
@@ -1009,7 +1009,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 .get(&file_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .inner
-                .Flush(file_identifier)
+                .flush(file_identifier)
         }
     }
 
@@ -1054,7 +1054,7 @@ impl<'a> Virtual_file_system_type<'a> {
             Self::get_file_system_from_path(&file_systems, path)?; // Get the file system identifier and the relative path
 
         let (_, file) = file_system
-            .Open_directory(relative_path, task)?
+            .open_directory(relative_path, task)?
             .Into_unique_file_identifier(file_system_identifier);
 
         Ok(file)
@@ -1079,7 +1079,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 .get(&file_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .inner
-                .Read_directory(file),
+                .read_directory(file),
         }
     }
 
@@ -1103,7 +1103,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 .get(&file_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .inner
-                .Set_position_directory(file, position),
+                .set_position_directory(file, position),
         }
     }
 
@@ -1149,7 +1149,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 .get(&file_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .inner
-                .Rewind_directory(file),
+                .rewind_directory(file),
         }
     }
 
@@ -1172,7 +1172,7 @@ impl<'a> Virtual_file_system_type<'a> {
                 .get(&file_system)
                 .ok_or(Error_type::Invalid_identifier)?
                 .inner
-                .Close_directory(file),
+                .close_directory(file),
         }
     }
 
@@ -1194,7 +1194,7 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let group = users::get_instance().get_user_primary_group(user).await?;
 
-        file_system.Create_directory(relative_path, time, user, group)
+        file_system.create_directory(relative_path, time, user, group)
     }
 
     pub async fn get_mode(
@@ -1249,7 +1249,7 @@ impl<'a> Virtual_file_system_type<'a> {
                     .get(&file_system)
                     .ok_or(Error_type::Invalid_identifier)?
                     .inner
-                    .Duplicate(local_file)?
+                    .duplicate(local_file)?
                     .Into_unique_file_identifier(file_system)
                     .1,
             )
@@ -1272,7 +1272,7 @@ impl<'a> Virtual_file_system_type<'a> {
             }
             _ => Self::get_file_system_from_identifier(&file_systems, file_system)?
                 .inner
-                .Duplicate(file)?,
+                .duplicate(file)?,
         };
 
         let (_, new_file) = new_file.Into_unique_file_identifier(file_system);
@@ -1371,7 +1371,7 @@ impl<'a> Virtual_file_system_type<'a> {
         }
 
         if old_file_system_identifier == new_file_system_identifier {
-            old_file_system.Rename(old_relative_path, new_relative_path)
+            old_file_system.rename(old_relative_path, new_relative_path)
         } else {
             Err(Error_type::Unsupported_operation) // TODO : Add support for moving between file systems
         }
@@ -1710,7 +1710,7 @@ async fn read_line(
     loop {
         let current_buffer = &mut [0; 1];
 
-        let size = file_system.Read(file, current_buffer, time)?;
+        let size = file_system.read(file, current_buffer, time)?;
 
         if size == 0 {
             yield_now().await; // Yield to allow other tasks to run, especially in a blocking operation
@@ -1738,7 +1738,7 @@ mod tests {
     struct Dummy_file_system_type;
 
     impl File_system_traits for Dummy_file_system_type {
-        fn Open(
+        fn open(
             &self,
             _: Task_identifier_type,
             _: &Path_type,
@@ -1750,22 +1750,22 @@ mod tests {
             todo!()
         }
 
-        fn Close(&self, _: Local_file_identifier_type) -> Result_type<()> {
+        fn close(&self, _: Local_file_identifier_type) -> Result_type<()> {
             todo!()
         }
 
-        fn Close_all(&self, _: Task_identifier_type) -> Result_type<()> {
+        fn close_all(&self, _: Task_identifier_type) -> Result_type<()> {
             todo!()
         }
 
-        fn Duplicate(
+        fn duplicate(
             &self,
             _: Local_file_identifier_type,
         ) -> Result_type<Local_file_identifier_type> {
             todo!()
         }
 
-        fn Transfert(
+        fn transfert(
             &self,
             _: Task_identifier_type,
             _: Local_file_identifier_type,
@@ -1774,11 +1774,11 @@ mod tests {
             todo!()
         }
 
-        fn Remove(&self, _: &Path_type) -> Result_type<()> {
+        fn remove(&self, _: &Path_type) -> Result_type<()> {
             todo!()
         }
 
-        fn Read(
+        fn read(
             &self,
             _: Local_file_identifier_type,
             _: &mut [u8],
@@ -1787,7 +1787,7 @@ mod tests {
             todo!()
         }
 
-        fn Write(
+        fn write(
             &self,
             _: Local_file_identifier_type,
             _: &[u8],
@@ -1796,11 +1796,11 @@ mod tests {
             todo!()
         }
 
-        fn Rename(&self, _: &Path_type, _: &Path_type) -> Result_type<()> {
+        fn rename(&self, _: &Path_type, _: &Path_type) -> Result_type<()> {
             todo!()
         }
 
-        fn Set_position(
+        fn set_position(
             &self,
             _: Local_file_identifier_type,
             _: &Position_type,
@@ -1808,11 +1808,11 @@ mod tests {
             todo!()
         }
 
-        fn Flush(&self, _: Local_file_identifier_type) -> Result_type<()> {
+        fn flush(&self, _: Local_file_identifier_type) -> Result_type<()> {
             todo!()
         }
 
-        fn Create_directory(
+        fn create_directory(
             &self,
             _: &Path_type,
             _: Time_type,
@@ -1822,7 +1822,7 @@ mod tests {
             todo!()
         }
 
-        fn Open_directory(
+        fn open_directory(
             &self,
             _: &Path_type,
             _: Task_identifier_type,
@@ -1830,11 +1830,11 @@ mod tests {
             todo!()
         }
 
-        fn Read_directory(&self, _: Local_file_identifier_type) -> Result_type<Option<Entry_type>> {
+        fn read_directory(&self, _: Local_file_identifier_type) -> Result_type<Option<Entry_type>> {
             todo!()
         }
 
-        fn Set_position_directory(
+        fn set_position_directory(
             &self,
             _: Local_file_identifier_type,
             _: Size_type,
@@ -1846,15 +1846,15 @@ mod tests {
             todo!()
         }
 
-        fn Rewind_directory(&self, _: Local_file_identifier_type) -> Result_type<()> {
+        fn rewind_directory(&self, _: Local_file_identifier_type) -> Result_type<()> {
             todo!()
         }
 
-        fn Close_directory(&self, _: Local_file_identifier_type) -> Result_type<()> {
+        fn close_directory(&self, _: Local_file_identifier_type) -> Result_type<()> {
             todo!()
         }
 
-        fn Set_metadata_from_path(&self, _: &Path_type, _: &Metadata_type) -> Result_type<()> {
+        fn set_metadata_from_path(&self, _: &Path_type, _: &Metadata_type) -> Result_type<()> {
             todo!()
         }
 

@@ -15,7 +15,7 @@ use network::{
 };
 use time::Duration_type;
 
-use super::error::Into_socket_error;
+use super::error::into_socket_error;
 
 struct Inner_type {
     #[cfg(target_family = "unix")]
@@ -138,7 +138,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         match protocol {
             Protocol_type::TCP => {
                 let tcp_listener =
-                    TcpListener::bind(into_socketaddr(ip, port)).map_err(Into_socket_error)?;
+                    TcpListener::bind(into_socketaddr(ip, port)).map_err(into_socket_error)?;
 
                 self.new_socket(socket, tcp_listener.as_raw_fd())?;
 
@@ -147,7 +147,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
             Protocol_type::UDP => {
                 let udp_socket =
-                    UdpSocket::bind(into_socketaddr(ip, port)).map_err(Into_socket_error)?;
+                    UdpSocket::bind(into_socketaddr(ip, port)).map_err(into_socket_error)?;
 
                 self.new_socket(socket, udp_socket.as_raw_fd())?;
 
@@ -167,7 +167,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
     ) -> Result_type<()> {
         let address = into_socketaddr(ip, port);
 
-        let tcp_stream = TcpStream::connect(address).map_err(Into_socket_error)?;
+        let tcp_stream = TcpStream::connect(address).map_err(into_socket_error)?;
 
         self.new_socket(socket, tcp_stream.as_raw_fd())?;
 
@@ -185,7 +185,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
         let tcp_listener = unsafe { TcpListener::from_raw_fd(socket) };
 
-        let (tcp_stream, address) = tcp_listener.accept().map_err(Into_socket_error)?;
+        let (tcp_stream, address) = tcp_listener.accept().map_err(into_socket_error)?;
 
         self.new_socket(new_socket, tcp_stream.as_raw_fd())?;
 
@@ -200,7 +200,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
         let mut socket = unsafe { TcpStream::from_raw_fd(socket) };
 
-        socket.write_all(data).map_err(Into_socket_error)?;
+        socket.write_all(data).map_err(into_socket_error)?;
 
         forget(socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
@@ -212,7 +212,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
         let mut socket = unsafe { TcpStream::from_raw_fd(socket) };
 
-        let bytes = socket.read(data).map_err(Into_socket_error)?;
+        let bytes = socket.read(data).map_err(into_socket_error)?;
 
         forget(socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
@@ -228,7 +228,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
         let socket = unsafe { UdpSocket::from_raw_fd(socket) };
 
-        let (bytes, address) = socket.recv_from(data).map_err(Into_socket_error)?;
+        let (bytes, address) = socket.recv_from(data).map_err(into_socket_error)?;
 
         forget(socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
@@ -248,9 +248,9 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
         let socket = unsafe { UdpSocket::from_raw_fd(socket) };
 
-        let Address = into_socketaddr(ip, port);
+        let address = into_socketaddr(ip, port);
 
-        socket.send_to(data, Address).map_err(Into_socket_error)?;
+        socket.send_to(data, address).map_err(into_socket_error)?;
 
         forget(socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
@@ -265,7 +265,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
 
-        let address = socket.local_addr().map_err(Into_socket_error)?;
+        let address = socket.local_addr().map_err(into_socket_error)?;
 
         forget(socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
@@ -280,7 +280,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
 
-        let address = socket.peer_addr().map_err(Into_socket_error)?;
+        let address = socket.peer_addr().map_err(into_socket_error)?;
 
         forget(socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
@@ -298,7 +298,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
         socket
             .set_write_timeout(Some(timeout))
-            .map_err(Into_socket_error)?;
+            .map_err(into_socket_error)?;
 
         forget(socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
@@ -316,7 +316,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
         socket
             .set_read_timeout(Some(timeout))
-            .map_err(Into_socket_error)?;
+            .map_err(into_socket_error)?;
 
         forget(socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
@@ -331,11 +331,11 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
 
-        let Timeout = socket.write_timeout().map_err(Into_socket_error)?;
+        let timeout = socket.write_timeout().map_err(into_socket_error)?;
 
         forget(socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
-        Ok(Timeout)
+        Ok(timeout)
     }
 
     fn get_receive_timeout(
@@ -344,11 +344,11 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
     ) -> Result_type<Option<Duration_type>> {
         let socket = self.get_socket(socket)?;
 
-        let Socket = unsafe { TcpStream::from_raw_fd(socket) };
+        let socket = unsafe { TcpStream::from_raw_fd(socket) };
 
-        let timeout = Socket.read_timeout().map_err(Into_socket_error)?;
+        let timeout = socket.read_timeout().map_err(into_socket_error)?;
 
-        forget(Socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
+        forget(socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
 
         Ok(timeout)
     }
@@ -363,7 +363,7 @@ mod tests {
     use std::net::{TcpListener, UdpSocket};
     use std::os::fd::AsRawFd;
 
-    pub const fn New_socket_identifier(
+    pub const fn new_socket_identifier(
         identifier: File_identifier_type,
     ) -> Local_file_identifier_type {
         Local_file_identifier_type::New(Task_identifier_type::new(1), identifier)
@@ -375,7 +375,7 @@ mod tests {
         let socket = TcpListener::bind("127.0.0.1:0").unwrap();
         let raw_fd = socket.as_raw_fd();
 
-        let socket_identifier = New_socket_identifier(1.into());
+        let socket_identifier = new_socket_identifier(1.into());
 
         driver.new_socket(socket_identifier, raw_fd).unwrap();
         assert_eq!(driver.get_socket(socket_identifier).unwrap(), raw_fd);
@@ -387,7 +387,7 @@ mod tests {
         let socket = TcpListener::bind("127.0.0.1:0").unwrap();
         let raw_fd = socket.as_raw_fd();
 
-        let socket_identifier = New_socket_identifier(1.into());
+        let socket_identifier = new_socket_identifier(1.into());
 
         driver.new_socket(socket_identifier, raw_fd).unwrap();
         assert_eq!(driver.remove_socket(socket_identifier).unwrap(), raw_fd);
@@ -398,7 +398,7 @@ mod tests {
     fn test_bind_tcp() {
         let driver = Network_socket_driver_type::new();
 
-        let socket_identifier = New_socket_identifier(1.into());
+        let socket_identifier = new_socket_identifier(1.into());
 
         let ip = IP_type::IPv4(IPv4_type::New([127, 0, 0, 1]));
         let port = Port_type::New(0);
@@ -412,7 +412,7 @@ mod tests {
     fn test_bind_udp() {
         let driver = Network_socket_driver_type::new();
 
-        let socket = New_socket_identifier(1.into());
+        let socket = new_socket_identifier(1.into());
 
         let ip = IP_type::IPv4(IPv4_type::New([127, 0, 0, 1]));
         let port = Port_type::New(0);
@@ -424,8 +424,8 @@ mod tests {
     fn test_close() {
         let driver = Network_socket_driver_type::new();
 
-        let socket_1 = New_socket_identifier(1.into());
-        let socket_identifier_2 = New_socket_identifier(2.into());
+        let socket_1 = new_socket_identifier(1.into());
+        let socket_identifier_2 = new_socket_identifier(2.into());
 
         // - Bind sockets
         driver
@@ -473,7 +473,7 @@ mod tests {
     fn test_connect() {
         let driver = Network_socket_driver_type::new();
 
-        let socket_1 = New_socket_identifier(1.into());
+        let socket_1 = new_socket_identifier(1.into());
 
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
@@ -486,7 +486,7 @@ mod tests {
     fn test_send_receive() {
         let driver = Network_socket_driver_type::new();
 
-        let socket_1_identifier = New_socket_identifier(1.into());
+        let socket_1_identifier = new_socket_identifier(1.into());
 
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
@@ -507,8 +507,8 @@ mod tests {
     fn test_tcp_send_receive_server() {
         let driver = Network_socket_driver_type::new();
 
-        let server = New_socket_identifier(1.into());
-        let server_stream = New_socket_identifier(2.into());
+        let server = new_socket_identifier(1.into());
+        let server_stream = new_socket_identifier(2.into());
 
         // - Bind socket
         driver
@@ -521,10 +521,10 @@ mod tests {
             .unwrap();
 
         let (ip_server, port_server) = driver.get_local_address(server).unwrap();
-        let Server_address = into_socketaddr(ip_server.clone(), port_server);
+        let server_address = into_socketaddr(ip_server.clone(), port_server);
 
         // - Connect to server
-        let mut client = TcpStream::connect(Server_address).unwrap();
+        let mut client = TcpStream::connect(server_address).unwrap();
 
         let (ip_client, port_client) = driver.Accept(server, server_stream).unwrap();
 
@@ -532,108 +532,108 @@ mod tests {
             driver.get_remote_address(server_stream).unwrap(),
             (ip_client, port_client)
         );
-        assert_eq!(client.peer_addr().unwrap(), Server_address);
+        assert_eq!(client.peer_addr().unwrap(), server_address);
 
         // - Send data from Client to Server
-        let Data = b"hello";
+        let data = b"hello";
 
-        client.write_all(Data).unwrap();
+        client.write_all(data).unwrap();
 
-        let mut Buffer = [0; 5];
-        let size = driver.Receive(server_stream, &mut Buffer).unwrap();
+        let mut buffer = [0; 5];
+        let size = driver.Receive(server_stream, &mut buffer).unwrap();
 
-        assert_eq!(size, Data.len());
-        assert_eq!(&Buffer, Data);
+        assert_eq!(size, data.len());
+        assert_eq!(&buffer, data);
 
         // - Send data from Server to Client
-        let Data = b"world";
+        let data = b"world";
 
-        driver.Send(server_stream, Data).unwrap();
+        driver.Send(server_stream, data).unwrap();
 
-        let mut Buffer = [0; 5];
-        client.read_exact(&mut Buffer).unwrap();
+        let mut buffer = [0; 5];
+        client.read_exact(&mut buffer).unwrap();
 
-        assert_eq!(&Buffer, Data);
+        assert_eq!(&buffer, data);
 
         // - Send data from Client to Server
-        let Data = b"fizzbuzz";
+        let data = b"fizzbuzz";
 
-        client.write_all(Data).unwrap();
+        client.write_all(data).unwrap();
 
-        let mut Buffer = [0; 8];
-        let Size = driver.Receive(server_stream, &mut Buffer).unwrap();
+        let mut buffer = [0; 8];
+        let size = driver.Receive(server_stream, &mut buffer).unwrap();
 
-        assert_eq!(Size, Data.len());
-        assert_eq!(&Buffer, Data);
+        assert_eq!(size, data.len());
+        assert_eq!(&buffer, data);
     }
 
     #[test]
-    fn test_TCP_send_receive_client() {
-        let Driver = Network_socket_driver_type::new();
+    fn test_tcp_send_receive_client() {
+        let driver = Network_socket_driver_type::new();
 
-        let Client = New_socket_identifier(1.into());
+        let client = new_socket_identifier(1.into());
 
         // - Bind socket
-        let Server_listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let server_listener = TcpListener::bind("127.0.0.1:0").unwrap();
 
-        let Server_address = Server_listener.local_addr().unwrap();
-        let (IP_server, Port_server) = into_ip_and_port(Server_address);
+        let server_address = server_listener.local_addr().unwrap();
+        let (ip_server, port_server) = into_ip_and_port(server_address);
 
-        Driver
-            .Connect(IP_server.clone(), Port_server, Client)
+        driver
+            .Connect(ip_server.clone(), port_server, client)
             .unwrap();
 
-        let (mut Server_stream, Client_address) = Server_listener.accept().unwrap();
+        let (mut server_stream, Client_address) = server_listener.accept().unwrap();
 
         assert_eq!(
-            Driver.get_remote_address(Client).unwrap(),
-            (IP_server.clone(), Port_server)
+            driver.get_remote_address(client).unwrap(),
+            (ip_server.clone(), port_server)
         );
         assert_eq!(
-            Driver.get_local_address(Client).unwrap(),
+            driver.get_local_address(client).unwrap(),
             into_ip_and_port(Client_address)
         );
 
         // - Send data from Client to Server
-        let Data = b"hello";
+        let data = b"hello";
 
-        Server_stream.write_all(Data).unwrap();
+        server_stream.write_all(data).unwrap();
 
-        let mut Buffer = [0; 5];
-        let Size = Driver.Receive(Client, &mut Buffer).unwrap();
+        let mut buffer = [0; 5];
+        let size = driver.Receive(client, &mut buffer).unwrap();
 
-        assert_eq!(Size, Data.len());
-        assert_eq!(&Buffer, Data);
+        assert_eq!(size, data.len());
+        assert_eq!(&buffer, data);
 
         // - Send data from Server to Client
-        let Data = b"world";
+        let data = b"world";
 
-        Driver.Send(Client, Data).unwrap();
+        driver.Send(client, data).unwrap();
 
         let mut Buffer = [0; 5];
-        Server_stream.read_exact(&mut Buffer).unwrap();
+        server_stream.read_exact(&mut Buffer).unwrap();
 
-        assert_eq!(&Buffer, Data);
+        assert_eq!(&Buffer, data);
 
         // - Send data from Client to Server
-        let Data = b"fizzbuzz";
+        let data = b"fizzbuzz";
 
-        Server_stream.write_all(Data).unwrap();
+        server_stream.write_all(data).unwrap();
 
-        let mut Buffer = [0; 8];
-        let Size = Driver.Receive(Client, &mut Buffer).unwrap();
+        let mut buffer = [0; 8];
+        let Size = driver.Receive(client, &mut buffer).unwrap();
 
-        assert_eq!(Size, Data.len());
-        assert_eq!(&Buffer, Data);
+        assert_eq!(Size, data.len());
+        assert_eq!(&buffer, data);
     }
 
     #[test]
-    fn test_TCP_send_receive_both_sides() {
+    fn test_tcp_send_receive_both_sides() {
         let Driver = Network_socket_driver_type::new();
 
-        let Server_listener = New_socket_identifier(1.into());
-        let Server_stream = New_socket_identifier(2.into());
-        let Client = New_socket_identifier(3.into());
+        let Server_listener = new_socket_identifier(1.into());
+        let Server_stream = new_socket_identifier(2.into());
+        let Client = new_socket_identifier(3.into());
 
         // - Bind socket
         Driver
@@ -698,10 +698,10 @@ mod tests {
     }
 
     #[test]
-    fn test_UDP_send_to_receive_from_one_side() {
+    fn test_udp_send_to_receive_from_one_side() {
         let Driver = Network_socket_driver_type::new();
 
-        let Socket_1 = New_socket_identifier(1.into());
+        let Socket_1 = new_socket_identifier(1.into());
 
         // -  Bind sockets
         Driver
@@ -765,11 +765,11 @@ mod tests {
     }
 
     #[test]
-    fn test_UDP_send_to_receive_from_both_sides() {
+    fn test_udp_send_to_receive_from_both_sides() {
         let Driver = Network_socket_driver_type::new();
 
-        let Socket_1_identifier = New_socket_identifier(1.into());
-        let Socket_2_identifier = New_socket_identifier(2.into());
+        let Socket_1_identifier = new_socket_identifier(1.into());
+        let Socket_2_identifier = new_socket_identifier(2.into());
 
         // - Bind sockets
         Driver

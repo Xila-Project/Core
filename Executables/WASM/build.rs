@@ -1,6 +1,6 @@
 #![allow(non_camel_case_types)]
 
-use std::{env, process::Command};
+use std::env;
 
 fn main() {
     if env::var("RUSTUP_TOOLCHAIN").unwrap().contains("esp") {

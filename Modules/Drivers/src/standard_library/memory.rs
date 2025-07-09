@@ -52,7 +52,7 @@ impl Drop for Memory_manager_type {
             for region in regions.iter_mut() {
                 if !region.slice.is_empty() {
                     unsafe {
-                        Unmap(region.slice.as_mut_ptr(), region.slice.len());
+                        unmap(region.slice.as_mut_ptr(), region.slice.len());
                     }
                 }
             }
@@ -89,7 +89,7 @@ impl Manager_trait for Memory_manager_type {
             // If no region could satisfy the request, try to expand existing regions
             for Region in Capable_regions {
                 // Try to expand the region to fit the requested layout
-                if Expand(Region, layout.size()) {
+                if expand(Region, layout.size()) {
                     // Try to allocate again after expanding
                     let Result = Region.heap.allocate_first_fit(layout).ok();
                     if Result.is_some() {
@@ -159,12 +159,12 @@ unsafe fn is_slice_within_region(
     pointer_start >= start && pointer_end <= end
 }
 
-unsafe fn Expand(Region: &mut Region_type, Tried_size: usize) -> bool {
+unsafe fn expand(Region: &mut Region_type, Tried_size: usize) -> bool {
     let page_size = get_page_size();
     // If the region is empty, allocate a new one
     if Region.slice.is_empty() {
-        let size = Round_page_size(Tried_size.max(INITIAL_HEAP_SIZE), page_size);
-        let new_slice = Map(size, Region.capabilities);
+        let size = round_page_size(Tried_size.max(INITIAL_HEAP_SIZE), page_size);
+        let new_slice = map(size, Region.capabilities);
         let new_size = new_slice.len();
         Region
             .heap
@@ -175,9 +175,9 @@ unsafe fn Expand(Region: &mut Region_type, Tried_size: usize) -> bool {
     // If the region is not empty, try to expand it
     let Region_old_size = Region.slice.len();
     let new_size = Region_old_size + Tried_size;
-    let new_size = Round_page_size(new_size, page_size);
+    let new_size = round_page_size(new_size, page_size);
 
-    Remap(&mut Region.slice, new_size);
+    remap(&mut Region.slice, new_size);
 
     let Difference = new_size - Region_old_size;
 
@@ -190,13 +190,13 @@ fn get_page_size() -> usize {
     unsafe { sysconf(_SC_PAGE_SIZE) as usize }
 }
 
-const fn Round_page_size(Size: usize, Page_size: usize) -> usize {
+const fn round_page_size(Size: usize, Page_size: usize) -> usize {
     (Size + Page_size - 1) & !(Page_size - 1) // Round up to the nearest page size
 }
 
-unsafe fn Map(size: usize, Capabilities: Capabilities_type) -> &'static mut [MaybeUninit<u8>] {
+unsafe fn map(size: usize, Capabilities: Capabilities_type) -> &'static mut [MaybeUninit<u8>] {
     let page_size = get_page_size();
-    let size = Round_page_size(size, page_size);
+    let size = round_page_size(size, page_size);
 
     let Capabilities = if Capabilities.get_executable() {
         PROT_READ | PROT_WRITE | PROT_EXEC
@@ -220,9 +220,9 @@ unsafe fn Map(size: usize, Capabilities: Capabilities_type) -> &'static mut [May
     core::slice::from_raw_parts_mut(Pointer as *mut MaybeUninit<u8>, size)
 }
 
-unsafe fn Remap(Slice: &mut &'static mut [MaybeUninit<u8>], New_size: usize) {
+unsafe fn remap(Slice: &mut &'static mut [MaybeUninit<u8>], New_size: usize) {
     let page_size = get_page_size();
-    let new_size = Round_page_size(New_size, page_size);
+    let new_size = round_page_size(New_size, page_size);
 
     let Old_size = Slice.len();
 
@@ -235,7 +235,7 @@ unsafe fn Remap(Slice: &mut &'static mut [MaybeUninit<u8>], New_size: usize) {
     *Slice = core::slice::from_raw_parts_mut(Slice.as_mut_ptr(), new_size);
 }
 
-unsafe fn Unmap(Pointer: *mut MaybeUninit<u8>, Size: usize) {
+unsafe fn unmap(Pointer: *mut MaybeUninit<u8>, Size: usize) {
     munmap(Pointer as *mut c_void, Size);
 }
 
@@ -441,9 +441,9 @@ mod tests {
         let Page_size = get_page_size();
 
         // Test various sizes
-        assert_eq!(Round_page_size(1, Page_size), Page_size);
-        assert_eq!(Round_page_size(Page_size, Page_size), Page_size);
-        assert_eq!(Round_page_size(Page_size + 1, Page_size), Page_size * 2);
-        assert_eq!(Round_page_size(Page_size * 2, Page_size), Page_size * 2);
+        assert_eq!(round_page_size(1, Page_size), Page_size);
+        assert_eq!(round_page_size(Page_size, Page_size), Page_size);
+        assert_eq!(round_page_size(Page_size + 1, Page_size), Page_size * 2);
+        assert_eq!(round_page_size(Page_size * 2, Page_size), Page_size * 2);
     }
 }

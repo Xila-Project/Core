@@ -101,7 +101,7 @@ impl Partition_statistics_type {
     ///              stats.Total_used_sectors / stats.Total_partitions as u64);
     /// }
     /// ```
-    pub fn From_mbr(Mbr: &MBR_type) -> Self {
-        Mbr.Generate_statistics()
+    pub fn from_mbr(Mbr: &MBR_type) -> Self {
+        Mbr.generate_statistics()
     }
 }

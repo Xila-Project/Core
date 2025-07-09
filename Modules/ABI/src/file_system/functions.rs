@@ -13,7 +13,7 @@ use file_system::{
 };
 use virtual_file_system::get_instance as get_file_system_instance;
 
-use crate::{context, Into_position, Xila_time_type};
+use crate::{context, into_position, Xila_time_type};
 
 use super::{
     Xila_file_system_mode_type, Xila_file_system_open_type, Xila_file_system_result_type,
@@ -49,7 +49,7 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics(
     into_u32(move || {
         let task_identifier = context::get_instance().get_current_task_identifier();
 
-        let statistics = Xila_file_system_statistics_type::From_mutable_pointer(statistics)
+        let statistics = Xila_file_system_statistics_type::from_mutable_pointer(statistics)
             .ok_or(Error_type::Invalid_parameter)?;
 
         let file = file_system::Unique_file_identifier_type::From_raw(file);
@@ -79,7 +79,7 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics_from_path(
             .to_str()
             .map_err(|_| Error_type::Invalid_parameter)?;
 
-        let statistics = Xila_file_system_statistics_type::From_mutable_pointer(statistics)
+        let statistics = Xila_file_system_statistics_type::from_mutable_pointer(statistics)
             .ok_or(Error_type::Invalid_parameter)?;
 
         *statistics = Xila_file_system_statistics_type::from_statistics(block_on(
@@ -525,7 +525,7 @@ pub unsafe extern "C" fn Xila_file_system_set_position(
 ) -> Xila_file_system_result_type {
     into_u32(move || {
         let task = context::get_instance().get_current_task_identifier();
-        let current_position = Into_position(whence, offset);
+        let current_position = into_position(whence, offset);
 
         // Debug: Setting position
 

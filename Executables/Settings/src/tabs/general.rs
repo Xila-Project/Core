@@ -38,7 +38,7 @@ impl General_tab_type {
         Ok(tab_container)
     }
 
-    pub async fn Handle_event(&mut self, _event: &Event_type) -> bool {
+    pub async fn handle_event(&mut self, _event: &Event_type) -> bool {
         // For now, the general tab doesn't handle any specific events
         false
     }

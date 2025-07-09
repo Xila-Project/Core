@@ -78,11 +78,11 @@ impl Loader_type {
             let mut source_file = File::open(source_path)?;
 
             // Create file on target
-            let destination_file = file_system.Open(
+            let destination_file = file_system.open(
                 Task_identifier_type::new(0),
                 destination_path,
                 Flags_type::New(Mode_type::READ_ONLY, Some(Open_type::CREATE), None),
-                Time_type::New(0),
+                Time_type::new(0),
                 User_identifier_type::ROOT,
                 Group_identifier_type::ROOT,
             )?;
@@ -96,10 +96,10 @@ impl Loader_type {
                     break;
                 }
 
-                file_system.Write(destination_file, &buffer[..read], Time_type::New(0))?;
+                file_system.write(destination_file, &buffer[..read], Time_type::new(0))?;
             }
 
-            file_system.Close(destination_file)?;
+            file_system.close(destination_file)?;
         }
 
         Ok(())
@@ -134,18 +134,18 @@ mod tests {
         let mut buffer = vec![0; test_file.len()];
 
         let file: file_system::Local_file_identifier_type = file_system
-            .Open(
+            .open(
                 Task_identifier_type::new(0),
                 Path_type::New(destination_path),
                 Flags_type::New(Mode_type::READ_ONLY, None, None),
-                Time_type::New(0),
+                Time_type::new(0),
                 User_identifier_type::ROOT,
                 Group_identifier_type::ROOT,
             )
             .unwrap();
 
         let read = file_system
-            .Read(file, &mut buffer, Time_type::New(0))
+            .read(file, &mut buffer, Time_type::new(0))
             .unwrap();
 
         assert_eq!(read, test_file.len());

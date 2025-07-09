@@ -2,7 +2,7 @@ use std::io::{stderr, stdin, stdout, Read, Write};
 
 use file_system::{Device_trait, Size_type};
 
-use crate::standard_library::io::Map_error;
+use crate::standard_library::io::map_error;
 
 pub struct Standard_in_device_type;
 
@@ -44,7 +44,7 @@ impl Device_trait for Standard_out_device_type {
 
     fn Write(&self, buffer: &[u8]) -> file_system::Result_type<Size_type> {
         Ok(Size_type::New(
-            stdout().write(buffer).map_err(Map_error)? as u64
+            stdout().write(buffer).map_err(map_error)? as u64
         ))
     }
 
@@ -57,7 +57,7 @@ impl Device_trait for Standard_out_device_type {
     }
 
     fn Flush(&self) -> file_system::Result_type<()> {
-        stdout().flush().map_err(Map_error)
+        stdout().flush().map_err(map_error)
     }
 
     fn is_a_terminal(&self) -> bool {
@@ -74,7 +74,7 @@ impl Device_trait for Standard_error_device_type {
 
     fn Write(&self, buffer: &[u8]) -> file_system::Result_type<Size_type> {
         Ok(Size_type::New(
-            stderr().write(buffer).map_err(Map_error)? as u64
+            stderr().write(buffer).map_err(map_error)? as u64
         ))
     }
 
@@ -87,7 +87,7 @@ impl Device_trait for Standard_error_device_type {
     }
 
     fn Flush(&self) -> file_system::Result_type<()> {
-        stderr().flush().map_err(Map_error)
+        stderr().flush().map_err(map_error)
     }
 
     fn is_a_terminal(&self) -> bool {

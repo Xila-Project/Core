@@ -15,7 +15,7 @@ use screen::*;
 use window::*;
 use wrapper::*;
 
-pub fn New(Resolution: Point_type) -> Result<(Device_type, Device_type, Device_type), String> {
+pub fn new(Resolution: Point_type) -> Result<(Device_type, Device_type, Device_type), String> {
     let inner = Arc::new(Mutex::new(Inner_type::new(Resolution)?));
 
     let Screen_device = Screen_device_type::new(inner.clone());

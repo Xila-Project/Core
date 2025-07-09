@@ -8,7 +8,7 @@ use shared::Duration_type;
 
 #[test]
 fn test_get_current_time() {
-    let _ = time::Initialize(Create_device!(drivers::native::Time_driver_type::new()));
+    let _ = time::initialize(Create_device!(drivers::native::Time_driver_type::new()));
 
     let Current_time = time::get_instance().get_current_time().unwrap();
 
@@ -19,7 +19,7 @@ fn test_get_current_time() {
 
 #[test]
 fn test_get_current_time_since_startup() {
-    let _ = time::Initialize(Create_device!(drivers::native::Time_driver_type::new()));
+    let _ = time::initialize(Create_device!(drivers::native::Time_driver_type::new()));
 
     let Current_time = time::get_instance()
         .get_current_time_since_startup()

@@ -107,7 +107,7 @@ pub async fn load_all_users_and_groups() -> Result_type<()> {
             };
 
             Users_manager
-                .Add_group(group.get_identifier(), group.get_name(), group.get_users())
+                .add_group(group.get_identifier(), group.get_name(), group.get_users())
                 .await
                 .map_err(Error_type::Failed_to_add_group)?;
         }
@@ -130,7 +130,7 @@ pub async fn load_all_users_and_groups() -> Result_type<()> {
             };
 
             Users_manager
-                .Add_user(
+                .add_user(
                     user.get_identifier(),
                     user.get_name(),
                     user.get_primary_group(),

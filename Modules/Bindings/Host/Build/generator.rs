@@ -1,7 +1,7 @@
 #![allow(non_camel_case_types)]
 
 use bindings_utilities::{
-    context::LVGL_context, enumeration, format::format_rust, function::Split_inputs,
+    context::LVGL_context, enumeration, format::format_rust, function::split_inputs,
 };
 use std::{fs::File, io::Write, path::Path};
 
@@ -112,7 +112,7 @@ fn generate_conversion_for_output(r#return: &ReturnType) -> Result<Option<TokenS
                         }
                     } else if type_string == "core :: ffi :: c_void" {
                         quote! {
-                            let __current_result = __environment.Convert_to_WASM_pointer(
+                            let __current_result = __environment.convert_to_wasm_pointer(
                                 __current_result
                             );
 
@@ -120,7 +120,7 @@ fn generate_conversion_for_output(r#return: &ReturnType) -> Result<Option<TokenS
                         }
                     } else {
                         quote! {
-                            let __current_result = __environment.Convert_to_WASM_pointer(
+                            let __current_result = __environment.convert_to_wasm_pointer(
                                 __current_result as *mut core::ffi::c_void
                             );
 
@@ -183,7 +183,7 @@ fn generate_function_call(
     // - Get the inputs
     let inputs = function.inputs.iter().collect::<Vec<_>>();
 
-    let (left_inputs, right_inputs) = Split_inputs(&inputs)?;
+    let (left_inputs, right_inputs) = split_inputs(&inputs)?;
 
     // - Generate the assignation of the arguments to variables (let name = __Argument_X;)
     let assigns = right_inputs
@@ -305,7 +305,7 @@ pub fn generate(output_path: &Path, context: &LVGL_context) -> Result<(), String
     let mut output_file = File::create(&output_file_path)
         .map_err(|error| format!("Error creating output file : {error}"))?;
 
-    let enumerations = enumeration::Generate_code(context.get_signatures());
+    let enumerations = enumeration::generate_code(context.get_signatures());
 
     let functions = generate_code(
         context.get_type_tree(),

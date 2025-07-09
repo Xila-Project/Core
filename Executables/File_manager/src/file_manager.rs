@@ -43,7 +43,7 @@ impl File_manager_type {
 
         let mut window = graphics::get_instance().create_window().await?;
 
-        window.set_icon("Fm", palette::Get(Hue_type::Cyan, palette::Tone_type::MAIN));
+        window.set_icon("Fm", palette::get(Hue_type::Cyan, palette::Tone_type::MAIN));
 
         let mut manager = Self {
             window,

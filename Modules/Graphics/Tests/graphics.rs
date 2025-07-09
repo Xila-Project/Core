@@ -15,11 +15,11 @@ async fn main() {
     use file_system::Create_device;
     use graphics::{lvgl, Get_recommended_buffer_size, Input_type_type, Point_type};
 
-    let _ = users::Initialize();
+    let _ = users::initialize();
 
-    let task_instance = task::Initialize();
+    let task_instance = task::initialize();
 
-    time::Initialize(Create_device!(drivers::native::Time_driver_type::new()))
+    time::initialize(Create_device!(drivers::native::Time_driver_type::new()))
         .expect("Error initializing time manager");
 
     const RESOLUTION: Point_type = Point_type::new(800, 480);
@@ -27,7 +27,7 @@ async fn main() {
     const BUFFER_SIZE: usize = get_recommended_buffer_size(&RESOLUTION);
 
     let (screen_device, pointer_device, keyboard_device) =
-        window_screen::New(RESOLUTION).expect("Error creating touchscreen");
+        window_screen::new(RESOLUTION).expect("Error creating touchscreen");
 
     let _task = task_instance.get_current_task_identifier().await;
 

@@ -14,11 +14,11 @@ use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
 #[ignore]
 #[Test]
 async fn integration_test() {
-    let task_instance = task::Initialize();
+    let task_instance = task::initialize();
 
-    let _ = users::Initialize();
+    let _ = users::initialize();
 
-    let _ = time::Initialize(Create_device!(drivers::native::Time_driver_type::new()));
+    let _ = time::initialize(Create_device!(drivers::native::Time_driver_type::new()));
 
     let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
 

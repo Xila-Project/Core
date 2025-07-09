@@ -23,14 +23,14 @@ impl Shortcut_type {
     pub async fn add(path: &Path_type) -> Result_type<()> {
         let shortcut = Shortcut_type::read_from_path(path, &mut Vec::new()).await?;
 
-        let New_shortcut_path = SHORTCUT_PATH
+        let new_shortcut_path = SHORTCUT_PATH
             .Append(shortcut.get_name())
             .ok_or(Error_type::Failed_to_get_shortcut_file_path)?
             .Append(".json")
             .ok_or(Error_type::Failed_to_get_shortcut_file_path)?;
 
         virtual_file_system::get_instance()
-            .rename(&path, &New_shortcut_path)
+            .rename(&path, &new_shortcut_path)
             .await
             .map_err(Error_type::Failed_to_add_shortcut)?;
 
@@ -43,30 +43,30 @@ impl Shortcut_type {
     ) -> Result_type<Shortcut_type> {
         let virtual_file_system = virtual_file_system::get_instance();
 
-        let Shortcut_file = File_type::open(virtual_file_system, path, Mode_type::READ_ONLY.into())
+        let shortcut_file = File_type::open(virtual_file_system, path, Mode_type::READ_ONLY.into())
             .await
             .map_err(Error_type::Failed_to_read_shortcut_file)?;
 
         buffer.clear();
 
-        Shortcut_file
+        shortcut_file
             .read_to_end(buffer)
             .await
             .map_err(Error_type::Failed_to_read_shortcut_file)?;
 
-        let String = core::str::from_utf8(buffer).map_err(Error_type::Invalid_UTF_8)?;
+        let string = core::str::from_utf8(buffer).map_err(Error_type::Invalid_UTF_8)?;
 
-        let shortcut = Shortcut_type::from_str(String)?;
+        let shortcut = Shortcut_type::from_str(string)?;
 
         Ok(shortcut)
     }
 
-    pub async fn read(Entry_name: &str, Buffer: &mut Vec<u8>) -> Result_type<Shortcut_type> {
+    pub async fn read(entry_name: &str, buffer: &mut Vec<u8>) -> Result_type<Shortcut_type> {
         let shortcut_file_path = SHORTCUT_PATH
-            .Append(Entry_name)
+            .Append(entry_name)
             .ok_or(Error_type::Failed_to_get_shortcut_file_path)?;
 
-        let Shortcut = Shortcut_type::read_from_path(&shortcut_file_path, Buffer).await?;
+        let Shortcut = Shortcut_type::read_from_path(&shortcut_file_path, buffer).await?;
 
         Ok(Shortcut)
     }

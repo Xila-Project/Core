@@ -6,7 +6,7 @@
 
 use core::fmt::{self, Display, Formatter};
 
-use shared::{Duration_type, Unix_to_human_time};
+use shared::{unix_to_human_time, Duration_type};
 
 /// Represents a point in time for file system operations.
 ///
@@ -54,7 +54,7 @@ impl Time_type {
     ///
     /// let time = Time_type::New(1640995200); // January 1, 2022
     /// ```
-    pub const fn New(Seconds: u64) -> Self {
+    pub const fn new(Seconds: u64) -> Self {
         Self { seconds: Seconds }
     }
 
@@ -73,7 +73,7 @@ impl Time_type {
     /// let time = Time_type::New(1640995200);
     /// assert_eq!(time.As_u64(), 1640995200);
     /// ```
-    pub const fn As_u64(self) -> u64 {
+    pub const fn as_u64(self) -> u64 {
         self.seconds
     }
 }
@@ -100,7 +100,7 @@ impl From<Time_type> for Duration_type {
 
 impl Display for Time_type {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let (year, month, day, hour, minute, second) = Unix_to_human_time(self.seconds as i64);
+        let (year, month, day, hour, minute, second) = unix_to_human_time(self.seconds as i64);
 
         write!(
             f,
@@ -116,30 +116,30 @@ mod tests {
 
     #[test]
     fn test_time_creation() {
-        let time = Time_type::New(1640995200); // January 1, 2022
-        assert_eq!(time.As_u64(), 1640995200);
+        let time = Time_type::new(1640995200); // January 1, 2022
+        assert_eq!(time.as_u64(), 1640995200);
     }
 
     #[test]
     fn test_time_epoch() {
-        let epoch = Time_type::New(0);
-        assert_eq!(epoch.As_u64(), 0);
+        let epoch = Time_type::new(0);
+        assert_eq!(epoch.as_u64(), 0);
     }
 
     #[test]
     fn test_time_const_operations() {
         // Test that New and As_u64 are const functions
-        const TIME: Time_type = Time_type::New(1234567890);
-        const SECONDS: u64 = TIME.As_u64();
+        const TIME: Time_type = Time_type::new(1234567890);
+        const SECONDS: u64 = TIME.as_u64();
 
         assert_eq!(SECONDS, 1234567890);
-        assert_eq!(TIME.As_u64(), 1234567890);
+        assert_eq!(TIME.as_u64(), 1234567890);
     }
 
     #[test]
     fn test_time_comparison() {
-        let early = Time_type::New(1000);
-        let late = Time_type::New(2000);
+        let early = Time_type::new(1000);
+        let late = Time_type::new(2000);
 
         assert!(early < late);
         assert!(late > early);
@@ -154,23 +154,23 @@ mod tests {
     #[test]
     fn test_time_ordering() {
         let mut times = [
-            Time_type::New(3000),
-            Time_type::New(1000),
-            Time_type::New(2000),
-            Time_type::New(500),
+            Time_type::new(3000),
+            Time_type::new(1000),
+            Time_type::new(2000),
+            Time_type::new(500),
         ];
 
         times.sort();
 
-        assert_eq!(times[0], Time_type::New(500));
-        assert_eq!(times[1], Time_type::New(1000));
-        assert_eq!(times[2], Time_type::New(2000));
-        assert_eq!(times[3], Time_type::New(3000));
+        assert_eq!(times[0], Time_type::new(500));
+        assert_eq!(times[1], Time_type::new(1000));
+        assert_eq!(times[2], Time_type::new(2000));
+        assert_eq!(times[3], Time_type::new(3000));
     }
 
     #[test]
     fn test_time_clone_copy() {
-        let original = Time_type::New(999);
+        let original = Time_type::new(999);
         let cloned = original;
         let copied = original;
 
@@ -179,12 +179,12 @@ mod tests {
         assert_eq!(cloned, copied);
 
         // Test that we can still use original after copying
-        assert_eq!(original.As_u64(), 999);
+        assert_eq!(original.as_u64(), 999);
     }
 
     #[test]
     fn test_time_debug() {
-        let time = Time_type::New(1640995200);
+        let time = Time_type::new(1640995200);
         let debug_str = format!("{time:?}");
         assert!(debug_str.contains("Time_type"));
         assert!(debug_str.contains("1640995200"));
@@ -194,9 +194,9 @@ mod tests {
     fn test_time_hash() {
         use alloc::collections::BTreeMap;
 
-        let time1 = Time_type::New(12345);
-        let time2 = Time_type::New(12345);
-        let time3 = Time_type::New(54321);
+        let time1 = Time_type::new(12345);
+        let time2 = Time_type::new(12345);
+        let time3 = Time_type::new(54321);
 
         // Test that equal times can be used as keys in collections
         let mut map = BTreeMap::new();
@@ -213,12 +213,12 @@ mod tests {
     fn test_time_from_duration() {
         let duration = Duration_type::New(1640995200, 0);
         let time: Time_type = duration.into();
-        assert_eq!(time.As_u64(), 1640995200);
+        assert_eq!(time.as_u64(), 1640995200);
     }
 
     #[test]
     fn test_time_to_duration() {
-        let time = Time_type::New(1640995200);
+        let time = Time_type::new(1640995200);
         let duration: Duration_type = time.into();
         assert_eq!(duration.As_seconds(), 1640995200);
     }
@@ -226,7 +226,7 @@ mod tests {
     #[test]
     fn test_time_display_formatting() {
         // Test display formatting
-        let time = Time_type::New(0); // Unix epoch
+        let time = Time_type::new(0); // Unix epoch
         let display_str = format!("{time}");
 
         // The exact format depends on Unix_to_human_time implementation
@@ -240,9 +240,9 @@ mod tests {
     fn test_time_display_various_dates() {
         // Test some known timestamps
         let times = vec![
-            Time_type::New(0),          // 1970-01-01 00:00:00
-            Time_type::New(86400),      // 1970-01-02 00:00:00
-            Time_type::New(1640995200), // 2022-01-01 00:00:00 (approximately)
+            Time_type::new(0),          // 1970-01-01 00:00:00
+            Time_type::new(86400),      // 1970-01-02 00:00:00
+            Time_type::new(1640995200), // 2022-01-01 00:00:00 (approximately)
         ];
 
         for time in times {
@@ -257,8 +257,8 @@ mod tests {
 
     #[test]
     fn test_time_max_value() {
-        let max_time = Time_type::New(u64::MAX);
-        assert_eq!(max_time.As_u64(), u64::MAX);
+        let max_time = Time_type::new(u64::MAX);
+        assert_eq!(max_time.as_u64(), u64::MAX);
 
         // Should still be convertible to duration
         let duration: Duration_type = max_time.into();
@@ -267,8 +267,8 @@ mod tests {
 
     #[test]
     fn test_time_zero_and_max_comparison() {
-        let zero = Time_type::New(0);
-        let max = Time_type::New(u64::MAX);
+        let zero = Time_type::new(0);
+        let max = Time_type::new(u64::MAX);
 
         assert!(zero < max);
         assert!(max > zero);
@@ -280,12 +280,12 @@ mod tests {
         let original_seconds = 1640995200u64;
 
         // Time -> Duration -> Time
-        let time = Time_type::New(original_seconds);
+        let time = Time_type::new(original_seconds);
         let duration: Duration_type = time.into();
         let back_to_time: Time_type = duration.into();
 
         assert_eq!(time, back_to_time);
-        assert_eq!(original_seconds, back_to_time.As_u64());
+        assert_eq!(original_seconds, back_to_time.as_u64());
     }
 
     #[test]
@@ -302,7 +302,7 @@ mod tests {
         // Test a sequence of times
         use alloc::vec::Vec;
         let times: Vec<Time_type> = (0..10)
-            .map(|i| Time_type::New(i * 86400)) // Each day
+            .map(|i| Time_type::new(i * 86400)) // Each day
             .collect();
 
         // Verify they're in ascending order

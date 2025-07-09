@@ -30,7 +30,7 @@ impl Settings_type {
 
         let mut window = graphics::get_instance().create_window().await?;
 
-        window.set_icon("Se", palette::Get(Hue_type::Grey, palette::Tone_type::MAIN));
+        window.set_icon("Se", palette::get(Hue_type::Grey, palette::Tone_type::MAIN));
 
         // Create tabview
         let tabview = unsafe {

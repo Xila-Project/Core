@@ -19,7 +19,7 @@ pub use user::*;
 
 #[cfg(test)]
 mod tests {
-    use drivers::std::memory::Memory_manager_type;
+    use drivers::standard_library::memory::Memory_manager_type;
     use memory::Instantiate_global_allocator;
 
     Instantiate_global_allocator!(Memory_manager_type);

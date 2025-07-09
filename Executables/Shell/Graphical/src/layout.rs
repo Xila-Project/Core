@@ -1,6 +1,6 @@
 use alloc::{format, string::String};
 use graphics::lvgl;
-use shared::Unix_to_human_time;
+use shared::unix_to_human_time;
 
 use crate::error::{Error_type, Result_type};
 
@@ -30,7 +30,7 @@ impl Layout_type {
         let current_time = time::get_instance().get_current_time();
 
         if let Ok(current_time) = current_time {
-            let (_, _, _, hour, minute, _) = Unix_to_human_time(current_time.As_seconds() as i64);
+            let (_, _, _, hour, minute, _) = unix_to_human_time(current_time.As_seconds() as i64);
 
             let _ = graphics::get_instance().lock().await;
 

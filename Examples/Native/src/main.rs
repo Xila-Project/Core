@@ -33,23 +33,23 @@ Instantiate_global_allocator!(drivers::standard_library::memory::Memory_manager_
 #[task::Run(task_path = task, executor = Instantiate_static_executor!())]
 async fn main() {
     // - Initialize the system
-    log::Initialize(&drivers::standard_library::log::Logger_type).unwrap();
+    log::initialize(&drivers::standard_library::log::Logger_type).unwrap();
 
     // Initialize the task manager
-    let task_manager = task::Initialize();
+    let task_manager = task::initialize();
 
     let task = task_manager.get_current_task_identifier().await;
 
     // Initialize the users manager
-    users::Initialize();
+    users::initialize();
     // Initialize the time manager
-    time::Initialize(Create_device!(drivers::native::Time_driver_type::new())).unwrap();
+    time::initialize(Create_device!(drivers::native::Time_driver_type::new())).unwrap();
 
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
     const RESOLUTION: graphics::Point_type = graphics::Point_type::new(800, 600);
     let (screen_device, pointer_device, keyboard_device) =
-        drivers::native::window_screen::New(RESOLUTION).unwrap();
+        drivers::native::window_screen::new(RESOLUTION).unwrap();
     // - - Initialize the graphics manager
     let graphics_manager = graphics::initialize(
         screen_device,
@@ -80,7 +80,7 @@ async fn main() {
 
     // Create a partition type
     let partition = Create_device!(
-        MBR_type::Find_or_create_partition_with_signature(
+        MBR_type::find_or_create_partition_with_signature(
             &drive,
             0xDEADBEEF,
             Partition_type_type::Xila
@@ -89,7 +89,7 @@ async fn main() {
     );
 
     // Print MBR information
-    let mbr = MBR_type::Read_from_device(&drive).unwrap();
+    let mbr = MBR_type::read_from_device(&drive).unwrap();
 
     Information!("MBR information: {mbr}");
 

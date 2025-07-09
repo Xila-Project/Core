@@ -1,7 +1,7 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-pub fn Get() -> TokenStream {
+pub fn get() -> TokenStream {
     quote! {
         pub unsafe fn object_delete(__pointer_table : &mut Pointer_table_type, __task: Task_identifier_type, object: u16) {
 
@@ -11,7 +11,7 @@ pub fn Get() -> TokenStream {
         }
 
         pub unsafe fn window_create() -> *mut lv_obj_t {
-            Futures::block_on(
+            futures::block_on(
                 graphics::get_instance().create_window()
             ).unwrap().into_raw()
         }

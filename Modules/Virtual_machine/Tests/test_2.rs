@@ -7,7 +7,7 @@ use alloc::vec;
 
 use wamr_rust_sdk::{function::Function, value::WasmValue, RuntimeError};
 
-use drivers::std::memory::Memory_manager_type;
+use drivers::standard_library::memory::Memory_manager_type;
 use file_system::{Create_device, Create_file_system, Memory_device_type};
 use log::Information;
 use memory::Instantiate_global_allocator;
@@ -37,16 +37,16 @@ const FUNCTIONS: [Function_descriptor_type; 0] = Function_descriptors! {};
 #[ignore]
 #[Test]
 async fn integration_test() {
-    let task_instance = task::Initialize();
+    let task_instance = task::initialize();
 
     static LOGGER: drivers::standard_library::log::Logger_type =
         drivers::standard_library::log::Logger_type;
 
-    log::Initialize(&LOGGER).expect("Failed to initialize logger");
+    log::initialize(&LOGGER).expect("Failed to initialize logger");
 
-    users::Initialize();
+    users::initialize();
 
-    time::Initialize(Create_device!(drivers::native::Time_driver_type::new()))
+    time::initialize(Create_device!(drivers::native::Time_driver_type::new()))
         .expect("Failed to initialize time manager");
 
     let device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
@@ -126,13 +126,13 @@ async fn integration_test() {
         .await
         .unwrap();
 
-    ABI::get_instance()
+    abi::get_instance()
         .call_abi(async || {
             // Register the functions
 
             let runtime = Runtime_type::builder()
                 .register(&Registrable)
-                .Build()
+                .build()
                 .unwrap();
 
             let module = Module_type::From_buffer(
@@ -149,7 +149,7 @@ async fn integration_test() {
             let mut instance = Instance_type::New(&runtime, &module, 1024 * 4)
                 .expect("Failed to instantiate module");
 
-            let environment = Environment_type::From_instance(&instance)
+            let environment = Environment_type::from_instance(&instance)
                 .expect("Failed to get execution environment");
 
             let function = Function::find_export_func(instance.get_inner_reference(), "_start")
@@ -157,7 +157,7 @@ async fn integration_test() {
 
             loop {
                 // Reset instruction limit before each call
-                environment.Set_instruction_count_limit(Some(100));
+                environment.set_instruction_count_limit(Some(100));
 
                 let result = function.call(instance.get_inner_reference(), &vec![]);
 

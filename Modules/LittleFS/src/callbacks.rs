@@ -6,7 +6,7 @@ use file_system::{Device_type, Error_type, Position_type};
 
 use super::littlefs;
 
-pub unsafe extern "C" fn Read_callback(
+pub unsafe extern "C" fn read_callback(
     configuration: *const littlefs::lfs_config,
     block: littlefs::lfs_block_t,
     offset: littlefs::lfs_off_t,
@@ -42,7 +42,7 @@ pub unsafe extern "C" fn Read_callback(
     0
 }
 
-pub unsafe extern "C" fn Programm_callback(
+pub unsafe extern "C" fn programm_callback(
     configuration: *const littlefs::lfs_config,
     block: littlefs::lfs_block_t,
     offset: littlefs::lfs_off_t,
@@ -78,7 +78,7 @@ pub unsafe extern "C" fn Programm_callback(
     0
 }
 
-pub unsafe extern "C" fn Erase_callback(
+pub unsafe extern "C" fn erase_callback(
     configuration: *const littlefs::lfs_config,
     block: littlefs::lfs_block_t,
 ) -> c_int {
@@ -109,7 +109,7 @@ pub unsafe extern "C" fn Erase_callback(
     0
 }
 
-pub unsafe extern "C" fn Flush_callback(Configuration: *const littlefs::lfs_config) -> c_int {
+pub unsafe extern "C" fn flush_callback(Configuration: *const littlefs::lfs_config) -> c_int {
     let device = unsafe { Box::from_raw(Configuration.read().context as *mut Device_type) };
 
     loop {

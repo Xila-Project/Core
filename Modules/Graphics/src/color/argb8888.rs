@@ -21,13 +21,13 @@ impl Debug for Color_ARGB8888_type {
 impl Color_ARGB8888_type {
     pub const fn new(alpha: u8, Red: u8, Green: u8, Blue: u8) -> Self {
         Self(0)
-            .Set_alpha(alpha)
-            .Set_red(Red)
-            .Set_green(Green)
-            .Set_blue(Blue)
+            .set_alpha(alpha)
+            .set_red(Red)
+            .set_green(Green)
+            .set_blue(Blue)
     }
 
-    pub const fn From_RGB565(Value: Color_RGB565_type) -> Self {
+    pub const fn from_rgb565(Value: Color_RGB565_type) -> Self {
         Self::new(
             0xFF,
             Value.get_red() << 3 | Value.get_red() >> 2,
@@ -36,7 +36,7 @@ impl Color_ARGB8888_type {
         )
     }
 
-    pub const fn As_u32(self) -> u32 {
+    pub const fn as_u32(self) -> u32 {
         self.0
     }
 
@@ -56,22 +56,22 @@ impl Color_ARGB8888_type {
         ((self.0) & 0b1111_1111) as u8
     }
 
-    pub const fn Set_alpha(mut self, Value: u8) -> Self {
+    pub const fn set_alpha(mut self, Value: u8) -> Self {
         self.0 = (self.0 & !(0b1111_1111 << 24)) | ((Value as u32) << 24);
         self
     }
 
-    pub const fn Set_red(mut self, Value: u8) -> Self {
+    pub const fn set_red(mut self, Value: u8) -> Self {
         self.0 = (self.0 & 0xFF00_FFFF) | ((Value as u32) << 16);
         self
     }
 
-    pub const fn Set_green(mut self, Value: u8) -> Self {
+    pub const fn set_green(mut self, Value: u8) -> Self {
         self.0 = (self.0 & 0xFFFF_00FF) | ((Value as u32) << 8);
         self
     }
 
-    pub const fn Set_blue(mut self, Value: u8) -> Self {
+    pub const fn set_blue(mut self, Value: u8) -> Self {
         self.0 = (self.0 & 0xFFFF_FF00) | (Value as u32);
         self
     }
@@ -91,7 +91,7 @@ impl From<u32> for Color_ARGB8888_type {
 
 impl From<Color_RGB565_type> for Color_ARGB8888_type {
     fn from(value: Color_RGB565_type) -> Self {
-        Self::From_RGB565(value)
+        Self::from_rgb565(value)
     }
 }
 
@@ -111,7 +111,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_ARGB8888() {
+    fn test_argb8888() {
         let Color = Color_ARGB8888_type::new(255, 255, 255, 255);
         assert_eq!(Color.get_alpha(), 0xFF);
         assert_eq!(Color.get_red(), 0xFF);

@@ -16,7 +16,7 @@ impl Terminal_executable_type {
             .create_directory(&"/Configuration/Shared/Shortcuts", task)
             .await;
 
-        let File = match File_type::open(
+        let file = match File_type::open(
             virtual_file_system,
             "/Configuration/Shared/Shortcuts/Terminal.json",
             Flags_type::New(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
@@ -30,9 +30,9 @@ impl Terminal_executable_type {
             Err(error) => Err(error.to_string())?,
         };
 
-        File.write(crate::SHORTCUT.as_bytes())
+        file.write(crate::SHORTCUT.as_bytes())
             .await
-            .map_err(|Error| Error.to_string())?;
+            .map_err(|error| error.to_string())?;
 
         Ok(Self)
     }

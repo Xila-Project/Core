@@ -71,7 +71,7 @@ impl Raw_rwlock_type {
         }
     }
 
-    pub fn Write(&self) -> bool {
+    pub fn write(&self) -> bool {
         unsafe {
             self.mutex.lock_mut(|State| {
                 // Can only write if completely unlocked
@@ -169,7 +169,7 @@ pub unsafe extern "C" fn Xila_write_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool
         None => return false,
     };
 
-    rwlock.Write()
+    rwlock.write()
 }
 
 /// Unlock a rwlock.

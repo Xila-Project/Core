@@ -89,31 +89,31 @@ impl Metadata_type {
         self.group
     }
 
-    pub fn Set_inode(&mut self, Inode: Inode_type) {
+    pub fn set_inode(&mut self, Inode: Inode_type) {
         self.inode = Some(Inode);
     }
 
-    pub fn Set_type(&mut self, Type: Type_type) {
+    pub fn set_type(&mut self, Type: Type_type) {
         self.Type = Type;
     }
 
-    pub fn Set_creation_time(&mut self, Time: Time_type) {
+    pub fn set_creation_time(&mut self, Time: Time_type) {
         self.creation_time = Time;
     }
 
-    pub fn Set_modification_time(&mut self, Time: Time_type) {
+    pub fn set_modification_time(&mut self, Time: Time_type) {
         self.modification_time = Time;
     }
 
-    pub fn Set_access_time(&mut self, Time: Time_type) {
+    pub fn set_access_time(&mut self, Time: Time_type) {
         self.access_time = Time;
     }
 
-    pub fn Set_permissions(&mut self, Permissions: Permissions_type) {
+    pub fn set_permissions(&mut self, Permissions: Permissions_type) {
         self.permissions = Permissions;
     }
 
-    pub fn Set_owner(&mut self, Owner: User_identifier_type) {
+    pub fn set_owner(&mut self, Owner: User_identifier_type) {
         self.user = Owner;
     }
 
@@ -126,8 +126,8 @@ impl Metadata_type {
 mod tests {
     use super::*;
 
-    fn Create_test_metadata() -> Metadata_type {
-        let current_time = Time_type::New(1640995200);
+    fn create_test_metadata() -> Metadata_type {
+        let current_time = Time_type::new(1640995200);
         let user = User_identifier_type::New(1000);
         let group = Group_identifier_type::New(1000);
 
@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn test_metadata_creation() {
-        let current_time = Time_type::New(1640995200);
+        let current_time = Time_type::new(1640995200);
         let user = User_identifier_type::New(1000);
         let group = Group_identifier_type::New(1000);
 
@@ -160,36 +160,36 @@ mod tests {
 
     #[test]
     fn test_metadata_getters() {
-        let metadata = Create_test_metadata();
+        let metadata = create_test_metadata();
 
         // Test initial values
         assert!(metadata.get_inode().is_none());
         assert_eq!(metadata.get_type(), Type_type::File);
-        assert_eq!(metadata.get_creation_time().As_u64(), 1640995200);
-        assert_eq!(metadata.get_modification_time().As_u64(), 1640995200);
-        assert_eq!(metadata.get_access_time().As_u64(), 1640995200);
+        assert_eq!(metadata.get_creation_time().as_u64(), 1640995200);
+        assert_eq!(metadata.get_modification_time().as_u64(), 1640995200);
+        assert_eq!(metadata.get_access_time().as_u64(), 1640995200);
         assert_eq!(metadata.get_user().As_u16(), 1000);
         assert_eq!(metadata.get_group().As_u16(), 1000);
     }
 
     #[test]
     fn test_metadata_setters() {
-        let mut metadata = Create_test_metadata();
+        let mut metadata = create_test_metadata();
 
         // Test setting inode
         let inode = Inode_type::New(42);
-        metadata.Set_inode(inode);
+        metadata.set_inode(inode);
         assert_eq!(metadata.get_inode(), Some(inode));
 
         // Test setting type
-        metadata.Set_type(Type_type::Directory);
+        metadata.set_type(Type_type::Directory);
         assert_eq!(metadata.get_type(), Type_type::Directory);
 
         // Test setting times
-        let new_time = Time_type::New(1641081600);
-        metadata.Set_creation_time(new_time);
-        metadata.Set_modification_time(new_time);
-        metadata.Set_access_time(new_time);
+        let new_time = Time_type::new(1641081600);
+        metadata.set_creation_time(new_time);
+        metadata.set_modification_time(new_time);
+        metadata.set_access_time(new_time);
 
         assert_eq!(metadata.get_creation_time(), new_time);
         assert_eq!(metadata.get_modification_time(), new_time);
@@ -199,7 +199,7 @@ mod tests {
         let new_user = User_identifier_type::New(2000);
         let new_group = Group_identifier_type::New(2000);
 
-        metadata.Set_owner(new_user);
+        metadata.set_owner(new_user);
         metadata.set_group(new_group);
 
         assert_eq!(metadata.get_user(), new_user);
@@ -208,20 +208,20 @@ mod tests {
 
     #[test]
     fn test_metadata_permissions() {
-        let metadata = Create_test_metadata();
+        let metadata = create_test_metadata();
         let _permissions = metadata.get_permissions();
 
         // Test that we can set new permissions
         let mut metadata = metadata;
         let new_permissions = Permissions_type::New_default(Type_type::Directory);
-        metadata.Set_permissions(new_permissions);
+        metadata.set_permissions(new_permissions);
 
         assert_eq!(metadata.get_permissions(), new_permissions);
     }
 
     #[test]
     fn test_metadata_clone() {
-        let original = Create_test_metadata();
+        let original = create_test_metadata();
         let cloned = original.clone();
 
         assert_eq!(original, cloned);
@@ -233,21 +233,21 @@ mod tests {
 
     #[test]
     fn test_metadata_equality() {
-        let metadata1 = Create_test_metadata();
-        let metadata2 = Create_test_metadata();
+        let metadata1 = create_test_metadata();
+        let metadata2 = create_test_metadata();
 
         assert_eq!(metadata1, metadata2);
 
         // Change one field and verify they're different
-        let mut metadata3 = Create_test_metadata();
-        metadata3.Set_type(Type_type::Directory);
+        let mut metadata3 = create_test_metadata();
+        metadata3.set_type(Type_type::Directory);
 
         assert_ne!(metadata1, metadata3);
     }
 
     #[test]
     fn test_metadata_debug() {
-        let metadata = Create_test_metadata();
+        let metadata = create_test_metadata();
         let debug_str = alloc::format!("{metadata:?}");
 
         assert!(debug_str.contains("Metadata_type"));
@@ -257,7 +257,7 @@ mod tests {
 
     #[test]
     fn test_metadata_different_types() {
-        let current_time = Time_type::New(1640995200);
+        let current_time = Time_type::new(1640995200);
         let user = User_identifier_type::New(1000);
         let group = Group_identifier_type::New(1000);
 
@@ -283,47 +283,47 @@ mod tests {
 
     #[test]
     fn test_metadata_inode_operations() {
-        let mut metadata = Create_test_metadata();
+        let mut metadata = create_test_metadata();
 
         // Initially no inode
         assert!(metadata.get_inode().is_none());
 
         // Set an inode
         let inode1 = Inode_type::New(42);
-        metadata.Set_inode(inode1);
+        metadata.set_inode(inode1);
         assert_eq!(metadata.get_inode(), Some(inode1));
 
         // Change the inode
         let inode2 = Inode_type::New(84);
-        metadata.Set_inode(inode2);
+        metadata.set_inode(inode2);
         assert_eq!(metadata.get_inode(), Some(inode2));
         assert_ne!(metadata.get_inode(), Some(inode1));
     }
 
     #[test]
     fn test_metadata_time_updates() {
-        let mut metadata = Create_test_metadata();
+        let mut metadata = create_test_metadata();
 
         let initial_time = metadata.get_creation_time();
-        let new_time = Time_type::New(initial_time.As_u64() + 3600); // 1 hour later
+        let new_time = Time_type::new(initial_time.as_u64() + 3600); // 1 hour later
 
         // Test that times can be updated independently
-        metadata.Set_creation_time(new_time);
+        metadata.set_creation_time(new_time);
         assert_eq!(metadata.get_creation_time(), new_time);
         assert_eq!(metadata.get_modification_time(), initial_time); // Should be unchanged
         assert_eq!(metadata.get_access_time(), initial_time); // Should be unchanged
 
-        metadata.Set_modification_time(new_time);
+        metadata.set_modification_time(new_time);
         assert_eq!(metadata.get_modification_time(), new_time);
         assert_eq!(metadata.get_access_time(), initial_time); // Should still be unchanged
 
-        metadata.Set_access_time(new_time);
+        metadata.set_access_time(new_time);
         assert_eq!(metadata.get_access_time(), new_time);
     }
 
     #[test]
     fn test_metadata_user_group_operations() {
-        let mut metadata = Create_test_metadata();
+        let mut metadata = create_test_metadata();
 
         let _initial_user = metadata.get_user();
         let initial_group = metadata.get_group();
@@ -332,7 +332,7 @@ mod tests {
         let new_group = Group_identifier_type::New(5000);
 
         // Test user change
-        metadata.Set_owner(new_user);
+        metadata.set_owner(new_user);
         assert_eq!(metadata.get_user(), new_user);
         assert_eq!(metadata.get_group(), initial_group); // Group should be unchanged
 
@@ -344,24 +344,24 @@ mod tests {
 
     #[test]
     fn test_metadata_comprehensive_modification() {
-        let mut metadata = Create_test_metadata();
+        let mut metadata = create_test_metadata();
 
         // Modify all fields
         let new_inode = Inode_type::New(999);
         let new_type = Type_type::Socket;
-        let new_time = Time_type::New(2000000000);
+        let new_time = Time_type::new(2000000000);
         let new_user = User_identifier_type::New(9999);
         let new_group = Group_identifier_type::New(9999);
         let new_permissions = Permissions_type::New_default(Type_type::Socket);
 
-        metadata.Set_inode(new_inode);
-        metadata.Set_type(new_type);
-        metadata.Set_creation_time(new_time);
-        metadata.Set_modification_time(new_time);
-        metadata.Set_access_time(new_time);
-        metadata.Set_owner(new_user);
+        metadata.set_inode(new_inode);
+        metadata.set_type(new_type);
+        metadata.set_creation_time(new_time);
+        metadata.set_modification_time(new_time);
+        metadata.set_access_time(new_time);
+        metadata.set_owner(new_user);
         metadata.set_group(new_group);
-        metadata.Set_permissions(new_permissions);
+        metadata.set_permissions(new_permissions);
 
         // Verify all changes
         assert_eq!(metadata.get_inode(), Some(new_inode));

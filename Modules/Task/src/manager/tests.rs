@@ -8,7 +8,7 @@ use users::{Group_identifier_type, User_identifier_type};
 
 #[Test(task_path = crate)]
 async fn test_get_task_name() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Task_name = "Test Task";
     let Task = Manager.get_current_task_identifier().await;
@@ -28,7 +28,7 @@ async fn test_get_task_name() {
 
 #[Test(task_path = crate)]
 async fn test_set_get_owner() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Task = Manager.get_current_task_identifier().await;
 
@@ -54,7 +54,7 @@ async fn test_set_get_owner() {
 
 #[Test(task_path = crate)]
 async fn test_get_current_task_identifier() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Task = Manager.get_current_task_identifier().await;
 
@@ -73,7 +73,7 @@ async fn test_get_current_task_identifier() {
 
 #[Test(task_path = crate)]
 async fn test_task_owner_inheritance() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Task = Manager.get_current_task_identifier().await;
     let User_identifier = User_identifier_type::New(123);
@@ -135,7 +135,7 @@ async fn test_task_owner_inheritance() {
 
 #[Test(task_path = crate)]
 async fn test_environment_variables() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Task_identifier = Manager.get_current_task_identifier().await;
     let Name = "Key";
@@ -165,7 +165,7 @@ async fn test_environment_variables() {
 
 #[Test(task_path = crate)]
 async fn test_environment_variable_inheritance() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Task = Manager.get_current_task_identifier().await;
 
@@ -198,7 +198,7 @@ async fn test_environment_variable_inheritance() {
 
 #[Test(task_path = crate)]
 async fn test_join_handle() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Task = Manager.get_current_task_identifier().await;
 
@@ -212,7 +212,7 @@ async fn test_join_handle() {
 
 #[Test(task_path = crate)]
 async fn test_set_user() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Task = Manager.get_current_task_identifier().await;
 
@@ -225,7 +225,7 @@ async fn test_set_user() {
 
 #[Test(task_path = crate)]
 async fn test_set_group() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Task = Manager.get_current_task_identifier().await;
 
@@ -238,7 +238,7 @@ async fn test_set_group() {
 
 #[Test(task_path = crate)]
 async fn test_signal() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Task = Manager.get_current_task_identifier().await;
 
@@ -399,7 +399,7 @@ fn test_find_first_available_identifier_empty_range() {
 
 #[Test(task_path = crate)]
 async fn test_spawn() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Task_name = "Child Task";
     let Task = Manager.get_current_task_identifier().await;
@@ -417,7 +417,7 @@ async fn test_spawn() {
 
 #[Test(task_path = crate)]
 async fn test_get_parent() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Root_task = Manager.get_current_task_identifier().await;
     let Spawner = Manager.get_spawner(Root_task).await.unwrap();
@@ -443,7 +443,7 @@ async fn test_get_parent() {
 
 #[Test(task_path = crate)]
 async fn test_get_children() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Root_task = Manager.get_current_task_identifier().await;
     let Spawner = Manager.get_spawner(Root_task).await.unwrap();
@@ -486,7 +486,7 @@ async fn test_get_children() {
 
 #[Test(task_path = crate)]
 async fn test_get_children_with_nested_tasks() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Root_task = Manager.get_current_task_identifier().await;
     let Spawner = Manager.get_spawner(Root_task).await.unwrap();
@@ -536,7 +536,7 @@ async fn test_get_children_with_nested_tasks() {
 
 #[Test(task_path = crate)]
 async fn test_get_parent_invalid_task() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     // Test with an invalid task identifier
     let Invalid_task = Task_identifier_type::new(99999);
@@ -547,7 +547,7 @@ async fn test_get_parent_invalid_task() {
 
 #[Test(task_path = crate)]
 async fn test_get_children_invalid_task() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     // Test with an invalid task identifier
     let Invalid_task = Task_identifier_type::new(99999);
@@ -561,7 +561,7 @@ async fn test_get_children_invalid_task() {
 
 #[Test(task_path = crate)]
 async fn test_root_task_parent() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Root_task = Manager.get_current_task_identifier().await;
 
@@ -572,7 +572,7 @@ async fn test_root_task_parent() {
 
 #[Test(task_path = crate)]
 async fn test_multiple_generation_relationships() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Root_task = Manager.get_current_task_identifier().await;
     let Spawner = Manager.get_spawner(Root_task).await.unwrap();
@@ -652,7 +652,7 @@ async fn test_multiple_generation_relationships() {
 
 #[Test(task_path = crate)]
 async fn test_register_spawner() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     // Get current task and its spawner
     let Current_task = Manager.get_current_task_identifier().await;
@@ -679,7 +679,7 @@ async fn test_register_spawner() {
 
 #[Test(task_path = crate)]
 async fn test_unregister_spawner() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     // Test unregistering a non-existent spawner
     let Invalid_spawner_id = 99999;
@@ -701,7 +701,7 @@ async fn test_unregister_spawner() {
 
 #[Test(task_path = crate)]
 async fn test_unregister_nonexistent_spawner() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     // Try to unregister a nonexistent spawner
     let Invalid_id = 99999;
@@ -716,7 +716,7 @@ async fn test_unregister_nonexistent_spawner() {
 
 #[Test(task_path = crate)]
 async fn test_register_multiple_spawners() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     // Test the ID assignment logic by checking the current spawner
     let Current_task = Manager.get_current_task_identifier().await;
@@ -738,8 +738,8 @@ async fn test_register_multiple_spawners() {
 }
 
 //#[Test(task_path = crate)]
-async fn _Test_spawner_load_balancing() {
-    let Manager = Initialize();
+async fn _test_spawner_load_balancing() {
+    let Manager = initialize();
 
     // Test the load balancing behavior by checking how tasks are distributed
     // Since we can't easily create multiple spawners in tests, we test that
@@ -787,7 +787,7 @@ async fn _Test_spawner_load_balancing() {
 
 #[Test(task_path = crate)]
 async fn test_get_spawner_invalid_task() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     // Test with an invalid task identifier
     let Invalid_task = Task_identifier_type::new(99999);
@@ -802,7 +802,7 @@ async fn test_get_spawner_invalid_task() {
 
 #[Test(task_path = crate)]
 async fn test_get_spawner_valid_task() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Task = Manager.get_current_task_identifier().await;
     let Spawner_result = Manager.get_spawner(Task).await;
@@ -813,7 +813,7 @@ async fn test_get_spawner_valid_task() {
 
 #[Test(task_path = crate)]
 async fn test_spawner_with_explicit_selection() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Parent_task = Manager.get_current_task_identifier().await;
     let Current_spawner_id = Manager.get_spawner(Parent_task).await.unwrap();
@@ -835,7 +835,7 @@ async fn test_spawner_with_explicit_selection() {
 
 #[Test(task_path = crate)]
 async fn test_spawner_with_invalid_selection() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     let Parent_task = Manager.get_current_task_identifier().await;
     let Invalid_spawner = 99999;
@@ -858,7 +858,7 @@ async fn test_spawner_with_invalid_selection() {
 
 #[Test(task_path = crate)]
 async fn test_spawner_reuse_after_unregister() {
-    let Manager = Initialize();
+    let Manager = initialize();
 
     // Test the ID reuse behavior by testing with invalid spawner IDs
     // Since we can't easily create new spawners in tests, we verify the

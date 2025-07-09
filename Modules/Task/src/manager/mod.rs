@@ -29,8 +29,8 @@ use synchronization::{
 
 static MANAGER_INSTANCE: OnceLock<Manager_type> = OnceLock::new();
 
-pub fn Initialize() -> &'static Manager_type {
-    MANAGER_INSTANCE.get_or_init(Manager_type::New)
+pub fn initialize() -> &'static Manager_type {
+    MANAGER_INSTANCE.get_or_init(Manager_type::new)
 }
 
 pub fn get_instance() -> &'static Manager_type {
@@ -53,7 +53,7 @@ impl Manager_type {
 
     /// Create a new task manager instance,
     /// create a root task and register current thread as the root task main thread.
-    pub(crate) fn New() -> Self {
+    pub(crate) fn new() -> Self {
         Manager_type(RwLock::new(Inner_type {
             tasks: BTreeMap::new(),
             identifiers: BTreeMap::new(),

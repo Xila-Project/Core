@@ -44,7 +44,7 @@ impl Environment_type<'_> {
         Ok(Self(Raw_pointer as Environment_pointer_type, PhantomData))
     }
 
-    pub fn From_instance(Instance: &Instance_type) -> Result_type<Self> {
+    pub fn from_instance(Instance: &Instance_type) -> Result_type<Self> {
         let instance_pointer = Instance.get_inner_reference().get_inner_instance();
 
         if instance_pointer.is_null() {
@@ -84,7 +84,7 @@ impl Environment_type<'_> {
     ///
     /// This function is unsafe because it is not checked that the address is valid.
     /// Please use `Validate_WASM_pointer` to check the address.
-    pub unsafe fn Convert_to_native_pointer<T>(
+    pub unsafe fn convert_to_native_pointer<T>(
         &self,
         address: WASM_pointer_type,
     ) -> Option<*mut T> {
@@ -101,18 +101,18 @@ impl Environment_type<'_> {
     ///
     /// This function is unsafe because it is not checked that the address is valid.
     /// Please use `Validate_WASM_pointer` to check the address.
-    pub unsafe fn Convert_to_WASM_pointer<T>(&self, Pointer: *const T) -> WASM_pointer_type {
+    pub unsafe fn convert_to_wasm_pointer<T>(&self, Pointer: *const T) -> WASM_pointer_type {
         wasm_runtime_addr_native_to_app(self.get_instance_pointer(), Pointer as *mut c_void)
             as WASM_pointer_type
     }
 
-    pub fn Validate_WASM_pointer(&self, Address: WASM_pointer_type, Size: WASM_usize_type) -> bool {
+    pub fn validate_wasm_pointer(&self, Address: WASM_pointer_type, Size: WASM_usize_type) -> bool {
         unsafe {
             wasm_runtime_validate_app_addr(self.get_instance_pointer(), Address as u64, Size as u64)
         }
     }
 
-    pub fn Validate_native_pointer<T>(&self, Pointer: *const T, Size: u64) -> bool {
+    pub fn validate_native_pointer<T>(&self, Pointer: *const T, Size: u64) -> bool {
         unsafe {
             wasm_runtime_validate_native_addr(
                 self.get_instance_pointer(),
@@ -124,7 +124,7 @@ impl Environment_type<'_> {
 
     /// Make an indirect function call (call a function by its index which is not exported).
     /// For exported functions use `Call_export_function`.
-    pub fn Call_indirect_function(
+    pub fn call_indirect_function(
         &self,
         function_index: u32,
         parameters: &Vec<WasmValue>,
@@ -161,7 +161,7 @@ impl Environment_type<'_> {
 
     /// Create a new execution environment.
     /// This environment should be initialized with `Initialize_thread_environment` and deinitialized with `Deinitialize_thread_environment`.
-    pub fn Create_environment(&self, Stack_size: usize) -> Result_type<Self> {
+    pub fn create_environment(&self, Stack_size: usize) -> Result_type<Self> {
         let execution_environment =
             unsafe { wasm_runtime_create_exec_env(self.get_instance_pointer(), Stack_size as u32) };
 
@@ -174,7 +174,7 @@ impl Environment_type<'_> {
         Ok(Self(execution_environment, PhantomData))
     }
 
-    pub fn Set_instruction_count_limit(&self, Limit: Option<u64>) {
+    pub fn set_instruction_count_limit(&self, Limit: Option<u64>) {
         unsafe {
             wasm_runtime_set_instruction_count_limit(
                 self.get_inner_reference(),

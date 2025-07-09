@@ -1,4 +1,4 @@
-pub fn Unix_to_human_time(Unix_timestamp: i64) -> (u16, u8, u8, u8, u8, u8) {
+pub fn unix_to_human_time(Unix_timestamp: i64) -> (u16, u8, u8, u8, u8, u8) {
     // Constants for calculations
     const SECONDS_IN_MINUTE: i64 = 60;
     const SECONDS_IN_HOUR: i64 = 60 * SECONDS_IN_MINUTE;
@@ -35,8 +35,8 @@ pub fn Unix_to_human_time(Unix_timestamp: i64) -> (u16, u8, u8, u8, u8, u8) {
 
     // Determine the current month and day
     let mut Month = 0;
-    while days_since_epoch >= Days_in_month(Year, Month) {
-        days_since_epoch -= Days_in_month(Year, Month);
+    while days_since_epoch >= days_in_month(Year, Month) {
+        days_since_epoch -= days_in_month(Year, Month);
         Month += 1;
     }
 
@@ -63,7 +63,7 @@ pub fn is_leap_year(Year: i64) -> bool {
     (Year % 4 == 0 && Year % 100 != 0) || (Year % 400 == 0)
 }
 
-pub fn Days_in_month(Year: i64, Month: usize) -> i64 {
+pub fn days_in_month(Year: i64, Month: usize) -> i64 {
     // Number of days in each month (non-leap year)
     const DAYS_IN_MONTH: [i64; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 

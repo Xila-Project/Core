@@ -100,7 +100,7 @@ impl Manager_type {
             runtime_builder = runtime_builder.register(*Registrable);
         }
 
-        let Runtime = runtime_builder.Build()?;
+        let Runtime = runtime_builder.build()?;
 
         let Manager = Self { runtime: Runtime };
 

@@ -7,7 +7,7 @@ use alloc::vec;
 
 use wamr_rust_sdk::value::WasmValue;
 
-use drivers::std::memory::Memory_manager_type;
+use drivers::standard_library::memory::Memory_manager_type;
 use file_system::{Create_device, Create_file_system, Memory_device_type};
 use memory::Instantiate_global_allocator;
 use task::Test;
@@ -36,16 +36,16 @@ const FUNCTIONS: [Function_descriptor_type; 0] = Function_descriptors! {};
 #[ignore]
 #[Test]
 async fn integration_test() {
-    let task_instance = task::Initialize();
+    let task_instance = task::initialize();
 
     static LOGGER: drivers::standard_library::log::Logger_type =
         drivers::standard_library::log::Logger_type;
 
-    log::Initialize(&LOGGER).expect("Failed to initialize logger");
+    log::initialize(&LOGGER).expect("Failed to initialize logger");
 
-    users::Initialize();
+    users::initialize();
 
-    time::Initialize(Create_device!(drivers::native::Time_driver_type::new()))
+    time::initialize(Create_device!(drivers::native::Time_driver_type::new()))
         .expect("Failed to initialize time manager");
 
     let device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
@@ -131,7 +131,7 @@ async fn integration_test() {
 
             let runtime = Runtime_type::builder()
                 .register(&Registrable)
-                .Build()
+                .build()
                 .unwrap();
 
             let module = Module_type::From_buffer(
@@ -148,7 +148,7 @@ async fn integration_test() {
             let mut instance = Instance_type::New(&runtime, &module, 1024 * 4)
                 .expect("Failed to instantiate module");
 
-            let _ = Environment_type::From_instance(&instance)
+            let _ = Environment_type::from_instance(&instance)
                 .expect("Failed to get execution environment");
 
             assert_eq!(instance.Call_main(&vec![]).unwrap(), [WasmValue::Void]);

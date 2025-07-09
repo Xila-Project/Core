@@ -2,12 +2,12 @@ use proc_macro2::{Literal, TokenStream};
 use quote::{quote, ToTokens};
 use syn::Signature;
 
-pub fn Generate_code(Signatures: Vec<Signature>) -> TokenStream {
+pub fn generate_code(Signatures: Vec<Signature>) -> TokenStream {
     let mut signatures = Signatures.clone();
 
     signatures.sort_by_key(|x| x.ident.to_string().to_lowercase());
 
-    let Variants = &signatures
+    let variants = &signatures
         .into_iter()
         .enumerate()
         .map(|(i, x)| {
@@ -22,7 +22,7 @@ pub fn Generate_code(Signatures: Vec<Signature>) -> TokenStream {
         #[repr(u16)]
         pub enum Function_calls_type {
             #(
-                #Variants,
+                #variants,
             )*
         }
     }

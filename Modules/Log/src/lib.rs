@@ -48,9 +48,9 @@ impl From<log::Level> for Level_type {
 pub trait Logger_trait: Send + Sync {
     fn enabled(&self, level: Level_type) -> bool;
 
-    fn Write(&self, Arguments: fmt::Arguments);
+    fn write(&self, Arguments: fmt::Arguments);
 
-    fn Log(&self, Record: &Record) {
+    fn log(&self, Record: &Record) {
         let letter = match Record.level() {
             log::Level::Error => "E",
             log::Level::Warn => "W",
@@ -67,7 +67,7 @@ pub trait Logger_trait: Send + Sync {
             log::Level::Trace => GREY,
         };
 
-        self.Write(format_args!(
+        self.write(format_args!(
             "{} {} {} | {}{}{} | {}",
             Color,
             letter,
@@ -79,7 +79,7 @@ pub trait Logger_trait: Send + Sync {
         ))
     }
 
-    fn Flush(&self) {
+    fn flush(&self) {
         // Implement flush logic if needed, e.g., flushing buffers to a file or console
     }
 }
@@ -95,17 +95,17 @@ impl Log for Logger_type {
         if !self.enabled(Record.metadata()) {
             return;
         }
-        self.0.Log(Record)
+        self.0.log(Record)
     }
 
     fn flush(&self) {
-        self.0.Flush();
+        self.0.flush();
     }
 }
 
 static LOGGER_INSTANCE: OnceLock<Logger_type> = OnceLock::new();
 
-pub fn Initialize(Logger: &'static dyn Logger_trait) -> Result<(), log::SetLoggerError> {
+pub fn initialize(Logger: &'static dyn Logger_trait) -> Result<(), log::SetLoggerError> {
     let logger = LOGGER_INSTANCE.get_or_init(|| Logger_type(Logger));
 
     set_logger(logger).expect("Failed to set logger");
@@ -115,36 +115,36 @@ pub fn Initialize(Logger: &'static dyn Logger_trait) -> Result<(), log::SetLogge
 
 pub fn test_write(Logger: &impl Logger_trait) {
     for i in 0..5 {
-        Logger.Write(format_args!("This is a test message number {i}."));
+        Logger.write(format_args!("This is a test message number {i}."));
     }
 }
 
 pub fn test_log(Logger: &impl Logger_trait) {
-    Logger.Log(
+    Logger.log(
         &Record::builder()
             .level(log::Level::Info)
             .args(format_args!("This is a test log message."))
             .build(),
     );
-    Logger.Log(
+    Logger.log(
         &Record::builder()
             .level(log::Level::Warn)
             .args(format_args!("This is a test warning message."))
             .build(),
     );
-    Logger.Log(
+    Logger.log(
         &Record::builder()
             .level(log::Level::Error)
             .args(format_args!("This is a test error message."))
             .build(),
     );
-    Logger.Log(
+    Logger.log(
         &Record::builder()
             .level(log::Level::Debug)
             .args(format_args!("This is a test debug message."))
             .build(),
     );
-    Logger.Log(
+    Logger.log(
         &Record::builder()
             .level(log::Level::Trace)
             .args(format_args!("This is a test trace message."))
@@ -153,5 +153,5 @@ pub fn test_log(Logger: &impl Logger_trait) {
 }
 
 pub fn test_flush(Logger: &impl Logger_trait) {
-    Logger.Flush();
+    Logger.flush();
 }

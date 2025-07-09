@@ -5,7 +5,7 @@ use bindings_utilities::format::format_identifier;
 
 use bindings_utilities::context::LVGL_context;
 use bindings_utilities::format::format_c;
-use bindings_utilities::function::Split_inputs;
+use bindings_utilities::function::split_inputs;
 use quote::ToTokens;
 use syn::{FnArg, ReturnType, Signature, Type};
 
@@ -60,7 +60,7 @@ fn generate_function_signature(signature: &Signature) -> String {
 
     let inputs = signature.inputs.iter().collect::<Vec<_>>();
 
-    let (_, inputs) = Split_inputs(&inputs).unwrap();
+    let (_, inputs) = split_inputs(&inputs).unwrap();
 
     let mut inputs = inputs
         .iter()
@@ -112,7 +112,7 @@ fn generate_graphics_call(signature: &Signature) -> String {
 
     let inputs = signature.inputs.iter().collect::<Vec<_>>();
 
-    let (_, inputs) = Split_inputs(&inputs).unwrap();
+    let (_, inputs) = split_inputs(&inputs).unwrap();
 
     let mut inputs = inputs
         .iter()

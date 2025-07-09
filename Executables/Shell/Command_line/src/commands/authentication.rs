@@ -13,14 +13,14 @@ impl Shell_type {
         self.standard.print("Password: ").await;
         self.standard.out_flush().await;
 
-        let mut Password = String::new();
-        self.standard.read_line(&mut Password).await;
+        let mut password = String::new();
+        self.standard.read_line(&mut password).await;
 
         // - Check the user name and the password
         let User_identifier = authentication::authenticate_user(
             virtual_file_system::get_instance(),
             &user_name,
-            &Password,
+            &password,
         )
         .await
         .map_err(Error_type::Authentication_failed)?;

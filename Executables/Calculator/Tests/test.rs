@@ -35,17 +35,17 @@ async fn run_graphics() {
 #[Test]
 async fn integration_test() {
     // - Initialize the system
-    log::Initialize(&drivers::standard_library::log::Logger_type).unwrap();
+    log::initialize(&drivers::standard_library::log::Logger_type).unwrap();
 
     let binary_buffer = include_bytes!("../WASM/target/wasm32-wasip1/release/Calculator.wasm");
 
-    users::Initialize();
+    users::initialize();
 
     let task_instance = task::Initialize();
 
     let task = task_instance.get_current_task_identifier().await;
 
-    time::Initialize(Create_device!(Time_driver_type::new()))
+    time::initialize(Create_device!(Time_driver_type::new()))
         .expect("Error initializing time manager");
 
     let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
@@ -90,7 +90,7 @@ async fn integration_test() {
     let virtual_machine = virtual_machine::get_instance();
     const RESOLUTION: graphics::Point_type = graphics::Point_type::new(800, 600);
     let (screen_device, pointer_device, keyboard_device) =
-        drivers::native::window_screen::New(RESOLUTION).unwrap();
+        drivers::native::window_screen::new(RESOLUTION).unwrap();
     // - - Initialize the graphics manager
     graphics::initialize(
         screen_device,

@@ -34,7 +34,7 @@ mod generated_bindings {
         pointer: WASM_pointer_type,
     ) -> Result_type<*mut T> {
         environment
-            .Convert_to_native_pointer(pointer)
+            .convert_to_native_pointer(pointer)
             .ok_or(Error_type::Invalid_pointer)
     }
 

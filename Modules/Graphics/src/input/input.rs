@@ -6,7 +6,7 @@ use file_system::Device_type;
 
 use crate::{lvgl, Result_type};
 
-use super::{Binding_callback_function, Input_type_type, User_data_type};
+use super::{binding_callback_function, Input_type_type, User_data_type};
 
 pub struct Input_type {
     #[allow(dead_code)]
@@ -39,7 +39,7 @@ impl Input_type {
         let Input_device = unsafe {
             let input_device = lvgl::lv_indev_create();
             lvgl::lv_indev_set_type(input_device, Type.into());
-            lvgl::lv_indev_set_read_cb(input_device, Some(Binding_callback_function));
+            lvgl::lv_indev_set_read_cb(input_device, Some(binding_callback_function));
             lvgl::lv_indev_set_user_data(input_device, Box::into_raw(User_data) as *mut c_void);
 
             if Type == Input_type_type::Keypad {

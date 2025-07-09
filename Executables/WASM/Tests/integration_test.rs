@@ -3,7 +3,7 @@
 extern crate alloc;
 
 use command_line_shell::Shell_executable_type;
-use drivers::std::Loader::Loader_type;
+use drivers::standard_library::loader::Loader_type;
 use executable::{Mount_static_executables, Standard_type};
 use file_system::{Create_device, Create_file_system, Memory_device_type, Mode_type};
 use memory::Instantiate_global_allocator;
@@ -16,13 +16,13 @@ Instantiate_global_allocator!(drivers::standard_library::memory::Memory_manager_
 #[ignore]
 #[Test]
 async fn i() {
-    let task_instance = task::Initialize();
+    let task_instance = task::initialize();
 
-    let _ = users::Initialize();
+    let _ = users::initialize();
 
     let _ = time::Initialize(Create_device!(drivers::native::Time_driver_type::new()));
 
-    let _ = Virtual_machine::Initialize(&[]);
+    let _ = virtual_machine::Initialize(&[]);
 
     let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 1024 * 512));
 

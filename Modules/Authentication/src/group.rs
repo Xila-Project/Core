@@ -208,7 +208,7 @@ pub async fn create_group<'a>(
 
     // - Add it to the users manager.
     users_manager
-        .Add_group(Group_identifier, group_name, &[])
+        .add_group(Group_identifier, group_name, &[])
         .await
         .map_err(Error_type::Failed_to_add_group)?;
 

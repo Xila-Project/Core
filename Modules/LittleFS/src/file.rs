@@ -10,7 +10,7 @@ use file_system::{
 };
 use users::{Group_identifier_type, User_identifier_type};
 
-use super::{littlefs, Convert_flags, Convert_result};
+use super::{convert_flags, convert_result, littlefs};
 
 fn convert_position(position: &Position_type) -> (i32, i32) {
     match position {
@@ -71,7 +71,7 @@ impl File_type {
 
         let path = CString::new(path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
-        let little_fs_flags = Convert_flags(flags);
+        let little_fs_flags = convert_flags(flags);
 
         let metadata_buffer = Box::new(metadata);
 
@@ -101,7 +101,7 @@ impl File_type {
                 cache_size,
             }));
 
-            Convert_result(littlefs::lfs_file_opencfg(
+            convert_result(littlefs::lfs_file_opencfg(
                 file_system as *mut _,
                 &file.0.file as *const _ as *mut _,
                 path.as_ptr(),
@@ -122,7 +122,7 @@ impl File_type {
 
     pub fn close(self, file_system: &mut super::littlefs::lfs_t) -> Result_type<()> {
         unsafe {
-            Convert_result(littlefs::lfs_file_close(
+            convert_result(littlefs::lfs_file_close(
                 file_system as *mut _,
                 &self.0.file as *const _ as *mut _,
             ))?;
@@ -136,7 +136,7 @@ impl File_type {
         buffer: &mut [u8],
     ) -> Result_type<Size_type> {
         let bytes_read = unsafe {
-            Convert_result(littlefs::lfs_file_read(
+            convert_result(littlefs::lfs_file_read(
                 file_system as *mut _,
                 &self.0.file as *const _ as *mut _,
                 buffer.as_mut_ptr() as *mut _,
@@ -153,7 +153,7 @@ impl File_type {
         buffer: &[u8],
     ) -> Result_type<Size_type> {
         let bytes_written = unsafe {
-            Convert_result(littlefs::lfs_file_write(
+            convert_result(littlefs::lfs_file_write(
                 file_system as *mut _,
                 &self.0.file as *const _ as *mut _,
                 buffer.as_ptr() as *const _,
@@ -172,7 +172,7 @@ impl File_type {
         let (offset, whence) = convert_position(position);
 
         let offset = unsafe {
-            Convert_result(littlefs::lfs_file_seek(
+            convert_result(littlefs::lfs_file_seek(
                 file_system as *mut _,
                 &self.0.file as *const _ as *mut _,
                 offset,
@@ -185,7 +185,7 @@ impl File_type {
 
     pub fn flush(&self, file_system: &mut super::littlefs::lfs_t) -> Result_type<()> {
         unsafe {
-            Convert_result(littlefs::lfs_file_sync(
+            convert_result(littlefs::lfs_file_sync(
                 file_system as *mut _,
                 &self.0.file as *const _ as *mut _,
             ))?;
@@ -243,7 +243,7 @@ impl File_type {
 
     pub fn get_size(&self, file_system: &mut super::littlefs::lfs_t) -> Result_type<Size_type> {
         let size = unsafe {
-            Convert_result(littlefs::lfs_file_size(
+            convert_result(littlefs::lfs_file_size(
                 file_system as *mut _,
                 &self.0.file as *const _ as *mut _,
             ))?
@@ -260,7 +260,7 @@ impl File_type {
 
         let mut metadata = MaybeUninit::<Metadata_type>::uninit();
 
-        Convert_result(unsafe {
+        convert_result(unsafe {
             littlefs::lfs_getattr(
                 file_system as *mut _,
                 path.as_ptr(),
@@ -280,7 +280,7 @@ impl File_type {
     ) -> Result_type<()> {
         let path = CString::new(path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
-        Convert_result(unsafe {
+        convert_result(unsafe {
             littlefs::lfs_setattr(
                 file_system as *mut _,
                 path.as_ptr(),

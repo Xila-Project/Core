@@ -9,7 +9,7 @@ use super::Input_data_type;
 /// # Safety
 ///
 /// This function may dereference a raw pointer.
-pub unsafe extern "C" fn Binding_callback_function(
+pub unsafe extern "C" fn binding_callback_function(
     input_device: *mut lvgl::lv_indev_t,
     data: *mut lvgl::lv_indev_data_t,
 ) {

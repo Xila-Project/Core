@@ -23,7 +23,7 @@ impl Context_type {
         block_on(self.0.read()).task.expect("No current task set")
     }
 
-    pub async fn Set_task(&self, Task: Task_identifier_type) {
+    pub async fn set_task(&self, Task: Task_identifier_type) {
         loop {
             let mut Inner = self.0.write().await;
 
@@ -34,20 +34,20 @@ impl Context_type {
         }
     }
 
-    pub async fn Clear_task(&self) {
+    pub async fn clear_task(&self) {
         let mut inner = self.0.write().await;
         inner.task.take();
     }
 
-    pub async fn call_abi<F, Fut, R>(&self, Function: F) -> R
+    pub async fn call_abi<F, Fut, R>(&self, function: F) -> R
     where
         F: FnOnce() -> Fut,
         Fut: core::future::Future<Output = R>,
     {
         let Task = task::get_instance().get_current_task_identifier().await;
-        self.Set_task(Task).await;
-        let result = Function().await;
-        self.Clear_task().await;
+        self.set_task(Task).await;
+        let result = function().await;
+        self.clear_task().await;
         result
     }
 }

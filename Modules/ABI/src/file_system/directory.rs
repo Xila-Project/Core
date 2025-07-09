@@ -154,9 +154,9 @@ mod tests {
         Task_identifier_type,
         &'static Virtual_file_system_type<'static>,
     ) {
-        let _ = users::Initialize();
+        let _ = users::initialize();
 
-        let _ = time::Initialize(Create_device!(drivers::native::Time_driver_type::new()));
+        let _ = time::initialize(Create_device!(drivers::native::Time_driver_type::new()));
 
         let task = task::get_instance().get_current_task_identifier().await;
 

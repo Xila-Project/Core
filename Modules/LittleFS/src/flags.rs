@@ -1,7 +1,7 @@
 use super::littlefs;
 use file_system::Flags_type;
 
-pub fn Convert_flags(Flags: Flags_type) -> i32 {
+pub fn convert_flags(Flags: Flags_type) -> i32 {
     let mut little_fs_flags: i32 = if Flags.get_mode().get_read() {
         if Flags.get_mode().get_write() {
             littlefs::lfs_open_flags_LFS_O_RDWR as i32

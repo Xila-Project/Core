@@ -16,17 +16,17 @@ async fn main() {
     use command_line_shell::Shell_executable_type;
     use drivers::native::window_screen;
     use executable::Mount_static_executables;
-    use graphics::{Get_minimal_buffer_size, Input_type_type, Point_type};
+    use graphics::{get_minimal_buffer_size, Input_type_type, Point_type};
     use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
 
     // - Initialize the task manager.
-    let task_instance = task::Initialize();
+    let task_instance = task::initialize();
 
     // - Initialize the user manager.
-    let _ = users::Initialize();
+    let _ = users::initialize();
 
     // - Initialize the time manager.
-    let _ = time::Initialize(Create_device!(drivers::native::Time_driver_type::new()));
+    let _ = time::initialize(Create_device!(drivers::native::Time_driver_type::new()));
 
     // - Initialize the virtual file system.
     let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
@@ -42,7 +42,7 @@ async fn main() {
 
     const RESOLUTION: Point_type = Point_type::new(800, 480);
 
-    let (screen_device, pointer_device, keyboard_device) = window_screen::New(RESOLUTION).unwrap();
+    let (screen_device, pointer_device, keyboard_device) = window_screen::new(RESOLUTION).unwrap();
 
     const BUFFER_SIZE: usize = get_minimal_buffer_size(&RESOLUTION);
 

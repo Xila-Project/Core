@@ -4,15 +4,16 @@ extern crate alloc;
 
 use drivers::native::Time_driver_type;
 use file_system::{Create_device, Create_file_system, Memory_device_type};
-use graphics::LVGL;
+use graphics::lvgl;
 use memory::Instantiate_global_allocator;
 use task::Test;
 use time::Duration_type;
 use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
 
-Instantiate_global_allocator!(drivers::standard_library::memory::Memory_manager_type);
+Instantiate_global_allocator!(drivers::standard_library::memory:
+:Memory_manager_type);
 
-#[task::Run(executor = drivers::standard_library::Executor::Instantiate_static_executor!())]
+#[task::Run(executor = drivers::standard_library::executor::Instantiate_static_executor!())]
 async fn run_graphics() {
     graphics::get_instance()
         .r#loop(task::Manager_type::Sleep)
@@ -24,17 +25,17 @@ async fn run_graphics() {
 #[Test]
 async fn i() {
     // - Initialize the system
-    log::Initialize(&drivers::standard_library::log::Logger_type).unwrap();
+    log::initialize(&drivers::standard_library::log::Logger_type).unwrap();
 
     let binary_buffer = include_bytes!("./WASM_test/target/wasm32-wasip1/release/WASM_test.wasm");
 
     users::Initialize();
 
-    let task_instance = task::Initialize();
+    let task_instance = task::initialize();
 
     let task = task_instance.get_current_task_identifier().await;
 
-    time::Initialize(Create_device!(Time_driver_type::new()))
+    time::initialize(Create_device!(Time_driver_type::new()))
         .expect("Error initializing time manager");
 
     let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
@@ -74,12 +75,12 @@ async fn i() {
     .await
     .unwrap();
 
-    Virtual_machine::Initialize(&[&Host_bindings::Graphics_bindings]);
+    virtual_machine::Initialize(&[&host_bindings::Graphics_bindings]);
 
-    let virtual_machine = Virtual_machine::get_instance();
+    let virtual_machine = virtual_machine::get_instance();
     const RESOLUTION: graphics::Point_type = graphics::Point_type::new(800, 600);
     let (screen_device, pointer_device, keyboard_device) =
-        drivers::native::window_screen::New(RESOLUTION).unwrap();
+        drivers::native::window_screen::new(RESOLUTION).unwrap();
     // - - Initialize the graphics manager
     graphics::initialize(
         screen_device,

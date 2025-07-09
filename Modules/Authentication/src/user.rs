@@ -276,7 +276,7 @@ pub async fn create_user<'a>(
 
     // - Add it to the users manager.
     users_manager
-        .Add_user(user_identifier, user_name, primary_group)
+        .add_user(user_identifier, user_name, primary_group)
         .await
         .map_err(Error_type::Failed_to_create_user)?;
 

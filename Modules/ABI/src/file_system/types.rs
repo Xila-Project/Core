@@ -10,11 +10,11 @@ pub enum Xila_file_system_whence_type {
     End,
 }
 
-pub const fn Into_position(Whence: Xila_file_system_whence_type, Offset: i64) -> Position_type {
-    match Whence {
-        Xila_file_system_whence_type::Start => Position_type::Start(Offset as u64),
-        Xila_file_system_whence_type::Current => Position_type::Current(Offset),
-        Xila_file_system_whence_type::End => Position_type::End(Offset),
+pub const fn into_position(whence: Xila_file_system_whence_type, offset: i64) -> Position_type {
+    match whence {
+        Xila_file_system_whence_type::Start => Position_type::Start(offset as u64),
+        Xila_file_system_whence_type::Current => Position_type::Current(offset),
+        Xila_file_system_whence_type::End => Position_type::End(offset),
     }
 }
 
@@ -101,7 +101,7 @@ pub struct Xila_file_system_statistics_type {
     last_access: Xila_time_type,
     last_modification: Xila_time_type,
     last_status_change: Xila_time_type,
-    Type: Xila_file_type_type,
+    r#type: Xila_file_type_type,
     permissions: Permissions_type,
     user: Xila_user_identifier_type,
     group: Xila_group_identifier_type,
@@ -114,17 +114,17 @@ impl Xila_file_system_statistics_type {
             inode: statistics.get_inode().As_u64(),
             links: statistics.get_links(),
             size: statistics.get_size().As_u64(),
-            last_access: statistics.get_last_access().As_u64(),
-            last_modification: statistics.get_last_modification().As_u64(),
-            last_status_change: statistics.get_last_status_change().As_u64(),
-            Type: statistics.get_type().into(),
+            last_access: statistics.get_last_access().as_u64(),
+            last_modification: statistics.get_last_modification().as_u64(),
+            last_status_change: statistics.get_last_status_change().as_u64(),
+            r#type: statistics.get_type().into(),
             permissions: statistics.get_permissions().As_u16(),
             user: statistics.get_user().As_u16(),
             group: statistics.get_group().As_u16(),
         }
     }
 
-    pub fn From_mutable_pointer(
+    pub fn from_mutable_pointer(
         pointer: *mut Xila_file_system_statistics_type,
     ) -> Option<*mut Xila_file_system_statistics_type> {
         if pointer.is_null() {

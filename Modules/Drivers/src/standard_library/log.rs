@@ -15,7 +15,7 @@ impl Logger_trait for Logger_type {
         }
     }
 
-    fn Write(&self, args: fmt::Arguments) {
+    fn write(&self, args: fmt::Arguments) {
         println!("{args}");
     }
 }

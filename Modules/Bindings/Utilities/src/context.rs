@@ -51,8 +51,8 @@ impl LVGL_context {
 
                     path.contains("_cb_")
                 }
-                syn::Type::Ptr(Type_ptr) => {
-                    let element = Type_ptr.elem.to_token_stream().to_string();
+                syn::Type::Ptr(type_ptr) => {
+                    let element = type_ptr.elem.to_token_stream().to_string();
 
                     element.contains("lv_event_t")
                         || element.ends_with("_dsc_t")

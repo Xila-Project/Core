@@ -3,7 +3,7 @@ use core::{ffi::CStr, fmt::Debug, mem::MaybeUninit};
 use alloc::{ffi::CString, rc::Rc, string::ToString};
 use file_system::{Entry_type, Inode_type, Path_type, Result_type, Size_type, Type_type};
 
-use super::{littlefs, Convert_result};
+use super::{convert_result, littlefs};
 
 struct Inner_type {
     directory: littlefs::lfs_dir_t,
@@ -28,12 +28,12 @@ impl Directory_type {
     ) -> Result_type<()> {
         let path = CString::new(path.As_str()).unwrap();
 
-        Convert_result(unsafe { littlefs::lfs_mkdir(file_system as *mut _, path.as_ptr()) })?;
+        convert_result(unsafe { littlefs::lfs_mkdir(file_system as *mut _, path.as_ptr()) })?;
 
         Ok(())
     }
 
-    pub fn Open(File_system: &mut super::littlefs::lfs_t, Path: &Path_type) -> Result_type<Self> {
+    pub fn open(File_system: &mut super::littlefs::lfs_t, Path: &Path_type) -> Result_type<Self> {
         let path = CString::new(Path.As_str()).unwrap();
 
         let Directory = MaybeUninit::<littlefs::lfs_dir_t>::uninit();
@@ -42,7 +42,7 @@ impl Directory_type {
             directory: unsafe { Directory.assume_init() },
         }));
 
-        Convert_result(unsafe {
+        convert_result(unsafe {
             littlefs::lfs_dir_open(
                 File_system as *mut _,
                 &Directory.0.directory as *const _ as *mut _,
@@ -53,8 +53,8 @@ impl Directory_type {
         Ok(Directory)
     }
 
-    pub fn Rewind(&mut self, File_system: &mut super::littlefs::lfs_t) -> Result_type<()> {
-        Convert_result(unsafe {
+    pub fn rewind(&mut self, File_system: &mut super::littlefs::lfs_t) -> Result_type<()> {
+        convert_result(unsafe {
             littlefs::lfs_dir_rewind(
                 File_system as *mut _,
                 &self.0.directory as *const _ as *mut _,
@@ -68,7 +68,7 @@ impl Directory_type {
         &mut self,
         file_system: &mut super::littlefs::lfs_t,
     ) -> Result_type<Size_type> {
-        let offset = Convert_result(unsafe {
+        let offset = convert_result(unsafe {
             littlefs::lfs_dir_tell(
                 file_system as *mut _,
                 &self.0.directory as *const _ as *mut _,
@@ -78,12 +78,12 @@ impl Directory_type {
         Ok(Size_type::New(offset as u64))
     }
 
-    pub fn Set_position(
+    pub fn set_position(
         &mut self,
         file_system: &mut littlefs::lfs_t,
         position: Size_type,
     ) -> Result_type<()> {
-        Convert_result(unsafe {
+        convert_result(unsafe {
             littlefs::lfs_dir_seek(
                 file_system as *const _ as *mut _,
                 &self.0.directory as *const _ as *mut _,
@@ -94,7 +94,7 @@ impl Directory_type {
         Ok(())
     }
 
-    pub fn Read(
+    pub fn read(
         &mut self,
         file_system: &mut super::littlefs::lfs_t,
     ) -> Result_type<Option<Entry_type>> {
@@ -114,7 +114,7 @@ impl Directory_type {
             return Ok(None);
         }
 
-        Convert_result(Result)?;
+        convert_result(Result)?;
 
         let Name = unsafe { CStr::from_ptr(Informations.name.as_ptr()) };
         let name = Name.to_str().unwrap().to_string();
@@ -135,8 +135,8 @@ impl Directory_type {
         Ok(Some(Entry))
     }
 
-    pub fn Close(&mut self, File_system: &mut super::littlefs::lfs_t) -> Result_type<()> {
-        Convert_result(unsafe {
+    pub fn close(&mut self, File_system: &mut super::littlefs::lfs_t) -> Result_type<()> {
+        convert_result(unsafe {
             littlefs::lfs_dir_close(
                 File_system as *mut _,
                 &self.0.directory as *const _ as *mut _,

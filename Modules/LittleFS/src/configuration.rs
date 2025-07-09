@@ -48,7 +48,7 @@ impl Configuration_type {
         inline_max: 0,
     };
 
-    pub fn New(
+    pub fn new(
         device: Device_type,
         block_size: usize,
         total_size: usize,
@@ -87,57 +87,57 @@ impl Configuration_type {
         })
     }
 
-    pub const fn Set_read_size(mut self, Read_size: usize) -> Self {
+    pub const fn set_read_size(mut self, Read_size: usize) -> Self {
         self.read_size = Read_size;
         self
     }
 
-    pub const fn Set_program_size(mut self, Program_size: usize) -> Self {
+    pub const fn set_program_size(mut self, Program_size: usize) -> Self {
         self.program_size = Program_size;
         self
     }
 
-    pub const fn Set_block_cycles(mut self, Block_cycles: u16) -> Self {
+    pub const fn set_block_cycles(mut self, Block_cycles: u16) -> Self {
         self.block_cycles = Some(Block_cycles);
         self
     }
 
-    pub const fn Set_maximum_file_size(mut self, Maximum_file_size: usize) -> Self {
+    pub const fn set_maximum_file_size(mut self, Maximum_file_size: usize) -> Self {
         self.maximum_file_size = Some(Maximum_file_size);
         self
     }
 
-    pub const fn Set_maximum_attributes_size(mut self, Maximum_attributes_size: usize) -> Self {
+    pub const fn set_maximum_attributes_size(mut self, Maximum_attributes_size: usize) -> Self {
         self.maximum_attributes_size = Some(Maximum_attributes_size);
         self
     }
 
-    pub const fn Set_maximum_name_size(mut self, Maximum_name_size: usize) -> Self {
+    pub const fn set_maximum_name_size(mut self, Maximum_name_size: usize) -> Self {
         self.maximum_name_size = Some(Maximum_name_size);
         self
     }
 
-    pub const fn Set_cache_size(mut self, Cache_size: usize) -> Self {
+    pub const fn set_cache_size(mut self, Cache_size: usize) -> Self {
         self.cache_size = Cache_size;
         self
     }
 
-    pub const fn Set_look_ahead_size(mut self, Look_ahead_size: usize) -> Self {
+    pub const fn set_look_ahead_size(mut self, Look_ahead_size: usize) -> Self {
         self.look_ahead_size = Look_ahead_size;
         self
     }
 
-    pub const fn Set_compact_threshold(mut self, Compact_threshold: usize) -> Self {
+    pub const fn set_compact_threshold(mut self, Compact_threshold: usize) -> Self {
         self.compact_threshold = Some(Compact_threshold);
         self
     }
 
-    pub const fn Set_metadata_maximum(mut self, Metadata_maxium: usize) -> Self {
+    pub const fn set_metadata_maximum(mut self, Metadata_maxium: usize) -> Self {
         self.metadata_maxium = Some(Metadata_maxium);
         self
     }
 
-    pub const fn Set_inline_maximum(mut self, Inline_maximum: usize) -> Self {
+    pub const fn set_inline_maximum(mut self, Inline_maximum: usize) -> Self {
         self.inline_maximum = Some(Inline_maximum);
         self
     }
@@ -153,10 +153,10 @@ impl TryFrom<Configuration_type> for littlefs::lfs_config {
 
         let LFS_Configuration = littlefs::lfs_config {
             context: Box::into_raw(Box::new(Configuration.context)) as *mut c_void,
-            read: Some(callbacks::Read_callback),
-            prog: Some(callbacks::Programm_callback),
-            erase: Some(callbacks::Erase_callback),
-            sync: Some(callbacks::Flush_callback),
+            read: Some(callbacks::read_callback),
+            prog: Some(callbacks::programm_callback),
+            erase: Some(callbacks::erase_callback),
+            sync: Some(callbacks::flush_callback),
             read_size: Configuration.read_size as u32,
             prog_size: Configuration.program_size as u32,
             block_size: Configuration.block_size as u32,
