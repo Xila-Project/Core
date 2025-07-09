@@ -43,7 +43,7 @@ impl File_system_type {
             .2)
     }
 
-    pub async fn Create_unnamed_pipe(
+    pub async fn create_unnamed_pipe(
         &self,
         task: Task_identifier_type,
         status: Status_type,
@@ -52,38 +52,38 @@ impl File_system_type {
         let mut inner = self.0.write().await;
 
         // Create the pipe
-        let Pipe = Pipe_type::New(buffer_size);
+        let pipe = Pipe_type::new(buffer_size);
 
         // - Create the read file
-        let Read_flags = Flags_type::New(Mode_type::READ_ONLY, None, Some(status));
+        let read_flags = Flags_type::new(Mode_type::READ_ONLY, None, Some(status));
 
-        let Read_file = get_new_file_identifier(task, None, None, &inner.open_pipes)?;
+        let read_file = get_new_file_identifier(task, None, None, &inner.open_pipes)?;
 
         if inner
             .open_pipes
-            .insert(Read_file, (Pipe.clone(), Read_flags, None))
+            .insert(read_file, (pipe.clone(), read_flags, None))
             .is_some()
         {
             return Err(Error_type::Internal_error); // Should never happen
         }
 
         // - Create the write file
-        let Write_flags = Flags_type::New(Mode_type::WRITE_ONLY, None, Some(status));
+        let write_flags = Flags_type::new(Mode_type::WRITE_ONLY, None, Some(status));
 
-        let Write_file = get_new_file_identifier(task, None, None, &inner.open_pipes)?;
+        let write_file = get_new_file_identifier(task, None, None, &inner.open_pipes)?;
 
         if inner
             .open_pipes
-            .insert(Write_file, (Pipe.clone(), Write_flags, None))
+            .insert(write_file, (pipe.clone(), write_flags, None))
             .is_some()
         {
             return Err(Error_type::Internal_error); // Should never happen
         }
 
-        Ok((Read_file, Write_file))
+        Ok((read_file, write_file))
     }
 
-    fn Borrow_mutable_inner_2_splited(
+    fn borrow_mutable_inner_2_splited(
         inner: &mut Inner_type,
     ) -> (
         &mut BTreeMap<Inode_type, Pipe_type>,
@@ -92,21 +92,21 @@ impl File_system_type {
         (&mut inner.named_pipes, &mut inner.open_pipes)
     }
 
-    pub async fn Create_named_pipe(&self, Buffer_size: usize) -> Result_type<Inode_type> {
+    pub async fn create_named_pipe(&self, buffer_size: usize) -> Result_type<Inode_type> {
         let mut inner = self.0.write().await;
 
-        let Inode = get_new_inode(&inner.named_pipes)?;
+        let inode = get_new_inode(&inner.named_pipes)?;
 
-        let Pipe = Pipe_type::New(Buffer_size);
+        let pipe = Pipe_type::new(buffer_size);
 
-        if inner.named_pipes.insert(Inode, Pipe).is_some() {
+        if inner.named_pipes.insert(inode, pipe).is_some() {
             return Err(Error_type::Internal_error); // Should never happen
         }
 
-        Ok(Inode)
+        Ok(inode)
     }
 
-    pub async fn Open(
+    pub async fn open(
         &self,
         inode: Inode_type,
         task: Task_identifier_type,
@@ -115,23 +115,23 @@ impl File_system_type {
     ) -> Result_type<Local_file_identifier_type> {
         let mut inner = self.0.write().await;
 
-        let (Named_pipes, Open_pipes) = Self::Borrow_mutable_inner_2_splited(&mut inner);
+        let (named_pipes, open_pipes) = Self::borrow_mutable_inner_2_splited(&mut inner);
 
-        let Pipe = Named_pipes
+        let pipe = named_pipes
             .get(&inode)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        let Local_file_identifier = get_new_file_identifier(task, None, None, Open_pipes)?;
+        let local_file_identifier = get_new_file_identifier(task, None, None, open_pipes)?;
 
-        Open_pipes.insert(
-            Local_file_identifier,
-            (Pipe.clone(), flags, Some(underlying_file)),
+        open_pipes.insert(
+            local_file_identifier,
+            (pipe.clone(), flags, Some(underlying_file)),
         );
 
-        Ok(Local_file_identifier)
+        Ok(local_file_identifier)
     }
 
-    pub async fn Close(
+    pub async fn close(
         &self,
         file: Local_file_identifier_type,
     ) -> Result_type<Option<Unique_file_identifier_type>> {
@@ -146,20 +146,20 @@ impl File_system_type {
         Ok(underlying_file)
     }
 
-    pub async fn Close_all(&self, Task: Task_identifier_type) -> Result_type<()> {
+    pub async fn close_all(&self, task: Task_identifier_type) -> Result_type<()> {
         let mut inner = self.0.write().await;
 
         // Get all the keys of the open pipes that belong to the task
-        let Keys = inner
+        let keys = inner
             .open_pipes
             .keys()
-            .filter(|Key| Key.Split().0 == Task)
+            .filter(|key| key.split().0 == task)
             .cloned()
             .collect::<Vec<_>>();
 
         // Close all the pipes corresponding to the keys
-        for Key in Keys {
-            if let Some((pipe, _, _)) = inner.open_pipes.remove(&Key) {
+        for key in keys {
+            if let Some((pipe, _, _)) = inner.open_pipes.remove(&key) {
                 drop(pipe);
             }
         }
@@ -167,29 +167,29 @@ impl File_system_type {
         Ok(())
     }
 
-    pub async fn Duplicate(
+    pub async fn duplicate(
         &self,
         file: Local_file_identifier_type,
         underlying_file: Option<Unique_file_identifier_type>,
     ) -> Result_type<Local_file_identifier_type> {
         let mut inner = self.0.write().await;
 
-        let (Pipe, Flags, _) = inner
+        let (pipe, flags, _) = inner
             .open_pipes
             .get(&file)
             .ok_or(Error_type::Invalid_identifier)?
             .clone();
 
-        let New_file = get_new_file_identifier(file.Split().0, None, None, &inner.open_pipes)?;
+        let new_file = get_new_file_identifier(file.split().0, None, None, &inner.open_pipes)?;
 
         inner
             .open_pipes
-            .insert(New_file, (Pipe.clone(), Flags, underlying_file));
+            .insert(new_file, (pipe.clone(), flags, underlying_file));
 
-        Ok(New_file)
+        Ok(new_file)
     }
 
-    pub async fn Transfert(
+    pub async fn transfert(
         &self,
         new_task: Task_identifier_type,
         file: Local_file_identifier_type,
@@ -197,13 +197,13 @@ impl File_system_type {
     ) -> Result_type<Local_file_identifier_type> {
         let mut inner = self.0.write().await;
 
-        let (Pipe, Flags, Underlying_file) = inner
+        let (pipe, flags, underlying_file) = inner
             .open_pipes
             .remove(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        let New_file = if let Some(File) = new_file {
-            let file = Local_file_identifier_type::New(new_task, File);
+        let new_file = if let Some(file) = new_file {
+            let file = Local_file_identifier_type::new(new_task, file);
 
             if inner.open_pipes.contains_key(&file) {
                 return Err(Error_type::Invalid_identifier);
@@ -216,117 +216,117 @@ impl File_system_type {
 
         if inner
             .open_pipes
-            .insert(New_file, (Pipe, Flags, Underlying_file))
+            .insert(new_file, (pipe, flags, underlying_file))
             .is_some()
         {
             return Err(Error_type::Internal_error); // Should never happen
         }
 
-        Ok(New_file)
+        Ok(new_file)
     }
 
-    pub async fn Remove(&self, Inode: Inode_type) -> Result_type<()> {
+    pub async fn remove(&self, inode: Inode_type) -> Result_type<()> {
         self.0
             .write()
             .await
             .named_pipes
-            .remove(&Inode)
+            .remove(&inode)
             .ok_or(Error_type::Invalid_inode)?;
 
         Ok(())
     }
 
-    pub async fn Read(
+    pub async fn read(
         &self,
         file: Local_file_identifier_type,
         buffer: &mut [u8],
     ) -> Result_type<(Size_type, Option<Unique_file_identifier_type>)> {
         let inner = self.0.read().await;
 
-        let (Pipe, Flags, Underlying_file) = inner
+        let (pipe, flags, underlying_file) = inner
             .open_pipes
             .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        if !Flags.get_mode().get_read() {
+        if !flags.get_mode().get_read() {
             return Err(Error_type::Invalid_mode);
         }
 
-        if Flags.get_status().get_non_blocking() {
-            return Ok((Pipe.Read(buffer).await?, *Underlying_file));
+        if flags.get_status().get_non_blocking() {
+            return Ok((pipe.read(buffer).await?, *underlying_file));
         }
 
         loop {
             // Wait for the pipe to be ready
-            if let Ok(Size) = Pipe.Read(buffer).await {
-                return Ok((Size, *Underlying_file));
+            if let Ok(size) = pipe.read(buffer).await {
+                return Ok((size, *underlying_file));
             }
         }
     }
 
-    pub async fn Read_line(
+    pub async fn read_line(
         &self,
         file: Local_file_identifier_type,
         buffer: &mut String,
     ) -> Result_type<(Size_type, Option<Unique_file_identifier_type>)> {
         let mut inner = self.0.write().await;
 
-        let (Pipe, Flags, Underlying_file) = inner
+        let (pipe, flags, underlying_file) = inner
             .open_pipes
             .get_mut(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        if !Flags.get_mode().get_read() {
+        if !flags.get_mode().get_read() {
             return Err(Error_type::Invalid_mode);
         }
 
-        if Flags.get_status().get_non_blocking() {
-            return Ok((Pipe.Read_line(buffer).await?, *Underlying_file));
+        if flags.get_status().get_non_blocking() {
+            return Ok((pipe.read_line(buffer).await?, *underlying_file));
         }
 
         loop {
             // Wait for the pipe to be ready
-            if let Ok(Size) = Pipe.Read_line(buffer).await {
-                return Ok((Size, *Underlying_file));
+            if let Ok(size) = pipe.read_line(buffer).await {
+                return Ok((size, *underlying_file));
             }
         }
     }
 
-    pub async fn Write(
+    pub async fn write(
         &self,
         file: Local_file_identifier_type,
         buffer: &[u8],
     ) -> Result_type<(Size_type, Option<Unique_file_identifier_type>)> {
         let inner = self.0.read().await;
 
-        let (Pipe, Flags, Underlying_file) = inner
+        let (pipe, flags, underlying_file) = inner
             .open_pipes
             .get(&file)
             .ok_or(Error_type::Invalid_identifier)?;
 
-        if !Flags.get_mode().get_write() {
+        if !flags.get_mode().get_write() {
             return Err(Error_type::Invalid_mode);
         }
 
-        if Flags.get_status().get_non_blocking() {
-            return Ok((Pipe.Write(buffer).await?, *Underlying_file));
+        if flags.get_status().get_non_blocking() {
+            return Ok((pipe.write(buffer).await?, *underlying_file));
         }
 
         loop {
             // Wait for the pipe to be ready
-            if let Ok(Size) = Pipe.Write(buffer).await {
-                return Ok((Size, *Underlying_file));
+            if let Ok(size) = pipe.write(buffer).await {
+                return Ok((size, *underlying_file));
             }
         }
     }
 
-    pub async fn get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type> {
+    pub async fn get_mode(&self, file: Local_file_identifier_type) -> Result_type<Mode_type> {
         Ok(self
             .0
             .read()
             .await
             .open_pipes
-            .get(&File)
+            .get(&file)
             .ok_or(Error_type::Invalid_identifier)?
             .1
             .get_mode())
@@ -346,7 +346,7 @@ mod tests {
         let status = Status_type::default();
         let buffer_size = 1024;
 
-        let result = fs.Create_unnamed_pipe(task_id, status, buffer_size).await;
+        let result = fs.create_unnamed_pipe(task_id, status, buffer_size).await;
         assert!(result.is_ok());
 
         let (read_file, write_file) = result.unwrap();
@@ -359,7 +359,7 @@ mod tests {
         let fs = File_system_type::new();
         let buffer_size = 1024;
 
-        let result = fs.Create_named_pipe(buffer_size).await;
+        let result = fs.create_named_pipe(buffer_size).await;
         assert!(result.is_ok());
 
         let inode = result.unwrap();
@@ -371,17 +371,17 @@ mod tests {
         let fs = File_system_type::new();
         let buffer_size = 1024;
         let task_id = Task_identifier_type::new(0);
-        let flags = Flags_type::New(Mode_type::READ_WRITE, None, None);
+        let flags = Flags_type::new(Mode_type::READ_WRITE, None, None);
 
-        let inode = fs.Create_named_pipe(buffer_size).await.unwrap();
+        let inode = fs.create_named_pipe(buffer_size).await.unwrap();
         let file_id = fs
-            .Open(inode, task_id, flags, Unique_file_identifier_type::from(0))
+            .open(inode, task_id, flags, Unique_file_identifier_type::from(0))
             .await
             .unwrap();
 
         assert!(fs.0.read().await.open_pipes.contains_key(&file_id));
 
-        fs.Close(file_id).await.unwrap();
+        fs.close(file_id).await.unwrap();
         assert!(!fs.0.read().await.open_pipes.contains_key(&file_id));
     }
 
@@ -393,11 +393,11 @@ mod tests {
         let buffer_size = 1024;
 
         let (read_file, _) = fs
-            .Create_unnamed_pipe(task_id, status, buffer_size)
+            .create_unnamed_pipe(task_id, status, buffer_size)
             .await
             .unwrap();
 
-        let new_file = fs.Duplicate(read_file, None).await.unwrap();
+        let new_file = fs.duplicate(read_file, None).await.unwrap();
 
         assert!(fs.0.read().await.open_pipes.contains_key(&new_file));
     }
@@ -411,10 +411,10 @@ mod tests {
         let buffer_size = 1024;
 
         let (read_file, _) = fs
-            .Create_unnamed_pipe(task_id, status, buffer_size)
+            .create_unnamed_pipe(task_id, status, buffer_size)
             .await
             .unwrap();
-        let new_file = fs.Transfert(new_task_id, read_file, None).await.unwrap();
+        let new_file = fs.transfert(new_task_id, read_file, None).await.unwrap();
 
         assert!(fs.0.read().await.open_pipes.contains_key(&new_file));
         assert!(!fs.0.read().await.open_pipes.contains_key(&read_file));
@@ -425,8 +425,8 @@ mod tests {
         let fs = File_system_type::new();
         let buffer_size = 1024;
 
-        let inode = fs.Create_named_pipe(buffer_size).await.unwrap();
-        fs.Remove(inode).await.unwrap();
+        let inode = fs.create_named_pipe(buffer_size).await.unwrap();
+        fs.remove(inode).await.unwrap();
 
         assert!(!fs.0.read().await.named_pipes.contains_key(&inode));
     }
@@ -439,17 +439,17 @@ mod tests {
         let buffer_size = 1024;
 
         let (read_file, write_file) = fs
-            .Create_unnamed_pipe(task_id, status, buffer_size)
+            .create_unnamed_pipe(task_id, status, buffer_size)
             .await
             .unwrap();
 
         // Write data to the pipe
         let data = b"hello";
-        fs.Write(write_file, data).await.unwrap();
+        fs.write(write_file, data).await.unwrap();
 
         // Read data from the pipe
         let mut buffer = [0; 5];
-        fs.Read(read_file, &mut buffer).await.unwrap();
+        fs.read(read_file, &mut buffer).await.unwrap();
         assert_eq!(&buffer, b"hello");
     }
 
@@ -461,7 +461,7 @@ mod tests {
         let buffer_size = 1024;
 
         let (read_file, _) = fs
-            .Create_unnamed_pipe(task_id, status, buffer_size)
+            .create_unnamed_pipe(task_id, status, buffer_size)
             .await
             .unwrap();
         let mode = fs.get_mode(read_file).await.unwrap();

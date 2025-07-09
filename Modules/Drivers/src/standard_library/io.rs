@@ -2,8 +2,8 @@ use std::{io::Error, io::ErrorKind};
 
 use file_system::Error_type;
 
-pub fn map_error(Error: Error) -> Error_type {
-    match Error.kind() {
+pub fn map_error(error: Error) -> Error_type {
+    match error.kind() {
         ErrorKind::PermissionDenied => Error_type::Permission_denied,
         ErrorKind::NotFound => Error_type::Not_found,
         ErrorKind::AlreadyExists => Error_type::Already_exists,

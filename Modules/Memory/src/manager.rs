@@ -21,8 +21,8 @@ impl Manager_type {
     ///
     /// # Returns
     /// A new instance of `Allocator_type` containing the provided allocator.
-    pub const fn New(Allocator: &'static dyn Manager_trait) -> Self {
-        Self(Allocator)
+    pub const fn new(allocator: &'static dyn Manager_trait) -> Self {
+        Self(allocator)
     }
 }
 
@@ -39,14 +39,14 @@ impl Manager_type {
 unsafe impl GlobalAlloc for Manager_type {
     unsafe fn alloc(&self, layout: core::alloc::Layout) -> *mut u8 {
         self.0
-            .Allocate(Capabilities_type::default(), Layout_type::from(layout))
+            .allocate(Capabilities_type::default(), Layout_type::from(layout))
             .map_or(core::ptr::null_mut(), |pointer| pointer.as_ptr())
     }
 
-    unsafe fn dealloc(&self, Pointer: *mut u8, Layout: core::alloc::Layout) {
-        if !Pointer.is_null() {
+    unsafe fn dealloc(&self, pointer: *mut u8, layout: core::alloc::Layout) {
+        if !pointer.is_null() {
             self.0
-                .Deallocate(NonNull::new_unchecked(Pointer), Layout_type::from(Layout))
+                .deallocate(NonNull::new_unchecked(pointer), Layout_type::from(layout))
         }
     }
 }

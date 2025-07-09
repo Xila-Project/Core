@@ -14,7 +14,7 @@ impl Pointer_device_type {
 }
 
 impl Device_trait for Pointer_device_type {
-    fn Read(&self, buffer: &mut [u8]) -> file_system::Result_type<Size_type> {
+    fn read(&self, buffer: &mut [u8]) -> file_system::Result_type<Size_type> {
         // - Cast the pointer data to the buffer.
         let data: &mut Input_data_type = buffer
             .try_into()
@@ -26,7 +26,7 @@ impl Device_trait for Pointer_device_type {
         Ok(size_of::<Input_data_type>().into())
     }
 
-    fn Write(&self, _: &[u8]) -> file_system::Result_type<Size_type> {
+    fn write(&self, _: &[u8]) -> file_system::Result_type<Size_type> {
         Err(file_system::Error_type::Unsupported_operation)
     }
 
@@ -34,11 +34,11 @@ impl Device_trait for Pointer_device_type {
         Ok(size_of::<Input_data_type>().into())
     }
 
-    fn Set_position(&self, _: &file_system::Position_type) -> file_system::Result_type<Size_type> {
+    fn set_position(&self, _: &file_system::Position_type) -> file_system::Result_type<Size_type> {
         Err(file_system::Error_type::Unsupported_operation)
     }
 
-    fn Flush(&self) -> file_system::Result_type<()> {
+    fn flush(&self) -> file_system::Result_type<()> {
         Ok(())
     }
 }

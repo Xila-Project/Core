@@ -6,7 +6,7 @@ mod wrapper;
 
 use std::sync::{Arc, Mutex};
 
-use file_system::{Create_device, Device_type};
+use file_system::{create_device, Device_type};
 use graphics::Point_type;
 
 use keyboard::*;
@@ -15,18 +15,18 @@ use screen::*;
 use window::*;
 use wrapper::*;
 
-pub fn new(Resolution: Point_type) -> Result<(Device_type, Device_type, Device_type), String> {
-    let inner = Arc::new(Mutex::new(Inner_type::new(Resolution)?));
+pub fn new(resolution: Point_type) -> Result<(Device_type, Device_type, Device_type), String> {
+    let inner = Arc::new(Mutex::new(Inner_type::new(resolution)?));
 
-    let Screen_device = Screen_device_type::new(inner.clone());
+    let screen_device = Screen_device_type::new(inner.clone());
 
-    let Pointer_device = Pointer_device_type::new(inner.clone());
+    let pointer_device = Pointer_device_type::new(inner.clone());
 
-    let Keyboard_device = Keyboard_device_type::new(inner);
+    let keyboard_device = Keyboard_device_type::new(inner);
 
     Ok((
-        Create_device!(Screen_device),
-        Create_device!(Pointer_device),
-        Create_device!(Keyboard_device),
+        create_device!(screen_device),
+        create_device!(pointer_device),
+        create_device!(keyboard_device),
     ))
 }

@@ -1,4 +1,5 @@
 //! Directory entry representation for file system operations.
+
 //!
 //! This module provides the [`Entry_type`] structure which represents individual
 //! entries within directories, such as files, subdirectories, and other file system objects.
@@ -24,10 +25,10 @@ use super::{Inode_type, Size_type};
 ///
 /// // Create a directory entry for a regular file
 /// let file_entry = Entry_type::New(
-///     Inode_type::New(42),
+///     Inode_type::new(42),
 ///     String::from("document.txt"),
 ///     Type_type::File,
-///     Size_type::New(1024)
+///     Size_type::new(1024)
 /// );
 ///
 /// assert_eq!(file_entry.get_name(), "document.txt");
@@ -41,7 +42,7 @@ pub struct Entry_type {
     /// The name of this directory entry
     name: String,
     /// The type of file system object (file, directory, etc.)
-    Type: Type_type,
+    r#type: Type_type,
     /// The size of the file system object in bytes
     size: Size_type,
 }
@@ -64,18 +65,18 @@ impl Entry_type {
     /// use alloc::string::String;
     ///
     /// let entry = Entry_type::New(
-    ///     Inode_type::New(123),
+    ///     Inode_type::new(123),
     ///     String::from("example.txt"),
     ///     Type_type::File,
-    ///     Size_type::New(2048)
+    ///     Size_type::new(2048)
     /// );
     /// ```
-    pub fn New(Inode: Inode_type, Name: String, Type: Type_type, Size: Size_type) -> Self {
+    pub fn new(inode: Inode_type, name: String, r#type: Type_type, size: Size_type) -> Self {
         Self {
-            inode: Inode,
-            name: Name,
-            Type,
-            size: Size,
+            inode,
+            name,
+            r#type,
+            size,
         }
     }
 
@@ -103,7 +104,7 @@ impl Entry_type {
     ///
     /// The type of file system object (file, directory, symbolic link, etc.).
     pub fn get_type(&self) -> Type_type {
-        self.Type
+        self.r#type
     }
 
     /// Get the size of this directory entry.
@@ -121,8 +122,8 @@ impl Entry_type {
     /// # Arguments
     ///
     /// * `Inode` - The new inode number to assign
-    pub fn Set_inode(&mut self, Inode: Inode_type) {
-        self.inode = Inode;
+    pub fn set_inode(&mut self, inode: Inode_type) {
+        self.inode = inode;
     }
 
     /// Set the name for this directory entry.
@@ -130,8 +131,8 @@ impl Entry_type {
     /// # Arguments
     ///
     /// * `Name` - The new name to assign to this entry
-    pub fn Set_name(&mut self, Name: String) {
-        self.name = Name;
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
     }
 
     /// Set the type for this directory entry.
@@ -139,12 +140,12 @@ impl Entry_type {
     /// # Arguments
     ///
     /// * `Type` - The new file system object type
-    pub fn Set_type(&mut self, Type: Type_type) {
-        self.Type = Type;
+    pub fn set_type(&mut self, r#type: Type_type) {
+        self.r#type = r#type;
     }
 
-    pub fn Set_size(&mut self, Size: Size_type) {
-        self.size = Size;
+    pub fn set_size(&mut self, size: Size_type) {
+        self.size = size;
     }
 }
 
@@ -162,16 +163,16 @@ impl AsMut<[u8]> for Entry_type {
 impl TryFrom<&mut [u8]> for &mut Entry_type {
     type Error = ();
 
-    fn try_from(Value: &mut [u8]) -> Result<Self, Self::Error> {
-        if Value.len() != core::mem::size_of::<Entry_type>() {
+    fn try_from(value: &mut [u8]) -> Result<Self, Self::Error> {
+        if value.len() != core::mem::size_of::<Entry_type>() {
             return Err(());
         }
-        if Value.as_ptr() as usize % core::mem::align_of::<Entry_type>() != 0 {
+        if value.as_ptr() as usize % core::mem::align_of::<Entry_type>() != 0 {
             return Err(());
         }
 
         #[allow(clippy::transmute_ptr_to_ref)]
-        Ok(unsafe { core::mem::transmute::<*mut u8, &mut Entry_type>(Value.as_mut_ptr()) })
+        Ok(unsafe { core::mem::transmute::<*mut u8, &mut Entry_type>(value.as_mut_ptr()) })
     }
 }
 
@@ -182,64 +183,64 @@ mod tests {
 
     #[test]
     fn test_entry_creation() {
-        let entry = Entry_type::New(
-            Inode_type::New(42),
+        let entry = Entry_type::new(
+            Inode_type::new(42),
             String::from("test.txt"),
             Type_type::File,
-            Size_type::New(1024),
+            Size_type::new(1024),
         );
 
-        assert_eq!(entry.get_inode(), Inode_type::New(42));
+        assert_eq!(entry.get_inode(), Inode_type::new(42));
         assert_eq!(entry.get_name(), "test.txt");
         assert_eq!(entry.get_type(), Type_type::File);
-        assert_eq!(entry.get_size(), Size_type::New(1024));
+        assert_eq!(entry.get_size(), Size_type::new(1024));
     }
 
     #[test]
     fn test_entry_getters() {
-        let entry = Entry_type::New(
-            Inode_type::New(123),
+        let entry = Entry_type::new(
+            Inode_type::new(123),
             String::from("directory"),
             Type_type::Directory,
-            Size_type::New(0),
+            Size_type::new(0),
         );
 
         // Test individual getters
-        assert_eq!(entry.get_inode().As_u64(), 123);
+        assert_eq!(entry.get_inode().as_u64(), 123);
         assert_eq!(entry.get_name(), "directory");
         assert_eq!(entry.get_type(), Type_type::Directory);
-        assert_eq!(entry.get_size().As_u64(), 0);
+        assert_eq!(entry.get_size().as_u64(), 0);
     }
 
     #[test]
     fn test_entry_setters() {
-        let mut entry = Entry_type::New(
-            Inode_type::New(1),
+        let mut entry = Entry_type::new(
+            Inode_type::new(1),
             String::from("old_name"),
             Type_type::File,
-            Size_type::New(100),
+            Size_type::new(100),
         );
 
         // Test setters
-        entry.Set_inode(Inode_type::New(999));
-        entry.Set_name(String::from("new_name.txt"));
-        entry.Set_type(Type_type::Directory);
-        entry.Set_size(Size_type::New(2048));
+        entry.set_inode(Inode_type::new(999));
+        entry.set_name(String::from("new_name.txt"));
+        entry.set_type(Type_type::Directory);
+        entry.set_size(Size_type::new(2048));
 
         // Verify changes
-        assert_eq!(entry.get_inode().As_u64(), 999);
+        assert_eq!(entry.get_inode().as_u64(), 999);
         assert_eq!(entry.get_name(), "new_name.txt");
         assert_eq!(entry.get_type(), Type_type::Directory);
-        assert_eq!(entry.get_size().As_u64(), 2048);
+        assert_eq!(entry.get_size().as_u64(), 2048);
     }
 
     #[test]
     fn test_entry_clone() {
-        let original = Entry_type::New(
-            Inode_type::New(456),
+        let original = Entry_type::new(
+            Inode_type::new(456),
             String::from("clone_test.dat"),
             Type_type::File,
-            Size_type::New(512),
+            Size_type::new(512),
         );
 
         let cloned = original.clone();
@@ -256,11 +257,11 @@ mod tests {
 
     #[test]
     fn test_entry_debug() {
-        let entry = Entry_type::New(
-            Inode_type::New(789),
+        let entry = Entry_type::new(
+            Inode_type::new(789),
             String::from("debug_test"),
             Type_type::Symbolic_link,
-            Size_type::New(64),
+            Size_type::new(64),
         );
 
         let debug_str = alloc::format!("{entry:?}");
@@ -271,25 +272,25 @@ mod tests {
 
     #[test]
     fn test_entry_equality() {
-        let entry1 = Entry_type::New(
-            Inode_type::New(100),
+        let entry1 = Entry_type::new(
+            Inode_type::new(100),
             String::from("same.txt"),
             Type_type::File,
-            Size_type::New(200),
+            Size_type::new(200),
         );
 
-        let entry2 = Entry_type::New(
-            Inode_type::New(100),
+        let entry2 = Entry_type::new(
+            Inode_type::new(100),
             String::from("same.txt"),
             Type_type::File,
-            Size_type::New(200),
+            Size_type::new(200),
         );
 
-        let entry3 = Entry_type::New(
-            Inode_type::New(101),
+        let entry3 = Entry_type::new(
+            Inode_type::new(101),
             String::from("different.txt"),
             Type_type::File,
-            Size_type::New(200),
+            Size_type::new(200),
         );
 
         assert_eq!(entry1, entry2);
@@ -299,25 +300,25 @@ mod tests {
     #[test]
     fn test_entry_different_types() {
         // Test entries with different file types
-        let file_entry = Entry_type::New(
-            Inode_type::New(1),
+        let file_entry = Entry_type::new(
+            Inode_type::new(1),
             String::from("file.txt"),
             Type_type::File,
-            Size_type::New(1024),
+            Size_type::new(1024),
         );
 
-        let dir_entry = Entry_type::New(
-            Inode_type::New(2),
+        let dir_entry = Entry_type::new(
+            Inode_type::new(2),
             String::from("directory"),
             Type_type::Directory,
-            Size_type::New(0),
+            Size_type::new(0),
         );
 
-        let symlink_entry = Entry_type::New(
-            Inode_type::New(3),
+        let symlink_entry = Entry_type::new(
+            Inode_type::new(3),
             String::from("link"),
             Type_type::Symbolic_link,
-            Size_type::New(32),
+            Size_type::new(32),
         );
 
         assert_eq!(file_entry.get_type(), Type_type::File);
@@ -331,11 +332,11 @@ mod tests {
 
     #[test]
     fn test_entry_empty_name() {
-        let entry = Entry_type::New(
-            Inode_type::New(0),
+        let entry = Entry_type::new(
+            Inode_type::new(0),
             String::new(),
             Type_type::File,
-            Size_type::New(0),
+            Size_type::new(0),
         );
 
         assert_eq!(entry.get_name(), "");
@@ -344,24 +345,24 @@ mod tests {
 
     #[test]
     fn test_entry_large_values() {
-        let entry = Entry_type::New(
-            Inode_type::New(u64::MAX),
+        let entry = Entry_type::new(
+            Inode_type::new(u64::MAX),
             String::from("large_file.bin"),
             Type_type::File,
-            Size_type::New(u64::MAX),
+            Size_type::new(u64::MAX),
         );
 
-        assert_eq!(entry.get_inode().As_u64(), u64::MAX);
-        assert_eq!(entry.get_size().As_u64(), u64::MAX);
+        assert_eq!(entry.get_inode().as_u64(), u64::MAX);
+        assert_eq!(entry.get_size().as_u64(), u64::MAX);
     }
 
     #[test]
     fn test_entry_as_mut_slice() {
-        let mut entry = Entry_type::New(
-            Inode_type::New(42),
+        let mut entry = Entry_type::new(
+            Inode_type::new(42),
             String::from("test"),
             Type_type::File,
-            Size_type::New(100),
+            Size_type::new(100),
         );
 
         let slice = entry.as_mut();
@@ -390,41 +391,41 @@ mod tests {
 
     #[test]
     fn test_entry_modification_after_creation() {
-        let mut entry = Entry_type::New(
-            Inode_type::New(1),
+        let mut entry = Entry_type::new(
+            Inode_type::new(1),
             String::from("initial"),
             Type_type::File,
-            Size_type::New(0),
+            Size_type::new(0),
         );
 
         // Modify multiple times
         for i in 1..=5 {
-            entry.Set_inode(Inode_type::New(i));
-            entry.Set_name(alloc::format!("name_{i}"));
-            entry.Set_size(Size_type::New(i * 100));
+            entry.set_inode(Inode_type::new(i));
+            entry.set_name(alloc::format!("name_{i}"));
+            entry.set_size(Size_type::new(i * 100));
 
-            assert_eq!(entry.get_inode().As_u64(), i);
+            assert_eq!(entry.get_inode().as_u64(), i);
             assert_eq!(entry.get_name(), &alloc::format!("name_{i}"));
-            assert_eq!(entry.get_size().As_u64(), i * 100);
+            assert_eq!(entry.get_size().as_u64(), i * 100);
         }
     }
 
     #[test]
     fn test_entry_unicode_names() {
-        let entry = Entry_type::New(
-            Inode_type::New(1),
+        let entry = Entry_type::new(
+            Inode_type::new(1),
             String::from("файл.txt"), // Cyrillic
             Type_type::File,
-            Size_type::New(256),
+            Size_type::new(256),
         );
 
         assert_eq!(entry.get_name(), "файл.txt");
 
-        let entry2 = Entry_type::New(
-            Inode_type::New(2),
+        let entry2 = Entry_type::new(
+            Inode_type::new(2),
             String::from("文件.dat"), // Chinese
             Type_type::File,
-            Size_type::New(512),
+            Size_type::new(512),
         );
 
         assert_eq!(entry2.get_name(), "文件.dat");

@@ -30,7 +30,7 @@ impl Layout_type {
         let current_time = time::get_instance().get_current_time();
 
         if let Ok(current_time) = current_time {
-            let (_, _, _, hour, minute, _) = unix_to_human_time(current_time.As_seconds() as i64);
+            let (_, _, _, hour, minute, _) = unix_to_human_time(current_time.as_seconds() as i64);
 
             let _ = graphics::get_instance().lock().await;
 

@@ -25,13 +25,13 @@ impl From<Error_type> for NonZeroU32 {
     fn from(value: Error_type) -> Self {
         let discriminant = value.get_discriminant();
 
-        let Offset = match value {
-            Error_type::File_system(Error_type) => Error_type.get_discriminant().get(),
+        let offset = match value {
+            Error_type::File_system(error_type) => error_type.get_discriminant().get(),
             Error_type::Network(error_type) => error_type.get_discriminant().get() as u32,
             _ => 0,
         };
 
-        discriminant.saturating_add(Offset)
+        discriminant.saturating_add(offset)
     }
 }
 

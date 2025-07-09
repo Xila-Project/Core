@@ -18,8 +18,8 @@ impl Debug for Color_RGB565_type {
 }
 
 impl Color_RGB565_type {
-    pub const fn new(red: u8, Green: u8, Blue: u8) -> Self {
-        Self(0).set_red(red).set_green(Green).set_blue(Blue)
+    pub const fn new(red: u8, green: u8, blue: u8) -> Self {
+        Self(0).set_red(red).set_green(green).set_blue(blue)
     }
 
     pub const fn as_u16(self) -> u16 {
@@ -38,20 +38,20 @@ impl Color_RGB565_type {
         (self.0 & 0b11111) as u8
     }
 
-    pub const fn set_red(mut self, Value: u8) -> Self {
-        let value = Value & 0b11111; // 5 bits
+    pub const fn set_red(mut self, value: u8) -> Self {
+        let value = value & 0b11111; // 5 bits
         self.0 = (self.0 & !(0b11111 << 11)) | ((value as u16) << 11);
         self
     }
 
-    pub const fn set_green(mut self, Value: u8) -> Self {
-        let value = Value & 0b111111; // 6 bits
+    pub const fn set_green(mut self, value: u8) -> Self {
+        let value = value & 0b111111; // 6 bits
         self.0 = (self.0 & !(0b111111 << 5)) | ((value as u16) << 5);
         self
     }
 
-    pub const fn set_blue(mut self, Value: u8) -> Self {
-        let value = Value & 0b11111; // 5 bits
+    pub const fn set_blue(mut self, value: u8) -> Self {
+        let value = value & 0b11111; // 5 bits
         self.0 = (self.0 & !0b11111) | (value as u16);
         self
     }
@@ -95,34 +95,34 @@ mod tests {
 
     #[test]
     fn test_rgb565() {
-        let Color = Color_RGB565_type::new(255, 255, 255);
-        assert_eq!(Color.get_red(), 0b11111);
-        assert_eq!(Color.get_green(), 0b111111);
-        assert_eq!(Color.get_blue(), 0b11111);
-        assert_eq!(Color.0, 0xFFFF);
+        let color = Color_RGB565_type::new(255, 255, 255);
+        assert_eq!(color.get_red(), 0b11111);
+        assert_eq!(color.get_green(), 0b111111);
+        assert_eq!(color.get_blue(), 0b11111);
+        assert_eq!(color.0, 0xFFFF);
 
-        let Color = Color_RGB565_type::new(255, 0, 0);
-        assert_eq!(Color.get_red(), 0b11111);
-        assert_eq!(Color.get_green(), 0);
-        assert_eq!(Color.get_blue(), 0);
-        assert_eq!(Color.0, 0xF800);
+        let color = Color_RGB565_type::new(255, 0, 0);
+        assert_eq!(color.get_red(), 0b11111);
+        assert_eq!(color.get_green(), 0);
+        assert_eq!(color.get_blue(), 0);
+        assert_eq!(color.0, 0xF800);
 
-        let Color = Color_RGB565_type::new(0, 255, 0);
-        assert_eq!(Color.get_red(), 0);
-        assert_eq!(Color.get_green(), 0b111111);
-        assert_eq!(Color.get_blue(), 0);
-        assert_eq!(Color.0, 0x07E0);
+        let color = Color_RGB565_type::new(0, 255, 0);
+        assert_eq!(color.get_red(), 0);
+        assert_eq!(color.get_green(), 0b111111);
+        assert_eq!(color.get_blue(), 0);
+        assert_eq!(color.0, 0x07E0);
 
-        let Color = Color_RGB565_type::new(0, 0, 255);
-        assert_eq!(Color.get_red(), 0);
-        assert_eq!(Color.get_green(), 0);
-        assert_eq!(Color.get_blue(), 0b11111);
-        assert_eq!(Color.0, 0x00_1F);
+        let color = Color_RGB565_type::new(0, 0, 255);
+        assert_eq!(color.get_red(), 0);
+        assert_eq!(color.get_green(), 0);
+        assert_eq!(color.get_blue(), 0b11111);
+        assert_eq!(color.0, 0x00_1F);
 
-        let Color = Color_RGB565_type::new(0, 0, 0);
-        assert_eq!(Color.get_red(), 0);
-        assert_eq!(Color.get_green(), 0);
-        assert_eq!(Color.get_blue(), 0);
-        assert_eq!(Color.0, 0);
+        let color = Color_RGB565_type::new(0, 0, 0);
+        assert_eq!(color.get_red(), 0);
+        assert_eq!(color.get_green(), 0);
+        assert_eq!(color.get_blue(), 0);
+        assert_eq!(color.0, 0);
     }
 }

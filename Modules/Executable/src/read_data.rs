@@ -22,13 +22,13 @@ impl Read_data_type {
         F: Future<Output = Result<(), NonZeroUsize>> + 'static,
     {
         Self {
-            main: Some(Box::new(move |Standard, Arguments| {
-                Box::pin(main(Standard, Arguments))
+            main: Some(Box::new(move |standard, arguments| {
+                Box::pin(main(standard, arguments))
             })),
         }
     }
 
-    pub const fn New_default() -> [u8; size_of::<Self>()] {
+    pub const fn new_default() -> [u8; size_of::<Self>()] {
         [0; size_of::<Self>()]
     }
 
@@ -44,24 +44,24 @@ impl Read_data_type {
 impl TryFrom<&mut [u8]> for &mut Read_data_type {
     type Error = ();
 
-    fn try_from(Value: &mut [u8]) -> Result<Self, Self::Error> {
-        if Value.len() != size_of::<Read_data_type>() {
+    fn try_from(value: &mut [u8]) -> Result<Self, Self::Error> {
+        if value.len() != size_of::<Read_data_type>() {
             return Err(());
         }
-        if !(Value.as_ptr() as usize).is_multiple_of(core::mem::align_of::<Read_data_type>()) {
+        if !(value.as_ptr() as usize).is_multiple_of(core::mem::align_of::<Read_data_type>()) {
             return Err(());
         }
 
         #[allow(clippy::transmute_ptr_to_ref)]
-        Ok(unsafe { transmute::<*mut u8, Self>(Value.as_mut_ptr()) })
+        Ok(unsafe { transmute::<*mut u8, Self>(value.as_mut_ptr()) })
     }
 }
 
 impl TryFrom<[u8; size_of::<Read_data_type>()]> for Read_data_type {
     type Error = ();
 
-    fn try_from(Value: [u8; size_of::<Read_data_type>()]) -> Result<Self, Self::Error> {
-        Ok(unsafe { transmute::<[u8; size_of::<Read_data_type>()], Self>(Value) })
+    fn try_from(value: [u8; size_of::<Read_data_type>()]) -> Result<Self, Self::Error> {
+        Ok(unsafe { transmute::<[u8; size_of::<Read_data_type>()], Self>(value) })
     }
 }
 

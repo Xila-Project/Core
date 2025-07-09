@@ -55,23 +55,23 @@ impl File_identifier_type {
     pub const SIZE_BITS: u8 = core::mem::size_of::<File_identifier_inner_type>() as u8 * 8;
 
     /// Standard input file identifier (traditionally 0).
-    pub const STANDARD_IN: File_identifier_type = File_identifier_type::New(0);
+    pub const STANDARD_IN: File_identifier_type = File_identifier_type::new(0);
 
     /// Standard output file identifier (traditionally 1).
-    pub const STANDARD_OUT: File_identifier_type = File_identifier_type::New(1);
+    pub const STANDARD_OUT: File_identifier_type = File_identifier_type::new(1);
 
     /// Standard error file identifier (traditionally 2).
-    pub const STANDARD_ERROR: File_identifier_type = File_identifier_type::New(2);
+    pub const STANDARD_ERROR: File_identifier_type = File_identifier_type::new(2);
 
     /// Minimum file identifier available for regular files.
     ///
     /// Regular files should use identifiers starting from this value to avoid
     /// conflicts with standard file identifiers.
-    pub const MINIMUM: File_identifier_type = File_identifier_type::New(3);
+    pub const MINIMUM: File_identifier_type = File_identifier_type::new(3);
 
     /// Maximum possible file identifier value.
     pub const MAXIMUM: File_identifier_type =
-        File_identifier_type::New(File_identifier_inner_type::MAX);
+        File_identifier_type::new(File_identifier_inner_type::MAX);
 
     /// Create a new file identifier from a raw value.
     ///
@@ -87,8 +87,8 @@ impl File_identifier_type {
     /// let file_id = File_identifier_type::New(5);
     /// assert_eq!(file_id.Into_inner(), 5);
     /// ```
-    pub const fn New(Identifier: File_identifier_inner_type) -> Self {
-        Self(Identifier)
+    pub const fn new(identifier: File_identifier_inner_type) -> Self {
+        Self(identifier)
     }
 
     /// Get the raw identifier value.
@@ -105,7 +105,7 @@ impl File_identifier_type {
     /// let file_id = File_identifier_type::New(42);
     /// assert_eq!(file_id.Into_inner(), 42);
     /// ```
-    pub const fn Into_inner(self) -> File_identifier_inner_type {
+    pub const fn into_inner(self) -> File_identifier_inner_type {
         self.0
     }
 }
@@ -128,8 +128,8 @@ mod tests {
 
     #[test]
     fn test_file_identifier() {
-        let Identifier = File_identifier_type::from(0x1234);
-        assert_eq!(Identifier, File_identifier_type::New(0x1234));
-        assert_eq!(File_identifier_inner_type::from(Identifier), 0x1234);
+        let identifier = File_identifier_type::from(0x1234);
+        assert_eq!(identifier, File_identifier_type::new(0x1234));
+        assert_eq!(File_identifier_inner_type::from(identifier), 0x1234);
     }
 }

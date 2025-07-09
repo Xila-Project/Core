@@ -4,8 +4,8 @@ use crate::{lvgl, Point_type};
 pub struct Area_type(Point_type, Point_type);
 
 impl Area_type {
-    pub fn new(point_1: Point_type, Point_2: Point_type) -> Self {
-        Self(point_1, Point_2)
+    pub fn new(point_1: Point_type, point_2: Point_type) -> Self {
+        Self(point_1, point_2)
     }
 
     pub fn get_point_1(&self) -> Point_type {
@@ -24,13 +24,13 @@ impl Area_type {
         (self.1.get_y() - self.0.get_y()).unsigned_abs() + 1
     }
 
-    pub fn Set_point_1(mut self, Value: Point_type) -> Self {
-        self.0 = Value;
+    pub fn set_point_1(mut self, value: Point_type) -> Self {
+        self.0 = value;
         self
     }
 
-    pub fn Set_point_2(mut self, Value: Point_type) -> Self {
-        self.1 = Value;
+    pub fn set_point_2(mut self, value: Point_type) -> Self {
+        self.1 = value;
         self
     }
 }

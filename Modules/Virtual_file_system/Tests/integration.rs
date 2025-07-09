@@ -5,7 +5,7 @@
 use task::Task_identifier_type;
 
 use file_system::{
-    Create_device, Create_file_system, Flags_type, Memory_device_type, Mode_type, Open_type,
+    create_device, Create_file_system, Flags_type, Memory_device_type, Mode_type, Open_type,
     Path_type, Position_type, Status_type,
 };
 #[cfg(target_os = "linux")]
@@ -21,13 +21,13 @@ async fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>
 
     let _ = users::Initialize();
 
-    let _ = time::Initialize(Create_device!(drivers::native::Time_driver_type::New()));
+    let _ = time::Initialize(create_device!(drivers::native::Time_driver_type::New()));
 
     let Task = Task_instance
         .get_current_task_identifier()
         .expect("Failed to get current task identifier");
 
-    let Device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
+    let Device = create_device!(Memory_device_type::<512>::New(1024 * 512));
 
     let Cache_size = 256;
 
@@ -140,7 +140,7 @@ fn test_device() {
 
     const Device_path: &Path_type = Path_type::From_str("/Device");
 
-    let Device = Create_device!(Memory_device_type::<512>::New(512));
+    let Device = create_device!(Memory_device_type::<512>::New(512));
 
     Virtual_file_system
         .Mount_static_device(Task, &Device_path, Device)

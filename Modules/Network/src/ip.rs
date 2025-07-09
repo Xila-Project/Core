@@ -7,15 +7,15 @@ pub struct IPv4_type([u8; 4]);
 impl IPv4_type {
     pub const LOCALHOST: Self = Self([127, 0, 0, 1]);
 
-    pub const fn New(value: [u8; 4]) -> Self {
+    pub const fn new(value: [u8; 4]) -> Self {
         Self(value)
     }
 
-    pub const fn Into_inner(self) -> [u8; 4] {
+    pub const fn into_inner(self) -> [u8; 4] {
         self.0
     }
 
-    pub const fn From_inner(value: [u8; 4]) -> Self {
+    pub const fn from_inner(value: [u8; 4]) -> Self {
         Self(value)
     }
 }
@@ -27,19 +27,19 @@ impl TryFrom<&str> for IPv4_type {
         let mut result = [0; 4];
         let mut index = 0;
 
-        for Part in value.split('.') {
+        for part in value.split('.') {
             if index >= 4 {
                 return Err(());
             }
-            let Part = Part.parse::<u8>().map_err(|_| ())?;
-            result[index] = Part;
+            let part = part.parse::<u8>().map_err(|_| ())?;
+            result[index] = part;
             index += 1;
         }
         if index != 4 {
             return Err(());
         }
 
-        Ok(Self::New(result))
+        Ok(Self::new(result))
     }
 }
 
@@ -58,11 +58,11 @@ impl IPv6_type {
         Self(value)
     }
 
-    pub const fn Into_inner(self) -> [u16; 8] {
+    pub const fn into_inner(self) -> [u16; 8] {
         self.0
     }
 
-    pub const fn From_inner(value: [u16; 8]) -> Self {
+    pub const fn from_inner(value: [u16; 8]) -> Self {
         Self(value)
     }
 }
@@ -74,13 +74,13 @@ impl TryFrom<&str> for IPv6_type {
         let mut result = [0; 8];
         let mut index = 0;
 
-        for Part in value.split(':') {
+        for part in value.split(':') {
             if index >= result.len() {
                 return Err(());
             }
 
-            let Part = u16::from_str_radix(Part, 16).map_err(|_| ())?;
-            result[index] = Part;
+            let part = u16::from_str_radix(part, 16).map_err(|_| ())?;
+            result[index] = part;
             index += 1;
         }
         if index != result.len() {
@@ -110,7 +110,7 @@ pub enum IP_type {
 impl Display for IP_type {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            IP_type::IPv4(Value) => write!(f, "{Value}"),
+            IP_type::IPv4(value) => write!(f, "{value}"),
             IP_type::IPv6(value) => write!(f, "{value}"),
         }
     }
@@ -134,9 +134,9 @@ mod tests {
 
     #[test]
     fn test_ipv4_try_from() {
-        let IP = IPv4_type::try_from("0.0.0.0").unwrap();
+        let ip = IPv4_type::try_from("0.0.0.0").unwrap();
 
-        assert_eq!(IP.0, [0, 0, 0, 0]);
+        assert_eq!(ip.0, [0, 0, 0, 0]);
 
         IPv4_type::try_from("1.2b.3.4").unwrap_err();
 
@@ -144,25 +144,25 @@ mod tests {
 
         IPv4_type::try_from("1.2.3").unwrap_err();
 
-        let IP = IPv4_type::try_from("4.3.2.1").unwrap();
+        let ip = IPv4_type::try_from("4.3.2.1").unwrap();
 
-        assert_eq!(IP.0, [4, 3, 2, 1]);
+        assert_eq!(ip.0, [4, 3, 2, 1]);
     }
 
     #[test]
     fn test_ipv6_try_from() {
-        let IP = IPv6_type::try_from("0:0:0:0:0:0:0:0").unwrap();
+        let ip = IPv6_type::try_from("0:0:0:0:0:0:0:0").unwrap();
 
-        assert_eq!(IP.0, [0; 8]);
+        assert_eq!(ip.0, [0; 8]);
 
         IPv6_type::try_from("0:0:0:0:0:0:0:0:0").unwrap_err();
 
         IPv6_type::try_from("0:0:0:0:0:0:0").unwrap_err();
 
-        let IP = IPv6_type::try_from("1234:5678:9abc:def0:1234:5678:9abc:def0").unwrap();
+        let ip = IPv6_type::try_from("1234:5678:9abc:def0:1234:5678:9abc:def0").unwrap();
 
         assert_eq!(
-            IP.0,
+            ip.0,
             [0x1234, 0x5678, 0x9abc, 0xdef0, 0x1234, 0x5678, 0x9abc, 0xdef0]
         );
     }

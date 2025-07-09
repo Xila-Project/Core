@@ -4,7 +4,7 @@
 extern crate alloc;
 
 use executable::Standard_type;
-use file_system::{Create_device, Create_file_system, Memory_device_type, Mode_type};
+use file_system::{create_device, Create_file_system, Memory_device_type, Mode_type};
 use settings::Settings_executable_type;
 use task::Test;
 
@@ -26,10 +26,10 @@ async fn main() {
     let _ = users::initialize();
 
     // - Initialize the time manager.
-    let _ = time::initialize(Create_device!(drivers::native::Time_driver_type::new()));
+    let _ = time::initialize(create_device!(drivers::native::Time_driver_type::new()));
 
     // - Initialize the virtual file system.
-    let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
+    let memory_device = create_device!(Memory_device_type::<512>::new(1024 * 512));
 
     little_fs::File_system_type::format(memory_device.clone(), 256).unwrap();
 
@@ -141,7 +141,7 @@ async fn main() {
     let result = executable::execute("/Binaries/Settings", "".to_string(), standard)
         .await
         .unwrap()
-        .Join()
+        .join()
         .await;
 
     assert_eq!(result, 0);

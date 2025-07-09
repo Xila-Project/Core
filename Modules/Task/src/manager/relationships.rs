@@ -16,7 +16,7 @@ impl Manager_type {
             .await
             .tasks
             .iter()
-            .filter(|(_, Metadata)| Metadata.Parent == task_identifier)
+            .filter(|(_, metadata)| metadata.parent == task_identifier)
             .map(|(identifier, _)| *identifier)
             .collect())
     }
@@ -26,6 +26,6 @@ impl Manager_type {
         &self,
         task_identifier: Task_identifier_type,
     ) -> Result_type<Task_identifier_type> {
-        Self::get_task(&*self.0.read().await, task_identifier).map(|Task| Task.Parent)
+        Self::get_task(&*self.0.read().await, task_identifier).map(|task| task.parent)
     }
 }

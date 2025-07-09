@@ -7,15 +7,15 @@ pub struct Port_type(u16);
 impl Port_type {
     pub const ANY: Self = Self(0);
 
-    pub const fn New(value: u16) -> Self {
+    pub const fn new(value: u16) -> Self {
         Self(value)
     }
 
-    pub const fn Into_inner(self) -> u16 {
+    pub const fn into_inner(self) -> u16 {
         self.0
     }
 
-    pub const fn From_inner(value: u16) -> Self {
+    pub const fn from_inner(value: u16) -> Self {
         Self(value)
     }
 }

@@ -17,15 +17,15 @@ pub struct Path_owned_type(String);
 impl Path_owned_type {
     /// # Safety
     /// The caller must ensure that the string is valid path string.
-    pub unsafe fn New_unchecked(Path: String) -> Self {
-        Path_owned_type(Path)
+    pub unsafe fn new_unchecked(path: String) -> Self {
+        Path_owned_type(path)
     }
 
-    pub fn New(Path: String) -> Option<Self> {
-        let path = if Path.ends_with(SEPARATOR) && Path.len() > 1 {
-            Path[..Path.len() - 1].to_string()
+    pub fn new(path: String) -> Option<Self> {
+        let path = if path.ends_with(SEPARATOR) && path.len() > 1 {
+            path[..path.len() - 1].to_string()
         } else {
-            Path
+            path
         };
 
         if is_valid_string(&path) {
@@ -35,32 +35,32 @@ impl Path_owned_type {
         }
     }
 
-    pub fn Root() -> Path_owned_type {
+    pub fn root() -> Path_owned_type {
         Path_owned_type("/".to_string())
     }
 
-    pub fn Join(mut self, Path: impl AsRef<Path_type>) -> Option<Self> {
-        if Path.as_ref().is_absolute() {
+    pub fn join(mut self, path: impl AsRef<Path_type>) -> Option<Self> {
+        if path.as_ref().is_absolute() {
             return None;
         }
 
-        if Path.as_ref().is_empty() {
+        if path.as_ref().is_empty() {
             return Some(self);
         }
 
         if !self.0.ends_with(SEPARATOR) {
             self.0.push(SEPARATOR);
         }
-        self.0.push_str(Path.as_ref().As_str());
+        self.0.push_str(path.as_ref().as_str());
 
         Some(self)
     }
 
-    pub fn Append(self, Path: &str) -> Option<Self> {
-        self.Join(Path_type::From_str(Path))
+    pub fn append(self, path: &str) -> Option<Self> {
+        self.join(Path_type::from_str(path))
     }
 
-    pub fn Revert_parent_directory(&mut self) -> &mut Self {
+    pub fn revert_parent_directory(&mut self) -> &mut Self {
         let mut last_index = 0;
         for (i, c) in self.0.chars().enumerate() {
             if c == SEPARATOR {
@@ -100,28 +100,28 @@ impl Path_owned_type {
         &self.0[last_index + 1..]
     }
 
-    pub fn get_relative_to(&self, Path: &Path_owned_type) -> Option<Path_owned_type> {
-        if !self.0.starts_with(Path.0.as_str()) {
+    pub fn get_relative_to(&self, path: &Path_owned_type) -> Option<Path_owned_type> {
+        if !self.0.starts_with(path.0.as_str()) {
             return None;
         }
 
-        Some(Path_owned_type(self.0[Path.0.len()..].to_string()))
+        Some(Path_owned_type(self.0[path.0.len()..].to_string()))
     }
 
-    pub fn Canonicalize(mut self) -> Self {
+    pub fn canonicalize(mut self) -> Self {
         let mut stack: Vec<&str> = Vec::new();
 
         if self.is_absolute() {
             stack.push("");
         }
 
-        for Component in self.0.split(SEPARATOR) {
-            match Component {
+        for component in self.0.split(SEPARATOR) {
+            match component {
                 ".." => {
                     stack.pop();
                 }
                 "." | "" => continue,
-                _ => stack.push(Component),
+                _ => stack.push(component),
             }
         }
 
@@ -131,17 +131,17 @@ impl Path_owned_type {
     }
 }
 
-pub fn is_valid_string(String: &str) -> bool {
+pub fn is_valid_string(string: &str) -> bool {
     let invalid = ['\0', ':', '*', '?', '"', '<', '>', '|', ' '];
 
-    for Character in String.chars() {
+    for character in string.chars() {
         // Check if the string contains invalid characters.
-        if invalid.contains(&Character) {
+        if invalid.contains(&character) {
             return false;
         }
     }
 
-    if String.ends_with(SEPARATOR) && String.len() > 1 {
+    if string.ends_with(SEPARATOR) && string.len() > 1 {
         // Check if the string ends with a separator and is not the root directory.
         return false;
     }
@@ -189,7 +189,7 @@ impl Deref for Path_owned_type {
     type Target = Path_type;
 
     fn deref(&self) -> &Self::Target {
-        Path_type::From_str(self.0.as_str())
+        Path_type::from_str(self.0.as_str())
     }
 }
 
@@ -205,12 +205,12 @@ mod tests {
 
     #[test]
     fn test_path_addition() {
-        let Path = Path_owned_type::try_from("/").unwrap();
-        assert_eq!(Path.As_str(), "/");
-        let Path = Path.Append("Folder").unwrap();
-        assert_eq!(Path.As_str(), "/Folder");
-        let Path = Path.Append("File").unwrap();
-        assert_eq!(Path.As_str(), "/Folder/File");
+        let path = Path_owned_type::try_from("/").unwrap();
+        assert_eq!(path.as_str(), "/");
+        let path = path.append("Folder").unwrap();
+        assert_eq!(path.as_str(), "/Folder");
+        let path = path.append("File").unwrap();
+        assert_eq!(path.as_str(), "/Folder/File");
     }
 
     #[test]
@@ -234,10 +234,10 @@ mod tests {
 
     #[test]
     fn test_canonicalize() {
-        let Path = Path_owned_type::try_from("/home/../home/user/./file.txt").unwrap();
-        assert_eq!(Path.Canonicalize().As_str(), "/home/user/file.txt");
+        let path = Path_owned_type::try_from("/home/../home/user/./file.txt").unwrap();
+        assert_eq!(path.canonicalize().as_str(), "/home/user/file.txt");
 
-        let Path = Path_owned_type::try_from("./home/../home/user/./file.txt").unwrap();
-        assert_eq!(Path.Canonicalize().As_str(), "home/user/file.txt");
+        let path = Path_owned_type::try_from("./home/../home/user/./file.txt").unwrap();
+        assert_eq!(path.canonicalize().as_str(), "home/user/file.txt");
     }
 }

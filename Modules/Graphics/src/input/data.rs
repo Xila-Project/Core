@@ -7,7 +7,7 @@ use super::{Key_type, State_type};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(C)]
 pub struct Input_data_type {
-    pub Continue: bool,
+    pub r#continue: bool,
     pub point: Point_type,
     pub state: State_type,
     pub key: Key_type,
@@ -19,23 +19,28 @@ impl Default for Input_data_type {
             point: Point_type::default(),
             state: State_type::default(),
             key: Key_type::Character(0),
-            Continue: false,
+            r#continue: false,
         }
     }
 }
 
 impl Input_data_type {
-    pub const fn new(point: Point_type, State: State_type, Key: Key_type, Continue: bool) -> Self {
+    pub const fn new(
+        point: Point_type,
+        state: State_type,
+        key: Key_type,
+        r#continue: bool,
+    ) -> Self {
         Self {
             point,
-            state: State,
-            key: Key,
-            Continue,
+            state,
+            key,
+            r#continue,
         }
     }
 
     pub const fn get_continue(&self) -> bool {
-        self.Continue
+        self.r#continue
     }
 
     pub const fn get_point(&self) -> &Point_type {
@@ -50,41 +55,41 @@ impl Input_data_type {
         self.key
     }
 
-    pub const fn Set_continue(&mut self, Continue: bool) {
-        self.Continue = Continue;
+    pub const fn set_continue(&mut self, r#continue: bool) {
+        self.r#continue = r#continue;
     }
 
-    pub fn Set_point(&mut self, Point: Point_type) {
-        self.point = Point;
+    pub fn set_point(&mut self, point: Point_type) {
+        self.point = point;
     }
 
-    pub fn Set_state(&mut self, Touch: State_type) {
-        self.state = Touch;
+    pub fn set_state(&mut self, touch: State_type) {
+        self.state = touch;
     }
 
-    pub fn Set_key(&mut self, Key: Key_type) {
-        self.key = Key;
+    pub fn set_key(&mut self, key: Key_type) {
+        self.key = key;
     }
 
-    pub fn Set(&mut self, Point: Point_type, Touch: State_type) {
-        self.point = Point;
-        self.state = Touch;
+    pub fn set(&mut self, point: Point_type, touch: State_type) {
+        self.point = point;
+        self.state = touch;
     }
 }
 
 impl TryFrom<&mut [u8]> for &mut Input_data_type {
     type Error = ();
 
-    fn try_from(Value: &mut [u8]) -> Result<Self, Self::Error> {
-        if Value.len() != size_of::<Input_data_type>() {
+    fn try_from(value: &mut [u8]) -> Result<Self, Self::Error> {
+        if value.len() != size_of::<Input_data_type>() {
             return Err(());
         }
-        if Value.as_ptr() as usize % core::mem::align_of::<Input_data_type>() != 0 {
+        if value.as_ptr() as usize % core::mem::align_of::<Input_data_type>() != 0 {
             return Err(());
         }
 
         #[allow(clippy::transmute_ptr_to_ref)]
-        Ok(unsafe { transmute::<*mut u8, Self>(Value.as_mut_ptr()) })
+        Ok(unsafe { transmute::<*mut u8, Self>(value.as_mut_ptr()) })
     }
 }
 
@@ -98,13 +103,13 @@ impl From<Input_data_type> for lvgl::lv_indev_data_t {
     fn from(value: Input_data_type) -> lvgl::lv_indev_data_t {
         let mut input_device_data = lvgl::lv_indev_data_t::default();
 
-        let State = value.get_touch();
+        let state = value.get_touch();
 
-        if *State == State_type::Pressed {
+        if *state == State_type::Pressed {
             input_device_data.point = (*value.get_point()).into();
         }
 
-        input_device_data.state = (*State).into();
+        input_device_data.state = (*state).into();
         input_device_data.key = value.key.into();
 
         input_device_data

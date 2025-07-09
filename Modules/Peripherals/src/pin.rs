@@ -10,8 +10,8 @@ pub enum Direction_type {
 impl TryFrom<u8> for Direction_type {
     type Error = ();
 
-    fn try_from(Value: u8) -> Result<Self, Self::Error> {
-        match Value {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
             0 => Ok(Self::Input),
             1 => Ok(Self::Output),
             _ => Err(()),
@@ -29,8 +29,8 @@ pub enum Level_type {
 impl TryFrom<u8> for Level_type {
     type Error = ();
 
-    fn try_from(Value: u8) -> Result<Self, Self::Error> {
-        match Value {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
             0 => Ok(Self::Low),
             1 => Ok(Self::High),
             _ => Err(()),
@@ -86,19 +86,19 @@ impl Pin_data_type {
         self.pull
     }
 
-    pub fn Set_level(&mut self, Level: Option<Level_type>) {
-        self.level = Level;
+    pub fn set_level(&mut self, level: Option<Level_type>) {
+        self.level = level;
     }
 
-    pub fn Set_direction(&mut self, Direction: Option<Direction_type>) {
-        self.direction = Direction;
+    pub fn set_direction(&mut self, direction: Option<Direction_type>) {
+        self.direction = direction;
     }
 
-    pub fn Set_pull(&mut self, Pull: Option<Pull_type>) {
-        self.pull = Pull;
+    pub fn set_pull(&mut self, pull: Option<Pull_type>) {
+        self.pull = pull;
     }
 
-    pub fn Set(
+    pub fn set(
         &mut self,
         level: Option<Level_type>,
         direction: Option<Direction_type>,
@@ -121,31 +121,31 @@ impl AsMut<[u8]> for Pin_data_type {
 impl TryFrom<&[u8]> for &Pin_data_type {
     type Error = ();
 
-    fn try_from(Value: &[u8]) -> Result<Self, Self::Error> {
-        if Value.len() != size_of::<Pin_data_type>() {
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() != size_of::<Pin_data_type>() {
             return Err(());
         }
-        if !(Value.as_ptr() as usize).is_multiple_of(core::mem::align_of::<Pin_data_type>()) {
+        if !(value.as_ptr() as usize).is_multiple_of(core::mem::align_of::<Pin_data_type>()) {
             return Err(());
         }
 
         #[allow(clippy::transmute_ptr_to_ref)]
-        Ok(unsafe { transmute::<*const u8, Self>(Value.as_ptr()) })
+        Ok(unsafe { transmute::<*const u8, Self>(value.as_ptr()) })
     }
 }
 
 impl TryFrom<&mut [u8]> for &mut Pin_data_type {
     type Error = ();
 
-    fn try_from(Value: &mut [u8]) -> Result<Self, Self::Error> {
-        if Value.len() != size_of::<Pin_data_type>() {
+    fn try_from(value: &mut [u8]) -> Result<Self, Self::Error> {
+        if value.len() != size_of::<Pin_data_type>() {
             return Err(());
         }
-        if !(Value.as_ptr() as usize).is_multiple_of(core::mem::align_of::<Pin_data_type>()) {
+        if !(value.as_ptr() as usize).is_multiple_of(core::mem::align_of::<Pin_data_type>()) {
             return Err(());
         }
 
         #[allow(clippy::transmute_ptr_to_ref)]
-        Ok(unsafe { transmute::<*mut u8, Self>(Value.as_mut_ptr()) })
+        Ok(unsafe { transmute::<*mut u8, Self>(value.as_mut_ptr()) })
     }
 }

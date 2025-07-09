@@ -17,15 +17,15 @@ impl Default for Type_tree_type {
 }
 
 impl Type_tree_type {
-    pub fn insert(&mut self, Type: String, Alias: String) {
-        self.type_tree.insert(Type, Alias);
+    pub fn insert(&mut self, r#type: String, alias: String) {
+        self.type_tree.insert(r#type, alias);
     }
 
-    pub fn Resolve(&self, Path: &Path) -> String {
-        let path_string = Path.to_token_stream().to_string();
+    pub fn resolve(&self, path: &Path) -> String {
+        let path_string = path.to_token_stream().to_string();
 
-        if let Some(Alias) = self.type_tree.get(&path_string) {
-            Alias.clone()
+        if let Some(alias) = self.type_tree.get(&path_string) {
+            alias.clone()
         } else {
             path_string
         }

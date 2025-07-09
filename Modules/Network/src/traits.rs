@@ -11,9 +11,9 @@ pub trait Network_socket_driver_trait: Send + Sync {
         iterator: Local_file_identifier_iterator_type,
     ) -> Result_type<Option<Local_file_identifier_type>>;
 
-    fn Close(&self, Socket: Local_file_identifier_type) -> Result_type<()>;
+    fn close(&self, socket: Local_file_identifier_type) -> Result_type<()>;
 
-    fn Bind(
+    fn bind(
         &self,
         ip: IP_type,
         port: Port_type,
@@ -21,32 +21,33 @@ pub trait Network_socket_driver_trait: Send + Sync {
         socket: Local_file_identifier_type,
     ) -> Result_type<()>;
 
-    fn Connect(
+    fn connect(
         &self,
         ip: IP_type,
         port: Port_type,
         socket: Local_file_identifier_type,
     ) -> Result_type<()>;
 
-    fn Accept(
+    fn accept(
         &self,
         socket: Local_file_identifier_type,
         new_socket: Local_file_identifier_type,
     ) -> Result_type<(IP_type, Port_type)>;
 
-    fn Send(&self, Socket: Local_file_identifier_type, Data: &[u8]) -> Result_type<()>;
+    fn send(&self, socket: Local_file_identifier_type, data: &[u8]) -> Result_type<()>;
 
-    fn Send_to(
+    fn send_to(
         &self,
+
         socket: Local_file_identifier_type,
         data: &[u8],
         ip: IP_type,
         port: Port_type,
     ) -> Result_type<()>;
 
-    fn Receive(&self, Socket: Local_file_identifier_type, Data: &mut [u8]) -> Result_type<usize>;
+    fn receive(&self, socket: Local_file_identifier_type, data: &mut [u8]) -> Result_type<usize>;
 
-    fn Receive_from(
+    fn receive_from(
         &self,
         socket: Local_file_identifier_type,
         data: &mut [u8],
@@ -62,13 +63,13 @@ pub trait Network_socket_driver_trait: Send + Sync {
         socket: Local_file_identifier_type,
     ) -> Result_type<(IP_type, Port_type)>;
 
-    fn Set_send_timeout(
+    fn set_send_timeout(
         &self,
         socket: Local_file_identifier_type,
         timeout: Duration_type,
     ) -> Result_type<()>;
 
-    fn Set_receive_timeout(
+    fn set_receive_timeout(
         &self,
         socket: Local_file_identifier_type,
         timeout: Duration_type,

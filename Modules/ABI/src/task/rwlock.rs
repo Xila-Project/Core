@@ -19,7 +19,7 @@ impl Raw_rwlock_type {
     const WRITING: usize = 1; // Represents the state when there is a writer
     const UNLOCKED: usize = 0; // Represents the state when the rwlock is unlocked
 
-    pub fn New() -> Self {
+    pub fn new() -> Self {
         Self {
             mutex: Mutex::new(Self::UNLOCKED), // Initial state: unlocked
         }
@@ -35,7 +35,7 @@ impl Raw_rwlock_type {
     ///
     /// This function is unsafe because it dereferences a raw pointer.
     /// The caller must ensure the pointer is valid and points to properly initialized memory.
-    pub unsafe fn From_pointer<'a>(pointer: *const Raw_rwlock_type) -> Option<&'a Self> {
+    pub unsafe fn from_pointer<'a>(pointer: *const Raw_rwlock_type) -> Option<&'a Self> {
         if !Self::is_valid_pointer(pointer) {
             return None;
         }
@@ -48,22 +48,22 @@ impl Raw_rwlock_type {
     ///
     /// This function is unsafe because it dereferences a raw pointer.
     /// The caller must ensure the pointer is valid and points to properly initialized memory.
-    pub unsafe fn From_mutable_pointer<'a>(pointer: *mut Raw_rwlock_type) -> Option<&'a mut Self> {
+    pub unsafe fn from_mutable_pointer<'a>(pointer: *mut Raw_rwlock_type) -> Option<&'a mut Self> {
         if !Self::is_valid_pointer(pointer) {
             return None;
         }
         Some(&mut *pointer)
     }
 
-    pub fn Read(&self) -> bool {
+    pub fn read(&self) -> bool {
         unsafe {
-            self.mutex.lock_mut(|State| {
+            self.mutex.lock_mut(|state| {
                 // Can't read if there's a writer (state == 1)
 
-                match *State {
+                match *state {
                     Self::WRITING => return false, // Write lock prevents reading
-                    Self::UNLOCKED => *State = Self::READING, // Unlocked, can read
-                    _ => *State += 1,              // Already has readers, can add more
+                    Self::UNLOCKED => *state = Self::READING, // Unlocked, can read
+                    _ => *state += 1,              // Already has readers, can add more
                 }
 
                 true
@@ -73,34 +73,34 @@ impl Raw_rwlock_type {
 
     pub fn write(&self) -> bool {
         unsafe {
-            self.mutex.lock_mut(|State| {
+            self.mutex.lock_mut(|state| {
                 // Can only write if completely unlocked
-                if *State != Self::UNLOCKED {
+                if *state != Self::UNLOCKED {
                     return false;
                 }
 
-                *State = Self::WRITING; // Write lock
+                *state = Self::WRITING; // Write lock
                 true
             })
         }
     }
 
-    pub fn Unlock(&self) -> bool {
+    pub fn unlock(&self) -> bool {
         unsafe {
-            self.mutex.lock_mut(|State| {
-                match *State {
+            self.mutex.lock_mut(|state| {
+                match *state {
                     Self::UNLOCKED => false, // Not locked
                     Self::WRITING => {
                         // Write lock - unlock completely
-                        *State = Self::UNLOCKED;
+                        *state = Self::UNLOCKED;
                         true
                     }
                     n if n >= 2 => {
                         // Read lock - decrement reader count
-                        *State -= 1;
-                        if *State == Self::WRITING {
+                        *state -= 1;
+                        if *state == Self::WRITING {
                             // This shouldn't happen, but fix it
-                            *State = Self::UNLOCKED;
+                            *state = Self::UNLOCKED;
                         }
                         true
                     }
@@ -124,16 +124,16 @@ pub static RAW_RWLOCK_SIZE: usize = size_of::<Raw_rwlock_type>();
 ///
 /// This function may return an error if the rwlock is not initialized.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_initialize_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
-    if Rwlock.is_null() {
+pub unsafe extern "C" fn Xila_initialize_rwlock(rwlock: *mut Raw_rwlock_type) -> bool {
+    if rwlock.is_null() {
         return false;
     }
 
-    if Rwlock as usize % align_of::<Raw_rwlock_type>() != 0 {
+    if rwlock as usize % align_of::<Raw_rwlock_type>() != 0 {
         return false;
     }
 
-    Rwlock.write(Raw_rwlock_type::New());
+    rwlock.write(Raw_rwlock_type::new());
 
     true
 }
@@ -146,13 +146,13 @@ pub unsafe extern "C" fn Xila_initialize_rwlock(Rwlock: *mut Raw_rwlock_type) ->
 /// - `rwlock` points to a valid, initialized `Raw_rwlock_type`
 /// - The rwlock remains valid for the duration of the call
 #[no_mangle]
-pub unsafe extern "C" fn Xila_read_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
-    let rwlock = match Raw_rwlock_type::From_mutable_pointer(Rwlock) {
+pub unsafe extern "C" fn Xila_read_rwlock(rwlock: *mut Raw_rwlock_type) -> bool {
+    let rwlock = match Raw_rwlock_type::from_mutable_pointer(rwlock) {
         Some(rwlock) => rwlock,
         None => return false,
     };
 
-    rwlock.Read()
+    rwlock.read()
 }
 
 /// Write lock a rwlock.
@@ -163,8 +163,8 @@ pub unsafe extern "C" fn Xila_read_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool 
 /// - `rwlock` points to a valid, initialized `Raw_rwlock_type`
 /// - The rwlock remains valid for the duration of the call
 #[no_mangle]
-pub unsafe extern "C" fn Xila_write_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
-    let rwlock = match Raw_rwlock_type::From_mutable_pointer(Rwlock) {
+pub unsafe extern "C" fn Xila_write_rwlock(rwlock: *mut Raw_rwlock_type) -> bool {
+    let rwlock = match Raw_rwlock_type::from_mutable_pointer(rwlock) {
         Some(rwlock) => rwlock,
         None => return false,
     };
@@ -181,13 +181,13 @@ pub unsafe extern "C" fn Xila_write_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool
 /// - The rwlock remains valid for the duration of the call
 /// - The current task owns the lock (either read or write)
 #[no_mangle]
-pub unsafe extern "C" fn Xila_unlock_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
-    let rwlock = match Raw_rwlock_type::From_mutable_pointer(Rwlock) {
+pub unsafe extern "C" fn Xila_unlock_rwlock(rwlock: *mut Raw_rwlock_type) -> bool {
+    let rwlock = match Raw_rwlock_type::from_mutable_pointer(rwlock) {
         Some(rwlock) => rwlock,
         None => return false,
     };
 
-    rwlock.Unlock()
+    rwlock.unlock()
 }
 
 /// Destroy a rwlock.
@@ -199,13 +199,13 @@ pub unsafe extern "C" fn Xila_unlock_rwlock(Rwlock: *mut Raw_rwlock_type) -> boo
 /// - The rwlock is not currently locked
 /// - No other threads are waiting on the rwlock
 #[no_mangle]
-pub unsafe extern "C" fn Xila_destroy_rwlock(Rwlock: *mut Raw_rwlock_type) -> bool {
-    let _ = match Raw_rwlock_type::From_mutable_pointer(Rwlock) {
+pub unsafe extern "C" fn Xila_destroy_rwlock(rwlock: *mut Raw_rwlock_type) -> bool {
+    let _ = match Raw_rwlock_type::from_mutable_pointer(rwlock) {
         Some(rw_lock) => rw_lock,
         None => return false,
     };
 
-    drop_in_place(Rwlock); // Drop the rwlock, releasing resources
+    drop_in_place(rwlock); // Drop the rwlock, releasing resources
 
     true // RwLock is dropped here
 }

@@ -42,7 +42,7 @@ fn generate_conversion_for_argument(
                     }
                 }
                 syn::Type::Path(path) => {
-                    let path_string = type_tree.Resolve(&path.path);
+                    let path_string = type_tree.resolve(&path.path);
 
                     let path_string_stripped = path_string.replace(" ", "");
 
@@ -267,7 +267,7 @@ pub fn generate_code(
 
         #[allow(unused_variables)]
         #[allow(clippy::too_many_arguments)]
-        pub unsafe fn Call_function(
+        pub unsafe fn call_function(
             __environment: Environment_type,
             __pointer_table: &mut Pointer_table_type,
             __function: Function_calls_type,

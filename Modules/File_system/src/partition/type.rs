@@ -127,8 +127,8 @@ impl Partition_type_type {
     ///     assert_eq!(id, 0xFF);
     /// }
     /// ```
-    pub fn From_u8(Value: u8) -> Self {
-        match Value {
+    pub fn from_u8(value: u8) -> Self {
+        match value {
             0x00 => Partition_type_type::Empty,
             0x01 => Partition_type_type::Fat12,
             0x04 => Partition_type_type::Fat16_small,
@@ -152,12 +152,12 @@ impl Partition_type_type {
             0xEE => Partition_type_type::Gpt_protective,
             0xEF => Partition_type_type::Efi_system,
             0xDA => Partition_type_type::Xila,
-            _ => Partition_type_type::Unknown(Value),
+            _ => Partition_type_type::Unknown(value),
         }
     }
 
     /// Convert the partition type to its raw u8 value
-    pub fn To_u8(&self) -> u8 {
+    pub fn to_u8(&self) -> u8 {
         match self {
             Partition_type_type::Empty => 0x00,
             Partition_type_type::Fat12 => 0x01,
@@ -271,8 +271,8 @@ impl Partition_type_type {
 impl fmt::Display for Partition_type_type {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Partition_type_type::Unknown(Value) => write!(formatter, "Unknown (0x{Value:02X})"),
-            _ => write!(formatter, "{} (0x{:02X})", self.get_name(), self.To_u8()),
+            Partition_type_type::Unknown(value) => write!(formatter, "Unknown (0x{value:02X})"),
+            _ => write!(formatter, "{} (0x{:02X})", self.get_name(), self.to_u8()),
         }
     }
 }
@@ -285,46 +285,46 @@ mod tests {
     #[test]
     fn test_partition_type_from_u8() {
         assert_eq!(
-            Partition_type_type::From_u8(0x00),
+            Partition_type_type::from_u8(0x00),
             Partition_type_type::Empty
         );
         assert_eq!(
-            Partition_type_type::From_u8(0x0C),
+            Partition_type_type::from_u8(0x0C),
             Partition_type_type::Fat32_lba
         );
         assert_eq!(
-            Partition_type_type::From_u8(0x83),
+            Partition_type_type::from_u8(0x83),
             Partition_type_type::Linux
         );
         assert_eq!(
-            Partition_type_type::From_u8(0xEE),
+            Partition_type_type::from_u8(0xEE),
             Partition_type_type::Gpt_protective
         );
         assert_eq!(
-            Partition_type_type::From_u8(0xFF),
+            Partition_type_type::from_u8(0xFF),
             Partition_type_type::Unknown(0xFF)
         );
     }
 
     #[test]
     fn test_partition_type_to_u8() {
-        assert_eq!(Partition_type_type::Empty.To_u8(), 0x00);
-        assert_eq!(Partition_type_type::Fat32_lba.To_u8(), 0x0C);
-        assert_eq!(Partition_type_type::Linux.To_u8(), 0x83);
-        assert_eq!(Partition_type_type::Gpt_protective.To_u8(), 0xEE);
-        assert_eq!(Partition_type_type::Unknown(0xFF).To_u8(), 0xFF);
+        assert_eq!(Partition_type_type::Empty.to_u8(), 0x00);
+        assert_eq!(Partition_type_type::Fat32_lba.to_u8(), 0x0C);
+        assert_eq!(Partition_type_type::Linux.to_u8(), 0x83);
+        assert_eq!(Partition_type_type::Gpt_protective.to_u8(), 0xEE);
+        assert_eq!(Partition_type_type::Unknown(0xFF).to_u8(), 0xFF);
     }
 
     #[test]
     fn test_partition_type_round_trip() {
-        let Types = vec![
+        let types = vec![
             0x00, 0x01, 0x04, 0x05, 0x06, 0x07, 0x0B, 0x0C, 0x0E, 0x0F, 0x11, 0x14, 0x16, 0x17,
             0x1B, 0x1C, 0x1E, 0x82, 0x83, 0x8E, 0xEE, 0xEF, 0xFF, 0x42, 0x99,
         ];
 
-        for Type_value in Types {
-            let Partition_type = Partition_type_type::From_u8(Type_value);
-            assert_eq!(Partition_type.To_u8(), Type_value);
+        for type_value in types {
+            let partition_type = Partition_type_type::from_u8(type_value);
+            assert_eq!(partition_type.to_u8(), type_value);
         }
     }
 
@@ -374,14 +374,14 @@ mod tests {
 
     #[test]
     fn test_partition_type_display() {
-        let Fat32_variant = Partition_type_type::Fat32_lba;
-        let Display_string = format!("{Fat32_variant}");
-        assert!(Display_string.contains("FAT32 LBA"));
-        assert!(Display_string.contains("0x0C"));
+        let fat32_variant = Partition_type_type::Fat32_lba;
+        let display_string = format!("{fat32_variant}");
+        assert!(display_string.contains("FAT32 LBA"));
+        assert!(display_string.contains("0x0C"));
 
-        let Unknown = Partition_type_type::Unknown(0x42);
-        let Unknown_string = format!("{Unknown}");
-        assert!(Unknown_string.contains("Unknown"));
-        assert!(Unknown_string.contains("0x42"));
+        let unknown = Partition_type_type::Unknown(0x42);
+        let unknown_string = format!("{unknown}");
+        assert!(unknown_string.contains("Unknown"));
+        assert!(unknown_string.contains("0x42"));
     }
 }

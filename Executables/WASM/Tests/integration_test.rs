@@ -5,7 +5,7 @@ extern crate alloc;
 use command_line_shell::Shell_executable_type;
 use drivers::standard_library::loader::Loader_type;
 use executable::{Mount_static_executables, Standard_type};
-use file_system::{Create_device, Create_file_system, Memory_device_type, Mode_type};
+use file_system::{create_device, Create_file_system, Memory_device_type, Mode_type};
 use memory::Instantiate_global_allocator;
 use task::Test;
 use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
@@ -20,11 +20,11 @@ async fn i() {
 
     let _ = users::initialize();
 
-    let _ = time::Initialize(Create_device!(drivers::native::Time_driver_type::new()));
+    let _ = time::Initialize(create_device!(drivers::native::Time_driver_type::new()));
 
-    let _ = virtual_machine::Initialize(&[]);
+    let _ = virtual_machine::initialize(&[]);
 
-    let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 1024 * 512));
+    let memory_device = create_device!(Memory_device_type::<512>::new(1024 * 1024 * 512));
 
     little_fs::File_system_type::format(memory_device.clone(), 256).unwrap();
 
@@ -112,14 +112,14 @@ async fn i() {
     let environment_variables = &[("Paths", "/"), ("User", "alix_anneraud"), ("Host", "xila")];
 
     task_instance
-        .Set_environment_variables(task, environment_variables)
+        .set_environment_variables(task, environment_variables)
         .await
         .unwrap();
 
     let result = executable::execute("/Binaries/Command_line_shell", "".to_string(), standard)
         .await
         .unwrap()
-        .Join()
+        .join()
         .await;
 
     assert!(result == 0);

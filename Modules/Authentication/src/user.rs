@@ -1,4 +1,5 @@
 //! User management functionality for the Authentication module.
+
 //!
 //! This module provides comprehensive user account management including:
 //! - User creation and authentication
@@ -82,7 +83,7 @@ impl User_type {
     ///
     /// A `User_identifier_type` containing the user's unique ID.
     pub fn get_identifier(&self) -> User_identifier_type {
-        User_identifier_type::New(self.identifier)
+        User_identifier_type::new(self.identifier)
     }
 
     /// Returns the user's primary group identifier.
@@ -91,7 +92,7 @@ impl User_type {
     ///
     /// A `Group_identifier_type` containing the user's primary group ID.
     pub fn get_primary_group(&self) -> Group_identifier_type {
-        Group_identifier_type::New(self.primary_group)
+        Group_identifier_type::new(self.primary_group)
     }
 
     /// Returns the user's name as a string slice.
@@ -169,9 +170,9 @@ impl User_type {
 /// Returns `Ok(Path_owned_type)` with the complete path to the user file,
 /// or `Err(Error_type::Failed_to_get_user_file_path)` if path construction fails.
 pub fn get_user_file_path(user_name: &str) -> Result_type<Path_owned_type> {
-    Path_type::New(USERS_FOLDER_PATH)
+    Path_type::new(USERS_FOLDER_PATH)
         .to_owned()
-        .Append(user_name)
+        .append(user_name)
         .ok_or(Error_type::Failed_to_get_user_file_path)
 }
 
@@ -287,9 +288,9 @@ pub async fn create_user<'a>(
 
     // - Write user file.
     let user = User_type::new(
-        user_identifier.As_u16(),
+        user_identifier.as_u16(),
         user_name.to_string(),
-        primary_group.As_u16(),
+        primary_group.as_u16(),
         hash,
         salt,
     );
@@ -299,15 +300,15 @@ pub async fn create_user<'a>(
         Err(error) => Err(Error_type::Failed_to_create_users_directory(error))?,
     }
 
-    let user_file_path = Path_type::New(USERS_FOLDER_PATH)
+    let user_file_path = Path_type::new(USERS_FOLDER_PATH)
         .to_owned()
-        .Append(user_name)
+        .append(user_name)
         .ok_or(Error_type::Failed_to_get_user_file_path)?;
 
     let user_file: File_type<'_> = File_type::open(
         virtual_file_system,
         user_file_path,
-        Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None),
+        Flags_type::new(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None),
     )
     .await
     .map_err(Error_type::Failed_to_open_user_file)?;
@@ -356,15 +357,15 @@ pub async fn change_user_password<'a>(
 
     let hash = hash_password(new_password, &salt);
 
-    let user_file_path = Path_type::New(USERS_FOLDER_PATH)
+    let user_file_path = Path_type::new(USERS_FOLDER_PATH)
         .to_owned()
-        .Append(user_name)
+        .append(user_name)
         .ok_or(Error_type::Failed_to_get_user_file_path)?;
 
     let user_file = File_type::open(
         virtual_file_system,
         user_file_path,
-        Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::TRUNCATE), None),
+        Flags_type::new(Mode_type::READ_WRITE, Some(Open_type::TRUNCATE), None),
     )
     .await
     .map_err(Error_type::Failed_to_open_user_file)?;
@@ -423,7 +424,7 @@ pub async fn change_user_name<'a>(
     let user_file = File_type::open(
         virtual_file_system,
         file_path,
-        Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::TRUNCATE), None),
+        Flags_type::new(Mode_type::READ_WRITE, Some(Open_type::TRUNCATE), None),
     )
     .await
     .map_err(Error_type::Failed_to_open_user_file)?;

@@ -110,17 +110,17 @@ pub struct Xila_file_system_statistics_type {
 impl Xila_file_system_statistics_type {
     pub fn from_statistics(statistics: file_system::Statistics_type) -> Self {
         Self {
-            file_system: statistics.get_file_system().As_inner(),
-            inode: statistics.get_inode().As_u64(),
+            file_system: statistics.get_file_system().as_inner(),
+            inode: statistics.get_inode().as_u64(),
             links: statistics.get_links(),
-            size: statistics.get_size().As_u64(),
+            size: statistics.get_size().as_u64(),
             last_access: statistics.get_last_access().as_u64(),
             last_modification: statistics.get_last_modification().as_u64(),
             last_status_change: statistics.get_last_status_change().as_u64(),
             r#type: statistics.get_type().into(),
-            permissions: statistics.get_permissions().As_u16(),
-            user: statistics.get_user().As_u16(),
-            group: statistics.get_group().As_u16(),
+            permissions: statistics.get_permissions().as_u16(),
+            user: statistics.get_user().as_u16(),
+            group: statistics.get_group().as_u16(),
         }
     }
 

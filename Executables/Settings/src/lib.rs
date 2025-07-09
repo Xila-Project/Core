@@ -10,8 +10,6 @@ use core::num::NonZeroUsize;
 
 use executable::Standard_type;
 
-use crate::settings::Settings_type;
-
 use alloc::string::{String, ToString};
 pub use error::*;
 use file_system::{Flags_type, Mode_type, Open_type};
@@ -43,7 +41,7 @@ impl Settings_executable_type {
         let file = match File_type::open(
             virtual_file_system,
             "/Configuration/Shared/Shortcuts/Settings.json",
-            Flags_type::New(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
+            Flags_type::new(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
         )
         .await
         {

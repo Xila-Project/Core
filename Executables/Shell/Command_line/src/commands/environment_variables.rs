@@ -1,17 +1,17 @@
-use alloc::format;
+pub(crate) use alloc::format;
 
 use crate::Shell_type;
 
 impl Shell_type {
-    pub async fn set_environment_variable(&mut self, Arguments: &[&str]) {
-        if Arguments.len() != 1 {
+    pub async fn set_environment_variable(&mut self, arguments: &[&str]) {
+        if arguments.len() != 1 {
             self.standard
                 .print_error_line("Invalid number of arguments")
                 .await;
             return;
         }
 
-        let (Name, Value) = match Arguments[0].split_once('=') {
+        let (name, value) = match arguments[0].split_once('=') {
             Some((name, value)) => (name, value),
             None => {
                 self.standard.print_error_line("Invalid argument").await;
@@ -20,7 +20,7 @@ impl Shell_type {
         };
 
         if let Err(error) = task::get_instance()
-            .Set_environment_variable(self.standard.get_task(), Name, Value)
+            .set_environment_variable(self.standard.get_task(), name, value)
             .await
         {
             self.standard
@@ -29,18 +29,18 @@ impl Shell_type {
         }
     }
 
-    pub async fn remove_environment_variable(&mut self, Arguments: &[&str]) {
-        if Arguments.len() != 1 {
+    pub async fn remove_environment_variable(&mut self, arguments: &[&str]) {
+        if arguments.len() != 1 {
             self.standard
                 .print_error_line("Invalid number of arguments")
                 .await;
             return;
         }
 
-        let Name = Arguments[0];
+        let name = arguments[0];
 
         if let Err(error) = task::get_instance()
-            .Remove_environment_variable(self.standard.get_task(), Name)
+            .remove_environment_variable(self.standard.get_task(), name)
             .await
         {
             self.standard

@@ -6,7 +6,7 @@ extern crate alloc;
 use alloc::string::ToString;
 use command_line_shell::Shell_executable_type;
 use executable::{Mount_static_executables, Standard_type};
-use file_system::{Create_device, Create_file_system, Memory_device_type, Mode_type};
+use file_system::{create_device, Create_file_system, Memory_device_type, Mode_type};
 use task::Test;
 use users::Group_identifier_type;
 use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
@@ -18,9 +18,9 @@ async fn integration_test() {
 
     let _ = users::initialize();
 
-    let _ = time::initialize(Create_device!(drivers::native::Time_driver_type::new()));
+    let _ = time::initialize(create_device!(drivers::native::Time_driver_type::new()));
 
-    let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
+    let memory_device = create_device!(Memory_device_type::<512>::new(1024 * 512));
 
     little_fs::File_system_type::format(memory_device.clone(), 256).unwrap();
 
@@ -67,7 +67,7 @@ async fn integration_test() {
     .await
     .unwrap();
 
-    let group_identifier = Group_identifier_type::New(1000);
+    let group_identifier = Group_identifier_type::new(1000);
 
     authentication::create_group(virtual_file_system, "alix_anneraud", Some(group_identifier))
         .await
@@ -111,19 +111,19 @@ async fn integration_test() {
     );
 
     task_instance
-        .Set_environment_variable(task, "Paths", "/")
+        .set_environment_variable(task, "Paths", "/")
         .await
         .unwrap();
 
     task_instance
-        .Set_environment_variable(task, "Host", "xila")
+        .set_environment_variable(task, "Host", "xila")
         .await
         .unwrap();
 
     let result = executable::execute("/Binaries/Command_line_shell", "".to_string(), standard)
         .await
         .unwrap()
-        .Join()
+        .join()
         .await;
 
     assert!(result == 0);

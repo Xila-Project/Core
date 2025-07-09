@@ -36,16 +36,16 @@ unsafe impl Send for Environment_type<'_> {}
 unsafe impl Sync for Environment_type<'_> {}
 
 impl Environment_type<'_> {
-    pub fn from_raw_pointer(Raw_pointer: Environment_pointer_type) -> Result_type<Self> {
-        if Raw_pointer.is_null() {
+    pub fn from_raw_pointer(raw_pointer: Environment_pointer_type) -> Result_type<Self> {
+        if raw_pointer.is_null() {
             return Err(Error_type::Invalid_pointer);
         }
 
-        Ok(Self(Raw_pointer as Environment_pointer_type, PhantomData))
+        Ok(Self(raw_pointer as Environment_pointer_type, PhantomData))
     }
 
-    pub fn from_instance(Instance: &Instance_type) -> Result_type<Self> {
-        let instance_pointer = Instance.get_inner_reference().get_inner_instance();
+    pub fn from_instance(instance: &Instance_type) -> Result_type<Self> {
+        let instance_pointer = instance.get_inner_reference().get_inner_instance();
 
         if instance_pointer.is_null() {
             return Err(Error_type::Invalid_pointer);
@@ -61,14 +61,14 @@ impl Environment_type<'_> {
             let custom_data = wasm_runtime_get_custom_data(self.get_instance_pointer())
                 as *const Custom_data_type;
 
-            let Custom_data = if custom_data.is_null() {
+            let custom_data = if custom_data.is_null() {
                 let task = abi::get_instance().get_current_task_identifier();
 
-                let Custom_data = Box::new(Custom_data_type::new(task));
+                let custom_data = Box::new(Custom_data_type::new(task));
 
                 wasm_runtime_set_custom_data(
                     self.get_instance_pointer(),
-                    Box::into_raw(Custom_data) as *mut c_void,
+                    Box::into_raw(custom_data) as *mut c_void,
                 );
 
                 wasm_runtime_get_custom_data(self.get_instance_pointer()) as *const Custom_data_type
@@ -76,7 +76,7 @@ impl Environment_type<'_> {
                 custom_data
             };
 
-            Ok(&*Custom_data)
+            Ok(&*custom_data)
         }
     }
 
@@ -101,23 +101,23 @@ impl Environment_type<'_> {
     ///
     /// This function is unsafe because it is not checked that the address is valid.
     /// Please use `Validate_WASM_pointer` to check the address.
-    pub unsafe fn convert_to_wasm_pointer<T>(&self, Pointer: *const T) -> WASM_pointer_type {
-        wasm_runtime_addr_native_to_app(self.get_instance_pointer(), Pointer as *mut c_void)
+    pub unsafe fn convert_to_wasm_pointer<T>(&self, pointer: *const T) -> WASM_pointer_type {
+        wasm_runtime_addr_native_to_app(self.get_instance_pointer(), pointer as *mut c_void)
             as WASM_pointer_type
     }
 
-    pub fn validate_wasm_pointer(&self, Address: WASM_pointer_type, Size: WASM_usize_type) -> bool {
+    pub fn validate_wasm_pointer(&self, address: WASM_pointer_type, size: WASM_usize_type) -> bool {
         unsafe {
-            wasm_runtime_validate_app_addr(self.get_instance_pointer(), Address as u64, Size as u64)
+            wasm_runtime_validate_app_addr(self.get_instance_pointer(), address as u64, size as u64)
         }
     }
 
-    pub fn validate_native_pointer<T>(&self, Pointer: *const T, Size: u64) -> bool {
+    pub fn validate_native_pointer<T>(&self, pointer: *const T, size: u64) -> bool {
         unsafe {
             wasm_runtime_validate_native_addr(
                 self.get_instance_pointer(),
-                Pointer as *mut c_void,
-                Size,
+                pointer as *mut c_void,
+                size,
             )
         }
     }
@@ -131,8 +131,8 @@ impl Environment_type<'_> {
     ) -> Result_type<()> {
         let mut arguments = Vec::new();
 
-        for Parameter in parameters {
-            arguments.append(&mut Parameter.encode());
+        for parameter in parameters {
+            arguments.append(&mut parameter.encode());
         }
 
         if arguments.is_empty() {
@@ -147,9 +147,9 @@ impl Environment_type<'_> {
                 arguments.as_mut_ptr(),
             )
         } {
-            let Exception_message =
+            let exception_message =
                 unsafe { wasm_runtime_get_exception(self.get_instance_pointer()) };
-            let exception_message = unsafe { CStr::from_ptr(Exception_message) };
+            let exception_message = unsafe { CStr::from_ptr(exception_message) };
             let exception_message =
                 String::from_utf8_lossy(exception_message.to_bytes()).to_string();
 
@@ -161,9 +161,9 @@ impl Environment_type<'_> {
 
     /// Create a new execution environment.
     /// This environment should be initialized with `Initialize_thread_environment` and deinitialized with `Deinitialize_thread_environment`.
-    pub fn create_environment(&self, Stack_size: usize) -> Result_type<Self> {
+    pub fn create_environment(&self, stack_size: usize) -> Result_type<Self> {
         let execution_environment =
-            unsafe { wasm_runtime_create_exec_env(self.get_instance_pointer(), Stack_size as u32) };
+            unsafe { wasm_runtime_create_exec_env(self.get_instance_pointer(), stack_size as u32) };
 
         if execution_environment.is_null() {
             return Err(Error_type::Execution_error(
@@ -174,11 +174,11 @@ impl Environment_type<'_> {
         Ok(Self(execution_environment, PhantomData))
     }
 
-    pub fn set_instruction_count_limit(&self, Limit: Option<u64>) {
+    pub fn set_instruction_count_limit(&self, limit: Option<u64>) {
         unsafe {
             wasm_runtime_set_instruction_count_limit(
                 self.get_inner_reference(),
-                Limit.map(|limit| limit as i32).unwrap_or(-1),
+                limit.map(|limit| limit as i32).unwrap_or(-1),
             );
         }
     }

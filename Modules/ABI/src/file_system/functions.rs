@@ -52,7 +52,7 @@ pub unsafe extern "C" fn Xila_file_system_get_statistics(
         let statistics = Xila_file_system_statistics_type::from_mutable_pointer(statistics)
             .ok_or(Error_type::Invalid_parameter)?;
 
-        let file = file_system::Unique_file_identifier_type::From_raw(file);
+        let file = file_system::Unique_file_identifier_type::from_raw(file);
 
         *statistics = Xila_file_system_statistics_type::from_statistics(
             block_on(get_file_system_instance().get_statistics(file, task_identifier))
@@ -113,9 +113,9 @@ pub unsafe extern "C" fn Xila_file_system_get_access_mode(
             Err(Error_type::Invalid_parameter)?;
         }
 
-        let file = file_system::Unique_file_identifier_type::From_raw(file);
+        let file = file_system::Unique_file_identifier_type::from_raw(file);
 
-        mode.write(block_on(get_file_system_instance().get_mode(file, task_identifier))?.As_u8());
+        mode.write(block_on(get_file_system_instance().get_mode(file, task_identifier))?.as_u8());
 
         Ok(())
     })
@@ -134,7 +134,7 @@ pub extern "C" fn Xila_file_system_close(
     into_u32(move || {
         let task_identifier = context::get_instance().get_current_task_identifier();
 
-        let file = file_system::Unique_file_identifier_type::From_raw(file);
+        let file = file_system::Unique_file_identifier_type::from_raw(file);
 
         block_on(get_file_system_instance().close(file, task_identifier))?;
 
@@ -169,7 +169,7 @@ pub unsafe extern "C" fn Xila_file_system_write_vectored(
 
         let mut current_written = 0;
 
-        let file = file_system::Unique_file_identifier_type::From_raw(file);
+        let file = file_system::Unique_file_identifier_type::from_raw(file);
 
         for (buffer, length) in buffers.iter().zip(buffers_length.iter()) {
             let buffer_slice = core::slice::from_raw_parts(*buffer, *length);
@@ -214,7 +214,7 @@ pub unsafe extern "C" fn Xila_file_system_read_vectored(
 
         let mut current_read = 0;
 
-        let file = file_system::Unique_file_identifier_type::From_raw(file);
+        let file = file_system::Unique_file_identifier_type::from_raw(file);
 
         for (buffer_pointer, buffer_length) in buffers.iter_mut().zip(buffers_length.iter_mut()) {
             let buffer = core::slice::from_raw_parts_mut(*buffer_pointer, *buffer_length);
@@ -255,7 +255,7 @@ pub unsafe extern "C" fn Xila_file_system_read_at_position_vectored(
         let mut current_read = 0;
 
         let file: file_system::Unique_file_identifier_type =
-            file_system::Unique_file_identifier_type::From_raw(file);
+            file_system::Unique_file_identifier_type::from_raw(file);
 
         block_on(get_file_system_instance().set_position(
             file,
@@ -302,7 +302,7 @@ pub unsafe extern "C" fn Xila_file_system_write_at_position_vectored(
         let mut current_written = 0;
 
         let file: file_system::Unique_file_identifier_type =
-            file_system::Unique_file_identifier_type::From_raw(file);
+            file_system::Unique_file_identifier_type::from_raw(file);
 
         block_on(get_file_system_instance().set_position(
             file,
@@ -349,7 +349,7 @@ pub unsafe extern "C" fn Xila_file_system_is_a_terminal(
             Err(Error_type::Invalid_parameter)?;
         }
 
-        let file = file_system::Unique_file_identifier_type::From_raw(file);
+        let file = file_system::Unique_file_identifier_type::from_raw(file);
 
         *is_a_terminal = block_on(get_file_system_instance().is_a_terminal(file, task_identifier))?;
 
@@ -359,9 +359,9 @@ pub unsafe extern "C" fn Xila_file_system_is_a_terminal(
 
 #[no_mangle]
 pub extern "C" fn Xila_file_system_is_stdin(file: Xila_unique_file_identifier_type) -> bool {
-    let file = file_system::Unique_file_identifier_type::From_raw(file);
+    let file = file_system::Unique_file_identifier_type::from_raw(file);
 
-    let (_, file) = file.Split();
+    let (_, file) = file.split();
 
     // Debug: Checking if file is stdin
 
@@ -370,9 +370,9 @@ pub extern "C" fn Xila_file_system_is_stdin(file: Xila_unique_file_identifier_ty
 
 #[no_mangle]
 pub extern "C" fn Xila_file_system_is_stderr(file: Xila_unique_file_identifier_type) -> bool {
-    let file = file_system::Unique_file_identifier_type::From_raw(file);
+    let file = file_system::Unique_file_identifier_type::from_raw(file);
 
-    let (_, file) = file.Split();
+    let (_, file) = file.split();
 
     // Debug: Checking if file is stderr
 
@@ -381,9 +381,9 @@ pub extern "C" fn Xila_file_system_is_stderr(file: Xila_unique_file_identifier_t
 
 #[no_mangle]
 pub extern "C" fn Xila_file_system_is_stdout(file: Xila_unique_file_identifier_type) -> bool {
-    let file = file_system::Unique_file_identifier_type::From_raw(file);
+    let file = file_system::Unique_file_identifier_type::from_raw(file);
 
-    let (_, file) = file.Split();
+    let (_, file) = file.split();
 
     // Debug: Checking if file is stdout
 
@@ -408,11 +408,11 @@ pub unsafe extern "C" fn Xila_file_system_open(
             .to_str()
             .map_err(|_| Error_type::Invalid_parameter)?;
 
-        let mode = Mode_type::From_u8(mode);
-        let open = Open_type::From_u8(open);
-        let status = Status_type::From_u8(status);
+        let mode = Mode_type::from_u8(mode);
+        let open = Open_type::from_u8(open);
+        let status = Status_type::from_u8(status);
 
-        let flags = Flags_type::New(mode, Some(open), Some(status));
+        let flags = Flags_type::new(mode, Some(open), Some(status));
 
         // Debug: Opening file
 
@@ -420,7 +420,7 @@ pub unsafe extern "C" fn Xila_file_system_open(
 
         *file = block_on(get_file_system_instance().open(&path, flags, task))
             .expect("Failed to open file")
-            .Into_inner();
+            .into_inner();
 
         Ok(())
     })
@@ -484,7 +484,7 @@ pub extern "C" fn Xila_file_system_flush(
     into_u32(move || {
         let task = context::get_instance().get_current_task_identifier();
 
-        let file = file_system::Unique_file_identifier_type::From_raw(file);
+        let file = file_system::Unique_file_identifier_type::from_raw(file);
 
         block_on(get_file_system_instance().flush(file, task))?;
 
@@ -529,11 +529,11 @@ pub unsafe extern "C" fn Xila_file_system_set_position(
 
         // Debug: Setting position
 
-        let file = file_system::Unique_file_identifier_type::From_raw(file);
+        let file = file_system::Unique_file_identifier_type::from_raw(file);
 
         *position =
             block_on(get_file_system_instance().set_position(file, &current_position, task))?
-                .As_u64();
+                .as_u64();
 
         Ok(())
     })
@@ -644,7 +644,7 @@ pub extern "C" fn Xila_file_system_truncate(
     into_u32(move || {
         let _task = context::get_instance().get_current_task_identifier();
 
-        let _file = file_system::Unique_file_identifier_type::From_raw(_file);
+        let _file = file_system::Unique_file_identifier_type::from_raw(_file);
 
         todo!();
     })

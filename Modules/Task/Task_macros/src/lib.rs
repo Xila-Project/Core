@@ -133,7 +133,7 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
         fn #Function_name() {
             #Input_function
 
-            static mut __Spawner : usize = 0;
+            static mut __SPAWNER : usize = 0;
 
             unsafe {
                 let __EXECUTOR = #Executor;
@@ -142,14 +142,14 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                     let Manager = #Task_path::initialize();
 
                     unsafe {
-                        __Spawner = Manager.register_spawner(Spawner).expect("Failed to register spawner");
+                        __SPAWNER = Manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
                     #Task_path::futures::block_on(async move {
-                        Manager.Spawn(
+                        Manager.spawn(
                             #Task_path::Manager_type::ROOT_TASK_IDENTIFIER,
                             #Function_name_string,
-                            Some(__Spawner),
+                            Some(__SPAWNER),
                             async move |_task| {
                                 __inner().await;
                                 __executor.stop();
@@ -159,7 +159,7 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                 });
             }
             unsafe {
-                #Task_path::get_instance().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
+                #Task_path::get_instance().unregister_spawner(__SPAWNER).expect("Failed to unregister spawner");
             }
 
         }
@@ -265,7 +265,7 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
         fn #Function_name() {
             #Input_function
 
-            static mut __Spawner : usize = 0;
+            static mut __SPAWNER : usize = 0;
 
             unsafe {
                 let __EXECUTOR : &'static mut _ = #Executor_expression;
@@ -274,14 +274,14 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                     let Manager = #Task_path::initialize();
 
                     unsafe {
-                        __Spawner = Manager.register_spawner(Spawner).expect("Failed to register spawner");
+                        __SPAWNER = Manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
                     #Task_path::futures::block_on(async move {
-                        Manager.Spawn(
+                        Manager.spawn(
                             #Task_path::Manager_type::ROOT_TASK_IDENTIFIER,
                             #Function_name_string,
-                            Some(__Spawner),
+                            Some(__SPAWNER),
                             async move |_task| {
                                 __inner().await;
                                 __EXECUTOR.stop();
@@ -291,7 +291,7 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                 });
             }
             unsafe {
-                #Task_path::get_instance().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
+                #Task_path::get_instance().unregister_spawner(__SPAWNER).expect("Failed to unregister spawner");
             }
         }
     }

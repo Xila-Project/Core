@@ -66,7 +66,7 @@ impl Settings_type {
             let event = match self.window.pop_event() {
                 Some(event) => event,
                 None => {
-                    task::Manager_type::Sleep(Duration::from_millis(50)).await;
+                    task::Manager_type::sleep(Duration::from_millis(50)).await;
                     continue;
                 }
             };

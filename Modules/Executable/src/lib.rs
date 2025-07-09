@@ -20,27 +20,27 @@ use virtual_file_system::File_type;
 
 use file_system::{Path_type, Statistics_type};
 
-async fn is_execute_allowed(Statistics: &Statistics_type, User: User_identifier_type) -> bool {
+async fn is_execute_allowed(statistics: &Statistics_type, user: User_identifier_type) -> bool {
     // - Check if the file can executed by anyone
-    if Statistics.get_permissions().get_others().get_execute() {
+    if statistics.get_permissions().get_others().get_execute() {
         return true;
     }
 
     // - Check if the user is the owner and has the execute permission
-    if User == User_identifier_type::ROOT {
+    if user == User_identifier_type::ROOT {
         return true;
     }
-    if (Statistics.get_user() == User) && Statistics.get_permissions().get_user().get_execute() {
+    if (statistics.get_user() == user) && statistics.get_permissions().get_user().get_execute() {
         return true;
     }
 
     // - Check if the user is in the group
     let is_in_group = users::get_instance()
-        .is_in_group(User, Statistics.get_group())
+        .is_in_group(user, statistics.get_group())
         .await;
 
     // - Check if the user is in the group
-    if (is_in_group) && Statistics.get_permissions().get_group().get_execute() {
+    if (is_in_group) && statistics.get_permissions().get_group().get_execute() {
         return true;
     }
 
@@ -59,15 +59,15 @@ async fn get_overridden_user(
         return Ok(None);
     }
 
-    let Current_user = task::get_instance().get_user(task).await?;
+    let current_user = task::get_instance().get_user(task).await?;
 
-    let New_user = statistics.get_user();
+    let new_user = statistics.get_user();
 
-    if Current_user != users::User_identifier_type::ROOT || New_user != Current_user {
+    if current_user != users::User_identifier_type::ROOT || new_user != current_user {
         return Err(Error_type::Permission_denied);
     }
 
-    Ok(Some(New_user))
+    Ok(Some(new_user))
 }
 
 pub async fn execute(
@@ -77,9 +77,9 @@ pub async fn execute(
 ) -> Result_type<Join_handle_type<isize>> {
     let task_instance = task::get_instance();
 
-    let Task = task_instance.get_current_task_identifier().await;
+    let task = task_instance.get_current_task_identifier().await;
 
-    let File = File_type::open(
+    let file = File_type::open(
         virtual_file_system::get_instance(),
         &path,
         file_system::Mode_type::READ_WRITE.into(),
@@ -88,8 +88,8 @@ pub async fn execute(
 
     // - Check the executable bit
     if !is_execute_allowed(
-        &File.get_statistics().await?,
-        task_instance.get_user(Task).await?,
+        &file.get_statistics().await?,
+        task_instance.get_user(task).await?,
     )
     .await
     {
@@ -97,37 +97,37 @@ pub async fn execute(
     }
 
     // - Check if the user can override the user identifier
-    let New_user = get_overridden_user(&File.get_statistics().await?, Task).await?;
+    let new_user = get_overridden_user(&file.get_statistics().await?, task).await?;
 
-    let File_name = path
+    let file_name = path
         .as_ref()
         .get_file_name()
         .ok_or(file_system::Error_type::Invalid_path)?;
 
-    let mut Read_data = Read_data_type::New_default();
-    File.read(&mut Read_data).await?;
-    let read_data: Read_data_type = Read_data.try_into().unwrap();
+    let mut read_data = Read_data_type::new_default();
+    file.read(&mut read_data).await?;
+    let read_data: Read_data_type = read_data.try_into().unwrap();
 
-    let Main = read_data
+    let main = read_data
         .get_main()
         .ok_or(Error_type::Failed_to_get_main_function)?;
 
-    let (Join_handle, _) = task_instance
-        .Spawn(Task, File_name, None, async move |Task| {
-            if let Some(new_user) = New_user {
-                task::get_instance().set_user(Task, new_user).await.unwrap();
+    let (join_handle, _) = task_instance
+        .spawn(task, file_name, None, async move |task| {
+            if let Some(new_user) = new_user {
+                task::get_instance().set_user(task, new_user).await.unwrap();
             }
 
-            let Standard = standard.transfert(Task).await.unwrap();
+            let standard = standard.transfert(task).await.unwrap();
 
-            match Main(Standard, inputs).await {
+            match main(standard, inputs).await {
                 Ok(_) => 0_isize,
                 Err(error) => -(error.get() as isize),
             }
         })
         .await?;
 
-    Ok(Join_handle)
+    Ok(join_handle)
 }
 
 #[cfg(test)]
@@ -140,22 +140,22 @@ mod tests {
 
     #[Test]
     async fn is_user_allowed_test() {
-        let Statistics = Statistics_type::new(
-            file_system::File_system_identifier_type::New(0),
-            file_system::Inode_type::New(0),
+        let statistics = Statistics_type::new(
+            file_system::File_system_identifier_type::new(0),
+            file_system::Inode_type::new(0),
             1,
             0_usize.into(),
             Time_type::new(0),
             Time_type::new(0),
             Time_type::new(0),
             file_system::Type_type::File,
-            file_system::Permissions_type::From_octal(0o777).unwrap(),
+            file_system::Permissions_type::from_octal(0o777).unwrap(),
             users::User_identifier_type::ROOT,
             users::Group_identifier_type::ROOT,
         );
 
-        assert!(is_execute_allowed(&Statistics, users::User_identifier_type::ROOT).await);
-        assert!(is_execute_allowed(&Statistics, users::User_identifier_type::ROOT).await);
-        assert!(is_execute_allowed(&Statistics, users::User_identifier_type::ROOT).await);
+        assert!(is_execute_allowed(&statistics, users::User_identifier_type::ROOT).await);
+        assert!(is_execute_allowed(&statistics, users::User_identifier_type::ROOT).await);
+        assert!(is_execute_allowed(&statistics, users::User_identifier_type::ROOT).await);
     }
 }

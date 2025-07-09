@@ -170,7 +170,7 @@ pub extern "C" fn Xila_memory_deallocate(pointer: *mut c_void) {
     };
 
     unsafe {
-        memory::get_instance().Deallocate(
+        memory::get_instance().deallocate(
             NonNull::new(pointer as *mut u8).expect("Failed to deallocate memory, pointer is null"),
             layout,
         );
@@ -249,7 +249,7 @@ pub unsafe extern "C" fn Xila_memory_reallocate(pointer: *mut c_void, size: usiz
             new_layout
         );
 
-        let allocated = memory::get_instance().Reallocate(pointer, old_layout, new_layout)?;
+        let allocated = memory::get_instance().reallocate(pointer, old_layout, new_layout)?;
 
         allocation_table.insert(allocated.as_ptr() as usize, new_layout);
 
@@ -316,9 +316,9 @@ pub unsafe extern "C" fn Xila_memory_allocate(
         let layout = Layout_type::from_size_align(size, alignment)
             .expect("Failed to create layout for memory allocation");
 
-        let capabilities = Capabilities_type::From_u8(capabilities);
+        let capabilities = Capabilities_type::from_u8(capabilities);
 
-        let result = memory::get_instance().Allocate(capabilities, layout);
+        let result = memory::get_instance().allocate(capabilities, layout);
 
         if result.is_some() {
             Write_allocations_table!().insert(result.unwrap().as_ptr() as usize, layout);
@@ -381,7 +381,7 @@ pub extern "C" fn Xila_memory_get_page_size() -> usize {
 /// ```
 #[no_mangle]
 pub extern "C" fn Xila_memory_flush_data_cache() {
-    memory::get_instance().Flush_data_cache();
+    memory::get_instance().flush_data_cache();
 }
 
 /// Flushes the instruction cache for a specific memory region.
@@ -416,7 +416,7 @@ pub extern "C" fn Xila_memory_flush_data_cache() {
 pub extern "C" fn Xila_memory_flush_instruction_cache(_address: *mut c_void, _size: usize) {
     let address = NonNull::new(_address as *mut u8).expect("Failed to flush instruction cache");
 
-    memory::get_instance().Flush_instruction_cache(address, _size);
+    memory::get_instance().flush_instruction_cache(address, _size);
 }
 
 #[cfg(test)]

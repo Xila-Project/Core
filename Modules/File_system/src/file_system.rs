@@ -177,7 +177,7 @@ pub trait File_system_traits: Send + Sync {
     ///
     /// # Arguments
     ///
-    /// * `File` - File identifier to close
+    /// * `file` - File identifier to close
     ///
     /// # Returns
     ///
@@ -188,7 +188,7 @@ pub trait File_system_traits: Send + Sync {
     ///
     /// * [`Error_type::Invalid_identifier`] - File identifier is invalid
     /// * [`Error_type::Input_output`] - I/O error during close operation
-    fn close(&self, File: Local_file_identifier_type) -> Result_type<()>;
+    fn close(&self, file: Local_file_identifier_type) -> Result_type<()>;
 
     /// Close all files opened by a specific task.
     ///
@@ -197,13 +197,13 @@ pub trait File_system_traits: Send + Sync {
     ///
     /// # Arguments
     ///
-    /// * `Task` - Task identifier whose files should be closed
+    /// * `task` - Task identifier whose files should be closed
     ///
     /// # Returns
     ///
     /// * `Ok(())` - All files successfully closed
     /// * `Err(Error_type)` - Error during cleanup
-    fn close_all(&self, Task: Task_identifier_type) -> Result_type<()>;
+    fn close_all(&self, task: Task_identifier_type) -> Result_type<()>;
 
     /// Create a duplicate file identifier for the same file.
     ///
@@ -263,7 +263,7 @@ pub trait File_system_traits: Send + Sync {
     ///
     /// # Arguments
     ///
-    /// * `Path` - Path to the file or directory to remove
+    /// * `path` - Path to the file or directory to remove
     ///
     /// # Returns
     ///
@@ -276,7 +276,7 @@ pub trait File_system_traits: Send + Sync {
     /// * [`Error_type::Permission_denied`] - Insufficient permissions
     /// * [`Error_type::Directory_not_empty`] - Directory contains files
     /// * [`Error_type::Ressource_busy`] - File is currently in use
-    fn remove(&self, Path: &Path_type) -> Result_type<()>;
+    fn remove(&self, path: &Path_type) -> Result_type<()>;
     // - - File operations
 
     /// Read data from an open file.
@@ -343,8 +343,8 @@ pub trait File_system_traits: Send + Sync {
     ///
     /// # Arguments
     ///
-    /// * `Source` - Current path of the file or directory
-    /// * `Destination` - New path for the file or directory
+    /// * `source` - Current path of the file or directory
+    /// * `destination` - New path for the file or directory
     ///
     /// # Returns
     ///
@@ -356,7 +356,7 @@ pub trait File_system_traits: Send + Sync {
     /// * [`Error_type::Not_found`] - Source file doesn't exist
     /// * [`Error_type::Already_exists`] - Destination already exists
     /// * [`Error_type::Permission_denied`] - Insufficient permissions
-    fn rename(&self, Source: &Path_type, Destination: &Path_type) -> Result_type<()>;
+    fn rename(&self, source: &Path_type, destination: &Path_type) -> Result_type<()>;
 
     /// Set the position of the file.
     ///
@@ -368,7 +368,7 @@ pub trait File_system_traits: Send + Sync {
         position: &Position_type,
     ) -> Result_type<Size_type>;
 
-    fn flush(&self, File: Local_file_identifier_type) -> Result_type<()>;
+    fn flush(&self, file: Local_file_identifier_type) -> Result_type<()>;
 
     // - Directory
 
@@ -386,7 +386,7 @@ pub trait File_system_traits: Send + Sync {
         task: Task_identifier_type,
     ) -> Result_type<Local_file_identifier_type>;
 
-    fn read_directory(&self, File: Local_file_identifier_type) -> Result_type<Option<Entry_type>>;
+    fn read_directory(&self, file: Local_file_identifier_type) -> Result_type<Option<Entry_type>>;
 
     fn set_position_directory(
         &self,
@@ -394,24 +394,24 @@ pub trait File_system_traits: Send + Sync {
         position: Size_type,
     ) -> Result_type<()>;
 
-    fn get_position_directory(&self, File: Local_file_identifier_type) -> Result_type<Size_type>;
+    fn get_position_directory(&self, file: Local_file_identifier_type) -> Result_type<Size_type>;
 
-    fn rewind_directory(&self, File: Local_file_identifier_type) -> Result_type<()>;
+    fn rewind_directory(&self, file: Local_file_identifier_type) -> Result_type<()>;
 
-    fn close_directory(&self, File: Local_file_identifier_type) -> Result_type<()>;
+    fn close_directory(&self, file: Local_file_identifier_type) -> Result_type<()>;
 
     // - Metadata
 
-    fn get_metadata(&self, File: Local_file_identifier_type) -> Result_type<Metadata_type>;
+    fn get_metadata(&self, file: Local_file_identifier_type) -> Result_type<Metadata_type>;
 
-    fn set_metadata_from_path(&self, Path: &Path_type, Metadata: &Metadata_type)
+    fn set_metadata_from_path(&self, path: &Path_type, metadata: &Metadata_type)
         -> Result_type<()>;
 
-    fn get_metadata_from_path(&self, Path: &Path_type) -> Result_type<Metadata_type>;
+    fn get_metadata_from_path(&self, path: &Path_type) -> Result_type<Metadata_type>;
 
-    fn get_statistics(&self, File: Local_file_identifier_type) -> Result_type<Statistics_type>;
+    fn get_statistics(&self, file: Local_file_identifier_type) -> Result_type<Statistics_type>;
 
-    fn get_mode(&self, File: Local_file_identifier_type) -> Result_type<Mode_type>;
+    fn get_mode(&self, file: Local_file_identifier_type) -> Result_type<Mode_type>;
 }
 
 pub fn get_new_file_identifier<T>(
@@ -421,10 +421,10 @@ pub fn get_new_file_identifier<T>(
     map: &BTreeMap<Local_file_identifier_type, T>,
 ) -> Result_type<Local_file_identifier_type> {
     let start = start.unwrap_or(File_identifier_type::MINIMUM);
-    let mut start = Local_file_identifier_type::New(task, start);
+    let mut start = Local_file_identifier_type::new(task, start);
 
-    let End = end.unwrap_or(File_identifier_type::MAXIMUM);
-    let end = Local_file_identifier_type::New(task, End);
+    let end_value = end.unwrap_or(File_identifier_type::MAXIMUM);
+    let end = Local_file_identifier_type::new(task, end_value);
 
     while start < end {
         if !map.contains_key(&start) {
@@ -437,10 +437,10 @@ pub fn get_new_file_identifier<T>(
     Err(Error_type::Too_many_open_files)
 }
 
-pub fn get_new_inode<T>(Map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type> {
+pub fn get_new_inode<T>(map: &BTreeMap<Inode_type, T>) -> Result_type<Inode_type> {
     let mut inode = Inode_type::from(0);
 
-    while Map.contains_key(&inode) {
+    while map.contains_key(&inode) {
         inode += 1;
     }
 
@@ -459,19 +459,19 @@ pub mod tests {
         Path_type::ROOT.to_owned()
     }
 
-    pub async fn test_open_close_delete(File_system: impl File_system_traits) {
+    pub async fn test_open_close_delete(file_system: impl File_system_traits) {
         let task = task::get_instance().get_current_task_identifier().await;
 
-        let Path = get_test_path().Append("Test_open_close_delete").unwrap();
+        let path = get_test_path().append("Test_open_close_delete").unwrap();
 
-        let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
+        let flags = Flags_type::new(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
         // - Open
-        let File = File_system
+        let file = file_system
             .open(
                 task,
-                &Path,
-                Flags,
+                &path,
+                flags,
                 Time_type::new(123),
                 User_identifier_type::ROOT,
                 Group_identifier_type::ROOT,
@@ -479,25 +479,25 @@ pub mod tests {
             .unwrap();
 
         // - Close
-        File_system.close(File).unwrap();
+        file_system.close(file).unwrap();
 
         // - Delete
-        File_system.remove(&Path).unwrap();
+        file_system.remove(&path).unwrap();
     }
 
-    pub async fn test_read_write(File_system: impl File_system_traits) {
+    pub async fn test_read_write(file_system: impl File_system_traits) {
         let task = task::get_instance().get_current_task_identifier().await;
 
-        let Path = get_test_path().Append("Test_read_write").unwrap();
+        let path = get_test_path().append("Test_read_write").unwrap();
 
-        let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
+        let flags = Flags_type::new(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
         // - Open
-        let File = File_system
+        let file = file_system
             .open(
                 task,
-                &Path,
-                Flags,
+                &path,
+                flags,
                 Time_type::new(123),
                 User_identifier_type::ROOT,
                 Group_identifier_type::ROOT,
@@ -505,45 +505,45 @@ pub mod tests {
             .unwrap();
 
         // - Write
-        let Buffer = [0x01, 0x02, 0x03];
-        let size = File_system
-            .write(File, &Buffer, Time_type::new(123))
+        let buffer = [0x01, 0x02, 0x03];
+        let size = file_system
+            .write(file, &buffer, Time_type::new(123))
             .unwrap();
 
-        assert_eq!(size, Size_type::from(Buffer.len()));
-        File_system
-            .set_position(File, &Position_type::Start(0))
+        assert_eq!(size, Size_type::from(buffer.len()));
+        file_system
+            .set_position(file, &Position_type::Start(0))
             .unwrap();
 
         // - Read
-        let mut Buffer_read = [0; 3];
-        let size = File_system
-            .read(File, &mut Buffer_read, Time_type::new(123))
+        let mut buffer_read = [0; 3];
+        let size = file_system
+            .read(file, &mut buffer_read, Time_type::new(123))
             .unwrap();
-        assert_eq!(Buffer, Buffer_read);
-        assert_eq!(size, Size_type::from(Buffer.len()));
+        assert_eq!(buffer, buffer_read);
+        assert_eq!(size, Size_type::from(buffer.len()));
 
         // - Close
-        File_system.close(File).unwrap();
+        file_system.close(file).unwrap();
 
         // - Delete
-        File_system.remove(&Path).unwrap();
+        file_system.remove(&path).unwrap();
     }
 
-    pub async fn test_move(File_system: impl File_system_traits) {
+    pub async fn test_move(file_system: impl File_system_traits) {
         let task = task::get_instance().get_current_task_identifier().await;
 
-        let Path = get_test_path().Append("Test_move").unwrap();
-        let path_destination = get_test_path().Append("Test_move_destination").unwrap();
+        let path = get_test_path().append("Test_move").unwrap();
+        let path_destination = get_test_path().append("Test_move_destination").unwrap();
 
-        let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
+        let flags = Flags_type::new(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
         // - Open
-        let File = File_system
+        let file = file_system
             .open(
                 task,
-                &Path,
-                Flags,
+                &path,
+                flags,
                 Time_type::new(123),
                 User_identifier_type::ROOT,
                 Group_identifier_type::ROOT,
@@ -551,19 +551,19 @@ pub mod tests {
             .unwrap();
 
         // - Write
-        let Buffer = [0x01, 0x02, 0x03];
-        let size = File_system
-            .write(File, &Buffer, Time_type::new(123))
+        let buffer = [0x01, 0x02, 0x03];
+        let size = file_system
+            .write(file, &buffer, Time_type::new(123))
             .unwrap();
-        assert_eq!(size, Size_type::from(Buffer.len()));
+        assert_eq!(size, Size_type::from(buffer.len()));
 
-        File_system.close(File).unwrap();
+        file_system.close(file).unwrap();
 
         // - Move
-        File_system.rename(&Path, &path_destination).unwrap();
+        file_system.rename(&path, &path_destination).unwrap();
 
         // - Open
-        let File = File_system
+        let file = file_system
             .open(
                 task,
                 &path_destination,
@@ -575,33 +575,33 @@ pub mod tests {
             .unwrap();
 
         // - Read
-        let mut Buffer_read = [0; 3];
-        let size = File_system
-            .read(File, &mut Buffer_read, Time_type::new(123))
+        let mut buffer_read = [0; 3];
+        let size = file_system
+            .read(file, &mut buffer_read, Time_type::new(123))
             .unwrap();
-        assert_eq!(size, Size_type::from(Buffer.len()));
-        assert_eq!(Buffer, Buffer_read);
+        assert_eq!(size, Size_type::from(buffer.len()));
+        assert_eq!(buffer, buffer_read);
 
         // - Close
-        File_system.close(File).unwrap();
+        file_system.close(file).unwrap();
 
         // - Delete
-        File_system.remove(&path_destination).unwrap();
+        file_system.remove(&path_destination).unwrap();
     }
 
-    pub async fn test_set_position(File_system: impl File_system_traits) {
+    pub async fn test_set_position(file_system: impl File_system_traits) {
         let task = task::get_instance().get_current_task_identifier().await;
 
-        let Path = get_test_path().Append("Test_set_position").unwrap();
+        let path = get_test_path().append("Test_set_position").unwrap();
 
-        let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
+        let flags = Flags_type::new(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
         // - Open
-        let File = File_system
+        let file = file_system
             .open(
                 task,
-                &Path,
-                Flags,
+                &path,
+                flags,
                 Time_type::new(123),
                 User_identifier_type::ROOT,
                 Group_identifier_type::ROOT,
@@ -609,263 +609,263 @@ pub mod tests {
             .unwrap();
 
         // - Write
-        let Buffer = [0x01, 0x02, 0x03];
-        let size = File_system
-            .write(File, &Buffer, Time_type::new(123))
+        let buffer = [0x01, 0x02, 0x03];
+        let size = file_system
+            .write(file, &buffer, Time_type::new(123))
             .unwrap();
-        assert_eq!(Buffer.len(), size.into());
+        assert_eq!(buffer.len(), size.into());
 
         // - Set position
-        let Position = Position_type::Start(0);
-        let size = File_system.set_position(File, &Position).unwrap();
+        let position = Position_type::Start(0);
+        let size = file_system.set_position(file, &position).unwrap();
         assert_eq!(
             size,
-            File_system
-                .set_position(File, &Position_type::Current(0))
+            file_system
+                .set_position(file, &Position_type::Current(0))
                 .unwrap()
         );
 
         // - Read
-        let mut Buffer_read = [0; 3];
-        let size = File_system
-            .read(File, &mut Buffer_read, Time_type::new(123))
+        let mut buffer_read = [0; 3];
+        let size = file_system
+            .read(file, &mut buffer_read, Time_type::new(123))
             .unwrap();
-        assert_eq!(Buffer, Buffer_read);
-        assert_eq!(Buffer.len(), size.into());
+        assert_eq!(buffer, buffer_read);
+        assert_eq!(buffer.len(), size.into());
 
         // - Close
-        File_system.close(File).unwrap();
+        file_system.close(file).unwrap();
 
         // - Delete
-        File_system.remove(&Path).unwrap();
+        file_system.remove(&path).unwrap();
     }
 
-    pub async fn test_flush(File_system: impl File_system_traits) {
+    pub async fn test_flush(file_system: impl File_system_traits) {
         let task = task::get_instance().get_current_task_identifier().await;
 
-        let Path = get_test_path().Append("Test_flush").unwrap();
+        let path = get_test_path().append("Test_flush").unwrap();
 
-        let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
+        let flags = Flags_type::new(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
-        let File = File_system
+        let file = file_system
             .open(
                 task,
-                &Path,
-                Flags,
+                &path,
+                flags,
                 Time_type::new(123),
                 User_identifier_type::ROOT,
                 Group_identifier_type::ROOT,
             )
             .unwrap();
 
-        let Buffer = [0x01, 0x02, 0x03];
-        let size = File_system
-            .write(File, &Buffer, Time_type::new(123))
+        let buffer = [0x01, 0x02, 0x03];
+        let size = file_system
+            .write(file, &buffer, Time_type::new(123))
             .unwrap();
-        assert_eq!(size, Size_type::from(Buffer.len()));
+        assert_eq!(size, Size_type::from(buffer.len()));
 
-        File_system.flush(File).unwrap();
+        file_system.flush(file).unwrap();
 
-        File_system.close(File).unwrap();
+        file_system.close(file).unwrap();
 
-        File_system.remove(&Path).unwrap();
+        file_system.remove(&path).unwrap();
     }
 
-    pub async fn test_set_get_metadata(File_system: impl File_system_traits) {
+    pub async fn test_set_get_metadata(file_system: impl File_system_traits) {
         let task = task::get_instance().get_current_task_identifier().await;
 
-        let Path = get_test_path().Append("Test_set_owner").unwrap();
+        let path = get_test_path().append("Test_set_owner").unwrap();
 
-        let Flags = Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
+        let flags = Flags_type::new(Mode_type::READ_WRITE, Some(Open_type::CREATE_ONLY), None);
 
-        let File = File_system
+        let file = file_system
             .open(
                 task,
-                &Path,
-                Flags,
+                &path,
+                flags,
                 Time_type::new(123),
                 User_identifier_type::ROOT,
                 Group_identifier_type::ROOT,
             )
             .unwrap();
 
-        let Time = Time_type::new(123);
+        let time = Time_type::new(123);
 
-        let Metadata = Metadata_type::get_default(
+        let metadata = Metadata_type::get_default(
             Type_type::File,
-            Time,
+            time,
             User_identifier_type::ROOT,
             Group_identifier_type::ROOT,
         )
         .unwrap();
 
-        File_system
-            .set_metadata_from_path(&Path, &Metadata)
+        file_system
+            .set_metadata_from_path(&path, &metadata)
             .unwrap();
 
-        let Metadata_read = File_system.get_metadata_from_path(&Path).unwrap();
+        let metadata_read = file_system.get_metadata_from_path(&path).unwrap();
 
-        assert_eq!(Metadata, Metadata_read);
+        assert_eq!(metadata, metadata_read);
 
-        File_system.close(File).unwrap();
+        file_system.close(file).unwrap();
 
-        File_system.remove(&Path).unwrap();
+        file_system.remove(&path).unwrap();
     }
 
-    pub async fn test_read_directory(File_system: impl File_system_traits) {
+    pub async fn test_read_directory(file_system: impl File_system_traits) {
         let task = task::get_instance().get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
-            let flags = Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
-            let file = File_system
+            let flags = Flags_type::new(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
+            let file = file_system
                 .open(
                     task,
-                    Path_type::From_str(&format!("/Test{i}")),
+                    Path_type::from_str(&format!("/Test{i}")),
                     flags,
                     Time_type::new(123),
                     User_identifier_type::ROOT,
                     Group_identifier_type::ROOT,
                 )
                 .unwrap();
-            File_system.close(file).unwrap();
+            file_system.close(file).unwrap();
         }
 
-        let Path = Path_type::From_str("/");
-        let directory = File_system.open_directory(Path, task).unwrap();
+        let path = Path_type::from_str("/");
+        let directory = file_system.open_directory(path, task).unwrap();
 
-        let Current_directory = File_system.read_directory(directory).unwrap().unwrap();
-        assert_eq!(*Current_directory.get_name(), ".");
-        assert_eq!(Current_directory.get_type(), Type_type::Directory);
+        let current_directory = file_system.read_directory(directory).unwrap().unwrap();
+        assert_eq!(*current_directory.get_name(), ".");
+        assert_eq!(current_directory.get_type(), Type_type::Directory);
 
-        let Parent_directory = File_system.read_directory(directory).unwrap().unwrap();
-        assert_eq!(*Parent_directory.get_name(), "..");
-        assert_eq!(Parent_directory.get_type(), Type_type::Directory);
+        let parent_directory = file_system.read_directory(directory).unwrap().unwrap();
+        assert_eq!(*parent_directory.get_name(), "..");
+        assert_eq!(parent_directory.get_type(), Type_type::Directory);
 
         for i in 0..10 {
-            let entry = File_system.read_directory(directory).unwrap().unwrap();
+            let entry = file_system.read_directory(directory).unwrap().unwrap();
 
             assert_eq!(*entry.get_name(), format!("Test{i}"));
             assert_eq!(entry.get_type(), Type_type::File);
         }
 
-        File_system.close_directory(directory).unwrap();
+        file_system.close_directory(directory).unwrap();
     }
 
-    pub async fn test_set_position_directory(File_system: impl File_system_traits) {
+    pub async fn test_set_position_directory(file_system: impl File_system_traits) {
         let task = task::get_instance().get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
-            let flags = Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
-            let file = File_system
+            let flags = Flags_type::new(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
+            let file = file_system
                 .open(
                     task,
-                    Path_type::From_str(&format!("/Test{i}")),
+                    Path_type::from_str(&format!("/Test{i}")),
                     flags,
                     Time_type::new(123),
                     User_identifier_type::ROOT,
                     Group_identifier_type::ROOT,
                 )
                 .unwrap();
-            File_system.close(file).unwrap();
+            file_system.close(file).unwrap();
         }
 
-        let Directory = File_system.open_directory(Path_type::ROOT, task).unwrap();
+        let directory = file_system.open_directory(Path_type::ROOT, task).unwrap();
 
-        let Current_directory = File_system.read_directory(Directory).unwrap().unwrap();
-        assert_eq!(*Current_directory.get_name(), ".");
-        assert_eq!(Current_directory.get_type(), Type_type::Directory);
+        let current_directory = file_system.read_directory(directory).unwrap().unwrap();
+        assert_eq!(*current_directory.get_name(), ".");
+        assert_eq!(current_directory.get_type(), Type_type::Directory);
 
-        let Parent_directory = File_system.read_directory(Directory).unwrap().unwrap();
-        assert_eq!(*Parent_directory.get_name(), "..");
-        assert_eq!(Parent_directory.get_type(), Type_type::Directory);
+        let parent_directory = file_system.read_directory(directory).unwrap().unwrap();
+        assert_eq!(*parent_directory.get_name(), "..");
+        assert_eq!(parent_directory.get_type(), Type_type::Directory);
 
-        let Position = File_system.get_position_directory(Directory).unwrap();
+        let position = file_system.get_position_directory(directory).unwrap();
 
         for i in 0..10 {
-            let entry = File_system.read_directory(Directory).unwrap().unwrap();
+            let entry = file_system.read_directory(directory).unwrap().unwrap();
 
             assert_eq!(*entry.get_name(), format!("Test{i}"));
             assert_eq!(entry.get_type(), Type_type::File);
         }
 
-        File_system
-            .set_position_directory(Directory, Position)
+        file_system
+            .set_position_directory(directory, position)
             .unwrap();
 
         for i in 0..10 {
-            let entry = File_system.read_directory(Directory).unwrap().unwrap();
+            let entry = file_system.read_directory(directory).unwrap().unwrap();
 
             assert_eq!(*entry.get_name(), format!("Test{i}"));
             assert_eq!(entry.get_type(), Type_type::File);
         }
     }
 
-    pub async fn test_rewind_directory(File_system: impl File_system_traits) {
+    pub async fn test_rewind_directory(file_system: impl File_system_traits) {
         let task = task::get_instance().get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
-            let flags = Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
-            let file = File_system
+            let flags = Flags_type::new(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None);
+            let file = file_system
                 .open(
                     task,
-                    Path_type::From_str(&format!("/Test{i}")),
+                    Path_type::from_str(&format!("/Test{i}")),
                     flags,
                     Time_type::new(123),
                     User_identifier_type::ROOT,
                     Group_identifier_type::ROOT,
                 )
                 .unwrap();
-            File_system.close(file).unwrap();
+            file_system.close(file).unwrap();
         }
 
-        let Directory = File_system.open_directory(Path_type::ROOT, task).unwrap();
+        let directory = file_system.open_directory(Path_type::ROOT, task).unwrap();
 
-        let Current_directory = File_system.read_directory(Directory).unwrap().unwrap();
-        assert_eq!(*Current_directory.get_name(), ".");
-        assert_eq!(Current_directory.get_type(), Type_type::Directory);
+        let current_directory = file_system.read_directory(directory).unwrap().unwrap();
+        assert_eq!(*current_directory.get_name(), ".");
+        assert_eq!(current_directory.get_type(), Type_type::Directory);
 
-        let Parent_directory = File_system.read_directory(Directory).unwrap().unwrap();
-        assert_eq!(*Parent_directory.get_name(), "..");
-        assert_eq!(Parent_directory.get_type(), Type_type::Directory);
+        let parent_directory = file_system.read_directory(directory).unwrap().unwrap();
+        assert_eq!(*parent_directory.get_name(), "..");
+        assert_eq!(parent_directory.get_type(), Type_type::Directory);
 
         for i in 0..10 {
-            let entry = File_system.read_directory(Directory).unwrap().unwrap();
+            let entry = file_system.read_directory(directory).unwrap().unwrap();
 
             assert_eq!(*entry.get_name(), format!("Test{i}"));
             assert_eq!(entry.get_type(), Type_type::File);
         }
 
-        File_system.rewind_directory(Directory).unwrap();
+        file_system.rewind_directory(directory).unwrap();
 
-        let Current_directory = File_system.read_directory(Directory).unwrap().unwrap();
-        assert_eq!(*Current_directory.get_name(), ".");
-        assert_eq!(Current_directory.get_type(), Type_type::Directory);
+        let current_directory = file_system.read_directory(directory).unwrap().unwrap();
+        assert_eq!(*current_directory.get_name(), ".");
+        assert_eq!(current_directory.get_type(), Type_type::Directory);
 
-        let Parent_directory = File_system.read_directory(Directory).unwrap().unwrap();
-        assert_eq!(*Parent_directory.get_name(), "..");
-        assert_eq!(Parent_directory.get_type(), Type_type::Directory);
+        let parent_directory = file_system.read_directory(directory).unwrap().unwrap();
+        assert_eq!(*parent_directory.get_name(), "..");
+        assert_eq!(parent_directory.get_type(), Type_type::Directory);
 
         for i in 0..10 {
-            let entry = File_system.read_directory(Directory).unwrap().unwrap();
+            let entry = file_system.read_directory(directory).unwrap().unwrap();
 
             assert_eq!(*entry.get_name(), format!("Test{i}"));
             assert_eq!(entry.get_type(), Type_type::File);
         }
 
-        File_system.close_directory(Directory).unwrap();
+        file_system.close_directory(directory).unwrap();
     }
 
-    pub async fn test_create_remove_directory(File_system: impl File_system_traits) {
+    pub async fn test_create_remove_directory(file_system: impl File_system_traits) {
         let task = task::get_instance().get_current_task_identifier().await;
 
-        let Path = get_test_path().Append("Test_create_directory").unwrap();
+        let path = get_test_path().append("Test_create_directory").unwrap();
 
-        File_system
+        file_system
             .create_directory(
-                &Path,
+                &path,
                 Time_type::new(123),
                 User_identifier_type::ROOT,
                 Group_identifier_type::ROOT,
@@ -873,37 +873,37 @@ pub mod tests {
             .unwrap();
 
         {
-            let Root_directory = File_system.open_directory(Path_type::ROOT, task).unwrap();
+            let root_directory = file_system.open_directory(Path_type::ROOT, task).unwrap();
 
-            let Current_directory = File_system.read_directory(Root_directory).unwrap().unwrap();
-            assert_eq!(*Current_directory.get_name(), ".");
-            assert_eq!(Current_directory.get_type(), Type_type::Directory);
+            let current_directory = file_system.read_directory(root_directory).unwrap().unwrap();
+            assert_eq!(*current_directory.get_name(), ".");
+            assert_eq!(current_directory.get_type(), Type_type::Directory);
 
-            let Parent_directory = File_system.read_directory(Root_directory).unwrap().unwrap();
-            assert_eq!(*Parent_directory.get_name(), "..");
-            assert_eq!(Parent_directory.get_type(), Type_type::Directory);
+            let parent_directory = file_system.read_directory(root_directory).unwrap().unwrap();
+            assert_eq!(*parent_directory.get_name(), "..");
+            assert_eq!(parent_directory.get_type(), Type_type::Directory);
 
-            let Directory = File_system.read_directory(Root_directory).unwrap().unwrap();
-            assert_eq!(*Directory.get_name(), "Test_create_directory");
-            assert_eq!(Directory.get_type(), Type_type::Directory);
+            let directory = file_system.read_directory(root_directory).unwrap().unwrap();
+            assert_eq!(*directory.get_name(), "Test_create_directory");
+            assert_eq!(directory.get_type(), Type_type::Directory);
 
-            File_system.close_directory(Root_directory).unwrap();
+            file_system.close_directory(root_directory).unwrap();
         }
 
         {
-            let Directory = File_system.open_directory(&Path, task).unwrap();
+            let directory = file_system.open_directory(&path, task).unwrap();
 
-            let Current_directory = File_system.read_directory(Directory).unwrap().unwrap();
+            let current_directory = file_system.read_directory(directory).unwrap().unwrap();
 
-            assert_eq!(*Current_directory.get_name(), ".");
-            assert_eq!(Current_directory.get_type(), Type_type::Directory);
+            assert_eq!(*current_directory.get_name(), ".");
+            assert_eq!(current_directory.get_type(), Type_type::Directory);
 
-            let Parent_directory = File_system.read_directory(Directory).unwrap().unwrap();
-            assert_eq!(*Parent_directory.get_name(), "..");
-            assert_eq!(Parent_directory.get_type(), Type_type::Directory);
+            let parent_directory = file_system.read_directory(directory).unwrap().unwrap();
+            assert_eq!(*parent_directory.get_name(), "..");
+            assert_eq!(parent_directory.get_type(), Type_type::Directory);
 
-            File_system.close_directory(Directory).unwrap();
+            file_system.close_directory(directory).unwrap();
         }
-        File_system.remove(&Path).unwrap();
+        file_system.remove(&path).unwrap();
     }
 }

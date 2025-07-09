@@ -74,7 +74,7 @@ extern "C" fn binding_tick_callback_function() -> u32 {
     time::get_instance()
         .get_current_time()
         .unwrap_or_default()
-        .As_milliseconds() as u32
+        .as_milliseconds() as u32
 }
 
 unsafe impl Send for Manager_type {}
@@ -177,7 +177,7 @@ impl Manager_type {
         let mut screen_read_data = Screen_read_data_type::default();
 
         screen_device
-            .Read(screen_read_data.as_mut())
+            .read(screen_read_data.as_mut())
             .map_err(|_| Error_type::Failed_to_get_resolution)?;
 
         let resolution: Point_type = screen_read_data.get_resolution();

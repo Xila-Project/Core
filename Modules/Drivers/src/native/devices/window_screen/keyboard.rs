@@ -14,22 +14,22 @@ impl Keyboard_device_type {
 }
 
 impl Device_trait for Keyboard_device_type {
-    fn Read(&self, buffer: &mut [u8]) -> file_system::Result_type<Size_type> {
+    fn read(&self, buffer: &mut [u8]) -> file_system::Result_type<Size_type> {
         // - Cast
         let data: &mut Input_data_type = buffer
             .try_into()
             .map_err(|_| file_system::Error_type::Invalid_parameter)?;
 
         if let Some((state, key, r#continue)) = self.0.lock().unwrap().pop_keyboard_data() {
-            data.Set_state(state);
-            data.Set_key(key);
-            data.Set_continue(r#continue);
+            data.set_state(state);
+            data.set_key(key);
+            data.set_continue(r#continue);
         }
 
         Ok(size_of::<Input_data_type>().into())
     }
 
-    fn Write(&self, _: &[u8]) -> file_system::Result_type<Size_type> {
+    fn write(&self, _: &[u8]) -> file_system::Result_type<Size_type> {
         Err(file_system::Error_type::Unsupported_operation)
     }
 
@@ -37,11 +37,11 @@ impl Device_trait for Keyboard_device_type {
         Ok(size_of::<Input_data_type>().into())
     }
 
-    fn Set_position(&self, _: &file_system::Position_type) -> file_system::Result_type<Size_type> {
+    fn set_position(&self, _: &file_system::Position_type) -> file_system::Result_type<Size_type> {
         Err(file_system::Error_type::Unsupported_operation)
     }
 
-    fn Flush(&self) -> file_system::Result_type<()> {
+    fn flush(&self) -> file_system::Result_type<()> {
         Ok(())
     }
 }

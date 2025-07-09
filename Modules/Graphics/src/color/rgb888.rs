@@ -8,15 +8,11 @@ pub struct Color_RGB888_type {
 }
 
 impl Color_RGB888_type {
-    pub const WHITE: Color_RGB888_type = Color_RGB888_type::New(0xFF, 0xFF, 0xFF);
-    pub const BLACK: Color_RGB888_type = Color_RGB888_type::New(0x00, 0x00, 0x00);
+    pub const WHITE: Color_RGB888_type = Color_RGB888_type::new(0xFF, 0xFF, 0xFF);
+    pub const BLACK: Color_RGB888_type = Color_RGB888_type::new(0x00, 0x00, 0x00);
 
-    pub const fn New(Red: u8, Green: u8, Blue: u8) -> Self {
-        Self {
-            red: Red,
-            green: Green,
-            blue: Blue,
-        }
+    pub const fn new(red: u8, green: u8, blue: u8) -> Self {
+        Self { red, green, blue }
     }
 
     pub const fn get_red(&self) -> u8 {
@@ -31,23 +27,23 @@ impl Color_RGB888_type {
         self.blue
     }
 
-    pub const fn Set_red(mut self, Value: u8) -> Self {
-        self.red = Value;
+    pub const fn set_red(mut self, value: u8) -> Self {
+        self.red = value;
         self
     }
 
-    pub const fn Set_green(mut self, Value: u8) -> Self {
-        self.green = Value;
+    pub const fn set_green(mut self, value: u8) -> Self {
+        self.green = value;
         self
     }
 
-    pub const fn Set_blue(mut self, Value: u8) -> Self {
-        self.blue = Value;
+    pub const fn set_blue(mut self, value: u8) -> Self {
+        self.blue = value;
         self
     }
 
-    pub const fn From_LVGL_color(Value: lvgl::lv_color_t) -> Self {
-        Self::New(Value.red, Value.green, Value.blue)
+    pub const fn from_lvgl_color(value: lvgl::lv_color_t) -> Self {
+        Self::new(value.red, value.green, value.blue)
     }
 
     pub const fn into_lvgl_color(self) -> lvgl::lv_color_t {
@@ -67,6 +63,6 @@ impl From<Color_RGB888_type> for lvgl::lv_color_t {
 
 impl From<lvgl::lv_color_t> for Color_RGB888_type {
     fn from(value: lvgl::lv_color_t) -> Self {
-        Color_RGB888_type::From_LVGL_color(value)
+        Color_RGB888_type::from_lvgl_color(value)
     }
 }

@@ -58,7 +58,7 @@ unsafe extern "C" fn event_callback(event: *mut lvgl::lv_event_t) {
         }
         _ => {
             (*queue).push_back(Event_type::new(
-                Event_code_type::From_LVGL_code(code),
+                Event_code_type::from_lvgl_code(code),
                 target,
                 None,
             ));

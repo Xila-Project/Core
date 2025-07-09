@@ -30,7 +30,7 @@ pub struct Function_descriptor_type {
 pub trait Registrable_trait {
     fn get_functions(&self) -> &[Function_descriptor_type];
 
-    fn is_XIP(&self) -> bool {
+    fn is_xip(&self) -> bool {
         false
     }
 

@@ -39,37 +39,37 @@ impl fmt::Display for Permissions_type {
 }
 
 impl Permissions_type {
-    pub const NONE: Self = Self::New(
+    pub const NONE: Self = Self::new(
         Permission_type::NONE,
         Permission_type::NONE,
         Permission_type::NONE,
         Special_type::NONE,
     );
-    pub const ALL_FULL: Self = Self::New(
+    pub const ALL_FULL: Self = Self::new(
         Permission_type::FULL,
         Permission_type::FULL,
         Permission_type::FULL,
         Special_type::NONE,
     );
-    pub const ALL_READ_WRITE: Self = Self::New(
+    pub const ALL_READ_WRITE: Self = Self::new(
         Permission_type::READ_WRITE,
         Permission_type::READ_WRITE,
         Permission_type::READ_WRITE,
         Special_type::NONE,
     );
-    pub const USER_FULL: Self = Self::New(
+    pub const USER_FULL: Self = Self::new(
         Permission_type::FULL,
         Permission_type::NONE,
         Permission_type::NONE,
         Special_type::NONE,
     );
-    pub const USER_READ_WRITE: Self = Self::New(
+    pub const USER_READ_WRITE: Self = Self::new(
         Permission_type::READ_WRITE,
         Permission_type::NONE,
         Permission_type::NONE,
         Special_type::NONE,
     );
-    pub const EXECUTABLE: Self = Self::New(
+    pub const EXECUTABLE: Self = Self::new(
         Permission_type::FULL,
         Permission_type::READ_EXECUTE,
         Permission_type::READ_EXECUTE,
@@ -77,48 +77,48 @@ impl Permissions_type {
     );
 
     /// Creates a new permission.
-    pub const fn New(
+    pub const fn new(
         user: Permission_type,
         group: Permission_type,
         others: Permission_type,
         special: Special_type,
     ) -> Self {
         Self(
-            (special.To_unix() as u16) << 9
-                | (user.To_unix() as u16) << 6
-                | (group.To_unix() as u16) << 3
-                | others.To_unix() as u16,
+            (special.to_unix() as u16) << 9
+                | (user.to_unix() as u16) << 6
+                | (group.to_unix() as u16) << 3
+                | others.to_unix() as u16,
         )
     }
 
     /// Creates a new permission with read access for user. No access for group and others.
-    pub const fn New_default(Type: Type_type) -> Self {
-        match Type {
-            Type_type::Directory => Self::New(
+    pub const fn new_default(r#type: Type_type) -> Self {
+        match r#type {
+            Type_type::Directory => Self::new(
                 Permission_type::FULL,
                 Permission_type::READ_EXECUTE,
                 Permission_type::READ_EXECUTE,
                 Special_type::NONE,
             ),
-            Type_type::File => Self::New(
+            Type_type::File => Self::new(
                 Permission_type::READ_WRITE,
                 Permission_type::READ_ONLY,
                 Permission_type::READ_ONLY,
                 Special_type::NONE,
             ),
-            Type_type::Pipe => Self::New(
+            Type_type::Pipe => Self::new(
                 Permission_type::READ_WRITE,
                 Permission_type::NONE,
                 Permission_type::NONE,
                 Special_type::NONE,
             ),
-            Type_type::Block_device => Self::New(
+            Type_type::Block_device => Self::new(
                 Permission_type::FULL,
                 Permission_type::READ_WRITE,
                 Permission_type::READ_WRITE,
                 Special_type::NONE,
             ),
-            Type_type::Character_device => Self::New(
+            Type_type::Character_device => Self::new(
                 Permission_type::READ_WRITE,
                 Permission_type::READ_WRITE,
                 Permission_type::NONE,
@@ -130,60 +130,60 @@ impl Permissions_type {
     }
 
     /// Sets the permission for the user.
-    pub fn Set_user(mut self, User: Permission_type) -> Self {
-        self.0 = (self.0 & 0o7077) | (User.To_unix() as u16) << 6;
+    pub fn set_user(mut self, user: Permission_type) -> Self {
+        self.0 = (self.0 & 0o7077) | (user.to_unix() as u16) << 6;
         self
     }
 
     /// Sets the permission for the group.
-    pub fn Set_group(mut self, Group: Permission_type) -> Self {
-        self.0 = (self.0 & 0o7707) | (Group.To_unix() as u16) << 3;
+    pub fn set_group(mut self, group: Permission_type) -> Self {
+        self.0 = (self.0 & 0o7707) | (group.to_unix() as u16) << 3;
         self
     }
 
     /// Sets the permission for others.
-    pub fn Set_others(mut self, Others: Permission_type) -> Self {
-        self.0 = (self.0 & 0o7770) | Others.To_unix() as u16;
+    pub fn set_others(mut self, others: Permission_type) -> Self {
+        self.0 = (self.0 & 0o7770) | others.to_unix() as u16;
         self
     }
 
     /// Sets the special permissions.
-    pub fn Set_special(mut self, Special: Special_type) -> Self {
-        self.0 = (self.0 & 0o0777) | (Special.To_unix() as u16) << 9;
+    pub fn set_special(mut self, special: Special_type) -> Self {
+        self.0 = (self.0 & 0o0777) | (special.to_unix() as u16) << 9;
         self
     }
 
     /// Gets the permission for the user.
     pub fn get_user(&self) -> Permission_type {
-        Permission_type::From_unix(((self.0 >> 6) & 0b111) as u8).unwrap()
+        Permission_type::from_unix(((self.0 >> 6) & 0b111) as u8).unwrap()
     }
 
     /// Gets the permission for the group.
     pub fn get_group(&self) -> Permission_type {
-        Permission_type::From_unix(((self.0 >> 3) & 0b111) as u8).unwrap()
+        Permission_type::from_unix(((self.0 >> 3) & 0b111) as u8).unwrap()
     }
 
     /// Gets the permission for others.
     pub fn get_others(&self) -> Permission_type {
-        Permission_type::From_unix((self.0 & 0b111) as u8).unwrap()
+        Permission_type::from_unix((self.0 & 0b111) as u8).unwrap()
     }
 
     /// Gets the special permissions.
     pub fn get_special(&self) -> Special_type {
-        Special_type::From_unix((self.0 >> 9) as u8).unwrap()
+        Special_type::from_unix((self.0 >> 9) as u8).unwrap()
     }
 
     /// Converts the permission to a Unix permission.
-    pub const fn From_octal(Unix: u16) -> Option<Self> {
-        if Unix > 0o777 {
+    pub const fn from_octal(unix: u16) -> Option<Self> {
+        if unix > 0o777 {
             return None;
         }
 
-        Some(Self(Unix))
+        Some(Self(unix))
     }
 
     /// Converts the permission to a Unix permission.
-    pub const fn As_u16(&self) -> u16 {
+    pub const fn as_u16(&self) -> u16 {
         self.0
     }
 }
@@ -200,13 +200,13 @@ impl fmt::Display for Special_type {
         } else {
             "-"
         };
-        let Set_uid = if self.get_set_user_identifier() {
+        let set_uid = if self.get_set_user_identifier() {
             "g"
         } else {
             "-"
         };
 
-        write!(f, "{sticky}{set_gid}{Set_uid}")
+        write!(f, "{sticky}{set_gid}{set_uid}")
     }
 }
 
@@ -216,22 +216,22 @@ impl Special_type {
     pub const SET_USER_IDENTIFIER: Self = Self(2);
     pub const SET_GROUP_IDENTIFIER: Self = Self(4);
 
-    pub fn New(Sticky: bool, Set_gid: bool, Set_uid: bool) -> Self {
-        Self((Sticky as u8) | (Set_gid as u8) << 1 | (Set_uid as u8) << 2)
+    pub fn new(sticky: bool, set_gid: bool, set_uid: bool) -> Self {
+        Self((sticky as u8) | (set_gid as u8) << 1 | (set_uid as u8) << 2)
     }
 
-    pub fn Set_sticky(mut self, Sticky: bool) -> Self {
-        self.0 = (self.0 & 0b110) | Sticky as u8;
+    pub fn set_sticky(mut self, sticky: bool) -> Self {
+        self.0 = (self.0 & 0b110) | sticky as u8;
         self
     }
 
-    pub fn Set_set_group_identifier(mut self, Set_gid: bool) -> Self {
-        self.0 = (self.0 & 0b101) | (Set_gid as u8) << 1;
+    pub fn set_set_group_identifier(mut self, set_gid: bool) -> Self {
+        self.0 = (self.0 & 0b101) | (set_gid as u8) << 1;
         self
     }
 
-    pub fn Set_set_user_identifier(mut self, Set_uid: bool) -> Self {
-        self.0 = (self.0 & 0b011) | (Set_uid as u8) << 2;
+    pub fn set_set_user_identifier(mut self, set_uid: bool) -> Self {
+        self.0 = (self.0 & 0b011) | (set_uid as u8) << 2;
         self
     }
 
@@ -247,16 +247,16 @@ impl Special_type {
         self.0 & 0b100 != 0
     }
 
-    pub const fn To_unix(&self) -> u8 {
+    pub const fn to_unix(&self) -> u8 {
         self.0
     }
 
-    pub fn From_unix(Unix: u8) -> Option<Self> {
-        if Unix > 0b111 {
+    pub fn from_unix(unix: u8) -> Option<Self> {
+        if unix > 0b111 {
             return None;
         }
 
-        Some(Self(Unix))
+        Some(Self(unix))
     }
 }
 
@@ -292,37 +292,37 @@ impl fmt::Display for Permission_type {
 }
 
 impl Permission_type {
-    pub const READ_ONLY: Self = Self::New(true, false, false);
-    pub const WRITE_ONLY: Self = Self::New(false, true, false);
-    pub const EXECUTE_ONLY: Self = Self::New(false, false, true);
+    pub const READ_ONLY: Self = Self::new(true, false, false);
+    pub const WRITE_ONLY: Self = Self::new(false, true, false);
+    pub const EXECUTE_ONLY: Self = Self::new(false, false, true);
 
-    pub const READ_WRITE: Self = Self::New(true, true, false);
-    pub const WRITE_EXECUTE: Self = Self::New(false, true, true);
-    pub const READ_EXECUTE: Self = Self::New(true, false, true);
+    pub const READ_WRITE: Self = Self::new(true, true, false);
+    pub const WRITE_EXECUTE: Self = Self::new(false, true, true);
+    pub const READ_EXECUTE: Self = Self::new(true, false, true);
 
-    pub const NONE: Self = Self::New(false, false, false);
-    pub const FULL: Self = Self::New(true, true, true);
+    pub const NONE: Self = Self::new(false, false, false);
+    pub const FULL: Self = Self::new(true, true, true);
 
     /// Creates a new permission.
-    pub const fn New(Read: bool, Write: bool, Execute: bool) -> Self {
-        Self((Read as u8) << 2 | (Write as u8) << 1 | Execute as u8)
+    pub const fn new(read: bool, write: bool, execute: bool) -> Self {
+        Self((read as u8) << 2 | (write as u8) << 1 | execute as u8)
     }
 
     /// Sets the read permission.
-    pub fn Set_read(mut self, Read: bool) -> Self {
-        self.0 = (self.0 & 0b011) | (Read as u8) << 2;
+    pub fn set_read(mut self, read: bool) -> Self {
+        self.0 = (self.0 & 0b011) | (read as u8) << 2;
         self
     }
 
     /// Sets the write permission.
-    pub fn Set_write(mut self, Write: bool) -> Self {
-        self.0 = (self.0 & 0b101) | (Write as u8) << 1;
+    pub fn set_write(mut self, write: bool) -> Self {
+        self.0 = (self.0 & 0b101) | (write as u8) << 1;
         self
     }
 
     /// Sets the execute permission.
-    pub fn Set_execute(mut self, Execute: bool) -> Self {
-        self.0 = (self.0 & 0b110) | Execute as u8;
+    pub fn set_execute(mut self, execute: bool) -> Self {
+        self.0 = (self.0 & 0b110) | execute as u8;
         self
     }
 
@@ -342,21 +342,21 @@ impl Permission_type {
     }
 
     /// Converts the permission to a Unix permission.
-    pub const fn To_unix(&self) -> u8 {
+    pub const fn to_unix(&self) -> u8 {
         self.0
     }
 
-    pub fn Include(&self, Other: Self) -> bool {
-        (self.0 & Other.0) == Other.0
+    pub fn include(&self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
     }
 
     /// Creates a permission from a Unix permission.
-    pub fn From_unix(Unix: u8) -> Option<Self> {
-        if Unix > 0b111 {
+    pub fn from_unix(unix: u8) -> Option<Self> {
+        if unix > 0b111 {
             return None;
         }
 
-        Some(Self(Unix))
+        Some(Self(unix))
     }
 }
 
@@ -366,11 +366,11 @@ mod tests {
 
     #[test]
     fn test_new_permissions() {
-        let user = Permission_type::New(true, false, false); // Read only
-        let group = Permission_type::New(false, true, false); // Write only
-        let others = Permission_type::New(false, false, true); // Execute only
-        let special = Special_type::New(true, false, true); // Sticky and set user identifier
-        let permissions = Permissions_type::New(user, group, others, special);
+        let user = Permission_type::new(true, false, false); // Read only
+        let group = Permission_type::new(false, true, false); // Write only
+        let others = Permission_type::new(false, false, true); // Execute only
+        let special = Special_type::new(true, false, true); // Sticky and set user identifier
+        let permissions = Permissions_type::new(user, group, others, special);
         assert_eq!(permissions.0, 0b101_100_010_001);
     }
 
@@ -389,130 +389,130 @@ mod tests {
     #[test]
     fn test_permission_type_to_unix() {
         let read = Permission_type::READ_ONLY;
-        assert_eq!(read.To_unix(), 4);
+        assert_eq!(read.to_unix(), 4);
         let write = Permission_type::WRITE_ONLY;
-        assert_eq!(write.To_unix(), 2);
+        assert_eq!(write.to_unix(), 2);
         let execute = Permission_type::EXECUTE_ONLY;
-        assert_eq!(execute.To_unix(), 1);
+        assert_eq!(execute.to_unix(), 1);
         let full = Permission_type::FULL;
-        assert_eq!(full.To_unix(), 7);
+        assert_eq!(full.to_unix(), 7);
         let none = Permission_type::NONE;
-        assert_eq!(none.To_unix(), 0);
+        assert_eq!(none.to_unix(), 0);
     }
 
     #[test]
     fn test_permission_type_from_unix() {
-        let Read = Permission_type::From_unix(4).unwrap();
-        assert!(Read.get_read() && !Read.get_write() && !Read.get_execute());
-        let Write = Permission_type::From_unix(2).unwrap();
-        assert!(!Write.get_read() && Write.get_write() && !Write.get_execute());
-        let Execute = Permission_type::From_unix(1).unwrap();
-        assert!(!Execute.get_read() && !Execute.get_write() && Execute.get_execute());
-        let Full = Permission_type::From_unix(7).unwrap();
-        assert!(Full.get_read() && Full.get_write() && Full.get_execute());
-        let No = Permission_type::From_unix(0).unwrap();
-        assert!(!No.get_read() && !No.get_write() && !No.get_execute());
+        let read = Permission_type::from_unix(4).unwrap();
+        assert!(read.get_read() && !read.get_write() && !read.get_execute());
+        let write = Permission_type::from_unix(2).unwrap();
+        assert!(!write.get_read() && write.get_write() && !write.get_execute());
+        let execute = Permission_type::from_unix(1).unwrap();
+        assert!(!execute.get_read() && !execute.get_write() && execute.get_execute());
+        let full = Permission_type::from_unix(7).unwrap();
+        assert!(full.get_read() && full.get_write() && full.get_execute());
+        let no = Permission_type::from_unix(0).unwrap();
+        assert!(!no.get_read() && !no.get_write() && !no.get_execute());
     }
 
     #[test]
     fn test_permissions_type_from_unix() {
-        let Permissions = Permissions_type::From_octal(0b101_101_101).unwrap();
-        assert_eq!(Permissions.get_user().To_unix(), 5);
-        assert_eq!(Permissions.get_group().To_unix(), 5);
-        assert_eq!(Permissions.get_others().To_unix(), 5);
+        let permissions = Permissions_type::from_octal(0b101_101_101).unwrap();
+        assert_eq!(permissions.get_user().to_unix(), 5);
+        assert_eq!(permissions.get_group().to_unix(), 5);
+        assert_eq!(permissions.get_others().to_unix(), 5);
     }
 
     #[test]
     fn test_permissions_type_to_unix() {
-        let User = Permission_type::New(true, false, true); // Read and execute
-        let Group = Permission_type::New(true, true, false); // Read and write
-        let Others = Permission_type::New(false, true, true); // Write and execute
-        let Special = Special_type::New(true, false, true); // Sticky and set user identifier
-        let Permissions = Permissions_type::New(User, Group, Others, Special);
-        assert_eq!(Permissions.As_u16(), 0b101_101_110_011);
+        let user = Permission_type::new(true, false, true); // Read and execute
+        let group = Permission_type::new(true, true, false); // Read and write
+        let others = Permission_type::new(false, true, true); // Write and execute
+        let special = Special_type::new(true, false, true); // Sticky and set user identifier
+        let permissions = Permissions_type::new(user, group, others, special);
+        assert_eq!(permissions.as_u16(), 0b101_101_110_011);
     }
 
     #[test]
     fn test_permission_type_include() {
-        let Read = Permission_type::READ_ONLY;
-        let Write = Permission_type::WRITE_ONLY;
-        let Read_write = Permission_type::READ_WRITE;
-        let Read_execute = Permission_type::READ_EXECUTE;
-        let Write_execute = Permission_type::WRITE_EXECUTE;
-        let Execute = Permission_type::EXECUTE_ONLY;
-        let Full = Permission_type::FULL;
-        let No = Permission_type::NONE;
+        let read = Permission_type::READ_ONLY;
+        let write = Permission_type::WRITE_ONLY;
+        let read_write = Permission_type::READ_WRITE;
+        let read_execute = Permission_type::READ_EXECUTE;
+        let write_execute = Permission_type::WRITE_EXECUTE;
+        let execute = Permission_type::EXECUTE_ONLY;
+        let full = Permission_type::FULL;
+        let no = Permission_type::NONE;
 
-        assert!(Full.Include(Read));
-        assert!(Full.Include(Write));
-        assert!(Full.Include(Execute));
-        assert!(Full.Include(Read_write));
-        assert!(Full.Include(Read_execute));
-        assert!(Full.Include(Write_execute));
-        assert!(Full.Include(Full));
-        assert!(Full.Include(No));
+        assert!(full.include(read));
+        assert!(full.include(write));
+        assert!(full.include(execute));
+        assert!(full.include(read_write));
+        assert!(full.include(read_execute));
+        assert!(full.include(write_execute));
+        assert!(full.include(full));
+        assert!(full.include(no));
 
-        assert!(Read.Include(Read));
-        assert!(!Read.Include(Write));
-        assert!(!Read.Include(Execute));
-        assert!(!Read.Include(Read_write));
-        assert!(!Read.Include(Read_execute));
-        assert!(!Read.Include(Write_execute));
-        assert!(!Read.Include(Full));
-        assert!(Read.Include(No));
+        assert!(read.include(read));
+        assert!(!read.include(write));
+        assert!(!read.include(execute));
+        assert!(!read.include(read_write));
+        assert!(!read.include(read_execute));
+        assert!(!read.include(write_execute));
+        assert!(!read.include(full));
+        assert!(read.include(no));
 
-        assert!(!Write.Include(Read));
-        assert!(Write.Include(Write));
-        assert!(!Write.Include(Execute));
-        assert!(!Write.Include(Read_write));
-        assert!(!Write.Include(Read_execute));
-        assert!(!Write.Include(Write_execute));
-        assert!(!Write.Include(Full));
-        assert!(Write.Include(No));
+        assert!(!write.include(read));
+        assert!(write.include(write));
+        assert!(!write.include(execute));
+        assert!(!write.include(read_write));
+        assert!(!write.include(read_execute));
+        assert!(!write.include(write_execute));
+        assert!(!write.include(full));
+        assert!(write.include(no));
 
-        assert!(!Execute.Include(Read));
-        assert!(!Execute.Include(Write));
-        assert!(Execute.Include(Execute));
-        assert!(!Execute.Include(Read_write));
-        assert!(!Execute.Include(Read_execute));
-        assert!(!Execute.Include(Write_execute));
-        assert!(!Execute.Include(Full));
-        assert!(Execute.Include(No));
+        assert!(!execute.include(read));
+        assert!(!execute.include(write));
+        assert!(execute.include(execute));
+        assert!(!execute.include(read_write));
+        assert!(!execute.include(read_execute));
+        assert!(!execute.include(write_execute));
+        assert!(!execute.include(full));
+        assert!(execute.include(no));
 
-        assert!(Read_write.Include(Read));
-        assert!(Read_write.Include(Write));
-        assert!(!Read_write.Include(Execute));
-        assert!(Read_write.Include(Read_write));
-        assert!(!Read_write.Include(Read_execute));
-        assert!(!Read_write.Include(Write_execute));
-        assert!(!Read_write.Include(Full));
-        assert!(Read_write.Include(No));
+        assert!(read_write.include(read));
+        assert!(read_write.include(write));
+        assert!(!read_write.include(execute));
+        assert!(read_write.include(read_write));
+        assert!(!read_write.include(read_execute));
+        assert!(!read_write.include(write_execute));
+        assert!(!read_write.include(full));
+        assert!(read_write.include(no));
 
-        assert!(Read_execute.Include(Read));
-        assert!(!Read_execute.Include(Write));
-        assert!(Read_execute.Include(Execute));
-        assert!(!Read_execute.Include(Read_write));
-        assert!(Read_execute.Include(Read_execute));
-        assert!(!Read_execute.Include(Write_execute));
-        assert!(!Read_execute.Include(Full));
-        assert!(Read_execute.Include(No));
+        assert!(read_execute.include(read));
+        assert!(!read_execute.include(write));
+        assert!(read_execute.include(execute));
+        assert!(!read_execute.include(read_write));
+        assert!(read_execute.include(read_execute));
+        assert!(!read_execute.include(write_execute));
+        assert!(!read_execute.include(full));
+        assert!(read_execute.include(no));
 
-        assert!(!Write_execute.Include(Read));
-        assert!(Write_execute.Include(Write));
-        assert!(Write_execute.Include(Execute));
-        assert!(!Write_execute.Include(Read_write));
-        assert!(!Write_execute.Include(Read_execute));
-        assert!(Write_execute.Include(Write_execute));
-        assert!(!Write_execute.Include(Full));
-        assert!(Write_execute.Include(No));
+        assert!(!write_execute.include(read));
+        assert!(write_execute.include(write));
+        assert!(write_execute.include(execute));
+        assert!(!write_execute.include(read_write));
+        assert!(!write_execute.include(read_execute));
+        assert!(write_execute.include(write_execute));
+        assert!(!write_execute.include(full));
+        assert!(write_execute.include(no));
 
-        assert!(!No.Include(Read));
-        assert!(!No.Include(Write));
-        assert!(!No.Include(Execute));
-        assert!(!No.Include(Read_write));
-        assert!(!No.Include(Read_execute));
-        assert!(!No.Include(Write_execute));
-        assert!(!No.Include(Full));
-        assert!(No.Include(No));
+        assert!(!no.include(read));
+        assert!(!no.include(write));
+        assert!(!no.include(execute));
+        assert!(!no.include(read_write));
+        assert!(!no.include(read_execute));
+        assert!(!no.include(write_execute));
+        assert!(!no.include(full));
+        assert!(no.include(no));
     }
 }

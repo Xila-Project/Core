@@ -7,10 +7,10 @@ impl Capabilities_type {
     pub const EXECUTABLE_FLAG: u8 = 1 << 0;
     pub const DIRECT_MEMORY_ACCESS_FLAG: u8 = 1 << 1;
 
-    pub const fn New(Executable: bool, Direct_memory_access: bool) -> Self {
+    pub const fn new(executable: bool, direct_memory_access: bool) -> Self {
         Capabilities_type(0)
-            .Set_executable(Executable)
-            .Set_direct_memory_access(Direct_memory_access)
+            .set_executable(executable)
+            .set_direct_memory_access(direct_memory_access)
     }
 
     pub const fn get_executable(&self) -> bool {
@@ -21,7 +21,7 @@ impl Capabilities_type {
         self.0 & Capabilities_type::DIRECT_MEMORY_ACCESS_FLAG != 0
     }
 
-    pub const fn Set_executable(mut self, value: bool) -> Self {
+    pub const fn set_executable(mut self, value: bool) -> Self {
         if value {
             self.0 |= Capabilities_type::EXECUTABLE_FLAG;
         } else {
@@ -30,7 +30,7 @@ impl Capabilities_type {
         self
     }
 
-    pub const fn Set_direct_memory_access(mut self, value: bool) -> Self {
+    pub const fn set_direct_memory_access(mut self, value: bool) -> Self {
         if value {
             self.0 |= Capabilities_type::DIRECT_MEMORY_ACCESS_FLAG;
         } else {
@@ -39,19 +39,19 @@ impl Capabilities_type {
         self
     }
 
-    pub const fn is_subset_of(&self, Other: Capabilities_type) -> bool {
-        (self.0 & Other.0) == self.0
+    pub const fn is_subset_of(&self, other: Capabilities_type) -> bool {
+        (self.0 & other.0) == self.0
     }
 
-    pub const fn is_superset_of(&self, Other: Capabilities_type) -> bool {
-        (self.0 & Other.0) == Other.0
+    pub const fn is_superset_of(&self, other: Capabilities_type) -> bool {
+        (self.0 & other.0) == other.0
     }
 
-    pub const fn From_u8(Value: u8) -> Self {
-        Capabilities_type(Value)
+    pub const fn from_u8(value: u8) -> Self {
+        Capabilities_type(value)
     }
 
-    pub const fn To_u8(&self) -> u8 {
+    pub const fn to_u8(&self) -> u8 {
         self.0
     }
 }

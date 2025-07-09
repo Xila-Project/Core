@@ -1,4 +1,5 @@
 use alloc::string::String;
+
 use core::ffi::CStr;
 use file_system::Size_type;
 use graphics::{lvgl, Color_type, Event_code_type, Key_type, Window_type};
@@ -167,7 +168,7 @@ impl Terminal_type {
 
         let (string, index) = match inner.validated.as_mut() {
             Some(validated) => validated,
-            None => return Ok(Size_type::New(0)),
+            None => return Ok(Size_type::new(0)),
         };
 
         if *index >= string.len() {
@@ -184,7 +185,7 @@ impl Terminal_type {
                 *byte = b'\n';
             }
 
-            return Ok(Size_type::New(1));
+            return Ok(Size_type::new(1));
         }
 
         let mut read = 0;
@@ -198,7 +199,7 @@ impl Terminal_type {
                 read += 1;
             });
 
-        Ok(Size_type::New(read))
+        Ok(Size_type::new(read))
     }
 
     pub async fn event_handler(&self) -> Result_type<bool> {

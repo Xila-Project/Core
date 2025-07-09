@@ -9,28 +9,28 @@ impl Random_device_type {
 }
 
 impl Device_trait for Random_device_type {
-    fn Read(&self, buffer: &mut [u8]) -> file_system::Result_type<file_system::Size_type> {
+    fn read(&self, buffer: &mut [u8]) -> file_system::Result_type<file_system::Size_type> {
         rand::fill(buffer);
 
         Ok(buffer.len().into())
     }
 
-    fn Write(&self, _Buffer: &[u8]) -> file_system::Result_type<file_system::Size_type> {
+    fn write(&self, _buffer: &[u8]) -> file_system::Result_type<file_system::Size_type> {
         Err(file_system::Error_type::Unsupported_operation)
     }
 
     fn get_size(&self) -> file_system::Result_type<file_system::Size_type> {
-        Ok(Size_type::New(0))
+        Ok(Size_type::new(0))
     }
 
-    fn Set_position(
+    fn set_position(
         &self,
         _position: &file_system::Position_type,
     ) -> file_system::Result_type<file_system::Size_type> {
         Err(file_system::Error_type::Unsupported_operation)
     }
 
-    fn Flush(&self) -> file_system::Result_type<()> {
+    fn flush(&self) -> file_system::Result_type<()> {
         Ok(())
     }
 }

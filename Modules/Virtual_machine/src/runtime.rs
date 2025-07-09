@@ -25,12 +25,12 @@ impl Runtime_builder_type {
         Self(runtime_builder)
     }
 
-    pub fn register_function(self, Name: &str, Function_pointer: *mut c_void) -> Self {
-        Self(self.0.register_host_function(Name, Function_pointer))
+    pub fn register_function(self, name: &str, function_pointer: *mut c_void) -> Self {
+        Self(self.0.register_host_function(name, function_pointer))
     }
 
-    pub fn register(mut self, Registrable: &dyn Registrable_trait) -> Self {
-        for function_descriptor in Registrable.get_functions() {
+    pub fn register(mut self, registrable: &dyn Registrable_trait) -> Self {
+        for function_descriptor in registrable.get_functions() {
             self = self.register_function(function_descriptor.name, function_descriptor.pointer);
         }
 
@@ -53,7 +53,7 @@ impl Runtime_type {
         &self.0
     }
 
-    pub fn Initialize_thread_environment() -> Option<()> {
+    pub fn initialize_thread_environment() -> Option<()> {
         if unsafe { wasm_runtime_init_thread_env() } {
             Some(())
         } else {
@@ -61,7 +61,7 @@ impl Runtime_type {
         }
     }
 
-    pub fn Deinitialize_thread_environment() {
+    pub fn deinitialize_thread_environment() {
         unsafe { wasm_runtime_destroy_thread_env() }
     }
 }

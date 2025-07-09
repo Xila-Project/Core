@@ -7,8 +7,8 @@ pub struct Point_type {
 }
 
 impl Point_type {
-    pub const fn new(X: i16, Y: i16) -> Self {
-        Self { x: X, y: Y }
+    pub const fn new(x: i16, y: i16) -> Self {
+        Self { x, y }
     }
 
     pub const fn get_x(&self) -> i16 {
@@ -19,29 +19,29 @@ impl Point_type {
         self.y
     }
 
-    pub fn Split(self) -> (i16, i16) {
+    pub fn split(self) -> (i16, i16) {
         (self.x, self.y)
     }
 
-    pub fn Set_x(mut self, Value: i16) -> Self {
-        self.x = Value;
+    pub fn set_x(mut self, value: i16) -> Self {
+        self.x = value;
         self
     }
 
-    pub fn Set_y(mut self, Value: i16) -> Self {
-        self.y = Value;
+    pub fn set_y(mut self, value: i16) -> Self {
+        self.y = value;
         self
     }
 
-    pub fn Set(mut self, X: i16, Y: i16) -> Self {
-        self.x = X;
-        self.y = Y;
+    pub fn set(mut self, x: i16, y: i16) -> Self {
+        self.x = x;
+        self.y = y;
         self
     }
 
-    pub fn get_distance(&self, Other: Point_type) -> f32 {
-        let x = (self.x - Other.x) as f32;
-        let y = (self.y - Other.y) as f32;
+    pub fn get_distance(&self, other: Point_type) -> f32 {
+        let x = (self.x - other.x) as f32;
+        let y = (self.y - other.y) as f32;
         (x * x + y * y).sqrt()
     }
 }
@@ -54,7 +54,7 @@ impl From<(i16, i16)> for Point_type {
 
 impl From<Point_type> for (i16, i16) {
     fn from(point: Point_type) -> Self {
-        point.Split()
+        point.split()
     }
 }
 

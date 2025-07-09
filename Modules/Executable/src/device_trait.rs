@@ -43,7 +43,7 @@ macro_rules! Implement_executable_device {
                 futures::block_on(virtual_file_system.mount_static_device(
                     task,
                     &$mount_path,
-                    file_system::Create_device!($struct_name),
+                    file_system::create_device!($struct_name),
                 ))
                 .map_err(|error| error.to_string())?;
 
@@ -52,7 +52,7 @@ macro_rules! Implement_executable_device {
         }
 
         impl file_system::Device_trait for $struct_name {
-            fn Read(&self, buffer: &mut [u8]) -> file_system::Result_type<file_system::Size_type> {
+            fn read(&self, buffer: &mut [u8]) -> file_system::Result_type<file_system::Size_type> {
                 let read_data: &mut executable::Read_data_type = buffer
                     .try_into()
                     .map_err(|_| file_system::Error_type::Invalid_parameter)?;
@@ -62,7 +62,7 @@ macro_rules! Implement_executable_device {
                 Ok(core::mem::size_of::<executable::Read_data_type>().into())
             }
 
-            fn Write(&self, _: &[u8]) -> file_system::Result_type<file_system::Size_type> {
+            fn write(&self, _: &[u8]) -> file_system::Result_type<file_system::Size_type> {
                 Err(file_system::Error_type::Unsupported_operation)
             }
 
@@ -70,14 +70,14 @@ macro_rules! Implement_executable_device {
                 Err(file_system::Error_type::Unsupported_operation)
             }
 
-            fn Set_position(
+            fn set_position(
                 &self,
                 _: &file_system::Position_type,
             ) -> file_system::Result_type<file_system::Size_type> {
                 Err(file_system::Error_type::Unsupported_operation)
             }
 
-            fn Flush(&self) -> file_system::Result_type<()> {
+            fn flush(&self) -> file_system::Result_type<()> {
                 Err(file_system::Error_type::Unsupported_operation)
             }
         }
@@ -91,10 +91,10 @@ macro_rules! Mount_static_executables {
 
     async || -> Result<(), file_system::Error_type>
     {
-        use file_system::{Create_device, Permissions_type};
+        use file_system::{create_device, Permissions_type};
 
         $(
-            $Virtual_file_system.mount_static_device($Task_identifier, $Path, Create_device!($Device)).await?;
+            $Virtual_file_system.mount_static_device($Task_identifier, $Path, create_device!($Device)).await?;
             $Virtual_file_system.set_permissions($Path, Permissions_type::EXECUTABLE ).await?;
         )*
 

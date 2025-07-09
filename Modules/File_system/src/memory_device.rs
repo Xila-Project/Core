@@ -1,4 +1,5 @@
 //! In-memory device implementation for testing and simulation.
+
 //!
 //! This module provides a memory-based device implementation that stores data
 //! in RAM instead of on physical storage. It's primarily used for testing,
@@ -31,7 +32,7 @@ use crate::{Device_trait, Position_type, Size_type};
 ///
 /// // Create a 1MB memory device with 512-byte blocks
 /// let device = Memory_device_type::<512>::New(1024 * 1024);
-/// let device = Create_device!(device);
+/// let device = create_device!(device);
 ///
 /// // Write some data
 /// let data = b"Hello, Memory Device!";
@@ -75,12 +76,12 @@ impl<const BLOCK_SIZE: usize> Memory_device_type<BLOCK_SIZE> {
     /// // Create a 4KB device with 512-byte blocks
     /// let device = Memory_device_type::<512>::New(4096);
     /// ```
-    pub fn New(Size: usize) -> Self {
-        assert!(Size % BLOCK_SIZE == 0);
+    pub fn new(size: usize) -> Self {
+        assert!(size % BLOCK_SIZE == 0);
 
-        let Data: Vec<u8> = vec![0; Size];
+        let data: Vec<u8> = vec![0; size];
 
-        Self(RwLock::new((Data, 0)))
+        Self(RwLock::new((data, 0)))
     }
 
     /// Create a memory device from existing data.
@@ -107,10 +108,10 @@ impl<const BLOCK_SIZE: usize> Memory_device_type<BLOCK_SIZE> {
     /// let data = vec![0x42; 1024]; // 1KB of 0x42 bytes
     /// let device = Memory_device_type::<512>::From_vec(data);
     /// ```
-    pub fn From_vec(Data: Vec<u8>) -> Self {
-        assert!(Data.len() % BLOCK_SIZE == 0);
+    pub fn from_vec(data: Vec<u8>) -> Self {
+        assert!(data.len() % BLOCK_SIZE == 0);
 
-        Self(RwLock::new((Data, 0)))
+        Self(RwLock::new((data, 0)))
     }
 
     /// Get the number of blocks in this device.
@@ -142,62 +143,62 @@ impl<const BLOCK_SIZE: usize> Device_trait for Memory_device_type<BLOCK_SIZE> {
     ///
     /// Reads data from the current position into the provided buffer.
     /// The position is automatically advanced by the number of bytes read.
-    fn Read(&self, Buffer: &mut [u8]) -> crate::Result_type<Size_type> {
+    fn read(&self, buffer: &mut [u8]) -> crate::Result_type<Size_type> {
         let mut inner = self
             .0
             .try_write()
             .map_err(|_| crate::Error_type::Ressource_busy)?;
         let (data, position) = &mut *inner;
 
-        let Read_size = Buffer.len().min(data.len().saturating_sub(*position));
-        Buffer[..Read_size].copy_from_slice(&data[*position..*position + Read_size]);
-        *position += Read_size;
-        Ok(Read_size.into())
+        let read_size = buffer.len().min(data.len().saturating_sub(*position));
+        buffer[..read_size].copy_from_slice(&data[*position..*position + read_size]);
+        *position += read_size;
+        Ok(read_size.into())
     }
 
-    fn Write(&self, Buffer: &[u8]) -> crate::Result_type<Size_type> {
+    fn write(&self, buffer: &[u8]) -> crate::Result_type<Size_type> {
         let mut inner = block_on(self.0.write());
         let (data, position) = &mut *inner;
 
-        data[*position..*position + Buffer.len()].copy_from_slice(Buffer);
-        *position += Buffer.len();
-        Ok(Buffer.len().into())
+        data[*position..*position + buffer.len()].copy_from_slice(buffer);
+        *position += buffer.len();
+        Ok(buffer.len().into())
     }
 
     fn get_size(&self) -> crate::Result_type<Size_type> {
         let inner = block_on(self.0.read());
 
-        Ok(Size_type::New(inner.0.len() as u64))
+        Ok(Size_type::new(inner.0.len() as u64))
     }
 
-    fn Set_position(&self, Position: &Position_type) -> crate::Result_type<Size_type> {
+    fn set_position(&self, position: &Position_type) -> crate::Result_type<Size_type> {
         let mut inner = block_on(self.0.write());
         let (data, device_position) = &mut *inner;
 
-        match Position {
-            Position_type::Start(Position) => *device_position = *Position as usize,
+        match position {
+            Position_type::Start(position) => *device_position = *position as usize,
             Position_type::Current(position) => {
                 *device_position = (*device_position as isize + *position as isize) as usize
             }
-            Position_type::End(Position) => {
-                *device_position = (data.len() as isize - *Position as isize) as usize
+            Position_type::End(position) => {
+                *device_position = (data.len() as isize - *position as isize) as usize
             }
         }
 
-        Ok(Size_type::New(*device_position as u64))
+        Ok(Size_type::new(*device_position as u64))
     }
 
-    fn Erase(&self) -> crate::Result_type<()> {
+    fn erase(&self) -> crate::Result_type<()> {
         let mut inner = block_on(self.0.write());
 
-        let (Data, Position) = &mut *inner;
+        let (data, position) = &mut *inner;
 
-        Data[*Position..*Position + BLOCK_SIZE].fill(0);
+        data[*position..*position + BLOCK_SIZE].fill(0);
 
         Ok(())
     }
 
-    fn Flush(&self) -> crate::Result_type<()> {
+    fn flush(&self) -> crate::Result_type<()> {
         Ok(())
     }
 
@@ -205,7 +206,7 @@ impl<const BLOCK_SIZE: usize> Device_trait for Memory_device_type<BLOCK_SIZE> {
         Ok(BLOCK_SIZE)
     }
 
-    fn Dump_device(&self) -> crate::Result_type<Vec<u8>> {
+    fn dump_device(&self) -> crate::Result_type<Vec<u8>> {
         let inner = block_on(self.0.read());
 
         Ok(inner.0.clone())

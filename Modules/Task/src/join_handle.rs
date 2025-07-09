@@ -10,16 +10,16 @@ impl<T> Join_handle_type<T> {
     pub fn new() -> (Self, Self) {
         let signal = Signal::<CriticalSectionRawMutex, T>::new();
 
-        let Arc = Arc::new(signal);
+        let arc = Arc::new(signal);
 
-        (Self(Arc.clone()), Self(Arc))
+        (Self(arc.clone()), Self(arc))
     }
 
-    pub(crate) fn Signal(&self, Value: T) {
-        self.0.signal(Value);
+    pub(crate) fn signal(&self, value: T) {
+        self.0.signal(value);
     }
 
-    pub async fn Join(self) -> T {
+    pub async fn join(self) -> T {
         self.0.wait().await
     }
 }

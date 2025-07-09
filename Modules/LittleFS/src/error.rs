@@ -27,8 +27,8 @@ pub enum Error_type {
 }
     */
 
-pub(crate) fn convert_result(Error: i32) -> Result_type<u32> {
-    match Error {
+pub(crate) fn convert_result(error: i32) -> Result_type<u32> {
+    match error {
         littlefs::lfs_error_LFS_ERR_IO => Err(Error_type::Input_output),
         littlefs::lfs_error_LFS_ERR_CORRUPT => Err(Error_type::Corrupted),
         littlefs::lfs_error_LFS_ERR_NOENT => Err(Error_type::Not_found),
@@ -44,8 +44,8 @@ pub(crate) fn convert_result(Error: i32) -> Result_type<u32> {
         littlefs::lfs_error_LFS_ERR_NOATTR => Err(Error_type::No_attribute),
         littlefs::lfs_error_LFS_ERR_NAMETOOLONG => Err(Error_type::Name_too_long),
         _ => {
-            if Error >= littlefs::lfs_error_LFS_ERR_OK {
-                Ok(Error as u32)
+            if error >= littlefs::lfs_error_LFS_ERR_OK {
+                Ok(error as u32)
             } else {
                 Err(Error_type::Internal_error)
             }

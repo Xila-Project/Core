@@ -1,12 +1,12 @@
-//! Group management functionality for the Authentication module.
-//!
-//! This module provides group management capabilities including:
-//! - Group creation and management
-//! - User group membership tracking
-//! - File-based persistent storage of group data
-//!
-//! All group data is stored as JSON files in the `/System/Groups/` directory,
-//! with each group having their own file named after their group name.
+// Group management functionality for the Authentication module.
+//
+// This module provides group management capabilities including:
+// - Group creation and management
+// - User group membership tracking
+// - File-based persistent storage of group data
+//
+// All group data is stored as JSON files in the `/System/Groups/` directory,
+// with each group having their own file named after their group name.
 
 use alloc::{
     borrow::ToOwned,
@@ -69,7 +69,7 @@ impl Group_type {
     ///
     /// A `Group_identifier_type` containing the group's unique ID.
     pub fn get_identifier(&self) -> Group_identifier_type {
-        Group_identifier_type::New(self.identifier)
+        Group_identifier_type::new(self.identifier)
     }
 
     /// Returns the group's name as a string slice.
@@ -105,10 +105,10 @@ impl Group_type {
 ///
 /// Returns `Ok(Path_owned_type)` with the complete path to the group file,
 /// or `Err(Error_type::Failed_to_get_group_file_path)` if path construction fails.
-pub fn get_group_file_path(Group_name: &str) -> Result_type<Path_owned_type> {
-    Path_type::New(GROUP_FOLDER_PATH)
+pub fn get_group_file_path(group_name: &str) -> Result_type<Path_owned_type> {
+    Path_type::new(GROUP_FOLDER_PATH)
         .to_owned()
-        .Append(Group_name)
+        .append(group_name)
         .ok_or(Error_type::Failed_to_get_group_file_path)
 }
 
@@ -139,12 +139,12 @@ pub async fn read_group_file<'a>(
     buffer: &mut Vec<u8>,
     file: &str,
 ) -> Result_type<Group_type> {
-    let group_file_path = Path_type::New(GROUP_FOLDER_PATH)
+    let group_file_path = Path_type::new(GROUP_FOLDER_PATH)
         .to_owned()
-        .Append(file)
+        .append(file)
         .ok_or(Error_type::Failed_to_get_group_file_path)?;
 
-    let Group_file = File_type::open(
+    let group_file = File_type::open(
         virtual_file_system,
         group_file_path,
         Mode_type::READ_ONLY.into(),
@@ -154,7 +154,7 @@ pub async fn read_group_file<'a>(
 
     buffer.clear();
 
-    Group_file
+    group_file
         .read_to_end(buffer)
         .await
         .map_err(Error_type::Failed_to_read_group_file)?;
@@ -197,8 +197,8 @@ pub async fn create_group<'a>(
     let users_manager = users::get_instance();
 
     // - New group identifier if not provided.
-    let Group_identifier = if let Some(Group_identifier) = group_identifier {
-        Group_identifier
+    let group_identifier = if let Some(group_identifier) = group_identifier {
+        group_identifier
     } else {
         users_manager
             .get_new_group_identifier()
@@ -208,34 +208,34 @@ pub async fn create_group<'a>(
 
     // - Add it to the users manager.
     users_manager
-        .add_group(Group_identifier, group_name, &[])
+        .add_group(group_identifier, group_name, &[])
         .await
         .map_err(Error_type::Failed_to_add_group)?;
 
     // - Write group file.
-    let Group = Group_type::new(Group_identifier.As_u16(), group_name.to_string(), vec![]);
+    let group = Group_type::new(group_identifier.as_u16(), group_name.to_string(), vec![]);
 
     match Directory_type::create(virtual_file_system, GROUP_FOLDER_PATH).await {
         Ok(_) | Err(file_system::Error_type::Already_exists) => {}
         Err(error) => Err(Error_type::Failed_to_create_groups_directory(error))?,
     };
 
-    let Group_file_path = get_group_file_path(group_name)?;
+    let group_file_path = get_group_file_path(group_name)?;
 
-    let Group_file = File_type::open(
+    let group_file = File_type::open(
         virtual_file_system,
-        Group_file_path,
-        Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None),
+        group_file_path,
+        Flags_type::new(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None),
     )
     .await
     .map_err(Error_type::Failed_to_open_group_file)?;
 
-    let Group_json = miniserde::json::to_string(&Group);
+    let group_json = miniserde::json::to_string(&group);
 
-    Group_file
-        .write(Group_json.as_bytes())
+    group_file
+        .write(group_json.as_bytes())
         .await
         .map_err(Error_type::Failed_to_write_group_file)?;
 
-    Ok(Group_identifier)
+    Ok(group_identifier)
 }

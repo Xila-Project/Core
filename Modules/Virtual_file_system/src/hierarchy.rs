@@ -53,7 +53,7 @@ pub async fn clean_devices_in_directory<'a>(
             continue;
         }
 
-        let entry_path = path.Append(entry.get_name()).unwrap();
+        let entry_path = path.append(entry.get_name()).unwrap();
 
         if virtual_file_system
             .get_metadata_from_path(&entry_path)

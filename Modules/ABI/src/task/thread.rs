@@ -12,12 +12,12 @@ pub type Xila_thread_identifier_type = usize;
 pub extern "C" fn Xila_get_current_thread_identifier() -> usize {
     context::get_instance()
         .get_current_task_identifier()
-        .Into_inner() as usize
+        .into_inner() as usize
 }
 
 #[no_mangle]
 pub extern "C" fn Xila_thread_sleep(duration: u64) {
-    block_on(Manager_type::Sleep(Duration::from_millis(duration)));
+    block_on(Manager_type::sleep(Duration::from_millis(duration)));
 }
 
 #[no_mangle]

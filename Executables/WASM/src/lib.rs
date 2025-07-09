@@ -38,7 +38,7 @@ pub async fn inner_main(standard: &Standard_type, arguments: String) -> Result<(
         return Err(Error_type::Invalid_number_of_arguments);
     }
 
-    let path = Path_type::New(arguments[0]);
+    let path = Path_type::new(arguments[0]);
 
     match path.get_extension() {
         Some("wasm") | Some("WASM") => Ok(()),
@@ -55,9 +55,9 @@ pub async fn inner_main(standard: &Standard_type, arguments: String) -> Result<(
 
         let current_path = current_path.get_value();
 
-        let current_path = Path_type::New(current_path);
+        let current_path = Path_type::new(current_path);
 
-        current_path.Join(path).ok_or(Error_type::Invalid_path)?
+        current_path.join(path).ok_or(Error_type::Invalid_path)?
     };
 
     let file = File_type::open(
@@ -84,7 +84,7 @@ pub async fn inner_main(standard: &Standard_type, arguments: String) -> Result<(
     let (standard_in, standard_out, standard_error) = standard.split();
 
     virtual_machine::get_instance()
-        .Execute(buffer, 4096, standard_in, standard_out, standard_error)
+        .execute(buffer, 4096, standard_in, standard_out, standard_error)
         .await
         .map_err(|_| Error_type::Failed_to_execute)?;
 

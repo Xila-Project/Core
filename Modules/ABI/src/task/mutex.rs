@@ -35,7 +35,7 @@ impl Raw_mutex_type {
     ///
     /// This function is unsafe because it dereferences a raw pointer.
     /// The caller must ensure the pointer is valid and points to properly initialized memory.
-    pub unsafe fn From_pointer<'a>(pointer: *const Raw_mutex_type) -> Option<&'a Self> {
+    pub unsafe fn from_pointer<'a>(pointer: *const Raw_mutex_type) -> Option<&'a Self> {
         if !Self::is_valid_pointer(pointer) {
             return None;
         }
@@ -58,7 +58,7 @@ impl Raw_mutex_type {
     pub fn lock(&self) -> bool {
         let current_task = context::get_instance()
             .get_current_task_identifier()
-            .Into_inner() as usize;
+            .into_inner() as usize;
 
         unsafe {
             self.mutex.lock_mut(|state| {
@@ -83,7 +83,7 @@ impl Raw_mutex_type {
     pub fn unlock(&self) -> bool {
         let current_task = context::get_instance()
             .get_current_task_identifier()
-            .Into_inner() as usize;
+            .into_inner() as usize;
 
         unsafe {
             self.mutex.lock_mut(|state| {

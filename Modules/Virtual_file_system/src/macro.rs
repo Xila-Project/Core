@@ -5,9 +5,9 @@ macro_rules! Mount_static_devices {
 
     async || -> Result<(), file_system::Error_type>
     {
-        use file_system::Create_device;
+        use file_system::create_device;
 
-        $( $Virtual_file_system.mount_static_device($Task_identifier, $Path, Create_device!($Device)).await?; )*
+        $( $Virtual_file_system.mount_static_device($Task_identifier, $Path, create_device!($Device)).await?; )*
 
         Ok(())
     }()

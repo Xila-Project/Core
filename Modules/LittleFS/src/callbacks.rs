@@ -15,14 +15,14 @@ pub unsafe extern "C" fn read_callback(
 ) -> c_int {
     let device = unsafe { Box::from_raw(configuration.read().context as *mut Device_type) };
 
-    let Buffer = unsafe { core::slice::from_raw_parts_mut(buffer as *mut u8, size as usize) };
+    let buffer = unsafe { core::slice::from_raw_parts_mut(buffer as *mut u8, size as usize) };
 
-    let Block_size = unsafe { configuration.read().block_size };
+    let block_size = unsafe { configuration.read().block_size };
 
-    let Position = block as u64 * Block_size as u64 + offset as u64;
+    let position = block as u64 * block_size as u64 + offset as u64;
 
     loop {
-        match device.Set_position(&Position_type::Start(Position)) {
+        match device.set_position(&Position_type::Start(position)) {
             Ok(_) => break,
             Err(Error_type::Ressource_busy) => continue,
             Err(_) => return littlefs::lfs_error_LFS_ERR_IO,
@@ -30,7 +30,7 @@ pub unsafe extern "C" fn read_callback(
     }
 
     loop {
-        match device.Read(Buffer) {
+        match device.read(buffer) {
             Ok(_) => break,
             Err(Error_type::Ressource_busy) => continue,
             Err(_) => return littlefs::lfs_error_LFS_ERR_IO,
@@ -51,14 +51,14 @@ pub unsafe extern "C" fn programm_callback(
 ) -> c_int {
     let device = unsafe { Box::from_raw(configuration.read().context as *mut Device_type) };
 
-    let Buffer = unsafe { core::slice::from_raw_parts(buffer as *const u8, size as usize) };
+    let buffer = unsafe { core::slice::from_raw_parts(buffer as *const u8, size as usize) };
 
-    let Block_size = unsafe { configuration.read().block_size };
+    let block_size = unsafe { configuration.read().block_size };
 
-    let Position = block as u64 * Block_size as u64 + offset as u64;
+    let position = block as u64 * block_size as u64 + offset as u64;
 
     loop {
-        match device.Set_position(&Position_type::Start(Position)) {
+        match device.set_position(&Position_type::Start(position)) {
             Ok(_) => break,
             Err(Error_type::Ressource_busy) => continue,
             Err(_) => return littlefs::lfs_error_LFS_ERR_IO,
@@ -66,7 +66,7 @@ pub unsafe extern "C" fn programm_callback(
     }
 
     loop {
-        match device.Write(Buffer) {
+        match device.write(buffer) {
             Ok(_) => break,
             Err(Error_type::Ressource_busy) => continue,
             Err(_) => return littlefs::lfs_error_LFS_ERR_IO,
@@ -84,12 +84,12 @@ pub unsafe extern "C" fn erase_callback(
 ) -> c_int {
     let device = unsafe { Box::from_raw(configuration.read().context as *mut Device_type) };
 
-    let Block_size = unsafe { configuration.read().block_size };
+    let block_size = unsafe { configuration.read().block_size };
 
-    let Position = block as u64 * Block_size as u64;
+    let position = block as u64 * block_size as u64;
 
     loop {
-        match device.Set_position(&Position_type::Start(Position)) {
+        match device.set_position(&Position_type::Start(position)) {
             Ok(_) => break,
             Err(Error_type::Ressource_busy) => continue,
             Err(_) => return littlefs::lfs_error_LFS_ERR_IO,
@@ -97,7 +97,7 @@ pub unsafe extern "C" fn erase_callback(
     }
 
     loop {
-        match device.Erase() {
+        match device.erase() {
             Ok(_) => break,
             Err(Error_type::Ressource_busy) => continue,
             Err(_) => return littlefs::lfs_error_LFS_ERR_IO,
@@ -109,11 +109,11 @@ pub unsafe extern "C" fn erase_callback(
     0
 }
 
-pub unsafe extern "C" fn flush_callback(Configuration: *const littlefs::lfs_config) -> c_int {
-    let device = unsafe { Box::from_raw(Configuration.read().context as *mut Device_type) };
+pub unsafe extern "C" fn flush_callback(configuration: *const littlefs::lfs_config) -> c_int {
+    let device = unsafe { Box::from_raw(configuration.read().context as *mut Device_type) };
 
     loop {
-        match device.Flush() {
+        match device.flush() {
             Ok(_) => break,
             Err(Error_type::Ressource_busy) => continue,
             Err(_) => return littlefs::lfs_error_LFS_ERR_IO,

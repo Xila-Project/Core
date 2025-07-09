@@ -28,19 +28,19 @@ pub extern "C" fn Xila_semaphore_close(_semaphore: *mut Xila_semaphore_type) -> 
 
 /// This function is used to wait a semaphore.
 #[no_mangle]
-pub extern "C" fn Xila_semaphore_wait(_Semaphore: *mut Xila_semaphore_type) -> u32 {
+pub extern "C" fn Xila_semaphore_wait(_semaphore: *mut Xila_semaphore_type) -> u32 {
     todo!()
 }
 
 /// This function is used to try wait a semaphore.
 #[no_mangle]
-pub extern "C" fn Xila_semaphore_try_wait(_Semaphore: *mut Xila_semaphore_type) -> u32 {
+pub extern "C" fn Xila_semaphore_try_wait(_semaphore: *mut Xila_semaphore_type) -> u32 {
     todo!()
 }
 
 /// This function is used to post a semaphore.
 #[no_mangle]
-pub extern "C" fn Xila_semaphore_post(_Semaphore: *mut Xila_semaphore_type) -> u32 {
+pub extern "C" fn Xila_semaphore_post(_semaphore: *mut Xila_semaphore_type) -> u32 {
     todo!()
 }
 
@@ -63,6 +63,6 @@ pub unsafe extern "C" fn Xila_semaphore_get_value(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_semaphore_remove(_Name: *const c_char) -> u32 {
+pub unsafe extern "C" fn Xila_semaphore_remove(_name: *const c_char) -> u32 {
     todo!()
 }

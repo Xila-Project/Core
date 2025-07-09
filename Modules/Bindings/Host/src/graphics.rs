@@ -72,7 +72,7 @@ impl Pointer_table_type {
     }
 
     const fn get_identifier(task: Task_identifier_type, identifier: u16) -> usize {
-        (task.Into_inner() as usize) << 32 | identifier as usize
+        (task.into_inner() as usize) << 32 | identifier as usize
     }
 
     pub fn insert(&mut self, task: Task_identifier_type, pointer: *mut c_void) -> Result_type<u16> {
@@ -169,7 +169,7 @@ pub unsafe fn call(
 
     let pointer_table_reference = (*pointer_table_reference).get_mut().unwrap();
 
-    if let Err(error) = generated_bindings::Call_function(
+    if let Err(error) = generated_bindings::call_function(
         environment,
         pointer_table_reference,
         function,

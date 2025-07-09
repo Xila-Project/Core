@@ -12,7 +12,7 @@ pub struct File_drive_device_type(RwLock<File>);
 
 impl File_drive_device_type {
     pub fn new(path: &impl AsRef<Path_type>) -> Self {
-        let path = path.as_ref().As_str();
+        let path = path.as_ref().as_str();
 
         let file = OpenOptions::new()
             .read(true)
@@ -27,21 +27,21 @@ impl File_drive_device_type {
 }
 
 impl Device_trait for File_drive_device_type {
-    fn Read(&self, buffer: &mut [u8]) -> file_system::Result_type<file_system::Size_type> {
+    fn read(&self, buffer: &mut [u8]) -> file_system::Result_type<file_system::Size_type> {
         self.0
             .try_write()
             .map_err(|_| Error_type::Ressource_busy)?
             .read(buffer)
-            .map(|size| file_system::Size_type::New(size as u64))
+            .map(|size| file_system::Size_type::new(size as u64))
             .map_err(map_error)
     }
 
-    fn Write(&self, buffer: &[u8]) -> file_system::Result_type<file_system::Size_type> {
+    fn write(&self, buffer: &[u8]) -> file_system::Result_type<file_system::Size_type> {
         self.0
             .try_write()
             .map_err(|_| Error_type::Ressource_busy)?
             .write(buffer)
-            .map(|size| file_system::Size_type::New(size as u64))
+            .map(|size| file_system::Size_type::new(size as u64))
             .map_err(map_error)
     }
 
@@ -49,7 +49,7 @@ impl Device_trait for File_drive_device_type {
         Ok((1024 * 1024 * 1024 * 4_usize).into())
     }
 
-    fn Set_position(
+    fn set_position(
         &self,
         position: &file_system::Position_type,
     ) -> file_system::Result_type<file_system::Size_type> {
@@ -63,15 +63,15 @@ impl Device_trait for File_drive_device_type {
             .try_write()
             .map_err(|_| Error_type::Ressource_busy)?
             .seek(position)
-            .map(Size_type::New)
+            .map(Size_type::new)
             .map_err(map_error)
     }
 
-    fn Flush(&self) -> file_system::Result_type<()> {
+    fn flush(&self) -> file_system::Result_type<()> {
         self.0.write().unwrap().flush().map_err(map_error)
     }
 
-    fn Erase(&self) -> file_system::Result_type<()> {
+    fn erase(&self) -> file_system::Result_type<()> {
         Ok(())
     }
 
@@ -91,14 +91,14 @@ mod tests {
 
         let data = [1, 2, 3, 4, 5];
 
-        assert_eq!(file.Write(&data).unwrap(), Size_type::New(5));
+        assert_eq!(file.write(&data).unwrap(), Size_type::new(5));
 
-        file.Set_position(&file_system::Position_type::Start(0))
+        file.set_position(&file_system::Position_type::Start(0))
             .unwrap();
 
         let mut buffer = [0; 5];
 
-        assert_eq!(file.Read(&mut buffer).unwrap(), Size_type::New(5));
+        assert_eq!(file.read(&mut buffer).unwrap(), Size_type::new(5));
         assert_eq!(buffer, data);
     }
 
@@ -106,19 +106,19 @@ mod tests {
     fn test_read_write_at_position() {
         let file = File_drive_device_type::new(&"./Test.img");
 
-        file.Set_position(&file_system::Position_type::Start(10))
+        file.set_position(&file_system::Position_type::Start(10))
             .unwrap();
 
         let data = [1, 2, 3, 4, 5];
 
-        assert_eq!(file.Write(&data).unwrap(), Size_type::New(5));
+        assert_eq!(file.write(&data).unwrap(), Size_type::new(5));
 
-        file.Set_position(&file_system::Position_type::Start(10))
+        file.set_position(&file_system::Position_type::Start(10))
             .unwrap();
 
         let mut buffer = [0; 5];
 
-        assert_eq!(file.Read(&mut buffer).unwrap(), Size_type::New(5));
+        assert_eq!(file.read(&mut buffer).unwrap(), Size_type::new(5));
         assert_eq!(buffer, data);
     }
 }

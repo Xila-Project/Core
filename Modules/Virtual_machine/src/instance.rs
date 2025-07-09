@@ -40,7 +40,7 @@ impl Drop for Instance_type<'_> {
 }
 
 impl<'module> Instance_type<'module> {
-    pub fn New(
+    pub fn new(
         runtime: &Runtime_type,
         module: &'module Module_type<'module>,
         stack_size: usize,
@@ -51,38 +51,38 @@ impl<'module> Instance_type<'module> {
             stack_size as u32,
         )?;
 
-        let Instance = Instance_type {
+        let instance = Instance_type {
             instance: wamr_instance,
         };
 
-        Ok(Instance)
+        Ok(instance)
     }
 
-    pub fn Validate_native_pointer<T>(&self, Pointer: *const T, Size: usize) -> bool {
+    pub fn validate_native_pointer<T>(&self, pointer: *const T, size: usize) -> bool {
         unsafe {
             wasm_runtime_validate_native_addr(
                 self.get_inner_reference().get_inner_instance(),
-                Pointer as *mut c_void,
-                Size as u64,
+                pointer as *mut c_void,
+                size as u64,
             )
         }
     }
 
-    pub fn Validate_WASM_pointer(&self, Address: WASM_pointer_type, Size: usize) -> bool {
+    pub fn validate_wasm_pointer(&self, address: WASM_pointer_type, size: usize) -> bool {
         unsafe {
             wasm_runtime_validate_native_addr(
                 self.get_inner_reference().get_inner_instance(),
-                Address as *mut c_void,
-                Size as u64,
+                address as *mut c_void,
+                size as u64,
             )
         }
     }
 
-    pub fn Convert_to_WASM_pointer<T>(&self, Pointer: *const T) -> WASM_pointer_type {
+    pub fn convert_to_wasm_pointer<T>(&self, pointer: *const T) -> WASM_pointer_type {
         unsafe {
             wasm_runtime_addr_native_to_app(
                 self.get_inner_reference().get_inner_instance(),
-                Pointer as *mut c_void,
+                pointer as *mut c_void,
             ) as WASM_pointer_type
         }
     }
@@ -91,14 +91,14 @@ impl<'module> Instance_type<'module> {
     ///
     /// This function is unsafe because it is not checked that the address is valid.
     #[allow(clippy::mut_from_ref)]
-    pub unsafe fn convert_to_native_pointer<T>(&self, Address: WASM_pointer_type) -> *mut T {
+    pub unsafe fn convert_to_native_pointer<T>(&self, address: WASM_pointer_type) -> *mut T {
         wasm_runtime_addr_app_to_native(
             self.get_inner_reference().get_inner_instance(),
-            Address as u64,
+            address as u64,
         ) as *mut T
     }
 
-    pub fn Call_export_function(
+    pub fn call_export_function(
         &self,
         name: &str,
         parameters: &Vec<WasmValue>,
@@ -116,15 +116,15 @@ impl<'module> Instance_type<'module> {
         }
     }
 
-    pub fn Call_main(&self, Parameters: &Vec<WasmValue>) -> Result_type<Vec<WasmValue>> {
-        self.Call_export_function("_start", Parameters)
+    pub fn call_main(&self, parameters: &Vec<WasmValue>) -> Result_type<Vec<WasmValue>> {
+        self.call_export_function("_start", parameters)
     }
 
-    pub fn Allocate<T>(&mut self, Size: usize) -> Result_type<*mut T> {
-        let result = self.Call_export_function("Allocate", &vec![WasmValue::I32(Size as i32)])?;
+    pub fn allocate<T>(&mut self, size: usize) -> Result_type<*mut T> {
+        let result = self.call_export_function("Allocate", &vec![WasmValue::I32(size as i32)])?;
 
-        if let Some(WasmValue::I32(Pointer)) = result.first() {
-            let pointer = unsafe { self.convert_to_native_pointer(*Pointer as u32) };
+        if let Some(WasmValue::I32(pointer)) = result.first() {
+            let pointer = unsafe { self.convert_to_native_pointer(*pointer as u32) };
 
             Ok(pointer)
         } else {
@@ -132,8 +132,8 @@ impl<'module> Instance_type<'module> {
         }
     }
 
-    pub fn Deallocate<T>(&mut self, Data: *mut T) {
-        let _ = self.Call_export_function("Deallocate", &vec![WasmValue::I32(Data as i32)]);
+    pub fn deallocate<T>(&mut self, data: *mut T) {
+        let _ = self.call_export_function("Deallocate", &vec![WasmValue::I32(data as i32)]);
     }
 
     pub fn get_inner_reference(&self) -> &Instance {

@@ -34,7 +34,7 @@ pub struct Desk_type {
 }
 
 unsafe extern "C" fn event_handler(event: *mut lvgl::lv_event_t) {
-    let code = Event_code_type::From_LVGL_code(lvgl::lv_event_get_code(event));
+    let code = Event_code_type::from_lvgl_code(lvgl::lv_event_get_code(event));
 
     if code == Event_code_type::Child_created || code == Event_code_type::Child_deleted {
         let target = lvgl::lv_event_get_target(event) as *mut lvgl::lv_obj_t;

@@ -16,10 +16,10 @@ pub struct Duration_type {
 
 impl Duration_type {
     /// Creates a new [`Duration_type`] from the specified number of seconds and nanoseconds.
-    pub const fn New(Seconds: u64, Nanoseconds: u32) -> Self {
+    pub const fn new(seconds: u64, nanoseconds: u32) -> Self {
         Duration_type {
-            seconds: Seconds,
-            nanoseconds: Nanoseconds,
+            seconds,
+            nanoseconds,
         }
     }
 
@@ -40,8 +40,8 @@ impl Duration_type {
     /// let duration = earlier.get_duration_since(&later);
     /// assert_eq!(duration, Duration_type::New(0, 0));
     /// ```
-    pub fn get_duration_since(&self, Earlier: &Duration_type) -> Duration_type {
-        self.get_duration_since_checked(Earlier).unwrap_or_default()
+    pub fn get_duration_since(&self, earlier: &Duration_type) -> Duration_type {
+        self.get_duration_since_checked(earlier).unwrap_or_default()
     }
 
     /// Returns the duration between the two instants, or `None` if the duration is negative.
@@ -61,9 +61,9 @@ impl Duration_type {
     /// let duration = earlier.get_duration_since_checked(&later);
     /// assert_eq!(duration, None);
     /// ```
-    pub fn get_duration_since_checked(&self, Earlier: &Duration_type) -> Option<Duration_type> {
+    pub fn get_duration_since_checked(&self, earlier: &Duration_type) -> Option<Duration_type> {
         let self_duration = Duration::new(self.seconds, self.nanoseconds);
-        let earlier_duration = Duration::new(Earlier.seconds, Earlier.nanoseconds);
+        let earlier_duration = Duration::new(earlier.seconds, earlier.nanoseconds);
         self_duration
             .checked_sub(earlier_duration)
             .map(|d| Duration_type {
@@ -98,27 +98,27 @@ impl Duration_type {
         }
     }
 
-    pub fn Add_checked(&self, Duration: &Duration_type) -> Option<Duration_type> {
+    pub fn add_checked(&self, duration: &Duration_type) -> Option<Duration_type> {
         let self_duration = Duration::new(self.seconds, self.nanoseconds);
-        let duration = Duration::new(Duration.seconds, Duration.nanoseconds);
+        let duration = Duration::new(duration.seconds, duration.nanoseconds);
         self_duration.checked_add(duration).map(|d| Duration_type {
             seconds: d.as_secs(),
             nanoseconds: d.subsec_nanos(),
         })
     }
 
-    pub fn Substract_checked(&self, Duration: &Duration_type) -> Option<Duration_type> {
+    pub fn substract_checked(&self, duration: &Duration_type) -> Option<Duration_type> {
         let self_duration = Duration::new(self.seconds, self.nanoseconds);
-        let duration = Duration::new(Duration.seconds, Duration.nanoseconds);
+        let duration = Duration::new(duration.seconds, duration.nanoseconds);
         self_duration.checked_sub(duration).map(|d| Duration_type {
             seconds: d.as_secs(),
             nanoseconds: d.subsec_nanos(),
         })
     }
 
-    pub fn Add_saturating(&self, Duration: &Duration_type) -> Duration_type {
+    pub fn add_saturating(&self, duration: &Duration_type) -> Duration_type {
         let self_duration = Duration::new(self.seconds, self.nanoseconds);
-        let duration = Duration::new(Duration.seconds, Duration.nanoseconds);
+        let duration = Duration::new(duration.seconds, duration.nanoseconds);
         let result = self_duration.saturating_add(duration);
         Duration_type {
             seconds: result.as_secs(),
@@ -126,7 +126,7 @@ impl Duration_type {
         }
     }
 
-    pub fn Substract_saturating(&self, duration: &Duration_type) -> Duration_type {
+    pub fn substract_saturating(&self, duration: &Duration_type) -> Duration_type {
         let self_duration = Duration::new(self.seconds, self.nanoseconds);
         let duration = Duration::new(duration.seconds, duration.nanoseconds);
         let result = self_duration.saturating_sub(duration);
@@ -146,7 +146,7 @@ impl Duration_type {
     /// let duration = Duration_type::New(1, 500_000_000);
     /// assert_eq!(duration.As_seconds(), 1);
     /// ```
-    pub fn As_seconds(&self) -> u64 {
+    pub fn as_seconds(&self) -> u64 {
         self.seconds
     }
 
@@ -160,8 +160,8 @@ impl Duration_type {
     /// let duration = Duration_type::New(1, 500_000_000);
     /// assert_eq!(duration.As_milliseconds(), 1_500);
     /// ```
-    pub fn As_milliseconds(&self) -> u64 {
-        self.As_microseconds() as u64 / 1_000
+    pub fn as_milliseconds(&self) -> u64 {
+        self.as_microseconds() as u64 / 1_000
     }
 
     /// Returns the number of microseconds in the duration.
@@ -175,8 +175,8 @@ impl Duration_type {
     ///
     /// assert_eq!(duration.As_microseconds(), 1_500_000);
     /// ```
-    pub fn As_microseconds(&self) -> u128 {
-        self.As_nanoseconds() / 1_000
+    pub fn as_microseconds(&self) -> u128 {
+        self.as_nanoseconds() / 1_000
     }
 
     /// Returns the number of nanoseconds in the duration.
@@ -189,7 +189,7 @@ impl Duration_type {
     /// let duration = Duration_type::New(1, 500_000_000);
     /// assert_eq!(duration.As_nanoseconds(), 1_500_000_000);
     /// ```
-    pub fn As_nanoseconds(&self) -> u128 {
+    pub fn as_nanoseconds(&self) -> u128 {
         u128::from(self.seconds) * 1_000_000_000 + u128::from(self.nanoseconds)
     }
 }
@@ -197,8 +197,8 @@ impl Duration_type {
 impl Add<&Duration_type> for Duration_type {
     type Output = Duration_type;
 
-    fn add(self, Duration: &Duration_type) -> Duration_type {
-        self.Add_checked(Duration)
+    fn add(self, duration: &Duration_type) -> Duration_type {
+        self.add_checked(duration)
             .expect("Overflow when adding duration")
     }
 }
@@ -206,7 +206,7 @@ impl Add<&Duration_type> for Duration_type {
 impl AddAssign<&Duration_type> for Duration_type {
     fn add_assign(&mut self, duration: &Duration_type) {
         *self = self
-            .Add_checked(duration)
+            .add_checked(duration)
             .expect("Overflow when adding duration");
     }
 }
@@ -214,8 +214,8 @@ impl AddAssign<&Duration_type> for Duration_type {
 impl Sub<&Duration_type> for Duration_type {
     type Output = Duration_type;
 
-    fn sub(self, Duration: &Duration_type) -> Duration_type {
-        self.Substract_checked(Duration)
+    fn sub(self, duration: &Duration_type) -> Duration_type {
+        self.substract_checked(duration)
             .expect("Overflow when substracting duration")
     }
 }
@@ -223,7 +223,7 @@ impl Sub<&Duration_type> for Duration_type {
 impl SubAssign<&Duration_type> for Duration_type {
     fn sub_assign(&mut self, duration: &Duration_type) {
         *self = self
-            .Substract_checked(duration)
+            .substract_checked(duration)
             .expect("Overflow when substracting duration");
     }
 }

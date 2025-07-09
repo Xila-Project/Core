@@ -84,21 +84,21 @@ pub async fn load_all_users_and_groups() -> Result_type<()> {
     use user::read_user_file;
     use virtual_file_system::Directory_type;
     // Open Xila users folder.
-    let Virtual_file_system = virtual_file_system::get_instance();
+    let virtual_file_system = virtual_file_system::get_instance();
 
-    let Users_manager = users::get_instance();
+    let users_manager = users::get_instance();
 
-    let mut Buffer: Vec<u8> = vec![];
+    let mut buffer: Vec<u8> = vec![];
 
     {
-        let Groups_directory = Directory_type::open(Virtual_file_system, GROUP_FOLDER_PATH)
+        let groups_directory = Directory_type::open(virtual_file_system, GROUP_FOLDER_PATH)
             .await
             .map_err(Error_type::Failed_to_read_group_directory)?;
 
         // Read all groups.
-        for Group_entry in Groups_directory {
+        for group_entry in groups_directory {
             let group = if let Ok(group) =
-                read_group_file(Virtual_file_system, &mut Buffer, Group_entry.get_name()).await
+                read_group_file(virtual_file_system, &mut buffer, group_entry.get_name()).await
             {
                 group
             } else {
@@ -106,7 +106,7 @@ pub async fn load_all_users_and_groups() -> Result_type<()> {
                 continue;
             };
 
-            Users_manager
+            users_manager
                 .add_group(group.get_identifier(), group.get_name(), group.get_users())
                 .await
                 .map_err(Error_type::Failed_to_add_group)?;
@@ -114,14 +114,14 @@ pub async fn load_all_users_and_groups() -> Result_type<()> {
     }
 
     {
-        let Users_directory = Directory_type::open(Virtual_file_system, USERS_FOLDER_PATH)
+        let users_directory = Directory_type::open(virtual_file_system, USERS_FOLDER_PATH)
             .await
             .map_err(Error_type::Failed_to_read_users_directory)?;
 
         // Read all users.
-        for User_entry in Users_directory {
+        for user_entry in users_directory {
             let user = if let Ok(user) =
-                read_user_file(Virtual_file_system, &mut Buffer, User_entry.get_name()).await
+                read_user_file(virtual_file_system, &mut buffer, user_entry.get_name()).await
             {
                 user
             } else {
@@ -129,7 +129,7 @@ pub async fn load_all_users_and_groups() -> Result_type<()> {
                 continue;
             };
 
-            Users_manager
+            users_manager
                 .add_user(
                     user.get_identifier(),
                     user.get_name(),

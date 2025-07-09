@@ -19,11 +19,11 @@ impl Terminal_executable_type {
         let file = match File_type::open(
             virtual_file_system,
             "/Configuration/Shared/Shortcuts/Terminal.json",
-            Flags_type::New(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
+            Flags_type::new(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
         )
         .await
         {
-            Ok(File) => File,
+            Ok(file) => file,
             Err(file_system::Error_type::Already_exists) => {
                 return Ok(Self);
             }

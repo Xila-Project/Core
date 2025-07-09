@@ -18,7 +18,7 @@ impl Screen_device_type {
 }
 
 impl Device_trait for Screen_device_type {
-    fn Read(&self, buffer: &mut [u8]) -> file_system::Result_type<file_system::Size_type> {
+    fn read(&self, buffer: &mut [u8]) -> file_system::Result_type<file_system::Size_type> {
         let data: &mut Screen_read_data_type = buffer
             .try_into()
             .map_err(|_| file_system::Error_type::Invalid_parameter)?;
@@ -27,31 +27,31 @@ impl Device_trait for Screen_device_type {
 
         data.set_resolution(resolution);
 
-        Ok(Size_type::New(size_of::<Self>() as u64))
+        Ok(Size_type::new(size_of::<Self>() as u64))
     }
 
-    fn Write(&self, buffer: &[u8]) -> file_system::Result_type<file_system::Size_type> {
+    fn write(&self, buffer: &[u8]) -> file_system::Result_type<file_system::Size_type> {
         let data: &Screen_write_data_type = buffer
             .try_into()
             .map_err(|_| file_system::Error_type::Invalid_parameter)?;
 
         self.0.lock().unwrap().draw(data).unwrap();
 
-        Ok(Size_type::New(size_of::<Self>() as u64))
+        Ok(Size_type::new(size_of::<Self>() as u64))
     }
 
     fn get_size(&self) -> file_system::Result_type<file_system::Size_type> {
-        Ok(Size_type::New(size_of::<Self>() as u64))
+        Ok(Size_type::new(size_of::<Self>() as u64))
     }
 
-    fn Set_position(
+    fn set_position(
         &self,
         _: &file_system::Position_type,
     ) -> file_system::Result_type<file_system::Size_type> {
         Err(file_system::Error_type::Unsupported_operation)
     }
 
-    fn Flush(&self) -> file_system::Result_type<()> {
+    fn flush(&self) -> file_system::Result_type<()> {
         Ok(())
     }
 }

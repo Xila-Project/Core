@@ -7,7 +7,7 @@ use core::fmt::Debug;
 
 impl Manager_type {
     /// Find the first available identifier for any identifier type with Into_inner() method
-    pub(crate) fn Find_first_available_identifier<Raw_identifier_type, Identifier_type, V>(
+    pub(crate) fn find_first_available_identifier<Raw_identifier_type, Identifier_type, V>(
         map: &BTreeMap<Identifier_type, V>,
         mut range: impl Iterator<Item = Raw_identifier_type>,
     ) -> Option<Identifier_type>
@@ -15,10 +15,10 @@ impl Manager_type {
         Identifier_type: PartialEq<Raw_identifier_type> + From<Raw_identifier_type> + Debug,
         Raw_identifier_type: Debug,
     {
-        for Key in map.keys() {
+        for key in map.keys() {
             match range.next() {
                 Some(test_key) => {
-                    if *Key != test_key {
+                    if *key != test_key {
                         return Some(test_key.into());
                     }
                 }
@@ -27,7 +27,7 @@ impl Manager_type {
             }
         }
 
-        range.next().map(|Key| Key.into())
+        range.next().map(|key| key.into())
     }
 
     pub(crate) fn get_task(

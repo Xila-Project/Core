@@ -67,8 +67,8 @@ impl Protection_type {
     ///
     /// # Returns
     /// A new protection type with the specified permissions.
-    pub const fn New(Read: bool, Write: bool, Execute: bool) -> Self {
-        Self(0).Set_read(Read).Set_write(Write).Set_execute(Execute)
+    pub const fn new(read: bool, write: bool, execute: bool) -> Self {
+        Self(0).set_read(read).set_write(write).set_execute(execute)
     }
 
     /// Sets or clears specified bits in the protection flags.
@@ -79,11 +79,11 @@ impl Protection_type {
     ///
     /// # Returns
     /// A new protection type with the modified bits.
-    const fn Set_bits(mut self, Bits: u8, Value: bool) -> Self {
-        if Value {
-            self.0 |= Bits;
+    const fn set_bits(mut self, bits: u8, value: bool) -> Self {
+        if value {
+            self.0 |= bits;
         } else {
-            self.0 &= !Bits;
+            self.0 &= !bits;
         }
         self
     }
@@ -95,8 +95,8 @@ impl Protection_type {
     ///
     /// # Returns
     /// `true` if any of the specified bits are set, `false` otherwise.
-    const fn get_bits(&self, Bits: u8) -> bool {
-        self.0 & Bits != 0
+    const fn get_bits(&self, bits: u8) -> bool {
+        self.0 & bits != 0
     }
 
     /// Sets or clears the read permission.
@@ -106,8 +106,8 @@ impl Protection_type {
     ///
     /// # Returns
     /// A new protection type with the modified read permission.
-    pub const fn Set_read(self, Value: bool) -> Self {
-        self.Set_bits(Self::READ_BIT, Value)
+    pub const fn set_read(self, value: bool) -> Self {
+        self.set_bits(Self::READ_BIT, value)
     }
 
     /// Sets or clears the write permission.
@@ -117,8 +117,8 @@ impl Protection_type {
     ///
     /// # Returns
     /// A new protection type with the modified write permission.
-    pub const fn Set_write(self, Value: bool) -> Self {
-        self.Set_bits(Self::WRITE_BIT, Value)
+    pub const fn set_write(self, value: bool) -> Self {
+        self.set_bits(Self::WRITE_BIT, value)
     }
 
     /// Sets or clears the execute permission.
@@ -128,8 +128,8 @@ impl Protection_type {
     ///
     /// # Returns
     /// A new protection type with the modified execute permission.
-    pub const fn Set_execute(self, Value: bool) -> Self {
-        self.Set_bits(Self::EXECUTE_BIT, Value)
+    pub const fn set_execute(self, value: bool) -> Self {
+        self.set_bits(Self::EXECUTE_BIT, value)
     }
 
     /// Checks if read permission is granted.
@@ -160,7 +160,7 @@ impl Protection_type {
     ///
     /// # Returns
     /// The raw byte value representing the protection flags.
-    pub const fn As_u8(&self) -> u8 {
+    pub const fn as_u8(&self) -> u8 {
         self.0
     }
 
@@ -171,8 +171,8 @@ impl Protection_type {
     ///
     /// # Returns
     /// A new protection type with the specified flags.
-    pub const fn From_u8(Value: u8) -> Self {
-        Self(Value)
+    pub const fn from_u8(value: u8) -> Self {
+        Self(value)
     }
 }
 

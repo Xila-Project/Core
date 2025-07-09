@@ -2,8 +2,8 @@ use proc_macro2::{Literal, TokenStream};
 use quote::{quote, ToTokens};
 use syn::Signature;
 
-pub fn generate_code(Signatures: Vec<Signature>) -> TokenStream {
-    let mut signatures = Signatures.clone();
+pub fn generate_code(signatures: Vec<Signature>) -> TokenStream {
+    let mut signatures = signatures.clone();
 
     signatures.sort_by_key(|x| x.ident.to_string().to_lowercase());
 

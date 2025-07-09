@@ -8,7 +8,7 @@ use alloc::vec;
 use wamr_rust_sdk::{function::Function, value::WasmValue, RuntimeError};
 
 use drivers::standard_library::memory::Memory_manager_type;
-use file_system::{Create_device, Create_file_system, Memory_device_type};
+use file_system::{create_device, Create_file_system, Memory_device_type};
 use log::Information;
 use memory::Instantiate_global_allocator;
 use task::Test;
@@ -46,10 +46,10 @@ async fn integration_test() {
 
     users::initialize();
 
-    time::initialize(Create_device!(drivers::native::Time_driver_type::new()))
+    time::initialize(create_device!(drivers::native::Time_driver_type::new()))
         .expect("Failed to initialize time manager");
 
-    let device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
+    let device = create_device!(Memory_device_type::<512>::new(1024 * 512));
 
     little_fs::File_system_type::format(device.clone(), 512).unwrap();
     let file_system = Create_file_system!(little_fs::File_system_type::new(device, 256).unwrap());
@@ -88,7 +88,7 @@ async fn integration_test() {
     .unwrap();
 
     task_instance
-        .Set_environment_variable(task, "Path", "/:/bin:/usr/bin")
+        .set_environment_variable(task, "Path", "/:/bin:/usr/bin")
         .await
         .unwrap();
 
@@ -135,7 +135,7 @@ async fn integration_test() {
                 .build()
                 .unwrap();
 
-            let module = Module_type::From_buffer(
+            let module = Module_type::from_buffer(
                 &runtime,
                 binary_buffer.to_vec(),
                 "main",
@@ -146,7 +146,7 @@ async fn integration_test() {
             .await
             .unwrap();
 
-            let mut instance = Instance_type::New(&runtime, &module, 1024 * 4)
+            let mut instance = Instance_type::new(&runtime, &module, 1024 * 4)
                 .expect("Failed to instantiate module");
 
             let environment = Environment_type::from_instance(&instance)
@@ -188,14 +188,14 @@ async fn integration_test() {
 
             assert_eq!(
                 instance
-                    .Call_export_function("GCD", &vec![WasmValue::I32(9), WasmValue::I32(27)])
+                    .call_export_function("GCD", &vec![WasmValue::I32(9), WasmValue::I32(27)])
                     .unwrap(),
                 [WasmValue::I32(9)]
             );
 
             // Test allocation and deallocation
 
-            let pointer = instance.Allocate::<u32>(4).unwrap();
+            let pointer = instance.allocate::<u32>(4).unwrap();
 
             unsafe {
                 pointer.write(1234);
@@ -203,7 +203,7 @@ async fn integration_test() {
                 assert_eq!(1234, pointer.read());
             }
 
-            instance.Deallocate(pointer);
+            instance.deallocate(pointer);
         })
         .await;
 }

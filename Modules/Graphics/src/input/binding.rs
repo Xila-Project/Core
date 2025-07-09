@@ -13,18 +13,18 @@ pub unsafe extern "C" fn binding_callback_function(
     input_device: *mut lvgl::lv_indev_t,
     data: *mut lvgl::lv_indev_data_t,
 ) {
-    let User_data = unsafe { lvgl::lv_indev_get_user_data(input_device) as *mut User_data_type };
+    let user_data = unsafe { lvgl::lv_indev_get_user_data(input_device) as *mut User_data_type };
 
-    let Device = &(*User_data).device;
+    let device = &(*user_data).device;
 
-    let mut Pointer_data = Input_data_type::default();
+    let mut pointer_data = Input_data_type::default();
 
-    Device
-        .Read(Pointer_data.as_mut())
+    device
+        .read(pointer_data.as_mut())
         .expect("Error reading from input device");
 
     unsafe {
-        *data = Pointer_data.into();
+        *data = pointer_data.into();
     }
 }
 

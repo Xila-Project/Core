@@ -17,27 +17,27 @@ impl AsRef<[Color_type]> for Buffer_type {
 }
 
 impl Buffer_type {
-    pub fn new_from_resolution(Resolution: &Point_type) -> Self {
-        let buffer_size = get_minimal_buffer_size(Resolution);
+    pub fn new_from_resolution(resolution: &Point_type) -> Self {
+        let buffer_size = get_minimal_buffer_size(resolution);
 
-        Self::New(buffer_size)
+        Self::new(buffer_size)
     }
 
-    pub fn New(Buffer_size: usize) -> Self {
+    pub fn new(buffer_size: usize) -> Self {
         Self {
-            buffer: vec![Color_RGB565_type::new(0, 0, 0); Buffer_size],
+            buffer: vec![Color_RGB565_type::new(0, 0, 0); buffer_size],
         }
     }
 }
 
-pub const fn get_recommended_buffer_size(Resolution: &Point_type) -> usize {
-    Resolution.get_x() as usize * Resolution.get_y() as usize
+pub const fn get_recommended_buffer_size(resolution: &Point_type) -> usize {
+    resolution.get_x() as usize * resolution.get_y() as usize
 }
 
-pub const fn get_minimal_buffer_size(Resolution: &Point_type) -> usize {
-    if Resolution.get_x() < Resolution.get_y() {
-        Resolution.get_y() as usize * Resolution.get_y() as usize / 10
+pub const fn get_minimal_buffer_size(resolution: &Point_type) -> usize {
+    if resolution.get_x() < resolution.get_y() {
+        resolution.get_y() as usize * resolution.get_y() as usize / 10
     } else {
-        Resolution.get_x() as usize * Resolution.get_x() as usize / 10
+        resolution.get_x() as usize * resolution.get_x() as usize / 10
     }
 }

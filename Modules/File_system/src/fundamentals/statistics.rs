@@ -22,16 +22,16 @@ use super::{Inode_type, Permissions_type};
 #[repr(C)]
 pub struct Statistics_type {
     file_system: File_system_identifier_type,
+    group: Group_identifier_type,
     inode: Inode_type,
-    links: u64,
-    size: Size_type,
     last_access: Time_type,
     last_modification: Time_type,
     last_status_change: Time_type,
-    Type: Type_type,
+    links: u64,
     permissions: Permissions_type,
+    r#type: Type_type,
+    size: Size_type,
     user: User_identifier_type,
-    group: Group_identifier_type,
 }
 
 impl Statistics_type {
@@ -57,7 +57,7 @@ impl Statistics_type {
             last_access,
             last_modification,
             last_status_change,
-            Type: type_value,
+            r#type: type_value,
             permissions,
             user,
             group,
@@ -93,7 +93,7 @@ impl Statistics_type {
     }
 
     pub const fn get_type(&self) -> Type_type {
-        self.Type
+        self.r#type
     }
 
     pub const fn get_permissions(&self) -> Permissions_type {
@@ -108,58 +108,58 @@ impl Statistics_type {
         self.group
     }
 
-    pub fn Set_file_system(&mut self, File_system: File_system_identifier_type) -> &mut Self {
-        self.file_system = File_system;
+    pub fn set_file_system(&mut self, file_system: File_system_identifier_type) -> &mut Self {
+        self.file_system = file_system;
         self
     }
 
-    pub fn Set_inode(&mut self, Inode: Inode_type) -> &mut Self {
-        self.inode = Inode;
+    pub fn set_inode(&mut self, inode: Inode_type) -> &mut Self {
+        self.inode = inode;
         self
     }
 
-    pub fn Set_type(&mut self, Type: Type_type) -> &mut Self {
-        self.Type = Type;
+    pub fn set_type(&mut self, r#type: Type_type) -> &mut Self {
+        self.r#type = r#type;
         self
     }
 
-    pub fn Set_links(&mut self, Links: u64) -> &mut Self {
-        self.links = Links;
+    pub fn set_links(&mut self, links: u64) -> &mut Self {
+        self.links = links;
         self
     }
 
-    pub fn Set_size(&mut self, Size: Size_type) -> &mut Self {
-        self.size = Size;
+    pub fn set_size(&mut self, size: Size_type) -> &mut Self {
+        self.size = size;
         self
     }
 
-    pub fn Set_last_access(&mut self, Last_access: Time_type) -> &mut Self {
-        self.last_access = Last_access;
+    pub fn set_last_access(&mut self, last_access: Time_type) -> &mut Self {
+        self.last_access = last_access;
         self
     }
 
-    pub fn Set_last_modification(&mut self, Last_modification: Time_type) -> &mut Self {
-        self.last_modification = Last_modification;
+    pub fn set_last_modification(&mut self, last_modification: Time_type) -> &mut Self {
+        self.last_modification = last_modification;
         self
     }
 
-    pub fn Set_last_status_change(&mut self, Last_status_change: Time_type) -> &mut Self {
-        self.last_status_change = Last_status_change;
+    pub fn set_last_status_change(&mut self, last_status_change: Time_type) -> &mut Self {
+        self.last_status_change = last_status_change;
         self
     }
 
-    pub fn Set_permissions(&mut self, Permissions: Permissions_type) -> &mut Self {
-        self.permissions = Permissions;
+    pub fn set_permissions(&mut self, permissions: Permissions_type) -> &mut Self {
+        self.permissions = permissions;
         self
     }
 
-    pub fn Set_user(&mut self, User: User_identifier_type) -> &mut Self {
-        self.user = User;
+    pub fn set_user(&mut self, user: User_identifier_type) -> &mut Self {
+        self.user = user;
         self
     }
 
-    pub fn Set_group(&mut self, Group: Group_identifier_type) -> &mut Self {
-        self.group = Group;
+    pub fn set_group(&mut self, group: Group_identifier_type) -> &mut Self {
+        self.group = group;
         self
     }
 }

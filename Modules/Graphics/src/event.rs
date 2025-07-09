@@ -8,12 +8,8 @@ pub struct Event_type {
 }
 
 impl Event_type {
-    pub fn new(code: Event_code_type, Target: *mut lvgl::lv_obj_t, Key: Option<Key_type>) -> Self {
-        Self {
-            code,
-            target: Target,
-            key: Key,
-        }
+    pub fn new(code: Event_code_type, target: *mut lvgl::lv_obj_t, key: Option<Key_type>) -> Self {
+        Self { code, target, key }
     }
 
     pub fn get_code(&self) -> Event_code_type {
@@ -136,8 +132,8 @@ impl Event_code_type {
         self as lvgl::lv_event_code_t
     }
 
-    pub const fn From_LVGL_code(Code: lvgl::lv_event_code_t) -> Self {
-        unsafe { core::mem::transmute(Code as u16) }
+    pub const fn from_lvgl_code(code: lvgl::lv_event_code_t) -> Self {
+        unsafe { core::mem::transmute(code as u16) }
     }
 }
 
@@ -149,6 +145,6 @@ impl From<Event_code_type> for lvgl::lv_event_code_t {
 
 impl From<lvgl::lv_event_code_t> for Event_code_type {
     fn from(code: lvgl::lv_event_code_t) -> Self {
-        Event_code_type::From_LVGL_code(code)
+        Event_code_type::from_lvgl_code(code)
     }
 }

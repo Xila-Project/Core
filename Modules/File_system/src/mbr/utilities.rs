@@ -32,7 +32,7 @@ use crate::{Device_type, Error_type, Partition_device_type, Partition_entry_type
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
 /// // First create and write an MBR to the device
 /// let mut mbr = MBR_type::New_with_signature(0x12345678);
 /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
@@ -81,7 +81,7 @@ pub fn create_partition_device(
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
 ///
 /// match Scan_mbr_partitions(&device) {
 ///     Ok(partitions) => {
@@ -98,14 +98,14 @@ pub fn scan_mbr_partitions(
 ) -> Result_type<Vec<(usize, Partition_entry_type)>> {
     let mbr = MBR_type::read_from_device(device)?;
 
-    let mut Partitions = Vec::new();
-    for (i, partition) in mbr.Partitions.iter().enumerate() {
+    let mut partitions = Vec::new();
+    for (i, partition) in mbr.partitions.iter().enumerate() {
         if partition.is_valid() {
-            Partitions.push((i, *partition));
+            partitions.push((i, *partition));
         }
     }
 
-    Ok(Partitions)
+    Ok(partitions)
 }
 
 /// Validate MBR structure and partitions for consistency and correctness.
@@ -130,7 +130,7 @@ pub fn scan_mbr_partitions(
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
 /// // First create and write a valid MBR
 /// let mut mbr = MBR_type::New_with_signature(0x12345678);
 /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
@@ -144,8 +144,8 @@ pub fn scan_mbr_partitions(
 ///     Err(e) => println!("Validation error: {}", e),
 /// }
 /// ```
-pub fn validate_mbr(Mbr: &crate::MBR_type) -> Result_type<()> {
-    Mbr.validate()
+pub fn validate_mbr(mbr: &crate::MBR_type) -> Result_type<()> {
+    mbr.validate()
 }
 
 /// Create partition devices for all valid partitions in an MBR.
@@ -170,7 +170,7 @@ pub fn validate_mbr(Mbr: &crate::MBR_type) -> Result_type<()> {
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
 /// // Create an MBR with multiple partitions
 /// let mut mbr = MBR_type::New_with_signature(0x12345678);
 /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
@@ -216,7 +216,7 @@ pub fn create_all_partition_devices(
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
 /// // Create an MBR with FAT32 partition
 /// let mut mbr = MBR_type::New_with_signature(0x12345678);
 /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
@@ -254,7 +254,7 @@ pub fn find_partitions_by_type(
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
 ///
 /// if Has_valid_mbr(&device) {
 ///     println!("Device has a valid MBR");
@@ -262,8 +262,8 @@ pub fn find_partitions_by_type(
 ///     println!("Device needs to be partitioned");
 /// }
 /// ```
-pub fn has_valid_mbr(Device: &Device_type) -> bool {
-    match MBR_type::read_from_device(Device) {
+pub fn has_valid_mbr(device: &Device_type) -> bool {
+    match MBR_type::read_from_device(device) {
         Ok(mbr) => mbr.is_valid(),
         Err(_) => false,
     }
@@ -290,7 +290,7 @@ pub fn has_valid_mbr(Device: &Device_type) -> bool {
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
 ///
 /// if is_gpt_disk(&device) {
 ///     println!("Device uses GPT partitioning");
@@ -298,8 +298,8 @@ pub fn has_valid_mbr(Device: &Device_type) -> bool {
 ///     println!("Device uses MBR partitioning");
 /// }
 /// ```
-pub fn is_gpt_disk(Device: &Device_type) -> bool {
-    match MBR_type::read_from_device(Device) {
+pub fn is_gpt_disk(device: &Device_type) -> bool {
+    match MBR_type::read_from_device(device) {
         Ok(mbr) => mbr.has_gpt_protective_partition(),
         Err(_) => false,
     }
@@ -365,8 +365,8 @@ pub fn create_basic_mbr(
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let source = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
-/// let target = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let source = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let target = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
 ///
 /// // Create a valid MBR on source device first
 /// let mut mbr = MBR_type::New_with_signature(0x12345678);
@@ -379,10 +379,10 @@ pub fn create_basic_mbr(
 /// // Both devices now have valid MBRs
 /// assert_eq!(Has_valid_mbr(&source), Has_valid_mbr(&target));
 /// ```
-pub fn clone_mbr(Source_device: &Device_type, Target_device: &Device_type) -> Result_type<()> {
-    let mbr = MBR_type::read_from_device(Source_device)?;
+pub fn clone_mbr(source_device: &Device_type, target_device: &Device_type) -> Result_type<()> {
+    let mbr = MBR_type::read_from_device(source_device)?;
     mbr.validate()?;
-    mbr.write_to_device(Target_device)?;
+    mbr.write_to_device(target_device)?;
     Ok(())
 }
 
@@ -407,7 +407,7 @@ pub fn clone_mbr(Source_device: &Device_type, Target_device: &Device_type) -> Re
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
 /// // Create a valid MBR first
 /// let mut mbr = MBR_type::New_with_signature(0x12345678);
 /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
@@ -420,8 +420,8 @@ pub fn clone_mbr(Source_device: &Device_type, Target_device: &Device_type) -> Re
 /// // Later, restore it if needed
 /// Restore_mbr(&device, &backup).unwrap();
 /// ```
-pub fn backup_mbr(Device: &Device_type) -> Result_type<[u8; 512]> {
-    let mbr = MBR_type::read_from_device(Device)?;
+pub fn backup_mbr(device: &Device_type) -> Result_type<[u8; 512]> {
+    let mbr = MBR_type::read_from_device(device)?;
     Ok(mbr.to_bytes())
 }
 
@@ -447,7 +447,7 @@ pub fn backup_mbr(Device: &Device_type) -> Result_type<[u8; 512]> {
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
 /// // Create a valid MBR first
 /// let mut mbr = MBR_type::New_with_signature(0x12345678);
 /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
@@ -461,10 +461,10 @@ pub fn backup_mbr(Device: &Device_type) -> Result_type<[u8; 512]> {
 ///
 /// assert!(Has_valid_mbr(&device));
 /// ```
-pub fn restore_mbr(Device: &Device_type, Backup: &[u8; 512]) -> Result_type<()> {
-    let mbr = MBR_type::from_bytes(Backup)?;
+pub fn restore_mbr(device: &Device_type, backup: &[u8; 512]) -> Result_type<()> {
+    let mbr = MBR_type::from_bytes(backup)?;
     mbr.validate()?;
-    mbr.write_to_device(Device)?;
+    mbr.write_to_device(device)?;
     Ok(())
 }
 
@@ -487,42 +487,42 @@ pub fn format_disk_and_get_first_partition(
     disk_signature: Option<u32>,
 ) -> Result_type<Partition_device_type> {
     // Check if device already has valid MBR
-    let Mbr = if has_valid_mbr(device) {
+    let mbr = if has_valid_mbr(device) {
         // Read existing MBR
         MBR_type::read_from_device(device)?
     } else {
         // Get device size in sectors
-        let Device_size = device.get_size()?;
+        let device_size = device.get_size()?;
         let block_size = device.get_block_size()?;
-        let total_sectors = (Device_size.As_u64() / block_size as u64) as u32;
+        let total_sectors = (device_size.as_u64() / block_size as u64) as u32;
 
         if total_sectors < 2048 {
             return Err(Error_type::Invalid_parameter);
         }
 
         // Create new MBR with signature
-        let Signature = disk_signature.unwrap_or({
+        let signature = disk_signature.unwrap_or({
             // Generate a simple signature based on current time or use a default
             // In a real implementation, you might want to use a proper random number generator
             0x12345678
         });
 
-        let New_mbr = MBR_type::create_basic(Signature, partition_type, total_sectors)?;
+        let new_mbr = MBR_type::create_basic(signature, partition_type, total_sectors)?;
 
         // Write the new MBR to device
-        New_mbr.write_to_device(device)?;
+        new_mbr.write_to_device(device)?;
 
-        New_mbr
+        new_mbr
     };
 
     // Get the first valid partition
-    let Valid_partitions = Mbr.get_valid_partitions();
-    if Valid_partitions.is_empty() {
+    let valid_partitions = mbr.get_valid_partitions();
+    if valid_partitions.is_empty() {
         return Err(Error_type::Not_found);
     }
 
     // Create partition device for the first partition
-    create_partition_device(device.clone(), Valid_partitions[0])
+    create_partition_device(device.clone(), valid_partitions[0])
 }
 
 #[cfg(test)]
@@ -536,474 +536,474 @@ mod tests {
 
     /// Create a test device with MBR data
     fn create_test_device_with_mbr() -> Device_type {
-        let mut Data = vec![0u8; 4096 * 1024]; // Make it large enough (4MB = 8192 sectors)
+        let mut data = vec![0u8; 4096 * 1024]; // Make it large enough (4MB = 8192 sectors)
 
         // Create a simple MBR at the beginning
-        let Mbr = create_test_mbr();
-        let Mbr_bytes = Mbr.to_bytes();
-        Data[0..512].copy_from_slice(&Mbr_bytes);
+        let mbr = create_test_mbr();
+        let mbr_bytes = mbr.to_bytes();
+        data[0..512].copy_from_slice(&mbr_bytes);
 
-        let Memory_device = Memory_device_type::<512>::From_vec(Data);
-        crate::Create_device!(Memory_device)
+        let memory_device = Memory_device_type::<512>::from_vec(data);
+        crate::create_device!(memory_device)
     }
 
     /// Create a test device without valid MBR
     fn create_test_device_no_mbr() -> Device_type {
-        let Memory_device = Memory_device_type::<512>::New(4096 * 1024); // Make it large enough (4MB = 8192 sectors)
-        crate::Create_device!(Memory_device)
+        let memory_device = Memory_device_type::<512>::new(4096 * 1024); // Make it large enough (4MB = 8192 sectors)
+        crate::create_device!(memory_device)
     }
 
     /// Create a test MBR for testing
     fn create_test_mbr() -> MBR_type {
-        let mut Mbr = MBR_type::new_with_signature(0x12345678);
+        let mut mbr = MBR_type::new_with_signature(0x12345678);
 
         // Add a few test partitions
-        let _ = Mbr.add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true);
-        let _ = Mbr.add_partition(Partition_type_type::Linux, 4096, 2048, false);
-        let _ = Mbr.add_partition(Partition_type_type::Hidden_fat16, 8192, 512, false);
+        let _ = mbr.add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true);
+        let _ = mbr.add_partition(Partition_type_type::Linux, 4096, 2048, false);
+        let _ = mbr.add_partition(Partition_type_type::Hidden_fat16, 8192, 512, false);
 
-        Mbr
+        mbr
     }
 
     #[test]
     fn test_create_partition_device() {
-        let Base_device = create_test_device_with_mbr();
-        let Mbr = MBR_type::read_from_device(&Base_device).unwrap();
-        let Partition = &Mbr.Partitions[0];
+        let base_device = create_test_device_with_mbr();
+        let mbr = MBR_type::read_from_device(&base_device).unwrap();
+        let partition = &mbr.partitions[0];
 
-        let Device_result = create_partition_device(Base_device, Partition);
-        assert!(Device_result.is_ok());
+        let device_result = create_partition_device(base_device, partition);
+        assert!(device_result.is_ok());
 
-        let Device = Device_result.unwrap();
-        assert_eq!(Device.get_start_lba(), Partition.get_start_lba());
-        assert_eq!(Device.get_sector_count(), Partition.get_size_sectors());
-        assert!(Device.is_valid());
+        let device = device_result.unwrap();
+        assert_eq!(device.get_start_lba(), partition.get_start_lba());
+        assert_eq!(device.get_sector_count(), partition.get_size_sectors());
+        assert!(device.is_valid());
     }
 
     #[test]
     fn test_create_partition_device_invalid() {
-        let Base_device = create_test_device_with_mbr();
-        let Invalid_partition = Partition_entry_type::new();
+        let base_device = create_test_device_with_mbr();
+        let invalid_partition = Partition_entry_type::new();
 
-        let Device_result = create_partition_device(Base_device, &Invalid_partition);
-        assert!(Device_result.is_err());
-        assert_eq!(Device_result.unwrap_err(), Error_type::Invalid_parameter);
+        let device_result = create_partition_device(base_device, &invalid_partition);
+        assert!(device_result.is_err());
+        assert_eq!(device_result.unwrap_err(), Error_type::Invalid_parameter);
     }
 
     #[test]
     fn test_scan_mbr_partitions() {
-        let Device = create_test_device_with_mbr();
+        let device = create_test_device_with_mbr();
 
-        let Scan_result = scan_mbr_partitions(&Device);
-        assert!(Scan_result.is_ok());
+        let scan_result = scan_mbr_partitions(&device);
+        assert!(scan_result.is_ok());
 
-        let Partitions = Scan_result.unwrap();
-        assert_eq!(Partitions.len(), 3); // Should find 3 valid partitions
+        let partitions = scan_result.unwrap();
+        assert_eq!(partitions.len(), 3); // Should find 3 valid partitions
 
         // Check that indices are correct
-        assert_eq!(Partitions[0].0, 0);
-        assert_eq!(Partitions[1].0, 1);
-        assert_eq!(Partitions[2].0, 2);
+        assert_eq!(partitions[0].0, 0);
+        assert_eq!(partitions[1].0, 1);
+        assert_eq!(partitions[2].0, 2);
 
         // Check partition types
         assert_eq!(
-            Partitions[0].1.get_partition_type(),
+            partitions[0].1.get_partition_type(),
             Partition_type_type::Fat32_lba
         );
         assert_eq!(
-            Partitions[1].1.get_partition_type(),
+            partitions[1].1.get_partition_type(),
             Partition_type_type::Linux
         );
         assert_eq!(
-            Partitions[2].1.get_partition_type(),
+            partitions[2].1.get_partition_type(),
             Partition_type_type::Hidden_fat16
         );
     }
 
     #[test]
     fn test_scan_mbr_partitions_no_mbr() {
-        let Device = create_test_device_no_mbr();
+        let device = create_test_device_no_mbr();
 
-        let Scan_result = scan_mbr_partitions(&Device);
-        assert!(Scan_result.is_err());
+        let scan_result = scan_mbr_partitions(&device);
+        assert!(scan_result.is_err());
     }
 
     #[test]
     fn test_validate_mbr_valid() {
-        let Mbr = create_test_mbr();
-        let Validation_result = validate_mbr(&Mbr);
-        assert!(Validation_result.is_ok());
+        let mbr = create_test_mbr();
+        let validation_result = validate_mbr(&mbr);
+        assert!(validation_result.is_ok());
     }
 
     #[test]
     fn test_validate_mbr_invalid_signature() {
-        let mut Mbr = super::MBR_type::new();
+        let mut mbr = super::MBR_type::new();
         // Manually set invalid signature - should be invalid
-        Mbr.Boot_signature = [0x00, 0x00];
+        mbr.boot_signature = [0x00, 0x00];
 
-        let Validation_result = validate_mbr(&Mbr);
-        assert!(Validation_result.is_err());
-        assert_eq!(Validation_result.unwrap_err(), Error_type::Corrupted);
+        let validation_result = validate_mbr(&mbr);
+        assert!(validation_result.is_err());
+        assert_eq!(validation_result.unwrap_err(), Error_type::Corrupted);
     }
 
     #[test]
     fn test_validate_mbr_multiple_bootable() {
-        let mut Mbr = MBR_type::new_with_signature(0x12345678);
+        let mut mbr = MBR_type::new_with_signature(0x12345678);
 
         // Manually create multiple bootable partitions (bypassing Add_partition validation)
-        Mbr.Partitions[0] =
+        mbr.partitions[0] =
             Partition_entry_type::new_with_params(true, Partition_type_type::Fat32_lba, 2048, 1024);
-        Mbr.Partitions[1] =
+        mbr.partitions[1] =
             Partition_entry_type::new_with_params(true, Partition_type_type::Linux, 4096, 2048);
 
-        let Validation_result = validate_mbr(&Mbr);
-        assert!(Validation_result.is_err());
-        assert_eq!(Validation_result.unwrap_err(), Error_type::Corrupted);
+        let validation_result = validate_mbr(&mbr);
+        assert!(validation_result.is_err());
+        assert_eq!(validation_result.unwrap_err(), Error_type::Corrupted);
     }
 
     #[test]
     fn test_validate_mbr_overlapping_partitions() {
-        let mut Mbr = MBR_type::new_with_signature(0x12345678);
+        let mut mbr = MBR_type::new_with_signature(0x12345678);
 
         // Manually create overlapping partitions (bypassing Add_partition validation)
-        Mbr.Partitions[0] = Partition_entry_type::new_with_params(
+        mbr.partitions[0] = Partition_entry_type::new_with_params(
             false,
             Partition_type_type::Fat32_lba,
             2048,
             2048,
         );
-        Mbr.Partitions[1] =
+        mbr.partitions[1] =
             Partition_entry_type::new_with_params(false, Partition_type_type::Linux, 3000, 2048);
 
-        let Validation_result = validate_mbr(&Mbr);
-        assert!(Validation_result.is_err());
-        assert_eq!(Validation_result.unwrap_err(), Error_type::Corrupted);
+        let validation_result = validate_mbr(&mbr);
+        assert!(validation_result.is_err());
+        assert_eq!(validation_result.unwrap_err(), Error_type::Corrupted);
     }
 
     #[test]
     fn test_create_all_partition_devices() {
-        let Base_device = create_test_device_with_mbr();
-        let Mbr = create_test_mbr();
+        let base_device = create_test_device_with_mbr();
+        let mbr = create_test_mbr();
 
-        let Devices_result = create_all_partition_devices(Base_device, &Mbr);
-        assert!(Devices_result.is_ok());
+        let devices_result = create_all_partition_devices(base_device, &mbr);
+        assert!(devices_result.is_ok());
 
-        let Devices = Devices_result.unwrap();
-        assert_eq!(Devices.len(), 3); // Should create 3 devices
+        let devices = devices_result.unwrap();
+        assert_eq!(devices.len(), 3); // Should create 3 devices
 
         // Check that all devices are valid
-        for Device in &Devices {
-            assert!(Device.is_valid());
+        for device in &devices {
+            assert!(device.is_valid());
         }
 
         // Check first device properties
-        assert_eq!(Devices[0].get_start_lba(), 2048);
-        assert_eq!(Devices[0].get_sector_count(), 1024);
+        assert_eq!(devices[0].get_start_lba(), 2048);
+        assert_eq!(devices[0].get_sector_count(), 1024);
     }
 
     #[test]
     fn test_find_partitions_by_type() {
-        let Mbr = create_test_mbr();
+        let mbr = create_test_mbr();
 
         // Find FAT32 partitions
-        let Fat_partitions = find_partitions_by_type(&Mbr, Partition_type_type::Fat32_lba);
-        assert_eq!(Fat_partitions.len(), 1);
-        assert_eq!(Fat_partitions[0].0, 0); // Index 0
+        let fat_partitions = find_partitions_by_type(&mbr, Partition_type_type::Fat32_lba);
+        assert_eq!(fat_partitions.len(), 1);
+        assert_eq!(fat_partitions[0].0, 0); // Index 0
 
         // Find Linux partitions
-        let Linux_partitions = find_partitions_by_type(&Mbr, Partition_type_type::Linux);
-        assert_eq!(Linux_partitions.len(), 1);
-        assert_eq!(Linux_partitions[0].0, 1); // Index 1
+        let linux_partitions = find_partitions_by_type(&mbr, Partition_type_type::Linux);
+        assert_eq!(linux_partitions.len(), 1);
+        assert_eq!(linux_partitions[0].0, 1); // Index 1
 
         // Find non-existent type
-        let Ntfs_partitions = find_partitions_by_type(&Mbr, Partition_type_type::Ntfs_exfat);
-        assert_eq!(Ntfs_partitions.len(), 0);
+        let ntfs_partitions = find_partitions_by_type(&mbr, Partition_type_type::Ntfs_exfat);
+        assert_eq!(ntfs_partitions.len(), 0);
     }
 
     #[test]
     fn test_partition_statistics() {
-        let Mbr = create_test_mbr();
-        let Stats = Partition_statistics_type::from_mbr(&Mbr);
+        let mbr = create_test_mbr();
+        let stats = Partition_statistics_type::from_mbr(&mbr);
 
-        assert_eq!(Stats.Total_partitions, 3);
-        assert_eq!(Stats.Bootable_partitions, 1);
-        assert_eq!(Stats.Fat_partitions, 2); // Fat32_lba + Hidden_fat16
-        assert_eq!(Stats.Linux_partitions, 1);
-        assert_eq!(Stats.Hidden_partitions, 1); // Hidden_fat16
-        assert_eq!(Stats.Extended_partitions, 0);
-        assert_eq!(Stats.Unknown_partitions, 0);
-        assert_eq!(Stats.Total_used_sectors, 1024 + 2048 + 512); // Sum of all partition sizes
-        assert_eq!(Stats.Largest_partition_sectors, 2048);
-        assert_eq!(Stats.Smallest_partition_sectors, 512);
+        assert_eq!(stats.total_partitions, 3);
+        assert_eq!(stats.bootable_partitions, 1);
+        assert_eq!(stats.fat_partitions, 2); // Fat32_lba + Hidden_fat16
+        assert_eq!(stats.linux_partitions, 1);
+        assert_eq!(stats.hidden_partitions, 1); // Hidden_fat16
+        assert_eq!(stats.extended_partitions, 0);
+        assert_eq!(stats.unknown_partitions, 0);
+        assert_eq!(stats.total_used_sectors, 1024 + 2048 + 512); // Sum of all partition sizes
+        assert_eq!(stats.largest_partition_sectors, 2048);
+        assert_eq!(stats.smallest_partition_sectors, 512);
     }
 
     #[test]
     fn test_partition_statistics_empty_mbr() {
-        let Mbr = MBR_type::new_with_signature(0x12345678);
-        let Stats = Partition_statistics_type::from_mbr(&Mbr);
+        let mbr = MBR_type::new_with_signature(0x12345678);
+        let stats = Partition_statistics_type::from_mbr(&mbr);
 
-        assert_eq!(Stats.Total_partitions, 0);
-        assert_eq!(Stats.Bootable_partitions, 0);
-        assert_eq!(Stats.Fat_partitions, 0);
-        assert_eq!(Stats.Linux_partitions, 0);
-        assert_eq!(Stats.Hidden_partitions, 0);
-        assert_eq!(Stats.Extended_partitions, 0);
-        assert_eq!(Stats.Unknown_partitions, 0);
-        assert_eq!(Stats.Total_used_sectors, 0);
-        assert_eq!(Stats.Largest_partition_sectors, 0);
-        assert_eq!(Stats.Smallest_partition_sectors, 0);
+        assert_eq!(stats.total_partitions, 0);
+        assert_eq!(stats.bootable_partitions, 0);
+        assert_eq!(stats.fat_partitions, 0);
+        assert_eq!(stats.linux_partitions, 0);
+        assert_eq!(stats.hidden_partitions, 0);
+        assert_eq!(stats.extended_partitions, 0);
+        assert_eq!(stats.unknown_partitions, 0);
+        assert_eq!(stats.total_used_sectors, 0);
+        assert_eq!(stats.largest_partition_sectors, 0);
+        assert_eq!(stats.smallest_partition_sectors, 0);
     }
 
     #[test]
     fn test_has_valid_mbr() {
-        let Valid_device = create_test_device_with_mbr();
-        assert!(has_valid_mbr(&Valid_device));
+        let valid_device = create_test_device_with_mbr();
+        assert!(has_valid_mbr(&valid_device));
 
-        let Invalid_device = create_test_device_no_mbr();
-        assert!(!has_valid_mbr(&Invalid_device));
+        let invalid_device = create_test_device_no_mbr();
+        assert!(!has_valid_mbr(&invalid_device));
     }
 
     #[test]
     fn test_is_gpt_disk() {
         // Create MBR with GPT protective partition
-        let mut Mbr = MBR_type::new_with_signature(0x12345678);
-        let _ = Mbr.add_partition(Partition_type_type::Gpt_protective, 1, 0xFFFFFFFF, false);
+        let mut mbr = MBR_type::new_with_signature(0x12345678);
+        let _ = mbr.add_partition(Partition_type_type::Gpt_protective, 1, 0xFFFFFFFF, false);
 
-        let mut Data = vec![0u8; 4096 * 1024];
-        let Mbr_bytes = Mbr.to_bytes();
-        Data[0..512].copy_from_slice(&Mbr_bytes);
-        let Memory_device = Memory_device_type::<512>::From_vec(Data);
-        let Gpt_device = crate::Create_device!(Memory_device);
+        let mut data = vec![0u8; 4096 * 1024];
+        let mbr_bytes = mbr.to_bytes();
+        data[0..512].copy_from_slice(&mbr_bytes);
+        let memory_device = Memory_device_type::<512>::from_vec(data);
+        let gpt_device = crate::create_device!(memory_device);
 
-        assert!(is_gpt_disk(&Gpt_device));
+        assert!(is_gpt_disk(&gpt_device));
 
         // Regular MBR should not be detected as GPT
-        let Regular_device = create_test_device_with_mbr();
-        assert!(!is_gpt_disk(&Regular_device));
+        let regular_device = create_test_device_with_mbr();
+        assert!(!is_gpt_disk(&regular_device));
     }
 
     #[test]
     fn test_create_basic_mbr() {
-        let Mbr_result = create_basic_mbr(0xABCDEF00, Partition_type_type::Fat32_lba, 100000);
-        assert!(Mbr_result.is_ok());
+        let mbr_result = create_basic_mbr(0xABCDEF00, Partition_type_type::Fat32_lba, 100000);
+        assert!(mbr_result.is_ok());
 
-        let Mbr = Mbr_result.unwrap();
-        assert!(Mbr.is_valid());
-        assert_eq!(Mbr.get_disk_signature(), 0xABCDEF00);
+        let mbr = mbr_result.unwrap();
+        assert!(mbr.is_valid());
+        assert_eq!(mbr.get_disk_signature(), 0xABCDEF00);
 
-        let Valid_partitions = Mbr.get_valid_partitions();
-        assert_eq!(Valid_partitions.len(), 1);
+        let valid_partitions = mbr.get_valid_partitions();
+        assert_eq!(valid_partitions.len(), 1);
 
-        let Partition = &Valid_partitions[0];
+        let partition = &valid_partitions[0];
         assert_eq!(
-            Partition.get_partition_type(),
+            partition.get_partition_type(),
             Partition_type_type::Fat32_lba
         );
-        assert_eq!(Partition.get_start_lba(), 2048);
-        assert_eq!(Partition.get_size_sectors(), 100000 - 2048);
-        assert!(Partition.is_bootable());
+        assert_eq!(partition.get_start_lba(), 2048);
+        assert_eq!(partition.get_size_sectors(), 100000 - 2048);
+        assert!(partition.is_bootable());
     }
 
     #[test]
     fn test_create_basic_mbr_too_small() {
-        let Mbr_result = create_basic_mbr(0x12345678, Partition_type_type::Fat32_lba, 1000);
-        assert!(Mbr_result.is_err());
-        assert_eq!(Mbr_result.unwrap_err(), Error_type::Invalid_parameter);
+        let mbr_result = create_basic_mbr(0x12345678, Partition_type_type::Fat32_lba, 1000);
+        assert!(mbr_result.is_err());
+        assert_eq!(mbr_result.unwrap_err(), Error_type::Invalid_parameter);
     }
 
     #[test]
     fn test_clone_mbr() {
-        let Source_device = create_test_device_with_mbr();
-        let Target_data = vec![0u8; 4096 * 1024];
-        let Memory_device = Memory_device_type::<512>::From_vec(Target_data);
-        let Target_device = crate::Create_device!(Memory_device);
+        let source_device = create_test_device_with_mbr();
+        let target_data = vec![0u8; 4096 * 1024];
+        let memory_device = Memory_device_type::<512>::from_vec(target_data);
+        let target_device = crate::create_device!(memory_device);
 
-        let Clone_result = clone_mbr(&Source_device, &Target_device);
-        assert!(Clone_result.is_ok());
+        let clone_result = clone_mbr(&source_device, &target_device);
+        assert!(clone_result.is_ok());
 
         // Verify that target device now has the same MBR
-        let Source_mbr = MBR_type::read_from_device(&Source_device).unwrap();
-        let Target_mbr = MBR_type::read_from_device(&Target_device).unwrap();
+        let source_mbr = MBR_type::read_from_device(&source_device).unwrap();
+        let target_mbr = MBR_type::read_from_device(&target_device).unwrap();
 
-        assert_eq!(Source_mbr.to_bytes(), Target_mbr.to_bytes());
+        assert_eq!(source_mbr.to_bytes(), target_mbr.to_bytes());
     }
 
     #[test]
     fn test_backup_and_restore_mbr() {
-        let Device = create_test_device_with_mbr();
+        let device = create_test_device_with_mbr();
 
         // Backup MBR
-        let Backup_result = backup_mbr(&Device);
-        assert!(Backup_result.is_ok());
-        let Backup = Backup_result.unwrap();
+        let backup_result = backup_mbr(&device);
+        assert!(backup_result.is_ok());
+        let backup = backup_result.unwrap();
 
         // Create a new device with zeros
-        let Target_data = vec![0u8; 4096 * 1024];
-        let Memory_device = Memory_device_type::<512>::From_vec(Target_data);
-        let Target_device = crate::Create_device!(Memory_device);
+        let target_data = vec![0u8; 4096 * 1024];
+        let memory_device = Memory_device_type::<512>::from_vec(target_data);
+        let target_device = crate::create_device!(memory_device);
 
         // Restore MBR
-        let Restore_result = restore_mbr(&Target_device, &Backup);
-        assert!(Restore_result.is_ok());
+        let restore_result = restore_mbr(&target_device, &backup);
+        assert!(restore_result.is_ok());
 
         // Verify restoration
-        let Original_mbr = MBR_type::read_from_device(&Device).unwrap();
-        let Restored_mbr = MBR_type::read_from_device(&Target_device).unwrap();
+        let original_mbr = MBR_type::read_from_device(&device).unwrap();
+        let restored_mbr = MBR_type::read_from_device(&target_device).unwrap();
 
-        assert_eq!(Original_mbr.to_bytes(), Restored_mbr.to_bytes());
+        assert_eq!(original_mbr.to_bytes(), restored_mbr.to_bytes());
     }
 
     #[test]
     fn test_backup_mbr_invalid_device() {
-        let Invalid_device = create_test_device_no_mbr();
+        let invalid_device = create_test_device_no_mbr();
 
-        let Backup_result = backup_mbr(&Invalid_device);
-        assert!(Backup_result.is_err());
+        let backup_result = backup_mbr(&invalid_device);
+        assert!(backup_result.is_err());
     }
 
     #[test]
     fn test_restore_mbr_invalid_backup() {
-        let Device = create_test_device_no_mbr();
-        let Invalid_backup = [0u8; 512]; // No valid signature
+        let device = create_test_device_no_mbr();
+        let invalid_backup = [0u8; 512]; // No valid signature
 
-        let Restore_result = restore_mbr(&Device, &Invalid_backup);
-        assert!(Restore_result.is_err());
+        let restore_result = restore_mbr(&device, &invalid_backup);
+        assert!(restore_result.is_err());
     }
 
     #[test]
     fn test_utilities_with_complex_mbr() {
         // Create a more complex MBR for comprehensive testing
-        let mut Mbr = MBR_type::new_with_signature(0xDEADBEEF);
+        let mut mbr = MBR_type::new_with_signature(0xDEADBEEF);
 
-        let _ = Mbr.add_partition(Partition_type_type::Fat16, 63, 1000, true);
-        let _ = Mbr.add_partition(Partition_type_type::Extended_lba, 2048, 10000, false);
-        let _ = Mbr.add_partition(Partition_type_type::Linux_swap, 15000, 2000, false);
-        let _ = Mbr.add_partition(Partition_type_type::Unknown(0x42), 20000, 5000, false);
+        let _ = mbr.add_partition(Partition_type_type::Fat16, 63, 1000, true);
+        let _ = mbr.add_partition(Partition_type_type::Extended_lba, 2048, 10000, false);
+        let _ = mbr.add_partition(Partition_type_type::Linux_swap, 15000, 2000, false);
+        let _ = mbr.add_partition(Partition_type_type::Unknown(0x42), 20000, 5000, false);
 
         // Test statistics
-        let Stats = Partition_statistics_type::from_mbr(&Mbr);
-        assert_eq!(Stats.Total_partitions, 4);
-        assert_eq!(Stats.Bootable_partitions, 1);
-        assert_eq!(Stats.Fat_partitions, 1);
-        assert_eq!(Stats.Linux_partitions, 1); // Linux_swap counts as Linux
-        assert_eq!(Stats.Extended_partitions, 1);
-        assert_eq!(Stats.Unknown_partitions, 1);
+        let stats = Partition_statistics_type::from_mbr(&mbr);
+        assert_eq!(stats.total_partitions, 4);
+        assert_eq!(stats.bootable_partitions, 1);
+        assert_eq!(stats.fat_partitions, 1);
+        assert_eq!(stats.linux_partitions, 1); // Linux_swap counts as Linux
+        assert_eq!(stats.extended_partitions, 1);
+        assert_eq!(stats.unknown_partitions, 1);
 
         // Test finding by type
-        let Extended = find_partitions_by_type(&Mbr, Partition_type_type::Extended_lba);
-        assert_eq!(Extended.len(), 1);
-        assert_eq!(Extended[0].0, 1);
+        let extended = find_partitions_by_type(&mbr, Partition_type_type::Extended_lba);
+        assert_eq!(extended.len(), 1);
+        assert_eq!(extended[0].0, 1);
 
-        let Unknown = find_partitions_by_type(&Mbr, Partition_type_type::Unknown(0x42));
-        assert_eq!(Unknown.len(), 1);
-        assert_eq!(Unknown[0].0, 3);
+        let unknown = find_partitions_by_type(&mbr, Partition_type_type::Unknown(0x42));
+        assert_eq!(unknown.len(), 1);
+        assert_eq!(unknown[0].0, 3);
     }
 
     #[test]
     fn test_edge_cases() {
         // Test with MBR containing only empty partitions
-        let Empty_mbr = MBR_type::new_with_signature(0x12345678);
+        let empty_mbr = MBR_type::new_with_signature(0x12345678);
 
-        let Stats = Partition_statistics_type::from_mbr(&Empty_mbr);
-        assert_eq!(Stats.Total_partitions, 0);
+        let stats = Partition_statistics_type::from_mbr(&empty_mbr);
+        assert_eq!(stats.total_partitions, 0);
 
-        let Partitions = find_partitions_by_type(&Empty_mbr, Partition_type_type::Fat32);
-        assert_eq!(Partitions.len(), 0);
+        let partitions = find_partitions_by_type(&empty_mbr, Partition_type_type::Fat32);
+        assert_eq!(partitions.len(), 0);
 
         // Test scan on empty device
-        let mut Empty_data = vec![0u8; 4096 * 1024];
-        let Empty_mbr_bytes = Empty_mbr.to_bytes();
-        Empty_data[0..512].copy_from_slice(&Empty_mbr_bytes);
-        let Memory_device = Memory_device_type::<512>::From_vec(Empty_data);
-        let Empty_device = crate::Create_device!(Memory_device);
+        let mut empty_data = vec![0u8; 4096 * 1024];
+        let empty_mbr_bytes = empty_mbr.to_bytes();
+        empty_data[0..512].copy_from_slice(&empty_mbr_bytes);
+        let memory_device = Memory_device_type::<512>::from_vec(empty_data);
+        let empty_device = crate::create_device!(memory_device);
 
-        let Scan_result = scan_mbr_partitions(&Empty_device);
-        assert!(Scan_result.is_ok());
-        assert_eq!(Scan_result.unwrap().len(), 0);
+        let scan_result = scan_mbr_partitions(&empty_device);
+        assert!(scan_result.is_ok());
+        assert_eq!(scan_result.unwrap().len(), 0);
     }
 
     // Tests for the new Format_disk_and_get_first_partition function
 
     #[test]
     fn test_format_disk_and_get_first_partition_existing_mbr() {
-        let Device = create_test_device_with_mbr();
+        let device = create_test_device_with_mbr();
 
-        let Partition_device_result = format_disk_and_get_first_partition(
-            &Device,
+        let partition_device_result = format_disk_and_get_first_partition(
+            &device,
             Partition_type_type::Fat32_lba,
             Some(0xABCDEF00),
         );
-        assert!(Partition_device_result.is_ok());
+        assert!(partition_device_result.is_ok());
 
-        let Partition_device = Partition_device_result.unwrap();
-        assert!(Partition_device.is_valid());
-        assert_eq!(Partition_device.get_start_lba(), 2048); // First partition starts at 2048
-        assert_eq!(Partition_device.get_sector_count(), 1024); // First partition size
+        let partition_device = partition_device_result.unwrap();
+        assert!(partition_device.is_valid());
+        assert_eq!(partition_device.get_start_lba(), 2048); // First partition starts at 2048
+        assert_eq!(partition_device.get_sector_count(), 1024); // First partition size
     }
 
     #[test]
     fn test_format_disk_and_get_first_partition_no_mbr() {
-        let Device = create_test_device_no_mbr();
+        let device = create_test_device_no_mbr();
 
-        let Partition_device_result = format_disk_and_get_first_partition(
-            &Device,
+        let partition_device_result = format_disk_and_get_first_partition(
+            &device,
             Partition_type_type::Fat32_lba,
             Some(0x12345678),
         );
-        assert!(Partition_device_result.is_ok());
+        assert!(partition_device_result.is_ok());
 
-        let Partition_device = Partition_device_result.unwrap();
-        assert!(Partition_device.is_valid());
-        assert_eq!(Partition_device.get_start_lba(), 2048); // Should start at 2048 for alignment
+        let partition_device = partition_device_result.unwrap();
+        assert!(partition_device.is_valid());
+        assert_eq!(partition_device.get_start_lba(), 2048); // Should start at 2048 for alignment
 
         // Check that MBR was created on device
-        assert!(has_valid_mbr(&Device));
+        assert!(has_valid_mbr(&device));
 
         // Verify the MBR has one partition with correct type
-        let Mbr = MBR_type::read_from_device(&Device).unwrap();
-        let Valid_partitions = Mbr.get_valid_partitions();
-        assert_eq!(Valid_partitions.len(), 1);
+        let mbr = MBR_type::read_from_device(&device).unwrap();
+        let valid_partitions = mbr.get_valid_partitions();
+        assert_eq!(valid_partitions.len(), 1);
         assert_eq!(
-            Valid_partitions[0].get_partition_type(),
+            valid_partitions[0].get_partition_type(),
             Partition_type_type::Fat32_lba
         );
-        assert!(Valid_partitions[0].is_bootable());
+        assert!(valid_partitions[0].is_bootable());
     }
 
     #[test]
     fn test_format_disk_and_get_first_partition_default_signature() {
-        let Device = create_test_device_no_mbr();
+        let device = create_test_device_no_mbr();
 
-        let Partition_device_result = format_disk_and_get_first_partition(
-            &Device,
+        let partition_device_result = format_disk_and_get_first_partition(
+            &device,
             Partition_type_type::Linux,
             None, // Use default signature
         );
-        assert!(Partition_device_result.is_ok());
+        assert!(partition_device_result.is_ok());
 
-        let Partition_device = Partition_device_result.unwrap();
-        assert!(Partition_device.is_valid());
+        let partition_device = partition_device_result.unwrap();
+        assert!(partition_device.is_valid());
 
         // Check that MBR was created with default signature
-        let Mbr = MBR_type::read_from_device(&Device).unwrap();
-        assert_eq!(Mbr.get_disk_signature(), 0x12345678); // Default signature
+        let mbr = MBR_type::read_from_device(&device).unwrap();
+        assert_eq!(mbr.get_disk_signature(), 0x12345678); // Default signature
     }
 
     #[test]
     fn test_format_disk_and_get_first_partition_device_too_small() {
         // Create a very small device (less than 2048 sectors)
-        let Small_data = vec![0u8; 1024]; // 2 sectors of 512 bytes each
-        let Memory_device = Memory_device_type::<512>::From_vec(Small_data);
-        let Small_device = crate::Create_device!(Memory_device);
+        let small_data = vec![0u8; 1024]; // 2 sectors of 512 bytes each
+        let memory_device = Memory_device_type::<512>::from_vec(small_data);
+        let small_device = crate::create_device!(memory_device);
 
-        let Partition_device_result = format_disk_and_get_first_partition(
-            &Small_device,
+        let partition_device_result = format_disk_and_get_first_partition(
+            &small_device,
             Partition_type_type::Fat32_lba,
             Some(0x12345678),
         );
-        assert!(Partition_device_result.is_err());
+        assert!(partition_device_result.is_err());
         assert_eq!(
-            Partition_device_result.unwrap_err(),
+            partition_device_result.unwrap_err(),
             Error_type::Invalid_parameter
         );
     }
@@ -1011,246 +1011,246 @@ mod tests {
     #[test]
     fn test_format_disk_and_get_first_partition_empty_mbr() {
         // Create device with valid MBR but no partitions
-        let mut Data = vec![0u8; 4096 * 1024];
-        let Empty_mbr = MBR_type::new_with_signature(0xDEADBEEF);
-        let Mbr_bytes = Empty_mbr.to_bytes();
-        Data[0..512].copy_from_slice(&Mbr_bytes);
+        let mut data = vec![0u8; 4096 * 1024];
+        let empty_mbr = MBR_type::new_with_signature(0xDEADBEEF);
+        let mbr_bytes = empty_mbr.to_bytes();
+        data[0..512].copy_from_slice(&mbr_bytes);
 
-        let Memory_device = Memory_device_type::<512>::From_vec(Data);
-        let Device = crate::Create_device!(Memory_device);
+        let memory_device = Memory_device_type::<512>::from_vec(data);
+        let device = crate::create_device!(memory_device);
 
-        let Partition_device_result = format_disk_and_get_first_partition(
-            &Device,
+        let partition_device_result = format_disk_and_get_first_partition(
+            &device,
             Partition_type_type::Fat32_lba,
             Some(0x12345678),
         );
-        assert!(Partition_device_result.is_err());
-        assert_eq!(Partition_device_result.unwrap_err(), Error_type::Not_found);
+        assert!(partition_device_result.is_err());
+        assert_eq!(partition_device_result.unwrap_err(), Error_type::Not_found);
     }
 
     #[test]
     fn test_format_disk_and_get_first_partition_different_types() {
         // Test with different partition types
-        let Partition_types = [
+        let partition_types = [
             Partition_type_type::Fat32_lba,
             Partition_type_type::Linux,
             Partition_type_type::Ntfs_exfat,
             Partition_type_type::Extended_lba,
         ];
 
-        for Partition_type in &Partition_types {
-            let Device = create_test_device_no_mbr();
+        for partition_type in &partition_types {
+            let device = create_test_device_no_mbr();
 
-            let Partition_device_result =
-                format_disk_and_get_first_partition(&Device, *Partition_type, Some(0xABCDEF00));
-            assert!(Partition_device_result.is_ok());
+            let partition_device_result =
+                format_disk_and_get_first_partition(&device, *partition_type, Some(0xABCDEF00));
+            assert!(partition_device_result.is_ok());
 
-            let Partition_device = Partition_device_result.unwrap();
-            assert!(Partition_device.is_valid());
+            let partition_device = partition_device_result.unwrap();
+            assert!(partition_device.is_valid());
 
             // Verify the partition type in MBR
-            let Mbr = MBR_type::read_from_device(&Device).unwrap();
-            let Valid_partitions = Mbr.get_valid_partitions();
-            assert_eq!(Valid_partitions.len(), 1);
-            assert_eq!(Valid_partitions[0].get_partition_type(), *Partition_type);
+            let mbr = MBR_type::read_from_device(&device).unwrap();
+            let valid_partitions = mbr.get_valid_partitions();
+            assert_eq!(valid_partitions.len(), 1);
+            assert_eq!(valid_partitions[0].get_partition_type(), *partition_type);
         }
     }
 
     #[test]
     fn test_format_disk_and_write_read_data() {
-        let Device = create_test_device_no_mbr();
+        let device = create_test_device_no_mbr();
 
         // Format disk and get first partition
-        let Partition_device_result = format_disk_and_get_first_partition(
-            &Device,
+        let partition_device_result = format_disk_and_get_first_partition(
+            &device,
             Partition_type_type::Fat32_lba,
             Some(0x12345678),
         );
-        assert!(Partition_device_result.is_ok());
-        let Partition_device = Partition_device_result.unwrap();
+        assert!(partition_device_result.is_ok());
+        let partition_device = partition_device_result.unwrap();
 
         // Test data to write
-        let Test_data = b"Hello, Partition World! This is a test of writing and reading data from a partition device.";
-        let mut Write_buffer = vec![0u8; 512]; // One sector
-        Write_buffer[0..Test_data.len()].copy_from_slice(Test_data);
+        let test_data = b"Hello, Partition World! This is a test of writing and reading data from a partition device.";
+        let mut write_buffer = vec![0u8; 512]; // One sector
+        write_buffer[0..test_data.len()].copy_from_slice(test_data);
 
         // Write data to the beginning of the partition
-        let Write_result = Partition_device.Write(&Write_buffer);
-        assert!(Write_result.is_ok());
-        let Bytes_written = Write_result.unwrap();
-        assert_eq!(Bytes_written.As_u64(), 512);
+        let write_result = partition_device.write(&write_buffer);
+        assert!(write_result.is_ok());
+        let bytes_written = write_result.unwrap();
+        assert_eq!(bytes_written.as_u64(), 512);
 
         // Reset position to beginning of partition
-        let Set_position_result = Partition_device.Set_position(&crate::Position_type::Start(0));
-        assert!(Set_position_result.is_ok());
+        let set_position_result = partition_device.set_position(&crate::Position_type::Start(0));
+        assert!(set_position_result.is_ok());
 
         // Read data back from the partition
-        let mut Read_buffer = vec![0u8; 512];
-        let Read_result = Partition_device.Read(&mut Read_buffer);
-        assert!(Read_result.is_ok());
-        let Bytes_read = Read_result.unwrap();
-        assert_eq!(Bytes_read.As_u64(), 512);
+        let mut read_buffer = vec![0u8; 512];
+        let read_result = partition_device.read(&mut read_buffer);
+        assert!(read_result.is_ok());
+        let bytes_read = read_result.unwrap();
+        assert_eq!(bytes_read.as_u64(), 512);
 
         // Verify the data matches what we wrote
-        assert_eq!(&Read_buffer[0..Test_data.len()], Test_data);
+        assert_eq!(&read_buffer[0..test_data.len()], test_data);
 
         // Test writing at different positions
-        let Second_test_data = b"Second write test at offset";
-        let Second_position = 1024; // Write at sector 2
+        let second_test_data = b"Second write test at offset";
+        let second_position = 1024; // Write at sector 2
 
         // Set position to second sector
-        let Set_position_result =
-            Partition_device.Set_position(&crate::Position_type::Start(Second_position));
-        assert!(Set_position_result.is_ok());
+        let set_position_result =
+            partition_device.set_position(&crate::Position_type::Start(second_position));
+        assert!(set_position_result.is_ok());
 
         // Write second test data
-        let mut Second_write_buffer = vec![0u8; 512];
-        Second_write_buffer[0..Second_test_data.len()].copy_from_slice(Second_test_data);
-        let Write_result = Partition_device.Write(&Second_write_buffer);
-        assert!(Write_result.is_ok());
+        let mut second_write_buffer = vec![0u8; 512];
+        second_write_buffer[0..second_test_data.len()].copy_from_slice(second_test_data);
+        let write_result = partition_device.write(&second_write_buffer);
+        assert!(write_result.is_ok());
 
         // Read back from second position
-        let Set_position_result =
-            Partition_device.Set_position(&crate::Position_type::Start(Second_position));
-        assert!(Set_position_result.is_ok());
-        let mut Second_read_buffer = vec![0u8; 512];
-        let Read_result = Partition_device.Read(&mut Second_read_buffer);
-        assert!(Read_result.is_ok());
+        let set_position_result =
+            partition_device.set_position(&crate::Position_type::Start(second_position));
+        assert!(set_position_result.is_ok());
+        let mut second_read_buffer = vec![0u8; 512];
+        let read_result = partition_device.read(&mut second_read_buffer);
+        assert!(read_result.is_ok());
 
         // Verify second write
         assert_eq!(
-            &Second_read_buffer[0..Second_test_data.len()],
-            Second_test_data
+            &second_read_buffer[0..second_test_data.len()],
+            second_test_data
         );
 
         // Verify first write is still intact
-        let Set_position_result = Partition_device.Set_position(&crate::Position_type::Start(0));
-        assert!(Set_position_result.is_ok());
-        let mut First_read_buffer = vec![0u8; 512];
-        let Read_result = Partition_device.Read(&mut First_read_buffer);
-        assert!(Read_result.is_ok());
-        assert_eq!(&First_read_buffer[0..Test_data.len()], Test_data);
+        let set_position_result = partition_device.set_position(&crate::Position_type::Start(0));
+        assert!(set_position_result.is_ok());
+        let mut first_read_buffer = vec![0u8; 512];
+        let read_result = partition_device.read(&mut first_read_buffer);
+        assert!(read_result.is_ok());
+        assert_eq!(&first_read_buffer[0..test_data.len()], test_data);
     }
 
     #[test]
     fn test_partition_data_isolation() {
         // Test that data written to one partition doesn't affect another
-        let Device = create_test_device_no_mbr();
+        let device = create_test_device_no_mbr();
 
         // Create an MBR with multiple partitions manually
-        let Device_size = Device.get_size().unwrap();
-        let Block_size = Device.get_block_size().unwrap();
-        let _ = (Device_size.As_u64() / Block_size as u64) as u32;
+        let device_size = device.get_size().unwrap();
+        let block_size = device.get_block_size().unwrap();
+        let _ = (device_size.as_u64() / block_size as u64) as u32;
 
-        let mut Mbr = MBR_type::new_with_signature(0x12345678);
+        let mut mbr = MBR_type::new_with_signature(0x12345678);
 
         // Add two partitions
-        let First_partition_size = 2048; // 1MB worth of sectors
-        let Second_partition_start = 2048 + First_partition_size;
-        let Second_partition_size = 2048;
+        let first_partition_size = 2048; // 1MB worth of sectors
+        let second_partition_start = 2048 + first_partition_size;
+        let second_partition_size = 2048;
 
-        let _ = Mbr.add_partition(
+        let _ = mbr.add_partition(
             Partition_type_type::Fat32_lba,
             2048,
-            First_partition_size,
+            first_partition_size,
             true,
         );
-        let _ = Mbr.add_partition(
+        let _ = mbr.add_partition(
             Partition_type_type::Linux,
-            Second_partition_start,
-            Second_partition_size,
+            second_partition_start,
+            second_partition_size,
             false,
         );
 
         // Write MBR to device
-        let Write_result = Mbr.write_to_device(&Device);
-        assert!(Write_result.is_ok());
+        let write_result = mbr.write_to_device(&device);
+        assert!(write_result.is_ok());
 
         // Create partition devices
-        let Valid_partitions = Mbr.get_valid_partitions();
-        assert_eq!(Valid_partitions.len(), 2);
+        let valid_partitions = mbr.get_valid_partitions();
+        assert_eq!(valid_partitions.len(), 2);
 
-        let First_partition_device =
-            create_partition_device(Device.clone(), Valid_partitions[0]).unwrap();
-        let Second_partition_device =
-            create_partition_device(Device.clone(), Valid_partitions[1]).unwrap();
+        let first_partition_device =
+            create_partition_device(device.clone(), valid_partitions[0]).unwrap();
+        let second_partition_device =
+            create_partition_device(device.clone(), valid_partitions[1]).unwrap();
 
         // Write different data to each partition
-        let First_data = b"Data for first partition - FAT32";
-        let Second_data = b"Data for second partition - Linux";
+        let first_data = b"Data for first partition - FAT32";
+        let second_data = b"Data for second partition - Linux";
 
-        let mut First_buffer = vec![0u8; 512];
-        First_buffer[0..First_data.len()].copy_from_slice(First_data);
-        let Write_result = First_partition_device.Write(&First_buffer);
-        assert!(Write_result.is_ok());
+        let mut first_buffer = vec![0u8; 512];
+        first_buffer[0..first_data.len()].copy_from_slice(first_data);
+        let write_result = first_partition_device.write(&first_buffer);
+        assert!(write_result.is_ok());
 
-        let mut Second_buffer = vec![0u8; 512];
-        Second_buffer[0..Second_data.len()].copy_from_slice(Second_data);
-        let Write_result = Second_partition_device.Write(&Second_buffer);
-        assert!(Write_result.is_ok());
+        let mut second_buffer = vec![0u8; 512];
+        second_buffer[0..second_data.len()].copy_from_slice(second_data);
+        let write_result = second_partition_device.write(&second_buffer);
+        assert!(write_result.is_ok());
 
         // Reset positions and read back
-        let _ = First_partition_device.Set_position(&crate::Position_type::Start(0));
-        let _ = Second_partition_device.Set_position(&crate::Position_type::Start(0));
+        let _ = first_partition_device.set_position(&crate::Position_type::Start(0));
+        let _ = second_partition_device.set_position(&crate::Position_type::Start(0));
 
-        let mut First_read_buffer = vec![0u8; 512];
-        let mut Second_read_buffer = vec![0u8; 512];
+        let mut first_read_buffer = vec![0u8; 512];
+        let mut second_read_buffer = vec![0u8; 512];
 
-        let Read_result = First_partition_device.Read(&mut First_read_buffer);
-        assert!(Read_result.is_ok());
-        let Read_result = Second_partition_device.Read(&mut Second_read_buffer);
-        assert!(Read_result.is_ok());
+        let read_result = first_partition_device.read(&mut first_read_buffer);
+        assert!(read_result.is_ok());
+        let read_result = second_partition_device.read(&mut second_read_buffer);
+        assert!(read_result.is_ok());
 
         // Verify each partition has its own data
-        assert_eq!(&First_read_buffer[0..First_data.len()], First_data);
-        assert_eq!(&Second_read_buffer[0..Second_data.len()], Second_data);
+        assert_eq!(&first_read_buffer[0..first_data.len()], first_data);
+        assert_eq!(&second_read_buffer[0..second_data.len()], second_data);
 
         // Verify the data is different (partitions are isolated)
-        assert_ne!(&First_read_buffer[0..32], &Second_read_buffer[0..32]);
+        assert_ne!(&first_read_buffer[0..32], &second_read_buffer[0..32]);
     }
 
     #[test]
     fn test_partition_bounds_checking() {
-        let Device = create_test_device_no_mbr();
+        let device = create_test_device_no_mbr();
 
-        let Partition_device_result = format_disk_and_get_first_partition(
-            &Device,
+        let partition_device_result = format_disk_and_get_first_partition(
+            &device,
             Partition_type_type::Fat32_lba,
             Some(0x12345678),
         );
-        assert!(Partition_device_result.is_ok());
-        let Partition_device = Partition_device_result.unwrap();
+        assert!(partition_device_result.is_ok());
+        let partition_device = partition_device_result.unwrap();
 
         // Try to write beyond partition bounds
-        let Partition_size_bytes = Partition_device.get_sector_count() as u64 * 512;
-        let Beyond_bounds_position = Partition_size_bytes;
+        let partition_size_bytes = partition_device.get_sector_count() as u64 * 512;
+        let beyond_bounds_position = partition_size_bytes;
 
-        let _ = Partition_device
-            .Set_position(&crate::Position_type::Start(Beyond_bounds_position))
+        let _ = partition_device
+            .set_position(&crate::Position_type::Start(beyond_bounds_position))
             .unwrap();
         // This should either fail or be clamped to valid range
         // The exact behavior depends on the partition device implementation
 
         // Write a small amount of data at the very end of the partition (should work)
-        let End_position = Partition_size_bytes - 512;
-        let Set_position_result =
-            Partition_device.Set_position(&crate::Position_type::Start(End_position));
-        assert!(Set_position_result.is_ok());
+        let end_position = partition_size_bytes - 512;
+        let set_position_result =
+            partition_device.set_position(&crate::Position_type::Start(end_position));
+        assert!(set_position_result.is_ok());
 
-        let Test_data = b"End of partition data";
-        let mut Write_buffer = vec![0u8; 512];
-        Write_buffer[0..Test_data.len()].copy_from_slice(Test_data);
+        let test_data = b"End of partition data";
+        let mut write_buffer = vec![0u8; 512];
+        write_buffer[0..test_data.len()].copy_from_slice(test_data);
 
-        let Write_result = Partition_device.Write(&Write_buffer);
-        assert!(Write_result.is_ok());
+        let write_result = partition_device.write(&write_buffer);
+        assert!(write_result.is_ok());
 
         // Read it back to verify
-        let Set_position_result =
-            Partition_device.Set_position(&crate::Position_type::Start(End_position));
-        assert!(Set_position_result.is_ok());
-        let mut Read_buffer = vec![0u8; 512];
-        let Read_result = Partition_device.Read(&mut Read_buffer);
-        assert!(Read_result.is_ok());
-        assert_eq!(&Read_buffer[0..Test_data.len()], Test_data);
+        let set_position_result =
+            partition_device.set_position(&crate::Position_type::Start(end_position));
+        assert!(set_position_result.is_ok());
+        let mut read_buffer = vec![0u8; 512];
+        let read_result = partition_device.read(&mut read_buffer);
+        assert!(read_result.is_ok());
+        assert_eq!(&read_buffer[0..test_data.len()], test_data);
     }
 }

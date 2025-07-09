@@ -17,7 +17,7 @@ const DIRECTORY_PATHS: [&CStr; 1] = [c"/"];
 const DIRECTORY_PATHS_RAW: [*const i8; 1] = [DIRECTORY_PATHS[0].as_ptr()];
 
 impl<'runtime> Module_type<'runtime> {
-    pub async fn From_buffer(
+    pub async fn from_buffer(
         runtime: &'runtime Runtime_type,
         buffer: Vec<u8>,
         name: &str,
@@ -26,50 +26,50 @@ impl<'runtime> Module_type<'runtime> {
         standard_error: Unique_file_identifier_type,
     ) -> Result_type<Self> {
         // - Environment variables.
-        let Task_instance = task::get_instance();
+        let task_instance = task::get_instance();
 
-        let Task = Task_instance.get_current_task_identifier().await;
-        let mut environment_variables_raw: Vec<*const i8> = Task_instance
-            .get_environment_variables(Task)
+        let task = task_instance.get_current_task_identifier().await;
+        let mut environment_variables_raw: Vec<*const i8> = task_instance
+            .get_environment_variables(task)
             .await
             .map_err(Error_type::Failed_to_get_task_informations)?
             .into_iter()
             .map(|x| x.get_raw().as_ptr())
             .collect();
 
-        let Environment_variables_raw_pointer = environment_variables_raw.as_mut_ptr();
+        let environment_variables_raw_pointer = environment_variables_raw.as_mut_ptr();
 
-        let Environment_variables_length = environment_variables_raw.len();
+        let environment_variables_length = environment_variables_raw.len();
 
         // - Create the module.
-        let Module = Module_type {
+        let module = Module_type {
             module: Module::from_vec(runtime.get_inner_reference(), buffer, name)?,
             _environment_variables_raw: environment_variables_raw,
         };
 
-        let Standard_in = standard_in.Into_inner() as u64;
-        let standard_out = standard_out.Into_inner() as u64;
-        let standard_error = standard_error.Into_inner() as u64;
+        let standard_in = standard_in.into_inner() as u64;
+        let standard_out = standard_out.into_inner() as u64;
+        let standard_error = standard_error.into_inner() as u64;
 
         // - Set WASI arguments.
         unsafe {
             wasm_runtime_set_wasi_args_ex(
-                Module.module.get_inner_module(),
+                module.module.get_inner_module(),
                 DIRECTORY_PATHS_RAW.as_ptr() as *mut *const i8,
                 DIRECTORY_PATHS_RAW.len() as u32,
                 null_mut(),
                 0,
-                Environment_variables_raw_pointer,
-                Environment_variables_length as u32,
+                environment_variables_raw_pointer,
+                environment_variables_length as u32,
                 null_mut(),
                 0,
-                u64::cast_signed(Standard_in),
+                u64::cast_signed(standard_in),
                 u64::cast_signed(standard_out),
                 u64::cast_signed(standard_error),
             )
         }
 
-        Ok(Module)
+        Ok(module)
     }
 
     pub(crate) fn get_inner_reference(&self) -> &Module {

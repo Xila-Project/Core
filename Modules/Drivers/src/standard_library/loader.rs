@@ -81,7 +81,7 @@ impl Loader_type {
             let destination_file = file_system.open(
                 Task_identifier_type::new(0),
                 destination_path,
-                Flags_type::New(Mode_type::READ_ONLY, Some(Open_type::CREATE), None),
+                Flags_type::new(Mode_type::READ_ONLY, Some(Open_type::CREATE), None),
                 Time_type::new(0),
                 User_identifier_type::ROOT,
                 Group_identifier_type::ROOT,
@@ -117,7 +117,7 @@ mod tests {
         let source_path = "Cargo.toml";
         let destination_path = "/Cargo.toml";
 
-        let device = file_system::Create_device!(file_system::Memory_device_type::<512>::New(
+        let device = file_system::create_device!(file_system::Memory_device_type::<512>::new(
             1024 * 1024 * 512
         ));
 
@@ -136,8 +136,8 @@ mod tests {
         let file: file_system::Local_file_identifier_type = file_system
             .open(
                 Task_identifier_type::new(0),
-                Path_type::New(destination_path),
-                Flags_type::New(Mode_type::READ_ONLY, None, None),
+                Path_type::new(destination_path),
+                Flags_type::new(Mode_type::READ_ONLY, None, None),
                 Time_type::new(0),
                 User_identifier_type::ROOT,
                 Group_identifier_type::ROOT,

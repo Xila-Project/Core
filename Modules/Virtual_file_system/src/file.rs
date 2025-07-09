@@ -39,10 +39,10 @@ impl<'a> File_type<'a> {
     ) -> Result_type<Self> {
         let task = task::get_instance().get_current_task_identifier().await;
 
-        let File_identifier = file_system.open(&path, flags, task).await?;
+        let file_identifier = file_system.open(&path, flags, task).await?;
 
         Ok(File_type {
-            file_identifier: File_identifier,
+            file_identifier,
             file_system,
             task,
         })
@@ -72,9 +72,9 @@ impl<'a> File_type<'a> {
     }
 
     // - Setters
-    pub async fn set_position(&self, Position: &Position_type) -> Result_type<Size_type> {
+    pub async fn set_position(&self, position: &Position_type) -> Result_type<Size_type> {
         self.file_system
-            .set_position(self.get_file_identifier(), Position, self.task)
+            .set_position(self.get_file_identifier(), position, self.task)
             .await
     }
 
@@ -85,30 +85,30 @@ impl<'a> File_type<'a> {
 
     // - Operations
 
-    pub async fn write(&self, Buffer: &[u8]) -> Result_type<Size_type> {
+    pub async fn write(&self, buffer: &[u8]) -> Result_type<Size_type> {
         self.file_system
-            .write(self.get_file_identifier(), Buffer, self.task)
+            .write(self.get_file_identifier(), buffer, self.task)
             .await
     }
 
-    pub async fn write_line(&self, Buffer: &[u8]) -> Result_type<Size_type> {
-        let size = self.write(Buffer).await? + self.write(b"\n").await?;
+    pub async fn write_line(&self, buffer: &[u8]) -> Result_type<Size_type> {
+        let size = self.write(buffer).await? + self.write(b"\n").await?;
         Ok(size)
     }
 
-    pub async fn read(&self, Buffer: &mut [u8]) -> Result_type<Size_type> {
+    pub async fn read(&self, buffer: &mut [u8]) -> Result_type<Size_type> {
         self.file_system
-            .read(self.get_file_identifier(), Buffer, self.task)
+            .read(self.get_file_identifier(), buffer, self.task)
             .await
     }
-    pub async fn read_line(&self, Buffer: &mut [u8]) -> Result_type<()> {
+    pub async fn read_line(&self, buffer: &mut [u8]) -> Result_type<()> {
         let mut index = 0;
         loop {
-            let Size: usize = self.read(&mut Buffer[index..index + 1]).await?.into();
-            if Size == 0 {
+            let size: usize = self.read(&mut buffer[index..index + 1]).await?.into();
+            if size == 0 {
                 break;
             }
-            if Buffer[index] == b'\n' {
+            if buffer[index] == b'\n' {
                 break;
             }
             index += 1;
@@ -116,9 +116,9 @@ impl<'a> File_type<'a> {
         Ok(())
     }
 
-    pub async fn read_to_end(&self, Buffer: &mut Vec<u8>) -> Result_type<Size_type> {
+    pub async fn read_to_end(&self, buffer: &mut Vec<u8>) -> Result_type<Size_type> {
         self.file_system
-            .read_to_end(self.get_file_identifier(), self.task, Buffer)
+            .read_to_end(self.get_file_identifier(), self.task, buffer)
             .await
     }
 

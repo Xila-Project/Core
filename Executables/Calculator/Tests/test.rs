@@ -5,7 +5,7 @@ extern crate alloc;
 use xila::drivers;
 use xila::drivers::native::Time_driver_type;
 use xila::file_system;
-use xila::file_system::{Create_device, Create_file_system, Memory_device_type};
+use xila::file_system::{Create_file_system, Memory_device_type, create_device};
 use xila::graphics;
 use xila::graphics::lvgl;
 use xila::host_bindings;
@@ -45,10 +45,10 @@ async fn integration_test() {
 
     let task = task_instance.get_current_task_identifier().await;
 
-    time::initialize(Create_device!(Time_driver_type::new()))
+    time::initialize(create_device!(Time_driver_type::new()))
         .expect("Error initializing time manager");
 
-    let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
+    let memory_device = create_device!(Memory_device_type::<512>::new(1024 * 512));
     little_fs::File_system_type::format(memory_device.clone(), 512).unwrap();
 
     let virtual_file_system = virtual_file_system::initialize(
@@ -85,7 +85,7 @@ async fn integration_test() {
     .await
     .unwrap();
 
-    virtual_machine::Initialize(&[&host_bindings::Graphics_bindings]);
+    virtual_machine::initialize(&[&host_bindings::Graphics_bindings]);
 
     let virtual_machine = virtual_machine::get_instance();
     const RESOLUTION: graphics::Point_type = graphics::Point_type::new(800, 600);
@@ -144,7 +144,7 @@ async fn integration_test() {
         .unwrap();
 
     virtual_machine
-        .Execute(
+        .execute(
             binary_buffer.to_vec(),
             8 * 1024,
             standard_in,

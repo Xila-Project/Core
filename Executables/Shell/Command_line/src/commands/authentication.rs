@@ -17,7 +17,7 @@ impl Shell_type {
         self.standard.read_line(&mut password).await;
 
         // - Check the user name and the password
-        let User_identifier = authentication::authenticate_user(
+        let user_identifier = authentication::authenticate_user(
             virtual_file_system::get_instance(),
             &user_name,
             &password,
@@ -31,12 +31,12 @@ impl Shell_type {
         let task = task_manager.get_current_task_identifier().await;
 
         task_manager
-            .set_user(task, User_identifier)
+            .set_user(task, user_identifier)
             .await
             .map_err(Error_type::Failed_to_set_task_user)?;
 
         task_manager
-            .Set_environment_variable(task, "User", &user_name)
+            .set_environment_variable(task, "User", &user_name)
             .await
             .map_err(Error_type::Failed_to_set_environment_variable)?;
 

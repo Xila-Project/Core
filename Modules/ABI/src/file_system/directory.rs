@@ -40,7 +40,7 @@ pub unsafe extern "C" fn Xila_file_system_open_directory(
 
         Debug!("Opening directory {path:?} for task {task:?}");
 
-        *directory = block_on(get_file_system_instance().open_directory(&path, task))?.Into_inner();
+        *directory = block_on(get_file_system_instance().open_directory(&path, task))?.into_inner();
 
         Ok(())
     })
@@ -64,14 +64,14 @@ pub unsafe extern "C" fn Xila_file_system_read_directory(
 
         Debug!("Reading directory {file:?} for task {task:?}");
 
-        let file = file_system::Unique_file_identifier_type::From_raw(file);
+        let file = file_system::Unique_file_identifier_type::from_raw(file);
 
         let entry = block_on(get_file_system_instance().read_directory(file, task))?;
 
         if let Some(entry) = entry {
             *entry_name = CString::new(entry.get_name().as_str()).unwrap().into_raw();
             *entry_type = entry.get_type().into();
-            *entry_size = entry.get_size().As_u64();
+            *entry_size = entry.get_size().as_u64();
             *entry_inode = entry.get_inode().into();
         } else {
             *entry_name = null_mut();
@@ -88,7 +88,7 @@ pub extern "C" fn Xila_file_system_close_directory(
     into_u32(move || {
         let task = get_context_instance().get_current_task_identifier();
 
-        let directory = file_system::Unique_file_identifier_type::From_raw(directory);
+        let directory = file_system::Unique_file_identifier_type::from_raw(directory);
 
         Debug!("Closing directory {directory:?} for task {task:?}");
 
@@ -105,7 +105,7 @@ pub extern "C" fn Xila_file_system_rewind_directory(
     into_u32(move || {
         let task = get_context_instance().get_current_task_identifier();
 
-        let directory = file_system::Unique_file_identifier_type::From_raw(directory);
+        let directory = file_system::Unique_file_identifier_type::from_raw(directory);
 
         Debug!("Rewinding directory {directory:?} for task {task:?}");
 
@@ -123,7 +123,7 @@ pub extern "C" fn Xila_file_system_directory_set_position(
     into_u32(move || {
         let task = get_context_instance().get_current_task_identifier();
 
-        let directory = file_system::Unique_file_identifier_type::From_raw(directory);
+        let directory = file_system::Unique_file_identifier_type::from_raw(directory);
 
         Debug!("Setting position in directory {directory:?} to offset {offset} for task {task:?}");
 
@@ -144,7 +144,7 @@ mod tests {
     use crate::context::get_instance as get_context_instance;
     use alloc::{ffi::CString, format, vec::Vec};
     use file_system::{
-        Create_device, Create_file_system, Memory_device_type, Mode_type, Open_type,
+        create_device, Create_file_system, Memory_device_type, Mode_type, Open_type,
         Path_owned_type,
     };
     use task::{Task_identifier_type, Test};
@@ -156,11 +156,11 @@ mod tests {
     ) {
         let _ = users::initialize();
 
-        let _ = time::initialize(Create_device!(drivers::native::Time_driver_type::new()));
+        let _ = time::initialize(create_device!(drivers::native::Time_driver_type::new()));
 
         let task = task::get_instance().get_current_task_identifier().await;
 
-        let device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
+        let device = create_device!(Memory_device_type::<512>::new(1024 * 512));
 
         let cache_size = 256;
 
@@ -362,7 +362,7 @@ mod tests {
         let test_file = vfs
             .open(
                 &"/test_read_directory_entries.txt",
-                file_system::Flags_type::New(
+                file_system::Flags_type::new(
                     Mode_type::WRITE_ONLY,
                     Some(Open_type::CREATE_ONLY),
                     None,
@@ -519,8 +519,8 @@ mod tests {
 
             let test_file = vfs
                 .open(
-                    &Path_owned_type::New(path).unwrap(),
-                    file_system::Flags_type::New(
+                    &Path_owned_type::new(path).unwrap(),
+                    file_system::Flags_type::new(
                         Mode_type::WRITE_ONLY,
                         Some(Open_type::CREATE_ONLY),
                         None,
@@ -641,8 +641,8 @@ mod tests {
 
             let test_file = vfs
                 .open(
-                    &Path_owned_type::New(path).unwrap(),
-                    file_system::Flags_type::New(
+                    &Path_owned_type::new(path).unwrap(),
+                    file_system::Flags_type::new(
                         Mode_type::WRITE_ONLY,
                         Some(Open_type::CREATE_ONLY),
                         None,
@@ -772,7 +772,7 @@ mod tests {
         let test_file = vfs
             .open(
                 &"/test_dir/file.txt",
-                file_system::Flags_type::New(
+                file_system::Flags_type::new(
                     Mode_type::WRITE_ONLY,
                     Some(Open_type::CREATE_ONLY),
                     None,

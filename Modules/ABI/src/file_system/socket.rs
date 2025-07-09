@@ -17,7 +17,7 @@ pub unsafe extern "C" fn Xila_file_system_send(
     into_u32(|| {
         let task = block_on(get_task_manager_instance().get_current_task_identifier());
 
-        let socket = file_system::Unique_file_identifier_type::From_raw(socket);
+        let socket = file_system::Unique_file_identifier_type::from_raw(socket);
 
         if buffer.is_null() {
             Err(Error_type::Invalid_parameter)?;
@@ -49,7 +49,7 @@ pub unsafe extern "C" fn Xila_file_system_receive(
     into_u32(|| {
         let task = block_on(get_task_manager_instance().get_current_task_identifier());
 
-        let socket = file_system::Unique_file_identifier_type::From_raw(socket);
+        let socket = file_system::Unique_file_identifier_type::from_raw(socket);
 
         if buffer.is_null() {
             Err(Error_type::Invalid_parameter)?;

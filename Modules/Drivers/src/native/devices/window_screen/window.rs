@@ -207,18 +207,18 @@ impl ApplicationHandler for Window_type {
                 position,
             } => self
                 .pointer_data
-                .Set_point((position.x as i16, position.y as i16).into()),
+                .set_point((position.x as i16, position.y as i16).into()),
             WindowEvent::MouseInput {
                 device_id: _,
                 state,
                 button: _,
             } => match state {
                 ElementState::Pressed => {
-                    self.pointer_data.Set_state(State_type::Pressed);
+                    self.pointer_data.set_state(State_type::Pressed);
                 }
 
                 ElementState::Released => {
-                    self.pointer_data.Set_state(State_type::Released);
+                    self.pointer_data.set_state(State_type::Released);
                 }
             },
             _ => {}

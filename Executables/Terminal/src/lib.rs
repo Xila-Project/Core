@@ -42,13 +42,13 @@ async fn mount_and_open(
     Unique_file_identifier_type,
 )> {
     virtual_file_system::get_instance()
-        .mount_device(task, &"/Devices/Terminal", Device_type::New(terminal))
+        .mount_device(task, &"/Devices/Terminal", Device_type::new(terminal))
         .await?;
 
     let standard_in = virtual_file_system::get_instance()
         .open(
             &"/Devices/Terminal",
-            Flags_type::New(Mode_type::READ_ONLY, None, None),
+            Flags_type::new(Mode_type::READ_ONLY, None, None),
             task,
         )
         .await?;

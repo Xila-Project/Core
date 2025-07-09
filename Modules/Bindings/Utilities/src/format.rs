@@ -13,11 +13,11 @@ pub fn format_rust(file_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-pub fn format_c(File_path: &Path) -> Result<(), String> {
+pub fn format_c(file_path: &Path) -> Result<(), String> {
     Command::new("clang-format")
         .arg("-i")
         .arg(
-            File_path
+            file_path
                 .to_str()
                 .ok_or("Error converting path to string")?,
         )
@@ -29,7 +29,7 @@ pub fn format_c(File_path: &Path) -> Result<(), String> {
 
 const NAMES: [(&str, &str); 1] = [("obj", "object")];
 
-pub fn format_identifier(Prefix: &str, function_name: &str) -> String {
+pub fn format_identifier(prefix: &str, function_name: &str) -> String {
     // - Remove prefix
     let function_name = if function_name.starts_with("lv_") {
         function_name.replacen("lv_", "", 1)
@@ -37,8 +37,8 @@ pub fn format_identifier(Prefix: &str, function_name: &str) -> String {
         function_name.to_string()
     };
 
-    let function_name = if !function_name.starts_with(Prefix) {
-        format!("{Prefix}{function_name}")
+    let function_name = if !function_name.starts_with(prefix) {
+        format!("{prefix}{function_name}")
     } else {
         function_name
     };
@@ -46,7 +46,7 @@ pub fn format_identifier(Prefix: &str, function_name: &str) -> String {
     // - Replace names
     let function_name = function_name
         .split("_")
-        .map(|part| match NAMES.iter().find(|(Old, _)| *Old == part) {
+        .map(|part| match NAMES.iter().find(|(old, _)| *old == part) {
             Some((_, new)) => new.to_string(),
             None => part.to_string(),
         })

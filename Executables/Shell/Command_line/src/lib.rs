@@ -44,8 +44,8 @@ executable::Implement_executable_device!(
     Main_function: main,
 );
 
-pub async fn main(standard: Standard_type, Arguments: String) -> Result<(), NonZeroUsize> {
-    Shell_type::new(standard).main(Arguments).await
+pub async fn main(standard: Standard_type, arguments: String) -> Result<(), NonZeroUsize> {
+    Shell_type::new(standard).main(arguments).await
 }
 
 impl Shell_type {
@@ -67,7 +67,7 @@ impl Shell_type {
         let _ = execute(path, input, standard)
             .await
             .map_err(|_| Error_type::Failed_to_execute_command)?
-            .Join()
+            .join()
             .await;
 
         Ok(())
@@ -98,10 +98,10 @@ impl Shell_type {
                 _ => {
                     // - Set the current directory for the following commands.
                     if let Err(error) = task::get_instance()
-                        .Set_environment_variable(
+                        .set_environment_variable(
                             self.standard.get_task(),
                             "Current_directory",
-                            self.current_directory.As_str(),
+                            self.current_directory.as_str(),
                         )
                         .await
                     {
@@ -110,13 +110,13 @@ impl Shell_type {
                             .await;
                     }
 
-                    let path = Path_type::From_str(command.get_command());
+                    let path = Path_type::from_str(command.get_command());
 
                     if path.is_valid() {
                         if path.is_absolute() {
                             self.run(path, command.get_arguments()).await?;
                         } else {
-                            match self.current_directory.clone().Join(path) {
+                            match self.current_directory.clone().join(path) {
                                 Some(path) => self.run(&path, command.get_arguments()).await?,
                                 None => self.standard.print_error_line("Invalid command").await,
                             }
@@ -133,7 +133,7 @@ impl Shell_type {
         Ok(())
     }
 
-    async fn main_interactive(&mut self, Paths: &[&Path_type]) -> Result<(), Error_type> {
+    async fn main_interactive(&mut self, paths: &[&Path_type]) -> Result<(), Error_type> {
         let mut input = String::new();
 
         while self.running {
@@ -154,9 +154,9 @@ impl Shell_type {
                 continue;
             }
 
-            let Result = self.parse_input(&input, Paths).await;
+            let result = self.parse_input(&input, paths).await;
 
-            if let Err(error) = Result {
+            if let Err(error) = result {
                 self.standard.print_error_line(&error.to_string()).await;
             }
         }
@@ -188,7 +188,7 @@ impl Shell_type {
         let paths = paths
             .get_value()
             .split(':')
-            .map(Path_type::From_str)
+            .map(Path_type::from_str)
             .collect::<Vec<&Path_type>>();
 
         let host = task::get_instance()

@@ -14,7 +14,7 @@ pub extern "C" fn Xila_time_get_time_since_startup_microseconds() -> u64 {
     get_instance()
         .get_current_time_since_startup()
         .unwrap_or_default()
-        .As_microseconds() as u64
+        .as_microseconds() as u64
 }
 
 #[no_mangle]

@@ -69,7 +69,7 @@ impl File_type {
             Self::get_metadata_from_path(file_system, path)?
         };
 
-        let path = CString::new(path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+        let path = CString::new(path.as_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
         let little_fs_flags = convert_flags(flags);
 
@@ -203,8 +203,8 @@ impl File_type {
         let size = self.get_size(file_system)?;
 
         let statistics = Statistics_type::new(
-            File_system_identifier_type::New(0),
-            Inode_type::New(0),
+            File_system_identifier_type::new(0),
+            Inode_type::new(0),
             1,
             size,
             metadata.get_creation_time(),
@@ -256,7 +256,7 @@ impl File_type {
         file_system: &mut super::littlefs::lfs_t,
         path: &Path_type,
     ) -> Result_type<Metadata_type> {
-        let path = CString::new(path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+        let path = CString::new(path.as_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
         let mut metadata = MaybeUninit::<Metadata_type>::uninit();
 
@@ -278,7 +278,7 @@ impl File_type {
         path: &Path_type,
         metadata: &Metadata_type,
     ) -> Result_type<()> {
-        let path = CString::new(path.As_str()).map_err(|_| Error_type::Invalid_parameter)?;
+        let path = CString::new(path.as_str()).map_err(|_| Error_type::Invalid_parameter)?;
 
         convert_result(unsafe {
             littlefs::lfs_setattr(

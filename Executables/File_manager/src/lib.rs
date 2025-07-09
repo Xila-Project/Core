@@ -16,8 +16,6 @@ use virtual_file_system::{File_type, Virtual_file_system_type};
 
 use executable::Standard_type;
 
-use crate::File_manager_type;
-
 pub const SHORTCUT: &str = r#"
 {
     "Name": "File manager",
@@ -42,7 +40,7 @@ impl File_manager_executable_type {
         let file = match File_type::open(
             virtual_file_system,
             "/Configuration/Shared/Shortcuts/File_manager.json",
-            Flags_type::New(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
+            Flags_type::new(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
         )
         .await
         {

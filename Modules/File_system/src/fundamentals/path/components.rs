@@ -26,12 +26,12 @@ impl<'a> From<&'a str> for Component_type<'a> {
 pub struct Components_type<'a>(Split<'a, char>);
 
 impl<'a> Components_type<'a> {
-    pub fn New(Path: &Path_type) -> Components_type {
-        Components_type(Path.As_str().split(SEPARATOR))
+    pub fn new(path: &Path_type) -> Components_type {
+        Components_type(path.as_str().split(SEPARATOR))
     }
 
-    pub fn get_common_components(self, Other: Components_type<'a>) -> usize {
-        self.zip(Other).take_while(|(a, b)| a == b).count()
+    pub fn get_common_components(self, other: Components_type<'a>) -> usize {
+        self.zip(other).take_while(|(a, b)| a == b).count()
     }
 }
 
@@ -59,7 +59,7 @@ mod tests {
     #[test]
     fn test_components() {
         assert_eq!(
-            Components_type::New(Path_type::From_str("/a/b/c")).collect::<Vec<_>>(),
+            Components_type::new(Path_type::from_str("/a/b/c")).collect::<Vec<_>>(),
             vec![
                 Component_type::Root,
                 Component_type::Normal("a"),
@@ -69,7 +69,7 @@ mod tests {
         );
 
         assert_eq!(
-            Components_type::New(Path_type::From_str("/a/./b/c")).collect::<Vec<_>>(),
+            Components_type::new(Path_type::from_str("/a/./b/c")).collect::<Vec<_>>(),
             vec![
                 Component_type::Root,
                 Component_type::Normal("a"),
@@ -80,7 +80,7 @@ mod tests {
         );
 
         assert_eq!(
-            Components_type::New(Path_type::From_str("a/b/c")).collect::<Vec<_>>(),
+            Components_type::new(Path_type::from_str("a/b/c")).collect::<Vec<_>>(),
             vec![
                 Component_type::Normal("a"),
                 Component_type::Normal("b"),
@@ -89,7 +89,7 @@ mod tests {
         );
 
         assert_eq!(
-            Components_type::New(Path_type::From_str("a/./../b/c")).collect::<Vec<_>>(),
+            Components_type::new(Path_type::from_str("a/./../b/c")).collect::<Vec<_>>(),
             vec![
                 Component_type::Normal("a"),
                 Component_type::Current,

@@ -29,8 +29,9 @@ pub trait Manager_trait: Send + Sync {
     /// This function is unsafe because the caller must ensure that:
     /// - The returned memory is properly initialized before use
     /// - The memory is properly deallocated when no longer needed
-    unsafe fn Allocate(
+    unsafe fn allocate(
         &self,
+
         capabilities: Capabilities_type,
         layout: Layout_type,
     ) -> Option<NonNull<u8>>;
@@ -47,7 +48,7 @@ pub trait Manager_trait: Send + Sync {
     /// - The layout matches the one used for allocation
     /// - The memory is not used after deallocation
     /// - The memory is not deallocated multiple times
-    unsafe fn Deallocate(&self, Pointer: NonNull<u8>, Layout: Layout_type);
+    unsafe fn deallocate(&self, pointer: NonNull<u8>, layout: Layout_type);
 
     /// Reallocates memory with a new layout.
     ///
@@ -71,32 +72,32 @@ pub trait Manager_trait: Send + Sync {
     /// - The `Old_layout` matches the one used for the original allocation
     /// - The old memory is not used after successful reallocation
     /// - The returned memory is properly initialized before use
-    unsafe fn Reallocate(
+    unsafe fn reallocate(
         &self,
         pointer: Option<NonNull<u8>>,
         old_layout: Layout_type,
         new_layout: Layout_type,
     ) -> Option<NonNull<u8>> {
         // Default implementation simply deallocates and allocates again
-        let Memory = self.Allocate(Capabilities_type::default(), new_layout)?;
+        let memory = self.allocate(Capabilities_type::default(), new_layout)?;
 
         // Copy the old data to the new memory
-        let Pointer = match pointer {
+        let pointer = match pointer {
             Some(ptr) => ptr,
-            None => return Some(Memory),
+            None => return Some(memory),
         };
 
-        let Old_size = old_layout.size();
+        let old_size = old_layout.size();
         let new_size = new_layout.size();
-        if Old_size > 0 && new_size > 0 {
-            let old_ptr = Pointer.as_ptr();
-            let new_ptr = Memory.as_ptr();
-            core::ptr::copy_nonoverlapping(old_ptr, new_ptr, core::cmp::min(Old_size, new_size));
+        if old_size > 0 && new_size > 0 {
+            let old_ptr = pointer.as_ptr();
+            let new_ptr = memory.as_ptr();
+            core::ptr::copy_nonoverlapping(old_ptr, new_ptr, core::cmp::min(old_size, new_size));
         }
         // Deallocate the old memory
-        self.Deallocate(Pointer, old_layout);
+        self.deallocate(pointer, old_layout);
 
-        Some(Memory)
+        Some(memory)
     }
 
     /// Returns the amount of memory currently used in this allocator.
@@ -133,7 +134,7 @@ pub trait Manager_trait: Send + Sync {
     /// # Note
     /// The default implementation does nothing and can be overridden by specific
     /// allocators that need to handle instruction cache management.
-    fn Flush_instruction_cache(&self, _Address: NonNull<u8>, _Size: usize) {
+    fn flush_instruction_cache(&self, _address: NonNull<u8>, _size: usize) {
         // Default implementation does nothing, can be overridden by specific allocators
     }
 
@@ -147,7 +148,7 @@ pub trait Manager_trait: Send + Sync {
     /// # Note
     /// The default implementation does nothing and can be overridden by specific
     /// allocators that need to handle data cache management.
-    fn Flush_data_cache(&self) {
+    fn flush_data_cache(&self) {
         // Default implementation does nothing, can be overridden by specific allocators
     }
 

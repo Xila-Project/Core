@@ -12,50 +12,50 @@ use super::*;
 pub struct Path_type(str);
 
 impl Path_type {
-    pub const ROOT: &'static Path_type = Self::From_str("/");
-    pub const EMPTY: &'static Path_type = Self::From_str("");
+    pub const ROOT: &'static Path_type = Self::from_str("/");
+    pub const EMPTY: &'static Path_type = Self::from_str("");
 
     /// Contains the OS core, including the kernel, init system, and critical drivers.
     /// Prevents modification by regular users.
-    pub const SYSTEM: &'static Path_type = Self::From_str("/System");
+    pub const SYSTEM: &'static Path_type = Self::from_str("/System");
 
     /// Stores system-wide settings in a structured format (e.g., JSON, TOML).
-    pub const DEVICES: &'static Path_type = Self::From_str("/Devices");
+    pub const DEVICES: &'static Path_type = Self::from_str("/Devices");
 
     /// Hardware devices, symlinks for human-friendly names.
-    pub const CONFIGURATION: &'static Path_type = Self::From_str("/Configuration");
+    pub const CONFIGURATION: &'static Path_type = Self::from_str("/Configuration");
 
     /// Contains the shared configurations between applications.
-    pub const SHARED_CONFIGURATION: &'static Path_type = Self::From_str("/Configuration/Shared");
+    pub const SHARED_CONFIGURATION: &'static Path_type = Self::from_str("/Configuration/Shared");
 
     /// Binaries data.
-    pub const DATA: &'static Path_type = Self::From_str("/Data");
+    pub const DATA: &'static Path_type = Self::from_str("/Data");
 
     /// Shared data between binaries.
-    pub const SHARED_DATA: &'static Path_type = Self::From_str("/Data/Shared");
+    pub const SHARED_DATA: &'static Path_type = Self::from_str("/Data/Shared");
 
     /// Contains the system's binaries, including the shell and other executables.
-    pub const BINARIES: &'static Path_type = Self::From_str("/Binaries");
+    pub const BINARIES: &'static Path_type = Self::from_str("/Binaries");
 
     /// Contains the user's data, including documents, downloads, and other files.
-    pub const USERS: &'static Path_type = Self::From_str("/Users");
+    pub const USERS: &'static Path_type = Self::from_str("/Users");
 
     /// Contains temporary files, including logs and caches.
-    pub const TEMPORARY: &'static Path_type = Self::From_str("/Temporary");
+    pub const TEMPORARY: &'static Path_type = Self::from_str("/Temporary");
 
     /// Contains logs, including system logs and application logs.
-    pub const LOGS: &'static Path_type = Self::From_str("/Temporary/Logs");
+    pub const LOGS: &'static Path_type = Self::from_str("/Temporary/Logs");
 
     /// # Safety
     /// The caller must ensure that the string is a valid path string.
-    pub const fn From_str(Path: &str) -> &Path_type {
-        unsafe { &*(Path as *const str as *const Path_type) }
+    pub const fn from_str(path: &str) -> &Path_type {
+        unsafe { &*(path as *const str as *const Path_type) }
     }
 
     /// # Safety
     /// The caller must ensure that the string is a valid path string.
-    pub fn New<S: AsRef<str> + ?Sized>(Path: &S) -> &Path_type {
-        unsafe { &*(Path.as_ref() as *const str as *const Path_type) }
+    pub fn new<S: AsRef<str> + ?Sized>(path: &S) -> &Path_type {
+        unsafe { &*(path.as_ref() as *const str as *const Path_type) }
     }
 
     pub fn is_valid(&self) -> bool {
@@ -78,7 +78,7 @@ impl Path_type {
         self.0.chars().all(|c| c != '.')
     }
 
-    pub fn Go_parent(&self) -> Option<&Path_type> {
+    pub fn go_parent(&self) -> Option<&Path_type> {
         let characters_to_remove = match self.0.rfind(SEPARATOR) {
             Some(index) => index,
             None => {
@@ -100,11 +100,11 @@ impl Path_type {
             if self.is_absolute() {
                 return Some(Self::ROOT);
             } else {
-                return Some(Self::From_str(""));
+                return Some(Self::from_str(""));
             }
         }
 
-        Some(Self::From_str(&self.0[..characters_to_remove]))
+        Some(Self::from_str(&self.0[..characters_to_remove]))
     }
 
     pub fn get_file_prefix(&self) -> Option<&str> {
@@ -137,70 +137,70 @@ impl Path_type {
         Some(&self.0[extension_start + 1..])
     }
 
-    pub fn Set_extension(&self, Extension: &str) -> Option<Path_owned_type> {
+    pub fn set_extension(&self, extension: &str) -> Option<Path_owned_type> {
         let extension_start = self
             .0
             .rfind(EXTENSION_SEPARATOR)
             .unwrap_or(self.get_length());
 
         Some(unsafe {
-            Path_owned_type::New_unchecked(format!("{}{}", &self.0[..extension_start], Extension))
+            Path_owned_type::new_unchecked(format!("{}{}", &self.0[..extension_start], extension))
         })
     }
 
-    pub fn Strip_prefix<'b>(&'b self, Path_prefix: &Path_type) -> Option<&'b Path_type> {
-        let mut stripped_prefix = self.0.strip_prefix(&Path_prefix.0)?;
+    pub fn strip_prefix<'b>(&'b self, path_prefix: &Path_type) -> Option<&'b Path_type> {
+        let mut stripped_prefix = self.0.strip_prefix(&path_prefix.0)?;
 
         if stripped_prefix.starts_with(SEPARATOR) {
             stripped_prefix = &stripped_prefix[1..]
         }
 
-        Some(Self::From_str(stripped_prefix))
+        Some(Self::from_str(stripped_prefix))
     }
 
-    pub fn Strip_prefix_absolute<'b>(&'b self, Path_prefix: &Path_type) -> Option<&'b Path_type> {
-        if Path_prefix.is_root() {
+    pub fn strip_prefix_absolute<'b>(&'b self, path_prefix: &Path_type) -> Option<&'b Path_type> {
+        if path_prefix.is_root() {
             return Some(self);
         }
 
-        let Stripped_prefix = self.0.strip_prefix(&Path_prefix.0)?;
+        let stripped_prefix = self.0.strip_prefix(&path_prefix.0)?;
 
-        if Stripped_prefix.is_empty() {
+        if stripped_prefix.is_empty() {
             return Some(Self::ROOT);
         }
 
-        Some(Self::From_str(Stripped_prefix))
+        Some(Self::from_str(stripped_prefix))
     }
 
-    pub fn Strip_suffix<'b>(&'b self, Path_suffix: &Path_type) -> Option<&'b Path_type> {
-        let stripped_suffix = self.0.strip_suffix(&Path_suffix.0)?;
+    pub fn strip_suffix<'b>(&'b self, path_suffix: &Path_type) -> Option<&'b Path_type> {
+        let stripped_suffix = self.0.strip_suffix(&path_suffix.0)?;
 
         if stripped_suffix.ends_with(SEPARATOR) {
-            return Some(Self::From_str(
+            return Some(Self::from_str(
                 &stripped_suffix[..stripped_suffix.len() - 1],
             ));
         }
 
-        Some(Self::From_str(stripped_suffix))
+        Some(Self::from_str(stripped_suffix))
     }
 
     pub fn get_components(&self) -> Components_type {
-        Components_type::New(self)
+        Components_type::new(self)
     }
 
-    pub fn Join(&self, Path: &Path_type) -> Option<Path_owned_type> {
-        self.to_owned().Join(Path)
+    pub fn join(&self, path: &Path_type) -> Option<Path_owned_type> {
+        self.to_owned().join(path)
     }
 
-    pub fn Append(&self, Path: &str) -> Option<Path_owned_type> {
-        self.to_owned().Append(Path)
+    pub fn append(&self, path: &str) -> Option<Path_owned_type> {
+        self.to_owned().append(path)
     }
 
     pub fn get_length(&self) -> usize {
         self.0.len()
     }
 
-    pub fn As_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         &self.0
     }
 }
@@ -216,7 +216,7 @@ impl ToOwned for Path_type {
     type Owned = Path_owned_type;
 
     fn to_owned(&self) -> Self::Owned {
-        unsafe { Path_owned_type::New_unchecked(self.0.to_string()) }
+        unsafe { Path_owned_type::new_unchecked(self.0.to_string()) }
     }
 
     fn clone_into(&self, target: &mut Self::Owned) {
@@ -226,13 +226,13 @@ impl ToOwned for Path_type {
 
 impl Borrow<Path_type> for Path_owned_type {
     fn borrow(&self) -> &Path_type {
-        Path_type::From_str(&self.0)
+        Path_type::from_str(&self.0)
     }
 }
 
 impl AsRef<Path_type> for str {
     fn as_ref(&self) -> &Path_type {
-        Path_type::From_str(self)
+        Path_type::from_str(self)
     }
 }
 
@@ -254,96 +254,96 @@ mod tests {
 
     #[test]
     fn test_strip_prefix() {
-        let Path = Path_type::From_str("/home/user/file.txt");
-        let Prefix = Path_type::From_str("/home/user");
-        assert_eq!(Path.Strip_prefix(Prefix).unwrap().As_str(), "file.txt");
+        let path = Path_type::from_str("/home/user/file.txt");
+        let prefix = Path_type::from_str("/home/user");
+        assert_eq!(path.strip_prefix(prefix).unwrap().as_str(), "file.txt");
 
-        let Path = Path_type::From_str("/home/user/file.txt");
-        let Prefix = Path_type::From_str("/");
+        let path = Path_type::from_str("/home/user/file.txt");
+        let prefix = Path_type::from_str("/");
         assert_eq!(
-            Path.Strip_prefix(Prefix).unwrap().As_str(),
+            path.strip_prefix(prefix).unwrap().as_str(),
             "home/user/file.txt"
         );
 
-        let Invalid_prefix = Path_type::From_str("/home/invalid/");
-        assert_eq!(Path.Strip_prefix(Invalid_prefix), None);
+        let invalid_prefix = Path_type::from_str("/home/invalid/");
+        assert_eq!(path.strip_prefix(invalid_prefix), None);
     }
 
     #[test]
     fn test_strip_prefix_absolute() {
-        let Path = Path_type::From_str("/");
-        let Prefix = Path_type::From_str("/");
-        assert_eq!(Path.Strip_prefix_absolute(Prefix).unwrap().As_str(), "/");
+        let path = Path_type::from_str("/");
+        let prefix = Path_type::from_str("/");
+        assert_eq!(path.strip_prefix_absolute(prefix).unwrap().as_str(), "/");
 
-        let Path = Path_type::From_str("/Foo/Bar");
-        let Prefix = Path_type::From_str("/Foo/Bar");
-        assert_eq!(Path.Strip_prefix_absolute(Prefix).unwrap().As_str(), "/");
+        let path = Path_type::from_str("/Foo/Bar");
+        let prefix = Path_type::from_str("/Foo/Bar");
+        assert_eq!(path.strip_prefix_absolute(prefix).unwrap().as_str(), "/");
 
-        let Path = Path_type::From_str("/home/user/file.txt");
-        let Prefix = Path_type::From_str("/home/user");
+        let path = Path_type::from_str("/home/user/file.txt");
+        let prefix = Path_type::from_str("/home/user");
         assert_eq!(
-            Path.Strip_prefix_absolute(Prefix).unwrap().As_str(),
+            path.strip_prefix_absolute(prefix).unwrap().as_str(),
             "/file.txt"
         );
 
-        let Path = Path_type::From_str("/home/user/file.txt");
-        let Prefix = Path_type::From_str("/");
+        let path = Path_type::from_str("/home/user/file.txt");
+        let prefix = Path_type::from_str("/");
         assert_eq!(
-            Path.Strip_prefix_absolute(Prefix).unwrap().As_str(),
+            path.strip_prefix_absolute(prefix).unwrap().as_str(),
             "/home/user/file.txt"
         );
 
-        let Invalid_prefix = Path_type::From_str("/home/invalid/");
-        assert_eq!(Path.Strip_prefix_absolute(Invalid_prefix), None);
+        let invalid_prefix = Path_type::from_str("/home/invalid/");
+        assert_eq!(path.strip_prefix_absolute(invalid_prefix), None);
     }
 
     #[test]
     fn test_strip_suffix() {
-        let Path = Path_type::From_str("/home/user/file.txt");
-        let Suffix = Path_type::From_str("user/file.txt");
-        assert_eq!(Path.Strip_suffix(Suffix).unwrap().As_str(), "/home");
+        let path = Path_type::from_str("/home/user/file.txt");
+        let suffix = Path_type::from_str("user/file.txt");
+        assert_eq!(path.strip_suffix(suffix).unwrap().as_str(), "/home");
 
-        let Invalid_suffix = Path_type::From_str("user/invalid.txt");
-        assert_eq!(Path.Strip_suffix(Invalid_suffix), None);
+        let invalid_suffix = Path_type::from_str("user/invalid.txt");
+        assert_eq!(path.strip_suffix(invalid_suffix), None);
     }
 
     #[test]
     fn test_go_parent() {
-        let Path = Path_type::From_str("/home/user/file.txt");
-        assert_eq!(&Path.Go_parent().unwrap().0, "/home/user");
-        assert_eq!(&Path.Go_parent().unwrap().Go_parent().unwrap().0, "/home");
+        let path = Path_type::from_str("/home/user/file.txt");
+        assert_eq!(&path.go_parent().unwrap().0, "/home/user");
+        assert_eq!(&path.go_parent().unwrap().go_parent().unwrap().0, "/home");
         assert_eq!(
-            &Path
-                .Go_parent()
+            &path
+                .go_parent()
                 .unwrap()
-                .Go_parent()
+                .go_parent()
                 .unwrap()
-                .Go_parent()
+                .go_parent()
                 .unwrap()
                 .0,
             "/"
         );
         assert_eq!(
-            Path.Go_parent()
+            path.go_parent()
                 .unwrap()
-                .Go_parent()
+                .go_parent()
                 .unwrap()
-                .Go_parent()
+                .go_parent()
                 .unwrap()
-                .Go_parent(),
+                .go_parent(),
             None
         );
 
-        let Path = Path_type::From_str("home/user/file.txt");
-        assert_eq!(&Path.Go_parent().unwrap().0, "home/user");
-        assert_eq!(&Path.Go_parent().unwrap().Go_parent().unwrap().0, "home");
+        let path = Path_type::from_str("home/user/file.txt");
+        assert_eq!(&path.go_parent().unwrap().0, "home/user");
+        assert_eq!(&path.go_parent().unwrap().go_parent().unwrap().0, "home");
         assert_eq!(
-            &Path
-                .Go_parent()
+            &path
+                .go_parent()
                 .unwrap()
-                .Go_parent()
+                .go_parent()
                 .unwrap()
-                .Go_parent()
+                .go_parent()
                 .unwrap()
                 .0,
             ""
@@ -353,33 +353,33 @@ mod tests {
     #[test]
     fn test_path_file() {
         // Regular case
-        let Path = Path_type::From_str("/Directory/File.txt");
-        assert_eq!(Path.get_extension(), Some("txt"));
-        assert_eq!(Path.get_file_prefix(), Some("File"));
-        assert_eq!(Path.get_file_name(), Some("File.txt"));
+        let path = Path_type::from_str("/Directory/File.txt");
+        assert_eq!(path.get_extension(), Some("txt"));
+        assert_eq!(path.get_file_prefix(), Some("File"));
+        assert_eq!(path.get_file_name(), Some("File.txt"));
 
         // No extension
-        let Path = Path_type::From_str("/Directory/File");
-        assert_eq!(Path.get_extension(), None);
-        assert_eq!(Path.get_file_prefix(), Some("File"));
-        assert_eq!(Path.get_file_name(), Some("File"));
+        let path = Path_type::from_str("/Directory/File");
+        assert_eq!(path.get_extension(), None);
+        assert_eq!(path.get_file_prefix(), Some("File"));
+        assert_eq!(path.get_file_name(), Some("File"));
 
         // No file prefix
-        let Path = Path_type::From_str("File.txt");
-        assert_eq!(Path.get_extension(), Some("txt"));
-        assert_eq!(Path.get_file_prefix(), Some("File"));
-        assert_eq!(Path.get_file_name(), Some("File.txt"));
+        let path = Path_type::from_str("File.txt");
+        assert_eq!(path.get_extension(), Some("txt"));
+        assert_eq!(path.get_file_prefix(), Some("File"));
+        assert_eq!(path.get_file_name(), Some("File.txt"));
 
         // No file prefix or extension
-        let Path = Path_type::From_str("/");
-        assert_eq!(Path.get_extension(), None);
-        assert_eq!(Path.get_file_prefix(), None);
-        assert_eq!(Path.get_file_name(), None);
+        let path = Path_type::from_str("/");
+        assert_eq!(path.get_extension(), None);
+        assert_eq!(path.get_file_prefix(), None);
+        assert_eq!(path.get_file_name(), None);
 
         // No file prefix or extension
-        let Path = Path_type::From_str("File");
-        assert_eq!(Path.get_extension(), None);
-        assert_eq!(Path.get_file_prefix(), Some("File"));
-        assert_eq!(Path.get_file_name(), Some("File"));
+        let path = Path_type::from_str("File");
+        assert_eq!(path.get_extension(), None);
+        assert_eq!(path.get_file_prefix(), Some("File"));
+        assert_eq!(path.get_file_name(), Some("File"));
     }
 }

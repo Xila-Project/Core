@@ -19,7 +19,7 @@ pub struct Metadata_type {
     /// The file inode.
     inode: Option<Inode_type>,
     /// The file type.
-    Type: Type_type,
+    r#type: Type_type,
     /// The file creation time.
     creation_time: Time_type,
     /// The file modification time.
@@ -43,11 +43,11 @@ impl Metadata_type {
         user: User_identifier_type,
         group: Group_identifier_type,
     ) -> Option<Self> {
-        let permissions = Permissions_type::New_default(type_value);
+        let permissions = Permissions_type::new_default(type_value);
 
         Some(Metadata_type {
             inode: None,
-            Type: type_value,
+            r#type: type_value,
             creation_time: current_time,
             modification_time: current_time,
             access_time: current_time,
@@ -62,7 +62,7 @@ impl Metadata_type {
     }
 
     pub fn get_type(&self) -> Type_type {
-        self.Type
+        self.r#type
     }
 
     pub fn get_creation_time(&self) -> Time_type {
@@ -89,32 +89,32 @@ impl Metadata_type {
         self.group
     }
 
-    pub fn set_inode(&mut self, Inode: Inode_type) {
-        self.inode = Some(Inode);
+    pub fn set_inode(&mut self, inode: Inode_type) {
+        self.inode = Some(inode);
     }
 
-    pub fn set_type(&mut self, Type: Type_type) {
-        self.Type = Type;
+    pub fn set_type(&mut self, r#type: Type_type) {
+        self.r#type = r#type;
     }
 
-    pub fn set_creation_time(&mut self, Time: Time_type) {
-        self.creation_time = Time;
+    pub fn set_creation_time(&mut self, time: Time_type) {
+        self.creation_time = time;
     }
 
-    pub fn set_modification_time(&mut self, Time: Time_type) {
-        self.modification_time = Time;
+    pub fn set_modification_time(&mut self, time: Time_type) {
+        self.modification_time = time;
     }
 
-    pub fn set_access_time(&mut self, Time: Time_type) {
-        self.access_time = Time;
+    pub fn set_access_time(&mut self, time: Time_type) {
+        self.access_time = time;
     }
 
-    pub fn set_permissions(&mut self, Permissions: Permissions_type) {
-        self.permissions = Permissions;
+    pub fn set_permissions(&mut self, permissions: Permissions_type) {
+        self.permissions = permissions;
     }
 
-    pub fn set_owner(&mut self, Owner: User_identifier_type) {
-        self.user = Owner;
+    pub fn set_owner(&mut self, owner: User_identifier_type) {
+        self.user = owner;
     }
 
     pub fn set_group(&mut self, group: Group_identifier_type) {
@@ -128,8 +128,8 @@ mod tests {
 
     fn create_test_metadata() -> Metadata_type {
         let current_time = Time_type::new(1640995200);
-        let user = User_identifier_type::New(1000);
-        let group = Group_identifier_type::New(1000);
+        let user = User_identifier_type::new(1000);
+        let group = Group_identifier_type::new(1000);
 
         Metadata_type::get_default(Type_type::File, current_time, user, group).unwrap()
     }
@@ -137,8 +137,8 @@ mod tests {
     #[test]
     fn test_metadata_creation() {
         let current_time = Time_type::new(1640995200);
-        let user = User_identifier_type::New(1000);
-        let group = Group_identifier_type::New(1000);
+        let user = User_identifier_type::new(1000);
+        let group = Group_identifier_type::new(1000);
 
         let metadata = Metadata_type::get_default(Type_type::File, current_time, user, group);
         assert!(metadata.is_some());
@@ -168,8 +168,8 @@ mod tests {
         assert_eq!(metadata.get_creation_time().as_u64(), 1640995200);
         assert_eq!(metadata.get_modification_time().as_u64(), 1640995200);
         assert_eq!(metadata.get_access_time().as_u64(), 1640995200);
-        assert_eq!(metadata.get_user().As_u16(), 1000);
-        assert_eq!(metadata.get_group().As_u16(), 1000);
+        assert_eq!(metadata.get_user().as_u16(), 1000);
+        assert_eq!(metadata.get_group().as_u16(), 1000);
     }
 
     #[test]
@@ -177,7 +177,7 @@ mod tests {
         let mut metadata = create_test_metadata();
 
         // Test setting inode
-        let inode = Inode_type::New(42);
+        let inode = Inode_type::new(42);
         metadata.set_inode(inode);
         assert_eq!(metadata.get_inode(), Some(inode));
 
@@ -196,8 +196,8 @@ mod tests {
         assert_eq!(metadata.get_access_time(), new_time);
 
         // Test setting owner and group
-        let new_user = User_identifier_type::New(2000);
-        let new_group = Group_identifier_type::New(2000);
+        let new_user = User_identifier_type::new(2000);
+        let new_group = Group_identifier_type::new(2000);
 
         metadata.set_owner(new_user);
         metadata.set_group(new_group);
@@ -213,7 +213,7 @@ mod tests {
 
         // Test that we can set new permissions
         let mut metadata = metadata;
-        let new_permissions = Permissions_type::New_default(Type_type::Directory);
+        let new_permissions = Permissions_type::new_default(Type_type::Directory);
         metadata.set_permissions(new_permissions);
 
         assert_eq!(metadata.get_permissions(), new_permissions);
@@ -258,8 +258,8 @@ mod tests {
     #[test]
     fn test_metadata_different_types() {
         let current_time = Time_type::new(1640995200);
-        let user = User_identifier_type::New(1000);
-        let group = Group_identifier_type::New(1000);
+        let user = User_identifier_type::new(1000);
+        let group = Group_identifier_type::new(1000);
 
         // Test different file types
         let file_metadata =
@@ -289,12 +289,12 @@ mod tests {
         assert!(metadata.get_inode().is_none());
 
         // Set an inode
-        let inode1 = Inode_type::New(42);
+        let inode1 = Inode_type::new(42);
         metadata.set_inode(inode1);
         assert_eq!(metadata.get_inode(), Some(inode1));
 
         // Change the inode
-        let inode2 = Inode_type::New(84);
+        let inode2 = Inode_type::new(84);
         metadata.set_inode(inode2);
         assert_eq!(metadata.get_inode(), Some(inode2));
         assert_ne!(metadata.get_inode(), Some(inode1));
@@ -328,8 +328,8 @@ mod tests {
         let _initial_user = metadata.get_user();
         let initial_group = metadata.get_group();
 
-        let new_user = User_identifier_type::New(5000);
-        let new_group = Group_identifier_type::New(5000);
+        let new_user = User_identifier_type::new(5000);
+        let new_group = Group_identifier_type::new(5000);
 
         // Test user change
         metadata.set_owner(new_user);
@@ -347,12 +347,12 @@ mod tests {
         let mut metadata = create_test_metadata();
 
         // Modify all fields
-        let new_inode = Inode_type::New(999);
+        let new_inode = Inode_type::new(999);
         let new_type = Type_type::Socket;
         let new_time = Time_type::new(2000000000);
-        let new_user = User_identifier_type::New(9999);
-        let new_group = Group_identifier_type::New(9999);
-        let new_permissions = Permissions_type::New_default(Type_type::Socket);
+        let new_user = User_identifier_type::new(9999);
+        let new_group = Group_identifier_type::new(9999);
+        let new_permissions = Permissions_type::new_default(Type_type::Socket);
 
         metadata.set_inode(new_inode);
         metadata.set_type(new_type);

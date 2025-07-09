@@ -12,20 +12,20 @@ impl Time_driver_type {
 }
 
 impl Device_trait for Time_driver_type {
-    fn Read(&self, buffer: &mut [u8]) -> Result_type<Size_type> {
+    fn read(&self, buffer: &mut [u8]) -> Result_type<Size_type> {
         let duration = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|_| Error_type::Internal_error)?;
 
         let duration: Duration_type =
-            Duration_type::New(duration.as_secs(), duration.subsec_nanos());
+            Duration_type::new(duration.as_secs(), duration.subsec_nanos());
 
         buffer.copy_from_slice(duration.as_ref());
 
         Ok(buffer.len().into())
     }
 
-    fn Write(&self, _: &[u8]) -> Result_type<file_system::Size_type> {
+    fn write(&self, _: &[u8]) -> Result_type<file_system::Size_type> {
         Err(Error_type::Unsupported_operation)
     }
 
@@ -33,14 +33,14 @@ impl Device_trait for Time_driver_type {
         Ok(size_of::<Duration_type>().into())
     }
 
-    fn Set_position(
+    fn set_position(
         &self,
         _: &file_system::Position_type,
     ) -> file_system::Result_type<file_system::Size_type> {
         Err(Error_type::Unsupported_operation)
     }
 
-    fn Flush(&self) -> file_system::Result_type<()> {
+    fn flush(&self) -> file_system::Result_type<()> {
         Err(Error_type::Unsupported_operation)
     }
 }

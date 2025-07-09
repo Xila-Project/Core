@@ -1,4 +1,4 @@
-use std::{env, path::Path, process::Command};
+use std::{env, path::Path};
 
 use syn::visit::Visit;
 mod generator;

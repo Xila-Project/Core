@@ -41,10 +41,10 @@ impl Directory_type<'_> {
     ) -> Result_type<Directory_type<'a>> {
         let task = task::get_instance().get_current_task_identifier().await;
 
-        let Directory_identifier = virtual_file_system.open_directory(&path, task).await?;
+        let directory_identifier = virtual_file_system.open_directory(&path, task).await?;
 
         Ok(Directory_type {
-            directory_identifier: Directory_identifier,
+            directory_identifier,
             virtual_file_system,
             task,
         })

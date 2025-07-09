@@ -5,20 +5,20 @@ use file_system::{Inode_type, Path_type};
 use crate::Shell_type;
 
 impl Shell_type {
-    pub async fn statistics(&mut self, Arguments: &[&str]) {
-        if Arguments.len() != 1 {
+    pub async fn statistics(&mut self, arguments: &[&str]) {
+        if arguments.len() != 1 {
             self.standard
                 .print_error_line("Invalid number of arguments")
                 .await;
             return;
         }
 
-        let path = Path_type::From_str(Arguments[0]);
+        let path = Path_type::from_str(arguments[0]);
 
         let path = if path.is_absolute() {
             path.to_owned()
         } else {
-            match self.current_directory.clone().Join(path) {
+            match self.current_directory.clone().join(path) {
                 Some(path) => path,
                 None => {
                     self.standard.print_error_line("Invalid path").await;
@@ -44,7 +44,7 @@ impl Shell_type {
         {
             Ok(user) => user,
             Err(_) => {
-                format!("{}", metadata.get_user().As_u16())
+                format!("{}", metadata.get_user().as_u16())
             }
         };
 
@@ -54,11 +54,11 @@ impl Shell_type {
         {
             Ok(group) => group,
             Err(_) => {
-                format!("{}", metadata.get_group().As_u16())
+                format!("{}", metadata.get_group().as_u16())
             }
         };
 
-        let inode = metadata.get_inode().unwrap_or(Inode_type::New(0)).As_u64();
+        let inode = metadata.get_inode().unwrap_or(Inode_type::new(0)).as_u64();
 
         self.standard
             .print_line(&format!(

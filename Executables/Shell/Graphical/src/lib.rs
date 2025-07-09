@@ -67,7 +67,7 @@ impl Shell_type {
                 return Err(Error_type::Missing_arguments.into());
             }
 
-            Shortcut_type::add(Path_type::From_str(arguments[1])).await?;
+            Shortcut_type::add(Path_type::from_str(arguments[1])).await?;
         }
 
         while self.running {
@@ -80,7 +80,7 @@ impl Shell_type {
                     let user_name = users::get_instance().get_user_name(user).await.unwrap();
 
                     task::get_instance()
-                        .Set_environment_variable(
+                        .set_environment_variable(
                             self._standard.get_task(),
                             "User",
                             user_name.as_str(),
@@ -107,7 +107,7 @@ impl Shell_type {
                 }
             }
 
-            task::Manager_type::Sleep(Duration::from_millis(20)).await;
+            task::Manager_type::sleep(Duration::from_millis(20)).await;
         }
 
         Ok(())

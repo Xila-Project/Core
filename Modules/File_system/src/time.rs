@@ -54,8 +54,8 @@ impl Time_type {
     ///
     /// let time = Time_type::New(1640995200); // January 1, 2022
     /// ```
-    pub const fn new(Seconds: u64) -> Self {
-        Self { seconds: Seconds }
+    pub const fn new(seconds: u64) -> Self {
+        Self { seconds }
     }
 
     /// Get the time as seconds since Unix epoch.
@@ -84,7 +84,7 @@ impl Time_type {
 impl From<Duration_type> for Time_type {
     fn from(duration: Duration_type) -> Self {
         Self {
-            seconds: duration.As_seconds(),
+            seconds: duration.as_seconds(),
         }
     }
 }
@@ -94,7 +94,7 @@ impl From<Duration_type> for Time_type {
 /// This converts the absolute time to a duration since the Unix epoch.
 impl From<Time_type> for Duration_type {
     fn from(time: Time_type) -> Self {
-        Duration_type::New(time.seconds, 0)
+        Duration_type::new(time.seconds, 0)
     }
 }
 
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn test_time_from_duration() {
-        let duration = Duration_type::New(1640995200, 0);
+        let duration = Duration_type::new(1640995200, 0);
         let time: Time_type = duration.into();
         assert_eq!(time.as_u64(), 1640995200);
     }
@@ -220,7 +220,7 @@ mod tests {
     fn test_time_to_duration() {
         let time = Time_type::new(1640995200);
         let duration: Duration_type = time.into();
-        assert_eq!(duration.As_seconds(), 1640995200);
+        assert_eq!(duration.as_seconds(), 1640995200);
     }
 
     #[test]
@@ -262,7 +262,7 @@ mod tests {
 
         // Should still be convertible to duration
         let duration: Duration_type = max_time.into();
-        assert_eq!(duration.As_seconds(), u64::MAX);
+        assert_eq!(duration.as_seconds(), u64::MAX);
     }
 
     #[test]

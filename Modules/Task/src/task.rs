@@ -17,7 +17,7 @@ impl Task_identifier_type {
         Self(identifier)
     }
 
-    pub const fn Into_inner(self) -> Task_identifier_inner_type {
+    pub const fn into_inner(self) -> Task_identifier_inner_type {
         self.0
     }
 }
@@ -60,21 +60,21 @@ mod tests {
     #[test]
     fn test_task_identifier_new() {
         let id = Task_identifier_type::new(42);
-        assert_eq!(id.Into_inner(), 42);
+        assert_eq!(id.into_inner(), 42);
     }
 
     #[test]
     fn test_task_identifier_into_inner() {
         let inner_value = 123;
         let id = Task_identifier_type::new(inner_value);
-        assert_eq!(id.Into_inner(), inner_value);
+        assert_eq!(id.into_inner(), inner_value);
     }
 
     #[test]
     fn test_task_identifier_from_inner_type() {
         let inner_value = 456;
         let id: Task_identifier_type = inner_value.into();
-        assert_eq!(id.Into_inner(), inner_value);
+        assert_eq!(id.into_inner(), inner_value);
     }
 
     #[test]
@@ -90,9 +90,9 @@ mod tests {
         let id2 = id1; // Copy
         let id3 = id1; // Copy (Clone not needed for Copy types)
 
-        assert_eq!(id1.Into_inner(), 42);
-        assert_eq!(id2.Into_inner(), 42);
-        assert_eq!(id3.Into_inner(), 42);
+        assert_eq!(id1.into_inner(), 42);
+        assert_eq!(id2.into_inner(), 42);
+        assert_eq!(id3.into_inner(), 42);
     }
 
     #[test]
@@ -150,25 +150,25 @@ mod tests {
     fn test_edge_cases() {
         // Test minimum value
         let min_id = Task_identifier_type::new(Task_identifier_type::MINIMUM);
-        assert_eq!(min_id.Into_inner(), Task_identifier_type::MINIMUM);
+        assert_eq!(min_id.into_inner(), Task_identifier_type::MINIMUM);
 
         // Test maximum value
         let max_id = Task_identifier_type::new(Task_identifier_type::MAXIMUM);
-        assert_eq!(max_id.Into_inner(), Task_identifier_type::MAXIMUM);
+        assert_eq!(max_id.into_inner(), Task_identifier_type::MAXIMUM);
     }
 
     #[test]
     fn test_const_constructor() {
         // Test that the constructor can be used in const context
         const ID: Task_identifier_type = Task_identifier_type::new(100);
-        assert_eq!(ID.Into_inner(), 100);
+        assert_eq!(ID.into_inner(), 100);
     }
 
     #[test]
     fn test_const_into_inner() {
         // Test that Into_inner can be used in const context
         const ID: Task_identifier_type = Task_identifier_type::new(200);
-        const INNER: Task_identifier_inner_type = ID.Into_inner();
+        const INNER: Task_identifier_inner_type = ID.into_inner();
         assert_eq!(INNER, 200);
     }
 
@@ -198,7 +198,7 @@ mod tests {
     #[test]
     fn test_zero_value() {
         let zero_id = Task_identifier_type::new(0);
-        assert_eq!(zero_id.Into_inner(), 0);
+        assert_eq!(zero_id.into_inner(), 0);
         assert_eq!(zero_id, 0);
     }
 

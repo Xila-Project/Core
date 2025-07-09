@@ -55,7 +55,7 @@
 //! # use file_system::*;
 //!
 //! // Create an in-memory device for testing
-//! let device = Create_device!(Memory_device_type::<512>::New(1024 * 1024));
+//! let device = create_device!(Memory_device_type::<512>::New(1024 * 1024));
 //!
 //! // Write some data
 //! let data = b"Hello, File System!";
@@ -70,7 +70,7 @@
 //! # use file_system::*;
 //!
 //! // Create a device and format it with MBR
-//! let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+//! let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
 //!
 //! // Create MBR and add a partition
 //! let mut mbr = MBR_type::New_with_signature(0x12345678);

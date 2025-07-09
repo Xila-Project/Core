@@ -1,4 +1,4 @@
-pub fn unix_to_human_time(Unix_timestamp: i64) -> (u16, u8, u8, u8, u8, u8) {
+pub fn unix_to_human_time(unix_timestamp: i64) -> (u16, u8, u8, u8, u8, u8) {
     // Constants for calculations
     const SECONDS_IN_MINUTE: i64 = 60;
     const SECONDS_IN_HOUR: i64 = 60 * SECONDS_IN_MINUTE;
@@ -7,9 +7,9 @@ pub fn unix_to_human_time(Unix_timestamp: i64) -> (u16, u8, u8, u8, u8, u8) {
     const DAYS_IN_LEAP_YEAR: i64 = 366;
 
     // Start from 1970
-    let mut Year = 1970;
-    let mut days_since_epoch = Unix_timestamp / SECONDS_IN_DAY;
-    let mut remaining_seconds = Unix_timestamp % SECONDS_IN_DAY;
+    let mut year = 1970;
+    let mut days_since_epoch = unix_timestamp / SECONDS_IN_DAY;
+    let mut remaining_seconds = unix_timestamp % SECONDS_IN_DAY;
 
     if remaining_seconds < 0 {
         // Handle negative Unix timestamps
@@ -19,58 +19,58 @@ pub fn unix_to_human_time(Unix_timestamp: i64) -> (u16, u8, u8, u8, u8, u8) {
 
     // Determine the current year
     while days_since_epoch
-        >= if is_leap_year(Year) {
+        >= if is_leap_year(year) {
             DAYS_IN_LEAP_YEAR
         } else {
             DAYS_IN_YEAR
         }
     {
-        days_since_epoch -= if is_leap_year(Year) {
+        days_since_epoch -= if is_leap_year(year) {
             DAYS_IN_LEAP_YEAR
         } else {
             DAYS_IN_YEAR
         };
-        Year += 1;
+        year += 1;
     }
 
     // Determine the current month and day
-    let mut Month = 0;
-    while days_since_epoch >= days_in_month(Year, Month) {
-        days_since_epoch -= days_in_month(Year, Month);
-        Month += 1;
+    let mut month = 0;
+    while days_since_epoch >= days_in_month(year, month) {
+        days_since_epoch -= days_in_month(year, month);
+        month += 1;
     }
 
     // Remaining days are the day of the month
-    let Day = days_since_epoch + 1;
+    let day = days_since_epoch + 1;
 
     // Calculate hour, minute, and second from remaining seconds
-    let Hour = remaining_seconds / SECONDS_IN_HOUR;
+    let hour = remaining_seconds / SECONDS_IN_HOUR;
     remaining_seconds %= SECONDS_IN_HOUR;
     let minute = remaining_seconds / SECONDS_IN_MINUTE;
     let second = remaining_seconds % SECONDS_IN_MINUTE;
 
     (
-        Year as u16,
-        Month as u8 + 1,
-        Day as u8,
-        Hour as u8,
+        year as u16,
+        month as u8 + 1,
+        day as u8,
+        hour as u8,
         minute as u8,
         second as u8,
     )
 }
 
-pub fn is_leap_year(Year: i64) -> bool {
-    (Year % 4 == 0 && Year % 100 != 0) || (Year % 400 == 0)
+pub fn is_leap_year(year: i64) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 }
 
-pub fn days_in_month(Year: i64, Month: usize) -> i64 {
+pub fn days_in_month(year: i64, month: usize) -> i64 {
     // Number of days in each month (non-leap year)
     const DAYS_IN_MONTH: [i64; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
-    if Month == 1 && is_leap_year(Year) {
+    if month == 1 && is_leap_year(year) {
         // February in a leap year
         29
     } else {
-        DAYS_IN_MONTH[Month]
+        DAYS_IN_MONTH[month]
     }
 }

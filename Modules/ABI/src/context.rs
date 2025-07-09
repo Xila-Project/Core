@@ -23,12 +23,12 @@ impl Context_type {
         block_on(self.0.read()).task.expect("No current task set")
     }
 
-    pub async fn set_task(&self, Task: Task_identifier_type) {
+    pub async fn set_task(&self, task: Task_identifier_type) {
         loop {
-            let mut Inner = self.0.write().await;
+            let mut inner = self.0.write().await;
 
-            if Inner.task.is_none() {
-                Inner.task.replace(Task);
+            if inner.task.is_none() {
+                inner.task.replace(task);
                 break;
             }
         }
@@ -44,8 +44,8 @@ impl Context_type {
         F: FnOnce() -> Fut,
         Fut: core::future::Future<Output = R>,
     {
-        let Task = task::get_instance().get_current_task_identifier().await;
-        self.set_task(Task).await;
+        let task = task::get_instance().get_current_task_identifier().await;
+        self.set_task(task).await;
         let result = function().await;
         self.clear_task().await;
         result

@@ -44,7 +44,7 @@ unsafe extern "C" fn binding_callback_function(
     let device = &user_data.device;
 
     device
-        .Write(screen_write_data.as_ref())
+        .write(screen_write_data.as_ref())
         .expect("Error writing to display");
 
     lvgl::lv_display_flush_ready(display);
@@ -71,10 +71,10 @@ impl Display_type {
         };
 
         // Set the buffer(s) and the render mode.
-        let buffer_1 = Buffer_type::New(buffer_size);
+        let buffer_1 = Buffer_type::new(buffer_size);
 
         let buffer_2 = if double_buffered {
-            Some(Buffer_type::New(buffer_size))
+            Some(Buffer_type::new(buffer_size))
         } else {
             None
         };

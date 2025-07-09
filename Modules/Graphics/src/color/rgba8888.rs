@@ -19,19 +19,19 @@ impl Debug for Color_RGBA8888_type {
 }
 
 impl Color_RGBA8888_type {
-    pub const fn new(red: u8, Green: u8, Blue: u8, Alpha: u8) -> Self {
+    pub const fn new(red: u8, green: u8, blue: u8, alpha: u8) -> Self {
         Self(0)
             .set_red(red)
-            .set_green(Green)
-            .set_blue(Blue)
-            .set_alpha(Alpha)
+            .set_green(green)
+            .set_blue(blue)
+            .set_alpha(alpha)
     }
 
-    pub const fn from_rgb565(Value: Color_RGB565_type) -> Self {
+    pub const fn from_rgb565(value: Color_RGB565_type) -> Self {
         Self::new(
-            Value.get_red() << 3 | Value.get_red() >> 2,
-            Value.get_green() << 2 | Value.get_green() >> 4,
-            Value.get_blue() << 3 | Value.get_blue() >> 2,
+            value.get_red() << 3 | value.get_red() >> 2,
+            value.get_green() << 2 | value.get_green() >> 4,
+            value.get_blue() << 3 | value.get_blue() >> 2,
             0xFF,
         )
     }
@@ -56,23 +56,23 @@ impl Color_RGBA8888_type {
         ((self.0 >> 24) & 0b1111_1111) as u8
     }
 
-    pub const fn set_red(mut self, Value: u8) -> Self {
-        self.0 = (self.0 & 0xFFFF_FF00) | (Value as u32);
+    pub const fn set_red(mut self, value: u8) -> Self {
+        self.0 = (self.0 & 0xFFFF_FF00) | (value as u32);
         self
     }
 
-    pub const fn set_green(mut self, Value: u8) -> Self {
-        self.0 = (self.0 & 0xFFFF_00FF) | ((Value as u32) << 8);
+    pub const fn set_green(mut self, value: u8) -> Self {
+        self.0 = (self.0 & 0xFFFF_00FF) | ((value as u32) << 8);
         self
     }
 
-    pub const fn set_blue(mut self, Value: u8) -> Self {
-        self.0 = (self.0 & 0xFF00_FFFF) | ((Value as u32) << 16);
+    pub const fn set_blue(mut self, value: u8) -> Self {
+        self.0 = (self.0 & 0xFF00_FFFF) | ((value as u32) << 16);
         self
     }
 
-    pub const fn set_alpha(mut self, Value: u8) -> Self {
-        self.0 = (self.0 & !(0b1111_1111 << 24)) | ((Value as u32) << 24);
+    pub const fn set_alpha(mut self, value: u8) -> Self {
+        self.0 = (self.0 & !(0b1111_1111 << 24)) | ((value as u32) << 24);
         self
     }
 }
@@ -112,52 +112,52 @@ mod tests {
 
     #[test]
     fn test_rgba8888() {
-        let Color = Color_RGBA8888_type::new(255, 255, 255, 255);
-        assert_eq!(Color.get_alpha(), 0xFF);
-        assert_eq!(Color.get_red(), 0xFF);
-        assert_eq!(Color.get_green(), 0xFF);
-        assert_eq!(Color.get_blue(), 0xFF);
-        assert_eq!(Color.0, 0xFFFF_FFFF);
-        assert_eq!(u32::from(Color), 0xFFFF_FFFF);
+        let color = Color_RGBA8888_type::new(255, 255, 255, 255);
+        assert_eq!(color.get_alpha(), 0xFF);
+        assert_eq!(color.get_red(), 0xFF);
+        assert_eq!(color.get_green(), 0xFF);
+        assert_eq!(color.get_blue(), 0xFF);
+        assert_eq!(color.0, 0xFFFF_FFFF);
+        assert_eq!(u32::from(color), 0xFFFF_FFFF);
 
-        let Color = Color_RGBA8888_type::new(255, 0, 0, 0);
-        assert_eq!(Color.get_alpha(), 0);
-        assert_eq!(Color.get_red(), 0xFF);
-        assert_eq!(Color.get_green(), 0);
-        assert_eq!(Color.get_blue(), 0);
-        assert_eq!(Color.0, 0x0000_00FF);
-        assert_eq!(u32::from(Color), 0x0000_00FF);
+        let color = Color_RGBA8888_type::new(255, 0, 0, 0);
+        assert_eq!(color.get_alpha(), 0);
+        assert_eq!(color.get_red(), 0xFF);
+        assert_eq!(color.get_green(), 0);
+        assert_eq!(color.get_blue(), 0);
+        assert_eq!(color.0, 0x0000_00FF);
+        assert_eq!(u32::from(color), 0x0000_00FF);
 
-        let Color = Color_RGBA8888_type::new(0, 255, 0, 0);
-        assert_eq!(Color.get_alpha(), 0);
-        assert_eq!(Color.get_red(), 0);
-        assert_eq!(Color.get_green(), 0xFF);
-        assert_eq!(Color.get_blue(), 0);
-        assert_eq!(Color.0, 0x0000_FF00);
-        assert_eq!(u32::from(Color), 0x0000_FF00);
+        let color = Color_RGBA8888_type::new(0, 255, 0, 0);
+        assert_eq!(color.get_alpha(), 0);
+        assert_eq!(color.get_red(), 0);
+        assert_eq!(color.get_green(), 0xFF);
+        assert_eq!(color.get_blue(), 0);
+        assert_eq!(color.0, 0x0000_FF00);
+        assert_eq!(u32::from(color), 0x0000_FF00);
 
-        let Color = Color_RGBA8888_type::new(0, 0, 255, 0);
-        assert_eq!(Color.get_alpha(), 0);
-        assert_eq!(Color.get_red(), 0);
-        assert_eq!(Color.get_green(), 0);
-        assert_eq!(Color.get_blue(), 0xFF);
-        assert_eq!(Color.0, 0x00FF_0000);
-        assert_eq!(u32::from(Color), 0x00FF_0000);
+        let color = Color_RGBA8888_type::new(0, 0, 255, 0);
+        assert_eq!(color.get_alpha(), 0);
+        assert_eq!(color.get_red(), 0);
+        assert_eq!(color.get_green(), 0);
+        assert_eq!(color.get_blue(), 0xFF);
+        assert_eq!(color.0, 0x00FF_0000);
+        assert_eq!(u32::from(color), 0x00FF_0000);
 
-        let Color = Color_RGBA8888_type::new(0, 0, 0, 255);
-        assert_eq!(Color.get_alpha(), 0xFF);
-        assert_eq!(Color.get_red(), 0);
-        assert_eq!(Color.get_green(), 0);
-        assert_eq!(Color.get_blue(), 0);
-        assert_eq!(Color.0, 0xFF00_0000);
-        assert_eq!(u32::from(Color), 0xFF00_0000);
+        let color = Color_RGBA8888_type::new(0, 0, 0, 255);
+        assert_eq!(color.get_alpha(), 0xFF);
+        assert_eq!(color.get_red(), 0);
+        assert_eq!(color.get_green(), 0);
+        assert_eq!(color.get_blue(), 0);
+        assert_eq!(color.0, 0xFF00_0000);
+        assert_eq!(u32::from(color), 0xFF00_0000);
 
-        let Color = Color_RGBA8888_type::new(0, 0, 0, 0);
-        assert_eq!(Color.get_alpha(), 0);
-        assert_eq!(Color.get_red(), 0);
-        assert_eq!(Color.get_green(), 0);
-        assert_eq!(Color.get_blue(), 0);
-        assert_eq!(Color.0, 0);
-        assert_eq!(u32::from(Color), 0);
+        let color = Color_RGBA8888_type::new(0, 0, 0, 0);
+        assert_eq!(color.get_alpha(), 0);
+        assert_eq!(color.get_red(), 0);
+        assert_eq!(color.get_green(), 0);
+        assert_eq!(color.get_blue(), 0);
+        assert_eq!(color.0, 0);
+        assert_eq!(u32::from(color), 0);
     }
 }

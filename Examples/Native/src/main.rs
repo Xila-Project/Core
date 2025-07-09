@@ -12,7 +12,7 @@ use xila::executable::Standard_type;
 use xila::file_system;
 use xila::file_system::MBR_type;
 use xila::file_system::Partition_type_type;
-use xila::file_system::{Create_device, Create_file_system};
+use xila::file_system::{Create_file_system, create_device};
 use xila::graphics;
 use xila::host_bindings;
 use xila::little_fs;
@@ -43,7 +43,7 @@ async fn main() {
     // Initialize the users manager
     users::initialize();
     // Initialize the time manager
-    time::initialize(Create_device!(drivers::native::Time_driver_type::new())).unwrap();
+    time::initialize(create_device!(drivers::native::Time_driver_type::new())).unwrap();
 
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
@@ -66,20 +66,20 @@ async fn main() {
         .unwrap();
 
     task_manager
-        .Spawn(task, "Graphics", None, |_| {
-            graphics_manager.r#loop(task::Manager_type::Sleep)
+        .spawn(task, "Graphics", None, |_| {
+            graphics_manager.r#loop(task::Manager_type::sleep)
         })
         .await
         .unwrap();
 
     // - Initialize the file system
     // Create a memory device
-    let drive = Create_device!(
+    let drive = create_device!(
         drivers::standard_library::drive_file::File_drive_device_type::new(&"./Drive.img")
     );
 
     // Create a partition type
-    let partition = Create_device!(
+    let partition = create_device!(
         MBR_type::find_or_create_partition_with_signature(
             &drive,
             0xDEADBEEF,
@@ -99,7 +99,7 @@ async fn main() {
         // If the file system is not found, format it
         Err(_) => {
             partition
-                .Set_position(&file_system::Position_type::Start(0))
+                .set_position(&file_system::Position_type::Start(0))
                 .unwrap();
 
             little_fs::File_system_type::format(partition.clone(), 256).unwrap();
@@ -147,7 +147,7 @@ async fn main() {
     .unwrap();
 
     // Initialize the virtual machine
-    virtual_machine::Initialize(&[&host_bindings::Graphics_bindings]);
+    virtual_machine::initialize(&[&host_bindings::Graphics_bindings]);
 
     // Mount static executables
 
@@ -202,7 +202,7 @@ async fn main() {
     .unwrap();
 
     // - - Create the default user
-    let group_identifier = users::Group_identifier_type::New(1000);
+    let group_identifier = users::Group_identifier_type::new(1000);
 
     let _ = authentication::create_group(
         virtual_file_system::get_instance(),
@@ -222,19 +222,19 @@ async fn main() {
 
     // - - Set the environment variables
     task_manager
-        .Set_environment_variable(task, "Paths", "/")
+        .set_environment_variable(task, "Paths", "/")
         .await
         .unwrap();
 
     task_manager
-        .Set_environment_variable(task, "Host", "xila")
+        .set_environment_variable(task, "Host", "xila")
         .await
         .unwrap();
     // - - Execute the shell
     let _ = executable::execute("/Binaries/Graphical_shell", String::from(""), standard)
         .await
         .unwrap()
-        .Join()
+        .join()
         .await;
 
     virtual_file_system::get_instance().uninitialize().await;

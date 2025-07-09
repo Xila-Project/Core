@@ -1,4 +1,5 @@
 //! Virtual Machine Manager - Global singleton for WASM runtime management.
+
 //!
 //! The Manager provides a centralized interface for initializing the WASM runtime,
 //! registering host functions, and executing WASM modules. It maintains a global
@@ -38,9 +39,9 @@ static MANAGER_INSTANCE: OnceLock<Manager_type> = OnceLock::new();
 /// ```rust,ignore
 /// let manager = Initialize(&[&MyHostFunctions]);
 /// ```
-pub fn Initialize(Registrables: &[&dyn Registrable_trait]) -> &'static Manager_type {
+pub fn initialize(registrables: &[&dyn Registrable_trait]) -> &'static Manager_type {
     MANAGER_INSTANCE.get_or_init(|| {
-        Manager_type::New(Registrables).expect("Cannot create virtual machine manager")
+        Manager_type::new(registrables).expect("Cannot create virtual machine manager")
     });
 
     get_instance()
@@ -93,24 +94,24 @@ impl Manager_type {
     /// - Runtime initialization fails
     /// - Host function registration fails  
     /// - Module loading fails
-    pub fn New(Registrables: &[&dyn Registrable_trait]) -> Result_type<Self> {
+    pub fn new(registrables: &[&dyn Registrable_trait]) -> Result_type<Self> {
         let mut runtime_builder = Runtime_type::builder();
 
-        for Registrable in Registrables {
-            runtime_builder = runtime_builder.register(*Registrable);
+        for registrable in registrables {
+            runtime_builder = runtime_builder.register(*registrable);
         }
 
-        let Runtime = runtime_builder.build()?;
+        let runtime = runtime_builder.build()?;
 
-        let Manager = Self { runtime: Runtime };
+        let manager = Self { runtime };
 
-        for Registrable in Registrables {
-            if let Some(module_binary) = Registrable.get_binary() {
-                Manager.Load_module(module_binary, Registrable.is_XIP(), Registrable.get_name())?;
+        for registrable in registrables {
+            if let Some(module_binary) = registrable.get_binary() {
+                manager.load_module(module_binary, registrable.is_xip(), registrable.get_name())?;
             }
         }
 
-        Ok(Manager)
+        Ok(manager)
     }
 
     /// Load a WASM module from a buffer for execution.
@@ -131,45 +132,45 @@ impl Manager_type {
     /// # Errors
     ///
     /// Returns an error if the module is not an XIP AOT compiled module or if the module cannot be loaded from the buffer.
-    fn Load_module(&self, Buffer: &[u8], XIP: bool, Name: &str) -> Result_type<()> {
-        if unsafe { XIP && !wasm_runtime_is_xip_file(Buffer.as_ptr(), Buffer.len() as u32) } {
+    fn load_module(&self, buffer: &[u8], xip: bool, name: &str) -> Result_type<()> {
+        if unsafe { xip && !wasm_runtime_is_xip_file(buffer.as_ptr(), buffer.len() as u32) } {
             return Err(Error_type::Invalid_module);
         }
 
         unsafe {
-            let mut Buffer = if XIP {
-                Vec::from_raw_parts(Buffer.as_ptr() as *mut u8, Buffer.len(), Buffer.len())
+            let mut buffer = if xip {
+                Vec::from_raw_parts(buffer.as_ptr() as *mut u8, buffer.len(), buffer.len())
             } else {
-                Buffer.to_vec()
+                buffer.to_vec()
             };
 
-            let mut Error_buffer = [0_i8; 128];
+            let mut error_buffer = [0_i8; 128];
 
-            let Module = wasm_runtime_load(
-                Buffer.as_mut_ptr(),
-                Buffer.len() as u32,
-                Error_buffer.as_mut_ptr(),
-                Error_buffer.len() as u32,
+            let module = wasm_runtime_load(
+                buffer.as_mut_ptr(),
+                buffer.len() as u32,
+                error_buffer.as_mut_ptr(),
+                error_buffer.len() as u32,
             );
 
-            if Module.is_null() {
+            if module.is_null() {
                 return Err(Error_type::Compilation_error(
-                    CStr::from_ptr(Error_buffer.as_ptr())
+                    CStr::from_ptr(error_buffer.as_ptr())
                         .to_string_lossy()
                         .to_string(),
                 ));
             }
 
             if !wasm_runtime_register_module(
-                Name.as_ptr() as *const i8,
-                Module,
-                Error_buffer.as_mut_ptr(),
-                Error_buffer.len() as u32,
+                name.as_ptr() as *const i8,
+                module,
+                error_buffer.as_mut_ptr(),
+                error_buffer.len() as u32,
             ) {
                 return Err(Error_type::Internal_error);
             }
 
-            forget(Buffer);
+            forget(buffer);
         }
 
         Ok(())
@@ -196,7 +197,7 @@ impl Manager_type {
     /// # Errors
     ///
     /// Returns an error if module loading, instantiation, or execution fails
-    pub async fn Execute(
+    pub async fn execute(
         &'static self,
         buffer: Vec<u8>,
         stack_size: usize,
@@ -206,7 +207,7 @@ impl Manager_type {
     ) -> Result_type<Vec<WasmValue>> {
         abi::get_instance()
             .call_abi(async || {
-                let module = Module_type::From_buffer(
+                let module = Module_type::from_buffer(
                     &self.runtime,
                     buffer,
                     "module",
@@ -216,11 +217,11 @@ impl Manager_type {
                 )
                 .await?;
 
-                let Instance = Instance_type::New(&self.runtime, &module, stack_size).unwrap();
+                let instance = Instance_type::new(&self.runtime, &module, stack_size).unwrap();
 
-                let Result = Instance.Call_main(&vec![])?;
+                let result = instance.call_main(&vec![])?;
 
-                Ok(Result)
+                Ok(result)
             })
             .await
     }

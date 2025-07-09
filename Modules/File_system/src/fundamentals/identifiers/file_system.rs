@@ -20,22 +20,22 @@ pub type File_system_identifier_inner_type = u32;
 pub struct File_system_identifier_type(File_system_identifier_inner_type);
 
 impl File_system_identifier_type {
-    pub const PIPE_FILE_SYSTEM: File_system_identifier_type = File_system_identifier_type::New(0);
-    pub const DEVICE_FILE_SYSTEM: File_system_identifier_type = File_system_identifier_type::New(1);
+    pub const PIPE_FILE_SYSTEM: File_system_identifier_type = File_system_identifier_type::new(0);
+    pub const DEVICE_FILE_SYSTEM: File_system_identifier_type = File_system_identifier_type::new(1);
     pub const NETWORK_SOCKET_FILE_SYSTEM: File_system_identifier_type =
-        File_system_identifier_type::New(2);
+        File_system_identifier_type::new(2);
     pub const LOCAL_SOCKET_FILE_SYSTEM: File_system_identifier_type =
-        File_system_identifier_type::New(3);
+        File_system_identifier_type::new(3);
 
-    pub const MINIMUM: File_system_identifier_type = File_system_identifier_type::New(4);
+    pub const MINIMUM: File_system_identifier_type = File_system_identifier_type::new(4);
     pub const MAXIMUM: File_system_identifier_type =
-        File_system_identifier_type::New(File_system_identifier_inner_type::MAX);
+        File_system_identifier_type::new(File_system_identifier_inner_type::MAX);
 
-    pub const fn New(Identifier: File_system_identifier_inner_type) -> Self {
-        Self(Identifier)
+    pub const fn new(identifier: File_system_identifier_inner_type) -> Self {
+        Self(identifier)
     }
 
-    pub const fn As_inner(self) -> File_system_identifier_inner_type {
+    pub const fn as_inner(self) -> File_system_identifier_inner_type {
         self.0
     }
 }
@@ -72,8 +72,8 @@ mod tests {
 
     #[test]
     fn test_file_system_identifier() {
-        let Identifier = File_system_identifier_type::from(0x1234);
-        assert_eq!(Identifier, File_system_identifier_type::New(0x1234));
-        assert_eq!(File_system_identifier_inner_type::from(Identifier), 0x1234);
+        let identifier = File_system_identifier_type::from(0x1234);
+        assert_eq!(identifier, File_system_identifier_type::new(0x1234));
+        assert_eq!(File_system_identifier_inner_type::from(identifier), 0x1234);
     }
 }

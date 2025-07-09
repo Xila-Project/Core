@@ -35,12 +35,12 @@ impl Shell_type {
 
     pub async fn concatenate(&mut self, arguments: &[&str]) {
         for path in arguments {
-            let path = Path_type::From_str(path);
+            let path = Path_type::from_str(path);
 
             if path.is_absolute() {
                 self.read_file_and_write(path).await;
             } else {
-                match self.current_directory.clone().Join(path) {
+                match self.current_directory.clone().join(path) {
                     Some(path) => self.read_file_and_write(&path).await,
                     None => self.standard.print_error_line("Invalid command").await,
                 }

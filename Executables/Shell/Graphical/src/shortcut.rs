@@ -6,7 +6,7 @@ use virtual_file_system::File_type;
 
 use crate::error::{Error_type, Result_type};
 
-pub const SHORTCUT_PATH: &Path_type = Path_type::From_str("/Configuration/Shared/Shortcuts");
+pub const SHORTCUT_PATH: &Path_type = Path_type::from_str("/Configuration/Shared/Shortcuts");
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Shortcut_type {
@@ -24,9 +24,9 @@ impl Shortcut_type {
         let shortcut = Shortcut_type::read_from_path(path, &mut Vec::new()).await?;
 
         let new_shortcut_path = SHORTCUT_PATH
-            .Append(shortcut.get_name())
+            .append(shortcut.get_name())
             .ok_or(Error_type::Failed_to_get_shortcut_file_path)?
-            .Append(".json")
+            .append(".json")
             .ok_or(Error_type::Failed_to_get_shortcut_file_path)?;
 
         virtual_file_system::get_instance()
@@ -63,12 +63,12 @@ impl Shortcut_type {
 
     pub async fn read(entry_name: &str, buffer: &mut Vec<u8>) -> Result_type<Shortcut_type> {
         let shortcut_file_path = SHORTCUT_PATH
-            .Append(entry_name)
+            .append(entry_name)
             .ok_or(Error_type::Failed_to_get_shortcut_file_path)?;
 
-        let Shortcut = Shortcut_type::read_from_path(&shortcut_file_path, buffer).await?;
+        let shortcut = Shortcut_type::read_from_path(&shortcut_file_path, buffer).await?;
 
-        Ok(Shortcut)
+        Ok(shortcut)
     }
 
     pub fn from_str(string: &str) -> Result_type<Self> {
@@ -92,7 +92,7 @@ impl Shortcut_type {
     }
 
     pub fn get_icon_color(&self) -> Color_type {
-        Color_type::New(self.icon_color[0], self.icon_color[1], self.icon_color[2])
+        Color_type::new(self.icon_color[0], self.icon_color[1], self.icon_color[2])
     }
 
     // pub fn is_terminal(&self) -> bool {

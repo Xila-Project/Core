@@ -20,16 +20,16 @@ pub fn get() -> TokenStream {
             __environment: Environment_type,
             __pointer_table: &mut Pointer_table_type,
             window: *mut lv_obj_t,
-            Code: *mut u32,
-            Target: *mut u16
+            code: *mut u32,
+            target: *mut u16
         ) {
             let mut window = graphics::Window_type::from_raw(window);
 
             if let Some(event) = window.pop_event() {
 
-                *Code = event.get_code() as u32;
+                *code = event.get_code() as u32;
 
-                *Target = __pointer_table
+                *target = __pointer_table
                     .get_wasm_pointer(event.get_target())
                     .unwrap();
             }

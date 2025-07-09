@@ -1,4 +1,4 @@
-use alloc::{
+pub(crate) use alloc::{
     borrow::ToOwned,
     ffi::CString,
     string::{String, ToString},
@@ -54,7 +54,7 @@ impl File_manager_type {
             path_text_area: null_mut(),
             go_button: null_mut(),
             file_list: null_mut(),
-            current_path: Path_owned_type::Root(),
+            current_path: Path_owned_type::root(),
             files: Vec::new(),
             running: true,
         };
@@ -84,7 +84,7 @@ impl File_manager_type {
             let event = match self.window.pop_event() {
                 Some(event) => event,
                 None => {
-                    task::Manager_type::Sleep(Duration::from_millis(50)).await;
+                    task::Manager_type::sleep(Duration::from_millis(50)).await;
                     continue;
                 }
             };
@@ -247,7 +247,7 @@ impl File_manager_type {
                     let file_item = File_item_type {
                         name: name.clone(),
                         r#type: entry.get_type(),
-                        size: entry.get_size().As_u64(),
+                        size: entry.get_size().as_u64(),
                     };
 
                     self.files.push(file_item);
@@ -341,7 +341,7 @@ impl File_manager_type {
                         if let Some(new_path) = self
                             .current_path
                             .clone()
-                            .Join(Path_type::From_str(&file.name))
+                            .join(Path_type::from_str(&file.name))
                         {
                             self.current_path = new_path;
                             self.update_path_label();
@@ -360,7 +360,7 @@ impl File_manager_type {
     }
 
     async fn handle_up_click(&mut self) {
-        if let Some(parent_path) = self.current_path.Go_parent() {
+        if let Some(parent_path) = self.current_path.go_parent() {
             self.current_path = parent_path.to_owned();
             self.update_path_label();
             if let Err(error) = self.load_directory().await {
@@ -370,7 +370,7 @@ impl File_manager_type {
     }
 
     async fn handle_home_click(&mut self) {
-        self.current_path = Path_owned_type::Root();
+        self.current_path = Path_owned_type::root();
         self.update_path_label();
         if let Err(error) = self.load_directory().await {
             log::Error!("Failed to load home directory: {error:?}");
@@ -394,7 +394,7 @@ impl File_manager_type {
                     if let Ok(path_str) = text_cstr.to_str() {
                         // Try to create a path from the entered string
                         let new_path =
-                            Path_owned_type::New(path_str.to_string()).unwrap_or_else(|| {
+                            Path_owned_type::new(path_str.to_string()).unwrap_or_else(|| {
                                 log::Error!("Invalid path entered: {path_str}");
                                 self.current_path.clone()
                             });

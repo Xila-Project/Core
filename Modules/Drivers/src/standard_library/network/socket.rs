@@ -27,13 +27,13 @@ pub struct Network_socket_driver_type(RwLock<Inner_type>);
 const fn into_socketaddr(ip: IP_type, port: Port_type) -> SocketAddr {
     let ip = match ip {
         IP_type::IPv4(ip) => {
-            let ip = ip.Into_inner();
+            let ip = ip.into_inner();
 
             IpAddr::V4(Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]))
         }
 
         IP_type::IPv6(ip) => {
-            let ip = ip.Into_inner();
+            let ip = ip.into_inner();
 
             IpAddr::V6(Ipv6Addr::new(
                 ip[0], ip[1], ip[2], ip[3], ip[4], ip[5], ip[6], ip[7],
@@ -41,18 +41,18 @@ const fn into_socketaddr(ip: IP_type, port: Port_type) -> SocketAddr {
         }
     };
 
-    let port = port.Into_inner();
+    let port = port.into_inner();
 
     SocketAddr::new(ip, port)
 }
 
 const fn into_ip_and_port(socket_address: SocketAddr) -> (IP_type, Port_type) {
     let ip = match socket_address.ip() {
-        IpAddr::V4(ip) => IP_type::IPv4(IPv4_type::New(ip.octets())),
+        IpAddr::V4(ip) => IP_type::IPv4(IPv4_type::new(ip.octets())),
         IpAddr::V6(ip) => IP_type::IPv6(IPv6_type::new(ip.segments())),
     };
 
-    let port = Port_type::New(socket_address.port());
+    let port = Port_type::new(socket_address.port());
 
     (ip, port)
 }
@@ -118,7 +118,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(iterator.find(|identifier| !inner.sockets.contains_key(identifier)))
     }
 
-    fn Close(&self, socket: Local_file_identifier_type) -> Result_type<()> {
+    fn close(&self, socket: Local_file_identifier_type) -> Result_type<()> {
         let socket = self.remove_socket(socket)?;
 
         unsafe {
@@ -128,7 +128,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(())
     }
 
-    fn Bind(
+    fn bind(
         &self,
         ip: IP_type,
         port: Port_type,
@@ -159,7 +159,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(())
     }
 
-    fn Connect(
+    fn connect(
         &self,
         ip: IP_type,
         port: Port_type,
@@ -176,7 +176,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(())
     }
 
-    fn Accept(
+    fn accept(
         &self,
         socket: Local_file_identifier_type,
         new_socket: Local_file_identifier_type,
@@ -195,7 +195,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(into_ip_and_port(address))
     }
 
-    fn Send(&self, socket: Local_file_identifier_type, data: &[u8]) -> Result_type<()> {
+    fn send(&self, socket: Local_file_identifier_type, data: &[u8]) -> Result_type<()> {
         let socket = self.get_socket(socket)?;
 
         let mut socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -207,7 +207,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(())
     }
 
-    fn Receive(&self, socket: Local_file_identifier_type, data: &mut [u8]) -> Result_type<usize> {
+    fn receive(&self, socket: Local_file_identifier_type, data: &mut [u8]) -> Result_type<usize> {
         let socket = self.get_socket(socket)?;
 
         let mut socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -219,7 +219,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(bytes)
     }
 
-    fn Receive_from(
+    fn receive_from(
         &self,
         socket: Local_file_identifier_type,
         data: &mut [u8],
@@ -237,7 +237,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok((bytes, ip, port))
     }
 
-    fn Send_to(
+    fn send_to(
         &self,
         socket: Local_file_identifier_type,
         data: &[u8],
@@ -287,7 +287,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(into_ip_and_port(address))
     }
 
-    fn Set_send_timeout(
+    fn set_send_timeout(
         &self,
         socket: Local_file_identifier_type,
         timeout: Duration_type,
@@ -305,7 +305,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(())
     }
 
-    fn Set_receive_timeout(
+    fn set_receive_timeout(
         &self,
         socket: Local_file_identifier_type,
         timeout: Duration_type,
@@ -366,7 +366,7 @@ mod tests {
     pub const fn new_socket_identifier(
         identifier: File_identifier_type,
     ) -> Local_file_identifier_type {
-        Local_file_identifier_type::New(Task_identifier_type::new(1), identifier)
+        Local_file_identifier_type::new(Task_identifier_type::new(1), identifier)
     }
 
     #[test]
@@ -400,11 +400,11 @@ mod tests {
 
         let socket_identifier = new_socket_identifier(1.into());
 
-        let ip = IP_type::IPv4(IPv4_type::New([127, 0, 0, 1]));
-        let port = Port_type::New(0);
+        let ip = IP_type::IPv4(IPv4_type::new([127, 0, 0, 1]));
+        let port = Port_type::new(0);
 
         driver
-            .Bind(ip, port, Protocol_type::TCP, socket_identifier)
+            .bind(ip, port, Protocol_type::TCP, socket_identifier)
             .unwrap();
     }
 
@@ -414,10 +414,10 @@ mod tests {
 
         let socket = new_socket_identifier(1.into());
 
-        let ip = IP_type::IPv4(IPv4_type::New([127, 0, 0, 1]));
-        let port = Port_type::New(0);
+        let ip = IP_type::IPv4(IPv4_type::new([127, 0, 0, 1]));
+        let port = Port_type::new(0);
 
-        driver.Bind(ip, port, Protocol_type::UDP, socket).unwrap();
+        driver.bind(ip, port, Protocol_type::UDP, socket).unwrap();
     }
 
     #[test]
@@ -429,7 +429,7 @@ mod tests {
 
         // - Bind sockets
         driver
-            .Bind(
+            .bind(
                 IPv4_type::LOCALHOST.into(),
                 Port_type::ANY,
                 Protocol_type::UDP,
@@ -438,7 +438,7 @@ mod tests {
             .unwrap();
 
         driver
-            .Bind(
+            .bind(
                 IPv4_type::LOCALHOST.into(),
                 Port_type::ANY,
                 Protocol_type::UDP,
@@ -451,19 +451,19 @@ mod tests {
 
         // - Send data from socket 1 to socket 2
         driver
-            .Send_to(socket_1, b"hello", ip_2.clone(), port_2)
+            .send_to(socket_1, b"hello", ip_2.clone(), port_2)
             .unwrap();
 
-        driver.Close(socket_1).unwrap();
+        driver.close(socket_1).unwrap();
 
         assert_eq!(
             Error_type::Invalid_identifier,
             driver
-                .Send_to(
+                .send_to(
                     socket_1,
                     b"hello",
-                    IP_type::IPv4(IPv4_type::New([127, 0, 0, 1])),
-                    Port_type::New(0),
+                    IP_type::IPv4(IPv4_type::new([127, 0, 0, 1])),
+                    Port_type::new(0),
                 )
                 .unwrap_err()
         );
@@ -479,7 +479,7 @@ mod tests {
         let addr = listener.local_addr().unwrap();
         let (ip, port) = into_ip_and_port(addr);
 
-        driver.Connect(ip, port, socket_1).unwrap();
+        driver.connect(ip, port, socket_1).unwrap();
     }
 
     #[test]
@@ -492,11 +492,11 @@ mod tests {
         let addr = listener.local_addr().unwrap();
         let (ip, port) = into_ip_and_port(addr);
 
-        driver.Connect(ip, port, socket_1_identifier).unwrap();
+        driver.connect(ip, port, socket_1_identifier).unwrap();
         let (mut stream, _) = listener.accept().unwrap();
 
         let data = b"hello";
-        driver.Send(socket_1_identifier, data).unwrap();
+        driver.send(socket_1_identifier, data).unwrap();
 
         let mut buffer = [0; 5];
         stream.read_exact(&mut buffer).unwrap();
@@ -512,7 +512,7 @@ mod tests {
 
         // - Bind socket
         driver
-            .Bind(
+            .bind(
                 IPv4_type::LOCALHOST.into(),
                 Port_type::ANY,
                 Protocol_type::TCP,
@@ -526,7 +526,7 @@ mod tests {
         // - Connect to server
         let mut client = TcpStream::connect(server_address).unwrap();
 
-        let (ip_client, port_client) = driver.Accept(server, server_stream).unwrap();
+        let (ip_client, port_client) = driver.accept(server, server_stream).unwrap();
 
         assert_eq!(
             driver.get_remote_address(server_stream).unwrap(),
@@ -540,7 +540,7 @@ mod tests {
         client.write_all(data).unwrap();
 
         let mut buffer = [0; 5];
-        let size = driver.Receive(server_stream, &mut buffer).unwrap();
+        let size = driver.receive(server_stream, &mut buffer).unwrap();
 
         assert_eq!(size, data.len());
         assert_eq!(&buffer, data);
@@ -548,7 +548,7 @@ mod tests {
         // - Send data from Server to Client
         let data = b"world";
 
-        driver.Send(server_stream, data).unwrap();
+        driver.send(server_stream, data).unwrap();
 
         let mut buffer = [0; 5];
         client.read_exact(&mut buffer).unwrap();
@@ -561,7 +561,7 @@ mod tests {
         client.write_all(data).unwrap();
 
         let mut buffer = [0; 8];
-        let size = driver.Receive(server_stream, &mut buffer).unwrap();
+        let size = driver.receive(server_stream, &mut buffer).unwrap();
 
         assert_eq!(size, data.len());
         assert_eq!(&buffer, data);
@@ -580,10 +580,10 @@ mod tests {
         let (ip_server, port_server) = into_ip_and_port(server_address);
 
         driver
-            .Connect(ip_server.clone(), port_server, client)
+            .connect(ip_server.clone(), port_server, client)
             .unwrap();
 
-        let (mut server_stream, Client_address) = server_listener.accept().unwrap();
+        let (mut server_stream, client_address) = server_listener.accept().unwrap();
 
         assert_eq!(
             driver.get_remote_address(client).unwrap(),
@@ -591,7 +591,7 @@ mod tests {
         );
         assert_eq!(
             driver.get_local_address(client).unwrap(),
-            into_ip_and_port(Client_address)
+            into_ip_and_port(client_address)
         );
 
         // - Send data from Client to Server
@@ -600,7 +600,7 @@ mod tests {
         server_stream.write_all(data).unwrap();
 
         let mut buffer = [0; 5];
-        let size = driver.Receive(client, &mut buffer).unwrap();
+        let size = driver.receive(client, &mut buffer).unwrap();
 
         assert_eq!(size, data.len());
         assert_eq!(&buffer, data);
@@ -608,12 +608,12 @@ mod tests {
         // - Send data from Server to Client
         let data = b"world";
 
-        driver.Send(client, data).unwrap();
+        driver.send(client, data).unwrap();
 
-        let mut Buffer = [0; 5];
-        server_stream.read_exact(&mut Buffer).unwrap();
+        let mut buffer = [0; 5];
+        server_stream.read_exact(&mut buffer).unwrap();
 
-        assert_eq!(&Buffer, data);
+        assert_eq!(&buffer, data);
 
         // - Send data from Client to Server
         let data = b"fizzbuzz";
@@ -621,225 +621,225 @@ mod tests {
         server_stream.write_all(data).unwrap();
 
         let mut buffer = [0; 8];
-        let Size = driver.Receive(client, &mut buffer).unwrap();
+        let size = driver.receive(client, &mut buffer).unwrap();
 
-        assert_eq!(Size, data.len());
+        assert_eq!(size, data.len());
         assert_eq!(&buffer, data);
     }
 
     #[test]
     fn test_tcp_send_receive_both_sides() {
-        let Driver = Network_socket_driver_type::new();
+        let driver = Network_socket_driver_type::new();
 
-        let Server_listener = new_socket_identifier(1.into());
-        let Server_stream = new_socket_identifier(2.into());
-        let Client = new_socket_identifier(3.into());
+        let server_listener = new_socket_identifier(1.into());
+        let server_stream = new_socket_identifier(2.into());
+        let client = new_socket_identifier(3.into());
 
         // - Bind socket
-        Driver
-            .Bind(
+        driver
+            .bind(
                 IPv4_type::LOCALHOST.into(),
                 Port_type::ANY,
                 Protocol_type::TCP,
-                Server_listener,
+                server_listener,
             )
             .unwrap();
 
-        let (IP_server, Port_server) = Driver.get_local_address(Server_listener).unwrap();
+        let (ip_server, port_server) = driver.get_local_address(server_listener).unwrap();
 
         // - Connect to server
-        Driver
-            .Connect(IP_server.clone(), Port_server, Client)
+        driver
+            .connect(ip_server.clone(), port_server, client)
             .unwrap();
 
-        let (IP_client, Port_client) = Driver.Accept(Server_listener, Server_stream).unwrap();
+        let (ip_client, port_client) = driver.accept(server_listener, server_stream).unwrap();
 
         assert_eq!(
-            Driver.get_local_address(Client).unwrap(),
-            (IP_client.clone(), Port_client)
+            driver.get_local_address(client).unwrap(),
+            (ip_client.clone(), port_client)
         );
         assert_eq!(
-            Driver.get_remote_address(Client).unwrap(),
-            (IP_server.clone(), Port_server)
+            driver.get_remote_address(client).unwrap(),
+            (ip_server.clone(), port_server)
         );
 
         // - Send data from Client to Server
-        let Data = b"hello";
+        let data = b"hello";
 
-        Driver.Send(Client, Data).unwrap();
+        driver.send(client, data).unwrap();
 
-        let mut Buffer = [0; 5];
-        let Size = Driver.Receive(Server_stream, &mut Buffer).unwrap();
+        let mut buffer = [0; 5];
+        let size = driver.receive(server_stream, &mut buffer).unwrap();
 
-        assert_eq!(Size, Data.len());
-        assert_eq!(&Buffer, Data);
+        assert_eq!(size, data.len());
+        assert_eq!(&buffer, data);
 
         // - Send data from Server to Client
-        let Data = b"world";
+        let data = b"world";
 
-        Driver.Send(Server_stream, Data).unwrap();
+        driver.send(server_stream, data).unwrap();
 
-        let mut Buffer = [0; 5];
-        let Size = Driver.Receive(Client, &mut Buffer).unwrap();
+        let mut buffer = [0; 5];
+        let size = driver.receive(client, &mut buffer).unwrap();
 
-        assert_eq!(Size, Data.len());
-        assert_eq!(&Buffer, Data);
+        assert_eq!(size, data.len());
+        assert_eq!(&buffer, data);
 
         // - Send data from Client to Server
-        let Data = b"fizzbuzz";
+        let data = b"fizzbuzz";
 
-        Driver.Send(Client, Data).unwrap();
+        driver.send(client, data).unwrap();
 
-        let mut Buffer = [0; 8];
-        let Size = Driver.Receive(Server_stream, &mut Buffer).unwrap();
+        let mut buffer = [0; 8];
+        let size = driver.receive(server_stream, &mut buffer).unwrap();
 
-        assert_eq!(Size, Data.len());
-        assert_eq!(&Buffer, Data);
+        assert_eq!(size, data.len());
+        assert_eq!(&buffer, data);
     }
 
     #[test]
     fn test_udp_send_to_receive_from_one_side() {
-        let Driver = Network_socket_driver_type::new();
+        let driver = Network_socket_driver_type::new();
 
-        let Socket_1 = new_socket_identifier(1.into());
+        let socket_1 = new_socket_identifier(1.into());
 
         // -  Bind sockets
-        Driver
-            .Bind(
+        driver
+            .bind(
                 IPv4_type::LOCALHOST.into(),
                 Port_type::ANY,
                 Protocol_type::UDP,
-                Socket_1,
+                socket_1,
             )
             .unwrap();
 
-        let Socket_2 = UdpSocket::bind("127.0.0.1:0").unwrap();
+        let socket_2 = UdpSocket::bind("127.0.0.1:0").unwrap();
 
         // - Get local addresses
-        let (IP_1, Port_1) = Driver.get_local_address(Socket_1).unwrap();
-        let Socket_1_address = into_socketaddr(IP_1, Port_1);
-        let Socket_2_address = Socket_2.local_addr().unwrap();
-        let (IP_2, Port_2) = into_ip_and_port(Socket_2_address);
+        let (ip_1, port_1) = driver.get_local_address(socket_1).unwrap();
+        let socket_1_address = into_socketaddr(ip_1, port_1);
+        let socket_2_address = socket_2.local_addr().unwrap();
+        let (ip_2, port_2) = into_ip_and_port(socket_2_address);
 
         // - Send data from socket 1 to socket 2 (send)
-        let Data = b"world";
-        Driver
-            .Send_to(Socket_1, Data, IP_2.clone(), Port_2)
+        let data = b"world";
+        driver
+            .send_to(socket_1, data, ip_2.clone(), port_2)
             .unwrap();
 
-        let mut Buffer_2 = [0; 10];
+        let mut buffer_2 = [0; 10];
 
-        let (Size, Socket_address) = Socket_2.recv_from(&mut Buffer_2).unwrap();
+        let (size, socket_address) = socket_2.recv_from(&mut buffer_2).unwrap();
 
-        assert_eq!(Size, Data.len());
-        assert_eq!(Socket_address, Socket_1_address);
-        assert_eq!(&Buffer_2[..Size], Data);
+        assert_eq!(size, data.len());
+        assert_eq!(socket_address, socket_1_address);
+        assert_eq!(&buffer_2[..size], data);
 
         // - Send data from socket 2 to socket 1 (receive)
-        let Data = b"hello";
+        let data = b"hello";
 
-        Socket_2.send_to(Data, Socket_1_address).unwrap();
+        socket_2.send_to(data, socket_1_address).unwrap();
 
-        let mut Buffer = [0; 10];
-        let (Size, IP, Port) = Driver.Receive_from(Socket_1, &mut Buffer).unwrap();
+        let mut buffer = [0; 10];
+        let (size, ip, port) = driver.receive_from(socket_1, &mut buffer).unwrap();
 
-        assert_eq!(Size, 5);
-        assert_eq!((IP, Port), (IP_2.clone(), Port_2));
-        assert_eq!(&Buffer[..Size], Data);
+        assert_eq!(size, 5);
+        assert_eq!((ip, port), (ip_2.clone(), port_2));
+        assert_eq!(&buffer[..size], data);
 
         // - Send data from socket 1 to socket 2 (send)
-        let Data = b"fizzbuzz";
-        Driver
-            .Send_to(Socket_1, Data, IP_2.clone(), Port_2)
+        let data = b"fizzbuzz";
+        driver
+            .send_to(socket_1, data, ip_2.clone(), port_2)
             .unwrap();
 
-        let mut Buffer_2 = [0; 10];
+        let mut buffer_2 = [0; 10];
 
-        let (Size, Socket_address) = Socket_2.recv_from(&mut Buffer_2).unwrap();
+        let (size, socket_address) = socket_2.recv_from(&mut buffer_2).unwrap();
 
-        assert_eq!(Size, Data.len());
-        assert_eq!(Socket_address, Socket_1_address);
-        assert_eq!(&Buffer_2[..Size], Data);
+        assert_eq!(size, data.len());
+        assert_eq!(socket_address, socket_1_address);
+        assert_eq!(&buffer_2[..size], data);
 
-        Driver.Close(Socket_1).unwrap();
+        driver.close(socket_1).unwrap();
     }
 
     #[test]
     fn test_udp_send_to_receive_from_both_sides() {
-        let Driver = Network_socket_driver_type::new();
+        let driver = Network_socket_driver_type::new();
 
-        let Socket_1_identifier = new_socket_identifier(1.into());
-        let Socket_2_identifier = new_socket_identifier(2.into());
+        let socket_1_identifier = new_socket_identifier(1.into());
+        let socket_2_identifier = new_socket_identifier(2.into());
 
         // - Bind sockets
-        Driver
-            .Bind(
+        driver
+            .bind(
                 IPv4_type::LOCALHOST.into(),
                 Port_type::ANY,
                 Protocol_type::UDP,
-                Socket_1_identifier,
+                socket_1_identifier,
             )
             .unwrap();
 
-        Driver
-            .Bind(
+        driver
+            .bind(
                 IPv4_type::LOCALHOST.into(),
                 Port_type::ANY,
                 Protocol_type::UDP,
-                Socket_2_identifier,
+                socket_2_identifier,
             )
             .unwrap();
 
         // - Get local addresses
-        let (IP_1, Port_1) = Driver.get_local_address(Socket_1_identifier).unwrap();
-        let (IP_2, Port_2) = Driver.get_local_address(Socket_2_identifier).unwrap();
+        let (ip_1, port_1) = driver.get_local_address(socket_1_identifier).unwrap();
+        let (ip_2, port_2) = driver.get_local_address(socket_2_identifier).unwrap();
 
         // - Send data from socket 1 to socket 2
-        let Data = b"hello";
+        let data = b"hello";
 
-        Driver
-            .Send_to(Socket_1_identifier, Data, IP_2.clone(), Port_2)
+        driver
+            .send_to(socket_1_identifier, data, ip_2.clone(), port_2)
             .unwrap();
 
-        let mut Buffer = [0; 10];
-        let (Size, IP, Port) = Driver
-            .Receive_from(Socket_2_identifier, &mut Buffer)
+        let mut buffer = [0; 10];
+        let (size, ip, port) = driver
+            .receive_from(socket_2_identifier, &mut buffer)
             .unwrap();
 
-        assert_eq!(Size, Data.len());
-        assert_eq!((IP, Port), (IP_1.clone(), Port_1));
-        assert_eq!(&Buffer[..Size], Data);
+        assert_eq!(size, data.len());
+        assert_eq!((ip, port), (ip_1.clone(), port_1));
+        assert_eq!(&buffer[..size], data);
 
         // - Send data from socket 2 to socket 1
-        Driver
-            .Send_to(Socket_2_identifier, b"world", IP_1.clone(), Port_1)
+        driver
+            .send_to(socket_2_identifier, b"world", ip_1.clone(), port_1)
             .unwrap();
 
-        let mut Buffer = [0; 10];
-        let (Size, IP, Port) = Driver
-            .Receive_from(Socket_1_identifier, &mut Buffer)
+        let mut buffer = [0; 10];
+        let (size, ip, port) = driver
+            .receive_from(socket_1_identifier, &mut buffer)
             .unwrap();
 
-        assert_eq!(Size, Data.len());
-        assert_eq!((IP, Port), (IP_2.clone(), Port_2));
-        assert_eq!(&Buffer[..Size], b"world");
+        assert_eq!(size, data.len());
+        assert_eq!((ip, port), (ip_2.clone(), port_2));
+        assert_eq!(&buffer[..size], b"world");
 
         // - Send data from socket 1 to socket 2
-        let Data = b"fizzbuzz";
+        let data = b"fizzbuzz";
 
-        Driver
-            .Send_to(Socket_1_identifier, Data, IP_2.clone(), Port_2)
+        driver
+            .send_to(socket_1_identifier, data, ip_2.clone(), port_2)
             .unwrap();
 
-        let mut Buffer = [0; 10];
-        let (Size, IP, Port) = Driver
-            .Receive_from(Socket_2_identifier, &mut Buffer)
+        let mut buffer = [0; 10];
+        let (size, ip, port) = driver
+            .receive_from(socket_2_identifier, &mut buffer)
             .unwrap();
 
-        assert_eq!(Size, Data.len());
-        assert_eq!((IP, Port), (IP_1, Port_1));
-        assert_eq!(&Buffer[..Size], Data);
+        assert_eq!(size, data.len());
+        assert_eq!((ip, port), (ip_1, port_1));
+        assert_eq!(&buffer[..size], data);
 
-        Driver.Close(Socket_1_identifier).unwrap();
+        driver.close(socket_1_identifier).unwrap();
     }
 }

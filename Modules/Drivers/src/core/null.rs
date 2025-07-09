@@ -3,26 +3,26 @@ use file_system::{Device_trait, Size_type};
 pub struct Null_device_type;
 
 impl Device_trait for Null_device_type {
-    fn Read(&self, buffer: &mut [u8]) -> file_system::Result_type<file_system::Size_type> {
-        Ok(Size_type::New(buffer.len() as u64))
+    fn read(&self, buffer: &mut [u8]) -> file_system::Result_type<file_system::Size_type> {
+        Ok(Size_type::new(buffer.len() as u64))
     }
 
-    fn Write(&self, Buffer: &[u8]) -> file_system::Result_type<file_system::Size_type> {
-        Ok(Size_type::New(Buffer.len() as u64))
+    fn write(&self, buffer: &[u8]) -> file_system::Result_type<file_system::Size_type> {
+        Ok(Size_type::new(buffer.len() as u64))
     }
 
     fn get_size(&self) -> file_system::Result_type<file_system::Size_type> {
-        Ok(Size_type::New(0))
+        Ok(Size_type::new(0))
     }
 
-    fn Set_position(
+    fn set_position(
         &self,
         _: &file_system::Position_type,
     ) -> file_system::Result_type<file_system::Size_type> {
-        Ok(Size_type::New(0))
+        Ok(Size_type::new(0))
     }
 
-    fn Flush(&self) -> file_system::Result_type<()> {
+    fn flush(&self) -> file_system::Result_type<()> {
         Ok(())
     }
 }

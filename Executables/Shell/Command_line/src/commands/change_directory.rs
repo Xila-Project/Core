@@ -11,13 +11,13 @@ impl Shell_type {
                 .await;
         }
 
-        let current_directory = Path_type::From_str(arguments[0]).to_owned();
+        let current_directory = Path_type::from_str(arguments[0]).to_owned();
 
         let current_directory = if current_directory.is_absolute() {
             current_directory
         } else {
-            match self.current_directory.clone().Join(&current_directory) {
-                Some(path) => path.Canonicalize(),
+            match self.current_directory.clone().join(&current_directory) {
+                Some(path) => path.canonicalize(),
                 None => {
                     self.standard.print_error_line("Failed to join paths").await;
                     return;

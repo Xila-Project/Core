@@ -52,50 +52,50 @@ pub struct Local_file_identifier_type(usize);
 impl Local_file_identifier_type {
     const TASK_POSITION: u8 = File_identifier_type::SIZE_BITS;
 
-    pub const fn New(Task: Task_identifier_type, File: File_identifier_type) -> Self {
-        let task = Task.Into_inner();
-        let file = File.Into_inner();
+    pub const fn new(task: Task_identifier_type, file: File_identifier_type) -> Self {
+        let task = task.into_inner();
+        let file = file.into_inner();
 
         Self((task as usize) << Self::TASK_POSITION | file as usize)
     }
 
-    pub const fn Split(self) -> (Task_identifier_type, File_identifier_type) {
+    pub const fn split(self) -> (Task_identifier_type, File_identifier_type) {
         let task = self.0 >> File_identifier_type::SIZE_BITS;
         let task = Task_identifier_type::new(task as Task_identifier_inner_type);
 
-        let File = self.0 as File_identifier_inner_type;
-        let file = File_identifier_type::New(File);
+        let file = self.0 as File_identifier_inner_type;
+        let file = File_identifier_type::new(file);
 
         (task, file)
     }
 
-    pub const fn get_minimum(Task: Task_identifier_type) -> Self {
-        Self::New(Task, File_identifier_type::MINIMUM)
+    pub const fn get_minimum(task: Task_identifier_type) -> Self {
+        Self::new(task, File_identifier_type::MINIMUM)
     }
 
-    pub const fn get_maximum(Task: Task_identifier_type) -> Self {
-        Self::New(Task, File_identifier_type::MAXIMUM)
+    pub const fn get_maximum(task: Task_identifier_type) -> Self {
+        Self::new(task, File_identifier_type::MAXIMUM)
     }
 
-    pub const fn Into_unique_file_identifier(
+    pub const fn into_unique_file_identifier(
         self,
         file_system: File_system_identifier_type,
     ) -> (Task_identifier_type, Unique_file_identifier_type) {
-        let (task, file) = self.Split();
+        let (task, file) = self.split();
 
-        let Unique_file = Unique_file_identifier_type::New(file_system, file);
+        let unique_file = Unique_file_identifier_type::new(file_system, file);
 
-        (task, Unique_file)
+        (task, unique_file)
     }
 
-    pub const fn Into_inner(self) -> usize {
+    pub const fn into_inner(self) -> usize {
         self.0
     }
 }
 
 impl Debug for Local_file_identifier_type {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let (task, file) = self.Split();
+        let (task, file) = self.split();
 
         formatter
             .debug_struct("Local_file_identifier_type")
@@ -124,7 +124,7 @@ impl IntoIterator for Local_file_identifier_type {
     type IntoIter = Local_file_identifier_iterator_type;
 
     fn into_iter(self) -> Self::IntoIter {
-        let (task, _) = self.Split();
+        let (task, _) = self.split();
 
         Local_file_identifier_iterator_type {
             current: self,

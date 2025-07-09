@@ -1,4 +1,4 @@
-use std::{env, process::Command};
+use std::env;
 
 fn main() -> Result<(), ()> {
     println!("cargo:rerun-if-changed=Tests/WASM_test/src/main.rs");

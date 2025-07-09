@@ -1,13 +1,13 @@
 #[derive(Debug, Clone)]
 pub struct Region_statistics_type {
     /// Total usable size of the heap region in bytes.
-    pub Size: usize,
+    pub size: usize,
 
     /// Currently used size of the heap region in bytes.
-    pub Used: usize,
+    pub used: usize,
 
     /// Free size of the heap region in bytes.
-    pub Free: usize,
+    pub free: usize,
 }
 
 #[derive(Debug)]

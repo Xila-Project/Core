@@ -24,8 +24,8 @@ impl Command_type<'_> {
 impl<'a> TryFrom<&[Token_type<'a>]> for Command_type<'a> {
     type Error = Error_type;
 
-    fn try_from(Value: &[Token_type<'a>]) -> Result<Self, Self::Error> {
-        let mut iterator = Value.iter();
+    fn try_from(value: &[Token_type<'a>]) -> Result<Self, Self::Error> {
+        let mut iterator = value.iter();
 
         let command = match iterator.next() {
             Some(Token_type::String(command)) => *command,
@@ -42,8 +42,8 @@ impl<'a> TryFrom<&[Token_type<'a>]> for Command_type<'a> {
     }
 }
 
-pub fn parse(Tokens: Vec<Token_type<'_>>) -> Result_type<Vec<Command_type<'_>>> {
-    let tokens = Tokens.clone();
+pub fn parse(tokens: Vec<Token_type<'_>>) -> Result_type<Vec<Command_type<'_>>> {
+    let tokens = tokens.clone();
     let split = tokens.split(|token| *token == Token_type::Pipe);
 
     let commands = split
