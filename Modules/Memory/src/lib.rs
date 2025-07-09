@@ -1,22 +1,21 @@
 #![no_std]
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
 extern crate alloc;
 
-mod Cache;
-mod Capability;
-mod Macro;
-mod Manager;
-mod Protection;
-mod Statistics;
-mod Trait;
+mod cache;
+mod capability;
+mod r#macro;
+mod manager;
+mod protection;
+mod statistics;
+mod r#trait;
 
-pub use Cache::*;
-pub use Capability::*;
-pub use Manager::*;
-pub use Protection::*;
-pub use Statistics::*;
-pub use Trait::*;
+pub use cache::*;
+pub use capability::*;
+pub use manager::*;
+pub use protection::*;
+pub use r#trait::*;
+pub use statistics::*;
 
 pub type Layout_type = core::alloc::Layout;

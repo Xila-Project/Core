@@ -1,4 +1,4 @@
-#![allow(non_snake_case)]
+
 #![allow(non_camel_case_types)]
 
 
@@ -17,7 +17,7 @@ pub fn GCD(mut a: i32, mut b: i32) -> i32 {
     a
 }
 
-fn Test_stdio() -> Result<(), ()> {
+fn test_stdio() -> Result<(), ()> {
     println!("Test stdout");
     eprintln!("Test stderr");
 
@@ -30,7 +30,7 @@ fn Test_stdio() -> Result<(), ()> {
     Ok(())
 }
 
-fn Test_file() {
+fn test_file() {
     {
         let mut File = OpenOptions::new()
             .write(true)
@@ -65,7 +65,7 @@ fn Test_file() {
     }
 }
 
-fn Test_environment_variables() {
+fn test_environment_variables() {
     println!("Environment variables:");
 
     let Environment = std::env::vars();
@@ -75,7 +75,7 @@ fn Test_environment_variables() {
     }
 }
 
-fn Test_directory() {
+fn test_directory() {
     create_dir("/test_dir").unwrap();
 
     for Entry in read_dir("/").unwrap() {

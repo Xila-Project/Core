@@ -1,43 +1,42 @@
 #![no_std]
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
 #[cfg(all(target_arch = "wasm32", feature = "WASM"))]
-pub use WASM_bindings as Bindings;
+pub use wasm_bindings as bindings;
 
 #[cfg(feature = "Host")]
-pub use Authentication;
+pub use abi;
 #[cfg(feature = "Host")]
-pub use Drivers;
+pub use authentication;
 #[cfg(feature = "Host")]
-pub use Executable;
+pub use drivers;
 #[cfg(feature = "Host")]
-pub use File_system;
+pub use executable;
 #[cfg(feature = "Host")]
-pub use Futures;
+pub use file_system;
 #[cfg(feature = "Host")]
-pub use Graphics;
+pub use futures;
 #[cfg(feature = "Host")]
-pub use Host_bindings;
+pub use graphics;
 #[cfg(feature = "Host")]
-pub use LittleFS;
+pub use host_bindings;
 #[cfg(feature = "Host")]
-pub use Log;
+pub use little_fs;
 #[cfg(feature = "Host")]
-pub use Memory;
+pub use log;
 #[cfg(feature = "Host")]
-pub use Shared;
+pub use memory;
 #[cfg(feature = "Host")]
-pub use Synchronization;
+pub use shared;
 #[cfg(feature = "Host")]
-pub use Task;
+pub use synchronization;
 #[cfg(feature = "Host")]
-pub use Time;
+pub use task;
 #[cfg(feature = "Host")]
-pub use Users;
+pub use time;
 #[cfg(feature = "Host")]
-pub use Virtual_file_system;
+pub use users;
 #[cfg(feature = "Host")]
-pub use Virtual_machine;
+pub use virtual_file_system;
 #[cfg(feature = "Host")]
-pub use ABI;
+pub use virtual_machine;

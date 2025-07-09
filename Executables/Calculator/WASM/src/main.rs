@@ -1,15 +1,15 @@
-#![allow(non_snake_case)]
+
 #![allow(non_camel_case_types)]
 
 
-pub mod Evaluator;
-pub mod Interface;
-pub mod Parser;
-pub mod Token;
+pub mod evaluator;
+pub mod interface;
+pub mod parser;
+pub mod token;
 
-use Evaluator::Evaluator_type;
-use Interface::Interface_type;
-use Parser::Parser_type;
+use evaluator::Evaluator_type;
+use interface::Interface_type;
+use parser::Parser_type;
 
 pub struct Calculator;
 

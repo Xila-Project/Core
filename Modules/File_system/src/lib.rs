@@ -52,10 +52,10 @@
 //!
 //! ```rust
 //! # extern crate alloc;
-//! # use File_system::*;
+//! # use file_system::*;
 //!
 //! // Create an in-memory device for testing
-//! let device = Create_device!(Memory_device_type::<512>::New(1024 * 1024));
+//! let device = create_device!(Memory_device_type::<512>::New(1024 * 1024));
 //!
 //! // Write some data
 //! let data = b"Hello, File System!";
@@ -67,10 +67,10 @@
 //!
 //! ```rust
 //! # extern crate alloc;
-//! # use File_system::*;
+//! # use file_system::*;
 //!
 //! // Create a device and format it with MBR
-//! let device = Create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+//! let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
 //!
 //! // Create MBR and add a partition
 //! let mut mbr = MBR_type::New_with_signature(0x12345678);
@@ -95,7 +95,6 @@
 //! The [`Error_type`] enum provides comprehensive error reporting for all file system operations.
 
 #![no_std]
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
 extern crate alloc;
@@ -103,24 +102,24 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-mod Device;
-mod Error;
-mod File_system;
-mod Fundamentals;
-mod MBR;
-mod Partition;
+mod device;
+mod error;
+mod file_system;
+mod fundamentals;
+mod mbr;
+mod partition;
 
-mod Memory_device;
-mod Time;
+mod memory_device;
+mod time;
 
-pub use Device::{Device_trait, Device_type};
-pub use Error::*;
+pub use device::{Device_trait, Device_type};
+pub use error::*;
 
-pub use File_system::*;
-pub use Fundamentals::*;
-pub use Memory_device::*;
-pub use Partition::*;
-pub use Time::*;
+pub use file_system::*;
+pub use fundamentals::*;
+pub use memory_device::*;
+pub use partition::*;
+pub use time::*;
 
 // Export MBR module and its contents
-pub use MBR::*;
+pub use mbr::*;

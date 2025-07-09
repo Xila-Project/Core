@@ -1,17 +1,17 @@
 [package]
-name = "File_system"
+name = "file_system"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-Task = { path = "../Task" }
-Users = { path = "../Users" }
-Shared = { path = "../Shared" }
-Synchronization = { version = "0.1.0", path = "../Synchronization" }
-Futures = { version = "0.1.0", path = "../Futures" }
+task = { path = "../Task" }
+users = { path = "../Users" }
+shared = { path = "../Shared" }
+synchronization = { version = "0.1.0", path = "../Synchronization" }
+futures = { version = "0.1.0", path = "../Futures" }
 
 [dev-dependencies]
-Drivers = { path = "../Drivers" }
+drivers = { path = "../Drivers" }
 
 [features]
 std = []

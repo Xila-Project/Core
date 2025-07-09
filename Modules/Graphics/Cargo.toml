@@ -1,26 +1,26 @@
 [package]
-name = "Graphics"
+name = "graphics"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 cstr_core = "0.2.6"
-File_system = { path = "../File_system" }
+file_system = { path = "../File_system" }
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
 #lvgl_rust_sys = { path = "../../../lvgl_rust_sys", default-features = false }
 syn = { version = "2.0", features = ["full"] }
 quote = "1.0"
-Time = { path = "../Time" }
-Shared = { path = "../Shared" }
-Synchronization = { version = "0.1.0", path = "../Synchronization" }
-Log = { version = "0.1.0", path = "../Log" }
+time = { path = "../Time" }
+shared = { path = "../Shared" }
+synchronization = { version = "0.1.0", path = "../Synchronization" }
+log = { version = "0.1.0", path = "../Log" }
 
 
 [dev-dependencies]
-Drivers = { path = "../Drivers" }
-Users = { path = "../Users" }
-Task = { path = "../Task" }
-Futures = { path = "../Futures" }
+drivers = { path = "../Drivers" }
+users = { path = "../Users" }
+task = { path = "../Task" }
+futures = { path = "../Futures" }
 
 [features]
 default = ["RGB565"]
@@ -29,5 +29,5 @@ ARGB8888 = []
 RGBA8888 = []
 
 [[test]]
-name = "Graphics"
-path = "Tests/Graphics.rs"
+name = "graphics"
+path = "Tests/graphics.rs"

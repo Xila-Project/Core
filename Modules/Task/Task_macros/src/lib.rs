@@ -1,32 +1,31 @@
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 use darling::{FromMeta, ast::NestedMeta};
 use proc_macro::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{ItemFn, parse_macro_input, parse_str};
 
-fn Default_task_path() -> syn::Expr {
-    parse_str("Task").unwrap()
+fn default_task_path() -> syn::Expr {
+    parse_str("task").unwrap()
 }
 
-fn Default_executor() -> syn::Expr {
-    parse_str("Drivers::Std::Executor::Instantiate_static_executor!()").unwrap()
+fn default_executor() -> syn::Expr {
+    parse_str("drivers::standard_library::executor::Instantiate_static_executor!()").unwrap()
 }
 
 #[derive(Debug, FromMeta, Clone)]
 struct Task_arguments_type {
-    #[darling(default = "Default_task_path")]
-    pub Task_path: syn::Expr,
+    #[darling(default = "default_task_path")]
+    pub task_path: syn::Expr,
 
-    #[darling(default = "Default_executor")]
-    pub Executor: syn::Expr,
+    #[darling(default = "default_executor")]
+    pub executor: syn::Expr,
 }
 
 impl Task_arguments_type {
-    fn From_token_stream(Arguments: TokenStream) -> Result<Self, darling::Error> {
-        let Arguments = NestedMeta::parse_meta_list(Arguments.into()).unwrap();
-        Self::from_list(&Arguments.clone())
+    fn from_token_stream(arguments: TokenStream) -> Result<Self, darling::Error> {
+        let arguments = NestedMeta::parse_meta_list(arguments.into()).unwrap();
+        Self::from_list(&arguments.clone())
     }
 }
 
@@ -66,14 +65,14 @@ impl Task_arguments_type {
 #[proc_macro_attribute]
 #[allow(non_snake_case)]
 pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
-    let Arguments = match Task_arguments_type::From_token_stream(Arguments) {
+    let Arguments = match Task_arguments_type::from_token_stream(Arguments) {
         Ok(o) => o,
         Err(e) => return e.write_errors().into(),
     };
     let Input_function = parse_macro_input!(Input as ItemFn);
 
-    let Executor = Arguments.Executor;
-    let Task_path = Arguments.Task_path;
+    let Executor = Arguments.executor;
+    let Task_path = Arguments.task_path;
 
     // Extract function details
     let Function_name = &Input_function.sig.ident;
@@ -81,9 +80,9 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
     let Function_name_string = Function_name.to_string();
 
     // Check if function is async
-    let Is_asynchronous = Input_function.sig.asyncness.is_some();
+    let is_asynchronous = Input_function.sig.asyncness.is_some();
 
-    if !Is_asynchronous {
+    if !is_asynchronous {
         return syn::Error::new_spanned(
             Input_function.sig.fn_token,
             "Test functions must be async",
@@ -134,33 +133,33 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
         fn #Function_name() {
             #Input_function
 
-            static mut __Spawner : usize = 0;
+            static mut __SPAWNER : usize = 0;
 
             unsafe {
                 let __EXECUTOR = #Executor;
 
-                __EXECUTOR.Run(|Spawner, __executor| {
-                    let Manager = #Task_path::Initialize();
+                __EXECUTOR.run(|Spawner, __executor| {
+                    let Manager = #Task_path::initialize();
 
                     unsafe {
-                        __Spawner = Manager.Register_spawner(Spawner).expect("Failed to register spawner");
+                        __SPAWNER = Manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
-                    #Task_path::Futures::block_on(async move {
-                        Manager.Spawn(
-                            #Task_path::Manager_type::Root_task_identifier,
+                    #Task_path::futures::block_on(async move {
+                        Manager.spawn(
+                            #Task_path::Manager_type::ROOT_TASK_IDENTIFIER,
                             #Function_name_string,
-                            Some(__Spawner),
+                            Some(__SPAWNER),
                             async move |_task| {
                                 __inner().await;
-                                __executor.Stop();
+                                __executor.stop();
                             }
                         ).await
                     }).expect("Failed to spawn task");
                 });
             }
             unsafe {
-                #Task_path::Get_instance().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
+                #Task_path::get_instance().unregister_spawner(__SPAWNER).expect("Failed to unregister spawner");
             }
 
         }
@@ -186,7 +185,7 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
 /// The macro accepts an executor expression as a parameter:
 ///
 /// ```rust
-/// #[Run_with_executor(Drivers::Std::Executor::Executor_type::New())]
+/// #[Run_with_executor(drivers::standard_library::Executor::Executor_type::New())]
 /// async fn my_function() {
 ///     println!("Running with custom executor!");
 /// }
@@ -200,23 +199,23 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 #[allow(non_snake_case)]
 pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
-    let Arguments = match Task_arguments_type::From_token_stream(Arguments) {
+    let Arguments = match Task_arguments_type::from_token_stream(Arguments) {
         Ok(o) => o,
         Err(e) => return e.write_errors().into(),
     };
     let Input_function = parse_macro_input!(Input as ItemFn);
 
-    let Task_path = Arguments.Task_path;
-    let Executor_expression = Arguments.Executor;
+    let Task_path = Arguments.task_path;
+    let Executor_expression = Arguments.executor;
 
     // Extract function details
     let Function_name = &Input_function.sig.ident;
     let Function_name_string = Function_name.to_string();
 
     // Check if function is async
-    let Is_asynchronous = Input_function.sig.asyncness.is_some();
+    let is_asynchronous = Input_function.sig.asyncness.is_some();
 
-    if !Is_asynchronous {
+    if !is_asynchronous {
         return syn::Error::new_spanned(
             Input_function.sig.fn_token,
             "Functions with Run_with_executor must be async",
@@ -266,33 +265,33 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
         fn #Function_name() {
             #Input_function
 
-            static mut __Spawner : usize = 0;
+            static mut __SPAWNER : usize = 0;
 
             unsafe {
                 let __EXECUTOR : &'static mut _ = #Executor_expression;
 
-                __EXECUTOR.Run(|Spawner, __EXECUTOR| {
-                    let Manager = #Task_path::Initialize();
+                __EXECUTOR.run(|Spawner, __EXECUTOR| {
+                    let Manager = #Task_path::initialize();
 
                     unsafe {
-                        __Spawner = Manager.Register_spawner(Spawner).expect("Failed to register spawner");
+                        __SPAWNER = Manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
-                    #Task_path::Futures::block_on(async move {
-                        Manager.Spawn(
+                    #Task_path::futures::block_on(async move {
+                        Manager.spawn(
                             #Task_path::Manager_type::ROOT_TASK_IDENTIFIER,
                             #Function_name_string,
-                            Some(__Spawner),
+                            Some(__SPAWNER),
                             async move |_task| {
                                 __inner().await;
-                                __EXECUTOR.Stop();
+                                __EXECUTOR.stop();
                             }
                         ).await
                     }).expect("Failed to spawn task");
                 });
             }
             unsafe {
-                #Task_path::Get_instance().Unregister_spawner(__Spawner).expect("Failed to unregister spawner");
+                #Task_path::get_instance().unregister_spawner(__SPAWNER).expect("Failed to unregister spawner");
             }
         }
     }

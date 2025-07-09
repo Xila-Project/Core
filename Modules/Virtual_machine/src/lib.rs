@@ -27,15 +27,15 @@
 //! ## Usage Example
 //!
 //! ```rust,ignore
-//! use Virtual_machine::*;
+//! use virtual_machine::*;
 //!
 //! // Define host functions that WASM can call
 //! struct MyRegistrable;
 //! impl Registrable_trait for MyRegistrable {
-//!     fn Get_functions(&self) -> &[Function_descriptor_type] {
+//!     fn get_functions(&self) -> &[Function_descriptor_type] {
 //!         &[Function_descriptor!(my_host_function)]
 //!     }
-//!     fn Get_name(&self) -> &'static str { "my_module" }
+//!     fn get_name(&self) -> &'static str { "my_module" }
 //! }
 //!
 //! // Initialize the virtual machine manager
@@ -52,32 +52,31 @@
 //! ```
 
 #![no_std]
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 #![allow(unused_imports)]
 extern crate alloc;
 
-mod Custom_data;
-mod Environment;
-mod Error;
-mod Instance;
-mod Manager;
-mod Module;
-mod Registrable;
-mod Runtime;
+mod custom_data;
+mod environment;
+mod error;
+mod instance;
+mod manager;
+mod module;
+mod registrable;
+mod runtime;
 
 // Re-export key types from WAMR
 pub use wamr_rust_sdk::value::WasmValue;
 
 // Re-export all public types from modules
-pub use Custom_data::*;
-pub use Environment::*;
-pub use Error::*;
-pub use Instance::*;
-pub use Manager::*;
-pub use Module::*;
-pub use Registrable::*;
-pub use Runtime::*;
+pub use custom_data::*;
+pub use environment::*;
+pub use error::*;
+pub use instance::*;
+pub use manager::*;
+pub use module::*;
+pub use registrable::*;
+pub use runtime::*;
 
 /// Type alias for WASM pointer addresses in the 32-bit WASM address space
 pub type WASM_pointer_type = u32;

@@ -1,17 +1,27 @@
 #![no_std]
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 extern crate alloc;
 
-mod Device;
-mod Executable;
-mod Main;
-mod Terminal;
+mod device;
+mod error;
+mod executable;
+mod terminal;
 
-mod Error;
+pub use executable::*;
 
-pub use Executable::*;
+use core::num::NonZeroUsize;
+
+use ::executable::Standard_type;
+use alloc::{
+    string::{String, ToString},
+    sync::Arc,
+};
+use file_system::{Device_type, Flags_type, Mode_type, Unique_file_identifier_type};
+use futures::yield_now;
+use task::Task_identifier_type;
+
+use crate::{error::Result_type, terminal::Terminal_type};
 
 pub const SHORTCUT: &str = r#"
 {
@@ -22,3 +32,68 @@ pub const SHORTCUT: &str = r#"
     "Icon_string": ">_",
     "Icon_color": [0, 0, 0]
 }"#;
+
+async fn mount_and_open(
+    task: Task_identifier_type,
+    terminal: Arc<Terminal_type>,
+) -> Result_type<(
+    Unique_file_identifier_type,
+    Unique_file_identifier_type,
+    Unique_file_identifier_type,
+)> {
+    virtual_file_system::get_instance()
+        .mount_device(task, &"/Devices/Terminal", Device_type::new(terminal))
+        .await?;
+
+    let standard_in = virtual_file_system::get_instance()
+        .open(
+            &"/Devices/Terminal",
+            Flags_type::new(Mode_type::READ_ONLY, None, None),
+            task,
+        )
+        .await?;
+
+    let standard_out = virtual_file_system::get_instance()
+        .open(&"/Devices/Terminal", Mode_type::WRITE_ONLY.into(), task)
+        .await?;
+
+    let standard_error = virtual_file_system::get_instance()
+        .duplicate_file_identifier(standard_out, task)
+        .await?;
+
+    Ok((standard_in, standard_out, standard_error))
+}
+
+async fn inner_main(task: Task_identifier_type) -> Result_type<()> {
+    let terminal = Terminal_type::new().await?;
+
+    let terminal: Arc<Terminal_type> = Arc::new(terminal);
+
+    let (standard_in, standard_out, standard_error) =
+        mount_and_open(task, terminal.clone()).await?;
+
+    let standard = Standard_type::new(
+        standard_in,
+        standard_out,
+        standard_error,
+        task::get_instance().get_current_task_identifier().await,
+        virtual_file_system::get_instance(),
+    );
+
+    ::executable::execute("/Binaries/Command_line_shell", "".to_string(), standard).await?;
+
+    while terminal.event_handler().await? {
+        yield_now().await;
+    }
+
+    Ok(())
+}
+
+pub async fn main(standard: Standard_type, _: String) -> Result<(), NonZeroUsize> {
+    if let Err(error) = inner_main(standard.get_task()).await {
+        standard.print_error(&error.to_string()).await;
+        return Err(error.into());
+    }
+
+    Ok(())
+}

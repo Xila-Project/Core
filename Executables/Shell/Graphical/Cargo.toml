@@ -1,27 +1,27 @@
 [package]
-name = "Graphical_shell"
+name = "graphical_shell"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-Graphics = { path = "../../../Modules/Graphics" }
-File_system = { path = "../../../Modules/File_system" }
-Virtual_file_system = { path = "../../../Modules/Virtual_file_system" }
-Executable = { path = "../../../Modules/Executable" }
-Task = { path = "../../../Modules/Task" }
-Users = { path = "../../../Modules/Users" }
-Shared = { path = "../../../Modules/Shared" }
-Time = { path = "../../../Modules/Time" }
-Authentication = { path = "../../../Modules/Authentication" }
+graphics = { path = "../../../Modules/Graphics" }
+file_system = { path = "../../../Modules/File_system" }
+virtual_file_system = { path = "../../../Modules/Virtual_file_system" }
+executable = { path = "../../../Modules/Executable" }
+task = { path = "../../../Modules/Task" }
+users = { path = "../../../Modules/Users" }
+shared = { path = "../../../Modules/Shared" }
+time = { path = "../../../Modules/Time" }
+authentication = { path = "../../../Modules/Authentication" }
 miniserde = "0.1"
-Futures = { version = "0.1.0", path = "../../../Modules/Futures" }
-Log = { version = "0.1.0", path = "../../../Modules/Log" }
+futures = { version = "0.1.0", path = "../../../Modules/Futures" }
+log = { version = "0.1.0", path = "../../../Modules/Log" }
 
 [dev-dependencies]
-Drivers = { path = "../../../Modules/Drivers" }
-Time = { path = "../../../Modules/Time" }
-LittleFS = { path = "../../../Modules/LittleFS" }
+drivers = { path = "../../../Modules/Drivers" }
+time = { path = "../../../Modules/Time" }
+little_fs = { path = "../../../Modules/LittleFS" }
 
 [[test]]
-name = "Integration_test"
-path = "Tests/Integration_test.rs"
+name = "integration_test"
+path = "Tests/integration_test.rs"

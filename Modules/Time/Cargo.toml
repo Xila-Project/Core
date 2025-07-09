@@ -1,17 +1,17 @@
 [package]
-name = "Time"
+name = "time"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-File_system = { path = "../File_system" }
-Log = { path = "../Log" }
-Shared = { path = "../Shared" }
+file_system = { path = "../File_system" }
+log = { path = "../Log" }
+shared = { path = "../Shared" }
 
 [dev-dependencies]
-Drivers = { path = "../Drivers" }
-Log = { path = "../Log" }
+drivers = { path = "../Drivers" }
+log = { path = "../Log" }
 
 [[test]]
-name = "Integration"
-path = "Tests/Integration.rs"
+name = "integration"
+path = "Tests/integration.rs"

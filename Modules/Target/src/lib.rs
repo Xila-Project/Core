@@ -1,45 +1,44 @@
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
-mod Architecture;
-mod Family;
-mod Operating_system;
-mod Vendor;
+mod architecture;
+mod family;
+mod operating_system;
+mod vendor;
 
 use std::env;
 
-pub use Architecture::*;
-pub use Family::*;
-pub use Operating_system::*;
-pub use Vendor::*;
+pub use architecture::*;
+pub use family::*;
+pub use operating_system::*;
+pub use vendor::*;
 
 #[derive(Debug, PartialEq)]
 pub struct Target_type {
-    Architecture: Architecture_type,
-    Operating_system: Operating_system_type,
-    Family: Family_type,
-    Vendor: Vendor_type,
+    architecture: Architecture_type,
+    operating_system: Operating_system_type,
+    family: Family_type,
+    vendor: Vendor_type,
 }
 
 impl Target_type {
-    pub fn Get_architecture(&self) -> Architecture_type {
-        self.Architecture
+    pub fn get_architecture(&self) -> Architecture_type {
+        self.architecture
     }
 
-    pub fn Get_operating_system(&self) -> Operating_system_type {
-        self.Operating_system
+    pub fn get_operating_system(&self) -> Operating_system_type {
+        self.operating_system
     }
 
-    pub fn Get_family(&self) -> Family_type {
-        self.Family
+    pub fn get_family(&self) -> Family_type {
+        self.family
     }
 
-    pub fn Get_current() -> Target_type {
+    pub fn get_current() -> Target_type {
         Target_type {
-            Architecture: Architecture_type::from(env::var("CARGO_CFG_TARGET_ARCH").unwrap()),
-            Operating_system: Operating_system_type::from(env::var("CARGO_CFG_TARGET_OS").unwrap()),
-            Family: Family_type::from(env::var("CARGO_CFG_TARGET_FAMILY").unwrap()),
-            Vendor: Vendor_type::from(env::var("CARGO_CFG_TARGET_VENDOR").unwrap()),
+            architecture: Architecture_type::from(env::var("CARGO_CFG_TARGET_ARCH").unwrap()),
+            operating_system: Operating_system_type::from(env::var("CARGO_CFG_TARGET_OS").unwrap()),
+            family: Family_type::from(env::var("CARGO_CFG_TARGET_FAMILY").unwrap()),
+            vendor: Vendor_type::from(env::var("CARGO_CFG_TARGET_VENDOR").unwrap()),
         }
     }
 }

@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
 extern crate alloc;
@@ -7,20 +6,20 @@ extern crate alloc;
 #[cfg(any(test, feature = "std"))]
 extern crate std;
 
-mod Environment_variable;
-mod Error;
-mod Join_handle;
-mod Manager;
-mod Signal;
-mod Task;
+mod environment_variable;
+mod error;
+mod join_handle;
+mod manager;
+mod signal;
+mod task;
 
-pub use Environment_variable::*;
-pub use Error::*;
-pub use Futures;
-pub use Join_handle::*;
-pub use Manager::*;
-pub use Signal::*;
-pub use Task::*;
-pub use Task_macros::{Run, Test};
+pub use environment_variable::*;
+pub use error::*;
+pub use futures;
+pub use join_handle::*;
+pub use manager::*;
+pub use signal::*;
+pub use task::*;
+pub use task_macros::{Run, Test};
 
 pub use embassy_executor;

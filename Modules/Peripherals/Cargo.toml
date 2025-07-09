@@ -1,5 +1,5 @@
 [package]
-name = "Peripherals"
+name = "peripherals"
 version = "0.1.0"
 edition = "2021"
 

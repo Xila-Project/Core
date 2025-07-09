@@ -1,27 +1,27 @@
 [package]
-name = "Settings"
+name = "settings"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-Graphics = { path = "../../Modules/Graphics" }
-File_system = { path = "../../Modules/File_system" }
-Virtual_file_system = { path = "../../Modules/Virtual_file_system" }
-Executable = { path = "../../Modules/Executable" }
-Task = { path = "../../Modules/Task" }
-Users = { path = "../../Modules/Users" }
-Shared = { path = "../../Modules/Shared" }
-Time = { path = "../../Modules/Time" }
-Synchronization = { version = "0.1.0", path = "../../Modules/Synchronization" }
-Futures = { version = "0.1.0", path = "../../Modules/Futures" }
-Log = { version = "0.1.0", path = "../../Modules/Log" }
-Authentication = { path = "../../Modules/Authentication" }
+graphics = { path = "../../Modules/Graphics" }
+file_system = { path = "../../Modules/File_system" }
+virtual_file_system = { path = "../../Modules/Virtual_file_system" }
+executable = { path = "../../Modules/Executable" }
+task = { path = "../../Modules/Task" }
+users = { path = "../../Modules/Users" }
+shared = { path = "../../Modules/Shared" }
+time = { path = "../../Modules/Time" }
+synchronization = { version = "0.1.0", path = "../../Modules/Synchronization" }
+futures = { version = "0.1.0", path = "../../Modules/Futures" }
+log = { version = "0.1.0", path = "../../Modules/Log" }
+authentication = { path = "../../Modules/Authentication" }
 
 [dev-dependencies]
-Drivers = { path = "../../Modules/Drivers" }
-LittleFS = { path = "../../Modules/LittleFS" }
-Command_line_shell = { path = "../Shell/Command_line" }
+drivers = { path = "../../Modules/Drivers" }
+little_fs = { path = "../../Modules/LittleFS" }
+command_line_shell = { path = "../Shell/Command_line" }
 
 [[test]]
-name = "Integration_test"
-path = "Tests/Integration_test.rs"
+name = "integration_test"
+path = "Tests/integration_test.rs"

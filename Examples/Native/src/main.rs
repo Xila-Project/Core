@@ -1,88 +1,87 @@
 #![no_std]
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 extern crate alloc;
 
-use Xila::Authentication;
-use Xila::Drivers;
-use Xila::Drivers::Std::Executor::Instantiate_static_executor;
-use Xila::Executable;
-use Xila::Executable::Mount_static_executables;
-use Xila::Executable::Standard_type;
-use Xila::File_system;
-use Xila::File_system::MBR_type;
-use Xila::File_system::Partition_type_type;
-use Xila::File_system::{Create_device, Create_file_system};
-use Xila::Graphics;
-use Xila::Host_bindings;
-use Xila::LittleFS;
-use Xila::Log;
-use Xila::Log::Information;
-use Xila::Memory::Instantiate_global_allocator;
-use Xila::Task;
-use Xila::Time;
-use Xila::Users;
-use Xila::Virtual_file_system;
-use Xila::Virtual_file_system::Mount_static_devices;
-use Xila::Virtual_machine;
+use xila::authentication;
+use xila::drivers;
+use xila::drivers::standard_library::executor::Instantiate_static_executor;
+use xila::executable;
+use xila::executable::Mount_static_executables;
+use xila::executable::Standard_type;
+use xila::file_system;
+use xila::file_system::MBR_type;
+use xila::file_system::Partition_type_type;
+use xila::file_system::{Create_file_system, create_device};
+use xila::graphics;
+use xila::host_bindings;
+use xila::little_fs;
+use xila::log;
+use xila::log::Information;
+use xila::memory::Instantiate_global_allocator;
+use xila::task;
+use xila::time;
+use xila::users;
+use xila::virtual_file_system;
+use xila::virtual_file_system::Mount_static_devices;
+use xila::virtual_machine;
 
 use alloc::string::String;
 
-Instantiate_global_allocator!(Drivers::Std::Memory::Memory_manager_type);
+Instantiate_global_allocator!(drivers::standard_library::memory::Memory_manager_type);
 
-#[Task::Run(Task_path = Task, Executor = Instantiate_static_executor!())]
+#[task::Run(task_path = task, executor = Instantiate_static_executor!())]
 async fn main() {
     // - Initialize the system
-    Log::Initialize(&Drivers::Std::Log::Logger_type).unwrap();
+    log::initialize(&drivers::standard_library::log::Logger_type).unwrap();
 
     // Initialize the task manager
-    let Task_manager = Task::Initialize();
+    let task_manager = task::initialize();
 
-    let Task = Task_manager.Get_current_task_identifier().await;
+    let task = task_manager.get_current_task_identifier().await;
 
     // Initialize the users manager
-    Users::Initialize();
+    users::initialize();
     // Initialize the time manager
-    Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New())).unwrap();
+    time::initialize(create_device!(drivers::native::Time_driver_type::new())).unwrap();
 
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
-    const RESOLUTION: Graphics::Point_type = Graphics::Point_type::New(800, 600);
-    let (Screen_device, Pointer_device, Keyboard_device) =
-        Drivers::Native::Window_screen::New(RESOLUTION).unwrap();
+    const RESOLUTION: graphics::Point_type = graphics::Point_type::new(800, 600);
+    let (screen_device, pointer_device, keyboard_device) =
+        drivers::native::window_screen::new(RESOLUTION).unwrap();
     // - - Initialize the graphics manager
-    let Graphics_manager = Graphics::Initialize(
-        Screen_device,
-        Pointer_device,
-        Graphics::Input_type_type::Pointer,
-        Graphics::Get_minimal_buffer_size(&RESOLUTION),
+    let graphics_manager = graphics::initialize(
+        screen_device,
+        pointer_device,
+        graphics::Input_type_type::Pointer,
+        graphics::get_minimal_buffer_size(&RESOLUTION),
         true,
     )
     .await;
 
-    Graphics_manager
-        .Add_input_device(Keyboard_device, Graphics::Input_type_type::Keypad)
+    graphics_manager
+        .add_input_device(keyboard_device, graphics::Input_type_type::Keypad)
         .await
         .unwrap();
 
-    Task_manager
-        .Spawn(Task, "Graphics", None, |_| {
-            Graphics_manager.Loop(Task::Manager_type::Sleep)
+    task_manager
+        .spawn(task, "Graphics", None, |_| {
+            graphics_manager.r#loop(task::Manager_type::sleep)
         })
         .await
         .unwrap();
 
     // - Initialize the file system
     // Create a memory device
-    let Drive = Create_device!(Drivers::Std::Drive_file::File_drive_device_type::New(
-        &"./Drive.img"
-    ));
+    let drive = create_device!(
+        drivers::standard_library::drive_file::File_drive_device_type::new(&"./Drive.img")
+    );
 
     // Create a partition type
-    let Partition = Create_device!(
-        MBR_type::Find_or_create_partition_with_signature(
-            &Drive,
+    let partition = create_device!(
+        MBR_type::find_or_create_partition_with_signature(
+            &drive,
             0xDEADBEEF,
             Partition_type_type::Xila
         )
@@ -90,101 +89,101 @@ async fn main() {
     );
 
     // Print MBR information
-    let MBR = MBR_type::Read_from_device(&Drive).unwrap();
+    let mbr = MBR_type::read_from_device(&drive).unwrap();
 
-    Information!("MBR information: {MBR}");
+    Information!("MBR information: {mbr}");
 
     // Mount the file system
-    let File_system = match LittleFS::File_system_type::New(Partition.clone(), 256) {
-        Ok(File_system) => File_system,
+    let file_system = match little_fs::File_system_type::new(partition.clone(), 256) {
+        Ok(file_system) => file_system,
         // If the file system is not found, format it
         Err(_) => {
-            Partition
-                .Set_position(&File_system::Position_type::Start(0))
+            partition
+                .set_position(&file_system::Position_type::Start(0))
                 .unwrap();
 
-            LittleFS::File_system_type::Format(Partition.clone(), 256).unwrap();
+            little_fs::File_system_type::format(partition.clone(), 256).unwrap();
 
-            LittleFS::File_system_type::New(Partition, 256).unwrap()
+            little_fs::File_system_type::new(partition, 256).unwrap()
         }
     };
     // Initialize the virtual file system
-    Virtual_file_system::Initialize(Create_file_system!(File_system), None).unwrap();
+    virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
 
     // - - Mount the devices
 
     // - - Create the default system hierarchy
     let _ =
-        Virtual_file_system::Create_default_hierarchy(Virtual_file_system::Get_instance(), Task)
+        virtual_file_system::create_default_hierarchy(virtual_file_system::get_instance(), task)
             .await;
 
     // - - Mount the devices
-    Virtual_file_system::Clean_devices(Virtual_file_system::Get_instance())
+    virtual_file_system::clean_devices(virtual_file_system::get_instance())
         .await
         .unwrap();
 
     Mount_static_devices!(
-        Virtual_file_system::Get_instance(),
-        Task,
+        virtual_file_system::get_instance(),
+        task,
         &[
             (
                 &"/Devices/Standard_in",
-                Drivers::Std::Console::Standard_in_device_type
+                drivers::standard_library::console::Standard_in_device_type
             ),
             (
                 &"/Devices/Standard_out",
-                Drivers::Std::Console::Standard_out_device_type
+                drivers::standard_library::console::Standard_out_device_type
             ),
             (
                 &"/Devices/Standard_error",
-                Drivers::Std::Console::Standard_error_device_type
+                drivers::standard_library::console::Standard_error_device_type
             ),
-            (&"/Devices/Time", Drivers::Native::Time_driver_type),
-            (&"/Devices/Random", Drivers::Native::Random_device_type),
-            (&"/Devices/Null", Drivers::Core::Null_device_type)
+            (&"/Devices/Time", drivers::native::Time_driver_type),
+            (&"/Devices/Random", drivers::native::Random_device_type),
+            (&"/Devices/Null", drivers::core::Null_device_type)
         ]
     )
     .await
     .unwrap();
 
     // Initialize the virtual machine
-    Virtual_machine::Initialize(&[&Host_bindings::Graphics_bindings]);
+    virtual_machine::initialize(&[&host_bindings::Graphics_bindings]);
 
     // Mount static executables
 
-    let Virtual_file_system = Virtual_file_system::Get_instance();
+    let virtual_file_system = virtual_file_system::get_instance();
 
     Mount_static_executables!(
-        Virtual_file_system,
-        Task,
+        virtual_file_system,
+        task,
         &[
             (
                 &"/Binaries/Graphical_shell",
-                Graphical_shell::Shell_executable_type
+                graphical_shell::Shell_executable_type
             ),
             (
                 &"/Binaries/File_manager",
-                File_manager::File_manager_executable_type::New(Virtual_file_system, Task)
+                file_manager::File_manager_executable_type::new(virtual_file_system, task)
                     .await
                     .unwrap()
             ),
             (
                 &"/Binaries/Command_line_shell",
-                Command_line_shell::Shell_executable_type
+                command_line_shell::Shell_executable_type
             ),
             (
                 &"/Binaries/Terminal",
-                Terminal::Terminal_executable_type::New(Virtual_file_system::Get_instance(), Task)
+                terminal::Terminal_executable_type::new(virtual_file_system::get_instance(), task)
                     .await
                     .unwrap()
             ),
             (
                 &"/Binaries/Settings",
-                Settings::Settings_executable_type::New(Virtual_file_system, Task)
+                settings::Settings_executable_type::new(virtual_file_system, task)
                     .await
                     .unwrap()
             ),
-            (&"/Binaries/WASM", WASM::WASM_device_type)
+            (&"/Binaries/WASM", wasm::WASM_device_type)
         ]
     )
     .await
@@ -192,51 +191,51 @@ async fn main() {
 
     // - Execute the shell
     // - - Open the standard input, output and error
-    let Standard = Standard_type::Open(
+    let standard = Standard_type::open(
         &"/Devices/Standard_in",
         &"/Devices/Standard_out",
         &"/Devices/Standard_error",
-        Task,
-        Virtual_file_system::Get_instance(),
+        task,
+        virtual_file_system::get_instance(),
     )
     .await
     .unwrap();
 
     // - - Create the default user
-    let Group_identifier = Users::Group_identifier_type::New(1000);
+    let group_identifier = users::Group_identifier_type::new(1000);
 
-    let _ = Authentication::Create_group(
-        Virtual_file_system::Get_instance(),
+    let _ = authentication::create_group(
+        virtual_file_system::get_instance(),
         "alix_anneraud",
-        Some(Group_identifier),
+        Some(group_identifier),
     )
     .await;
 
-    let _ = Authentication::Create_user(
-        Virtual_file_system::Get_instance(),
+    let _ = authentication::create_user(
+        virtual_file_system::get_instance(),
         "alix_anneraud",
         "password",
-        Group_identifier,
+        group_identifier,
         None,
     )
     .await;
 
     // - - Set the environment variables
-    Task_manager
-        .Set_environment_variable(Task, "Paths", "/")
+    task_manager
+        .set_environment_variable(task, "Paths", "/")
         .await
         .unwrap();
 
-    Task_manager
-        .Set_environment_variable(Task, "Host", "xila")
+    task_manager
+        .set_environment_variable(task, "Host", "xila")
         .await
         .unwrap();
     // - - Execute the shell
-    let _ = Executable::Execute("/Binaries/Graphical_shell", String::from(""), Standard)
+    let _ = executable::execute("/Binaries/Graphical_shell", String::from(""), standard)
         .await
         .unwrap()
-        .Join()
+        .join()
         .await;
 
-    Virtual_file_system::Get_instance().Uninitialize().await;
+    virtual_file_system::get_instance().uninitialize().await;
 }

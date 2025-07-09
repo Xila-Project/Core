@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
 extern crate alloc;
@@ -7,15 +6,15 @@ extern crate alloc;
 extern crate std;
 
 #[cfg(target_vendor = "espressif")]
-pub mod Espressif;
+pub mod espressif;
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-pub mod Native;
+pub mod native;
 
-pub mod Core;
+pub mod core;
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-pub mod Std;
+pub mod standard_library;
 
 //pub fn Mount_devices(
 //    Task: Task_identifier_type,

@@ -1,0 +1,10 @@
+mod authentication;
+mod change_directory;
+mod clear;
+mod concatenate;
+mod directory;
+mod echo;
+mod environment_variables;
+mod exit;
+mod list;
+mod statistics;

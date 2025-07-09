@@ -1,24 +1,24 @@
 [package]
-name = "ABI"
+name = "abi"
 version = "0.1.0"
 edition = "2021"
-build = "Build.rs"
+build = "build.rs"
 
 [dependencies]
-Virtual_file_system = { path = "../Virtual_file_system" }
-File_system = { path = "../File_system" }
-Task = { path = "../Task" }
-Time = { path = "../Time" }
-Memory = { path = "../Memory" }
-Network = { path = "../Network" }
-Synchronization = { version = "0.1.0", path = "../Synchronization" }
-Futures = { version = "0.1.0", path = "../Futures" }
-Log = { version = "0.1.0", path = "../Log" }
+virtual_file_system = { path = "../Virtual_file_system" }
+file_system = { path = "../File_system" }
+task = { path = "../Task" }
+time = { path = "../Time" }
+memory = { path = "../Memory" }
+network = { path = "../Network" }
+synchronization = { version = "0.1.0", path = "../Synchronization" }
+futures = { version = "0.1.0", path = "../Futures" }
+log = { version = "0.1.0", path = "../Log" }
 
 [build-dependencies]
 cbindgen = "0.29"
  
 [dev-dependencies]
-Drivers = { path = "../Drivers" }
-LittleFS = { path = "../LittleFS" }
-Users = { path = "../Users" }
+drivers = { path = "../Drivers" }
+little_fs = { path = "../LittleFS" }
+users = { path = "../Users" }

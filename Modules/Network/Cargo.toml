@@ -1,10 +1,10 @@
 [package]
-name = "Network"
+name = "network"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-File_system = { path = "../File_system" }
-Futures = { version = "0.1.0", path = "../Futures" }
-Synchronization = { version = "0.1.0", path = "../Synchronization" }
-Time = { path = "../Time" }
+file_system = { path = "../File_system" }
+futures = { version = "0.1.0", path = "../Futures" }
+synchronization = { version = "0.1.0", path = "../Synchronization" }
+time = { path = "../Time" }

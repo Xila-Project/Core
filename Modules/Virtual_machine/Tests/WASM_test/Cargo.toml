@@ -1,7 +1,7 @@
 [workspace]
 
 [package]
-name = "Virtual_machine_WASM_test"
+name = "virtual_machine_wasm_test"
 version = "0.1.0"
 edition = "2021"
 

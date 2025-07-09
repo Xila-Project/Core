@@ -1,5 +1,5 @@
 [package]
-name = "Xila"
+name = "xila"
 version = "0.1.0"
 authors = ["Alix ANNERAUD <alix@anneraud.fr>"]
 edition = "2021"
@@ -8,55 +8,55 @@ rust-version = "1.82.0"
 
 [dependencies]
 # - WASM
-WASM_bindings = { path = "Modules/Bindings/WASM", optional = true }
+wasm_bindings = { path = "Modules/Bindings/WASM", optional = true }
 # - Host
-ABI = { path = "Modules/ABI", optional = true }
-LittleFS = { path = "Modules/LittleFS", optional = true }
-Virtual_machine = { path = "Modules/Virtual_machine", optional = true }
-Virtual_file_system = { path = "Modules/Virtual_file_system", optional = true }
-Graphics = { path = "Modules/Graphics", optional = true }
-Time = { path = "Modules/Time", optional = true }
-Task = { path = "Modules/Task", optional = true }
-Users = { path = "Modules/Users", optional = true }
-Drivers = { path = "Modules/Drivers", optional = true }
-Memory = { path = "Modules/Memory", optional = true }
-Executable = { path = "Modules/Executable", optional = true }
-File_system = { path = "Modules/File_system", optional = true }
-Host_bindings = { path = "Modules/Bindings/Host", optional = true }
-Authentication = { path = "Modules/Authentication", optional = true }
-Log = { path = "Modules/Log", optional = true }
-Futures = { path = "Modules/Futures", optional = true }
-Shared = { path = "Modules/Shared", optional = true }
-Synchronization = { path = "Modules/Synchronization", optional = true }
+abi = { path = "Modules/ABI", optional = true }
+little_fs = { path = "Modules/LittleFS", optional = true }
+virtual_machine = { path = "Modules/Virtual_machine", optional = true }
+virtual_file_system = { path = "Modules/Virtual_file_system", optional = true }
+graphics = { path = "Modules/Graphics", optional = true }
+time = { path = "Modules/Time", optional = true }
+task = { path = "Modules/Task", optional = true }
+users = { path = "Modules/Users", optional = true }
+drivers = { path = "Modules/Drivers", optional = true }
+memory = { path = "Modules/Memory", optional = true }
+executable = { path = "Modules/Executable", optional = true }
+file_system = { path = "Modules/File_system", optional = true }
+host_bindings = { path = "Modules/Bindings/Host", optional = true }
+authentication = { path = "Modules/Authentication", optional = true }
+log = { path = "Modules/Log", optional = true }
+futures = { path = "Modules/Futures", optional = true }
+shared = { path = "Modules/Shared", optional = true }
+synchronization = { path = "Modules/Synchronization", optional = true }
 
 [build-dependencies]
-Target = { path = "Modules/Target", optional = true }
+target = { path = "Modules/Target", optional = true }
 
 [features]
 default = []
 
 Host = [
-    "dep:ABI",
-    "dep:LittleFS",
-    "dep:Futures",
-    "dep:Virtual_machine",
-    "dep:Virtual_file_system",
-    "dep:Graphics",
-    "dep:Task",
-    "dep:Time",
-    "dep:Users",
-    "dep:Drivers",
-    "dep:Memory",
-    "dep:Target",
-    "dep:Executable",
-    "dep:File_system",
-    "dep:Host_bindings",
-    "dep:Authentication",
-    "dep:Log",
-    "dep:Shared",
-    "dep:Synchronization",
+    "dep:abi",
+    "dep:little_fs",
+    "dep:futures",
+    "dep:virtual_machine",
+    "dep:virtual_file_system",
+    "dep:graphics",
+    "dep:task",
+    "dep:time",
+    "dep:users",
+    "dep:drivers",
+    "dep:memory",
+    "dep:target",
+    "dep:executable",
+    "dep:file_system",
+    "dep:host_bindings",
+    "dep:authentication",
+    "dep:log",
+    "dep:shared",
+    "dep:synchronization",
 ]
-WASM = ["dep:WASM_bindings"]
+WASM = ["dep:wasm_bindings"]
 
 
 [workspace]

@@ -1,22 +1,21 @@
 #![no_std]
 #![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 extern crate alloc;
 
-mod Device;
-mod Directory;
-mod Error;
-mod File;
-mod File_system;
-mod Hierarchy;
-mod Macro;
-mod Pipe;
-mod Socket;
+mod device;
+mod directory;
+mod error;
+mod file;
+mod file_system;
+mod hierarchy;
+mod r#macro;
+mod pipe;
+mod socket;
 
-pub use Directory::*;
-pub use Error::*;
-pub use File::*;
-pub use File_system::*;
-pub use Hierarchy::*;
-pub use Socket::Socket_address_type;
+pub use directory::*;
+pub use error::*;
+pub use file::*;
+pub use file_system::*;
+pub use hierarchy::*;
+pub use socket::Socket_address_type;
