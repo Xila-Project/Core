@@ -12,7 +12,7 @@ pub fn Get() -> TokenStream {
 
         pub unsafe fn window_create() -> *mut lv_obj_t {
             Futures::block_on(
-                Graphics::get_instance().create_window()
+                graphics::get_instance().create_window()
             ).unwrap().into_raw()
         }
 
@@ -23,7 +23,7 @@ pub fn Get() -> TokenStream {
             Code: *mut u32,
             Target: *mut u16
         ) {
-            let mut window = Graphics::Window_type::from_raw(window);
+            let mut window = graphics::Window_type::from_raw(window);
 
             if let Some(event) = window.pop_event() {
 
@@ -38,12 +38,12 @@ pub fn Get() -> TokenStream {
         }
 
         pub unsafe fn window_get_event_code(window: *mut lv_obj_t) -> u32 {
-            let window = Graphics::Window_type::from_raw(window);
+            let window = graphics::Window_type::from_raw(window);
 
             let code = if let Some(event) = window.peek_event() {
                 event.get_code() as u32
             } else {
-                Graphics::Event_code_type::All as u32
+                graphics::Event_code_type::All as u32
             };
 
             core::mem::forget(window);
@@ -52,12 +52,12 @@ pub fn Get() -> TokenStream {
         }
 
         pub unsafe fn window_get_event_target(__pointer_table: &mut Pointer_table_type, window: *mut lv_obj_t) -> u16 {
-            let window = Graphics::Window_type::from_raw(window);
+            let window = graphics::Window_type::from_raw(window);
 
             let target = if let Some(event) = window.peek_event() {
                 event.get_target()
             } else {
-                Log::Warning!("No event available for the window");
+                log::Warning!("No event available for the window");
                 core::ptr::null_mut()
             };
 
@@ -68,7 +68,7 @@ pub fn Get() -> TokenStream {
         }
 
         pub unsafe fn window_next_event(window: *mut lv_obj_t) {
-            let mut window = Graphics::Window_type::from_raw(window);
+            let mut window = graphics::Window_type::from_raw(window);
 
             window.pop_event();
 

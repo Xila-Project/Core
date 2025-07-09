@@ -14,8 +14,8 @@ use alloc::{
     vec,
     vec::Vec,
 };
-use miniserde::{Deserialize, Serialize};
 use file_system::{Flags_type, Mode_type, Open_type, Path_owned_type, Path_type};
+use miniserde::{Deserialize, Serialize};
 use users::{
     Group_identifier_inner_type, Group_identifier_type, User_identifier_inner_type,
     User_identifier_type,
@@ -194,7 +194,7 @@ pub async fn create_group<'a>(
     group_name: &str,
     group_identifier: Option<Group_identifier_type>,
 ) -> Result_type<Group_identifier_type> {
-    let users_manager = Users::get_instance();
+    let users_manager = users::get_instance();
 
     // - New group identifier if not provided.
     let Group_identifier = if let Some(Group_identifier) = group_identifier {
@@ -216,7 +216,7 @@ pub async fn create_group<'a>(
     let Group = Group_type::new(Group_identifier.As_u16(), group_name.to_string(), vec![]);
 
     match Directory_type::create(virtual_file_system, GROUP_FOLDER_PATH).await {
-        Ok(_) | Err(File_system::Error_type::Already_exists) => {}
+        Ok(_) | Err(file_system::Error_type::Already_exists) => {}
         Err(error) => Err(Error_type::Failed_to_create_groups_directory(error))?,
     };
 

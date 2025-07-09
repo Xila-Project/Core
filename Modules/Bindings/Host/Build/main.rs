@@ -7,13 +7,13 @@ fn main() -> Result<(), ()> {
     let input = lvgl_rust_sys::_bindgen_raw_src();
     let parsed_input = syn::parse_file(input).expect("Error parsing input file");
 
-    let mut context = Bindings_utilities::context::LVGL_context::default();
+    let mut context = bindings_utilities::context::LVGL_context::default();
     context.set_function_filtering(Some(
-        Bindings_utilities::context::LVGL_context::filter_function,
+        bindings_utilities::context::LVGL_context::filter_function,
     ));
     context.visit_file(&parsed_input);
     context.set_function_filtering(None);
-    context.visit_file(&syn::parse2(Bindings_utilities::additional::Get()).unwrap());
+    context.visit_file(&syn::parse2(bindings_utilities::additional::Get()).unwrap());
 
     let out_directory = env::var("OUT_DIR").unwrap();
     let out_directory = Path::new(out_directory.as_str());

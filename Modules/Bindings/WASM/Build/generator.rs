@@ -1,13 +1,13 @@
 use std::fs;
 use std::{fs::File, io::Write, path::Path};
 
-use bindings_utilities::Format::format_identifier;
+use bindings_utilities::format::format_identifier;
 
+use bindings_utilities::context::LVGL_context;
+use bindings_utilities::format::format_c;
+use bindings_utilities::function::Split_inputs;
 use quote::ToTokens;
 use syn::{FnArg, ReturnType, Signature, Type};
-use bindings_utilities::context::LVGL_context;
-use bindings_utilities::Format::format_c;
-use bindings_utilities::function::Split_inputs;
 
 pub fn convert_fundamental_type(r#type: &str) -> String {
     match r#type {
@@ -33,16 +33,16 @@ pub fn convert_fundamental_type(r#type: &str) -> String {
     }
 }
 
-pub fn convert_type(r#typepe: String) -> String {
+pub fn convert_type(r#type: String) -> String {
     let type_value = r#type.split_whitespace().collect::<Vec<_>>();
 
-    let Type = type_value
+    let r#type = type_value
         .into_iter()
         .filter(|x| *x != "mut" && *x != "core" && *x != "ffi" && *x != "::" && !x.is_empty())
         .rev()
         .collect::<Vec<_>>();
 
-    let r#type = Type
+    let r#type = r#type
         .iter()
         .map(|x| convert_fundamental_type(x))
         .collect::<Vec<_>>()
@@ -95,7 +95,7 @@ fn generate_function_declarations(signatures: Vec<Signature>) -> String {
 fn generate_opaque_types(structures: Vec<String>) -> String {
     let opaque_types = structures
         .iter()
-        .filter(|Type| Type.ends_with("dsc_t"))
+        .filter(|r#type| r#type.ends_with("dsc_t"))
         .map(|type_value| {
             format!(
                 "typedef struct {{}} {};\n",
@@ -132,9 +132,9 @@ fn generate_graphics_call(signature: &Signature) -> String {
                 Type::Ptr(_) => {
                     format!("(size_t){}", pattern.pat.to_token_stream())
                 }
-                Type => panic!("Unsupported argument type : {Type:?}"),
+                r#type => panic!("Unsupported argument type : {type:?}"),
             },
-            Receiver => panic!("Unsupported argument type : {Receiver:?}"),
+            receiver => panic!("Unsupported argument type : {receiver:?}"),
         })
         .collect::<Vec<_>>();
 
@@ -144,14 +144,14 @@ fn generate_graphics_call(signature: &Signature) -> String {
         inputs.push("0".to_string());
     }
 
-    let Declaration = match &signature.output {
+    let declaration = match &signature.output {
         ReturnType::Default => None,
         ReturnType::Type(_, type_value) => {
             let type_value = convert_type(type_value.to_token_stream().to_string());
 
-            let Declaration = format!("{type_value} __result;");
+            let declaration = format!("{type_value} __result;");
 
-            Some(Declaration)
+            Some(declaration)
         }
     };
 
@@ -160,7 +160,7 @@ fn generate_graphics_call(signature: &Signature) -> String {
         identifier,
         inputs.join(", "),
         real_arguments_length,
-        Declaration
+        declaration
             .as_ref()
             .map(|_| "(void*)__result")
             .unwrap_or("NULL"),
@@ -169,19 +169,19 @@ fn generate_graphics_call(signature: &Signature) -> String {
 
 pub fn generate_types(lvgl_functions: &LVGL_context) -> String {
     //Read to string
-    let Includes = fs::read_to_string("./Build/Includes.h").unwrap();
+    let includes: String = fs::read_to_string("./Build/Includes.h").unwrap();
 
-    let Structures_name = lvgl_functions
+    let structures_name = lvgl_functions
         .get_structures()
         .iter()
         .map(|x| x.ident.to_string())
         .collect::<Vec<_>>();
 
-    let Opaque_types = generate_opaque_types(Structures_name);
+    let opaque_types = generate_opaque_types(structures_name);
 
     let types = fs::read_to_string("./Build/Types.h").unwrap();
 
-    format!("{Includes}\n{Opaque_types}\n{types}")
+    format!("{includes}\n{opaque_types}\n{types}")
 }
 
 pub fn generate_header(output_file: &mut File, lvgl_functions: &LVGL_context) {
@@ -259,41 +259,41 @@ pub fn generate_c_function_definition(signature: &Signature) -> String {
     format!("{c_signature}\n{{\n{graphics_call}\n}}\n")
 }
 
-pub fn generate_source(Output_file: &mut File, Context: &LVGL_context) {
-    Output_file
+pub fn generate_source(output_file: &mut File, context: &LVGL_context) {
+    output_file
         .write_all("#include \"Xila_graphics.h\"\n".as_bytes())
         .unwrap();
 
-    Output_file
-        .write_all(generate_code_enumeration(Context.get_signatures()).as_bytes())
+    output_file
+        .write_all(generate_code_enumeration(context.get_signatures()).as_bytes())
         .unwrap();
 
     let prelude = fs::read_to_string("./Build/Prelude.c").unwrap();
 
-    Output_file
+    output_file
         .write_all(prelude.as_bytes())
         .expect("Error writing to bindings file");
 
-    let graphics_calls = Context
+    let graphics_calls = context
         .get_signatures()
         .iter()
         .map(generate_c_function_definition)
         .collect::<Vec<_>>()
         .join("\n");
 
-    Output_file.write_all(graphics_calls.as_bytes()).unwrap();
+    output_file.write_all(graphics_calls.as_bytes()).unwrap();
 }
 
-pub fn generate(Output_path: &Path, lvgl_functions: &LVGL_context) -> Result<(), String> {
-    let header_file_path = Output_path.join("Xila_graphics.h");
-    let source_file_path = Output_path.join("Xila_graphics.c");
+pub fn generate(output_path: &Path, lvgl_functions: &LVGL_context) -> Result<(), String> {
+    let header_file_path = output_path.join("Xila_graphics.h");
+    let source_file_path = output_path.join("Xila_graphics.c");
 
-    let mut Header_file =
+    let mut header_file =
         File::create(&header_file_path).map_err(|_| "Error creating header file")?;
     let mut source_file =
         File::create(&source_file_path).map_err(|_| "Error creating source file")?;
 
-    generate_header(&mut Header_file, lvgl_functions);
+    generate_header(&mut header_file, lvgl_functions);
     generate_source(&mut source_file, lvgl_functions);
 
     format_c(&header_file_path)?;

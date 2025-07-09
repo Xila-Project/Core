@@ -5,20 +5,20 @@ use proc_macro::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{ItemFn, parse_macro_input, parse_str};
 
-fn Default_task_path() -> syn::Expr {
-    parse_str("Task").unwrap()
+fn default_task_path() -> syn::Expr {
+    parse_str("task").unwrap()
 }
 
-fn Default_executor() -> syn::Expr {
-    parse_str("Drivers::Std::Executor::Instantiate_static_executor!()").unwrap()
+fn default_executor() -> syn::Expr {
+    parse_str("drivers::standard_library::executor::Instantiate_static_executor!()").unwrap()
 }
 
 #[derive(Debug, FromMeta, Clone)]
 struct Task_arguments_type {
-    #[darling(default = "Default_task_path")]
+    #[darling(default = "default_task_path")]
     pub task_path: syn::Expr,
 
-    #[darling(default = "Default_executor")]
+    #[darling(default = "default_executor")]
     pub executor: syn::Expr,
 }
 
@@ -145,7 +145,7 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                         __Spawner = Manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
-                    #Task_path::Futures::block_on(async move {
+                    #Task_path::futures::block_on(async move {
                         Manager.Spawn(
                             #Task_path::Manager_type::ROOT_TASK_IDENTIFIER,
                             #Function_name_string,
@@ -185,7 +185,7 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
 /// The macro accepts an executor expression as a parameter:
 ///
 /// ```rust
-/// #[Run_with_executor(Drivers::Std::Executor::Executor_type::New())]
+/// #[Run_with_executor(drivers::standard_library::Executor::Executor_type::New())]
 /// async fn my_function() {
 ///     println!("Running with custom executor!");
 /// }
@@ -277,7 +277,7 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                         __Spawner = Manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
-                    #Task_path::Futures::block_on(async move {
+                    #Task_path::futures::block_on(async move {
                         Manager.Spawn(
                             #Task_path::Manager_type::ROOT_TASK_IDENTIFIER,
                             #Function_name_string,

@@ -5,7 +5,7 @@ use crate::Shell_type;
 
 impl Shell_type {
     async fn read_file_and_write(&mut self, path: &Path_type) {
-        let file = match Virtual_file_system::get_instance()
+        let file = match virtual_file_system::get_instance()
             .open(&path, Mode_type::READ_ONLY.into(), self.standard.get_task())
             .await
         {
@@ -19,7 +19,7 @@ impl Shell_type {
         };
 
         let mut buffer = [0_u8; 128];
-        while let Ok(size) = Virtual_file_system::get_instance()
+        while let Ok(size) = virtual_file_system::get_instance()
             .read(file, &mut buffer, self.standard.get_task())
             .await
         {

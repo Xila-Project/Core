@@ -11,7 +11,7 @@ impl Shell_type {
             Path_type::From_str(Arguments[0])
         };
 
-        let Directory = match Virtual_file_system::get_instance()
+        let Directory = match virtual_file_system::get_instance()
             .open_directory(&path, self.standard.get_task())
             .await
         {
@@ -25,7 +25,7 @@ impl Shell_type {
             }
         };
 
-        while let Ok(Some(Entry)) = Virtual_file_system::get_instance()
+        while let Ok(Some(Entry)) = virtual_file_system::get_instance()
             .read_directory(Directory, self.standard.get_task())
             .await
         {

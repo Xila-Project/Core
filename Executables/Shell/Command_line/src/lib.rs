@@ -38,7 +38,7 @@ pub struct Shell_type {
 
 pub struct Shell_executable_type;
 
-Executable::Implement_executable_device!(
+executable::Implement_executable_device!(
     Structure: Shell_executable_type,
     Mount_path: "/Binaries/Command_line_shell",
     Main_function: main,
@@ -97,7 +97,7 @@ impl Shell_type {
                 "rm" => self.remove(command.get_arguments()).await,
                 _ => {
                     // - Set the current directory for the following commands.
-                    if let Err(error) = Task::get_instance()
+                    if let Err(error) = task::get_instance()
                         .Set_environment_variable(
                             self.standard.get_task(),
                             "Current_directory",
@@ -165,7 +165,7 @@ impl Shell_type {
     }
 
     pub async fn main(&mut self, arguments: String) -> Result<(), NonZeroUsize> {
-        let user = match Task::get_instance()
+        let user = match task::get_instance()
             .get_environment_variable(self.standard.get_task(), "User")
             .await
         {
@@ -180,7 +180,7 @@ impl Shell_type {
 
         self.user = user;
 
-        let paths = Task::get_instance()
+        let paths = task::get_instance()
             .get_environment_variable(self.standard.get_task(), "Paths")
             .await
             .map_err(|_| Error_type::Failed_to_get_path)?;
@@ -191,7 +191,7 @@ impl Shell_type {
             .map(Path_type::From_str)
             .collect::<Vec<&Path_type>>();
 
-        let host = Task::get_instance()
+        let host = task::get_instance()
             .get_environment_variable(self.standard.get_task(), "Host")
             .await
             .map_err(|_| Error_type::Failed_to_get_path)?;

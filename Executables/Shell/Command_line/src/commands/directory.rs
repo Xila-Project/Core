@@ -31,7 +31,7 @@ impl Shell_type {
             }
         };
 
-        if let Err(error) = Virtual_file_system::get_instance()
+        if let Err(error) = virtual_file_system::get_instance()
             .create_directory(&path, self.standard.get_task())
             .await
         {
@@ -68,7 +68,7 @@ impl Shell_type {
             }
         };
 
-        if let Err(error) = Virtual_file_system::get_instance().remove(&path).await {
+        if let Err(error) = virtual_file_system::get_instance().remove(&path).await {
             self.standard
                 .print_error_line(&format!("Failed to remove directory: {error}"))
                 .await;

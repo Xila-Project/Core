@@ -1,14 +1,14 @@
 [package]
-name = "WASM_bindings"
+name = "wasm_bindings"
 version = "0.1.0"
 edition = "2021"
-build = "Build/Main.rs"
+build = "Build/main.rs"
 
 [build-dependencies]
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
 bindgen = "0.72"
 cc = "1.2"
-Bindings_utilities = { path = "../Utilities" }
+bindings_utilities = { path = "../Utilities" }
 quote = "1.0"
 syn = { version = "2.0", features = ["full", "visit", "extra-traits"] }
-Target = { path = "../../Target" }
+target = { path = "../../Target" }

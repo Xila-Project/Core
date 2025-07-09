@@ -17,8 +17,8 @@ impl Shell_type {
         self.standard.read_line(&mut Password).await;
 
         // - Check the user name and the password
-        let User_identifier = Authentication::authenticate_user(
-            Virtual_file_system::get_instance(),
+        let User_identifier = authentication::authenticate_user(
+            virtual_file_system::get_instance(),
             &user_name,
             &Password,
         )
@@ -26,7 +26,7 @@ impl Shell_type {
         .map_err(Error_type::Authentication_failed)?;
 
         // - Set the user
-        let task_manager = Task::get_instance();
+        let task_manager = task::get_instance();
 
         let task = task_manager.get_current_task_identifier().await;
 

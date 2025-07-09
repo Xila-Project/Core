@@ -1,15 +1,15 @@
 [package]
-name = "Executable"
+name = "executable"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-File_system = { path = "../File_system" }
-Virtual_file_system = { path = "../Virtual_file_system" }
-Task = { path = "../Task" }
-Users = { path = "../Users" }
-Futures = { version = "0.1.0", path = "../Futures" }
-Log = { version = "0.1.0", path = "../Log" }
+file_system = { path = "../File_system" }
+virtual_file_system = { path = "../Virtual_file_system" }
+task = { path = "../Task" }
+users = { path = "../Users" }
+futures = { version = "0.1.0", path = "../Futures" }
+log = { version = "0.1.0", path = "../Log" }
 
 [dev-dependencies]
-Drivers = { path = "../Drivers" }
+drivers = { path = "../Drivers" }

@@ -5,17 +5,17 @@ extern crate alloc;
 
 mod cache;
 mod capability;
-mod macro;
+mod r#macro;
 mod manager;
 mod protection;
 mod statistics;
-mod trait;
+mod r#trait;
 
 pub use cache::*;
 pub use capability::*;
 pub use manager::*;
 pub use protection::*;
+pub use r#trait::*;
 pub use statistics::*;
-pub use trait::*;
 
 pub type Layout_type = core::alloc::Layout;

@@ -1,10 +1,10 @@
 use core::{ffi::CStr, ptr::null_mut};
 
 use alloc::vec::Vec;
-use wamr_rust_sdk::{module::Module, sys::wasm_runtime_set_wasi_args_ex};
 use file_system::Unique_file_identifier_type;
+use wamr_rust_sdk::{module::Module, sys::wasm_runtime_set_wasi_args_ex};
 
-use crate::{Error_type, Result_type, Runtime::Runtime_type};
+use crate::{runtime::Runtime_type, Error_type, Result_type};
 
 pub struct Module_type<'runtime> {
     module: Module<'runtime>,
@@ -26,7 +26,7 @@ impl<'runtime> Module_type<'runtime> {
         standard_error: Unique_file_identifier_type,
     ) -> Result_type<Self> {
         // - Environment variables.
-        let Task_instance = Task::get_instance();
+        let Task_instance = task::get_instance();
 
         let Task = Task_instance.get_current_task_identifier().await;
         let mut environment_variables_raw: Vec<*const i8> = Task_instance

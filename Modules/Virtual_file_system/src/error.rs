@@ -11,8 +11,8 @@ pub enum Error_type {
     Invalid_parameter,
     Too_many_open_files,
     Failed_to_get_task_informations,
-    File_system(File_system::Error_type) = 0xFF,
-    Network(Network::Error_type) = 0x200,
+    File_system(file_system::Error_type) = 0xFF,
+    Network(network::Error_type) = 0x200,
 }
 
 impl Error_type {
@@ -35,14 +35,14 @@ impl From<Error_type> for NonZeroU32 {
     }
 }
 
-impl From<File_system::Error_type> for Error_type {
-    fn from(value: File_system::Error_type) -> Self {
+impl From<file_system::Error_type> for Error_type {
+    fn from(value: file_system::Error_type) -> Self {
         Self::File_system(value)
     }
 }
 
-impl From<Network::Error_type> for Error_type {
-    fn from(value: Network::Error_type) -> Self {
+impl From<network::Error_type> for Error_type {
+    fn from(value: network::Error_type) -> Self {
         Self::Network(value)
     }
 }

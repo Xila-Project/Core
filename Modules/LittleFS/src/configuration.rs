@@ -3,7 +3,7 @@ use core::{ffi::c_void, mem::forget};
 use alloc::{boxed::Box, vec};
 use file_system::Device_type;
 
-use super::{littlefs, Callbacks};
+use super::{callbacks, littlefs};
 
 #[derive(Debug, Clone)]
 pub struct Configuration_type {
@@ -153,10 +153,10 @@ impl TryFrom<Configuration_type> for littlefs::lfs_config {
 
         let LFS_Configuration = littlefs::lfs_config {
             context: Box::into_raw(Box::new(Configuration.context)) as *mut c_void,
-            read: Some(Callbacks::Read_callback),
-            prog: Some(Callbacks::Programm_callback),
-            erase: Some(Callbacks::Erase_callback),
-            sync: Some(Callbacks::Flush_callback),
+            read: Some(callbacks::Read_callback),
+            prog: Some(callbacks::Programm_callback),
+            erase: Some(callbacks::Erase_callback),
+            sync: Some(callbacks::Flush_callback),
             read_size: Configuration.read_size as u32,
             prog_size: Configuration.program_size as u32,
             block_size: Configuration.block_size as u32,

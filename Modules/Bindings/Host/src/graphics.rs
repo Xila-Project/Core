@@ -5,7 +5,7 @@ use std::{
 };
 
 use futures::block_on;
-pub use graphics::LVGL;
+pub use graphics::lvgl;
 
 use task::Task_identifier_type;
 use virtual_machine::{
@@ -26,7 +26,7 @@ pub enum Error_type {
 pub type Result_type<T> = Result<T, Error_type>;
 
 mod generated_bindings {
-    use super::{Error_type, Pointer_table_type, Result_type, Task_identifier_type, LVGL::*};
+    use super::{lvgl::*, Error_type, Pointer_table_type, Result_type, Task_identifier_type};
     use virtual_machine::{Environment_type, WASM_pointer_type, WASM_usize_type};
 
     unsafe fn convert_to_native_pointer<T>(
@@ -159,7 +159,7 @@ pub unsafe fn call(
 ) {
     let environment = Environment_type::from_raw_pointer(environment).unwrap();
 
-    let instance = Graphics::get_instance();
+    let instance = graphics::get_instance();
 
     let _lock = block_on(instance.lock());
 
@@ -183,7 +183,7 @@ pub unsafe fn call(
         arguments_count,
         result,
     ) {
-        Log::Error!(
+        log::Error!(
             "Error {error:?} durring graphics call: {function:?} with arguments: {argument_0:x}, {argument_1:x}, {argument_2:x}, {argument_3:x}, {argument_4:x}, {argument_5:x}, {argument_6:x}",
         );
     }

@@ -6,9 +6,9 @@ pub type Result_type<T> = Result<T, Error_type>;
 #[derive(Debug, Clone)]
 #[repr(u16)]
 pub enum Error_type {
-    Authentication_failed(Authentication::Error_type) = 1,
-    Failed_to_set_task_user(Task::Error_type),
-    Failed_to_set_environment_variable(Task::Error_type),
+    Authentication_failed(authentication::Error_type) = 1,
+    Failed_to_set_task_user(task::Error_type),
+    Failed_to_set_environment_variable(task::Error_type),
     Failed_to_tokenize_command_line,
     Missing_file_name_after_redirect_out,
     Missing_file_name_after_redirect_in,

@@ -25,7 +25,7 @@ impl Shell_type {
             }
         };
 
-        if let Err(error) = Virtual_file_system::get_instance()
+        if let Err(error) = virtual_file_system::get_instance()
             .open_directory(&current_directory, self.standard.get_task())
             .await
         {

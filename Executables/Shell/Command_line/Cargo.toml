@@ -1,24 +1,24 @@
 [package]
-name = "Command_line_shell"
+name = "command_line_shell"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-File_system = { path = "../../../Modules/File_system" }
-Virtual_file_system = { path = "../../../Modules/Virtual_file_system" }
-Executable = { path = "../../../Modules/Executable" }
-Task = { path = "../../../Modules/Task" }
-Users = { path = "../../../Modules/Users" }
-Authentication = { path = "../../../Modules/Authentication" }
-Futures = { version = "0.1.0", path = "../../../Modules/Futures" }
-Log = { path = "../../../Modules/Log" }
+file_system = { path = "../../../Modules/File_system" }
+virtual_file_system = { path = "../../../Modules/Virtual_file_system" }
+executable = { path = "../../../Modules/Executable" }
+task = { path = "../../../Modules/Task" }
+users = { path = "../../../Modules/Users" }
+authentication = { path = "../../../Modules/Authentication" }
+futures = { version = "0.1.0", path = "../../../Modules/Futures" }
+log = { path = "../../../Modules/Log" }
 
 [dev-dependencies]
-Drivers = { path = "../../../Modules/Drivers" }
-Time = { path = "../../../Modules/Time" }
-LittleFS = { path = "../../../Modules/LittleFS" }
+drivers = { path = "../../../Modules/Drivers" }
+time = { path = "../../../Modules/Time" }
+little_fs = { path = "../../../Modules/LittleFS" }
 
 
 [[test]]
-name = "Integration_test"
-path = "Tests/Integration_test.rs"
+name = "integration_test"
+path = "Tests/integration_test.rs"

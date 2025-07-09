@@ -1,8 +1,8 @@
 [package]
-name = "Virtual_machine"
+name = "virtual_machine"
 version = "0.1.0"
 edition = "2021"
-build = "Build.rs"
+build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -15,26 +15,26 @@ wamr-rust-sdk = { path = "../../../wamr-rust-sdk", features = [
     "instruction-metering",
 ] }
 
-Shared = { version = "0.1.0", path = "../Shared" }
-Memory = { version = "0.1.0", path = "../Memory" }
-File_system = { path = "../File_system" }
-Virtual_file_system = { path = "../Virtual_file_system" }
-LittleFS = { path = "../LittleFS" }
-Task = { version = "0.1.0", path = "../Task" }
-Time = { version = "0.1.0", path = "../Time" }
-ABI = { version = "0.1.0", path = "../ABI" }
-Synchronization = { version = "0.1.0", path = "../Synchronization" }
+shared = { version = "0.1.0", path = "../Shared" }
+memory = { version = "0.1.0", path = "../Memory" }
+file_system = { path = "../File_system" }
+virtual_file_system = { path = "../Virtual_file_system" }
+little_fs = { path = "../LittleFS" }
+task = { version = "0.1.0", path = "../Task" }
+time = { version = "0.1.0", path = "../Time" }
+abi = { version = "0.1.0", path = "../ABI" }
+synchronization = { version = "0.1.0", path = "../Synchronization" }
 
 [dev-dependencies]
-Users = { path = "../Users", version = "0.1.0" }
-Drivers = { path = "../Drivers", version = "0.1.0" }
-Futures = { path = "../Futures" }
-Log = { path = "../Log" }
+users = { path = "../Users", version = "0.1.0" }
+drivers = { path = "../Drivers", version = "0.1.0" }
+futures = { path = "../Futures" }
+log = { path = "../Log" }
 
 [[test]]
-name = "Virtual_machine_test"
-path = "Tests/Test.rs"
+name = "virtual_machine_test"
+path = "Tests/test.rs"
 
 [[test]]
-name = "Virtual_machine_test_2"
-path = "Tests/Test_2.rs"
+name = "virtual_machine_test_2"
+path = "Tests/test_2.rs"

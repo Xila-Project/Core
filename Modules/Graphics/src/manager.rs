@@ -12,15 +12,15 @@ use core::{future::Future, mem::forget};
 use core::time::Duration;
 use file_system::Device_type;
 
-use super::LVGL;
+use super::lvgl;
 
 use super::Point_type;
 
+use crate::window::Window_type;
 use crate::Color_type;
 use crate::Display_type;
 use crate::Input_type;
 use crate::Input_type_type;
-use crate::Window::Window_type;
 use crate::{Error_type, Result_type, Screen_read_data_type};
 
 static MANAGER_INSTANCE: OnceLock<Manager_type> = OnceLock::new();
@@ -33,7 +33,7 @@ pub async fn initialize(
     double_buffered: bool,
 ) -> &'static Manager_type {
     let manager = Manager_type::new(
-        Time::get_instance(),
+        time::get_instance(),
         screen_device,
         input_device,
         input_device_type,
@@ -54,7 +54,7 @@ pub fn get_instance() -> &'static Manager_type {
 struct Inner_type {
     _inputs: Vec<Input_type>,
     _displays: Vec<Display_type>,
-    window_parent: *mut LVGL::lv_obj_t,
+    window_parent: *mut lvgl::lv_obj_t,
 }
 
 pub struct Manager_type {
@@ -65,13 +65,13 @@ pub struct Manager_type {
 impl Drop for Manager_type {
     fn drop(&mut self) {
         unsafe {
-            LVGL::lv_deinit();
+            lvgl::lv_deinit();
         }
     }
 }
 
 extern "C" fn binding_tick_callback_function() -> u32 {
-    Time::get_instance()
+    time::get_instance()
         .get_current_time()
         .unwrap_or_default()
         .As_milliseconds() as u32
@@ -83,7 +83,7 @@ unsafe impl Sync for Manager_type {}
 
 impl Manager_type {
     fn new(
-        _: &Time::Manager_type,
+        _: &time::Manager_type,
         screen_device: Device_type,
         input_device: Device_type,
         input_device_type: Input_type_type,
@@ -91,13 +91,13 @@ impl Manager_type {
         double_buffered: bool,
     ) -> Result_type<Self> {
         unsafe {
-            LVGL::lv_init();
+            lvgl::lv_init();
 
-            if !LVGL::lv_is_initialized() {
+            if !lvgl::lv_is_initialized() {
                 panic!("Failed to initialize lvgl");
             }
 
-            LVGL::lv_tick_set_cb(Some(binding_tick_callback_function));
+            lvgl::lv_tick_set_cb(Some(binding_tick_callback_function));
         }
 
         let (display, input) = Self::create_display(
@@ -111,8 +111,8 @@ impl Manager_type {
         let screen = display.get_object();
 
         unsafe {
-            let group = LVGL::lv_group_create();
-            LVGL::lv_group_set_default(group);
+            let group = lvgl::lv_group_create();
+            lvgl::lv_group_set_default(group);
         }
 
         Ok(Self {
@@ -133,14 +133,14 @@ impl Manager_type {
         loop {
             let time_until_next = unsafe {
                 let _lock = self.global_lock.lock().await;
-                LVGL::lv_timer_handler()
+                lvgl::lv_timer_handler()
             };
 
             sleep(Duration::from_millis(time_until_next as u64)).await;
         }
     }
 
-    pub async fn set_window_parent(&self, window_parent: *mut LVGL::lv_obj_t) -> Result_type<()> {
+    pub async fn set_window_parent(&self, window_parent: *mut lvgl::lv_obj_t) -> Result_type<()> {
         self.inner.write().await.window_parent = window_parent;
 
         Ok(())
@@ -191,14 +191,14 @@ impl Manager_type {
 
     pub async fn get_window_count(&self) -> Result_type<usize> {
         let window_parent = self.inner.read().await.window_parent;
-        unsafe { Ok(LVGL::lv_obj_get_child_count(window_parent) as usize) }
+        unsafe { Ok(lvgl::lv_obj_get_child_count(window_parent) as usize) }
     }
 
     pub async fn get_window_icon(&self, index: usize) -> Result_type<(String, Color_type)> {
         let window_parent = self.inner.read().await.window_parent;
 
         let window = unsafe {
-            let child = LVGL::lv_obj_get_child(window_parent, index as i32);
+            let child = lvgl::lv_obj_get_child(window_parent, index as i32);
 
             Window_type::from_raw(child)
         };
@@ -215,7 +215,7 @@ impl Manager_type {
     pub async fn get_window_identifier(&self, index: usize) -> Result_type<usize> {
         let window_parent = self.inner.read().await.window_parent;
 
-        let window = unsafe { LVGL::lv_obj_get_child(window_parent, index as i32) as usize };
+        let window = unsafe { lvgl::lv_obj_get_child(window_parent, index as i32) as usize };
 
         Ok(window)
     }
@@ -226,14 +226,14 @@ impl Manager_type {
         let window_parent = self.inner.read().await.window_parent;
 
         let found = (0..window_count).find(|index| unsafe {
-            let child = LVGL::lv_obj_get_child(window_parent, *index as i32);
+            let child = lvgl::lv_obj_get_child(window_parent, *index as i32);
 
-            child == identifier as *mut LVGL::lv_obj_t
+            child == identifier as *mut lvgl::lv_obj_t
         });
 
         if found.is_some() {
             unsafe {
-                LVGL::lv_obj_move_foreground(identifier as *mut LVGL::lv_obj_t);
+                lvgl::lv_obj_move_foreground(identifier as *mut lvgl::lv_obj_t);
             }
 
             Ok(())
@@ -255,7 +255,7 @@ impl Manager_type {
         self.global_lock.lock().await
     }
 
-    pub fn get_current_screen(&self) -> Result_type<*mut LVGL::lv_obj_t> {
-        Ok(unsafe { LVGL::lv_screen_active() })
+    pub fn get_current_screen(&self) -> Result_type<*mut lvgl::lv_obj_t> {
+        Ok(unsafe { lvgl::lv_screen_active() })
     }
 }

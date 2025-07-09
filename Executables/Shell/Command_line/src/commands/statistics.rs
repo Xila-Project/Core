@@ -27,7 +27,7 @@ impl Shell_type {
             }
         };
 
-        let metadata = match Virtual_file_system::get_instance()
+        let metadata = match virtual_file_system::get_instance()
             .get_metadata_from_path(&path)
             .await
         {
@@ -38,7 +38,7 @@ impl Shell_type {
             }
         };
 
-        let user = match Users::get_instance()
+        let user = match users::get_instance()
             .get_user_name(metadata.get_user())
             .await
         {
@@ -48,7 +48,7 @@ impl Shell_type {
             }
         };
 
-        let group = match Users::get_instance()
+        let group = match users::get_instance()
             .get_group_name(metadata.get_group())
             .await
         {

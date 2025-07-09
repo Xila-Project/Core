@@ -10,7 +10,7 @@ mod service;
 mod traits;
 
 pub use error::*;
+pub use ip::*;
 pub use protocol::*;
 pub use service::*;
 pub use traits::*;
-pub use ip::*;

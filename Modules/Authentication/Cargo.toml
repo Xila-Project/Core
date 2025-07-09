@@ -1,5 +1,5 @@
 [package]
-name = "Authentication"
+name = "authentication"
 version = "0.1.0"
 edition = "2021"
 description = "User and group authentication module for Xila OS with secure password hashing"
@@ -11,10 +11,10 @@ readme = "README.md"
 
 [dependencies]
 # Core Xila modules
-Virtual_file_system = { path = "../Virtual_file_system" }
-Users = { path = "../Users" }
-Task = { path = "../Task" }
-File_system = { path = "../File_system" }
+virtual_file_system = { path = "../Virtual_file_system" }
+users = { path = "../Users" }
+task = { path = "../Task" }
+file_system = { path = "../File_system" }
 
 # External dependencies
 sha2 = { version = "0.10", features = ["asm"] }  # SHA-512 cryptographic hashing

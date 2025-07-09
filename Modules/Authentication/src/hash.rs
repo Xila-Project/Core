@@ -43,25 +43,25 @@ use crate::{Error_type, Result_type, RANDOM_DEVICE_PATH};
 /// for readability while maintaining sufficient entropy for security.
 pub async fn generate_salt() -> Result_type<String> {
     let random_file = File_type::open(
-        Virtual_file_system::get_instance(),
+        virtual_file_system::get_instance(),
         RANDOM_DEVICE_PATH,
         Mode_type::READ_ONLY.into(),
     )
     .await
     .map_err(Error_type::Failed_to_open_random_device)?;
 
-    let mut Buffer = [0_u8; 16];
+    let mut buffer = [0_u8; 16];
 
     random_file
-        .read(&mut Buffer)
+        .read(&mut buffer)
         .await
         .map_err(Error_type::Failed_to_read_random_device)?;
 
-    Buffer.iter_mut().for_each(|Byte| {
-        *Byte = *Byte % 26 + 97;
+    buffer.iter_mut().for_each(|byte| {
+        *byte = *byte % 26 + 97;
     });
 
-    Ok(core::str::from_utf8(&Buffer).unwrap().to_string())
+    Ok(core::str::from_utf8(&buffer).unwrap().to_string())
 }
 
 /// Computes the SHA-512 hash of a password combined with a salt.
@@ -84,15 +84,15 @@ pub async fn generate_salt() -> Result_type<String> {
 /// This function uses SHA-512, which is cryptographically secure and resistant
 /// to collision attacks. The salt prevents rainbow table attacks and ensures
 /// that identical passwords have different hashes.
-pub fn hash_password(Password: &str, Salt: &str) -> String {
+pub fn hash_password(password: &str, salt: &str) -> String {
     use sha2::Digest;
 
-    let mut Hasher = sha2::Sha512::new();
+    let mut hasher = sha2::Sha512::new();
 
-    Hasher.update(Password.as_bytes());
-    Hasher.update(Salt.as_bytes());
+    hasher.update(password.as_bytes());
+    hasher.update(salt.as_bytes());
 
-    let Hash = Hasher.finalize();
+    let hash = hasher.finalize();
 
-    format!("{Hash:x}")
+    format!("{hash:x}")
 }

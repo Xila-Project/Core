@@ -14,7 +14,7 @@ pub mod native;
 pub mod core;
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-pub mod std;
+pub mod standard_library;
 
 //pub fn Mount_devices(
 //    Task: Task_identifier_type,

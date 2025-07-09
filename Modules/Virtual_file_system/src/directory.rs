@@ -30,7 +30,7 @@ impl Directory_type<'_> {
         virtual_file_system: &'a Virtual_file_system_type<'a>,
         path: impl AsRef<Path_type>,
     ) -> Result_type<()> {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         virtual_file_system.create_directory(&path, task).await
     }
@@ -39,7 +39,7 @@ impl Directory_type<'_> {
         virtual_file_system: &'a Virtual_file_system_type<'a>,
         path: impl AsRef<Path_type>,
     ) -> Result_type<Directory_type<'a>> {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         let Directory_identifier = virtual_file_system.open_directory(&path, task).await?;
 

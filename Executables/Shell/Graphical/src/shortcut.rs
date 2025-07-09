@@ -1,10 +1,10 @@
 use alloc::{string::String, vec::Vec};
-use miniserde::{Deserialize, Serialize};
 use file_system::{Mode_type, Path_type};
 use graphics::Color_type;
+use miniserde::{Deserialize, Serialize};
 use virtual_file_system::File_type;
 
-use crate::Error::{Error_type, Result_type};
+use crate::error::{Error_type, Result_type};
 
 pub const SHORTCUT_PATH: &Path_type = Path_type::From_str("/Configuration/Shared/Shortcuts");
 
@@ -29,7 +29,7 @@ impl Shortcut_type {
             .Append(".json")
             .ok_or(Error_type::Failed_to_get_shortcut_file_path)?;
 
-        Virtual_file_system::get_instance()
+        virtual_file_system::get_instance()
             .rename(&path, &New_shortcut_path)
             .await
             .map_err(Error_type::Failed_to_add_shortcut)?;
@@ -41,7 +41,7 @@ impl Shortcut_type {
         path: &Path_type,
         buffer: &mut Vec<u8>,
     ) -> Result_type<Shortcut_type> {
-        let virtual_file_system = Virtual_file_system::get_instance();
+        let virtual_file_system = virtual_file_system::get_instance();
 
         let Shortcut_file = File_type::open(virtual_file_system, path, Mode_type::READ_ONLY.into())
             .await

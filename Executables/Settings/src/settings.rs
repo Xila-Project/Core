@@ -3,9 +3,9 @@ use core::time::Duration;
 
 use file_system::Type_type;
 use graphics::{
-    Event_code_type,
-    Palette::{self, Hue_type},
-    Window_type, LVGL,
+    lvgl,
+    palette::{self, Hue_type},
+    Event_code_type, Window_type,
 };
 
 use crate::error::Result_type;
@@ -26,15 +26,15 @@ pub struct File_item_type {
 
 impl Settings_type {
     pub async fn new() -> Result_type<Self> {
-        let _lock = Graphics::get_instance().lock().await;
+        let _lock = graphics::get_instance().lock().await;
 
-        let mut window = Graphics::get_instance().create_window().await?;
+        let mut window = graphics::get_instance().create_window().await?;
 
-        window.set_icon("Se", Palette::Get(Hue_type::Grey, Palette::Tone_type::MAIN));
+        window.set_icon("Se", palette::Get(Hue_type::Grey, palette::Tone_type::MAIN));
 
         // Create tabview
         let tabview = unsafe {
-            let tabview = LVGL::lv_tabview_create(window.get_object());
+            let tabview = lvgl::lv_tabview_create(window.get_object());
 
             if tabview.is_null() {
                 return Err(crate::error::Error_type::Failed_to_create_UI_element);
@@ -66,7 +66,7 @@ impl Settings_type {
             let event = match self.window.pop_event() {
                 Some(event) => event,
                 None => {
-                    Task::Manager_type::Sleep(Duration::from_millis(50)).await;
+                    task::Manager_type::Sleep(Duration::from_millis(50)).await;
                     continue;
                 }
             };

@@ -47,7 +47,7 @@ impl File_manager_executable_type {
         .await
         {
             Ok(file) => file,
-            Err(File_system::Error_type::Already_exists) => {
+            Err(file_system::Error_type::Already_exists) => {
                 return Ok(Self);
             }
             Err(error) => Err(error.to_string())?,
@@ -61,7 +61,7 @@ impl File_manager_executable_type {
     }
 }
 
-Executable::Implement_executable_device!(
+executable::Implement_executable_device!(
     Structure: File_manager_executable_type,
     Mount_path: "/Binaries/File_manager",
     Main_function: main,

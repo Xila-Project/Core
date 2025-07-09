@@ -74,7 +74,7 @@ const RANDOM_DEVICE_PATH: &str = "/Devices/Random";
 /// ```rust
 /// use authentication::Load_all_users_and_groups;
 ///
-/// # async fn example() -> Result<(), Authentication::Error_type> {
+/// # async fn example() -> Result<(), authentication::Error_type> {
 /// Load_all_users_and_groups().await?;
 /// # Ok(())
 /// # }
@@ -84,9 +84,9 @@ pub async fn load_all_users_and_groups() -> Result_type<()> {
     use user::read_user_file;
     use virtual_file_system::Directory_type;
     // Open Xila users folder.
-    let Virtual_file_system = Virtual_file_system::get_instance();
+    let Virtual_file_system = virtual_file_system::get_instance();
 
-    let Users_manager = Users::get_instance();
+    let Users_manager = users::get_instance();
 
     let mut Buffer: Vec<u8> = vec![];
 

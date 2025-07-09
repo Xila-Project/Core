@@ -1,75 +1,75 @@
 use core::ffi::CStr;
 
 use alloc::string::ToString;
-use graphics::{Event_code_type, Window_type, LVGL};
+use graphics::{lvgl, Event_code_type, Window_type};
 use users::User_identifier_type;
 
-use crate::Error::{Error_type, Result_type};
+use crate::error::{Error_type, Result_type};
 
 pub struct Login_type {
     window: Window_type,
-    user_name_text_area: *mut LVGL::lv_obj_t,
-    password_text_area: *mut LVGL::lv_obj_t,
-    button: *mut LVGL::lv_obj_t,
-    error_label: *mut LVGL::lv_obj_t,
+    user_name_text_area: *mut lvgl::lv_obj_t,
+    password_text_area: *mut lvgl::lv_obj_t,
+    button: *mut lvgl::lv_obj_t,
+    error_label: *mut lvgl::lv_obj_t,
     user: Option<User_identifier_type>,
 }
 
 impl Login_type {
     pub async fn new() -> Result_type<Self> {
         // - Lock the graphics
-        let _lock = Graphics::get_instance().lock();
+        let _lock = graphics::get_instance().lock();
 
         // - Create a window
-        let window = Graphics::get_instance().create_window().await?;
+        let window = graphics::get_instance().create_window().await?;
 
         unsafe {
-            LVGL::lv_obj_set_flex_flow(window.get_object(), LVGL::LV_FLEX_COLUMN);
-            LVGL::lv_obj_set_flex_align(
+            lvgl::lv_obj_set_flex_flow(window.get_object(), lvgl::LV_FLEX_COLUMN);
+            lvgl::lv_obj_set_flex_align(
                 window.get_object(),
-                LVGL::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
-                LVGL::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
-                LVGL::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+                lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+                lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+                lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
             );
         }
 
         let user_name_text_area = unsafe {
             // - Create a text area for the user name
-            let user_name_text_area = LVGL::lv_textarea_create(window.get_object());
+            let user_name_text_area = lvgl::lv_textarea_create(window.get_object());
 
-            LVGL::lv_textarea_set_placeholder_text(user_name_text_area, c"User name".as_ptr());
-            LVGL::lv_textarea_set_one_line(user_name_text_area, true);
+            lvgl::lv_textarea_set_placeholder_text(user_name_text_area, c"User name".as_ptr());
+            lvgl::lv_textarea_set_one_line(user_name_text_area, true);
 
             user_name_text_area
         };
 
         let password_text_area = unsafe {
             // - Create a text area for the password
-            let password_text_area = LVGL::lv_textarea_create(window.get_object());
+            let password_text_area = lvgl::lv_textarea_create(window.get_object());
 
-            LVGL::lv_textarea_set_placeholder_text(password_text_area, c"Password".as_ptr());
-            LVGL::lv_textarea_set_one_line(password_text_area, true);
-            LVGL::lv_textarea_set_password_mode(password_text_area, true);
+            lvgl::lv_textarea_set_placeholder_text(password_text_area, c"Password".as_ptr());
+            lvgl::lv_textarea_set_one_line(password_text_area, true);
+            lvgl::lv_textarea_set_password_mode(password_text_area, true);
 
             password_text_area
         };
 
         let error_label = unsafe {
             // - Create a label for the error
-            let error_label = LVGL::lv_label_create(window.get_object());
+            let error_label = lvgl::lv_label_create(window.get_object());
 
-            LVGL::lv_label_set_text(error_label, c"".as_ptr());
+            lvgl::lv_label_set_text(error_label, c"".as_ptr());
 
             error_label
         };
 
         let button = unsafe {
             // - Create a button
-            let button = LVGL::lv_button_create(window.get_object());
+            let button = lvgl::lv_button_create(window.get_object());
 
-            let label = LVGL::lv_label_create(button);
+            let label = lvgl::lv_label_create(button);
 
-            LVGL::lv_label_set_text(label, c"Login".as_ptr());
+            lvgl::lv_label_set_text(label, c"Login".as_ptr());
 
             button
         };
@@ -91,24 +91,24 @@ impl Login_type {
         unsafe {
             let error = CStr::from_bytes_with_nul_unchecked(error);
 
-            LVGL::lv_label_set_text(self.error_label, error.as_ptr());
+            lvgl::lv_label_set_text(self.error_label, error.as_ptr());
         }
     }
 
     pub fn clear_error(&mut self) {
         unsafe {
-            LVGL::lv_label_set_text(self.error_label, c"".as_ptr());
+            lvgl::lv_label_set_text(self.error_label, c"".as_ptr());
         }
     }
 
     pub async fn authenticate(&mut self) -> Result_type<()> {
         let (user_name, password) = unsafe {
-            let user_name = LVGL::lv_textarea_get_text(self.user_name_text_area);
+            let user_name = lvgl::lv_textarea_get_text(self.user_name_text_area);
             let user_name = CStr::from_ptr(user_name);
 
             let user_name = user_name.to_str().map_err(Error_type::Invalid_UTF_8)?;
 
-            let password = LVGL::lv_textarea_get_text(self.password_text_area);
+            let password = lvgl::lv_textarea_get_text(self.password_text_area);
             let password = CStr::from_ptr(password);
             let password = password.to_str().map_err(Error_type::Invalid_UTF_8)?;
 
@@ -116,8 +116,8 @@ impl Login_type {
         };
 
         // - Check the user name and the password
-        let user_identifier = Authentication::authenticate_user(
-            Virtual_file_system::get_instance(),
+        let user_identifier = authentication::authenticate_user(
+            virtual_file_system::get_instance(),
             user_name,
             password,
         )
@@ -125,7 +125,7 @@ impl Login_type {
         .map_err(Error_type::Authentication_failed)?;
 
         // - Set the user
-        let task_manager = Task::get_instance();
+        let task_manager = task::get_instance();
 
         let task = task_manager.get_current_task_identifier().await;
 

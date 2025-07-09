@@ -13,21 +13,21 @@ fn main() {
         return;
     }
 
-    let Input = lvgl_rust_sys::_bindgen_raw_src();
-    let parsed_input = syn::parse_file(Input).expect("Error parsing input file");
+    let input = lvgl_rust_sys::_bindgen_raw_src();
+    let parsed_input = syn::parse_file(input).expect("Error parsing input file");
 
-    let mut Context = Bindings_utilities::context::LVGL_context::default();
-    Context.set_function_filtering(Some(
-        Bindings_utilities::context::LVGL_context::filter_function,
+    let mut context = bindings_utilities::context::LVGL_context::default();
+    context.set_function_filtering(Some(
+        bindings_utilities::context::LVGL_context::filter_function,
     ));
-    Context.visit_file(&parsed_input);
-    Context.set_function_filtering(None);
-    Context.visit_file(&syn::parse2(Bindings_utilities::additional::Get()).unwrap());
+    context.visit_file(&parsed_input);
+    context.set_function_filtering(None);
+    context.visit_file(&syn::parse2(bindings_utilities::additional::Get()).unwrap());
 
-    let Out_directory = env::var("OUT_DIR").unwrap();
-    let out_directory = Path::new(Out_directory.as_str());
+    let out_directory = env::var("OUT_DIR").unwrap();
+    let out_directory = Path::new(out_directory.as_str());
 
-    Generator::generate(out_directory, &Context).expect("Error generating WASM bindings");
+    generator::generate(out_directory, &context).expect("Error generating WASM bindings");
 
     cc::Build::new()
         .file(out_directory.join("Xila_graphics.c"))

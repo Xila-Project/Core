@@ -44,7 +44,7 @@ impl Context_type {
         F: FnOnce() -> Fut,
         Fut: core::future::Future<Output = R>,
     {
-        let Task = Task::get_instance().get_current_task_identifier().await;
+        let Task = task::get_instance().get_current_task_identifier().await;
         self.Set_task(Task).await;
         let result = Function().await;
         self.Clear_task().await;

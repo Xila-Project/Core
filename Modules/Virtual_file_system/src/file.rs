@@ -37,7 +37,7 @@ impl<'a> File_type<'a> {
         path: impl AsRef<Path_type>,
         flags: Flags_type,
     ) -> Result_type<Self> {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         let File_identifier = file_system.open(&path, flags, task).await?;
 

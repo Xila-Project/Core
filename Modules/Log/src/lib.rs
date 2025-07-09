@@ -3,7 +3,6 @@
 
 extern crate alloc;
 
-use synchronization::once_lock::OnceLock;
 use alloc::fmt;
 use log::Log;
 use log::Metadata;
@@ -15,6 +14,7 @@ use log::set_logger;
 use log::set_max_level;
 pub use log::trace as Trace;
 pub use log::warn as Warning;
+use synchronization::once_lock::OnceLock;
 
 const BOLD: &str = "\x1b[0;1m";
 const RED: &str = "\x1b[0;41m";

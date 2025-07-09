@@ -13,15 +13,15 @@ use task::Test;
 use virtual_file_system::{File_type, Virtual_file_system_type};
 
 async fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>) {
-    let Task_instance = Task::Initialize();
+    let Task_instance = task::Initialize();
 
     unsafe {
         let _ = Task_instance.Register_task().await;
     }
 
-    let _ = Users::Initialize();
+    let _ = users::Initialize();
 
-    let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::New()));
+    let _ = time::Initialize(Create_device!(drivers::native::Time_driver_type::New()));
 
     let Task = Task_instance
         .get_current_task_identifier()
@@ -31,13 +31,13 @@ async fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>
 
     let Cache_size = 256;
 
-    LittleFS::File_system_type::Format(Device.clone(), Cache_size).unwrap();
-    let File_system = LittleFS::File_system_type::New(Device, Cache_size).unwrap();
+    little_fs::File_system_type::Format(Device.clone(), Cache_size).unwrap();
+    let File_system = little_fs::File_system_type::New(Device, Cache_size).unwrap();
 
     let Virtual_file_system = Virtual_file_system_type::New(
         Task_instance,
-        Users::get_instance(),
-        Time::get_instance(),
+        users::get_instance(),
+        time::get_instance(),
         Create_file_system!(File_system),
         None,
     ).await

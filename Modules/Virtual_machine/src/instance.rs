@@ -14,7 +14,7 @@ use wamr_rust_sdk::{
 };
 
 use crate::{
-    Custom_data_type, Error_type, Module::Module_type, Result_type, Runtime::Runtime_type,
+    module::Module_type, runtime::Runtime_type, Custom_data_type, Error_type, Result_type,
     WASM_pointer_type,
 };
 

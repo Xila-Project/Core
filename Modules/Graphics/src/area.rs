@@ -1,4 +1,4 @@
-use crate::{Point_type, LVGL};
+use crate::{lvgl, Point_type};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Area_type(Point_type, Point_type);
@@ -35,8 +35,8 @@ impl Area_type {
     }
 }
 
-impl From<LVGL::lv_area_t> for Area_type {
-    fn from(value: LVGL::lv_area_t) -> Self {
+impl From<lvgl::lv_area_t> for Area_type {
+    fn from(value: lvgl::lv_area_t) -> Self {
         Self::new(
             Point_type::new(value.x1 as i16, value.y1 as i16),
             Point_type::new(value.x2 as i16, value.y2 as i16),

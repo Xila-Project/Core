@@ -62,7 +62,7 @@ impl Environment_type<'_> {
                 as *const Custom_data_type;
 
             let Custom_data = if custom_data.is_null() {
-                let task = ABI::get_instance().get_current_task_identifier();
+                let task = abi::get_instance().get_current_task_identifier();
 
                 let Custom_data = Box::new(Custom_data_type::new(task));
 

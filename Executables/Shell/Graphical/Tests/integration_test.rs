@@ -13,7 +13,7 @@ use task::Test;
 #[Test]
 async fn main() {
     use alloc::string::ToString;
-    use drivers::Native::Window_screen;
+    use drivers::native::window_screen;
     use executable::Mount_static_executables;
     use file_system::{Flags_type, Open_type};
     use graphics::{Get_minimal_buffer_size, Input_type_type, Point_type};
@@ -22,23 +22,23 @@ async fn main() {
     use virtual_file_system::{File_type, Mount_static_devices};
 
     // - Initialize the task manager.
-    let task_instance = Task::Initialize();
+    let task_instance = task::Initialize();
 
     // - Initialize the user manager.
-    let _ = Users::Initialize();
+    let _ = users::Initialize();
 
     // - Initialize the time manager.
-    let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()));
+    let _ = time::Initialize(Create_device!(drivers::native::Time_driver_type::new()));
 
     // - Initialize the graphics manager.
 
     const RESOLUTION: Point_type = Point_type::new(800, 480);
 
-    let (screen_device, pointer_device, keyboard_device) = Window_screen::New(RESOLUTION).unwrap();
+    let (screen_device, pointer_device, keyboard_device) = window_screen::New(RESOLUTION).unwrap();
 
     const BUFFER_SIZE: usize = get_minimal_buffer_size(&RESOLUTION);
 
-    Graphics::initialize(
+    graphics::initialize(
         screen_device,
         pointer_device,
         Input_type_type::Pointer,
@@ -47,7 +47,7 @@ async fn main() {
     )
     .await;
 
-    Graphics::get_instance()
+    graphics::get_instance()
         .add_input_device(keyboard_device, Input_type_type::Keypad)
         .await
         .unwrap();
@@ -55,16 +55,16 @@ async fn main() {
     // - Initialize the virtual file system.
     let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
 
-    LittleFS::File_system_type::format(memory_device.clone(), 256).unwrap();
+    little_fs::File_system_type::format(memory_device.clone(), 256).unwrap();
 
-    let file_system = LittleFS::File_system_type::new(memory_device, 256).unwrap();
+    let file_system = little_fs::File_system_type::new(memory_device, 256).unwrap();
 
     let virtual_file_system =
-        Virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
+        virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
 
     let task = task_instance.get_current_task_identifier().await;
 
-    Virtual_file_system::create_default_hierarchy(virtual_file_system, task)
+    virtual_file_system::create_default_hierarchy(virtual_file_system, task)
         .await
         .unwrap();
 
@@ -82,19 +82,19 @@ async fn main() {
         &[
             (
                 &"/Devices/Standard_in",
-                Drivers::Std::Console::Standard_in_device_type
+                drivers::standard_library::console::Standard_in_device_type
             ),
             (
                 &"/Devices/Standard_out",
-                Drivers::Std::Console::Standard_out_device_type
+                drivers::standard_library::console::Standard_out_device_type
             ),
             (
                 &"/Devices/Standard_error",
-                Drivers::Std::Console::Standard_error_device_type
+                drivers::standard_library::console::Standard_error_device_type
             ),
-            (&"/Devices/Time", Drivers::Native::Time_driver_type),
-            (&"/Devices/Random", Drivers::Native::Random_device_type),
-            (&"/Devices/Null", Drivers::Core::Null_device_type)
+            (&"/Devices/Time", drivers::native::Time_driver_type),
+            (&"/Devices/Random", drivers::native::Random_device_type),
+            (&"/Devices/Null", drivers::core::Null_device_type)
         ]
     )
     .await
@@ -137,11 +137,11 @@ async fn main() {
 
     let group_identifier = Group_identifier_type::New(1000);
 
-    Authentication::create_group(virtual_file_system, "alix_anneraud", Some(group_identifier))
+    authentication::create_group(virtual_file_system, "alix_anneraud", Some(group_identifier))
         .await
         .unwrap();
 
-    Authentication::create_user(
+    authentication::create_user(
         virtual_file_system,
         "alix_anneraud",
         "password",
@@ -171,7 +171,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = Executable::execute("/Binaries/Graphical_shell", "".to_string(), standard)
+    let result = executable::execute("/Binaries/Graphical_shell", "".to_string(), standard)
         .await
         .unwrap()
         .Join()

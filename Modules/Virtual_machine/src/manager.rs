@@ -7,12 +7,12 @@
 use core::{ffi::CStr, mem::forget};
 
 use alloc::{string::ToString, vec, vec::Vec};
+use file_system::Unique_file_identifier_type;
+use synchronization::once_lock::OnceLock;
 use wamr_rust_sdk::{
     sys::{wasm_runtime_is_xip_file, wasm_runtime_load, wasm_runtime_register_module},
     value::WasmValue,
 };
-use file_system::Unique_file_identifier_type;
-use synchronization::once_lock::OnceLock;
 
 use crate::{Error_type, Instance_type, Module_type, Registrable_trait, Result_type, Runtime_type};
 
@@ -204,7 +204,7 @@ impl Manager_type {
         standard_out: Unique_file_identifier_type,
         standard_error: Unique_file_identifier_type,
     ) -> Result_type<Vec<WasmValue>> {
-        ABI::get_instance()
+        abi::get_instance()
             .call_abi(async || {
                 let module = Module_type::From_buffer(
                     &self.runtime,

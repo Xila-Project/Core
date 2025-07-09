@@ -11,15 +11,15 @@ use task::Test;
 async fn main() {
     use std::{process::exit, ptr::null_mut};
 
-    use drivers::Native::Window_screen;
+    use drivers::native::window_screen;
     use file_system::Create_device;
-    use graphics::{Get_recommended_buffer_size, Input_type_type, Point_type, LVGL};
+    use graphics::{lvgl, Get_recommended_buffer_size, Input_type_type, Point_type};
 
-    let _ = Users::Initialize();
+    let _ = users::Initialize();
 
-    let task_instance = Task::Initialize();
+    let task_instance = task::Initialize();
 
-    Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()))
+    time::Initialize(Create_device!(drivers::native::Time_driver_type::new()))
         .expect("Error initializing time manager");
 
     const RESOLUTION: Point_type = Point_type::new(800, 480);
@@ -27,11 +27,11 @@ async fn main() {
     const BUFFER_SIZE: usize = get_recommended_buffer_size(&RESOLUTION);
 
     let (screen_device, pointer_device, keyboard_device) =
-        Window_screen::New(RESOLUTION).expect("Error creating touchscreen");
+        window_screen::New(RESOLUTION).expect("Error creating touchscreen");
 
     let _task = task_instance.get_current_task_identifier().await;
 
-    let graphics = Graphics::initialize(
+    let graphics = graphics::initialize(
         screen_device,
         pointer_device,
         Input_type_type::Pointer,
@@ -49,29 +49,29 @@ async fn main() {
 
     let window = window.into_raw();
 
-    let _calendar = unsafe { LVGL::lv_calendar_create(window) };
+    let _calendar = unsafe { lvgl::lv_calendar_create(window) };
 
-    let button = unsafe { LVGL::lv_button_create(window) };
+    let button = unsafe { lvgl::lv_button_create(window) };
 
-    let label = unsafe { LVGL::lv_label_create(button) };
+    let label = unsafe { lvgl::lv_label_create(button) };
 
-    let slider = unsafe { LVGL::lv_slider_create(window) };
+    let slider = unsafe { lvgl::lv_slider_create(window) };
 
-    unsafe extern "C" fn quit(_event: *mut LVGL::lv_event_t) {
+    unsafe extern "C" fn quit(_event: *mut lvgl::lv_event_t) {
         exit(0);
     }
 
     unsafe {
-        LVGL::lv_obj_set_align(slider, LVGL::lv_align_t_LV_ALIGN_LEFT_MID);
-        LVGL::lv_obj_set_align(button, LVGL::lv_align_t_LV_ALIGN_CENTER);
-        LVGL::lv_label_set_text(label, c"Quit".as_ptr());
-        LVGL::lv_obj_add_event_cb(
+        lvgl::lv_obj_set_align(slider, lvgl::lv_align_t_LV_ALIGN_LEFT_MID);
+        lvgl::lv_obj_set_align(button, lvgl::lv_align_t_LV_ALIGN_CENTER);
+        lvgl::lv_label_set_text(label, c"Quit".as_ptr());
+        lvgl::lv_obj_add_event_cb(
             button,
             Some(quit),
-            LVGL::lv_event_code_t_LV_EVENT_CLICKED,
+            lvgl::lv_event_code_t_LV_EVENT_CLICKED,
             null_mut(),
         );
     }
 
-    graphics.r#loop(Task::Manager_type::Sleep).await.unwrap();
+    graphics.r#loop(task::Manager_type::Sleep).await.unwrap();
 }

@@ -1,38 +1,38 @@
 [package]
-name = "Host_bindings"
+name = "host_bindings"
 version = "0.1.0"
 edition = "2021"
-build = "Build/Main.rs"
+build = "Build/main.rs"
 
 [dependencies]
-File_system = { path = "../../File_system" }
-Virtual_machine = { path = "../../Virtual_machine" }
-Shared = { path = "../../Shared" }
-Users = { path = "../../Users" }
-Task = { path = "../../Task" }
-Graphics = { path = "../../Graphics" }
-Time = { path = "../../Time" }
+file_system = { path = "../../File_system" }
+virtual_machine = { path = "../../Virtual_machine" }
+shared = { path = "../../Shared" }
+users = { path = "../../Users" }
+task = { path = "../../Task" }
+graphics = { path = "../../Graphics" }
+time = { path = "../../Time" }
 include_bytes_aligned = "0.1"
-Futures = { path = "../../Futures" }
-Log = { path = "../../Log" }
+futures = { path = "../../Futures" }
+log = { path = "../../Log" }
 #wit-bindgen = "0.34.0"
 
 [dev-dependencies]
-Drivers = { path = "../../Drivers" }
-LittleFS = { path = "../../LittleFS" }
-Memory = { path = "../../Memory" }
-Virtual_file_system = { path = "../../Virtual_file_system" }
+drivers = { path = "../../Drivers" }
+little_fs = { path = "../../LittleFS" }
+memory = { path = "../../Memory" }
+virtual_file_system = { path = "../../Virtual_file_system" }
 
 [build-dependencies]
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
 #lvgl_rust_sys = { path = "../../../lvgl_rust_sys", default-features = false}
-Target = { path = "../../Target" }
+target = { path = "../../Target" }
 cbindgen = "0.29.0"
-Bindings_utilities = { path = "../Utilities" }
+bindings_utilities = { path = "../Utilities" }
 syn = { version = "2.0", features = ["full", "visit", "extra-traits"] }
 quote = "1.0"
 proc-macro2 = "1.0"
 
 [[test]]
-name = "Graphics_bindings_tests"
-path = "Tests/Graphics.rs"
+name = "graphics_bindings_tests"
+path = "Tests/graphics.rs"

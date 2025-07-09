@@ -1,37 +1,37 @@
 [package]
-name = "Drivers"
+name = "drivers"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 quote = "1.0.36"
-Log = { path = "../Log" }
-File_system = { path = "../File_system" }
-Virtual_file_system = { path = "../Virtual_file_system" }
-Task = { path = "../Task" }
-Users = { path = "../Users" }
-Graphics = { path = "../Graphics" }
-Time = { path = "../Time" }
-Shared = { path = "../Shared" }
-Peripherals = { path = "../Peripherals" }
-Network = { path = "../Network" }
-Memory = { path = "../Memory" }
-Synchronization = { path = "../Synchronization" }
+log = { path = "../Log" }
+file_system = { path = "../File_system" }
+virtual_file_system = { path = "../Virtual_file_system" }
+task = { path = "../Task" }
+users = { path = "../Users" }
+graphics = { path = "../Graphics" }
+time = { path = "../Time" }
+shared = { path = "../Shared" }
+peripherals = { path = "../Peripherals" }
+network = { path = "../Network" }
+memory = { path = "../Memory" }
+synchronization = { path = "../Synchronization" }
 linked_list_allocator = { version = "0.10", default-features = false, features = [
     "const_mut_refs",
 ] }
 
 embassy-sync = { version = "0.7" }
-Futures = { version = "0.1.0", path = "../Futures" }
+futures = { version = "0.1.0", path = "../Futures" }
 embassy-executor = { version = "0.7.0" }
 
 
 [dev-dependencies]
-LittleFS = { path = "../LittleFS" }
+little_fs = { path = "../LittleFS" }
 
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
-#Graphics = { path = "../Graphics", features = ["RGB565"] }
+#graphics = { path = "../Graphics", features = ["RGB565"] }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
 pixels = "0.14"
@@ -41,5 +41,5 @@ libc = { version = "0.2" }
 
 
 #[[te0.9.0.0]
-#name = "Native_graphics"
+#name = "native_graphics"
 #path = "Tests/Native/Graphics.rs"

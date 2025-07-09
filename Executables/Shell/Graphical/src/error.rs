@@ -8,23 +8,23 @@ pub type Result_type<T> = Result<T, Error_type>;
 #[derive(Debug, Clone)]
 #[repr(u8)]
 pub enum Error_type {
-    Graphics(Graphics::Error_type) = 1,
+    Graphics(graphics::Error_type) = 1,
     Failed_to_create_object,
     Failed_to_get_child,
-    Failed_to_set_environment_variable(Task::Error_type),
+    Failed_to_set_environment_variable(task::Error_type),
     Invalid_UTF_8(core::str::Utf8Error),
-    Authentication_failed(Authentication::Error_type),
-    Failed_to_set_task_user(Task::Error_type),
+    Authentication_failed(authentication::Error_type),
+    Failed_to_set_task_user(task::Error_type),
     Failed_to_deserialize_shortcut(miniserde::Error),
-    Failed_to_get_current_task_identifier(Task::Error_type),
-    Failed_to_read_shortcut_directory(File_system::Error_type),
+    Failed_to_get_current_task_identifier(task::Error_type),
+    Failed_to_read_shortcut_directory(file_system::Error_type),
     Failed_to_get_shortcut_file_path,
-    Failed_to_read_shortcut_file(File_system::Error_type),
-    Failed_to_open_standard_file(File_system::Error_type),
-    Failed_to_execute_shortcut(Executable::Error_type),
+    Failed_to_read_shortcut_file(file_system::Error_type),
+    Failed_to_open_standard_file(file_system::Error_type),
+    Failed_to_execute_shortcut(executable::Error_type),
     Null_character_in_string(alloc::ffi::NulError),
     Missing_arguments,
-    Failed_to_add_shortcut(File_system::Error_type),
+    Failed_to_add_shortcut(file_system::Error_type),
 }
 
 impl Error_type {
@@ -39,8 +39,8 @@ impl From<Error_type> for NonZeroUsize {
     }
 }
 
-impl From<Graphics::Error_type> for Error_type {
-    fn from(error: Graphics::Error_type) -> Self {
+impl From<graphics::Error_type> for Error_type {
+    fn from(error: graphics::Error_type) -> Self {
         Error_type::Graphics(error)
     }
 }

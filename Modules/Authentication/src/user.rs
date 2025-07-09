@@ -14,8 +14,8 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use miniserde::{Deserialize, Serialize};
 use file_system::{Flags_type, Mode_type, Open_type, Path_owned_type, Path_type};
+use miniserde::{Deserialize, Serialize};
 use users::{
     Group_identifier_inner_type, Group_identifier_type, User_identifier_inner_type,
     User_identifier_type,
@@ -23,9 +23,8 @@ use users::{
 use virtual_file_system::{Directory_type, File_type, Virtual_file_system_type};
 
 use crate::{
-    Error_type,
-    Hash::{generate_salt, hash_password},
-    Result_type, USERS_FOLDER_PATH,
+    hash::{generate_salt, hash_password},
+    Error_type, Result_type, USERS_FOLDER_PATH,
 };
 
 /// Represents a user account with all associated metadata.
@@ -127,8 +126,8 @@ impl User_type {
     /// # Arguments
     ///
     /// * `Hash` - New SHA-512 hash to store
-    pub fn set_hash(&mut self, Hash: String) {
-        self.hash = Hash;
+    pub fn set_hash(&mut self, hash: String) {
+        self.hash = hash;
     }
 
     /// Updates the user's salt.
@@ -136,8 +135,8 @@ impl User_type {
     /// # Arguments
     ///
     /// * `Salt` - New salt to store
-    pub fn set_salt(&mut self, Salt: String) {
-        self.salt = Salt;
+    pub fn set_salt(&mut self, salt: String) {
+        self.salt = salt;
     }
 
     /// Updates the user's primary group.
@@ -145,8 +144,8 @@ impl User_type {
     /// # Arguments
     ///
     /// * `Primary_group` - New primary group identifier
-    pub fn set_primary_group(&mut self, Primary_group: Group_identifier_inner_type) {
-        self.primary_group = Primary_group;
+    pub fn set_primary_group(&mut self, primary_group: Group_identifier_inner_type) {
+        self.primary_group = primary_group;
     }
 
     /// Updates the user's name.
@@ -154,8 +153,8 @@ impl User_type {
     /// # Arguments
     ///
     /// * `Name` - New username to store
-    pub fn set_name(&mut self, Name: String) {
-        self.name = Name;
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
     }
 }
 
@@ -169,10 +168,10 @@ impl User_type {
 ///
 /// Returns `Ok(Path_owned_type)` with the complete path to the user file,
 /// or `Err(Error_type::Failed_to_get_user_file_path)` if path construction fails.
-pub fn get_user_file_path(User_name: &str) -> Result_type<Path_owned_type> {
+pub fn get_user_file_path(user_name: &str) -> Result_type<Path_owned_type> {
     Path_type::New(USERS_FOLDER_PATH)
         .to_owned()
-        .Append(User_name)
+        .Append(user_name)
         .ok_or(Error_type::Failed_to_get_user_file_path)
 }
 
@@ -207,22 +206,22 @@ pub async fn authenticate_user<'a>(
 ) -> Result_type<User_identifier_type> {
     let path = get_user_file_path(user_name)?;
 
-    let User_file = File_type::open(virtual_file_system, path, Mode_type::READ_ONLY.into())
+    let user_file = File_type::open(virtual_file_system, path, Mode_type::READ_ONLY.into())
         .await
         .map_err(Error_type::Failed_to_open_user_file)?;
 
-    let mut Buffer = Vec::new();
+    let mut buffer = Vec::new();
 
-    User_file
-        .read_to_end(&mut Buffer)
+    user_file
+        .read_to_end(&mut buffer)
         .await
         .map_err(Error_type::Failed_to_read_user_file)?;
 
-    let User: User_type = miniserde::json::from_str(core::str::from_utf8(&Buffer).unwrap())
+    let user: User_type = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
         .map_err(Error_type::Failed_to_parse_user_file)?;
 
-    if hash_password(password, User.get_salt()) == User.get_hash() {
-        Ok(User.get_identifier())
+    if hash_password(password, user.get_salt()) == user.get_hash() {
+        Ok(user.get_identifier())
     } else {
         Err(Error_type::Invalid_password)
     }
@@ -263,11 +262,11 @@ pub async fn create_user<'a>(
     primary_group: Group_identifier_type,
     user_identifier: Option<User_identifier_type>,
 ) -> Result_type<User_identifier_type> {
-    let users_manager = Users::get_instance();
+    let users_manager = users::get_instance();
 
     // - New user identifier if not provided.
-    let User_identifier = if let Some(User_identifier) = user_identifier {
-        User_identifier
+    let user_identifier = if let Some(user_identifier) = user_identifier {
+        user_identifier
     } else {
         users_manager
             .get_new_user_identifier()
@@ -277,50 +276,50 @@ pub async fn create_user<'a>(
 
     // - Add it to the users manager.
     users_manager
-        .Add_user(User_identifier, user_name, primary_group)
+        .Add_user(user_identifier, user_name, primary_group)
         .await
         .map_err(Error_type::Failed_to_create_user)?;
 
     // - Hash password.
-    let Salt = generate_salt().await?;
+    let salt = generate_salt().await?;
 
-    let Hash = hash_password(password, &Salt);
+    let hash = hash_password(password, &salt);
 
     // - Write user file.
-    let User = User_type::new(
-        User_identifier.As_u16(),
+    let user = User_type::new(
+        user_identifier.As_u16(),
         user_name.to_string(),
         primary_group.As_u16(),
-        Hash,
-        Salt,
+        hash,
+        salt,
     );
 
     match Directory_type::create(virtual_file_system, USERS_FOLDER_PATH).await {
-        Ok(_) | Err(File_system::Error_type::Already_exists) => {}
+        Ok(_) | Err(file_system::Error_type::Already_exists) => {}
         Err(error) => Err(Error_type::Failed_to_create_users_directory(error))?,
     }
 
-    let User_file_path = Path_type::New(USERS_FOLDER_PATH)
+    let user_file_path = Path_type::New(USERS_FOLDER_PATH)
         .to_owned()
         .Append(user_name)
         .ok_or(Error_type::Failed_to_get_user_file_path)?;
 
-    let User_file = File_type::open(
+    let user_file: File_type<'_> = File_type::open(
         virtual_file_system,
-        User_file_path,
+        user_file_path,
         Flags_type::New(Mode_type::WRITE_ONLY, Some(Open_type::CREATE_ONLY), None),
     )
     .await
     .map_err(Error_type::Failed_to_open_user_file)?;
 
-    let User_json = miniserde::json::to_string(&User);
+    let user_json = miniserde::json::to_string(&user);
 
-    User_file
-        .write(User_json.as_bytes())
+    user_file
+        .write(user_json.as_bytes())
         .await
         .map_err(Error_type::Failed_to_write_user_file)?;
 
-    Ok(User_identifier)
+    Ok(user_identifier)
 }
 
 /// Changes a user's password by generating a new salt and hash.
@@ -355,38 +354,38 @@ pub async fn change_user_password<'a>(
 ) -> Result_type<()> {
     let salt = generate_salt().await?;
 
-    let Hash = hash_password(new_password, &salt);
+    let hash = hash_password(new_password, &salt);
 
-    let User_file_path = Path_type::New(USERS_FOLDER_PATH)
+    let user_file_path = Path_type::New(USERS_FOLDER_PATH)
         .to_owned()
         .Append(user_name)
         .ok_or(Error_type::Failed_to_get_user_file_path)?;
 
-    let User_file = File_type::open(
+    let user_file = File_type::open(
         virtual_file_system,
-        User_file_path,
+        user_file_path,
         Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::TRUNCATE), None),
     )
     .await
     .map_err(Error_type::Failed_to_open_user_file)?;
 
-    let mut Buffer = Vec::new();
+    let mut buffer = Vec::new();
 
-    User_file
-        .read_to_end(&mut Buffer)
+    user_file
+        .read_to_end(&mut buffer)
         .await
         .map_err(Error_type::Failed_to_read_user_file)?;
 
-    let mut User: User_type = miniserde::json::from_str(core::str::from_utf8(&Buffer).unwrap())
+    let mut user: User_type = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
         .map_err(Error_type::Failed_to_parse_user_file)?;
 
-    User.set_hash(Hash);
-    User.set_salt(salt);
+    user.set_hash(hash);
+    user.set_salt(salt);
 
-    let User_json = miniserde::json::to_string(&User);
+    let user_json = miniserde::json::to_string(&user);
 
-    User_file
-        .write(User_json.as_bytes())
+    user_file
+        .write(user_json.as_bytes())
         .await
         .map_err(Error_type::Failed_to_write_user_file)?;
 
@@ -421,7 +420,7 @@ pub async fn change_user_name<'a>(
 ) -> Result_type<()> {
     let file_path = get_user_file_path(current_name)?;
 
-    let User_file = File_type::open(
+    let user_file = File_type::open(
         virtual_file_system,
         file_path,
         Flags_type::New(Mode_type::READ_WRITE, Some(Open_type::TRUNCATE), None),
@@ -429,22 +428,22 @@ pub async fn change_user_name<'a>(
     .await
     .map_err(Error_type::Failed_to_open_user_file)?;
 
-    let mut Buffer = Vec::new();
+    let mut buffer = Vec::new();
 
-    User_file
-        .read_to_end(&mut Buffer)
+    user_file
+        .read_to_end(&mut buffer)
         .await
         .map_err(Error_type::Failed_to_read_user_file)?;
 
-    let mut User: User_type = miniserde::json::from_str(core::str::from_utf8(&Buffer).unwrap())
+    let mut user: User_type = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
         .map_err(Error_type::Failed_to_parse_user_file)?;
 
-    User.set_name(new_name.to_string());
+    user.set_name(new_name.to_string());
 
-    let User_json = miniserde::json::to_string(&User);
+    let user_json = miniserde::json::to_string(&user);
 
-    User_file
-        .write(User_json.as_bytes())
+    user_file
+        .write(user_json.as_bytes())
         .await
         .map_err(Error_type::Failed_to_write_user_file)?;
 
@@ -480,7 +479,7 @@ pub async fn read_user_file<'a>(
 ) -> Result_type<User_type> {
     let user_file_path = get_user_file_path(file)?;
 
-    let User_file = File_type::open(
+    let user_file = File_type::open(
         virtual_file_system,
         user_file_path,
         Mode_type::READ_ONLY.into(),
@@ -490,7 +489,7 @@ pub async fn read_user_file<'a>(
 
     buffer.clear();
 
-    User_file
+    user_file
         .read_to_end(buffer)
         .await
         .map_err(Error_type::Failed_to_read_user_file)?;

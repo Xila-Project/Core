@@ -25,7 +25,7 @@ pub enum Error_type {
     Invalid_UTF8_string,
 
     /// Failed to convert between slice types
-    Slice_conversion_failed(Shared::Error_type),
+    Slice_conversion_failed(shared::Error_type),
 
     /// Requested functionality is not yet implemented
     Not_implemented,
@@ -49,7 +49,7 @@ pub enum Error_type {
     Allocation_failure,
 
     /// Failed to retrieve task information
-    Failed_to_get_task_informations(Task::Error_type),
+    Failed_to_get_task_informations(task::Error_type),
 
     /// Mutex or lock was poisoned
     Poisoned_lock,
@@ -64,7 +64,7 @@ pub enum Error_type {
     Invalid_thread_identifier,
 
     /// Time-related operation failed
-    Time(Time::Error_type),
+    Time(time::Error_type),
 }
 
 impl From<RuntimeError> for Error_type {
@@ -80,8 +80,8 @@ impl From<RuntimeError> for Error_type {
         }
     }
 }
-impl From<Task::Error_type> for Error_type {
-    fn from(error: Task::Error_type) -> Self {
+impl From<task::Error_type> for Error_type {
+    fn from(error: task::Error_type) -> Self {
         Error_type::Failed_to_get_task_informations(error)
     }
 }

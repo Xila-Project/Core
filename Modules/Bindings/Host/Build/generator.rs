@@ -1,9 +1,9 @@
 #![allow(non_camel_case_types)]
 
-use std::{fs::File, io::Write, path::Path};
 use bindings_utilities::{
-    context::LVGL_context, enumeration, Format::format_rust, function::Split_inputs,
+    context::LVGL_context, enumeration, format::format_rust, function::Split_inputs,
 };
+use std::{fs::File, io::Write, path::Path};
 
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote, ToTokens};

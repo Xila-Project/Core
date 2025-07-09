@@ -14,20 +14,20 @@ use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
 #[ignore]
 #[Test]
 async fn integration_test() {
-    let task_instance = Task::Initialize();
+    let task_instance = task::Initialize();
 
-    let _ = Users::Initialize();
+    let _ = users::Initialize();
 
-    let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()));
+    let _ = time::Initialize(Create_device!(drivers::native::Time_driver_type::new()));
 
     let memory_device = Create_device!(Memory_device_type::<512>::New(1024 * 512));
 
-    LittleFS::File_system_type::format(memory_device.clone(), 256).unwrap();
+    little_fs::File_system_type::format(memory_device.clone(), 256).unwrap();
 
-    let file_system = LittleFS::File_system_type::new(memory_device, 256).unwrap();
+    let file_system = little_fs::File_system_type::new(memory_device, 256).unwrap();
 
     let virtual_file_system =
-        Virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
+        virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
 
     let task = task_instance.get_current_task_identifier().await;
 
@@ -41,19 +41,19 @@ async fn integration_test() {
         &[
             (
                 &"/Devices/Standard_in",
-                Drivers::Std::Console::Standard_in_device_type
+                drivers::standard_library::console::Standard_in_device_type
             ),
             (
                 &"/Devices/Standard_out",
-                Drivers::Std::Console::Standard_out_device_type
+                drivers::standard_library::console::Standard_out_device_type
             ),
             (
                 &"/Devices/Standard_error",
-                Drivers::Std::Console::Standard_error_device_type
+                drivers::standard_library::console::Standard_error_device_type
             ),
-            (&"/Devices/Time", Drivers::Native::Time_driver_type),
-            (&"/Devices/Random", Drivers::Native::Random_device_type),
-            (&"/Devices/Null", Drivers::Core::Null_device_type)
+            (&"/Devices/Time", drivers::native::Time_driver_type),
+            (&"/Devices/Random", drivers::native::Random_device_type),
+            (&"/Devices/Null", drivers::core::Null_device_type)
         ]
     )
     .await
@@ -69,11 +69,11 @@ async fn integration_test() {
 
     let group_identifier = Group_identifier_type::New(1000);
 
-    Authentication::create_group(virtual_file_system, "alix_anneraud", Some(group_identifier))
+    authentication::create_group(virtual_file_system, "alix_anneraud", Some(group_identifier))
         .await
         .unwrap();
 
-    Authentication::create_user(
+    authentication::create_user(
         virtual_file_system,
         "alix_anneraud",
         "password",
@@ -120,7 +120,7 @@ async fn integration_test() {
         .await
         .unwrap();
 
-    let result = Executable::execute("/Binaries/Command_line_shell", "".to_string(), standard)
+    let result = executable::execute("/Binaries/Command_line_shell", "".to_string(), standard)
         .await
         .unwrap()
         .Join()

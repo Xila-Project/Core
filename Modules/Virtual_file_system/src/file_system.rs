@@ -25,8 +25,8 @@ use file_system::{
     Unique_file_identifier_type,
 };
 
-use crate::Device::Internal_path_type;
-use crate::{Device, Pipe, Socket_address_type};
+use crate::device::Internal_path_type;
+use crate::{device, pipe, Socket_address_type};
 
 struct Internal_file_system_type {
     pub mount_point: Path_owned_type,
@@ -46,9 +46,9 @@ pub fn initialize(
     network_socket_driver: Option<&'static dyn Network_socket_driver_trait>,
 ) -> Result<&'static Virtual_file_system_type<'static>, crate::Error_type> {
     let virtual_file_system = Virtual_file_system_type::new(
-        Task::get_instance(),
-        Users::get_instance(),
-        Time::get_instance(),
+        task::get_instance(),
+        users::get_instance(),
+        time::get_instance(),
         root_file_system,
         network_socket_driver,
     )?;
@@ -72,9 +72,9 @@ pub struct Virtual_file_system_type<'a> {
         BTreeMap<File_system_identifier_type, Internal_file_system_type>,
     >,
     /// Devices.
-    device_file_system: Device::File_system_type<'a>,
+    device_file_system: device::File_system_type<'a>,
     /// Pipes.
-    pipe_file_system: Pipe::File_system_type,
+    pipe_file_system: pipe::File_system_type,
     /// Network sockets.
     network_socket_driver: Option<&'a dyn Network_socket_driver_trait>,
 }
@@ -85,9 +85,9 @@ impl<'a> Virtual_file_system_type<'a> {
     pub const STANDARD_ERROR_FILE_IDENTIFIER: File_identifier_type = File_identifier_type::New(2);
 
     pub fn new(
-        _: &'static Task::Manager_type,
-        _: &'static Users::Manager_type,
-        _: &'static Time::Manager_type,
+        _: &'static task::Manager_type,
+        _: &'static users::Manager_type,
+        _: &'static time::Manager_type,
         root_file_system: Box<dyn File_system_traits>,
         network_socket_driver: Option<&'a dyn Network_socket_driver_trait>,
     ) -> Result_type<Self> {
@@ -106,8 +106,8 @@ impl<'a> Virtual_file_system_type<'a> {
 
         Ok(Self {
             file_systems: RwLock::new(file_systems),
-            device_file_system: Device::File_system_type::New(),
-            pipe_file_system: Pipe::File_system_type::new(),
+            device_file_system: device::File_system_type::New(),
+            pipe_file_system: pipe::File_system_type::new(),
             network_socket_driver,
         })
     }
@@ -177,14 +177,14 @@ impl<'a> Virtual_file_system_type<'a> {
         let (_, parent_file_system, relative_path) =
             Self::get_file_system_from_path(&file_systems, &path)?; // Get the file system identifier and the relative path
 
-        let time = Time::get_instance()
+        let time = time::get_instance()
             .get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let user = Task::get_instance().get_user(task).await?;
+        let user = task::get_instance().get_user(task).await?;
 
-        let group = Users::get_instance().get_user_primary_group(user).await?;
+        let group = users::get_instance().get_user_primary_group(user).await?;
 
         parent_file_system.Create_directory(relative_path, time, user, group)?;
 
@@ -297,14 +297,14 @@ impl<'a> Virtual_file_system_type<'a> {
         let (file_system_identifier, file_system, relative_path) =
             Self::get_file_system_from_path(&file_systems, path)?; // Get the file system identifier and the relative path
 
-        let time: Time_type = Time::get_instance()
+        let time: Time_type = time::get_instance()
             .get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let user = Task::get_instance().get_user(task).await?;
+        let user = task::get_instance().get_user(task).await?;
 
-        let group = Users::get_instance().get_user_primary_group(user).await?;
+        let group = users::get_instance().get_user_primary_group(user).await?;
 
         let local_file = file_system.Open(task, relative_path, flags, time, user, group)?;
 
@@ -408,7 +408,7 @@ impl<'a> Virtual_file_system_type<'a> {
     ) -> Result_type<Size_type> {
         let (file_system, local_file_identifier) = file.Into_local_file_identifier(task);
 
-        let time = Time::get_instance()
+        let time = time::get_instance()
             .get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
@@ -461,7 +461,7 @@ impl<'a> Virtual_file_system_type<'a> {
     ) -> Result_type<Size_type> {
         let (file_system, local_file_identifier) = file.Into_local_file_identifier(task);
 
-        let time = Time::get_instance()
+        let time = time::get_instance()
             .get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
@@ -542,7 +542,7 @@ impl<'a> Virtual_file_system_type<'a> {
     ) -> Result_type<Size_type> {
         let (file_system, local_file_identifier) = file.Into_local_file_identifier(task);
 
-        let time = Time::get_instance()
+        let time = time::get_instance()
             .get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
@@ -645,7 +645,7 @@ impl<'a> Virtual_file_system_type<'a> {
         }
 
         if let Some(group) = group {
-            metadata.Set_group(group);
+            metadata.set_group(group);
         }
 
         file_system.Set_metadata_from_path(relative_path, &metadata)
@@ -693,14 +693,14 @@ impl<'a> Virtual_file_system_type<'a> {
         let (_, file_system, relative_path) =
             Self::get_file_system_from_path(&file_systems, &path)?; // Get the file system identifier and the relative path
 
-        let time = Time::get_instance()
+        let time = time::get_instance()
             .get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let user = Task::get_instance().get_user(task).await?;
+        let user = task::get_instance().get_user(task).await?;
 
-        let group = Users::get_instance().get_user_primary_group(user).await?;
+        let group = users::get_instance().get_user_primary_group(user).await?;
 
         let file = file_system.Open(
             task,
@@ -718,14 +718,14 @@ impl<'a> Virtual_file_system_type<'a> {
             .Mount_device(relative_path.to_owned(), device)
             .await?;
 
-        let time: Time_type = Time::get_instance()
+        let time: Time_type = time::get_instance()
             .get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let user = Task::get_instance().get_user(task).await?;
+        let user = task::get_instance().get_user(task).await?;
 
-        let group = Users::get_instance().get_user_primary_group(user).await?;
+        let group = users::get_instance().get_user_primary_group(user).await?;
 
         let mut metadata = Metadata_type::get_default(Type_type::Block_device, time, user, group)
             .ok_or(Error_type::Invalid_parameter)?;
@@ -748,14 +748,14 @@ impl<'a> Virtual_file_system_type<'a> {
         let (_, file_system, relative_path) =
             Self::get_file_system_from_path(&file_systems, &path)?; // Get the file system identifier and the relative path
 
-        let time = Time::get_instance()
+        let time = time::get_instance()
             .get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let user = Task::get_instance().get_user(task).await?;
+        let user = task::get_instance().get_user(task).await?;
 
-        let group = Users::get_instance().get_user_primary_group(user).await?;
+        let group = users::get_instance().get_user_primary_group(user).await?;
 
         let file = file_system.Open(
             task,
@@ -780,14 +780,14 @@ impl<'a> Virtual_file_system_type<'a> {
             .Mount_static_device(path, device)
             .await?;
 
-        let time: Time_type = Time::get_instance()
+        let time: Time_type = time::get_instance()
             .get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let user = Task::get_instance().get_user(task).await?;
+        let user = task::get_instance().get_user(task).await?;
 
-        let group = Users::get_instance().get_user_primary_group(user).await?;
+        let group = users::get_instance().get_user_primary_group(user).await?;
 
         // Set the metadata of the special file.
         let mut metadata = Metadata_type::get_default(r#type, time, user, group)
@@ -809,14 +809,14 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let (_, file_system, relative_path) = Self::get_file_system_from_path(&file_systems, path)?; // Get the file system identifier and the relative path
 
-        let time = Time::get_instance()
+        let time = time::get_instance()
             .get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let user = Task::get_instance().get_user(task).await?;
+        let user = task::get_instance().get_user(task).await?;
 
-        let group = Users::get_instance().get_user_primary_group(user).await?;
+        let group = users::get_instance().get_user_primary_group(user).await?;
 
         let file = file_system.Open(
             task,
@@ -831,14 +831,14 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let inode = self.pipe_file_system.Create_named_pipe(size).await?;
 
-        let time: Time_type = Time::get_instance()
+        let time: Time_type = time::get_instance()
             .get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let user = Task::get_instance().get_user(task).await?;
+        let user = task::get_instance().get_user(task).await?;
 
-        let group = Users::get_instance().get_user_primary_group(user).await?;
+        let group = users::get_instance().get_user_primary_group(user).await?;
 
         let mut metadata = Metadata_type::get_default(Type_type::Pipe, time, user, group)
             .ok_or(Error_type::Invalid_parameter)?;
@@ -1185,14 +1185,14 @@ impl<'a> Virtual_file_system_type<'a> {
 
         let (_, file_system, relative_path) = Self::get_file_system_from_path(&file_systems, path)?; // Get the file system identifier and the relative path
 
-        let time = Time::get_instance()
+        let time = time::get_instance()
             .get_current_time()
             .map_err(|_| Error_type::Time_error)?
             .into();
 
-        let user = Task::get_instance().get_user(task).await?;
+        let user = task::get_instance().get_user(task).await?;
 
-        let group = Users::get_instance().get_user_primary_group(user).await?;
+        let group = users::get_instance().get_user_primary_group(user).await?;
 
         file_system.Create_directory(relative_path, time, user, group)
     }

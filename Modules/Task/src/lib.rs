@@ -15,7 +15,7 @@ mod task;
 
 pub use environment_variable::*;
 pub use error::*;
-pub use Futures;
+pub use futures;
 pub use join_handle::*;
 pub use manager::*;
 pub use signal::*;

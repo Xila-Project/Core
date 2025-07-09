@@ -9,7 +9,7 @@ mod error;
 mod file;
 mod file_system;
 mod hierarchy;
-mod macro;
+mod r#macro;
 mod pipe;
 mod socket;
 

@@ -14,8 +14,8 @@ use crate::settings::Settings_type;
 
 use alloc::string::{String, ToString};
 pub use error::*;
-pub use settings::*;
 use file_system::{Flags_type, Mode_type, Open_type};
+pub use settings::*;
 use task::Task_identifier_type;
 use virtual_file_system::{File_type, Virtual_file_system_type};
 
@@ -48,7 +48,7 @@ impl Settings_executable_type {
         .await
         {
             Ok(file) => file,
-            Err(File_system::Error_type::Already_exists) => {
+            Err(file_system::Error_type::Already_exists) => {
                 return Ok(Self);
             }
             Err(error) => Err(error.to_string())?,
@@ -62,7 +62,7 @@ impl Settings_executable_type {
     }
 }
 
-Executable::Implement_executable_device!(
+executable::Implement_executable_device!(
     Structure: Settings_executable_type,
     Mount_path: "/Binaries/Settings",
     Main_function: main,

@@ -19,7 +19,7 @@ impl Shell_type {
             }
         };
 
-        if let Err(error) = Task::get_instance()
+        if let Err(error) = task::get_instance()
             .Set_environment_variable(self.standard.get_task(), Name, Value)
             .await
         {
@@ -39,7 +39,7 @@ impl Shell_type {
 
         let Name = Arguments[0];
 
-        if let Err(error) = Task::get_instance()
+        if let Err(error) = task::get_instance()
             .Remove_environment_variable(self.standard.get_task(), Name)
             .await
         {

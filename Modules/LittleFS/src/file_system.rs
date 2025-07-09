@@ -173,13 +173,13 @@ impl File_system_type {
 
     fn Read_inner(
         &self,
-    ) -> Synchronization::rwlock::RwLockReadGuard<'_, CriticalSectionRawMutex, Inner_type> {
+    ) -> synchronization::rwlock::RwLockReadGuard<'_, CriticalSectionRawMutex, Inner_type> {
         block_on(self.inner.read())
     }
 
     fn Write_inner(
         &self,
-    ) -> Synchronization::rwlock::RwLockWriteGuard<'_, CriticalSectionRawMutex, Inner_type> {
+    ) -> synchronization::rwlock::RwLockWriteGuard<'_, CriticalSectionRawMutex, Inner_type> {
         block_on(self.inner.write())
     }
 }
@@ -191,7 +191,7 @@ unsafe impl Sync for File_system_type {}
 impl File_system_traits for File_system_type {
     fn Open(
         &self,
-        task: Task::Task_identifier_type,
+        task: task::Task_identifier_type,
         path: &Path_type,
         flags: Flags_type,
         time: Time_type,
@@ -237,7 +237,7 @@ impl File_system_traits for File_system_type {
         Ok(())
     }
 
-    fn Close_all(&self, Task: Task::Task_identifier_type) -> Result_type<()> {
+    fn Close_all(&self, Task: task::Task_identifier_type) -> Result_type<()> {
         let mut inner = self.Write_inner();
 
         // Get all the keys of the open files that belong to the task
@@ -289,7 +289,7 @@ impl File_system_traits for File_system_type {
 
     fn Transfert(
         &self,
-        new_task: Task::Task_identifier_type,
+        new_task: task::Task_identifier_type,
         file_identifier: Local_file_identifier_type,
         new_file: Option<File_identifier_type>,
     ) -> Result_type<Local_file_identifier_type> {
@@ -432,7 +432,7 @@ impl File_system_traits for File_system_type {
 
         // open_directoriesy to get the metadata of the directories
         if open_directories.get_mut(&File).is_some() {
-            let current_time: Time_type = Time::get_instance().get_current_time().unwrap().into();
+            let current_time: Time_type = time::get_instance().get_current_time().unwrap().into();
 
             Ok(Statistics_type::new(
                 File_system_identifier_type::New(0),
@@ -478,7 +478,7 @@ impl File_system_traits for File_system_type {
     fn Open_directory(
         &self,
         path: &Path_type,
-        task: Task::Task_identifier_type,
+        task: task::Task_identifier_type,
     ) -> Result_type<Local_file_identifier_type> {
         let mut inner = self.Write_inner();
 
@@ -633,11 +633,11 @@ mod tests {
     const Cache_size: usize = 256;
 
     fn Initialize() -> File_system_type {
-        let _ = Users::Initialize();
+        let _ = users::Initialize();
 
-        Task::Initialize();
+        task::Initialize();
 
-        let _ = Time::Initialize(Create_device!(Drivers::Native::Time_driver_type::new()));
+        let _ = time::Initialize(Create_device!(drivers::native::Time_driver_type::new()));
 
         let mock_device = Memory_device_type::<512>::New(2048 * 512);
 
@@ -650,57 +650,57 @@ mod tests {
 
     #[Test]
     async fn test_open_close_delete() {
-        File_system::tests::Test_open_close_delete(Initialize()).await;
+        file_system::tests::Test_open_close_delete(Initialize()).await;
     }
 
     #[Test]
     async fn test_read_write() {
-        File_system::tests::Test_read_write(Initialize()).await;
+        file_system::tests::Test_read_write(Initialize()).await;
     }
 
     #[Test]
     async fn test_move() {
-        File_system::tests::Test_move(Initialize()).await;
+        file_system::tests::Test_move(Initialize()).await;
     }
 
     #[Test]
     async fn test_set_position() {
-        File_system::tests::Test_set_position(Initialize()).await;
+        file_system::tests::Test_set_position(Initialize()).await;
     }
 
     #[Test]
     async fn test_flush() {
-        File_system::tests::Test_flush(Initialize()).await;
+        file_system::tests::Test_flush(Initialize()).await;
     }
 
     #[Test]
     async fn test_set_get_metadata() {
-        File_system::tests::Test_set_get_metadata(Initialize()).await;
+        file_system::tests::Test_set_get_metadata(Initialize()).await;
     }
 
     #[Test]
     async fn test_read_directory() {
-        File_system::tests::Test_read_directory(Initialize()).await;
+        file_system::tests::Test_read_directory(Initialize()).await;
     }
 
     #[Test]
     async fn test_set_position_directory() {
-        File_system::tests::Test_set_position_directory(Initialize()).await;
+        file_system::tests::Test_set_position_directory(Initialize()).await;
     }
 
     #[Test]
     async fn test_rewind_directory() {
-        File_system::tests::Test_rewind_directory(Initialize()).await;
+        file_system::tests::Test_rewind_directory(Initialize()).await;
     }
 
     #[Test]
     async fn test_create_remove_directory() {
-        File_system::tests::Test_create_remove_directory(Initialize()).await;
+        file_system::tests::Test_create_remove_directory(Initialize()).await;
     }
 
     #[cfg(feature = "std")]
     #[Test]
     async fn test_loader() {
-        File_system::tests::Test_loader(Initialize());
+        file_system::tests::Test_loader(Initialize());
     }
 }

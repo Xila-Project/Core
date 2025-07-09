@@ -204,8 +204,8 @@ impl Error_type {
 /// Convert Task module errors to file system errors.
 ///
 /// This allows transparent handling of task-related errors in file system operations.
-impl From<Task::Error_type> for Error_type {
-    fn from(_: Task::Error_type) -> Self {
+impl From<task::Error_type> for Error_type {
+    fn from(_: task::Error_type) -> Self {
         Error_type::Failed_to_get_task_informations
     }
 }
@@ -213,8 +213,8 @@ impl From<Task::Error_type> for Error_type {
 /// Convert Users module errors to file system errors.
 ///
 /// This allows transparent handling of user-related errors in file system operations.
-impl From<Users::Error_type> for Error_type {
-    fn from(_: Users::Error_type) -> Self {
+impl From<users::Error_type> for Error_type {
+    fn from(_: users::Error_type) -> Self {
         Error_type::Failed_to_get_users_informations
     }
 }

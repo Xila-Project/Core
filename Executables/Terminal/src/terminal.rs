@@ -1,16 +1,16 @@
 use alloc::string::String;
 use core::ffi::CStr;
 use file_system::Size_type;
-use graphics::{Color_type, Event_code_type, Key_type, Window_type, LVGL};
+use graphics::{lvgl, Color_type, Event_code_type, Key_type, Window_type};
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
-use crate::Error::Result_type;
+use crate::error::Result_type;
 
 pub(crate) struct Inner_type {
     window: Window_type,
     buffer: String,
-    display: *mut LVGL::lv_obj_t,
-    input: *mut LVGL::lv_obj_t,
+    display: *mut lvgl::lv_obj_t,
+    input: *mut lvgl::lv_obj_t,
     validated: Option<(&'static str, usize)>,
 }
 
@@ -25,25 +25,25 @@ impl Terminal_type {
     const HOME: &'static str = "\x1B[H";
 
     pub async fn new() -> Result_type<Self> {
-        let _lock = Graphics::get_instance().lock().await;
+        let _lock = graphics::get_instance().lock().await;
 
-        let mut window = Graphics::get_instance().create_window().await?;
+        let mut window = graphics::get_instance().create_window().await?;
 
         unsafe {
             window.set_icon(">_", Color_type::BLACK);
 
-            LVGL::lv_obj_set_flex_flow(
+            lvgl::lv_obj_set_flex_flow(
                 window.get_object(),
-                LVGL::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN,
+                lvgl::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN,
             );
         }
 
         let container = unsafe {
-            let container = LVGL::lv_obj_create(window.get_object());
+            let container = lvgl::lv_obj_create(window.get_object());
 
-            LVGL::lv_obj_set_width(container, LVGL::lv_pct(100));
-            LVGL::lv_obj_set_flex_grow(container, 1);
-            LVGL::lv_obj_set_scroll_snap_y(container, LVGL::lv_scroll_snap_t_LV_SCROLL_SNAP_END);
+            lvgl::lv_obj_set_width(container, lvgl::lv_pct(100));
+            lvgl::lv_obj_set_flex_grow(container, 1);
+            lvgl::lv_obj_set_scroll_snap_y(container, lvgl::lv_scroll_snap_t_LV_SCROLL_SNAP_END);
 
             container
         };
@@ -51,33 +51,33 @@ impl Terminal_type {
         let buffer = String::with_capacity(80 * 24);
 
         let display = unsafe {
-            let label = LVGL::lv_label_create(container);
+            let label = lvgl::lv_label_create(container);
 
             if label.is_null() {
-                return Err(crate::Error::Error_type::Failed_to_create_object);
+                return Err(crate::error::Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_obj_set_width(label, LVGL::lv_pct(100));
-            LVGL::lv_label_set_text_static(label, buffer.as_ptr() as *const i8);
-            LVGL::lv_obj_set_style_text_font(
+            lvgl::lv_obj_set_width(label, lvgl::lv_pct(100));
+            lvgl::lv_label_set_text_static(label, buffer.as_ptr() as *const i8);
+            lvgl::lv_obj_set_style_text_font(
                 label,
-                &raw const LVGL::lv_font_unscii_8,
-                LVGL::LV_STATE_DEFAULT,
+                &raw const lvgl::lv_font_unscii_8,
+                lvgl::LV_STATE_DEFAULT,
             );
 
             label
         };
 
         let input = unsafe {
-            let input = LVGL::lv_textarea_create(window.get_object());
+            let input = lvgl::lv_textarea_create(window.get_object());
 
             if input.is_null() {
-                return Err(crate::Error::Error_type::Failed_to_create_object);
+                return Err(crate::error::Error_type::Failed_to_create_object);
             }
 
-            LVGL::lv_textarea_set_placeholder_text(input, c"Enter your command ...".as_ptr());
-            LVGL::lv_obj_set_width(input, LVGL::lv_pct(100));
-            LVGL::lv_textarea_set_one_line(input, true);
+            lvgl::lv_textarea_set_placeholder_text(input, c"Enter your command ...".as_ptr());
+            lvgl::lv_obj_set_width(input, lvgl::lv_pct(100));
+            lvgl::lv_textarea_set_one_line(input, true);
 
             input
         };
@@ -125,11 +125,11 @@ impl Terminal_type {
         inner.buffer += &text[start_index..];
         inner.buffer += "\0";
 
-        let _lock = Graphics::get_instance().lock().await;
+        let _lock = graphics::get_instance().lock().await;
 
         unsafe {
-            LVGL::lv_label_set_text(inner.display, inner.buffer.as_ptr() as *const i8);
-            LVGL::lv_obj_scroll_to_view(inner.display, true);
+            lvgl::lv_label_set_text(inner.display, inner.buffer.as_ptr() as *const i8);
+            lvgl::lv_obj_scroll_to_view(inner.display, true);
         }
 
         Ok(())
@@ -152,11 +152,11 @@ impl Terminal_type {
         inner.buffer += text[start_index..].trim();
         inner.buffer += "\n\0";
 
-        let _lock = Graphics::get_instance().lock().await;
+        let _lock = graphics::get_instance().lock().await;
 
         unsafe {
-            LVGL::lv_label_set_text(inner.display, inner.buffer.as_ptr() as *const i8);
-            LVGL::lv_obj_scroll_to_view(inner.display, true);
+            lvgl::lv_label_set_text(inner.display, inner.buffer.as_ptr() as *const i8);
+            lvgl::lv_obj_scroll_to_view(inner.display, true);
         }
 
         Ok(())
@@ -171,11 +171,11 @@ impl Terminal_type {
         };
 
         if *index >= string.len() {
-            let _lock = Graphics::get_instance().lock().await;
+            let _lock = graphics::get_instance().lock().await;
 
             unsafe {
-                LVGL::lv_textarea_set_text(inner.input, c"".as_ptr());
-                LVGL::lv_obj_remove_state(inner.input, LVGL::LV_STATE_DISABLED as _);
+                lvgl::lv_textarea_set_text(inner.input, c"".as_ptr());
+                lvgl::lv_obj_remove_state(inner.input, lvgl::LV_STATE_DISABLED as _);
             }
 
             inner.validated.take();
@@ -214,16 +214,16 @@ impl Terminal_type {
                         }
 
                         if character == b'\n' || character == b'\r' {
-                            let _lock = Graphics::get_instance().lock().await;
+                            let _lock = graphics::get_instance().lock().await;
 
                             let text = unsafe {
-                                let text = LVGL::lv_textarea_get_text(inner.input);
+                                let text = lvgl::lv_textarea_get_text(inner.input);
 
                                 CStr::from_ptr(text).to_str()?
                             };
 
                             unsafe {
-                                LVGL::lv_obj_add_state(inner.input, LVGL::LV_STATE_DISABLED as _);
+                                lvgl::lv_obj_add_state(inner.input, lvgl::LV_STATE_DISABLED as _);
                             }
 
                             drop(_lock);

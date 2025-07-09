@@ -460,7 +460,7 @@ pub mod tests {
     }
 
     pub async fn test_open_close_delete(File_system: impl File_system_traits) {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         let Path = get_test_path().Append("Test_open_close_delete").unwrap();
 
@@ -486,7 +486,7 @@ pub mod tests {
     }
 
     pub async fn test_read_write(File_system: impl File_system_traits) {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         let Path = get_test_path().Append("Test_read_write").unwrap();
 
@@ -531,7 +531,7 @@ pub mod tests {
     }
 
     pub async fn test_move(File_system: impl File_system_traits) {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         let Path = get_test_path().Append("Test_move").unwrap();
         let path_destination = get_test_path().Append("Test_move_destination").unwrap();
@@ -590,7 +590,7 @@ pub mod tests {
     }
 
     pub async fn test_set_position(File_system: impl File_system_traits) {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         let Path = get_test_path().Append("Test_set_position").unwrap();
 
@@ -641,7 +641,7 @@ pub mod tests {
     }
 
     pub async fn test_flush(File_system: impl File_system_traits) {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         let Path = get_test_path().Append("Test_flush").unwrap();
 
@@ -672,7 +672,7 @@ pub mod tests {
     }
 
     pub async fn test_set_get_metadata(File_system: impl File_system_traits) {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         let Path = get_test_path().Append("Test_set_owner").unwrap();
 
@@ -713,7 +713,7 @@ pub mod tests {
     }
 
     pub async fn test_read_directory(File_system: impl File_system_traits) {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
@@ -753,7 +753,7 @@ pub mod tests {
     }
 
     pub async fn test_set_position_directory(File_system: impl File_system_traits) {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
@@ -803,7 +803,7 @@ pub mod tests {
     }
 
     pub async fn test_rewind_directory(File_system: impl File_system_traits) {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         // Create multiple files
         for i in 0..10 {
@@ -859,7 +859,7 @@ pub mod tests {
     }
 
     pub async fn test_create_remove_directory(File_system: impl File_system_traits) {
-        let task = Task::get_instance().get_current_task_identifier().await;
+        let task = task::get_instance().get_current_task_identifier().await;
 
         let Path = get_test_path().Append("Test_create_directory").unwrap();
 
