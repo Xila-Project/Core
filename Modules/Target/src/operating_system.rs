@@ -1,17 +1,17 @@
 use std::env;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Operating_system_type {
+pub enum OperatingSystem {
     Windows,
     Linux,
     MacOS,
-    ESP_IDF,
+    EspIdf,
     WASI,
 }
 
-impl Operating_system_type {
-    pub fn get() -> Operating_system_type {
-        Operating_system_type::from(Self::get_raw())
+impl OperatingSystem {
+    pub fn get() -> OperatingSystem {
+        OperatingSystem::from(Self::get_raw())
     }
 
     pub fn get_raw() -> String {
@@ -19,14 +19,14 @@ impl Operating_system_type {
     }
 }
 
-impl From<String> for Operating_system_type {
+impl From<String> for OperatingSystem {
     fn from(s: String) -> Self {
         match s.as_str() {
-            "windows" => Operating_system_type::Windows,
-            "linux" => Operating_system_type::Linux,
-            "macos" => Operating_system_type::MacOS,
-            "espidf" => Operating_system_type::ESP_IDF,
-            "wasi" => Operating_system_type::WASI,
+            "windows" => OperatingSystem::Windows,
+            "linux" => OperatingSystem::Linux,
+            "macos" => OperatingSystem::MacOS,
+            "espidf" => OperatingSystem::EspIdf,
+            "wasi" => OperatingSystem::WASI,
             _ => panic!("Unknown operating system type : {s}"),
         }
     }

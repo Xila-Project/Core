@@ -3,7 +3,7 @@ use quote::quote;
 
 pub fn get() -> TokenStream {
     quote! {
-        pub unsafe fn object_delete(__pointer_table : &mut Pointer_table_type, __task: Task_identifier_type, object: u16) {
+        pub unsafe fn object_delete(__pointer_table : &mut PointerTable, __task: TaskIdentifier, object: u16) {
 
             let object = __pointer_table.remove(__task, object).unwrap();
 
@@ -17,13 +17,13 @@ pub fn get() -> TokenStream {
         }
 
         pub unsafe fn window_pop_event(
-            __environment: Environment_type,
-            __pointer_table: &mut Pointer_table_type,
+            __environment: Environment,
+            __pointer_table: &mut PointerTable,
             window: *mut lv_obj_t,
             code: *mut u32,
             target: *mut u16
         ) {
-            let mut window = graphics::Window_type::from_raw(window);
+            let mut window = graphics::Window::from_raw(window);
 
             if let Some(event) = window.pop_event() {
 
@@ -38,12 +38,12 @@ pub fn get() -> TokenStream {
         }
 
         pub unsafe fn window_get_event_code(window: *mut lv_obj_t) -> u32 {
-            let window = graphics::Window_type::from_raw(window);
+            let window = graphics::Window::from_raw(window);
 
             let code = if let Some(event) = window.peek_event() {
                 event.get_code() as u32
             } else {
-                graphics::Event_code_type::All as u32
+                graphics::EventKind::All as u32
             };
 
             core::mem::forget(window);
@@ -51,8 +51,8 @@ pub fn get() -> TokenStream {
             code
         }
 
-        pub unsafe fn window_get_event_target(__pointer_table: &mut Pointer_table_type, window: *mut lv_obj_t) -> u16 {
-            let window = graphics::Window_type::from_raw(window);
+        pub unsafe fn window_get_event_target(__pointer_table: &mut PointerTable, window: *mut lv_obj_t) -> u16 {
+            let window = graphics::Window::from_raw(window);
 
             let target = if let Some(event) = window.peek_event() {
                 event.get_target()
@@ -68,14 +68,14 @@ pub fn get() -> TokenStream {
         }
 
         pub unsafe fn window_next_event(window: *mut lv_obj_t) {
-            let mut window = graphics::Window_type::from_raw(window);
+            let mut window = graphics::Window::from_raw(window);
 
             window.pop_event();
 
             core::mem::forget(window);
         }
 
-        pub unsafe fn buttonmatrix_set_map(__environment : Environment_type, __pointer_table : &mut Pointer_table_type, __task: Task_identifier_type, object: u16, map: *const *const i8) {
+        pub unsafe fn buttonmatrix_set_map(__environment : Environment, __pointer_table : &mut PointerTable, __task: TaskIdentifier, object: u16, map: *const *const i8) {
 
             let mut v : Vec<*const i8> = vec![];
             let mut i = 0;

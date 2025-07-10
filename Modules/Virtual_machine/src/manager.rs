@@ -8,17 +8,17 @@
 use core::{ffi::CStr, mem::forget};
 
 use alloc::{string::ToString, vec, vec::Vec};
-use file_system::Unique_file_identifier_type;
+use file_system::UniqueFileIdentifier;
 use synchronization::once_lock::OnceLock;
 use wamr_rust_sdk::{
     sys::{wasm_runtime_is_xip_file, wasm_runtime_load, wasm_runtime_register_module},
     value::WasmValue,
 };
 
-use crate::{Error_type, Instance_type, Module_type, Registrable_trait, Result_type, Runtime_type};
+use crate::{Error, Instance, Module, Registrable, Result, Runtime};
 
 /// Global singleton instance of the Virtual Machine Manager
-static MANAGER_INSTANCE: OnceLock<Manager_type> = OnceLock::new();
+static MANAGER_INSTANCE: OnceLock<Manager> = OnceLock::new();
 
 /// Initialize the Virtual Machine Manager with a set of registrable host functions.
 ///
@@ -39,10 +39,9 @@ static MANAGER_INSTANCE: OnceLock<Manager_type> = OnceLock::new();
 /// ```rust,ignore
 /// let manager = Initialize(&[&MyHostFunctions]);
 /// ```
-pub fn initialize(registrables: &[&dyn Registrable_trait]) -> &'static Manager_type {
-    MANAGER_INSTANCE.get_or_init(|| {
-        Manager_type::new(registrables).expect("Cannot create virtual machine manager")
-    });
+pub fn initialize(registrables: &[&dyn Registrable]) -> &'static Manager {
+    MANAGER_INSTANCE
+        .get_or_init(|| Manager::new(registrables).expect("Cannot create virtual machine manager"));
 
     get_instance()
 }
@@ -56,7 +55,7 @@ pub fn initialize(registrables: &[&dyn Registrable_trait]) -> &'static Manager_t
 /// # Returns
 ///
 /// A static reference to the Manager instance
-pub fn get_instance() -> &'static Manager_type {
+pub fn get_instance() -> &'static Manager {
     MANAGER_INSTANCE
         .try_get()
         .expect("Cannot get virtual machine manager instance before initialization")
@@ -66,15 +65,15 @@ pub fn get_instance() -> &'static Manager_type {
 ///
 /// This struct encapsulates the WASM runtime and provides high-level operations
 /// for executing WASM modules with proper I/O redirection and resource management.
-pub struct Manager_type {
-    runtime: Runtime_type,
+pub struct Manager {
+    runtime: Runtime,
 }
 
-unsafe impl Send for Manager_type {}
+unsafe impl Send for Manager {}
 
-unsafe impl Sync for Manager_type {}
+unsafe impl Sync for Manager {}
 
-impl Manager_type {
+impl Manager {
     /// Create a new Virtual Machine Manager with the given registrable host functions.
     ///
     /// This function initializes the WASM runtime, registers all provided host functions,
@@ -94,8 +93,8 @@ impl Manager_type {
     /// - Runtime initialization fails
     /// - Host function registration fails  
     /// - Module loading fails
-    pub fn new(registrables: &[&dyn Registrable_trait]) -> Result_type<Self> {
-        let mut runtime_builder = Runtime_type::builder();
+    pub fn new(registrables: &[&dyn Registrable]) -> Result<Self> {
+        let mut runtime_builder = Runtime::builder();
 
         for registrable in registrables {
             runtime_builder = runtime_builder.register(*registrable);
@@ -132,9 +131,9 @@ impl Manager_type {
     /// # Errors
     ///
     /// Returns an error if the module is not an XIP AOT compiled module or if the module cannot be loaded from the buffer.
-    fn load_module(&self, buffer: &[u8], xip: bool, name: &str) -> Result_type<()> {
+    fn load_module(&self, buffer: &[u8], xip: bool, name: &str) -> Result<()> {
         if unsafe { xip && !wasm_runtime_is_xip_file(buffer.as_ptr(), buffer.len() as u32) } {
-            return Err(Error_type::Invalid_module);
+            return Err(Error::InvalidModule);
         }
 
         unsafe {
@@ -154,7 +153,7 @@ impl Manager_type {
             );
 
             if module.is_null() {
-                return Err(Error_type::Compilation_error(
+                return Err(Error::CompilationError(
                     CStr::from_ptr(error_buffer.as_ptr())
                         .to_string_lossy()
                         .to_string(),
@@ -167,7 +166,7 @@ impl Manager_type {
                 error_buffer.as_mut_ptr(),
                 error_buffer.len() as u32,
             ) {
-                return Err(Error_type::Internal_error);
+                return Err(Error::InternalError);
             }
 
             forget(buffer);
@@ -201,13 +200,13 @@ impl Manager_type {
         &'static self,
         buffer: Vec<u8>,
         stack_size: usize,
-        standard_in: Unique_file_identifier_type,
-        standard_out: Unique_file_identifier_type,
-        standard_error: Unique_file_identifier_type,
-    ) -> Result_type<Vec<WasmValue>> {
+        standard_in: UniqueFileIdentifier,
+        standard_out: UniqueFileIdentifier,
+        standard_error: UniqueFileIdentifier,
+    ) -> Result<Vec<WasmValue>> {
         abi::get_instance()
             .call_abi(async || {
-                let module = Module_type::from_buffer(
+                let module = Module::from_buffer(
                     &self.runtime,
                     buffer,
                     "module",
@@ -217,7 +216,7 @@ impl Manager_type {
                 )
                 .await?;
 
-                let instance = Instance_type::new(&self.runtime, &module, stack_size).unwrap();
+                let instance = Instance::new(&self.runtime, &module, stack_size).unwrap();
 
                 let result = instance.call_main(&vec![])?;
 

@@ -1,51 +1,51 @@
 use core::str::Split;
 
-use super::{Path_type, SEPARATOR};
+use super::{Path, SEPARATOR};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Component_type<'a> {
+pub enum Component<'a> {
     Root,
     Current,
     Parent,
     Normal(&'a str),
 }
 
-impl<'a> From<&'a str> for Component_type<'a> {
+impl<'a> From<&'a str> for Component<'a> {
     fn from(item: &'a str) -> Self {
         match item {
-            "" => Component_type::Root,
-            "/" => Component_type::Root,
-            "." => Component_type::Current,
-            ".." => Component_type::Parent,
-            _ => Component_type::Normal(item),
+            "" => Component::Root,
+            "/" => Component::Root,
+            "." => Component::Current,
+            ".." => Component::Parent,
+            _ => Component::Normal(item),
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct Components_type<'a>(Split<'a, char>);
+pub struct Components<'a>(Split<'a, char>);
 
-impl<'a> Components_type<'a> {
-    pub fn new(path: &Path_type) -> Components_type {
-        Components_type(path.as_str().split(SEPARATOR))
+impl<'a> Components<'a> {
+    pub fn new(path: &Path) -> Components {
+        Components(path.as_str().split(SEPARATOR))
     }
 
-    pub fn get_common_components(self, other: Components_type<'a>) -> usize {
+    pub fn get_common_components(self, other: Components<'a>) -> usize {
         self.zip(other).take_while(|(a, b)| a == b).count()
     }
 }
 
-impl<'a> Iterator for Components_type<'a> {
-    type Item = Component_type<'a>;
+impl<'a> Iterator for Components<'a> {
+    type Item = Component<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(Component_type::from)
+        self.0.next().map(Component::from)
     }
 }
 
-impl DoubleEndedIterator for Components_type<'_> {
+impl DoubleEndedIterator for Components<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.next_back().map(Component_type::from)
+        self.0.next_back().map(Component::from)
     }
 }
 
@@ -59,43 +59,43 @@ mod tests {
     #[test]
     fn test_components() {
         assert_eq!(
-            Components_type::new(Path_type::from_str("/a/b/c")).collect::<Vec<_>>(),
+            Components::new(Path::from_str("/a/b/c")).collect::<Vec<_>>(),
             vec![
-                Component_type::Root,
-                Component_type::Normal("a"),
-                Component_type::Normal("b"),
-                Component_type::Normal("c")
+                Component::Root,
+                Component::Normal("a"),
+                Component::Normal("b"),
+                Component::Normal("c")
             ]
         );
 
         assert_eq!(
-            Components_type::new(Path_type::from_str("/a/./b/c")).collect::<Vec<_>>(),
+            Components::new(Path::from_str("/a/./b/c")).collect::<Vec<_>>(),
             vec![
-                Component_type::Root,
-                Component_type::Normal("a"),
-                Component_type::Current,
-                Component_type::Normal("b"),
-                Component_type::Normal("c")
+                Component::Root,
+                Component::Normal("a"),
+                Component::Current,
+                Component::Normal("b"),
+                Component::Normal("c")
             ]
         );
 
         assert_eq!(
-            Components_type::new(Path_type::from_str("a/b/c")).collect::<Vec<_>>(),
+            Components::new(Path::from_str("a/b/c")).collect::<Vec<_>>(),
             vec![
-                Component_type::Normal("a"),
-                Component_type::Normal("b"),
-                Component_type::Normal("c")
+                Component::Normal("a"),
+                Component::Normal("b"),
+                Component::Normal("c")
             ]
         );
 
         assert_eq!(
-            Components_type::new(Path_type::from_str("a/./../b/c")).collect::<Vec<_>>(),
+            Components::new(Path::from_str("a/./../b/c")).collect::<Vec<_>>(),
             vec![
-                Component_type::Normal("a"),
-                Component_type::Current,
-                Component_type::Parent,
-                Component_type::Normal("b"),
-                Component_type::Normal("c")
+                Component::Normal("a"),
+                Component::Current,
+                Component::Parent,
+                Component::Normal("b"),
+                Component::Normal("c")
             ]
         );
     }

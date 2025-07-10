@@ -1,5 +1,3 @@
-#![allow(non_camel_case_types)]
-
 use core::{
     ffi::{c_void, CStr},
     marker::PhantomData,
@@ -22,33 +20,31 @@ use wamr_rust_sdk::{
     value::WasmValue,
 };
 
-use crate::{
-    Custom_data_type, Error_type, Instance_type, Result_type, WASM_pointer_type, WASM_usize_type,
-};
+use crate::{CustomData, Error, Instance, Result, WasmPointer, WasmUsize};
 
-pub type Environment_pointer_type = wasm_exec_env_t;
+pub type EnvironmentPointer = wasm_exec_env_t;
 
 #[derive(Debug, Clone, Copy)]
-pub struct Environment_type<'a>(Environment_pointer_type, PhantomData<&'a ()>);
+pub struct Environment<'a>(EnvironmentPointer, PhantomData<&'a ()>);
 
-unsafe impl Send for Environment_type<'_> {}
+unsafe impl Send for Environment<'_> {}
 
-unsafe impl Sync for Environment_type<'_> {}
+unsafe impl Sync for Environment<'_> {}
 
-impl Environment_type<'_> {
-    pub fn from_raw_pointer(raw_pointer: Environment_pointer_type) -> Result_type<Self> {
+impl Environment<'_> {
+    pub fn from_raw_pointer(raw_pointer: EnvironmentPointer) -> Result<Self> {
         if raw_pointer.is_null() {
-            return Err(Error_type::Invalid_pointer);
+            return Err(Error::InvalidPointer);
         }
 
-        Ok(Self(raw_pointer as Environment_pointer_type, PhantomData))
+        Ok(Self(raw_pointer as EnvironmentPointer, PhantomData))
     }
 
-    pub fn from_instance(instance: &Instance_type) -> Result_type<Self> {
+    pub fn from_instance(instance: &Instance) -> Result<Self> {
         let instance_pointer = instance.get_inner_reference().get_inner_instance();
 
         if instance_pointer.is_null() {
-            return Err(Error_type::Invalid_pointer);
+            return Err(Error::InvalidPointer);
         }
         Ok(Self(
             unsafe { wasm_runtime_get_exec_env_singleton(instance_pointer) },
@@ -56,22 +52,22 @@ impl Environment_type<'_> {
         ))
     }
 
-    pub fn get_or_initialize_custom_data(&self) -> Result_type<&Custom_data_type> {
+    pub fn get_or_initialize_custom_data(&self) -> Result<&CustomData> {
         unsafe {
-            let custom_data = wasm_runtime_get_custom_data(self.get_instance_pointer())
-                as *const Custom_data_type;
+            let custom_data =
+                wasm_runtime_get_custom_data(self.get_instance_pointer()) as *const CustomData;
 
             let custom_data = if custom_data.is_null() {
                 let task = abi::get_instance().get_current_task_identifier();
 
-                let custom_data = Box::new(Custom_data_type::new(task));
+                let custom_data = Box::new(CustomData::new(task));
 
                 wasm_runtime_set_custom_data(
                     self.get_instance_pointer(),
                     Box::into_raw(custom_data) as *mut c_void,
                 );
 
-                wasm_runtime_get_custom_data(self.get_instance_pointer()) as *const Custom_data_type
+                wasm_runtime_get_custom_data(self.get_instance_pointer()) as *const CustomData
             } else {
                 custom_data
             };
@@ -84,10 +80,7 @@ impl Environment_type<'_> {
     ///
     /// This function is unsafe because it is not checked that the address is valid.
     /// Please use `Validate_WASM_pointer` to check the address.
-    pub unsafe fn convert_to_native_pointer<T>(
-        &self,
-        address: WASM_pointer_type,
-    ) -> Option<*mut T> {
+    pub unsafe fn convert_to_native_pointer<T>(&self, address: WasmPointer) -> Option<*mut T> {
         let pointer = wasm_runtime_addr_app_to_native(self.get_instance_pointer(), address as u64);
 
         if pointer.is_null() {
@@ -101,12 +94,12 @@ impl Environment_type<'_> {
     ///
     /// This function is unsafe because it is not checked that the address is valid.
     /// Please use `Validate_WASM_pointer` to check the address.
-    pub unsafe fn convert_to_wasm_pointer<T>(&self, pointer: *const T) -> WASM_pointer_type {
+    pub unsafe fn convert_to_wasm_pointer<T>(&self, pointer: *const T) -> WasmPointer {
         wasm_runtime_addr_native_to_app(self.get_instance_pointer(), pointer as *mut c_void)
-            as WASM_pointer_type
+            as WasmPointer
     }
 
-    pub fn validate_wasm_pointer(&self, address: WASM_pointer_type, size: WASM_usize_type) -> bool {
+    pub fn validate_wasm_pointer(&self, address: WasmPointer, size: WasmUsize) -> bool {
         unsafe {
             wasm_runtime_validate_app_addr(self.get_instance_pointer(), address as u64, size as u64)
         }
@@ -128,7 +121,7 @@ impl Environment_type<'_> {
         &self,
         function_index: u32,
         parameters: &Vec<WasmValue>,
-    ) -> Result_type<()> {
+    ) -> Result<()> {
         let mut arguments = Vec::new();
 
         for parameter in parameters {
@@ -153,7 +146,7 @@ impl Environment_type<'_> {
             let exception_message =
                 String::from_utf8_lossy(exception_message.to_bytes()).to_string();
 
-            return Err(Error_type::Execution_error(exception_message));
+            return Err(Error::ExecutionError(exception_message));
         }
 
         Ok(())
@@ -161,12 +154,12 @@ impl Environment_type<'_> {
 
     /// Create a new execution environment.
     /// This environment should be initialized with `Initialize_thread_environment` and deinitialized with `Deinitialize_thread_environment`.
-    pub fn create_environment(&self, stack_size: usize) -> Result_type<Self> {
+    pub fn create_environment(&self, stack_size: usize) -> Result<Self> {
         let execution_environment =
             unsafe { wasm_runtime_create_exec_env(self.get_instance_pointer(), stack_size as u32) };
 
         if execution_environment.is_null() {
-            return Err(Error_type::Execution_error(
+            return Err(Error::ExecutionError(
                 "Execution environment creation failed".to_string(),
             ));
         }
@@ -188,7 +181,7 @@ impl Environment_type<'_> {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn get_inner_reference(&self) -> Environment_pointer_type {
+    pub(crate) fn get_inner_reference(&self) -> EnvironmentPointer {
         self.0
     }
 }

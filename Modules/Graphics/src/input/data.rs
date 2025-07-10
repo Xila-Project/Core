@@ -1,36 +1,31 @@
 use core::mem::transmute;
 
-use crate::{lvgl, Point_type};
+use crate::{lvgl, Point};
 
-use super::{Key_type, State_type};
+use super::{Key, State};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(C)]
 pub struct Input_data_type {
     pub r#continue: bool,
-    pub point: Point_type,
-    pub state: State_type,
-    pub key: Key_type,
+    pub point: Point,
+    pub state: State,
+    pub key: Key,
 }
 
 impl Default for Input_data_type {
     fn default() -> Self {
         Self {
-            point: Point_type::default(),
-            state: State_type::default(),
-            key: Key_type::Character(0),
+            point: Point::default(),
+            state: State::default(),
+            key: Key::Character(0),
             r#continue: false,
         }
     }
 }
 
 impl Input_data_type {
-    pub const fn new(
-        point: Point_type,
-        state: State_type,
-        key: Key_type,
-        r#continue: bool,
-    ) -> Self {
+    pub const fn new(point: Point, state: State, key: Key, r#continue: bool) -> Self {
         Self {
             point,
             state,
@@ -43,15 +38,15 @@ impl Input_data_type {
         self.r#continue
     }
 
-    pub const fn get_point(&self) -> &Point_type {
+    pub const fn get_point(&self) -> &Point {
         &self.point
     }
 
-    pub const fn get_touch(&self) -> &State_type {
+    pub const fn get_touch(&self) -> &State {
         &self.state
     }
 
-    pub const fn get_key(&self) -> Key_type {
+    pub const fn get_key(&self) -> Key {
         self.key
     }
 
@@ -59,19 +54,19 @@ impl Input_data_type {
         self.r#continue = r#continue;
     }
 
-    pub fn set_point(&mut self, point: Point_type) {
+    pub fn set_point(&mut self, point: Point) {
         self.point = point;
     }
 
-    pub fn set_state(&mut self, touch: State_type) {
+    pub fn set_state(&mut self, touch: State) {
         self.state = touch;
     }
 
-    pub fn set_key(&mut self, key: Key_type) {
+    pub fn set_key(&mut self, key: Key) {
         self.key = key;
     }
 
-    pub fn set(&mut self, point: Point_type, touch: State_type) {
+    pub fn set(&mut self, point: Point, touch: State) {
         self.point = point;
         self.state = touch;
     }
@@ -105,7 +100,7 @@ impl From<Input_data_type> for lvgl::lv_indev_data_t {
 
         let state = value.get_touch();
 
-        if *state == State_type::Pressed {
+        if *state == State::Pressed {
             input_device_data.point = (*value.get_point()).into();
         }
 

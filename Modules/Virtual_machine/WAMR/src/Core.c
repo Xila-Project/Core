@@ -1,4 +1,4 @@
-#include "../../../ABI/include/Xila.h"
+#include "../../../ABI/include/xila.h"
 #include "platform_api_vmcore.h"
 
 /****************************************************
@@ -30,17 +30,17 @@ void bh_platform_destroy(void) {}
 
 void *os_malloc(unsigned size)
 {
-    return Xila_memory_allocate(NULL, size, sizeof(void *), 0);
+    return xila_memory_allocate(NULL, size, sizeof(void *), 0);
 }
 
 void *os_realloc(void *ptr, unsigned size)
 {
-    return Xila_memory_reallocate(ptr, size);
+    return xila_memory_reallocate(ptr, size);
 }
 
 void os_free(void *ptr)
 {
-    Xila_memory_deallocate(ptr);
+    xila_memory_deallocate(ptr);
 }
 
 /**omefile) will trigger cmake to rerun if that file changes and you're building s
@@ -81,7 +81,7 @@ int os_vprintf(const char *format, va_list ap)
  */
 uint64 os_time_get_boot_us(void)
 {
-    return Xila_time_get_time_since_startup_microseconds();
+    return xila_time_get_time_since_startup_microseconds();
 }
 
 /**
@@ -89,7 +89,7 @@ uint64 os_time_get_boot_us(void)
  */
 uint64 os_time_thread_cputime_us(void)
 {
-    return Xila_time_get_cpu();
+    return xila_time_get_cpu();
 }
 
 /**
@@ -98,7 +98,7 @@ uint64 os_time_thread_cputime_us(void)
  */
 korp_tid os_self_thread(void)
 {
-    return Xila_get_current_thread_identifier();
+    return xila_get_current_thread_identifier();
 }
 
 /**
@@ -108,7 +108,7 @@ korp_tid os_self_thread(void)
  */
 uint8 *os_thread_get_stack_boundary(void)
 {
-    return Xila_thread_get_stack_boundary();
+    return xila_thread_get_stack_boundary();
 }
 
 /**
@@ -128,7 +128,7 @@ void os_thread_jit_write_protect_np(bool enabled)
 
 int os_mutex_init(korp_mutex *mutex)
 {
-    if (Xila_initialize_mutex(mutex))
+    if (xila_initialize_mutex(mutex))
         return 0;
 
     return 1;
@@ -136,7 +136,7 @@ int os_mutex_init(korp_mutex *mutex)
 
 int os_mutex_destroy(korp_mutex *mutex)
 {
-    if (Xila_destroy_mutex(mutex))
+    if (xila_destroy_mutex(mutex))
         return 0;
 
     return 1;
@@ -144,7 +144,7 @@ int os_mutex_destroy(korp_mutex *mutex)
 
 int os_mutex_lock(korp_mutex *mutex)
 {
-    if (Xila_lock_mutex(mutex))
+    if (xila_lock_mutex(mutex))
         return 0;
 
     return 1;
@@ -152,7 +152,7 @@ int os_mutex_lock(korp_mutex *mutex)
 
 int os_mutex_unlock(korp_mutex *mutex)
 {
-    if (Xila_unlock_mutex(mutex))
+    if (xila_unlock_mutex(mutex))
         return 0;
 
     return 1;
@@ -164,29 +164,29 @@ int os_mutex_unlock(korp_mutex *mutex)
  **************************************************/
 
 
-Xila_memory_capabilities_type To_xila_memory_capability(int prot)
+XilaMemoryCapabilities To_xila_memory_capability(int prot)
 {
-    Xila_memory_capabilities_type Xila_protection = 0;
+    XilaMemoryCapabilities xila_protection = 0;
 
     if (prot & MMAP_PROT_EXEC)
-        Xila_protection |= XILA_MEMORY_CAPABILITIES_EXECUTE;
+        xila_protection |= XILA_MEMORY_CAPABILITIES_EXECUTE;
 
-    return Xila_protection;
+    return xila_protection;
 }
 
 
 void *os_mmap(void *hint, size_t size, int prot, int flags, os_file_handle file)
 {
-    Xila_memory_capabilities_type Xila_protection = To_xila_memory_capability(prot);
+    XilaMemoryCapabilities xila_protection = To_xila_memory_capability(prot);
 
-    //Xila_memory_flags_type Xila_flags = To_xila_memory_flags(flags);
+    //xila_memory_flags_type xila_flags = To_xila_memory_flags(flags);
 
-    return Xila_memory_allocate(hint, size, sizeof(void *), Xila_protection);
+    return xila_memory_allocate(hint, size, sizeof(void *), xila_protection);
 }
 
 void os_munmap(void *addr, size_t size)
 {
-    Xila_memory_deallocate(addr);
+    xila_memory_deallocate(addr);
 }
 
 int os_mprotect(void *addr, size_t size, int prot)
@@ -196,7 +196,7 @@ int os_mprotect(void *addr, size_t size, int prot)
 
 int os_getpagesize()
 {
-    return Xila_memory_get_page_size();
+    return xila_memory_get_page_size();
 }
 
 /* Doesn't guarantee that protection flags will be preserved.
@@ -219,7 +219,7 @@ os_get_dbus_mirror(void *ibus);
  */
 void os_dcache_flush(void)
 {
-    Xila_memory_flush_data_cache();
+    xila_memory_flush_data_cache();
 }
 
 /**
@@ -227,5 +227,5 @@ void os_dcache_flush(void)
  */
 void os_icache_flush(void *start, size_t len)
 {
-    Xila_memory_flush_instruction_cache(start, len);
+    xila_memory_flush_instruction_cache(start, len);
 }

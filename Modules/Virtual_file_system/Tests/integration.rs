@@ -1,8 +1,8 @@
 
-#![allow(non_camel_case_types)]
 
 
-use task::Task_identifier_type;
+
+use task::TaskIdentifier;
 
 use file_system::{
     create_device, Create_file_system, Flags_type, Memory_device_type, Mode_type, Open_type,
@@ -10,9 +10,9 @@ use file_system::{
 };
 #[cfg(target_os = "linux")]
 use task::Test;
-use virtual_file_system::{File_type, Virtual_file_system_type};
+use virtual_file_system::{FileType, VirtualFileSystemType};
 
-async fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>) {
+async fn Initialize<'a>() -> (TaskIdentifier, VirtualFileSystemType<'a>) {
     let Task_instance = task::Initialize();
 
     unsafe {
@@ -21,20 +21,20 @@ async fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>
 
     let _ = users::Initialize();
 
-    let _ = time::Initialize(create_device!(drivers::native::Time_driver_type::New()));
+    let _ = time::Initialize(create_device!(drivers::native::Time_driver_type::new()));
 
     let Task = Task_instance
         .get_current_task_identifier()
         .expect("Failed to get current task identifier");
 
-    let Device = create_device!(Memory_device_type::<512>::New(1024 * 512));
+    let Device = create_device!(Memory_device_type::<512>::new(1024 * 512));
 
     let Cache_size = 256;
 
     little_fs::File_system_type::Format(Device.clone(), Cache_size).unwrap();
-    let File_system = little_fs::File_system_type::New(Device, Cache_size).unwrap();
+    let File_system = little_fs::File_system_type::new(Device, Cache_size).unwrap();
 
-    let Virtual_file_system = Virtual_file_system_type::New(
+    let Virtual_file_system = VirtualFileSystemType::new(
         Task_instance,
         users::get_instance(),
         time::get_instance(),
@@ -47,16 +47,16 @@ async fn Initialize<'a>() -> (Task_identifier_type, Virtual_file_system_type<'a>
 }
 
 #[cfg(target_os = "linux")]
-#[Test]
+#[test]
 async fn test_file() {
     let (_, Virtual_file_system) = Initialize();
 
     let File_path = "/file";
 
-    let File = File_type::Open(
+    let File = FileType::Open(
         &Virtual_file_system,
         File_path,
-        Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), None),
+        Flags_type::new(Mode_type::Read_write, Some(Open_type::Create_only), None),
     )
     .unwrap();
 
@@ -78,12 +78,12 @@ async fn test_file() {
 }
 
 #[cfg(target_os = "linux")]
-#[Test]
+#[test]
 async fn test_unnamed_pipe() {
     let (Task, Virtual_file_system) = Initialize();
 
     let (Pipe_read, Pipe_write) =
-        File_type::Create_unnamed_pipe(&Virtual_file_system, 512, Status_type::default(), Task)
+        FileType::Create_unnamed_pipe(&Virtual_file_system, 512, Status_type::default(), Task)
             .unwrap();
 
     let Data = b"Hello, world!";
@@ -98,7 +98,7 @@ async fn test_unnamed_pipe() {
 }
 
 #[cfg(target_os = "linux")]
-#[Test]
+#[test]
 async fn test_named_pipe() {
     let (Task, Virtual_file_system) = Initialize();
 
@@ -109,9 +109,9 @@ async fn test_named_pipe() {
         .unwrap();
 
     let Pipe_read =
-        File_type::Open(&Virtual_file_system, Pipe_path, Mode_type::Read_only.into()).unwrap();
+        FileType::Open(&Virtual_file_system, Pipe_path, Mode_type::Read_only.into()).unwrap();
 
-    let Pipe_write = File_type::Open(
+    let Pipe_write = FileType::Open(
         &Virtual_file_system,
         Pipe_path,
         Mode_type::Write_only.into(),
@@ -134,19 +134,19 @@ async fn test_named_pipe() {
 }
 
 #[cfg(target_os = "linux")]
-#[Test]
+#[test]
 fn test_device() {
     let (Task, Virtual_file_system) = Initialize();
 
     const Device_path: &Path_type = Path_type::From_str("/Device");
 
-    let Device = create_device!(Memory_device_type::<512>::New(512));
+    let Device = create_device!(Memory_device_type::<512>::new(512));
 
     Virtual_file_system
         .Mount_static_device(Task, &Device_path, Device)
         .unwrap();
 
-    let Device_file = File_type::Open(
+    let Device_file = FileType::Open(
         &Virtual_file_system,
         Device_path,
         Mode_type::Read_write.into(),

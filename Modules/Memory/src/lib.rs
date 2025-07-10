@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
@@ -18,4 +17,4 @@ pub use protection::*;
 pub use r#trait::*;
 pub use statistics::*;
 
-pub type Layout_type = core::alloc::Layout;
+pub type Layout = core::alloc::Layout;

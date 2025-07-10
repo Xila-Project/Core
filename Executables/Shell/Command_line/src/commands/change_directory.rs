@@ -1,9 +1,9 @@
 use alloc::{borrow::ToOwned, format};
-use file_system::Path_type;
+use file_system::Path;
 
-use crate::Shell_type;
+use crate::Shell;
 
-impl Shell_type {
+impl Shell {
     pub async fn change_directory(&mut self, arguments: &[&str]) {
         if arguments.len() != 1 {
             self.standard
@@ -11,7 +11,7 @@ impl Shell_type {
                 .await;
         }
 
-        let current_directory = Path_type::from_str(arguments[0]).to_owned();
+        let current_directory = Path::from_str(arguments[0]).to_owned();
 
         let current_directory = if current_directory.is_absolute() {
             current_directory

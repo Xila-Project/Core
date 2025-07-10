@@ -1,24 +1,22 @@
-#![allow(non_camel_case_types)]
-
 use std::{env, path::Path};
 
 use syn::visit::Visit;
-use target::Architecture_type;
+use target::Architecture;
 
 mod generator;
 
 fn main() {
     // Build only for WASM32 architecture.
-    if Architecture_type::get() != Architecture_type::WASM32 {
+    if Architecture::get() != Architecture::WASM32 {
         return;
     }
 
     let input = lvgl_rust_sys::_bindgen_raw_src();
     let parsed_input = syn::parse_file(input).expect("Error parsing input file");
 
-    let mut context = bindings_utilities::context::LVGL_context::default();
+    let mut context = bindings_utilities::context::LvglContext::default();
     context.set_function_filtering(Some(
-        bindings_utilities::context::LVGL_context::filter_function,
+        bindings_utilities::context::LvglContext::filter_function,
     ));
     context.visit_file(&parsed_input);
     context.set_function_filtering(None);

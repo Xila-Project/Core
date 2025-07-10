@@ -1,9 +1,8 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
-use executable::Standard_type;
+use executable::Standard;
 
 use core::num::NonZeroUsize;
 
@@ -14,9 +13,9 @@ use alloc::{
     vec::Vec,
 };
 use executable::execute;
-use file_system::Path_type;
+use file_system::Path;
 
-use crate::{parser::parse, resolver::resolve, tokenizer::tokenize, Error_type, Result_type};
+use crate::{parser::parse, resolver::resolve, tokenizer::tokenize, Error, Result};
 
 mod commands;
 mod error;
@@ -26,54 +25,54 @@ mod resolver;
 mod tokenizer;
 
 use error::*;
-use file_system::Path_owned_type;
+use file_system::PathOwned;
 
-pub struct Shell_type {
-    standard: Standard_type,
-    current_directory: Path_owned_type,
+pub struct Shell {
+    standard: Standard,
+    current_directory: PathOwned,
     running: bool,
     user: String,
     host: String,
 }
 
-pub struct Shell_executable_type;
+pub struct ShellExecutable;
 
-executable::Implement_executable_device!(
-    Structure: Shell_executable_type,
+executable::implement_executable_device!(
+    Structure: ShellExecutable,
     Mount_path: "/Binaries/Command_line_shell",
     Main_function: main,
 );
 
-pub async fn main(standard: Standard_type, arguments: String) -> Result<(), NonZeroUsize> {
-    Shell_type::new(standard).main(arguments).await
+pub async fn main(standard: Standard, arguments: String) -> core::result::Result<(), NonZeroUsize> {
+    Shell::new(standard).main(arguments).await
 }
 
-impl Shell_type {
-    pub fn new(standard: Standard_type) -> Self {
+impl Shell {
+    pub fn new(standard: Standard) -> Self {
         Self {
             standard,
-            current_directory: Path_type::ROOT.to_owned(),
+            current_directory: Path::ROOT.to_owned(),
             running: true,
             user: "".to_string(),
             host: "".to_string(),
         }
     }
 
-    async fn run(&mut self, path: &Path_type, arguments: &[&str]) -> Result_type<()> {
+    async fn run(&mut self, path: &Path, arguments: &[&str]) -> Result<()> {
         let standard = self.standard.duplicate().await.unwrap();
 
         let input = arguments.join(" ");
 
         let _ = execute(path, input, standard)
             .await
-            .map_err(|_| Error_type::Failed_to_execute_command)?
+            .map_err(|_| Error::FailedToExecuteCommand)?
             .join()
             .await;
 
         Ok(())
     }
 
-    async fn parse_input(&mut self, input: &str, paths: &[&Path_type]) -> Result_type<()> {
+    async fn parse_input(&mut self, input: &str, paths: &[&Path]) -> Result<()> {
         let tokens = input.split_whitespace().collect::<Vec<&str>>();
 
         let tokens = tokenize(&tokens);
@@ -110,7 +109,7 @@ impl Shell_type {
                             .await;
                     }
 
-                    let path = Path_type::from_str(command.get_command());
+                    let path = Path::from_str(command.get_command());
 
                     if path.is_valid() {
                         if path.is_absolute() {
@@ -133,7 +132,7 @@ impl Shell_type {
         Ok(())
     }
 
-    async fn main_interactive(&mut self, paths: &[&Path_type]) -> Result<(), Error_type> {
+    async fn main_interactive(&mut self, paths: &[&Path]) -> Result<()> {
         let mut input = String::new();
 
         while self.running {
@@ -164,7 +163,7 @@ impl Shell_type {
         Ok(())
     }
 
-    pub async fn main(&mut self, arguments: String) -> Result<(), NonZeroUsize> {
+    pub async fn main(&mut self, arguments: String) -> core::result::Result<(), NonZeroUsize> {
         let user = match task::get_instance()
             .get_environment_variable(self.standard.get_task(), "User")
             .await
@@ -183,18 +182,18 @@ impl Shell_type {
         let paths = task::get_instance()
             .get_environment_variable(self.standard.get_task(), "Paths")
             .await
-            .map_err(|_| Error_type::Failed_to_get_path)?;
+            .map_err(|_| Error::FailedToGetPath)?;
 
         let paths = paths
             .get_value()
             .split(':')
-            .map(Path_type::from_str)
-            .collect::<Vec<&Path_type>>();
+            .map(Path::from_str)
+            .collect::<Vec<&Path>>();
 
         let host = task::get_instance()
             .get_environment_variable(self.standard.get_task(), "Host")
             .await
-            .map_err(|_| Error_type::Failed_to_get_path)?;
+            .map_err(|_| Error::FailedToGetPath)?;
         self.host = host.get_value().to_string();
 
         if arguments.is_empty() {

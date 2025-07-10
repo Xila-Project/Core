@@ -1,12 +1,11 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 pub static SHORTCUT: &str = r#"
 {
-    "Name": "Calculator",
-    "Command": "WASM",
-    "Arguments": "/Binaries/Calculator",
-    "Terminal": false,
-    "Icon_string": "Ca",
-    "Icon_color": [158, 158, 158]
+    "name": "Calculator",
+    "command": "WASM",
+    "arguments": "/Binaries/Calculator",
+    "terminal": false,
+    "icon_string": "Ca",
+    "icon_color": [158, 158, 158]
 }"#;

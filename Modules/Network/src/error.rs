@@ -1,93 +1,93 @@
 use core::{fmt::Display, num::NonZeroU8};
 
-pub type Result_type<T> = Result<T, Error_type>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
-pub enum Error_type {
-    Not_found = 1,
-    Permission_denied,
-    Connection_refused,
-    Connection_reset,
-    Host_unreachable,
-    Network_unreachable,
-    Connection_aborted,
-    Not_connected,
-    Address_in_use,
-    Address_not_available,
-    Network_down,
-    Broken_pipe,
-    Already_exists,
-    Would_block,
-    Invalid_input,
-    Invalid_data,
-    Timed_out,
-    Write_zero,
-    Storage_full,
-    Resource_busy,
+pub enum Error {
+    NotFound = 1,
+    PermissionDenied,
+    ConnectionRefused,
+    ConnectionReset,
+    HostUnreachable,
+    NetworkUnreachable,
+    ConnectionAborted,
+    NotConnected,
+    AddressInUse,
+    AddressNotAvailable,
+    NetworkDown,
+    BrokenPipe,
+    AlreadyExists,
+    WouldBlock,
+    InvalidInput,
+    InvalidData,
+    TimedOut,
+    WriteZero,
+    StorageFull,
+    ResourceBusy,
     Deadlock,
     Interrupted,
     Unsupported,
-    Unexpected_end_of_file,
-    Out_of_memory,
-    In_progress,
-    Poisonned_lock,
-    Unsupported_protocol,
-    Invalid_identifier,
-    Duplicate_identifier,
+    UnexpectedEndOfFile,
+    OutOfMemory,
+    InProgress,
+    PoisonnedLock,
+    UnsupportedProtocol,
+    InvalidIdentifier,
+    DuplicateIdentifier,
     Other,
 }
 
-impl Error_type {
+impl Error {
     pub const fn get_discriminant(&self) -> NonZeroU8 {
         unsafe { NonZeroU8::new_unchecked(*self as u8) }
     }
 }
 
-impl From<Error_type> for NonZeroU8 {
-    fn from(value: Error_type) -> Self {
+impl From<Error> for NonZeroU8 {
+    fn from(value: Error) -> Self {
         value.get_discriminant()
     }
 }
 
-impl Display for Error_type {
+impl Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Error_type::Not_found => write!(f, "Not found"),
-            Error_type::Permission_denied => write!(f, "Permission denied"),
-            Error_type::Connection_refused => write!(f, "Connection refused"),
-            Error_type::Connection_reset => write!(f, "Connection reset"),
-            Error_type::Host_unreachable => write!(f, "Host unreachable"),
-            Error_type::Network_unreachable => write!(f, "Network unreachable"),
-            Error_type::Connection_aborted => write!(f, "Connection aborted"),
-            Error_type::Not_connected => write!(f, "Not connected"),
-            Error_type::Address_in_use => write!(f, "Address in use"),
-            Error_type::Address_not_available => write!(f, "Address not available"),
-            Error_type::Network_down => write!(f, "Network down"),
-            Error_type::Broken_pipe => write!(f, "Broken pipe"),
-            Error_type::Already_exists => write!(f, "Already exists"),
-            Error_type::Would_block => write!(f, "Would block"),
-            Error_type::Invalid_input => write!(f, "Invalid input"),
-            Error_type::Invalid_data => write!(f, "Invalid data"),
-            Error_type::Timed_out => write!(f, "Timed out"),
-            Error_type::Write_zero => write!(f, "Write zero"),
-            Error_type::Storage_full => write!(f, "Storage full"),
-            Error_type::Resource_busy => write!(f, "Resource busy"),
-            Error_type::Deadlock => write!(f, "Deadlock"),
-            Error_type::Interrupted => write!(f, "Interrupted"),
-            Error_type::Unsupported => write!(f, "Unsupported operation"),
-            Error_type::Unexpected_end_of_file => write!(f, "Unexpected end of file"),
-            Error_type::Out_of_memory => write!(f, "Out of memory"),
-            Error_type::In_progress => write!(f, "In progress operation not completed yet"),
-            Error_type::Poisonned_lock => write!(f, "Poisoned lock encountered an error state"),
-            Error_type::Unsupported_protocol => write!(f, "Unsupported protocol used in operation"),
-            Error_type::Invalid_identifier => {
+            Error::NotFound => write!(f, "Not found"),
+            Error::PermissionDenied => write!(f, "Permission denied"),
+            Error::ConnectionRefused => write!(f, "Connection refused"),
+            Error::ConnectionReset => write!(f, "Connection reset"),
+            Error::HostUnreachable => write!(f, "Host unreachable"),
+            Error::NetworkUnreachable => write!(f, "Network unreachable"),
+            Error::ConnectionAborted => write!(f, "Connection aborted"),
+            Error::NotConnected => write!(f, "Not connected"),
+            Error::AddressInUse => write!(f, "Address in use"),
+            Error::AddressNotAvailable => write!(f, "Address not available"),
+            Error::NetworkDown => write!(f, "Network down"),
+            Error::BrokenPipe => write!(f, "Broken pipe"),
+            Error::AlreadyExists => write!(f, "Already exists"),
+            Error::WouldBlock => write!(f, "Would block"),
+            Error::InvalidInput => write!(f, "Invalid input"),
+            Error::InvalidData => write!(f, "Invalid data"),
+            Error::TimedOut => write!(f, "Timed out"),
+            Error::WriteZero => write!(f, "Write zero"),
+            Error::StorageFull => write!(f, "Storage full"),
+            Error::ResourceBusy => write!(f, "Resource busy"),
+            Error::Deadlock => write!(f, "Deadlock"),
+            Error::Interrupted => write!(f, "Interrupted"),
+            Error::Unsupported => write!(f, "Unsupported operation"),
+            Error::UnexpectedEndOfFile => write!(f, "Unexpected end of file"),
+            Error::OutOfMemory => write!(f, "Out of memory"),
+            Error::InProgress => write!(f, "In progress operation not completed yet"),
+            Error::PoisonnedLock => write!(f, "Poisoned lock encountered an error state"),
+            Error::UnsupportedProtocol => write!(f, "Unsupported protocol used in operation"),
+            Error::InvalidIdentifier => {
                 write!(f, "Invalid identifier provided for operation")
             }
-            Error_type::Duplicate_identifier => {
+            Error::DuplicateIdentifier => {
                 write!(f, "Duplicate identifier found in operation")
             }
-            Error_type::Other => write!(f, "Other error occurred"),
+            Error::Other => write!(f, "Other error occurred"),
         }
     }
 }

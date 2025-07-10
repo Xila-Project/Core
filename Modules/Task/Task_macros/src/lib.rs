@@ -1,5 +1,3 @@
-#![allow(non_camel_case_types)]
-
 use darling::{FromMeta, ast::NestedMeta};
 use proc_macro::TokenStream;
 use quote::{ToTokens, format_ident, quote};
@@ -10,11 +8,11 @@ fn default_task_path() -> syn::Expr {
 }
 
 fn default_executor() -> syn::Expr {
-    parse_str("drivers::standard_library::executor::Instantiate_static_executor!()").unwrap()
+    parse_str("drivers::standard_library::executor::instantiate_static_executor!()").unwrap()
 }
 
 #[derive(Debug, FromMeta, Clone)]
-struct Task_arguments_type {
+struct TaskArguments {
     #[darling(default = "default_task_path")]
     pub task_path: syn::Expr,
 
@@ -22,7 +20,7 @@ struct Task_arguments_type {
     pub executor: syn::Expr,
 }
 
-impl Task_arguments_type {
+impl TaskArguments {
     fn from_token_stream(arguments: TokenStream) -> Result<Self, darling::Error> {
         let arguments = NestedMeta::parse_meta_list(arguments.into()).unwrap();
         Self::from_list(&arguments.clone())
@@ -40,51 +38,33 @@ impl Task_arguments_type {
 /// - Be async
 /// - Have no arguments
 /// - Have no return type (or return unit type `()`)
-///
-/// # Usage
-///
-/// The macro accepts an optional path parameter to specify the Task module location:
-///
-/// Within the Task crate itself:
-/// ```rust
-/// #[Test] // Uses crate:: internally
-/// async fn my_test() { ... }
-/// ```
-///
-/// Outside the Task crate:
-/// ```rust
-/// #[Test("Task")] // Specify the module path
-/// async fn my_test() { ... }
-/// ```
-///
-/// You can also use any other path:
-/// ```rust
-/// #[Test("my_project::Task")]
-/// async fn my_test() { ... }
-/// ```
 #[proc_macro_attribute]
 #[allow(non_snake_case)]
-pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
-    let Arguments = match Task_arguments_type::from_token_stream(Arguments) {
+pub fn test(arguments: TokenStream, input: TokenStream) -> TokenStream {
+    let arguments = match TaskArguments::from_token_stream(arguments) {
         Ok(o) => o,
         Err(e) => return e.write_errors().into(),
     };
-    let Input_function = parse_macro_input!(Input as ItemFn);
+    let input_function = parse_macro_input!(input as ItemFn);
 
-    let Executor = Arguments.executor;
-    let Task_path = Arguments.task_path;
+    let executor = arguments.executor;
+    let task_path = arguments.task_path;
 
     // Extract function details
-    let Function_name = &Input_function.sig.ident;
+    let function_name = &input_function.sig.ident;
 
-    let Function_name_string = Function_name.to_string();
+    let function_name_string = function_name.to_string();
 
     // Check if function is async
-    let is_asynchronous = Input_function.sig.asyncness.is_some();
+    let is_asynchronous = input_function.sig.asyncness.is_some();
 
     if !is_asynchronous {
+        dbg!(
+            "Test functions must be async: {:?}",
+            input_function.sig.clone()
+        );
         return syn::Error::new_spanned(
-            Input_function.sig.fn_token,
+            input_function.sig.fn_token,
             "Test functions must be async",
         )
         .to_compile_error()
@@ -92,9 +72,9 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
     }
 
     // Check if function has no arguments
-    if !Input_function.sig.inputs.is_empty() {
+    if !input_function.sig.inputs.is_empty() {
         return syn::Error::new_spanned(
-            &Input_function.sig.inputs,
+            &input_function.sig.inputs,
             "Test functions must not have any arguments",
         )
         .to_compile_error()
@@ -102,12 +82,12 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
     }
 
     // Check if function has no return type (or returns unit type)
-    if let syn::ReturnType::Type(_, Return_type) = &Input_function.sig.output {
+    if let syn::ReturnType::Type(_, return_type) = &input_function.sig.output {
         // Allow unit type () but reject any other return type
-        if let syn::Type::Tuple(tuple) = Return_type.as_ref() {
+        if let syn::Type::Tuple(tuple) = return_type.as_ref() {
             if !tuple.elems.is_empty() {
                 return syn::Error::new_spanned(
-                    Return_type,
+                    return_type,
                     "Test functions must not have a return type",
                 )
                 .to_compile_error()
@@ -115,7 +95,7 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
             }
         } else {
             return syn::Error::new_spanned(
-                Return_type,
+                return_type,
                 "Test functions must not have a return type",
             )
             .to_compile_error()
@@ -124,31 +104,31 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
     }
 
     // Change ident to __inner to avoid name conflicts
-    let mut Input_function = Input_function.clone();
+    let mut Input_function = input_function.clone();
     Input_function.sig.ident = format_ident!("__inner");
 
     // Generate the new function
     quote! {
-        #[test]
-        fn #Function_name() {
+        #[std::prelude::v1::test]
+        fn #function_name() {
             #Input_function
 
             static mut __SPAWNER : usize = 0;
 
             unsafe {
-                let __EXECUTOR = #Executor;
+                let __EXECUTOR = #executor;
 
                 __EXECUTOR.run(|Spawner, __executor| {
-                    let Manager = #Task_path::initialize();
+                    let Manager = #task_path::initialize();
 
                     unsafe {
                         __SPAWNER = Manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
-                    #Task_path::futures::block_on(async move {
+                    #task_path::futures::block_on(async move {
                         Manager.spawn(
-                            #Task_path::Manager_type::ROOT_TASK_IDENTIFIER,
-                            #Function_name_string,
+                            #task_path::Manager::ROOT_TASK_IDENTIFIER,
+                            #function_name_string,
                             Some(__SPAWNER),
                             async move |_task| {
                                 __inner().await;
@@ -159,7 +139,7 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                 });
             }
             unsafe {
-                #Task_path::get_instance().unregister_spawner(__SPAWNER).expect("Failed to unregister spawner");
+                #task_path::get_instance().unregister_spawner(__SPAWNER).expect("Failed to unregister spawner");
             }
 
         }
@@ -185,7 +165,7 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
 /// The macro accepts an executor expression as a parameter:
 ///
 /// ```rust
-/// #[Run_with_executor(drivers::standard_library::Executor::Executor_type::New())]
+/// #[Run_with_executor(drivers::standard_library::Executor::Executor_type::new())]
 /// async fn my_function() {
 ///     println!("Running with custom executor!");
 /// }
@@ -198,8 +178,8 @@ pub fn Test(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 #[allow(non_snake_case)]
-pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
-    let Arguments = match Task_arguments_type::from_token_stream(Arguments) {
+pub fn run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
+    let Arguments = match TaskArguments::from_token_stream(Arguments) {
         Ok(o) => o,
         Err(e) => return e.write_errors().into(),
     };
@@ -279,7 +259,7 @@ pub fn Run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
 
                     #Task_path::futures::block_on(async move {
                         Manager.spawn(
-                            #Task_path::Manager_type::ROOT_TASK_IDENTIFIER,
+                            #Task_path::Manager::ROOT_TASK_IDENTIFIER,
                             #Function_name_string,
                             Some(__SPAWNER),
                             async move |_task| {

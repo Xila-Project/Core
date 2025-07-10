@@ -1,8 +1,8 @@
-use users::{Group_identifier_type, User_identifier_type};
+use users::{GroupIdentifier, UserIdentifier};
 
-use crate::{Permissions_type, Time_type, Type_type};
+use crate::{Kind, Permissions, Time};
 
-use super::Inode_type;
+use super::Inode;
 
 /// File attributes.
 ///
@@ -15,37 +15,37 @@ use super::Inode_type;
 /// - The file owner.
 /// - The file group.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Metadata_type {
+pub struct Metadata {
     /// The file inode.
-    inode: Option<Inode_type>,
+    inode: Option<Inode>,
     /// The file type.
-    r#type: Type_type,
+    r#type: Kind,
     /// The file creation time.
-    creation_time: Time_type,
+    creation_time: Time,
     /// The file modification time.
-    modification_time: Time_type,
+    modification_time: Time,
     /// The file access time.
-    access_time: Time_type,
+    access_time: Time,
     /// The file permissions.
-    permissions: Permissions_type,
+    permissions: Permissions,
     /// The file owner.
-    user: User_identifier_type,
+    user: UserIdentifier,
     /// The file group.
-    group: Group_identifier_type,
+    group: GroupIdentifier,
 }
 
-impl Metadata_type {
+impl Metadata {
     pub const IDENTIFIER: u8 = 0x01;
 
     pub fn get_default(
-        type_value: Type_type,
-        current_time: Time_type,
-        user: User_identifier_type,
-        group: Group_identifier_type,
+        type_value: Kind,
+        current_time: Time,
+        user: UserIdentifier,
+        group: GroupIdentifier,
     ) -> Option<Self> {
-        let permissions = Permissions_type::new_default(type_value);
+        let permissions = Permissions::new_default(type_value);
 
-        Some(Metadata_type {
+        Some(Metadata {
             inode: None,
             r#type: type_value,
             creation_time: current_time,
@@ -57,67 +57,67 @@ impl Metadata_type {
         })
     }
 
-    pub fn get_inode(&self) -> Option<Inode_type> {
+    pub fn get_inode(&self) -> Option<Inode> {
         self.inode
     }
 
-    pub fn get_type(&self) -> Type_type {
+    pub fn get_type(&self) -> Kind {
         self.r#type
     }
 
-    pub fn get_creation_time(&self) -> Time_type {
+    pub fn get_creation_time(&self) -> Time {
         self.creation_time
     }
 
-    pub fn get_modification_time(&self) -> Time_type {
+    pub fn get_modification_time(&self) -> Time {
         self.modification_time
     }
 
-    pub fn get_access_time(&self) -> Time_type {
+    pub fn get_access_time(&self) -> Time {
         self.access_time
     }
 
-    pub fn get_permissions(&self) -> Permissions_type {
+    pub fn get_permissions(&self) -> Permissions {
         self.permissions
     }
 
-    pub fn get_user(&self) -> User_identifier_type {
+    pub fn get_user(&self) -> UserIdentifier {
         self.user
     }
 
-    pub fn get_group(&self) -> Group_identifier_type {
+    pub fn get_group(&self) -> GroupIdentifier {
         self.group
     }
 
-    pub fn set_inode(&mut self, inode: Inode_type) {
+    pub fn set_inode(&mut self, inode: Inode) {
         self.inode = Some(inode);
     }
 
-    pub fn set_type(&mut self, r#type: Type_type) {
+    pub fn set_type(&mut self, r#type: Kind) {
         self.r#type = r#type;
     }
 
-    pub fn set_creation_time(&mut self, time: Time_type) {
+    pub fn set_creation_time(&mut self, time: Time) {
         self.creation_time = time;
     }
 
-    pub fn set_modification_time(&mut self, time: Time_type) {
+    pub fn set_modification_time(&mut self, time: Time) {
         self.modification_time = time;
     }
 
-    pub fn set_access_time(&mut self, time: Time_type) {
+    pub fn set_access_time(&mut self, time: Time) {
         self.access_time = time;
     }
 
-    pub fn set_permissions(&mut self, permissions: Permissions_type) {
+    pub fn set_permissions(&mut self, permissions: Permissions) {
         self.permissions = permissions;
     }
 
-    pub fn set_owner(&mut self, owner: User_identifier_type) {
+    pub fn set_owner(&mut self, owner: UserIdentifier) {
         self.user = owner;
     }
 
-    pub fn set_group(&mut self, group: Group_identifier_type) {
+    pub fn set_group(&mut self, group: GroupIdentifier) {
         self.group = group;
     }
 }
@@ -126,25 +126,25 @@ impl Metadata_type {
 mod tests {
     use super::*;
 
-    fn create_test_metadata() -> Metadata_type {
-        let current_time = Time_type::new(1640995200);
-        let user = User_identifier_type::new(1000);
-        let group = Group_identifier_type::new(1000);
+    fn create_test_metadata() -> Metadata {
+        let current_time = Time::new(1640995200);
+        let user = UserIdentifier::new(1000);
+        let group = GroupIdentifier::new(1000);
 
-        Metadata_type::get_default(Type_type::File, current_time, user, group).unwrap()
+        Metadata::get_default(Kind::File, current_time, user, group).unwrap()
     }
 
     #[test]
     fn test_metadata_creation() {
-        let current_time = Time_type::new(1640995200);
-        let user = User_identifier_type::new(1000);
-        let group = Group_identifier_type::new(1000);
+        let current_time = Time::new(1640995200);
+        let user = UserIdentifier::new(1000);
+        let group = GroupIdentifier::new(1000);
 
-        let metadata = Metadata_type::get_default(Type_type::File, current_time, user, group);
+        let metadata = Metadata::get_default(Kind::File, current_time, user, group);
         assert!(metadata.is_some());
 
         let metadata = metadata.unwrap();
-        assert_eq!(metadata.get_type(), Type_type::File);
+        assert_eq!(metadata.get_type(), Kind::File);
         assert_eq!(metadata.get_creation_time(), current_time);
         assert_eq!(metadata.get_modification_time(), current_time);
         assert_eq!(metadata.get_access_time(), current_time);
@@ -155,7 +155,7 @@ mod tests {
 
     #[test]
     fn test_metadata_identifier() {
-        assert_eq!(Metadata_type::IDENTIFIER, 0x01);
+        assert_eq!(Metadata::IDENTIFIER, 0x01);
     }
 
     #[test]
@@ -164,7 +164,7 @@ mod tests {
 
         // Test initial values
         assert!(metadata.get_inode().is_none());
-        assert_eq!(metadata.get_type(), Type_type::File);
+        assert_eq!(metadata.get_type(), Kind::File);
         assert_eq!(metadata.get_creation_time().as_u64(), 1640995200);
         assert_eq!(metadata.get_modification_time().as_u64(), 1640995200);
         assert_eq!(metadata.get_access_time().as_u64(), 1640995200);
@@ -177,16 +177,16 @@ mod tests {
         let mut metadata = create_test_metadata();
 
         // Test setting inode
-        let inode = Inode_type::new(42);
+        let inode = Inode::new(42);
         metadata.set_inode(inode);
         assert_eq!(metadata.get_inode(), Some(inode));
 
         // Test setting type
-        metadata.set_type(Type_type::Directory);
-        assert_eq!(metadata.get_type(), Type_type::Directory);
+        metadata.set_type(Kind::Directory);
+        assert_eq!(metadata.get_type(), Kind::Directory);
 
         // Test setting times
-        let new_time = Time_type::new(1641081600);
+        let new_time = Time::new(1641081600);
         metadata.set_creation_time(new_time);
         metadata.set_modification_time(new_time);
         metadata.set_access_time(new_time);
@@ -196,8 +196,8 @@ mod tests {
         assert_eq!(metadata.get_access_time(), new_time);
 
         // Test setting owner and group
-        let new_user = User_identifier_type::new(2000);
-        let new_group = Group_identifier_type::new(2000);
+        let new_user = UserIdentifier::new(2000);
+        let new_group = GroupIdentifier::new(2000);
 
         metadata.set_owner(new_user);
         metadata.set_group(new_group);
@@ -213,7 +213,7 @@ mod tests {
 
         // Test that we can set new permissions
         let mut metadata = metadata;
-        let new_permissions = Permissions_type::new_default(Type_type::Directory);
+        let new_permissions = Permissions::new_default(Kind::Directory);
         metadata.set_permissions(new_permissions);
 
         assert_eq!(metadata.get_permissions(), new_permissions);
@@ -240,7 +240,7 @@ mod tests {
 
         // Change one field and verify they're different
         let mut metadata3 = create_test_metadata();
-        metadata3.set_type(Type_type::Directory);
+        metadata3.set_type(Kind::Directory);
 
         assert_ne!(metadata1, metadata3);
     }
@@ -257,22 +257,20 @@ mod tests {
 
     #[test]
     fn test_metadata_different_types() {
-        let current_time = Time_type::new(1640995200);
-        let user = User_identifier_type::new(1000);
-        let group = Group_identifier_type::new(1000);
+        let current_time = Time::new(1640995200);
+        let user = UserIdentifier::new(1000);
+        let group = GroupIdentifier::new(1000);
 
         // Test different file types
-        let file_metadata =
-            Metadata_type::get_default(Type_type::File, current_time, user, group).unwrap();
+        let file_metadata = Metadata::get_default(Kind::File, current_time, user, group).unwrap();
         let dir_metadata =
-            Metadata_type::get_default(Type_type::Directory, current_time, user, group).unwrap();
+            Metadata::get_default(Kind::Directory, current_time, user, group).unwrap();
         let symlink_metadata =
-            Metadata_type::get_default(Type_type::Symbolic_link, current_time, user, group)
-                .unwrap();
+            Metadata::get_default(Kind::SymbolicLink, current_time, user, group).unwrap();
 
-        assert_eq!(file_metadata.get_type(), Type_type::File);
-        assert_eq!(dir_metadata.get_type(), Type_type::Directory);
-        assert_eq!(symlink_metadata.get_type(), Type_type::Symbolic_link);
+        assert_eq!(file_metadata.get_type(), Kind::File);
+        assert_eq!(dir_metadata.get_type(), Kind::Directory);
+        assert_eq!(symlink_metadata.get_type(), Kind::SymbolicLink);
 
         // They should have different permissions based on type
         assert_ne!(
@@ -289,12 +287,12 @@ mod tests {
         assert!(metadata.get_inode().is_none());
 
         // Set an inode
-        let inode1 = Inode_type::new(42);
+        let inode1 = Inode::new(42);
         metadata.set_inode(inode1);
         assert_eq!(metadata.get_inode(), Some(inode1));
 
         // Change the inode
-        let inode2 = Inode_type::new(84);
+        let inode2 = Inode::new(84);
         metadata.set_inode(inode2);
         assert_eq!(metadata.get_inode(), Some(inode2));
         assert_ne!(metadata.get_inode(), Some(inode1));
@@ -305,7 +303,7 @@ mod tests {
         let mut metadata = create_test_metadata();
 
         let initial_time = metadata.get_creation_time();
-        let new_time = Time_type::new(initial_time.as_u64() + 3600); // 1 hour later
+        let new_time = Time::new(initial_time.as_u64() + 3600); // 1 hour later
 
         // Test that times can be updated independently
         metadata.set_creation_time(new_time);
@@ -328,8 +326,8 @@ mod tests {
         let _initial_user = metadata.get_user();
         let initial_group = metadata.get_group();
 
-        let new_user = User_identifier_type::new(5000);
-        let new_group = Group_identifier_type::new(5000);
+        let new_user = UserIdentifier::new(5000);
+        let new_group = GroupIdentifier::new(5000);
 
         // Test user change
         metadata.set_owner(new_user);
@@ -347,12 +345,12 @@ mod tests {
         let mut metadata = create_test_metadata();
 
         // Modify all fields
-        let new_inode = Inode_type::new(999);
-        let new_type = Type_type::Socket;
-        let new_time = Time_type::new(2000000000);
-        let new_user = User_identifier_type::new(9999);
-        let new_group = Group_identifier_type::new(9999);
-        let new_permissions = Permissions_type::new_default(Type_type::Socket);
+        let new_inode = Inode::new(999);
+        let new_type = Kind::Socket;
+        let new_time = Time::new(2000000000);
+        let new_user = UserIdentifier::new(9999);
+        let new_group = GroupIdentifier::new(9999);
+        let new_permissions = Permissions::new_default(Kind::Socket);
 
         metadata.set_inode(new_inode);
         metadata.set_type(new_type);

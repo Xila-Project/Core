@@ -2,13 +2,13 @@ use core::ptr::null_mut;
 
 use graphics::lvgl;
 
-use crate::{desk::Desk_type, error::Result_type};
+use crate::{desk::DeskType, error::Result};
 
-pub struct Home_type {
+pub struct HomeType {
     button: *mut lvgl::lv_obj_t,
 }
 
-impl Drop for Home_type {
+impl Drop for HomeType {
     fn drop(&mut self) {
         unsafe {
             lvgl::lv_obj_delete_async(self.button);
@@ -16,15 +16,15 @@ impl Drop for Home_type {
     }
 }
 
-impl Home_type {
-    pub async fn new(desk: *mut lvgl::lv_obj_t) -> Result_type<Self> {
+impl HomeType {
+    pub async fn new(desk: *mut lvgl::lv_obj_t) -> Result<Self> {
         let _lock = graphics::get_instance().lock().await; // Lock the graphics
 
         let button = unsafe {
             let button = lvgl::lv_obj_create(lvgl::lv_layer_top());
 
             if button.is_null() {
-                return Err(crate::error::Error_type::Failed_to_create_object);
+                return Err(crate::error::Error::FailedToCreateObject);
             }
 
             lvgl::lv_obj_set_size(button, lvgl::lv_pct(40), 8);
@@ -88,6 +88,6 @@ unsafe extern "C" fn handle_released(event: *mut lvgl::lv_event_t) {
         lvgl::lv_obj_remove_flag(desk, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
         lvgl::lv_obj_move_foreground(desk);
 
-        lvgl::lv_obj_send_event(desk, Desk_type::HOME_EVENT.into_lvgl_code(), null_mut());
+        lvgl::lv_obj_send_event(desk, DeskType::HOME_EVENT.into_lvgl_code(), null_mut());
     }
 }

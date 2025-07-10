@@ -2,9 +2,9 @@ use core::fmt::Display;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub struct Port_type(u16);
+pub struct Port(u16);
 
-impl Port_type {
+impl Port {
     pub const ANY: Self = Self(0);
 
     pub const fn new(value: u16) -> Self {
@@ -20,7 +20,7 @@ impl Port_type {
     }
 }
 
-impl Display for Port_type {
+impl Display for Port {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.0)
     }

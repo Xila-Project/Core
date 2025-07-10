@@ -5,15 +5,15 @@ use super::*;
 use alloc::collections::BTreeMap;
 use core::fmt::Debug;
 
-impl Manager_type {
+impl Manager {
     /// Find the first available identifier for any identifier type with Into_inner() method
-    pub(crate) fn find_first_available_identifier<Raw_identifier_type, Identifier_type, V>(
-        map: &BTreeMap<Identifier_type, V>,
-        mut range: impl Iterator<Item = Raw_identifier_type>,
-    ) -> Option<Identifier_type>
+    pub(crate) fn find_first_available_identifier<RawIdentifier, Identifier, V>(
+        map: &BTreeMap<Identifier, V>,
+        mut range: impl Iterator<Item = RawIdentifier>,
+    ) -> Option<Identifier>
     where
-        Identifier_type: PartialEq<Raw_identifier_type> + From<Raw_identifier_type> + Debug,
-        Raw_identifier_type: Debug,
+        Identifier: PartialEq<RawIdentifier> + From<RawIdentifier> + Debug,
+        RawIdentifier: Debug,
     {
         for key in map.keys() {
             match range.next() {
@@ -31,22 +31,22 @@ impl Manager_type {
     }
 
     pub(crate) fn get_task(
-        inner: &Inner_type,
-        task_identifier: Task_identifier_type,
-    ) -> Result_type<&Metadata_type> {
+        inner: &InnerType,
+        task_identifier: TaskIdentifier,
+    ) -> Result<&MetadataType> {
         inner
             .tasks
             .get(&task_identifier)
-            .ok_or(Error_type::Invalid_task_identifier)
+            .ok_or(Error::InvalidTaskIdentifier)
     }
 
     pub(crate) fn get_task_mutable(
-        inner: &mut Inner_type,
-        task_identifier: Task_identifier_type,
-    ) -> Result_type<&mut Metadata_type> {
+        inner: &mut InnerType,
+        task_identifier: TaskIdentifier,
+    ) -> Result<&mut MetadataType> {
         inner
             .tasks
             .get_mut(&task_identifier)
-            .ok_or(Error_type::Invalid_task_identifier)
+            .ok_or(Error::InvalidTaskIdentifier)
     }
 }

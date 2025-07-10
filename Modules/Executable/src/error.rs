@@ -1,39 +1,38 @@
 use core::fmt::Display;
-use core::result::Result;
 
-pub type Result_type<T> = Result<T, Error_type>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
-pub enum Error_type {
-    File_system(file_system::Error_type),
-    Task(task::Error_type),
-    Failed_to_get_main_function,
-    Invalid_stack_size,
-    Permission_denied,
+pub enum Error {
+    FileSystem(file_system::Error),
+    Task(task::Error),
+    FailedToGetMainFunction,
+    InvalidStackSize,
+    PermissionDenied,
 }
 
-impl Display for Error_type {
+impl Display for Error {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
-            Error_type::File_system(error) => write!(formatter, "{error}"),
-            Error_type::Task(error) => write!(formatter, "{error}"),
-            Error_type::Failed_to_get_main_function => {
+            Error::FileSystem(error) => write!(formatter, "{error}"),
+            Error::Task(error) => write!(formatter, "{error}"),
+            Error::FailedToGetMainFunction => {
                 write!(formatter, "Failed to get main function")
             }
-            Error_type::Invalid_stack_size => write!(formatter, "Invalid stack size"),
-            Error_type::Permission_denied => write!(formatter, "Permission denied"),
+            Error::InvalidStackSize => write!(formatter, "Invalid stack size"),
+            Error::PermissionDenied => write!(formatter, "Permission denied"),
         }
     }
 }
 
-impl From<file_system::Error_type> for Error_type {
-    fn from(error: file_system::Error_type) -> Self {
-        Error_type::File_system(error)
+impl From<file_system::Error> for Error {
+    fn from(error: file_system::Error) -> Self {
+        Error::FileSystem(error)
     }
 }
 
-impl From<task::Error_type> for Error_type {
-    fn from(error: task::Error_type) -> Self {
-        Error_type::Task(error)
+impl From<task::Error> for Error {
+    fn from(error: task::Error) -> Self {
+        Error::Task(error)
     }
 }

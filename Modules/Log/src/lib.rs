@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
@@ -25,7 +24,7 @@ const GREY: &str = "\x1b[0;100m";
 const RESET: &str = "\x1b[0m";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Level_type {
+pub enum Level {
     Error = 1,
     Warn,
     Info,
@@ -33,20 +32,20 @@ pub enum Level_type {
     Trace,
 }
 
-impl From<log::Level> for Level_type {
+impl From<log::Level> for Level {
     fn from(level: log::Level) -> Self {
         match level {
-            log::Level::Error => Level_type::Error,
-            log::Level::Warn => Level_type::Warn,
-            log::Level::Info => Level_type::Info,
-            log::Level::Debug => Level_type::Debug,
-            log::Level::Trace => Level_type::Trace,
+            log::Level::Error => Level::Error,
+            log::Level::Warn => Level::Warn,
+            log::Level::Info => Level::Info,
+            log::Level::Debug => Level::Debug,
+            log::Level::Trace => Level::Trace,
         }
     }
 }
 
-pub trait Logger_trait: Send + Sync {
-    fn enabled(&self, level: Level_type) -> bool;
+pub trait LoggerTrait: Send + Sync {
+    fn enabled(&self, level: Level) -> bool;
 
     fn write(&self, arguments: fmt::Arguments);
 
@@ -84,11 +83,11 @@ pub trait Logger_trait: Send + Sync {
     }
 }
 
-struct Logger_type(&'static dyn Logger_trait);
+struct LoggerType(&'static dyn LoggerTrait);
 
-impl Log for Logger_type {
+impl Log for LoggerType {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        self.0.enabled(Level_type::from(metadata.level()))
+        self.0.enabled(Level::from(metadata.level()))
     }
 
     fn log(&self, record: &Record) {
@@ -103,23 +102,23 @@ impl Log for Logger_type {
     }
 }
 
-static LOGGER_INSTANCE: OnceLock<Logger_type> = OnceLock::new();
+static LOGGER_INSTANCE: OnceLock<LoggerType> = OnceLock::new();
 
-pub fn initialize(logger: &'static dyn Logger_trait) -> Result<(), log::SetLoggerError> {
-    let logger = LOGGER_INSTANCE.get_or_init(|| Logger_type(logger));
+pub fn initialize(logger: &'static dyn LoggerTrait) -> Result<(), log::SetLoggerError> {
+    let logger = LOGGER_INSTANCE.get_or_init(|| LoggerType(logger));
 
     set_logger(logger).expect("Failed to set logger");
     set_max_level(log::LevelFilter::Trace);
     Ok(())
 }
 
-pub fn test_write(logger: &impl Logger_trait) {
+pub fn test_write(logger: &impl LoggerTrait) {
     for i in 0..5 {
         logger.write(format_args!("This is a test message number {i}."));
     }
 }
 
-pub fn test_log(logger: &impl Logger_trait) {
+pub fn test_log(logger: &impl LoggerTrait) {
     logger.log(
         &Record::builder()
             .level(log::Level::Info)
@@ -152,6 +151,6 @@ pub fn test_log(logger: &impl Logger_trait) {
     );
 }
 
-pub fn test_flush(logger: &impl Logger_trait) {
+pub fn test_flush(logger: &impl LoggerTrait) {
     logger.flush();
 }

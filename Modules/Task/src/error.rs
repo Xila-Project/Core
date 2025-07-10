@@ -1,36 +1,34 @@
-#![allow(non_camel_case_types)]
-
 use core::{fmt, num::NonZeroU32};
 
-pub type Result_type<T> = core::result::Result<T, Error_type>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
 #[repr(C)]
-pub enum Error_type {
-    Invalid_task_identifier = 1,
-    Invalid_spawner_identifier,
-    Thread_not_registered,
-    Thread_already_registered,
-    Failed_to_create_thread,
-    No_thread_for_task,
-    Failed_to_spawn_thread,
-    Invalid_environment_variable,
-    Too_many_tasks,
-    Too_many_spawners,
-    Already_initialized,
-    Already_set,
-    Not_initialized,
-    No_spawner_available,
+pub enum Error {
+    InvalidTaskIdentifier = 1,
+    InvalidSpawnerIdentifier,
+    ThreadNotRegistered,
+    ThreadAlreadyRegistered,
+    FailedToCreateThread,
+    NoThreadForTask,
+    FailedToSpawnThread,
+    InvalidEnvironmentVariable,
+    TooManyTasks,
+    TooManySpawners,
+    AlreadyInitialized,
+    AlreadySet,
+    NotInitialized,
+    NoSpawnerAvailable,
 }
 
-impl fmt::Display for Error_type {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{self:?}")
     }
 }
 
-impl From<Error_type> for NonZeroU32 {
-    fn from(error: Error_type) -> Self {
+impl From<Error> for NonZeroU32 {
+    fn from(error: Error) -> Self {
         unsafe { NonZeroU32::new_unchecked(error as u32) }
     }
 }
@@ -44,29 +42,29 @@ mod tests {
 
     #[test]
     fn test_error_type_display() {
-        let error = Error_type::Invalid_task_identifier;
+        let error = Error::InvalidTaskIdentifier;
         let display_string = format!("{error}");
-        assert_eq!(display_string, "Invalid_task_identifier");
+        assert_eq!(display_string, "InvalidTaskIdentifier");
 
-        let error = Error_type::Too_many_tasks;
+        let error = Error::TooManyTasks;
         let display_string = format!("{error}");
         assert_eq!(display_string, "Too_many_tasks");
     }
 
     #[test]
     fn test_error_type_debug() {
-        let error = Error_type::Invalid_spawner_identifier;
+        let error = Error::InvalidSpawnerIdentifier;
         let debug_string = format!("{error:?}");
         assert_eq!(debug_string, "Invalid_spawner_identifier");
 
-        let error = Error_type::Thread_not_registered;
+        let error = Error::ThreadNotRegistered;
         let debug_string = format!("{error:?}");
         assert_eq!(debug_string, "Thread_not_registered");
     }
 
     #[test]
     fn test_error_type_clone() {
-        let error1 = Error_type::Failed_to_create_thread;
+        let error1 = Error::FailedToCreateThread;
         let error2 = error1.clone();
 
         assert_eq!(format!("{error1:?}"), format!("{:?}", error2));
@@ -75,20 +73,20 @@ mod tests {
     #[test]
     fn test_all_error_variants() {
         let errors = vec![
-            Error_type::Invalid_task_identifier,
-            Error_type::Invalid_spawner_identifier,
-            Error_type::Thread_not_registered,
-            Error_type::Thread_already_registered,
-            Error_type::Failed_to_create_thread,
-            Error_type::No_thread_for_task,
-            Error_type::Failed_to_spawn_thread,
-            Error_type::Invalid_environment_variable,
-            Error_type::Too_many_tasks,
-            Error_type::Too_many_spawners,
-            Error_type::Already_initialized,
-            Error_type::Already_set,
-            Error_type::Not_initialized,
-            Error_type::No_spawner_available,
+            Error::InvalidTaskIdentifier,
+            Error::InvalidSpawnerIdentifier,
+            Error::ThreadNotRegistered,
+            Error::ThreadAlreadyRegistered,
+            Error::FailedToCreateThread,
+            Error::NoThreadForTask,
+            Error::FailedToSpawnThread,
+            Error::InvalidEnvironmentVariable,
+            Error::TooManyTasks,
+            Error::TooManySpawners,
+            Error::AlreadyInitialized,
+            Error::AlreadySet,
+            Error::NotInitialized,
+            Error::NoSpawnerAvailable,
         ];
 
         // Test that all variants can be created and formatted
@@ -105,20 +103,20 @@ mod tests {
     #[test]
     fn test_error_to_nonzero_u32_conversion() {
         let errors_and_expected_values = vec![
-            (Error_type::Invalid_task_identifier, 1u32),
-            (Error_type::Invalid_spawner_identifier, 2u32),
-            (Error_type::Thread_not_registered, 3u32),
-            (Error_type::Thread_already_registered, 4u32),
-            (Error_type::Failed_to_create_thread, 5u32),
-            (Error_type::No_thread_for_task, 6u32),
-            (Error_type::Failed_to_spawn_thread, 7u32),
-            (Error_type::Invalid_environment_variable, 8u32),
-            (Error_type::Too_many_tasks, 9u32),
-            (Error_type::Too_many_spawners, 10u32),
-            (Error_type::Already_initialized, 11u32),
-            (Error_type::Already_set, 12u32),
-            (Error_type::Not_initialized, 13u32),
-            (Error_type::No_spawner_available, 14u32),
+            (Error::InvalidTaskIdentifier, 1u32),
+            (Error::InvalidSpawnerIdentifier, 2u32),
+            (Error::ThreadNotRegistered, 3u32),
+            (Error::ThreadAlreadyRegistered, 4u32),
+            (Error::FailedToCreateThread, 5u32),
+            (Error::NoThreadForTask, 6u32),
+            (Error::FailedToSpawnThread, 7u32),
+            (Error::InvalidEnvironmentVariable, 8u32),
+            (Error::TooManyTasks, 9u32),
+            (Error::TooManySpawners, 10u32),
+            (Error::AlreadyInitialized, 11u32),
+            (Error::AlreadySet, 12u32),
+            (Error::NotInitialized, 13u32),
+            (Error::NoSpawnerAvailable, 14u32),
         ];
 
         for (error, expected_value) in errors_and_expected_values {
@@ -129,7 +127,7 @@ mod tests {
 
     #[test]
     fn test_result_type_ok() {
-        let result: Result_type<i32> = Ok(42);
+        let result: Result<i32> = Ok(42);
         assert!(result.is_ok());
         if let Ok(value) = result {
             assert_eq!(value, 42);
@@ -138,19 +136,19 @@ mod tests {
 
     #[test]
     fn test_result_type_err() {
-        let result: Result_type<i32> = Err(Error_type::Invalid_task_identifier);
+        let result: Result<i32> = Err(Error::InvalidTaskIdentifier);
         assert!(result.is_err());
 
         if let Err(error) = result {
-            assert_eq!(format!("{error:?}"), "Invalid_task_identifier");
+            assert_eq!(format!("{error:?}"), "InvalidTaskIdentifier");
         }
     }
 
     #[test]
     fn test_error_in_result_chain() {
-        fn might_fail(should_fail: bool) -> Result_type<String> {
+        fn might_fail(should_fail: bool) -> Result<String> {
             if should_fail {
-                Err(Error_type::Too_many_tasks)
+                Err(Error::TooManyTasks)
             } else {
                 Ok("Success".to_string())
             }
@@ -172,11 +170,11 @@ mod tests {
 
     #[test]
     fn test_error_propagation() {
-        fn inner_function() -> Result_type<i32> {
-            Err(Error_type::Not_initialized)
+        fn inner_function() -> Result<i32> {
+            Err(Error::NotInitialized)
         }
 
-        fn outer_function() -> Result_type<String> {
+        fn outer_function() -> Result<String> {
             let _value = inner_function()?;
             Ok("This won't be reached".to_string())
         }
@@ -192,36 +190,36 @@ mod tests {
     #[test]
     fn test_error_size() {
         // Ensure the error type has a reasonable size
-        assert!(std::mem::size_of::<Error_type>() <= 8);
+        assert!(std::mem::size_of::<Error>() <= 8);
     }
 
     #[test]
     fn test_error_repr_c() {
         // Test that the error can be used in FFI contexts
         // This mainly ensures the #[repr(C)] attribute works as expected
-        let error = Error_type::Invalid_task_identifier;
-        let error_discriminant = unsafe { std::mem::transmute::<Error_type, u32>(error) };
+        let error = Error::InvalidTaskIdentifier;
+        let error_discriminant = unsafe { std::mem::transmute::<Error, u32>(error) };
         assert_eq!(error_discriminant, 1);
 
-        let error2 = Error_type::Invalid_spawner_identifier;
-        let error2_discriminant = unsafe { std::mem::transmute::<Error_type, u32>(error2) };
+        let error2 = Error::InvalidSpawnerIdentifier;
+        let error2_discriminant = unsafe { std::mem::transmute::<Error, u32>(error2) };
         assert_eq!(error2_discriminant, 2);
     }
 
     #[test]
     fn test_specific_error_scenarios() {
         // Test environment variable error specifically
-        let env_error = Error_type::Invalid_environment_variable;
+        let env_error = Error::InvalidEnvironmentVariable;
         let display_str = format!("{env_error}");
         let non_zero: NonZeroU32 = env_error.into();
         assert_eq!(non_zero.get(), 8u32);
         assert_eq!(display_str, "Invalid_environment_variable");
 
         // Test task-related errors
-        let task_error = Error_type::Invalid_task_identifier;
-        assert_eq!(format!("{task_error}"), "Invalid_task_identifier");
+        let task_error = Error::InvalidTaskIdentifier;
+        assert_eq!(format!("{task_error}"), "InvalidTaskIdentifier");
 
-        let spawner_error = Error_type::Invalid_spawner_identifier;
+        let spawner_error = Error::InvalidSpawnerIdentifier;
         assert_eq!(format!("{spawner_error}"), "Invalid_spawner_identifier");
     }
 }

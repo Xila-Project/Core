@@ -1,9 +1,9 @@
 use alloc::{borrow::ToOwned, format};
-use file_system::Path_type;
+use file_system::Path;
 
-use crate::Shell_type;
+use crate::Shell;
 
-impl Shell_type {
+impl Shell {
     pub async fn create_directory(&mut self, arguments: &[&str]) {
         if arguments.len() != 1 {
             self.standard
@@ -12,7 +12,7 @@ impl Shell_type {
             return;
         }
 
-        let path = Path_type::from_str(arguments[0]);
+        let path = Path::from_str(arguments[0]);
 
         if !path.is_valid() {
             self.standard.print_error_line("Invalid path").await;
@@ -49,7 +49,7 @@ impl Shell_type {
             return;
         }
 
-        let path = Path_type::from_str(arguments[0]);
+        let path = Path::from_str(arguments[0]);
 
         if !path.is_valid() {
             self.standard.print_error_line("Invalid path").await;

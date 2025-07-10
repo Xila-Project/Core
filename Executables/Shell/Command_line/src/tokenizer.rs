@@ -1,46 +1,46 @@
 use alloc::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Redirect_type_type {
+pub enum RedirectKind {
     Output,
-    Output_append,
+    OutputAppend,
     Input,
-    Here_document,
+    HereDocument,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Redirect_type<'a> {
+pub struct Redirect<'a> {
     pub left: &'a str,
-    pub redirect_type: Redirect_type_type,
+    pub redirect_type: RedirectKind,
     pub right: &'a str,
 }
 
-impl<'a> TryFrom<&'a str> for Redirect_type<'a> {
+impl<'a> TryFrom<&'a str> for Redirect<'a> {
     type Error = ();
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         if let Some((left, right)) = value.split_once(">>") {
-            return Ok(Redirect_type {
+            return Ok(Redirect {
                 left,
-                redirect_type: Redirect_type_type::Output_append,
+                redirect_type: RedirectKind::OutputAppend,
                 right,
             });
         } else if let Some((left, right)) = value.split_once("<<") {
-            return Ok(Redirect_type {
+            return Ok(Redirect {
                 left,
-                redirect_type: Redirect_type_type::Here_document,
+                redirect_type: RedirectKind::HereDocument,
                 right,
             });
         } else if let Some((left, right)) = value.split_once(">") {
-            return Ok(Redirect_type {
+            return Ok(Redirect {
                 left,
-                redirect_type: Redirect_type_type::Output,
+                redirect_type: RedirectKind::Output,
                 right,
             });
         } else if let Some((left, right)) = value.split_once("<") {
-            return Ok(Redirect_type {
+            return Ok(Redirect {
                 left,
-                redirect_type: Redirect_type_type::Input,
+                redirect_type: RedirectKind::Input,
                 right,
             });
         }
@@ -50,29 +50,29 @@ impl<'a> TryFrom<&'a str> for Redirect_type<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Token_type<'a> {
+pub enum Token<'a> {
     String(&'a str),
     Pipe,
-    Redirect(Redirect_type<'a>),
+    Redirect(Redirect<'a>),
 }
 
-impl<'a> From<&'a str> for Token_type<'a> {
+impl<'a> From<&'a str> for Token<'a> {
     fn from(value: &'a str) -> Self {
         match value {
-            "|" => Token_type::Pipe,
+            "|" => Token::Pipe,
             value => {
-                if let Ok(redirect) = Redirect_type::try_from(value) {
-                    Token_type::Redirect(redirect)
+                if let Ok(redirect) = Redirect::try_from(value) {
+                    Token::Redirect(redirect)
                 } else {
-                    Token_type::String(value)
+                    Token::String(value)
                 }
             }
         }
     }
 }
 
-pub fn tokenize<'a>(input: &'a [&'a str]) -> Vec<Token_type<'a>> {
-    input.iter().map(|value| Token_type::from(*value)).collect()
+pub fn tokenize<'a>(input: &'a [&'a str]) -> Vec<Token<'a>> {
+    input.iter().map(|value| Token::from(*value)).collect()
 }
 
 #[cfg(test)]
@@ -85,7 +85,7 @@ mod tests {
     fn test_tokenize_empty() {
         let input = "".split_whitespace().collect::<Vec<&str>>();
 
-        let expected: Vec<Token_type> = Vec::new();
+        let expected: Vec<Token> = Vec::new();
 
         assert_eq!(tokenize(&input), expected);
     }
@@ -97,22 +97,22 @@ mod tests {
             .collect::<Vec<&str>>();
 
         let expected = [
-            Token_type::String("ls"),
-            Token_type::String("-l"),
-            Token_type::Pipe,
-            Token_type::String("grep"),
-            Token_type::String(".rs"),
-            Token_type::Redirect(Redirect_type {
+            Token::String("ls"),
+            Token::String("-l"),
+            Token::Pipe,
+            Token::String("grep"),
+            Token::String(".rs"),
+            Token::Redirect(Redirect {
                 left: "2",
-                redirect_type: Redirect_type_type::Output,
+                redirect_type: RedirectKind::Output,
                 right: "&1",
             }),
-            Token_type::Redirect(Redirect_type {
+            Token::Redirect(Redirect {
                 left: "",
-                redirect_type: Redirect_type_type::Output,
+                redirect_type: RedirectKind::Output,
                 right: "",
             }),
-            Token_type::String("output.txt"),
+            Token::String("output.txt"),
         ];
         assert_eq!(tokenize(&input), expected);
     }
@@ -122,11 +122,11 @@ mod tests {
         let input = "ls -l | grep .rs".split_whitespace().collect::<Vec<&str>>();
 
         let expected = [
-            Token_type::String("ls"),
-            Token_type::String("-l"),
-            Token_type::Pipe,
-            Token_type::String("grep"),
-            Token_type::String(".rs"),
+            Token::String("ls"),
+            Token::String("-l"),
+            Token::Pipe,
+            Token::String("grep"),
+            Token::String(".rs"),
         ];
 
         assert_eq!(tokenize(&input), &expected);
@@ -139,14 +139,14 @@ mod tests {
             .collect::<Vec<&str>>();
 
         let expected = [
-            Token_type::String("ls"),
-            Token_type::String("-l"),
-            Token_type::Redirect(Redirect_type {
+            Token::String("ls"),
+            Token::String("-l"),
+            Token::Redirect(Redirect {
                 left: "",
-                redirect_type: Redirect_type_type::Output,
+                redirect_type: RedirectKind::Output,
                 right: "",
             }),
-            Token_type::String("output.txt"),
+            Token::String("output.txt"),
         ];
 
         assert_eq!(tokenize(&input), &expected);
@@ -156,14 +156,14 @@ mod tests {
             .collect::<Vec<&str>>();
 
         let expected = [
-            Token_type::String("ls"),
-            Token_type::String("-l"),
-            Token_type::Redirect(Redirect_type {
+            Token::String("ls"),
+            Token::String("-l"),
+            Token::Redirect(Redirect {
                 left: "",
-                redirect_type: Redirect_type_type::Input,
+                redirect_type: RedirectKind::Input,
                 right: "",
             }),
-            Token_type::String("input.txt"),
+            Token::String("input.txt"),
         ];
 
         assert_eq!(tokenize(&input), &expected);
@@ -173,14 +173,14 @@ mod tests {
             .collect::<Vec<&str>>();
 
         let expected = [
-            Token_type::String("ls"),
-            Token_type::String("-l"),
-            Token_type::Redirect(Redirect_type {
+            Token::String("ls"),
+            Token::String("-l"),
+            Token::Redirect(Redirect {
                 left: "",
-                redirect_type: Redirect_type_type::Output_append,
+                redirect_type: RedirectKind::OutputAppend,
                 right: "",
             }),
-            Token_type::String("output.txt"),
+            Token::String("output.txt"),
         ];
 
         assert_eq!(tokenize(&input), &expected);
@@ -188,14 +188,14 @@ mod tests {
         let input = "ls -l << EOF".split_whitespace().collect::<Vec<&str>>();
 
         let expected = [
-            Token_type::String("ls"),
-            Token_type::String("-l"),
-            Token_type::Redirect(Redirect_type {
+            Token::String("ls"),
+            Token::String("-l"),
+            Token::Redirect(Redirect {
                 left: "",
-                redirect_type: Redirect_type_type::Here_document,
+                redirect_type: RedirectKind::HereDocument,
                 right: "",
             }),
-            Token_type::String("EOF"),
+            Token::String("EOF"),
         ];
 
         assert_eq!(tokenize(&input), &expected);
@@ -203,11 +203,11 @@ mod tests {
         let input = "ls -l 2>&1".split_whitespace().collect::<Vec<&str>>();
 
         let expected = [
-            Token_type::String("ls"),
-            Token_type::String("-l"),
-            Token_type::Redirect(Redirect_type {
+            Token::String("ls"),
+            Token::String("-l"),
+            Token::Redirect(Redirect {
                 left: "2",
-                redirect_type: Redirect_type_type::Output,
+                redirect_type: RedirectKind::Output,
                 right: "&1",
             }),
         ];
@@ -219,14 +219,14 @@ mod tests {
             .collect::<Vec<&str>>();
 
         let expected = [
-            Token_type::String("ls"),
-            Token_type::String("-l"),
-            Token_type::Redirect(Redirect_type {
+            Token::String("ls"),
+            Token::String("-l"),
+            Token::Redirect(Redirect {
                 left: "2",
-                redirect_type: Redirect_type_type::Output,
+                redirect_type: RedirectKind::Output,
                 right: "",
             }),
-            Token_type::String("output.txt"),
+            Token::String("output.txt"),
         ];
 
         assert_eq!(tokenize(&input), &expected);

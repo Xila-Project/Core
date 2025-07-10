@@ -1,16 +1,16 @@
-use file_system::Path_owned_type;
+use file_system::PathOwned;
 
-use network::{IP_type, IPv4_type, IPv6_type, Port_type};
+use network::{IPv4, IPv6, Port, IP};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Socket_address_type {
-    IPv4(IPv4_type, Port_type),
-    IPv6(IPv6_type, Port_type),
-    Local(Path_owned_type),
+pub enum SockerAddress {
+    IPv4(IPv4, Port),
+    IPv6(IPv6, Port),
+    Local(PathOwned),
 }
 
-impl Socket_address_type {
-    pub fn into_ip_and_port(self) -> Option<(IP_type, Port_type)> {
+impl SockerAddress {
+    pub fn into_ip_and_port(self) -> Option<(IP, Port)> {
         match self {
             Self::IPv4(ip, port) => Some((ip.into(), port)),
             Self::IPv6(ip, port) => Some((ip.into(), port)),
@@ -18,28 +18,28 @@ impl Socket_address_type {
         }
     }
 
-    pub const fn from_ip_and_port(ip: IP_type, port: Port_type) -> Self {
+    pub const fn from_ip_and_port(ip: IP, port: Port) -> Self {
         match ip {
-            IP_type::IPv4(ip) => Self::IPv4(ip, port),
-            IP_type::IPv6(ip) => Self::IPv6(ip, port),
+            IP::IPv4(ip) => Self::IPv4(ip, port),
+            IP::IPv6(ip) => Self::IPv6(ip, port),
         }
     }
 }
 
-impl From<(IPv4_type, Port_type)> for Socket_address_type {
-    fn from((ip, port): (IPv4_type, Port_type)) -> Self {
+impl From<(IPv4, Port)> for SockerAddress {
+    fn from((ip, port): (IPv4, Port)) -> Self {
         Self::IPv4(ip, port)
     }
 }
 
-impl From<(IPv6_type, Port_type)> for Socket_address_type {
-    fn from((ip, port): (IPv6_type, Port_type)) -> Self {
+impl From<(IPv6, Port)> for SockerAddress {
+    fn from((ip, port): (IPv6, Port)) -> Self {
         Self::IPv6(ip, port)
     }
 }
 
-impl From<Path_owned_type> for Socket_address_type {
-    fn from(path: Path_owned_type) -> Self {
+impl From<PathOwned> for SockerAddress {
+    fn from(path: PathOwned) -> Self {
         Self::Local(path)
     }
 }

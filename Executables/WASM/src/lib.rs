@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 mod error;
 
@@ -13,36 +12,36 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use executable::Standard_type;
-use file_system::{Mode_type, Path_type};
+use executable::Standard;
+use file_system::{Mode, Path};
 
-use virtual_file_system::File_type;
+use virtual_file_system::File;
 
-use crate::Error_type;
+use crate::Error;
 
 pub use error::*;
-use executable::Implement_executable_device;
+use executable::implement_executable_device;
 
-pub struct WASM_device_type;
+pub struct WasmDeviceType;
 
-Implement_executable_device!(
-    Structure: WASM_device_type,
+implement_executable_device!(
+    Structure: WasmDeviceType,
     Mount_path: "/Binaries/WASM",
     Main_function: main,
 );
 
-pub async fn inner_main(standard: &Standard_type, arguments: String) -> Result<(), Error_type> {
+pub async fn inner_main(standard: &Standard, arguments: String) -> Result<(), Error> {
     let arguments = arguments.split_whitespace().collect::<Vec<&str>>();
 
     if arguments.len() != 1 {
-        return Err(Error_type::Invalid_number_of_arguments);
+        return Err(Error::InvalidNumberOfArguments);
     }
 
-    let path = Path_type::new(arguments[0]);
+    let path = Path::new(arguments[0]);
 
     match path.get_extension() {
         Some("wasm") | Some("WASM") => Ok(()),
-        _ => return Err(Error_type::Not_a_WASM_file),
+        _ => return Err(Error::NotAWasmFile),
     }?;
 
     let path = if path.is_absolute() {
@@ -51,27 +50,27 @@ pub async fn inner_main(standard: &Standard_type, arguments: String) -> Result<(
         let current_path = task::get_instance()
             .get_environment_variable(standard.get_task(), "Current_directory")
             .await
-            .map_err(|_| Error_type::Failed_to_get_current_directory)?;
+            .map_err(|_| Error::FailedToGetCurrentDirectory)?;
 
         let current_path = current_path.get_value();
 
-        let current_path = Path_type::new(current_path);
+        let current_path = Path::new(current_path);
 
-        current_path.join(path).ok_or(Error_type::Invalid_path)?
+        current_path.join(path).ok_or(Error::InvalidPath)?
     };
 
-    let file = File_type::open(
+    let file = File::open(
         virtual_file_system::get_instance(),
         &path,
-        Mode_type::READ_ONLY.into(),
+        Mode::READ_ONLY.into(),
     )
     .await
-    .map_err(|_| Error_type::Failed_to_open_file)?;
+    .map_err(|_| Error::FailedToOpenFile)?;
 
     let size: usize = file
         .get_statistics()
         .await
-        .map_err(|_| Error_type::Failed_to_open_file)?
+        .map_err(|_| Error::FailedToOpenFile)?
         .get_size()
         .into();
 
@@ -79,19 +78,19 @@ pub async fn inner_main(standard: &Standard_type, arguments: String) -> Result<(
 
     file.read_to_end(&mut buffer)
         .await
-        .map_err(|_| Error_type::Failed_to_read_file)?;
+        .map_err(|_| Error::FailedToReadFile)?;
 
     let (standard_in, standard_out, standard_error) = standard.split();
 
     virtual_machine::get_instance()
         .execute(buffer, 4096, standard_in, standard_out, standard_error)
         .await
-        .map_err(|_| Error_type::Failed_to_execute)?;
+        .map_err(|_| Error::FailedToExecute)?;
 
     Ok(())
 }
 
-pub async fn main(standard: Standard_type, arguments: String) -> Result<(), NonZeroUsize> {
+pub async fn main(standard: Standard, arguments: String) -> Result<(), NonZeroUsize> {
     match inner_main(&standard, arguments).await {
         Ok(()) => {
             forget(standard);

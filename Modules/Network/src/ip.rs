@@ -2,9 +2,9 @@ use core::fmt::Display;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub struct IPv4_type([u8; 4]);
+pub struct IPv4([u8; 4]);
 
-impl IPv4_type {
+impl IPv4 {
     pub const LOCALHOST: Self = Self([127, 0, 0, 1]);
 
     pub const fn new(value: [u8; 4]) -> Self {
@@ -20,7 +20,7 @@ impl IPv4_type {
     }
 }
 
-impl TryFrom<&str> for IPv4_type {
+impl TryFrom<&str> for IPv4 {
     type Error = ();
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -43,7 +43,7 @@ impl TryFrom<&str> for IPv4_type {
     }
 }
 
-impl Display for IPv4_type {
+impl Display for IPv4 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}.{}.{}.{}", self.0[0], self.0[1], self.0[2], self.0[3])
     }
@@ -51,9 +51,9 @@ impl Display for IPv4_type {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub struct IPv6_type([u16; 8]);
+pub struct IPv6([u16; 8]);
 
-impl IPv6_type {
+impl IPv6 {
     pub const fn new(value: [u16; 8]) -> Self {
         Self(value)
     }
@@ -67,7 +67,7 @@ impl IPv6_type {
     }
 }
 
-impl TryFrom<&str> for IPv6_type {
+impl TryFrom<&str> for IPv6 {
     type Error = ();
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -91,7 +91,7 @@ impl TryFrom<&str> for IPv6_type {
     }
 }
 
-impl Display for IPv6_type {
+impl Display for IPv6 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
@@ -102,28 +102,28 @@ impl Display for IPv6_type {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum IP_type {
-    IPv4(IPv4_type),
-    IPv6(IPv6_type),
+pub enum IP {
+    IPv4(IPv4),
+    IPv6(IPv6),
 }
 
-impl Display for IP_type {
+impl Display for IP {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            IP_type::IPv4(value) => write!(f, "{value}"),
-            IP_type::IPv6(value) => write!(f, "{value}"),
+            IP::IPv4(value) => write!(f, "{value}"),
+            IP::IPv6(value) => write!(f, "{value}"),
         }
     }
 }
 
-impl From<IPv4_type> for IP_type {
-    fn from(value: IPv4_type) -> Self {
+impl From<IPv4> for IP {
+    fn from(value: IPv4) -> Self {
         Self::IPv4(value)
     }
 }
 
-impl From<IPv6_type> for IP_type {
-    fn from(value: IPv6_type) -> Self {
+impl From<IPv6> for IP {
+    fn from(value: IPv6) -> Self {
         Self::IPv6(value)
     }
 }
@@ -134,32 +134,32 @@ mod tests {
 
     #[test]
     fn test_ipv4_try_from() {
-        let ip = IPv4_type::try_from("0.0.0.0").unwrap();
+        let ip = IPv4::try_from("0.0.0.0").unwrap();
 
         assert_eq!(ip.0, [0, 0, 0, 0]);
 
-        IPv4_type::try_from("1.2b.3.4").unwrap_err();
+        IPv4::try_from("1.2b.3.4").unwrap_err();
 
-        IPv4_type::try_from("1.2.3.4.5").unwrap_err();
+        IPv4::try_from("1.2.3.4.5").unwrap_err();
 
-        IPv4_type::try_from("1.2.3").unwrap_err();
+        IPv4::try_from("1.2.3").unwrap_err();
 
-        let ip = IPv4_type::try_from("4.3.2.1").unwrap();
+        let ip = IPv4::try_from("4.3.2.1").unwrap();
 
         assert_eq!(ip.0, [4, 3, 2, 1]);
     }
 
     #[test]
     fn test_ipv6_try_from() {
-        let ip = IPv6_type::try_from("0:0:0:0:0:0:0:0").unwrap();
+        let ip = IPv6::try_from("0:0:0:0:0:0:0:0").unwrap();
 
         assert_eq!(ip.0, [0; 8]);
 
-        IPv6_type::try_from("0:0:0:0:0:0:0:0:0").unwrap_err();
+        IPv6::try_from("0:0:0:0:0:0:0:0:0").unwrap_err();
 
-        IPv6_type::try_from("0:0:0:0:0:0:0").unwrap_err();
+        IPv6::try_from("0:0:0:0:0:0:0").unwrap_err();
 
-        let ip = IPv6_type::try_from("1234:5678:9abc:def0:1234:5678:9abc:def0").unwrap();
+        let ip = IPv6::try_from("1234:5678:9abc:def0:1234:5678:9abc:def0").unwrap();
 
         assert_eq!(
             ip.0,

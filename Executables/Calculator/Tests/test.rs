@@ -1,11 +1,9 @@
-#![allow(non_camel_case_types)]
-
 extern crate alloc;
 
 use xila::drivers;
-use xila::drivers::native::Time_driver_type;
+use xila::drivers::native::TimeDriverType;
 use xila::file_system;
-use xila::file_system::{Create_file_system, Memory_device_type, create_device};
+use xila::file_system::{Create_file_system, MemoryDeviceType, create_device};
 use xila::graphics;
 use xila::graphics::lvgl;
 use xila::host_bindings;
@@ -13,46 +11,46 @@ use xila::little_fs;
 use xila::log;
 use xila::memory::Instantiate_global_allocator;
 use xila::task;
-use xila::task::Test;
+use xila::task::test;
 use xila::time;
-use xila::time::Duration_type;
+use xila::time::Duration;
 use xila::users;
 use xila::virtual_file_system;
 use xila::virtual_file_system::{Mount_static_devices, create_default_hierarchy};
 use xila::virtual_machine;
 
-Instantiate_global_allocator!(drivers::standard_library::memory::Memory_manager_type);
+Instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
 
-#[task::Run(executor = drivers::standard_library::executor::Instantiate_static_executor!())]
+#[task::run(executor = drivers::standard_library::executor::instantiate_static_executor!())]
 async fn run_graphics() {
     graphics::get_instance()
-        .r#loop(task::Manager_type::Sleep)
+        .r#loop(task::Manager::sleep)
         .await
         .unwrap();
 }
 
 #[ignore]
-#[Test]
+#[test]
 async fn integration_test() {
     // - Initialize the system
-    log::initialize(&drivers::standard_library::log::Logger_type).unwrap();
+    log::initialize(&drivers::standard_library::log::LoggerType).unwrap();
 
     let binary_buffer = include_bytes!("../WASM/target/wasm32-wasip1/release/Calculator.wasm");
 
     users::initialize();
 
-    let task_instance = task::Initialize();
+    let task_instance = task::initialize();
 
     let task = task_instance.get_current_task_identifier().await;
 
-    time::initialize(create_device!(Time_driver_type::new()))
+    time::initialize(create_device!(TimeDriverType::new()))
         .expect("Error initializing time manager");
 
-    let memory_device = create_device!(Memory_device_type::<512>::new(1024 * 512));
-    little_fs::File_system_type::format(memory_device.clone(), 512).unwrap();
+    let memory_device = create_device!(MemoryDeviceType::<512>::new(1024 * 512));
+    little_fs::FileSystem::format(memory_device.clone(), 512).unwrap();
 
     let virtual_file_system = virtual_file_system::initialize(
-        Create_file_system!(little_fs::File_system_type::new(memory_device, 256).unwrap()),
+        Create_file_system!(little_fs::FileSystem::new(memory_device, 256).unwrap()),
         None,
     )
     .unwrap();
@@ -67,42 +65,42 @@ async fn integration_test() {
         &[
             (
                 &"/Devices/Standard_in",
-                drivers::standard_library::console::Standard_in_device_type
+                drivers::standard_library::console::StandardInDevice
             ),
             (
                 &"/Devices/Standard_out",
-                drivers::standard_library::console::Standard_out_device_type
+                drivers::standard_library::console::StandardOutDeviceType
             ),
             (
                 &"/Devices/Standard_error",
-                drivers::standard_library::console::Standard_error_device_type
+                drivers::standard_library::console::StandardErrorDeviceType
             ),
-            (&"/Devices/Time", drivers::native::Time_driver_type),
-            (&"/Devices/Random", drivers::native::Random_device_type),
-            (&"/Devices/Null", drivers::core::Null_device_type)
+            (&"/Devices/Time", drivers::native::TimeDriverType),
+            (&"/Devices/Random", drivers::native::RandomDeviceType),
+            (&"/Devices/Null", drivers::core::NullDeviceType)
         ]
     )
     .await
     .unwrap();
 
-    virtual_machine::initialize(&[&host_bindings::Graphics_bindings]);
+    virtual_machine::initialize(&[&host_bindings::GraphicsBindings]);
 
     let virtual_machine = virtual_machine::get_instance();
-    const RESOLUTION: graphics::Point_type = graphics::Point_type::new(800, 600);
+    const RESOLUTION: graphics::Point = graphics::Point::new(800, 600);
     let (screen_device, pointer_device, keyboard_device) =
         drivers::native::window_screen::new(RESOLUTION).unwrap();
     // - - Initialize the graphics manager
     graphics::initialize(
         screen_device,
         pointer_device,
-        graphics::Input_type_type::Pointer,
+        graphics::InputKind::Pointer,
         graphics::get_minimal_buffer_size(&RESOLUTION),
         true,
     )
     .await;
 
     graphics::get_instance()
-        .add_input_device(keyboard_device, graphics::Input_type_type::Keypad)
+        .add_input_device(keyboard_device, graphics::InputKind::Keypad)
         .await
         .unwrap();
 
@@ -119,7 +117,7 @@ async fn integration_test() {
     let standard_in = virtual_file_system
         .open(
             &"/Devices/Standard_in",
-            file_system::Mode_type::READ_ONLY.into(),
+            file_system::Mode::READ_ONLY.into(),
             task,
         )
         .await
@@ -128,7 +126,7 @@ async fn integration_test() {
     let standard_out = virtual_file_system
         .open(
             &"/Devices/Standard_out",
-            file_system::Mode_type::WRITE_ONLY.into(),
+            file_system::Mode::WRITE_ONLY.into(),
             task,
         )
         .await
@@ -137,7 +135,7 @@ async fn integration_test() {
     let standard_error = virtual_file_system
         .open(
             &"/Devices/Standard_out",
-            file_system::Mode_type::WRITE_ONLY.into(),
+            file_system::Mode::WRITE_ONLY.into(),
             task,
         )
         .await
@@ -155,6 +153,6 @@ async fn integration_test() {
         .unwrap();
 
     loop {
-        task::Manager_type::Sleep(Duration_type::from_millis(1000)).await;
+        task::Manager::sleep(Duration::from_millis(1000)).await;
     }
 }

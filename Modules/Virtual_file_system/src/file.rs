@@ -2,46 +2,45 @@ use core::fmt::Debug;
 
 use alloc::vec::Vec;
 use futures::block_on;
-use task::Task_identifier_type;
+use task::TaskIdentifier;
 
 use file_system::{
-    Flags_type, Path_type, Position_type, Result_type, Size_type, Statistics_type, Status_type,
-    Unique_file_identifier_type,
+    Flags, Path, Position, Result, Size, Statistics_type, Status, UniqueFileIdentifier,
 };
 
-use super::Virtual_file_system_type;
+use super::VirtualFileSystemType;
 
 /// File structure.
 ///
 /// This structure is used to represent a file in the virtual file system.
 /// This is a wrapper around the virtual file system file identifier.
-pub struct File_type<'a> {
-    file_identifier: Unique_file_identifier_type,
-    file_system: &'a Virtual_file_system_type<'a>,
-    task: Task_identifier_type,
+pub struct File<'a> {
+    file_identifier: UniqueFileIdentifier,
+    file_system: &'a VirtualFileSystemType<'a>,
+    task: TaskIdentifier,
 }
 
-impl Debug for File_type<'_> {
+impl Debug for File<'_> {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
-            .debug_struct("File_type")
+            .debug_struct("FileType")
             .field("File_identifier", &self.file_identifier)
             .field("File_system", &(self.file_system as *const _))
             .finish()
     }
 }
 
-impl<'a> File_type<'a> {
+impl<'a> File<'a> {
     pub async fn open(
-        file_system: &'a Virtual_file_system_type<'a>,
-        path: impl AsRef<Path_type>,
-        flags: Flags_type,
-    ) -> Result_type<Self> {
+        file_system: &'a VirtualFileSystemType<'a>,
+        path: impl AsRef<Path>,
+        flags: Flags,
+    ) -> Result<Self> {
         let task = task::get_instance().get_current_task_identifier().await;
 
         let file_identifier = file_system.open(&path, flags, task).await?;
 
-        Ok(File_type {
+        Ok(File {
             file_identifier,
             file_system,
             task,
@@ -49,21 +48,21 @@ impl<'a> File_type<'a> {
     }
 
     pub async fn create_unnamed_pipe(
-        file_system: &'a Virtual_file_system_type<'a>,
+        file_system: &'a VirtualFileSystemType<'a>,
         size: usize,
-        status: Status_type,
-        task: Task_identifier_type,
-    ) -> Result_type<(Self, Self)> {
+        status: Status,
+        task: TaskIdentifier,
+    ) -> Result<(Self, Self)> {
         let (file_identifier_read, file_identifier_write) =
             file_system.create_unnamed_pipe(task, status, size).await?;
 
         Ok((
-            File_type {
+            File {
                 file_identifier: file_identifier_read,
                 file_system,
                 task,
             },
-            File_type {
+            File {
                 file_identifier: file_identifier_write,
                 file_system,
                 task,
@@ -72,36 +71,36 @@ impl<'a> File_type<'a> {
     }
 
     // - Setters
-    pub async fn set_position(&self, position: &Position_type) -> Result_type<Size_type> {
+    pub async fn set_position(&self, position: &Position) -> Result<Size> {
         self.file_system
             .set_position(self.get_file_identifier(), position, self.task)
             .await
     }
 
     // - Getters
-    pub const fn get_file_identifier(&self) -> Unique_file_identifier_type {
+    pub const fn get_file_identifier(&self) -> UniqueFileIdentifier {
         self.file_identifier
     }
 
     // - Operations
 
-    pub async fn write(&self, buffer: &[u8]) -> Result_type<Size_type> {
+    pub async fn write(&self, buffer: &[u8]) -> Result<Size> {
         self.file_system
             .write(self.get_file_identifier(), buffer, self.task)
             .await
     }
 
-    pub async fn write_line(&self, buffer: &[u8]) -> Result_type<Size_type> {
+    pub async fn write_line(&self, buffer: &[u8]) -> Result<Size> {
         let size = self.write(buffer).await? + self.write(b"\n").await?;
         Ok(size)
     }
 
-    pub async fn read(&self, buffer: &mut [u8]) -> Result_type<Size_type> {
+    pub async fn read(&self, buffer: &mut [u8]) -> Result<Size> {
         self.file_system
             .read(self.get_file_identifier(), buffer, self.task)
             .await
     }
-    pub async fn read_line(&self, buffer: &mut [u8]) -> Result_type<()> {
+    pub async fn read_line(&self, buffer: &mut [u8]) -> Result<()> {
         let mut index = 0;
         loop {
             let size: usize = self.read(&mut buffer[index..index + 1]).await?.into();
@@ -116,20 +115,20 @@ impl<'a> File_type<'a> {
         Ok(())
     }
 
-    pub async fn read_to_end(&self, buffer: &mut Vec<u8>) -> Result_type<Size_type> {
+    pub async fn read_to_end(&self, buffer: &mut Vec<u8>) -> Result<Size> {
         self.file_system
             .read_to_end(self.get_file_identifier(), self.task, buffer)
             .await
     }
 
-    pub async fn get_statistics(&self) -> Result_type<Statistics_type> {
+    pub async fn get_statistics(&self) -> Result<Statistics_type> {
         self.file_system
             .get_statistics(self.get_file_identifier(), self.task)
             .await
     }
 }
 
-impl Drop for File_type<'_> {
+impl Drop for File<'_> {
     fn drop(&mut self) {
         let _ = block_on(
             self.file_system

@@ -4,14 +4,14 @@ use alloc::string::ToString;
 
 use super::*;
 use alloc::{string::String, vec::Vec};
-use users::{Group_identifier_type, User_identifier_type};
+use users::{GroupIdentifier, UserIdentifier};
 
-impl Manager_type {
+impl Manager {
     pub async fn set_user(
         &self,
-        task_identifier: Task_identifier_type,
-        user: User_identifier_type,
-    ) -> Result_type<()> {
+        task_identifier: TaskIdentifier,
+        user: UserIdentifier,
+    ) -> Result<()> {
         Self::get_task_mutable(&mut *self.0.write().await, task_identifier)?.user = user;
 
         Ok(())
@@ -19,9 +19,9 @@ impl Manager_type {
 
     pub async fn set_group(
         &self,
-        task_identifier: Task_identifier_type,
-        group: Group_identifier_type,
-    ) -> Result_type<()> {
+        task_identifier: TaskIdentifier,
+        group: GroupIdentifier,
+    ) -> Result<()> {
         Self::get_task_mutable(&mut *self.0.write().await, task_identifier)?.group = group;
 
         Ok(())
@@ -29,11 +29,11 @@ impl Manager_type {
 
     pub async fn set_environment_variable(
         &self,
-        task_identifier: Task_identifier_type,
+        task_identifier: TaskIdentifier,
         name: &str,
         value: &str,
-    ) -> Result_type<()> {
-        let environment_variable = Environment_variable_type::new(name, value);
+    ) -> Result<()> {
+        let environment_variable = EnvironmentVariable::new(name, value);
 
         // Keep the write lock for the entire operation
         let mut inner = self.0.write().await;
@@ -51,14 +51,14 @@ impl Manager_type {
 
     pub async fn set_environment_variables(
         &self,
-        task_identifier: Task_identifier_type,
+        task_identifier: TaskIdentifier,
         environment_variables: &[(&str, &str)],
-    ) -> Result_type<()> {
+    ) -> Result<()> {
         let mut inner = self.0.write().await;
         let metadata = Self::get_task_mutable(&mut inner, task_identifier)?;
 
         environment_variables.iter().for_each(|(name, value)| {
-            let environment_variable = Environment_variable_type::new(name, value);
+            let environment_variable = EnvironmentVariable::new(name, value);
             metadata.environment_variables.push(environment_variable);
         });
 
@@ -67,9 +67,9 @@ impl Manager_type {
 
     pub async fn remove_environment_variable(
         &self,
-        task_identifier: Task_identifier_type,
+        task_identifier: TaskIdentifier,
         name: &str,
-    ) -> Result_type<()> {
+    ) -> Result<()> {
         Self::get_task_mutable(&mut *self.0.write().await, task_identifier)?
             .environment_variables
             .retain(|variable| variable.get_name() != name);
@@ -78,47 +78,41 @@ impl Manager_type {
     }
 
     /// Get user identifier of the owner of a task.
-    pub async fn get_user(
-        &self,
-        task_identifier: Task_identifier_type,
-    ) -> Result_type<User_identifier_type> {
+    pub async fn get_user(&self, task_identifier: TaskIdentifier) -> Result<UserIdentifier> {
         Self::get_task(&*self.0.read().await, task_identifier).map(|task| task.user)
     }
 
     /// Get group identifier of the owner of a task.
-    pub async fn get_group(
-        &self,
-        task_identifier: Task_identifier_type,
-    ) -> Result_type<Group_identifier_type> {
+    pub async fn get_group(&self, task_identifier: TaskIdentifier) -> Result<GroupIdentifier> {
         Self::get_task(&*self.0.read().await, task_identifier).map(|task| task.group)
     }
 
     pub async fn get_environment_variable(
         &self,
-        task_identifier: Task_identifier_type,
+        task_identifier: TaskIdentifier,
         name: &str,
-    ) -> Result_type<Environment_variable_type> {
+    ) -> Result<EnvironmentVariable> {
         Self::get_task(&*self.0.read().await, task_identifier)?
             .environment_variables
             .iter()
             .find(|variable| variable.get_name() == name)
             .cloned()
             // If the variable is not found, return an error
-            .ok_or(Error_type::Invalid_environment_variable)
+            .ok_or(Error::InvalidEnvironmentVariable)
     }
 
     pub async fn get_environment_variables(
         &self,
-        task_identifier: Task_identifier_type,
-    ) -> Result_type<Vec<Environment_variable_type>> {
+        task_identifier: TaskIdentifier,
+    ) -> Result<Vec<EnvironmentVariable>> {
         Self::get_task(&*self.0.read().await, task_identifier)
             .map(|task| task.environment_variables.clone())
-            .map_err(|_| Error_type::Invalid_task_identifier)
+            .map_err(|_| Error::InvalidTaskIdentifier)
     }
 
     /// # Arguments
     /// * `Task_identifier` - The identifier of the task.
-    pub async fn get_name(&self, task_identifier: Task_identifier_type) -> Result_type<String> {
+    pub async fn get_name(&self, task_identifier: TaskIdentifier) -> Result<String> {
         Self::get_task(&*self.0.read().await, task_identifier).map(|task| task.name.to_string())
     }
 }

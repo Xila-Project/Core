@@ -116,7 +116,7 @@ mod tests {
     use crate::Parser::Parser_type;
 
     fn Evaluate_expression(Input: &str) -> Result<f64, String> {
-        let mut Parser = Parser_type::New(Input)?;
+        let mut Parser = Parser_type::new(Input)?;
         let Expression = Parser.Parse()?;
         Evaluator_type::Evaluate(&Expression)
     }

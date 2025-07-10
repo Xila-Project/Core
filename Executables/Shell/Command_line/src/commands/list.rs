@@ -1,14 +1,14 @@
 use alloc::format;
-use file_system::Path_type;
+use file_system::Path;
 
-use crate::Shell_type;
+use crate::Shell;
 
-impl Shell_type {
+impl Shell {
     pub async fn list(&mut self, arguments: &[&str]) {
         let path = if arguments.is_empty() {
             self.current_directory.as_ref()
         } else {
-            Path_type::from_str(arguments[0])
+            Path::from_str(arguments[0])
         };
 
         let directory = match virtual_file_system::get_instance()

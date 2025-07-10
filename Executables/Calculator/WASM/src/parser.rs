@@ -43,7 +43,7 @@ pub struct Parser_type {
 
 impl Parser_type {
     pub fn New(Input: &str) -> Result<Self, String> {
-        let mut Lexer = Lexer_type::New(Input);
+        let mut Lexer = Lexer_type::new(Input);
         let Tokens = Lexer.tokenize();
 
         Ok(Self {

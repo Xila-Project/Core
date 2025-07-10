@@ -1,76 +1,76 @@
+use core::fmt::Display;
 use core::num::{NonZeroU16, NonZeroUsize};
-use core::{fmt::Display, result::Result};
 
-pub type Result_type<T> = Result<T, Error_type>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
 #[repr(u16)]
-pub enum Error_type {
-    Authentication_failed(authentication::Error_type) = 1,
-    Failed_to_set_task_user(task::Error_type),
-    Failed_to_set_environment_variable(task::Error_type),
-    Failed_to_tokenize_command_line,
-    Missing_file_name_after_redirect_out,
-    Missing_file_name_after_redirect_in,
-    Missing_command,
-    Command_not_found,
-    Failed_to_get_task_identifier,
-    Invalid_path,
-    Failed_to_get_path,
-    Failed_to_execute_command,
-    Failed_to_join_task,
-    Invalid_number_of_arguments,
+pub enum Error {
+    AuthenticationFailed(authentication::Error) = 1,
+    FailedToSetTaskUser(task::Error),
+    FailedToSetEnvironmentVariable(task::Error),
+    FailedToTokenizeCommandLine,
+    MissingFileNameAfterRedirectOut,
+    MissingFileNameAfterRedirectIn,
+    MissingCommand,
+    CommandNotFound,
+    FailedToGetTaskIdentifier,
+    InvalidPath,
+    FailedToGetPath,
+    FailedToExecuteCommand,
+    FailedToJoinTask,
+    InvalidNumberOfArguments,
 }
 
-impl Error_type {
+impl Error {
     pub fn get_discriminant(&self) -> NonZeroU16 {
         unsafe { *<*const _>::from(self).cast::<NonZeroU16>() }
     }
 }
 
-impl Display for Error_type {
+impl Display for Error {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
-            Error_type::Authentication_failed(error) => {
+            Error::AuthenticationFailed(error) => {
                 write!(formatter, "Authentication failed: {error}")
             }
-            Error_type::Failed_to_set_task_user(error) => {
+            Error::FailedToSetTaskUser(error) => {
                 write!(formatter, "Failed to set task user: {error}")
             }
-            Error_type::Failed_to_set_environment_variable(error) => {
+            Error::FailedToSetEnvironmentVariable(error) => {
                 write!(formatter, "Failed to set environment variable: {error}")
             }
-            Error_type::Failed_to_tokenize_command_line => {
+            Error::FailedToTokenizeCommandLine => {
                 write!(formatter, "Failed to tokenize command line")
             }
-            Error_type::Missing_file_name_after_redirect_out => {
+            Error::MissingFileNameAfterRedirectOut => {
                 write!(formatter, "Missing file name after redirect out")
             }
-            Error_type::Missing_file_name_after_redirect_in => {
+            Error::MissingFileNameAfterRedirectIn => {
                 write!(formatter, "Missing file name after redirect in")
             }
-            Error_type::Missing_command => write!(formatter, "Missing command"),
-            Error_type::Command_not_found => write!(formatter, "Command not found"),
-            Error_type::Failed_to_get_task_identifier => {
+            Error::MissingCommand => write!(formatter, "Missing command"),
+            Error::CommandNotFound => write!(formatter, "Command not found"),
+            Error::FailedToGetTaskIdentifier => {
                 write!(formatter, "Failed to get task identifier")
             }
-            Error_type::Invalid_path => write!(formatter, "Invalid path"),
-            Error_type::Failed_to_get_path => {
+            Error::InvalidPath => write!(formatter, "Invalid path"),
+            Error::FailedToGetPath => {
                 write!(formatter, "Failed to get environment variable")
             }
-            Error_type::Failed_to_execute_command => {
+            Error::FailedToExecuteCommand => {
                 write!(formatter, "Failed to execute command")
             }
-            Error_type::Failed_to_join_task => write!(formatter, "Failed to join task"),
-            Error_type::Invalid_number_of_arguments => {
+            Error::FailedToJoinTask => write!(formatter, "Failed to join task"),
+            Error::InvalidNumberOfArguments => {
                 write!(formatter, "Invalid number of arguments")
             }
         }
     }
 }
 
-impl From<Error_type> for NonZeroUsize {
-    fn from(error: Error_type) -> Self {
+impl From<Error> for NonZeroUsize {
+    fn from(error: Error) -> Self {
         error.get_discriminant().into()
     }
 }

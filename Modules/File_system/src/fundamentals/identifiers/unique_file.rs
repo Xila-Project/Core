@@ -1,10 +1,10 @@
 use core::fmt::Debug;
 
-use task::Task_identifier_type;
+use task::TaskIdentifier;
 
 use super::{
-    File_identifier_inner_type, File_identifier_type, File_system_identifier_inner_type,
-    File_system_identifier_type, Local_file_identifier_type,
+    FileIdentifier, FileIdentifierInner, FileSystemIdentifier, FileSystemIdentifierInner,
+    LocalFileIdentifier,
 };
 
 /// Unique file identifier type
@@ -20,9 +20,9 @@ use super::{
 /// ```rust
 /// use file_system::{Unique_file_identifier_type, File_identifier_type, File_system_identifier_type, Local_file_identifier_type};
 ///
-/// use task::Task_identifier_type;
+/// use task::TaskIdentifier;
 ///
-/// let Identifier = Unique_file_identifier_type::New(
+/// let Identifier = Unique_file_identifier_type::new(
 ///     File_system_identifier_type::from(0x1234),
 ///     File_identifier_type::from(0x5678),
 /// );
@@ -32,16 +32,16 @@ use super::{
 /// assert_eq!(File_system, File_system_identifier_type::from(0x1234));
 /// assert_eq!(File, File_identifier_type::from(0x5678));
 ///
-/// let (File_system, Local_file) = Identifier.Into_local_file_identifier(Task_identifier_type::from(0x9ABC));
+/// let (File_system, Local_file) = Identifier.Into_local_file_identifier(TaskIdentifier::from(0x9ABC));
 ///
 /// assert_eq!(File_system, File_system_identifier_type::from(0x1234));
-/// assert_eq!(Local_file, Local_file_identifier_type::New(Task_identifier_type::from(0x9ABC), File_identifier_type::from(0x5678)));
+/// assert_eq!(Local_file, Local_file_identifier_type::new(TaskIdentifier::from(0x9ABC), File_identifier_type::from(0x5678)));
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
-pub struct Unique_file_identifier_type(usize);
+pub struct UniqueFileIdentifier(usize);
 
-impl Debug for Unique_file_identifier_type {
+impl Debug for UniqueFileIdentifier {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let (file_system_identifier, file_identifier) = self.split();
 
@@ -53,10 +53,10 @@ impl Debug for Unique_file_identifier_type {
     }
 }
 
-impl Unique_file_identifier_type {
-    const FILE_SYSTEM_IDENTIFIER_POSITION: u8 = File_identifier_type::SIZE_BITS;
+impl UniqueFileIdentifier {
+    const FILE_SYSTEM_IDENTIFIER_POSITION: u8 = FileIdentifier::SIZE_BITS;
 
-    pub const fn new(file_system: File_system_identifier_type, file: File_identifier_type) -> Self {
+    pub const fn new(file_system: FileSystemIdentifier, file: FileIdentifier) -> Self {
         let file_system_identifier = file_system.as_inner();
         let file_identifier = file.into_inner();
 
@@ -66,24 +66,23 @@ impl Unique_file_identifier_type {
         )
     }
 
-    pub const fn split(&self) -> (File_system_identifier_type, File_identifier_type) {
-        let file_system = self.0 >> File_identifier_inner_type::BITS;
-        let file_system =
-            File_system_identifier_type::new(file_system as File_system_identifier_inner_type);
+    pub const fn split(&self) -> (FileSystemIdentifier, FileIdentifier) {
+        let file_system = self.0 >> FileIdentifierInner::BITS;
+        let file_system = FileSystemIdentifier::new(file_system as FileSystemIdentifierInner);
 
-        let file = self.0 as File_identifier_inner_type;
-        let file = File_identifier_type::new(file);
+        let file = self.0 as FileIdentifierInner;
+        let file = FileIdentifier::new(file);
 
         (file_system, file)
     }
 
     pub const fn into_local_file_identifier(
         self,
-        task: Task_identifier_type,
-    ) -> (File_system_identifier_type, Local_file_identifier_type) {
+        task: TaskIdentifier,
+    ) -> (FileSystemIdentifier, LocalFileIdentifier) {
         let (file_system, file) = self.split();
 
-        let local_file = Local_file_identifier_type::new(task, file);
+        let local_file = LocalFileIdentifier::new(task, file);
 
         (file_system, local_file)
     }
@@ -98,15 +97,15 @@ impl Unique_file_identifier_type {
     }
 }
 
-impl From<Unique_file_identifier_type> for usize {
-    fn from(identifier: Unique_file_identifier_type) -> Self {
+impl From<UniqueFileIdentifier> for usize {
+    fn from(identifier: UniqueFileIdentifier) -> Self {
         identifier.0
     }
 }
 
-impl From<usize> for Unique_file_identifier_type {
+impl From<usize> for UniqueFileIdentifier {
     fn from(identifier: usize) -> Self {
-        Unique_file_identifier_type(identifier)
+        UniqueFileIdentifier(identifier)
     }
 }
 
@@ -116,15 +115,15 @@ mod tests {
 
     #[test]
     fn test_unique_file_identifier() {
-        let identifier = Unique_file_identifier_type::new(
-            File_system_identifier_type::from(0x1234),
-            File_identifier_type::from(0x5678),
+        let identifier = UniqueFileIdentifier::new(
+            FileSystemIdentifier::from(0x1234),
+            FileIdentifier::from(0x5678),
         );
         assert_eq!(
             identifier.split(),
             (
-                File_system_identifier_type::new(0x1234),
-                File_identifier_type::new(0x5678)
+                FileSystemIdentifier::new(0x1234),
+                FileIdentifier::new(0x5678)
             )
         );
     }

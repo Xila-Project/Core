@@ -3,7 +3,7 @@ use core::fmt::Debug;
 /// POSIX signals enumeration
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
-pub enum Signal_type {
+pub enum SignalType {
     /// Hangup detected on controlling terminal or death of controlling process (SIGHUP)
     Hangup = 0,
     /// Interrupt from keyboard (SIGINT)
@@ -11,31 +11,31 @@ pub enum Signal_type {
     /// Quit from keyboard (SIGQUIT)
     Quit,
     /// Unused : Illegal Instruction (SIGILL)
-    Illegal_instruction,
+    IllegalInstruction,
     /// Trace/breakpoint trap (SIGTRAP)
     Trap,
     /// Abort signal from abort(3) (SIGABRT)
     Abort,
     /// Bus error (bad memory access) (SIGBUS)
-    Bus_error,
+    BusError,
     /// Floating-point exception (SIGFPE)
-    Floating_point_exception,
+    FloatingPointException,
     /// Kill signal (SIGKILL)
     Kill,
     /// User-defined signal 1 (SIGUSR1)
-    User_1,
+    User1,
     /// Invalid memory reference (SIGSEGV)
-    Segmentation_fault,
+    SegmentationFault,
     /// User-defined signal 2 (SIGUSR2)
-    User_2,
+    User2,
     /// Broken pipe: write to pipe with no readers (SIGPIPE)
-    Broken_pipe,
+    BrokenPipe,
     /// Timer signal from alarm(2) (SIGALRM)
     Alarm,
     /// Termination signal (SIGTERM)
     Termination,
     /// Stack fault on coprocessor (unused) (SIGSTKFLT)
-    Stack_fault,
+    StackFault,
     /// Child stopped or terminated (SIGCHLD)
     Child,
     /// Continue if stopped (SIGCONT)
@@ -43,34 +43,34 @@ pub enum Signal_type {
     /// Stop process (SIGSTOP)
     Stop,
     /// Stop typed at terminal (SIGTSTP)
-    Terminal_stop,
+    TerminalStop,
     /// Terminal input for background process (SIGTTIN)
-    Terminal_input,
+    TerminalInput,
     /// Terminal output for background process (SIGTTOU)
-    Terminal_output,
+    TerminalOutput,
     /// Urgent condition on socket (4.2BSD) (SIGURG)
     Urgent,
     /// CPU time limit exceeded (4.2BSD) (SIGXCPU)
-    Cpu_time_limit_exceeded,
+    CpuTimeLimitExceeded,
     /// File size limit exceeded (4.2BSD) (SIGXFSZ)
-    File_size_limit_exceeded,
+    FileSizeLimitExceeded,
     /// Virtual alarm clock (4.2BSD) (SIGVTALRM)
-    Virtual_alarm,
+    VirtualAlarm,
     /// Profiling timer expired (SIGPROF)
-    Profiling_timer_expired,
+    ProfilingTimerExpired,
     /// Window resize signal (4.3BSD, Sun) (SIGWINCH)
-    Window_resize,
+    WindowResize,
     /// I/O now possible (4.2BSD) (SIGIO)
-    IO_Possible,
+    IoPossible,
     /// Power failure (System V) (SIGPWR)
-    Power_failure,
+    PowerFailure,
     /// Bad system call (SVr4) (SIGSYS)
-    Bad_system_call,
+    BadSystemCall,
 }
 
-impl Signal_type {
+impl SignalType {
     pub const FIRST: Self = Self::Hangup;
-    pub const LAST: Self = Self::Bad_system_call;
+    pub const LAST: Self = Self::BadSystemCall;
 
     pub const fn get_discriminant(&self) -> u8 {
         *self as u8
@@ -79,30 +79,36 @@ impl Signal_type {
 
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
-pub struct Signal_accumulator_type {
+pub struct SignalAccumulatorType {
     accumulator: u32,
 }
 
-impl Signal_accumulator_type {
+impl Default for SignalAccumulatorType {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SignalAccumulatorType {
     pub const fn new() -> Self {
         Self { accumulator: 0 }
     }
 
-    pub const fn send(&mut self, signal: Signal_type) {
+    pub const fn send(&mut self, signal: SignalType) {
         self.accumulator |= 1 << signal as u32;
     }
 
-    pub const fn clear(&mut self, signal: Signal_type) {
+    pub const fn clear(&mut self, signal: SignalType) {
         self.accumulator &= !(1 << signal as u32);
     }
 
-    pub const fn has_signal(&self, signal: Signal_type) -> bool {
+    pub const fn has_signal(&self, signal: SignalType) -> bool {
         self.accumulator & (1 << signal as u32) != 0
     }
 
-    pub fn peek(&self) -> Option<Signal_type> {
-        for bit in Signal_type::FIRST as u8..=Signal_type::LAST as u8 {
-            let signal = unsafe { core::mem::transmute::<u8, Signal_type>(bit) };
+    pub fn peek(&self) -> Option<SignalType> {
+        for bit in SignalType::FIRST as u8..=SignalType::LAST as u8 {
+            let signal = unsafe { core::mem::transmute::<u8, SignalType>(bit) };
 
             if self.has_signal(signal) {
                 return Some(signal);
@@ -112,7 +118,7 @@ impl Signal_accumulator_type {
         None
     }
 
-    pub fn pop(&mut self) -> Option<Signal_type> {
+    pub fn pop(&mut self) -> Option<SignalType> {
         if let Some(signal) = self.peek() {
             self.clear(signal);
 
@@ -129,36 +135,36 @@ mod tests {
 
     #[test]
     fn test_send_and_has_signal() {
-        let mut acc = Signal_accumulator_type::new();
-        acc.send(Signal_type::Interrupt);
-        assert!(acc.has_signal(Signal_type::Interrupt));
+        let mut acc = SignalAccumulatorType::new();
+        acc.send(SignalType::Interrupt);
+        assert!(acc.has_signal(SignalType::Interrupt));
     }
 
     #[test]
     fn test_clear_signal() {
-        let mut acc = Signal_accumulator_type::new();
-        acc.send(Signal_type::Quit);
-        acc.clear(Signal_type::Quit);
-        assert!(!acc.has_signal(Signal_type::Quit));
+        let mut acc = SignalAccumulatorType::new();
+        acc.send(SignalType::Quit);
+        acc.clear(SignalType::Quit);
+        assert!(!acc.has_signal(SignalType::Quit));
     }
 
     #[test]
     fn test_peek_and_pop() {
-        let mut acc = Signal_accumulator_type::new();
-        acc.send(Signal_type::Hangup);
-        acc.send(Signal_type::User_1);
-        assert_eq!(acc.peek(), Some(Signal_type::Hangup));
-        assert_eq!(acc.pop(), Some(Signal_type::Hangup));
-        assert_eq!(acc.peek(), Some(Signal_type::User_1));
-        assert_eq!(acc.pop(), Some(Signal_type::User_1));
+        let mut acc = SignalAccumulatorType::new();
+        acc.send(SignalType::Hangup);
+        acc.send(SignalType::User1);
+        assert_eq!(acc.peek(), Some(SignalType::Hangup));
+        assert_eq!(acc.pop(), Some(SignalType::Hangup));
+        assert_eq!(acc.peek(), Some(SignalType::User1));
+        assert_eq!(acc.pop(), Some(SignalType::User1));
         assert_eq!(acc.pop(), None);
     }
 
     #[test]
     fn test_signal_discriminant() {
         assert_eq!(
-            Signal_type::Power_failure.get_discriminant(),
-            Signal_type::Power_failure as u8
+            SignalType::PowerFailure.get_discriminant(),
+            SignalType::PowerFailure as u8
         );
     }
 }

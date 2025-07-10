@@ -6,21 +6,27 @@
 use core::ffi::c_void;
 
 use wamr_rust_sdk::{
-    runtime::{Runtime, RuntimeBuilder},
+    runtime,
     sys::{wasm_runtime_destroy_thread_env, wasm_runtime_init_thread_env},
 };
 
-use crate::{Registrable_trait, Result_type};
+use crate::{Registrable, Result};
 
 /// Builder for configuring and creating WASM runtime instances.
 ///
 /// This builder allows incremental configuration of the runtime with
 /// host functions before creating the final runtime instance.
-pub struct Runtime_builder_type(RuntimeBuilder);
+pub struct RuntimeBuilder(runtime::RuntimeBuilder);
 
-impl Runtime_builder_type {
+impl Default for RuntimeBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RuntimeBuilder {
     pub fn new() -> Self {
-        let runtime_builder = Runtime::builder().use_system_allocator();
+        let runtime_builder = runtime::Runtime::builder().use_system_allocator();
 
         Self(runtime_builder)
     }
@@ -29,7 +35,7 @@ impl Runtime_builder_type {
         Self(self.0.register_host_function(name, function_pointer))
     }
 
-    pub fn register(mut self, registrable: &dyn Registrable_trait) -> Self {
+    pub fn register(mut self, registrable: &dyn Registrable) -> Self {
         for function_descriptor in registrable.get_functions() {
             self = self.register_function(function_descriptor.name, function_descriptor.pointer);
         }
@@ -37,19 +43,19 @@ impl Runtime_builder_type {
         self
     }
 
-    pub fn build(self) -> Result_type<Runtime_type> {
-        Ok(Runtime_type(self.0.build()?))
+    pub fn build(self) -> Result<Runtime> {
+        Ok(Runtime(self.0.build()?))
     }
 }
 
-pub struct Runtime_type(Runtime);
+pub struct Runtime(runtime::Runtime);
 
-impl Runtime_type {
-    pub fn builder() -> Runtime_builder_type {
-        Runtime_builder_type::new()
+impl Runtime {
+    pub fn builder() -> RuntimeBuilder {
+        RuntimeBuilder::new()
     }
 
-    pub(crate) fn get_inner_reference(&self) -> &Runtime {
+    pub(crate) fn get_inner_reference(&self) -> &runtime::Runtime {
         &self.0
     }
 

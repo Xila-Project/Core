@@ -6,7 +6,7 @@
 #ifndef _XILA_PLATFORM_INTERNAL_H
 #define _XILA_PLATFORM_INTERNAL_H
 
-#include "../../../ABI/include/Xila.h"
+#include "../../../ABI/include/xila.h"
 
 #include <stdint.h>
 #include <stdarg.h>
@@ -44,24 +44,24 @@ extern "C"
 
     typedef size_t korp_tid;
 
-    struct Raw_mutex_type
+    struct RawMutex
     {
-        uint8_t _[40];
+        uint8_t _[32];
     } __attribute__((aligned(8)));
 
-    typedef struct Raw_mutex_type korp_mutex;
+    typedef struct RawMutex korp_mutex;
 
     typedef pthread_cond_t korp_cond;
     typedef pthread_t korp_thread;
 
-    struct Raw_rwlock_type
+    struct RawRwLock
     {
-        uint8_t _[40];
+        uint8_t _[8];
     } __attribute__((aligned(8)));
 
-    typedef struct Raw_rwlock_type korp_rwlock;
+    typedef struct RawRwLock korp_rwlock;
 
-    typedef struct Xila_semaphore_type korp_sem;
+    typedef struct XilaSemaphore korp_sem;
 
     // #define OS_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 

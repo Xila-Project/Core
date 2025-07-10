@@ -1,6 +1,12 @@
-pub struct Resolver_type;
+pub struct Resolver;
 
-impl Resolver_type {
+impl Default for Resolver {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Resolver {
     pub fn new() -> Self {
         Self
     }

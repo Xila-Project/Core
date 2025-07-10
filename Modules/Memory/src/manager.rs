@@ -1,9 +1,9 @@
 use core::{alloc::GlobalAlloc, ptr::NonNull};
 
-use crate::{Capabilities_type, Layout_type, Manager_trait};
+use crate::{CapabilitiesType, Layout, ManagerTrait};
 
 unsafe extern "Rust" {
-    unsafe static __XILA_MEMORY_ALLOCATOR: &'static dyn Manager_trait;
+    unsafe static __XILA_MEMORY_ALLOCATOR: &'static dyn ManagerTrait;
 }
 
 /// A wrapper type that adapts any type implementing `Allocator_trait` to the standard
@@ -11,9 +11,9 @@ unsafe extern "Rust" {
 ///
 /// This enables custom allocators that implement the Xila-specific `Allocator_trait`
 /// to be used as the global memory allocator for Rust's allocation system.
-pub struct Manager_type(&'static dyn Manager_trait);
+pub struct Manager(&'static dyn ManagerTrait);
 
-impl Manager_type {
+impl Manager {
     /// Creates a new instance of `Allocator_type` wrapping the provided allocator.
     ///
     /// # Parameters
@@ -21,7 +21,7 @@ impl Manager_type {
     ///
     /// # Returns
     /// A new instance of `Allocator_type` containing the provided allocator.
-    pub const fn new(allocator: &'static dyn Manager_trait) -> Self {
+    pub const fn new(allocator: &'static dyn ManagerTrait) -> Self {
         Self(allocator)
     }
 }
@@ -36,21 +36,21 @@ impl Manager_type {
 /// The implementation upholds the safety guarantees required by `GlobalAlloc`:
 /// - Memory is properly aligned according to the layout
 /// - Deallocation uses the same layout that was used for allocation
-unsafe impl GlobalAlloc for Manager_type {
+unsafe impl GlobalAlloc for Manager {
     unsafe fn alloc(&self, layout: core::alloc::Layout) -> *mut u8 {
         self.0
-            .allocate(Capabilities_type::default(), Layout_type::from(layout))
+            .allocate(CapabilitiesType::default(), Layout::from(layout))
             .map_or(core::ptr::null_mut(), |pointer| pointer.as_ptr())
     }
 
     unsafe fn dealloc(&self, pointer: *mut u8, layout: core::alloc::Layout) {
         if !pointer.is_null() {
             self.0
-                .deallocate(NonNull::new_unchecked(pointer), Layout_type::from(layout))
+                .deallocate(NonNull::new_unchecked(pointer), Layout::from(layout))
         }
     }
 }
 
-pub fn get_instance() -> &'static dyn Manager_trait {
+pub fn get_instance() -> &'static dyn ManagerTrait {
     unsafe { __XILA_MEMORY_ALLOCATOR }
 }

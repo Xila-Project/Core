@@ -1,18 +1,18 @@
 use alloc::ffi::CString;
-use graphics::{lvgl, Color_type, Point_type};
+use graphics::{lvgl, Color, Point};
 
-use crate::error::{Error_type, Result_type};
+use crate::error::{Error, Result};
 
 pub unsafe fn create_icon(
     parent: *mut lvgl::lv_obj_t,
-    icon_color: Color_type,
+    icon_color: Color,
     icon_string: &str,
-    size: Point_type,
-) -> Result_type<*mut lvgl::lv_obj_t> {
+    size: Point,
+) -> Result<*mut lvgl::lv_obj_t> {
     let icon = lvgl::lv_button_create(parent);
 
     if icon.is_null() {
-        return Err(Error_type::Failed_to_create_object);
+        return Err(Error::FailedToCreateObject);
     }
 
     lvgl::lv_obj_set_size(icon, size.get_x().into(), size.get_y().into());
@@ -28,7 +28,7 @@ pub unsafe fn create_icon(
     let label = lvgl::lv_label_create(icon);
 
     if label.is_null() {
-        return Err(Error_type::Failed_to_create_object);
+        return Err(Error::FailedToCreateObject);
     }
 
     if size.get_x() >= 48 {
@@ -45,7 +45,7 @@ pub unsafe fn create_icon(
         );
     }
 
-    let icon_string = CString::new(icon_string).map_err(Error_type::Null_character_in_string)?;
+    let icon_string = CString::new(icon_string).map_err(Error::NullCharacterInString)?;
 
     lvgl::lv_label_set_text(label, icon_string.as_ptr());
     lvgl::lv_obj_set_align(label, lvgl::lv_align_t_LV_ALIGN_CENTER);

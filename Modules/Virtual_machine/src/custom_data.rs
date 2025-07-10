@@ -1,18 +1,18 @@
-use task::Task_identifier_type;
+use task::TaskIdentifier;
 
 #[derive(Debug, Clone)]
-pub struct Custom_data_type {
-    task_identifier: Task_identifier_type,
+pub struct CustomData {
+    task_identifier: TaskIdentifier,
 }
 
-impl Custom_data_type {
-    pub const fn new(task: Task_identifier_type) -> Self {
+impl CustomData {
+    pub const fn new(task: TaskIdentifier) -> Self {
         Self {
             task_identifier: task,
         }
     }
 
-    pub const fn get_task_identifier(&self) -> Task_identifier_type {
+    pub const fn get_task_identifier(&self) -> TaskIdentifier {
         self.task_identifier
     }
 }

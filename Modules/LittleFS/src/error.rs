@@ -1,9 +1,9 @@
 use super::littlefs;
-use file_system::{Error_type, Result_type};
+use file_system::{Error, Result};
 
 /*
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Error_type {
+pub enum Error {
     // LittleFS errors
     Input_output,        // Error during device operation
     Corrupted,           // Corrupted
@@ -14,7 +14,7 @@ pub enum Error_type {
     Directory_not_empty, // Dir is not empty
     Bad_file_number,     // Bad file number
     File_too_large,      // File too large
-    Invalid_parameter,   // Invalid parameter
+    InvalidParameter,   // Invalid parameter
     No_space_left,       // No space left on device
     No_memory,           // No more memory available
     No_attribute,        // No data/attr available
@@ -27,59 +27,59 @@ pub enum Error_type {
 }
     */
 
-pub(crate) fn convert_result(error: i32) -> Result_type<u32> {
+pub(crate) fn convert_result(error: i32) -> Result<u32> {
     match error {
-        littlefs::lfs_error_LFS_ERR_IO => Err(Error_type::Input_output),
-        littlefs::lfs_error_LFS_ERR_CORRUPT => Err(Error_type::Corrupted),
-        littlefs::lfs_error_LFS_ERR_NOENT => Err(Error_type::Not_found),
-        littlefs::lfs_error_LFS_ERR_EXIST => Err(Error_type::Already_exists),
-        littlefs::lfs_error_LFS_ERR_NOTDIR => Err(Error_type::Not_directory),
-        littlefs::lfs_error_LFS_ERR_ISDIR => Err(Error_type::is_directory),
-        littlefs::lfs_error_LFS_ERR_NOTEMPTY => Err(Error_type::Directory_not_empty),
-        littlefs::lfs_error_LFS_ERR_BADF => Err(Error_type::Invalid_identifier),
-        littlefs::lfs_error_LFS_ERR_FBIG => Err(Error_type::File_too_large),
-        littlefs::lfs_error_LFS_ERR_INVAL => Err(Error_type::Invalid_parameter),
-        littlefs::lfs_error_LFS_ERR_NOSPC => Err(Error_type::No_space_left),
-        littlefs::lfs_error_LFS_ERR_NOMEM => Err(Error_type::No_memory),
-        littlefs::lfs_error_LFS_ERR_NOATTR => Err(Error_type::No_attribute),
-        littlefs::lfs_error_LFS_ERR_NAMETOOLONG => Err(Error_type::Name_too_long),
+        littlefs::lfs_error_LFS_ERR_IO => Err(Error::InputOutput),
+        littlefs::lfs_error_LFS_ERR_CORRUPT => Err(Error::Corrupted),
+        littlefs::lfs_error_LFS_ERR_NOENT => Err(Error::NotFound),
+        littlefs::lfs_error_LFS_ERR_EXIST => Err(Error::AlreadyExists),
+        littlefs::lfs_error_LFS_ERR_NOTDIR => Err(Error::NotDirectory),
+        littlefs::lfs_error_LFS_ERR_ISDIR => Err(Error::IsDirectory),
+        littlefs::lfs_error_LFS_ERR_NOTEMPTY => Err(Error::DirectoryNotEmpty),
+        littlefs::lfs_error_LFS_ERR_BADF => Err(Error::InvalidIdentifier),
+        littlefs::lfs_error_LFS_ERR_FBIG => Err(Error::FileTooLarge),
+        littlefs::lfs_error_LFS_ERR_INVAL => Err(Error::InvalidParameter),
+        littlefs::lfs_error_LFS_ERR_NOSPC => Err(Error::NoSpaceLeft),
+        littlefs::lfs_error_LFS_ERR_NOMEM => Err(Error::NoMemory),
+        littlefs::lfs_error_LFS_ERR_NOATTR => Err(Error::NoAttribute),
+        littlefs::lfs_error_LFS_ERR_NAMETOOLONG => Err(Error::NameTooLong),
         _ => {
             if error >= littlefs::lfs_error_LFS_ERR_OK {
                 Ok(error as u32)
             } else {
-                Err(Error_type::Internal_error)
+                Err(Error::InternalError)
             }
         }
     }
 }
 /*
-impl From<Error_type> for crate::Error_type {
-    fn from(Error: Error_type) -> Self {
+impl From<Error> for crate::Error {
+    fn from(Error: Error) -> Self {
         match Error {
-            Error_type::Input_output => Self::Input_output,
-            Error_type::Corrupted => Self::Corrupted,
-            Error_type::No_Entry => Self::Not_found,
-            Error_type::Entry_exists => Self::Already_exists,
-            Error_type::Not_directory => Self::Not_directory,
-            Error_type::is_directory => Self::is_directory,
-            Error_type::Directory_not_empty => Self::Directory_not_empty,
-            Error_type::Bad_file_number => Self::Invalid_identifier,
-            Error_type::File_too_large => Self::File_too_large,
-            Error_type::Invalid_parameter => Self::Invalid_input,
-            Error_type::No_space_left => Self::File_system_full,
-            Error_type::No_memory => Self::No_memory,
-            Error_type::No_attribute => Self::No_attribute,
-            Error_type::Name_too_long => Self::Name_too_long,
-            Error_type::Too_many_open_files => Self::Too_many_open_files,
-            Error_type::Internal_error => Self::Internal_error,
-            Error_type::Poisoned_lock => Self::Internal_error,
-            Error_type::Invalid_identifier => Self::Invalid_identifier,
+            Error::Input_output => Self::Input_output,
+            Error::Corrupted => Self::Corrupted,
+            Error::No_Entry => Self::Not_found,
+            Error::Entry_exists => Self::Already_exists,
+            Error::Not_directory => Self::Not_directory,
+            Error::is_directory => Self::is_directory,
+            Error::Directory_not_empty => Self::Directory_not_empty,
+            Error::Bad_file_number => Self::Invalid_identifier,
+            Error::File_too_large => Self::File_too_large,
+            Error::InvalidParameter => Self::Invalid_input,
+            Error::No_space_left => Self::File_system_full,
+            Error::No_memory => Self::No_memory,
+            Error::No_attribute => Self::No_attribute,
+            Error::Name_too_long => Self::Name_too_long,
+            Error::Too_many_open_files => Self::Too_many_open_files,
+            Error::Internal_error => Self::Internal_error,
+            Error::Poisoned_lock => Self::Internal_error,
+            Error::Invalid_identifier => Self::Invalid_identifier,
         }
     }
 }
 
-impl<T> From<PoisonError<T>> for Error_type {
+impl<T> From<PoisonError<T>> for Error {
     fn from(_: PoisonError<T>) -> Self {
-        Error_type::Poisoned_lock
+        Error::Poisoned_lock
     }
 }*/

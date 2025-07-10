@@ -1,17 +1,17 @@
 use alloc::vec::Vec;
 
 use crate::{
-    error::{Error_type, Result_type},
-    tokenizer::Token_type,
+    error::{Error, Result},
+    tokenizer::Token,
 };
 
 #[derive(Debug, Clone)]
-pub struct Command_type<'a> {
+pub struct Command<'a> {
     command: &'a str,
     arguments: Vec<&'a str>,
 }
 
-impl Command_type<'_> {
+impl Command<'_> {
     pub fn get_command(&self) -> &str {
         self.command
     }
@@ -21,20 +21,20 @@ impl Command_type<'_> {
     }
 }
 
-impl<'a> TryFrom<&[Token_type<'a>]> for Command_type<'a> {
-    type Error = Error_type;
+impl<'a> TryFrom<&[Token<'a>]> for Command<'a> {
+    type Error = Error;
 
-    fn try_from(value: &[Token_type<'a>]) -> Result<Self, Self::Error> {
+    fn try_from(value: &[Token<'a>]) -> Result<Self> {
         let mut iterator = value.iter();
 
         let command = match iterator.next() {
-            Some(Token_type::String(command)) => *command,
-            _ => return Err(Error_type::Missing_command),
+            Some(Token::String(command)) => *command,
+            _ => return Err(Error::MissingCommand),
         };
 
         let mut arguments = Vec::new();
 
-        while let Some(Token_type::String(argument)) = iterator.next() {
+        while let Some(Token::String(argument)) = iterator.next() {
             arguments.push(*argument);
         }
 
@@ -42,13 +42,13 @@ impl<'a> TryFrom<&[Token_type<'a>]> for Command_type<'a> {
     }
 }
 
-pub fn parse(tokens: Vec<Token_type<'_>>) -> Result_type<Vec<Command_type<'_>>> {
+pub fn parse(tokens: Vec<Token<'_>>) -> Result<Vec<Command<'_>>> {
     let tokens = tokens.clone();
-    let split = tokens.split(|token| *token == Token_type::Pipe);
+    let split = tokens.split(|token| *token == Token::Pipe);
 
     let commands = split
-        .map(Command_type::try_from)
-        .collect::<Result<Vec<Command_type>, Error_type>>()?;
+        .map(Command::try_from)
+        .collect::<core::result::Result<Vec<Command>, Error>>()?;
 
     Ok(commands)
 }
@@ -62,11 +62,11 @@ mod tests {
     #[test]
     fn test_parse() {
         let tokens = vec![
-            Token_type::String("ls"),
-            Token_type::String("-l"),
-            Token_type::Pipe,
-            Token_type::String("grep"),
-            Token_type::String("main"),
+            Token::String("ls"),
+            Token::String("-l"),
+            Token::Pipe,
+            Token::String("grep"),
+            Token::String("main"),
         ];
 
         let commands = parse(tokens).unwrap();
@@ -80,13 +80,13 @@ mod tests {
         assert_eq!(commands[1].arguments, vec!["main"]);
 
         let tokens = vec![
-            Token_type::String("ls"),
-            Token_type::String("-l"),
-            Token_type::String("-a"),
-            Token_type::String("-h"),
-            Token_type::Pipe,
-            Token_type::String("grep"),
-            Token_type::String("main"),
+            Token::String("ls"),
+            Token::String("-l"),
+            Token::String("-a"),
+            Token::String("-h"),
+            Token::Pipe,
+            Token::String("grep"),
+            Token::String("main"),
         ];
 
         let commands = parse(tokens).unwrap();

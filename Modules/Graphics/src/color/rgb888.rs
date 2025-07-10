@@ -1,15 +1,15 @@
 use crate::lvgl;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Color_RGB888_type {
+pub struct ColorRGB888 {
     red: u8,
     green: u8,
     blue: u8,
 }
 
-impl Color_RGB888_type {
-    pub const WHITE: Color_RGB888_type = Color_RGB888_type::new(0xFF, 0xFF, 0xFF);
-    pub const BLACK: Color_RGB888_type = Color_RGB888_type::new(0x00, 0x00, 0x00);
+impl ColorRGB888 {
+    pub const WHITE: ColorRGB888 = ColorRGB888::new(0xFF, 0xFF, 0xFF);
+    pub const BLACK: ColorRGB888 = ColorRGB888::new(0x00, 0x00, 0x00);
 
     pub const fn new(red: u8, green: u8, blue: u8) -> Self {
         Self { red, green, blue }
@@ -55,14 +55,14 @@ impl Color_RGB888_type {
     }
 }
 
-impl From<Color_RGB888_type> for lvgl::lv_color_t {
-    fn from(value: Color_RGB888_type) -> Self {
+impl From<ColorRGB888> for lvgl::lv_color_t {
+    fn from(value: ColorRGB888) -> Self {
         value.into_lvgl_color()
     }
 }
 
-impl From<lvgl::lv_color_t> for Color_RGB888_type {
+impl From<lvgl::lv_color_t> for ColorRGB888 {
     fn from(value: lvgl::lv_color_t) -> Self {
-        Color_RGB888_type::from_lvgl_color(value)
+        ColorRGB888::from_lvgl_color(value)
     }
 }

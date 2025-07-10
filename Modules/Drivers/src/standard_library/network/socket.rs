@@ -8,31 +8,28 @@ use std::{
 
 use core::mem::forget;
 
-use file_system::{Local_file_identifier_iterator_type, Local_file_identifier_type};
-use network::{
-    Error_type, IP_type, IPv4_type, IPv6_type, Network_socket_driver_trait, Port_type,
-    Protocol_type, Result_type,
-};
-use time::Duration_type;
+use file_system::{LocalFileIdentifier, LocalFileIdentifierIterator};
+use network::{Error, IPv4, IPv6, Port, Protocol, Result, SocketDriver, IP};
+use time::Duration;
 
 use super::error::into_socket_error;
 
-struct Inner_type {
+struct Inner {
     #[cfg(target_family = "unix")]
-    pub sockets: BTreeMap<Local_file_identifier_type, RawFd>,
+    pub sockets: BTreeMap<LocalFileIdentifier, RawFd>,
 }
 
-pub struct Network_socket_driver_type(RwLock<Inner_type>);
+pub struct NetworkSocketDriver(RwLock<Inner>);
 
-const fn into_socketaddr(ip: IP_type, port: Port_type) -> SocketAddr {
+const fn into_socketaddr(ip: IP, port: Port) -> SocketAddr {
     let ip = match ip {
-        IP_type::IPv4(ip) => {
+        IP::IPv4(ip) => {
             let ip = ip.into_inner();
 
             IpAddr::V4(Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]))
         }
 
-        IP_type::IPv6(ip) => {
+        IP::IPv6(ip) => {
             let ip = ip.into_inner();
 
             IpAddr::V6(Ipv6Addr::new(
@@ -46,29 +43,35 @@ const fn into_socketaddr(ip: IP_type, port: Port_type) -> SocketAddr {
     SocketAddr::new(ip, port)
 }
 
-const fn into_ip_and_port(socket_address: SocketAddr) -> (IP_type, Port_type) {
+const fn into_ip_and_port(socket_address: SocketAddr) -> (IP, Port) {
     let ip = match socket_address.ip() {
-        IpAddr::V4(ip) => IP_type::IPv4(IPv4_type::new(ip.octets())),
-        IpAddr::V6(ip) => IP_type::IPv6(IPv6_type::new(ip.segments())),
+        IpAddr::V4(ip) => IP::IPv4(IPv4::new(ip.octets())),
+        IpAddr::V6(ip) => IP::IPv6(IPv6::new(ip.segments())),
     };
 
-    let port = Port_type::new(socket_address.port());
+    let port = Port::new(socket_address.port());
 
     (ip, port)
 }
 
-impl Network_socket_driver_type {
+impl Default for NetworkSocketDriver {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl NetworkSocketDriver {
     pub fn new() -> Self {
-        Self(RwLock::new(Inner_type {
+        Self(RwLock::new(Inner {
             sockets: BTreeMap::new(),
         }))
     }
 
-    fn new_socket(&self, socket: Local_file_identifier_type, raw_socket: RawFd) -> Result_type<()> {
+    fn new_socket(&self, socket: LocalFileIdentifier, raw_socket: RawFd) -> Result<()> {
         let mut inner = self.0.write().unwrap();
 
         if inner.sockets.contains_key(&socket) {
-            return Err(Error_type::Duplicate_identifier);
+            return Err(Error::DuplicateIdentifier);
         }
 
         if inner.sockets.insert(socket, raw_socket).is_some() {
@@ -78,47 +81,47 @@ impl Network_socket_driver_type {
         Ok(())
     }
 
-    fn get_socket(&self, socket: Local_file_identifier_type) -> Result_type<RawFd> {
+    fn get_socket(&self, socket: LocalFileIdentifier) -> Result<RawFd> {
         Ok(*self
             .0
             .read()
             .unwrap()
             .sockets
             .get(&socket)
-            .ok_or(Error_type::Invalid_identifier)?)
+            .ok_or(Error::InvalidIdentifier)?)
     }
 
-    fn get_socket_mutable(&self, socket: Local_file_identifier_type) -> Result_type<RawFd> {
+    fn get_socket_mutable(&self, socket: LocalFileIdentifier) -> Result<RawFd> {
         Ok(*self
             .0
             .write()
             .unwrap()
             .sockets
             .get(&socket)
-            .ok_or(Error_type::Invalid_identifier)?)
+            .ok_or(Error::InvalidIdentifier)?)
     }
 
-    fn remove_socket(&self, socket: Local_file_identifier_type) -> Result_type<RawFd> {
+    fn remove_socket(&self, socket: LocalFileIdentifier) -> Result<RawFd> {
         self.0
             .write()
             .unwrap()
             .sockets
             .remove(&socket)
-            .ok_or(Error_type::Invalid_identifier)
+            .ok_or(Error::InvalidIdentifier)
     }
 }
 
-impl Network_socket_driver_trait for Network_socket_driver_type {
+impl SocketDriver for NetworkSocketDriver {
     fn get_new_socket_identifier(
         &self,
-        mut iterator: Local_file_identifier_iterator_type,
-    ) -> Result_type<Option<Local_file_identifier_type>> {
+        mut iterator: LocalFileIdentifierIterator,
+    ) -> Result<Option<LocalFileIdentifier>> {
         let inner = self.0.read().unwrap();
 
         Ok(iterator.find(|identifier| !inner.sockets.contains_key(identifier)))
     }
 
-    fn close(&self, socket: Local_file_identifier_type) -> Result_type<()> {
+    fn close(&self, socket: LocalFileIdentifier) -> Result<()> {
         let socket = self.remove_socket(socket)?;
 
         unsafe {
@@ -130,13 +133,13 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn bind(
         &self,
-        ip: IP_type,
-        port: Port_type,
-        protocol: Protocol_type,
-        socket: Local_file_identifier_type,
-    ) -> Result_type<()> {
+        ip: IP,
+        port: Port,
+        protocol: Protocol,
+        socket: LocalFileIdentifier,
+    ) -> Result<()> {
         match protocol {
-            Protocol_type::TCP => {
+            Protocol::TCP => {
                 let tcp_listener =
                     TcpListener::bind(into_socketaddr(ip, port)).map_err(into_socket_error)?;
 
@@ -145,7 +148,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
                 forget(tcp_listener); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
             }
 
-            Protocol_type::UDP => {
+            Protocol::UDP => {
                 let udp_socket =
                     UdpSocket::bind(into_socketaddr(ip, port)).map_err(into_socket_error)?;
 
@@ -153,18 +156,13 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
                 forget(udp_socket); // * : Prevent closing the socket if the socket creation is SUCCESSFUL
             }
-            _ => return Err(Error_type::Unsupported_protocol),
+            _ => return Err(Error::UnsupportedProtocol),
         };
 
         Ok(())
     }
 
-    fn connect(
-        &self,
-        ip: IP_type,
-        port: Port_type,
-        socket: Local_file_identifier_type,
-    ) -> Result_type<()> {
+    fn connect(&self, ip: IP, port: Port, socket: LocalFileIdentifier) -> Result<()> {
         let address = into_socketaddr(ip, port);
 
         let tcp_stream = TcpStream::connect(address).map_err(into_socket_error)?;
@@ -178,9 +176,9 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn accept(
         &self,
-        socket: Local_file_identifier_type,
-        new_socket: Local_file_identifier_type,
-    ) -> Result_type<(IP_type, Port_type)> {
+        socket: LocalFileIdentifier,
+        new_socket: LocalFileIdentifier,
+    ) -> Result<(IP, Port)> {
         let socket = self.get_socket_mutable(socket)?;
 
         let tcp_listener = unsafe { TcpListener::from_raw_fd(socket) };
@@ -195,7 +193,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(into_ip_and_port(address))
     }
 
-    fn send(&self, socket: Local_file_identifier_type, data: &[u8]) -> Result_type<()> {
+    fn send(&self, socket: LocalFileIdentifier, data: &[u8]) -> Result<()> {
         let socket = self.get_socket(socket)?;
 
         let mut socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -207,7 +205,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(())
     }
 
-    fn receive(&self, socket: Local_file_identifier_type, data: &mut [u8]) -> Result_type<usize> {
+    fn receive(&self, socket: LocalFileIdentifier, data: &mut [u8]) -> Result<usize> {
         let socket = self.get_socket(socket)?;
 
         let mut socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -221,9 +219,9 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
     fn receive_from(
         &self,
-        socket: Local_file_identifier_type,
+        socket: LocalFileIdentifier,
         data: &mut [u8],
-    ) -> Result_type<(usize, IP_type, Port_type)> {
+    ) -> Result<(usize, IP, Port)> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { UdpSocket::from_raw_fd(socket) };
@@ -237,13 +235,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok((bytes, ip, port))
     }
 
-    fn send_to(
-        &self,
-        socket: Local_file_identifier_type,
-        data: &[u8],
-        ip: IP_type,
-        port: Port_type,
-    ) -> Result_type<()> {
+    fn send_to(&self, socket: LocalFileIdentifier, data: &[u8], ip: IP, port: Port) -> Result<()> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { UdpSocket::from_raw_fd(socket) };
@@ -257,10 +249,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(())
     }
 
-    fn get_local_address(
-        &self,
-        socket: Local_file_identifier_type,
-    ) -> Result_type<(IP_type, Port_type)> {
+    fn get_local_address(&self, socket: LocalFileIdentifier) -> Result<(IP, Port)> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -272,10 +261,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(into_ip_and_port(address))
     }
 
-    fn get_remote_address(
-        &self,
-        socket: Local_file_identifier_type,
-    ) -> Result_type<(IP_type, Port_type)> {
+    fn get_remote_address(&self, socket: LocalFileIdentifier) -> Result<(IP, Port)> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -287,11 +273,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(into_ip_and_port(address))
     }
 
-    fn set_send_timeout(
-        &self,
-        socket: Local_file_identifier_type,
-        timeout: Duration_type,
-    ) -> Result_type<()> {
+    fn set_send_timeout(&self, socket: LocalFileIdentifier, timeout: Duration) -> Result<()> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -305,11 +287,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(())
     }
 
-    fn set_receive_timeout(
-        &self,
-        socket: Local_file_identifier_type,
-        timeout: Duration_type,
-    ) -> Result_type<()> {
+    fn set_receive_timeout(&self, socket: LocalFileIdentifier, timeout: Duration) -> Result<()> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -323,10 +301,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(())
     }
 
-    fn get_send_timeout(
-        &self,
-        socket: Local_file_identifier_type,
-    ) -> Result_type<Option<Duration_type>> {
+    fn get_send_timeout(&self, socket: LocalFileIdentifier) -> Result<Option<Duration>> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -338,10 +313,7 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
         Ok(timeout)
     }
 
-    fn get_receive_timeout(
-        &self,
-        socket: Local_file_identifier_type,
-    ) -> Result_type<Option<Duration_type>> {
+    fn get_receive_timeout(&self, socket: LocalFileIdentifier) -> Result<Option<Duration>> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -356,22 +328,20 @@ impl Network_socket_driver_trait for Network_socket_driver_type {
 
 #[cfg(test)]
 mod tests {
-    use file_system::File_identifier_type;
-    use task::Task_identifier_type;
+    use file_system::FileIdentifier;
+    use task::TaskIdentifier;
 
     use super::*;
     use std::net::{TcpListener, UdpSocket};
     use std::os::fd::AsRawFd;
 
-    pub const fn new_socket_identifier(
-        identifier: File_identifier_type,
-    ) -> Local_file_identifier_type {
-        Local_file_identifier_type::new(Task_identifier_type::new(1), identifier)
+    pub const fn new_socket_identifier(identifier: FileIdentifier) -> LocalFileIdentifier {
+        LocalFileIdentifier::new(TaskIdentifier::new(1), identifier)
     }
 
     #[test]
     fn test_new_socket() {
-        let driver = Network_socket_driver_type::new();
+        let driver = NetworkSocketDriver::new();
         let socket = TcpListener::bind("127.0.0.1:0").unwrap();
         let raw_fd = socket.as_raw_fd();
 
@@ -383,7 +353,7 @@ mod tests {
 
     #[test]
     fn test_remove_socket() {
-        let driver = Network_socket_driver_type::new();
+        let driver = NetworkSocketDriver::new();
         let socket = TcpListener::bind("127.0.0.1:0").unwrap();
         let raw_fd = socket.as_raw_fd();
 
@@ -396,52 +366,47 @@ mod tests {
 
     #[test]
     fn test_bind_tcp() {
-        let driver = Network_socket_driver_type::new();
+        let driver = NetworkSocketDriver::new();
 
         let socket_identifier = new_socket_identifier(1.into());
 
-        let ip = IP_type::IPv4(IPv4_type::new([127, 0, 0, 1]));
-        let port = Port_type::new(0);
+        let ip = IP::IPv4(IPv4::new([127, 0, 0, 1]));
+        let port = Port::new(0);
 
         driver
-            .bind(ip, port, Protocol_type::TCP, socket_identifier)
+            .bind(ip, port, Protocol::TCP, socket_identifier)
             .unwrap();
     }
 
     #[test]
     fn test_bind_udp() {
-        let driver = Network_socket_driver_type::new();
+        let driver = NetworkSocketDriver::new();
 
         let socket = new_socket_identifier(1.into());
 
-        let ip = IP_type::IPv4(IPv4_type::new([127, 0, 0, 1]));
-        let port = Port_type::new(0);
+        let ip = IP::IPv4(IPv4::new([127, 0, 0, 1]));
+        let port = Port::new(0);
 
-        driver.bind(ip, port, Protocol_type::UDP, socket).unwrap();
+        driver.bind(ip, port, Protocol::UDP, socket).unwrap();
     }
 
     #[test]
     fn test_close() {
-        let driver = Network_socket_driver_type::new();
+        let driver = NetworkSocketDriver::new();
 
         let socket_1 = new_socket_identifier(1.into());
         let socket_identifier_2 = new_socket_identifier(2.into());
 
         // - Bind sockets
         driver
-            .bind(
-                IPv4_type::LOCALHOST.into(),
-                Port_type::ANY,
-                Protocol_type::UDP,
-                socket_1,
-            )
+            .bind(IPv4::LOCALHOST.into(), Port::ANY, Protocol::UDP, socket_1)
             .unwrap();
 
         driver
             .bind(
-                IPv4_type::LOCALHOST.into(),
-                Port_type::ANY,
-                Protocol_type::UDP,
+                IPv4::LOCALHOST.into(),
+                Port::ANY,
+                Protocol::UDP,
                 socket_identifier_2,
             )
             .unwrap();
@@ -457,13 +422,13 @@ mod tests {
         driver.close(socket_1).unwrap();
 
         assert_eq!(
-            Error_type::Invalid_identifier,
+            Error::InvalidIdentifier,
             driver
                 .send_to(
                     socket_1,
                     b"hello",
-                    IP_type::IPv4(IPv4_type::new([127, 0, 0, 1])),
-                    Port_type::new(0),
+                    IP::IPv4(IPv4::new([127, 0, 0, 1])),
+                    Port::new(0),
                 )
                 .unwrap_err()
         );
@@ -471,7 +436,7 @@ mod tests {
 
     #[test]
     fn test_connect() {
-        let driver = Network_socket_driver_type::new();
+        let driver = NetworkSocketDriver::new();
 
         let socket_1 = new_socket_identifier(1.into());
 
@@ -484,7 +449,7 @@ mod tests {
 
     #[test]
     fn test_send_receive() {
-        let driver = Network_socket_driver_type::new();
+        let driver = NetworkSocketDriver::new();
 
         let socket_1_identifier = new_socket_identifier(1.into());
 
@@ -505,19 +470,14 @@ mod tests {
 
     #[test]
     fn test_tcp_send_receive_server() {
-        let driver = Network_socket_driver_type::new();
+        let driver = NetworkSocketDriver::new();
 
         let server = new_socket_identifier(1.into());
         let server_stream = new_socket_identifier(2.into());
 
         // - Bind socket
         driver
-            .bind(
-                IPv4_type::LOCALHOST.into(),
-                Port_type::ANY,
-                Protocol_type::TCP,
-                server,
-            )
+            .bind(IPv4::LOCALHOST.into(), Port::ANY, Protocol::TCP, server)
             .unwrap();
 
         let (ip_server, port_server) = driver.get_local_address(server).unwrap();
@@ -569,7 +529,7 @@ mod tests {
 
     #[test]
     fn test_tcp_send_receive_client() {
-        let driver = Network_socket_driver_type::new();
+        let driver = NetworkSocketDriver::new();
 
         let client = new_socket_identifier(1.into());
 
@@ -629,7 +589,7 @@ mod tests {
 
     #[test]
     fn test_tcp_send_receive_both_sides() {
-        let driver = Network_socket_driver_type::new();
+        let driver = NetworkSocketDriver::new();
 
         let server_listener = new_socket_identifier(1.into());
         let server_stream = new_socket_identifier(2.into());
@@ -638,9 +598,9 @@ mod tests {
         // - Bind socket
         driver
             .bind(
-                IPv4_type::LOCALHOST.into(),
-                Port_type::ANY,
-                Protocol_type::TCP,
+                IPv4::LOCALHOST.into(),
+                Port::ANY,
+                Protocol::TCP,
                 server_listener,
             )
             .unwrap();
@@ -699,18 +659,13 @@ mod tests {
 
     #[test]
     fn test_udp_send_to_receive_from_one_side() {
-        let driver = Network_socket_driver_type::new();
+        let driver = NetworkSocketDriver::new();
 
         let socket_1 = new_socket_identifier(1.into());
 
         // -  Bind sockets
         driver
-            .bind(
-                IPv4_type::LOCALHOST.into(),
-                Port_type::ANY,
-                Protocol_type::UDP,
-                socket_1,
-            )
+            .bind(IPv4::LOCALHOST.into(), Port::ANY, Protocol::UDP, socket_1)
             .unwrap();
 
         let socket_2 = UdpSocket::bind("127.0.0.1:0").unwrap();
@@ -766,7 +721,7 @@ mod tests {
 
     #[test]
     fn test_udp_send_to_receive_from_both_sides() {
-        let driver = Network_socket_driver_type::new();
+        let driver = NetworkSocketDriver::new();
 
         let socket_1_identifier = new_socket_identifier(1.into());
         let socket_2_identifier = new_socket_identifier(2.into());
@@ -774,18 +729,18 @@ mod tests {
         // - Bind sockets
         driver
             .bind(
-                IPv4_type::LOCALHOST.into(),
-                Port_type::ANY,
-                Protocol_type::UDP,
+                IPv4::LOCALHOST.into(),
+                Port::ANY,
+                Protocol::UDP,
                 socket_1_identifier,
             )
             .unwrap();
 
         driver
             .bind(
-                IPv4_type::LOCALHOST.into(),
-                Port_type::ANY,
-                Protocol_type::UDP,
+                IPv4::LOCALHOST.into(),
+                Port::ANY,
+                Protocol::UDP,
                 socket_2_identifier,
             )
             .unwrap();

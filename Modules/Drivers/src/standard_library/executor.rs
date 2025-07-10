@@ -5,19 +5,25 @@ use std::sync::atomic::AtomicBool;
 use std::sync::{Condvar, Mutex};
 
 /// Single-threaded std-based executor.
-pub struct Executor_type {
+pub struct Executor {
     inner: raw::Executor,
     not_send: PhantomData<*mut ()>,
-    signaler: &'static Signaler_type,
+    signaler: &'static Signaler,
     stop: AtomicBool,
 }
 
-impl Executor_type {
+impl Default for Executor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Executor {
     /// Create a new Executor.
     pub fn new() -> Self {
-        let signaler = Box::leak(Box::new(Signaler_type::new()));
+        let signaler = Box::leak(Box::new(Signaler::new()));
         Self {
-            inner: raw::Executor::new(signaler as *mut Signaler_type as *mut ()),
+            inner: raw::Executor::new(signaler as *mut Signaler as *mut ()),
             not_send: PhantomData,
             signaler,
             stop: AtomicBool::new(false),
@@ -62,12 +68,12 @@ impl Executor_type {
     }
 }
 
-struct Signaler_type {
+struct Signaler {
     mutex: Mutex<bool>,
     condvar: Condvar,
 }
 
-impl Signaler_type {
+impl Signaler {
     fn new() -> Self {
         Self {
             mutex: Mutex::new(false),
@@ -91,17 +97,17 @@ impl Signaler_type {
 }
 
 #[macro_export]
-macro_rules! Instantiate_static_executor {
+macro_rules! instantiate_static_executor {
     () => {{
-        static mut __EXECUTOR: Option<$crate::standard_library::executor::Executor_type> = None;
+        static mut __EXECUTOR: Option<$crate::standard_library::executor::Executor> = None;
 
         unsafe {
             if __EXECUTOR.is_none() {
-                __EXECUTOR = Some($crate::standard_library::executor::Executor_type::new());
+                __EXECUTOR = Some($crate::standard_library::executor::Executor::new());
             }
             __EXECUTOR.as_mut().expect("Executor is not initialized")
         }
     }};
 }
 
-pub use Instantiate_static_executor;
+pub use instantiate_static_executor;

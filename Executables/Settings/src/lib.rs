@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
@@ -8,45 +7,45 @@ mod settings;
 mod tabs;
 use core::num::NonZeroUsize;
 
-use executable::Standard_type;
+use executable::Standard;
 
 use alloc::string::{String, ToString};
 pub use error::*;
-use file_system::{Flags_type, Mode_type, Open_type};
+use file_system::{Flags, Mode, Open};
 pub use settings::*;
-use task::Task_identifier_type;
-use virtual_file_system::{File_type, Virtual_file_system_type};
+use task::TaskIdentifier;
+use virtual_file_system::{File, VirtualFileSystemType};
 
 pub const SHORTCUT: &str = r#"
 {
-    "Name": "Settings",
-    "Command": "/Binaries/Settings",
-    "Arguments": "",
-    "Terminal": false,
-    "Icon_string": "Se",
-    "Icon_color": [158, 158, 158]
+    "name": "Settings",
+    "command": "/Binaries/Settings",
+    "arguments": "",
+    "terminal": false,
+    "icon_string": "Se",
+    "icon_color": [158, 158, 158]
 }"#;
 
-pub struct Settings_executable_type;
+pub struct SettingsExecutableType;
 
-impl Settings_executable_type {
+impl SettingsExecutableType {
     pub async fn new<'a>(
-        virtual_file_system: &'a Virtual_file_system_type<'a>,
-        task: Task_identifier_type,
-    ) -> Result<Self, String> {
+        virtual_file_system: &'a VirtualFileSystemType<'a>,
+        task: TaskIdentifier,
+    ) -> core::result::Result<Self, String> {
         let _ = virtual_file_system
             .create_directory(&"/Configuration/Shared/Shortcuts", task)
             .await;
 
-        let file = match File_type::open(
+        let file = match File::open(
             virtual_file_system,
             "/Configuration/Shared/Shortcuts/Settings.json",
-            Flags_type::new(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
+            Flags::new(Mode::WRITE_ONLY, Open::CREATE_ONLY.into(), None),
         )
         .await
         {
             Ok(file) => file,
-            Err(file_system::Error_type::Already_exists) => {
+            Err(file_system::Error::AlreadyExists) => {
                 return Ok(Self);
             }
             Err(error) => Err(error.to_string())?,
@@ -60,14 +59,14 @@ impl Settings_executable_type {
     }
 }
 
-executable::Implement_executable_device!(
-    Structure: Settings_executable_type,
+executable::implement_executable_device!(
+    Structure: SettingsExecutableType,
     Mount_path: "/Binaries/Settings",
     Main_function: main,
 );
 
-pub async fn main(_: Standard_type, _: String) -> Result<(), NonZeroUsize> {
-    let mut settings = Settings_type::new()
+pub async fn main(_: Standard, _: String) -> core::result::Result<(), NonZeroUsize> {
+    let mut settings = SettingsType::new()
         .await
         .map_err(|_| NonZeroUsize::new(1).unwrap())?;
 

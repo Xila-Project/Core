@@ -1,12 +1,13 @@
-use crate::error::Result_type;
+use crate::error::Result;
+
 use alloc::ffi::CString;
 use authentication;
-use graphics::{lvgl, Event_code_type, Event_type};
+use graphics::{lvgl, Event, EventKind};
 use task;
 use users;
 use virtual_file_system;
 
-pub struct Password_tab_type {
+pub struct PasswordTabType {
     tab_container: *mut lvgl::lv_obj_t,
     current_password_text_area: *mut lvgl::lv_obj_t,
     new_password_text_area: *mut lvgl::lv_obj_t,
@@ -15,7 +16,7 @@ pub struct Password_tab_type {
     password_status_label: *mut lvgl::lv_obj_t,
 }
 
-impl Password_tab_type {
+impl PasswordTabType {
     pub fn new() -> Self {
         Self {
             tab_container: core::ptr::null_mut(),
@@ -184,16 +185,16 @@ impl Password_tab_type {
     }
 }
 
-impl Password_tab_type {
+impl PasswordTabType {
     pub fn create_ui(
         &mut self,
         parent_tabview: *mut lvgl::lv_obj_t,
-    ) -> Result_type<*mut lvgl::lv_obj_t> {
+    ) -> Result<*mut lvgl::lv_obj_t> {
         let tab_container =
             unsafe { lvgl::lv_tabview_add_tab(parent_tabview, c"Password".as_ptr()) };
 
         if tab_container.is_null() {
-            return Err(crate::error::Error_type::Failed_to_create_UI_element);
+            return Err(crate::error::Error::FailedToCreateUiElement);
         }
 
         self.tab_container = tab_container;
@@ -315,9 +316,9 @@ impl Password_tab_type {
         Ok(tab_container)
     }
 
-    pub async fn handle_event(&mut self, event: &Event_type) -> bool {
+    pub async fn handle_event(&mut self, event: &Event) -> bool {
         // Handle password change button click
-        if event.get_code() == Event_code_type::Clicked
+        if event.get_code() == EventKind::Clicked
             && event.get_target() == self.change_password_button
         {
             self.handle_password_change().await;

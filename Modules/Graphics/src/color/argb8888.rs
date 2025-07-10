@@ -1,12 +1,12 @@
 use core::fmt::Debug;
 
-use super::{Color_RGB565_type, Color_RGBA8888_type};
+use super::{ColorRGB565, ColorRGBA8888};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct Color_ARGB8888_type(u32);
+pub struct ColorARGB8888(u32);
 
-impl Debug for Color_ARGB8888_type {
+impl Debug for ColorARGB8888 {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Color_ARGB8888_type")
@@ -18,7 +18,7 @@ impl Debug for Color_ARGB8888_type {
     }
 }
 
-impl Color_ARGB8888_type {
+impl ColorARGB8888 {
     pub const fn new(alpha: u8, red: u8, green: u8, blue: u8) -> Self {
         Self(0)
             .set_alpha(alpha)
@@ -27,7 +27,7 @@ impl Color_ARGB8888_type {
             .set_blue(blue)
     }
 
-    pub const fn from_rgb565(value: Color_RGB565_type) -> Self {
+    pub const fn from_rgb565(value: ColorRGB565) -> Self {
         Self::new(
             0xFF,
             value.get_red() << 3 | value.get_red() >> 2,
@@ -77,26 +77,26 @@ impl Color_ARGB8888_type {
     }
 }
 
-impl From<Color_ARGB8888_type> for u32 {
-    fn from(value: Color_ARGB8888_type) -> u32 {
+impl From<ColorARGB8888> for u32 {
+    fn from(value: ColorARGB8888) -> u32 {
         value.0
     }
 }
 
-impl From<u32> for Color_ARGB8888_type {
+impl From<u32> for ColorARGB8888 {
     fn from(value: u32) -> Self {
         Self(value)
     }
 }
 
-impl From<Color_RGB565_type> for Color_ARGB8888_type {
-    fn from(value: Color_RGB565_type) -> Self {
+impl From<ColorRGB565> for ColorARGB8888 {
+    fn from(value: ColorRGB565) -> Self {
         Self::from_rgb565(value)
     }
 }
 
-impl From<Color_RGBA8888_type> for Color_ARGB8888_type {
-    fn from(value: Color_RGBA8888_type) -> Self {
+impl From<ColorRGBA8888> for ColorARGB8888 {
+    fn from(value: ColorRGBA8888) -> Self {
         Self::new(
             value.get_alpha(),
             value.get_red(),
@@ -112,42 +112,42 @@ mod tests {
 
     #[test]
     fn test_argb8888() {
-        let color = Color_ARGB8888_type::new(255, 255, 255, 255);
+        let color = ColorARGB8888::new(255, 255, 255, 255);
         assert_eq!(color.get_alpha(), 0xFF);
         assert_eq!(color.get_red(), 0xFF);
         assert_eq!(color.get_green(), 0xFF);
         assert_eq!(color.get_blue(), 0xFF);
         assert_eq!(color.0, 0xFFFF_FFFF);
 
-        let color = Color_ARGB8888_type::new(255, 0, 0, 0);
+        let color = ColorARGB8888::new(255, 0, 0, 0);
         assert_eq!(color.get_alpha(), 0xFF);
         assert_eq!(color.get_red(), 0);
         assert_eq!(color.get_green(), 0);
         assert_eq!(color.get_blue(), 0);
         assert_eq!(color.0, 0xFF00_0000);
 
-        let color = Color_ARGB8888_type::new(0, 255, 0, 0);
+        let color = ColorARGB8888::new(0, 255, 0, 0);
         assert_eq!(color.get_alpha(), 0);
         assert_eq!(color.get_red(), 0xFF);
         assert_eq!(color.get_green(), 0);
         assert_eq!(color.get_blue(), 0);
         assert_eq!(color.0, 0x00FF_0000);
 
-        let color = Color_ARGB8888_type::new(0, 0, 255, 0);
+        let color = ColorARGB8888::new(0, 0, 255, 0);
         assert_eq!(color.get_alpha(), 0);
         assert_eq!(color.get_red(), 0);
         assert_eq!(color.get_green(), 0xFF);
         assert_eq!(color.get_blue(), 0);
         assert_eq!(color.0, 0x0000_FF00);
 
-        let color = Color_ARGB8888_type::new(0, 0, 0, 255);
+        let color = ColorARGB8888::new(0, 0, 0, 255);
         assert_eq!(color.get_alpha(), 0);
         assert_eq!(color.get_red(), 0);
         assert_eq!(color.get_green(), 0);
         assert_eq!(color.get_blue(), 0xFF);
         assert_eq!(color.0, 0x0000_00FF);
 
-        let color = Color_ARGB8888_type::new(0, 0, 0, 0);
+        let color = ColorARGB8888::new(0, 0, 0, 0);
         assert_eq!(color.get_alpha(), 0);
         assert_eq!(color.get_red(), 0);
         assert_eq!(color.get_green(), 0);

@@ -1,11 +1,8 @@
-#![allow(non_camel_case_types)]
-
 use std::env;
 
 fn main() {
     if env::var("RUSTUP_TOOLCHAIN").unwrap().contains("esp") {
         println!("cargo:warning=Build of WASM tests are disabled for esp toolchain.");
-        return;
     }
 
     //    let Output = Command::new("cargo")

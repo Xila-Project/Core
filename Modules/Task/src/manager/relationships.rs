@@ -4,12 +4,12 @@ use alloc::vec::Vec;
 
 use super::*;
 
-impl Manager_type {
+impl Manager {
     /// Get the children tasks of a task.
     pub async fn get_children(
         &self,
-        task_identifier: Task_identifier_type,
-    ) -> Result_type<Vec<Task_identifier_type>> {
+        task_identifier: TaskIdentifier,
+    ) -> Result<Vec<TaskIdentifier>> {
         Ok(self
             .0
             .read()
@@ -22,10 +22,7 @@ impl Manager_type {
     }
 
     /// Get the parent task of a task.
-    pub async fn get_parent(
-        &self,
-        task_identifier: Task_identifier_type,
-    ) -> Result_type<Task_identifier_type> {
+    pub async fn get_parent(&self, task_identifier: TaskIdentifier) -> Result<TaskIdentifier> {
         Self::get_task(&*self.0.read().await, task_identifier).map(|task| task.parent)
     }
 }

@@ -8,17 +8,17 @@ use alloc::{
     vec::Vec,
 };
 
-use super::{Path_type, EXTENSION_SEPARATOR, SEPARATOR};
+use super::{Path, EXTENSION_SEPARATOR, SEPARATOR};
 
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 #[repr(transparent)]
-pub struct Path_owned_type(String);
+pub struct PathOwned(String);
 
-impl Path_owned_type {
+impl PathOwned {
     /// # Safety
     /// The caller must ensure that the string is valid path string.
     pub unsafe fn new_unchecked(path: String) -> Self {
-        Path_owned_type(path)
+        PathOwned(path)
     }
 
     pub fn new(path: String) -> Option<Self> {
@@ -29,17 +29,17 @@ impl Path_owned_type {
         };
 
         if is_valid_string(&path) {
-            Some(Path_owned_type(path))
+            Some(PathOwned(path))
         } else {
             None
         }
     }
 
-    pub fn root() -> Path_owned_type {
-        Path_owned_type("/".to_string())
+    pub fn root() -> PathOwned {
+        PathOwned("/".to_string())
     }
 
-    pub fn join(mut self, path: impl AsRef<Path_type>) -> Option<Self> {
+    pub fn join(mut self, path: impl AsRef<Path>) -> Option<Self> {
         if path.as_ref().is_absolute() {
             return None;
         }
@@ -57,7 +57,7 @@ impl Path_owned_type {
     }
 
     pub fn append(self, path: &str) -> Option<Self> {
-        self.join(Path_type::from_str(path))
+        self.join(Path::from_str(path))
     }
 
     pub fn revert_parent_directory(&mut self) -> &mut Self {
@@ -100,12 +100,12 @@ impl Path_owned_type {
         &self.0[last_index + 1..]
     }
 
-    pub fn get_relative_to(&self, path: &Path_owned_type) -> Option<Path_owned_type> {
+    pub fn get_relative_to(&self, path: &PathOwned) -> Option<PathOwned> {
         if !self.0.starts_with(path.0.as_str()) {
             return None;
         }
 
-        Some(Path_owned_type(self.0[path.0.len()..].to_string()))
+        Some(PathOwned(self.0[path.0.len()..].to_string()))
     }
 
     pub fn canonicalize(mut self) -> Self {
@@ -149,52 +149,52 @@ pub fn is_valid_string(string: &str) -> bool {
     true
 }
 
-impl TryFrom<&str> for Path_owned_type {
+impl TryFrom<&str> for PathOwned {
     type Error = ();
 
     fn try_from(item: &str) -> Result<Self, Self::Error> {
         if is_valid_string(item) {
-            Ok(Path_owned_type(item.to_string()))
+            Ok(PathOwned(item.to_string()))
         } else {
             Err(())
         }
     }
 }
 
-impl TryFrom<String> for Path_owned_type {
+impl TryFrom<String> for PathOwned {
     type Error = ();
 
     fn try_from(item: String) -> Result<Self, Self::Error> {
         if is_valid_string(&item) {
-            Ok(Path_owned_type(item))
+            Ok(PathOwned(item))
         } else {
             Err(())
         }
     }
 }
 
-impl Display for Path_owned_type {
+impl Display for PathOwned {
     fn fmt(&self, formatter: &mut Formatter) -> Result<(), core::fmt::Error> {
         write!(formatter, "{}", self.0)
     }
 }
 
-impl AsRef<str> for Path_owned_type {
+impl AsRef<str> for PathOwned {
     fn as_ref(&self) -> &str {
         self.0.as_str()
     }
 }
 
-impl Deref for Path_owned_type {
-    type Target = Path_type;
+impl Deref for PathOwned {
+    type Target = Path;
 
     fn deref(&self) -> &Self::Target {
-        Path_type::from_str(self.0.as_str())
+        Path::from_str(self.0.as_str())
     }
 }
 
-impl AsRef<Path_type> for Path_owned_type {
-    fn as_ref(&self) -> &Path_type {
+impl AsRef<Path> for PathOwned {
+    fn as_ref(&self) -> &Path {
         self
     }
 }
@@ -205,7 +205,7 @@ mod tests {
 
     #[test]
     fn test_path_addition() {
-        let path = Path_owned_type::try_from("/").unwrap();
+        let path = PathOwned::try_from("/").unwrap();
         assert_eq!(path.as_str(), "/");
         let path = path.append("Folder").unwrap();
         assert_eq!(path.as_str(), "/Folder");
@@ -234,10 +234,10 @@ mod tests {
 
     #[test]
     fn test_canonicalize() {
-        let path = Path_owned_type::try_from("/home/../home/user/./file.txt").unwrap();
+        let path = PathOwned::try_from("/home/../home/user/./file.txt").unwrap();
         assert_eq!(path.canonicalize().as_str(), "/home/user/file.txt");
 
-        let path = Path_owned_type::try_from("./home/../home/user/./file.txt").unwrap();
+        let path = PathOwned::try_from("./home/../home/user/./file.txt").unwrap();
         assert_eq!(path.canonicalize().as_str(), "home/user/file.txt");
     }
 }

@@ -16,10 +16,10 @@ use alloc::{
     format,
     string::{String, ToString},
 };
-use file_system::Mode_type;
-use virtual_file_system::File_type;
+use file_system::Mode;
+use virtual_file_system::File;
 
-use crate::{Error_type, Result_type, RANDOM_DEVICE_PATH};
+use crate::{Error, Result, RANDOM_DEVICE_PATH};
 
 /// Generates a random salt for password hashing.
 ///
@@ -41,21 +41,21 @@ use crate::{Error_type, Result_type, RANDOM_DEVICE_PATH};
 ///
 /// The salt generation converts random bytes to lowercase letters (a-z)
 /// for readability while maintaining sufficient entropy for security.
-pub async fn generate_salt() -> Result_type<String> {
-    let random_file = File_type::open(
+pub async fn generate_salt() -> Result<String> {
+    let random_file = File::open(
         virtual_file_system::get_instance(),
         RANDOM_DEVICE_PATH,
-        Mode_type::READ_ONLY.into(),
+        Mode::READ_ONLY.into(),
     )
     .await
-    .map_err(Error_type::Failed_to_open_random_device)?;
+    .map_err(Error::FailedToOpenRandomDevice)?;
 
     let mut buffer = [0_u8; 16];
 
     random_file
         .read(&mut buffer)
         .await
-        .map_err(Error_type::Failed_to_read_random_device)?;
+        .map_err(Error::FailedToReadRandomDevice)?;
 
     buffer.iter_mut().for_each(|byte| {
         *byte = *byte % 26 + 97;

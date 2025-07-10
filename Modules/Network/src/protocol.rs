@@ -1,4 +1,4 @@
-pub enum Protocol_type {
+pub enum Protocol {
     TCP,
     UDP,
     ICMP,

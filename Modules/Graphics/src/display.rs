@@ -2,44 +2,40 @@ use alloc::boxed::Box;
 
 use core::{ffi::c_void, ptr::null_mut, slice};
 
-use file_system::Device_type;
+use file_system::DeviceType;
 
-use crate::{
-    draw_buffer::Buffer_type, Area_type, Point_type, Rendering_color_type, Result_type,
-    Screen_write_data_type,
-};
+use crate::{draw_buffer::Buffer, Area, Point, RenderingColor, Result, ScreenWriteData};
 
 use super::lvgl;
 
-struct User_data {
-    device: Device_type,
+struct UserData {
+    device: DeviceType,
 }
 
-pub struct Display_type {
+pub struct DisplayType {
     display: *mut lvgl::lv_display_t,
-    _buffer_1: Buffer_type,
-    _buffer_2: Option<Buffer_type>,
+    _buffer_1: Buffer,
+    _buffer_2: Option<Buffer>,
 }
 
-unsafe impl Send for Display_type {}
+unsafe impl Send for DisplayType {}
 
-unsafe impl Sync for Display_type {}
+unsafe impl Sync for DisplayType {}
 
 unsafe extern "C" fn binding_callback_function(
     display: *mut lvgl::lv_disp_t,
     area: *const lvgl::lv_area_t,
     data: *mut u8,
 ) {
-    let area: Area_type = unsafe { *area }.into();
+    let area: Area = unsafe { *area }.into();
 
     let buffer_size: usize = (area.get_width()) as usize * (area.get_height()) as usize;
 
-    let buffer =
-        unsafe { slice::from_raw_parts_mut(data as *mut Rendering_color_type, buffer_size) };
+    let buffer = unsafe { slice::from_raw_parts_mut(data as *mut RenderingColor, buffer_size) };
 
-    let screen_write_data = Screen_write_data_type::new(area, buffer);
+    let screen_write_data = ScreenWriteData::new(area, buffer);
 
-    let user_data = unsafe { &*(lvgl::lv_display_get_user_data(display) as *mut User_data) };
+    let user_data = unsafe { &*(lvgl::lv_display_get_user_data(display) as *mut UserData) };
 
     let device = &user_data.device;
 
@@ -50,7 +46,7 @@ unsafe extern "C" fn binding_callback_function(
     lvgl::lv_display_flush_ready(display);
 }
 
-impl Drop for Display_type {
+impl Drop for DisplayType {
     fn drop(&mut self) {
         unsafe {
             lvgl::lv_display_delete(self.display);
@@ -58,23 +54,23 @@ impl Drop for Display_type {
     }
 }
 
-impl Display_type {
+impl DisplayType {
     pub fn new(
-        file: Device_type,
-        resolution: Point_type,
+        file: DeviceType,
+        resolution: Point,
         buffer_size: usize,
         double_buffered: bool,
-    ) -> Result_type<Self> {
+    ) -> Result<Self> {
         // Create the display.
         let lvgl_display: *mut lvgl_rust_sys::_lv_display_t = unsafe {
             lvgl::lv_display_create(resolution.get_x() as i32, resolution.get_y() as i32)
         };
 
         // Set the buffer(s) and the render mode.
-        let buffer_1 = Buffer_type::new(buffer_size);
+        let buffer_1 = Buffer::new(buffer_size);
 
         let buffer_2 = if double_buffered {
-            Some(Buffer_type::new(buffer_size))
+            Some(Buffer::new(buffer_size))
         } else {
             None
         };
@@ -92,7 +88,7 @@ impl Display_type {
         }
 
         // Set the user data.
-        let user_data = Box::new(User_data { device: file });
+        let user_data = Box::new(UserData { device: file });
 
         unsafe {
             lvgl::lv_display_set_user_data(lvgl_display, Box::into_raw(user_data) as *mut c_void)

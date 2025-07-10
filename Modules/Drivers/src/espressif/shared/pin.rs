@@ -1,11 +1,11 @@
 use std::sync::RwLock;
 
 use esp_idf_sys::{self, gpio_reset_pin};
-use file_system::{Device_trait, Size_type};
+use file_system::{DeviceTrait, Size};
 use graphics::lvgl::input_device::Data;
 use peripherals::{Direction_type, Pin_data_type, Pull_type};
 
-use super::{Error_type, Result_type};
+use super::{Error, Result};
 
 #[macro_export]
 macro_rules! Enumerate_pin_devices {
@@ -22,13 +22,13 @@ macro_rules! Enumerate_pin_devices {
 }
 
 pub fn Mount_pin_devices(
-    Virtual_file_system: &file_system::Virtual_file_system_type,
+    Virtual_file_system: &file_system::VirtualFileSystemType,
     Pin_devices: &'static [(u8, &'static file_system::Path_type)],
-) -> Result_type<()> {
+) -> Result<()> {
     for (i, Path) in Pin_devices.iter() {
         Virtual_file_system
-            .Add_device(Path, Box::new(Pin_device_type::New(*i)))
-            .map_err(|_| Error_type::Failed_to_register_pin_device)?;
+            .Add_device(Path, Box::new(Pin_device_type::new(*i)))
+            .map_err(|_| Error::Failed_to_register_pin_device)?;
     }
 
     Ok(())
@@ -51,26 +51,26 @@ impl Pin_device_type {
     }
 }
 
-impl Device_trait for Pin_device_type {
-    fn Read(&self, Buffer: &mut [u8]) -> file_system::Result_type<Size_type> {
+impl DeviceTrait for Pin_device_type {
+    fn Read(&self, Buffer: &mut [u8]) -> file_system::Result<Size> {
         let Data: &mut Pin_data_type = Buffer
             .try_into()
-            .map_err(|_| file_system::Error_type::Invalid_input)?;
+            .map_err(|_| file_system::Error::Invalid_input)?;
 
         Data.Set_level(
             Level_type::try_from(unsafe {
                 esp_idf_sys::gpio_get_level(self.0.read()?.Pin as i32) as u8
             })
-            .map_err(|_| file_system::Error_type::Invalid_input)?,
+            .map_err(|_| file_system::Error::Invalid_input)?,
         );
 
         Ok(size_of::<Pin_data_type>())
     }
 
-    fn Write(&self, Buffer: &[u8]) -> file_system::Result_type<usize> {
+    fn Write(&self, Buffer: &[u8]) -> file_system::Result<usize> {
         let Data: &mut Pin_data_type = Buffer
             .try_into()
-            .map_err(|_| file_system::Error_type::Invalid_input)?;
+            .map_err(|_| file_system::Error::Invalid_input)?;
 
         let Pin = self.0.read()? as i32;
 
@@ -129,15 +129,15 @@ impl Device_trait for Pin_device_type {
         Ok(size_of::<Pin_data_type>())
     }
 
-    fn get_size(&self) -> file_system::Result_type<usize> {
+    fn get_size(&self) -> file_system::Result<usize> {
         Ok(size_of::<Pin_data_type>())
     }
 
-    fn Set_position(&self, _: &file_system::Position_type) -> file_system::Result_type<usize> {
+    fn Set_position(&self, _: &file_system::Position_type) -> file_system::Result<usize> {
         Ok(0)
     }
 
-    fn Flush(&self) -> file_system::Result_type<()> {
+    fn Flush(&self) -> file_system::Result<()> {
         Ok(())
     }
 }

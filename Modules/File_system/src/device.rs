@@ -10,11 +10,11 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::{Error_type, Position_type, Result_type, Size_type};
+use crate::{Error, Position, Result, Size};
 
-/// Convenience macro for creating a new [`Device_type`] from any type implementing [`Device_trait`].
+/// Convenience macro for creating a new [`DeviceType`] from any type implementing [`DeviceTrait`].
 ///
-/// This macro wraps the provided device implementation in an `Arc` and creates a `Device_type`.
+/// This macro wraps the provided device implementation in an `Arc` and creates a `DeviceType`.
 ///
 /// # Examples
 ///
@@ -22,13 +22,13 @@ use crate::{Error_type, Position_type, Result_type, Size_type};
 /// # extern crate alloc;
 /// # use file_system::*;
 ///
-/// let memory_device = Memory_device_type::<512>::New(1024);
+/// let memory_device = Memory_device_type::<512>::new(1024);
 /// let device = create_device!(memory_device);
 /// ```
 #[macro_export]
 macro_rules! create_device {
     ($Device:expr) => {
-        $crate::Device_type::new(alloc::sync::Arc::new($Device))
+        $crate::DeviceType::new(alloc::sync::Arc::new($Device))
     };
 }
 
@@ -47,13 +47,13 @@ macro_rules! create_device {
 /// ## Non-Blocking Operations
 ///
 /// Devices should never block indefinitely. If an operation would block, implementations should
-/// return [`Error_type::Ressource_busy`] instead. This means implementations should prefer
+/// return [`Error::Ressource_busy`] instead. This means implementations should prefer
 /// `try_read()` and `try_write()` variants of synchronization primitives.
 ///
 /// ## Position Management
 ///
 /// Devices maintain an internal position cursor that affects read and write operations.
-/// The position can be manipulated using [`Device_trait::Set_position`].
+/// The position can be manipulated using [`DeviceTrait::Set_position`].
 ///
 /// # Examples
 ///
@@ -62,7 +62,7 @@ macro_rules! create_device {
 /// # use file_system::*;
 ///
 /// // Create a memory device for testing
-/// let device = create_device!(Memory_device_type::<512>::New(1024));
+/// let device = create_device!(Memory_device_type::<512>::new(1024));
 ///
 /// // Write data
 /// let data = b"Hello, World!";
@@ -76,7 +76,7 @@ macro_rules! create_device {
 /// assert_eq!(bytes_read.As_u64(), data.len() as u64);
 /// assert_eq!(&buffer, data);
 /// ```
-pub trait Device_trait: Send + Sync {
+pub trait DeviceTrait: Send + Sync {
     /// Read data from the device at the current position.
     ///
     /// Reads up to `Buffer.len()` bytes from the device into the provided buffer.
@@ -88,15 +88,15 @@ pub trait Device_trait: Send + Sync {
     ///
     /// # Returns
     ///
-    /// * `Ok(Size_type)` - Number of bytes successfully read
-    /// * `Err(Error_type)` - Error if read operation failed
+    /// * `Ok(Size)` - Number of bytes successfully read
+    /// * `Err(Error)` - Error if read operation failed
     ///
     /// # Errors
     ///
-    /// * [`Error_type::Input_output`] - I/O error during read operation
-    /// * [`Error_type::Ressource_busy`] - Device is temporarily unavailable
-    /// * [`Error_type::Invalid_parameter`] - Invalid buffer or device state
-    fn read(&self, buffer: &mut [u8]) -> Result_type<Size_type>;
+    /// * [`Error::Input_output`] - I/O error during read operation
+    /// * [`Error::Ressource_busy`] - Device is temporarily unavailable
+    /// * [`Error::InvalidParameter`] - Invalid buffer or device state
+    fn read(&self, buffer: &mut [u8]) -> Result<Size>;
 
     /// Write data to the device at the current position.
     ///
@@ -109,16 +109,16 @@ pub trait Device_trait: Send + Sync {
     ///
     /// # Returns
     ///
-    /// * `Ok(Size_type)` - Number of bytes successfully written
-    /// * `Err(Error_type)` - Error if write operation failed
+    /// * `Ok(Size)` - Number of bytes successfully written
+    /// * `Err(Error)` - Error if write operation failed
     ///
     /// # Errors
     ///
-    /// * [`Error_type::Input_output`] - I/O error during write operation
-    /// * [`Error_type::No_space_left`] - Device is full
-    /// * [`Error_type::Ressource_busy`] - Device is temporarily unavailable
-    /// * [`Error_type::Permission_denied`] - Device is read-only
-    fn write(&self, buffer: &[u8]) -> Result_type<Size_type>;
+    /// * [`Error::Input_output`] - I/O error during write operation
+    /// * [`Error::No_space_left`] - Device is full
+    /// * [`Error::Ressource_busy`] - Device is temporarily unavailable
+    /// * [`Error::Permission_denied`] - Device is read-only
+    fn write(&self, buffer: &[u8]) -> Result<Size>;
 
     /// Get the total size of the device in bytes.
     ///
@@ -126,9 +126,9 @@ pub trait Device_trait: Send + Sync {
     ///
     /// # Returns
     ///
-    /// * `Ok(Size_type)` - Total device size in bytes
-    /// * `Err(Error_type)` - Error if size cannot be determined
-    fn get_size(&self) -> Result_type<Size_type>;
+    /// * `Ok(Size)` - Total device size in bytes
+    /// * `Err(Error)` - Error if size cannot be determined
+    fn get_size(&self) -> Result<Size>;
 
     /// Set the current position cursor for read/write operations.
     ///
@@ -142,13 +142,13 @@ pub trait Device_trait: Send + Sync {
     ///
     /// # Returns
     ///
-    /// * `Ok(Size_type)` - The new absolute position after the operation
-    /// * `Err(Error_type)` - Error if position is invalid
+    /// * `Ok(Size)` - The new absolute position after the operation
+    /// * `Err(Error)` - Error if position is invalid
     ///
     /// # Errors
     ///
-    /// * [`Error_type::Invalid_parameter`] - Position is beyond device bounds
-    fn set_position(&self, position: &Position_type) -> Result_type<Size_type>;
+    /// * [`Error::InvalidParameter`] - Position is beyond device bounds
+    fn set_position(&self, position: &Position) -> Result<Size>;
 
     /// Flush any buffered data to the underlying storage.
     ///
@@ -158,22 +158,22 @@ pub trait Device_trait: Send + Sync {
     /// # Returns
     ///
     /// * `Ok(())` - Flush completed successfully
-    /// * `Err(Error_type)` - Error during flush operation
-    fn flush(&self) -> Result_type<()>;
+    /// * `Err(Error)` - Error during flush operation
+    fn flush(&self) -> Result<()>;
 
     /// Erase the entire device.
     ///
     /// This operation is primarily intended for flash memory devices and similar
     /// storage that requires explicit erase operations. For most devices, this
-    /// operation is not supported and will return [`Error_type::Unsupported_operation`].
+    /// operation is not supported and will return [`Error::UnsupportedOperation`].
     ///
     /// # Returns
     ///
     /// * `Ok(())` - Erase completed successfully
-    /// * `Err(Error_type::Unsupported_operation)` - Device doesn't support erase
-    /// * `Err(Error_type)` - Error during erase operation
-    fn erase(&self) -> Result_type<()> {
-        Err(Error_type::Unsupported_operation)
+    /// * `Err(Error::UnsupportedOperation)` - Device doesn't support erase
+    /// * `Err(Error)` - Error during erase operation
+    fn erase(&self) -> Result<()> {
+        Err(Error::UnsupportedOperation)
     }
 
     /// Get the block size of the device in bytes.
@@ -184,9 +184,9 @@ pub trait Device_trait: Send + Sync {
     /// # Returns
     ///
     /// * `Ok(usize)` - Block size in bytes
-    /// * `Err(Error_type::Unsupported_operation)` - Device doesn't have a block size
-    fn get_block_size(&self) -> Result_type<usize> {
-        Err(Error_type::Unsupported_operation)
+    /// * `Err(Error::UnsupportedOperation)` - Device doesn't have a block size
+    fn get_block_size(&self) -> Result<usize> {
+        Err(Error::UnsupportedOperation)
     }
 
     /// Check if this device represents a terminal/console device.
@@ -220,13 +220,13 @@ pub trait Device_trait: Send + Sync {
     /// # Returns
     ///
     /// * `Ok(Vec<u8>)` - Complete device contents
-    /// * `Err(Error_type)` - Error reading device
+    /// * `Err(Error)` - Error reading device
     ///
     /// # Note
     ///
     /// This operation can consume significant memory for large devices.
     /// Use with caution on production systems.
-    fn dump_device(&self) -> Result_type<Vec<u8>> {
+    fn dump_device(&self) -> Result<Vec<u8>> {
         let size = self.get_size()?;
 
         let mut buffer = vec![0; size.into()];
@@ -239,8 +239,8 @@ pub trait Device_trait: Send + Sync {
 
 /// Thread-safe wrapper for device implementations.
 ///
-/// `Device_type` provides a unified interface for all device implementations by wrapping
-/// them in an `Arc<dyn Device_trait>`. This allows for efficient cloning and sharing of
+/// `DeviceType` provides a unified interface for all device implementations by wrapping
+/// them in an `Arc<dyn DeviceTrait>`. This allows for efficient cloning and sharing of
 /// device references across threads while maintaining type erasure.
 ///
 /// # Examples
@@ -251,27 +251,27 @@ pub trait Device_trait: Send + Sync {
 /// # use alloc::sync::Arc;
 ///
 /// // Create a device using the convenience macro
-/// let device1 = create_device!(Memory_device_type::<512>::New(1024));
+/// let device1 = create_device!(Memory_device_type::<512>::new(1024));
 ///
 /// // Create a device manually
-/// let memory_device = Memory_device_type::<512>::New(1024);
-/// let device2 = Device_type::New(Arc::new(memory_device));
+/// let memory_device = Memory_device_type::<512>::new(1024);
+/// let device2 = DeviceType::new(Arc::new(memory_device));
 ///
 /// // Clone the device (cheap operation - only clones the Arc)
 /// let device_clone = device1.clone();
 /// ```
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct Device_type(Arc<dyn Device_trait>);
+pub struct DeviceType(Arc<dyn DeviceTrait>);
 
-impl Debug for Device_type {
+impl Debug for DeviceType {
     fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
-        write!(formatter, "Device_type")
+        write!(formatter, "DeviceType")
     }
 }
 
-impl Device_type {
-    /// Create a new device wrapper from any implementation of [`Device_trait`].
+impl DeviceType {
+    /// Create a new device wrapper from any implementation of [`DeviceTrait`].
     ///
     /// # Arguments
     ///
@@ -284,80 +284,80 @@ impl Device_type {
     /// # use file_system::*;
     /// # use alloc::sync::Arc;
     ///
-    /// let memory_device = Memory_device_type::<512>::New(1024);
-    /// let device = Device_type::New(Arc::new(memory_device));
+    /// let memory_device = Memory_device_type::<512>::new(1024);
+    /// let device = DeviceType::new(Arc::new(memory_device));
     /// ```
-    pub fn new(device: Arc<dyn Device_trait>) -> Self {
-        Device_type(device)
+    pub fn new(device: Arc<dyn DeviceTrait>) -> Self {
+        DeviceType(device)
     }
 
     /// Read data from the device at the current position.
     ///
-    /// See [`Device_trait::Read`] for detailed documentation.
-    pub fn read(&self, buffer: &mut [u8]) -> Result_type<Size_type> {
+    /// See [`DeviceTrait::Read`] for detailed documentation.
+    pub fn read(&self, buffer: &mut [u8]) -> Result<Size> {
         self.0.read(buffer)
     }
 
     /// Write data to the device at the current position.
     ///
-    /// See [`Device_trait::Write`] for detailed documentation.
-    pub fn write(&self, buffer: &[u8]) -> Result_type<Size_type> {
+    /// See [`DeviceTrait::Write`] for detailed documentation.
+    pub fn write(&self, buffer: &[u8]) -> Result<Size> {
         self.0.write(buffer)
     }
 
     /// Get the total size of the device in bytes.
     ///
-    /// See [`Device_trait::get_size`] for detailed documentation.
-    pub fn get_size(&self) -> Result_type<Size_type> {
+    /// See [`DeviceTrait::get_size`] for detailed documentation.
+    pub fn get_size(&self) -> Result<Size> {
         self.0.get_size()
     }
 
     /// Set the current position cursor for read/write operations.
     ///
-    /// See [`Device_trait::Set_position`] for detailed documentation.
-    pub fn set_position(&self, position: &Position_type) -> Result_type<Size_type> {
+    /// See [`DeviceTrait::Set_position`] for detailed documentation.
+    pub fn set_position(&self, position: &Position) -> Result<Size> {
         self.0.set_position(position)
     }
 
     /// Flush any buffered data to the underlying storage.
     ///
-    /// See [`Device_trait::Flush`] for detailed documentation.
-    pub fn flush(&self) -> Result_type<()> {
+    /// See [`DeviceTrait::Flush`] for detailed documentation.
+    pub fn flush(&self) -> Result<()> {
         self.0.flush()
     }
 
     /// Erase the entire device.
     ///
-    /// See [`Device_trait::Erase`] for detailed documentation.
-    pub fn erase(&self) -> Result_type<()> {
+    /// See [`DeviceTrait::Erase`] for detailed documentation.
+    pub fn erase(&self) -> Result<()> {
         self.0.erase()
     }
 
     /// Get the block size of the device in bytes.
     ///
-    /// See [`Device_trait::get_block_size`] for detailed documentation.
-    pub fn get_block_size(&self) -> Result_type<usize> {
+    /// See [`DeviceTrait::get_block_size`] for detailed documentation.
+    pub fn get_block_size(&self) -> Result<usize> {
         self.0.get_block_size()
     }
 
     /// Check if this device represents a terminal/console device.
     ///
-    /// See [`Device_trait::is_a_terminal`] for detailed documentation.
+    /// See [`DeviceTrait::is_a_terminal`] for detailed documentation.
     pub fn is_a_terminal(&self) -> bool {
         self.0.is_a_terminal()
     }
 
     /// Check if this device is a block device.
     ///
-    /// See [`Device_trait::is_a_block_device`] for detailed documentation.
+    /// See [`DeviceTrait::is_a_block_device`] for detailed documentation.
     pub fn is_a_block_device(&self) -> bool {
         self.0.is_a_block_device()
     }
 
     /// Create a complete dump of the device contents.
     ///
-    /// See [`Device_trait::Dump_device`] for detailed documentation.
-    pub fn dump_device(&self) -> Result_type<Vec<u8>> {
+    /// See [`DeviceTrait::Dump_device`] for detailed documentation.
+    pub fn dump_device(&self) -> Result<Vec<u8>> {
         self.0.dump_device()
     }
 }

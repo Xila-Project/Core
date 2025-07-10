@@ -6,18 +6,18 @@ pub(crate) use alloc::{
 };
 use core::{ptr::null_mut, time::Duration};
 
-use file_system::{Path_owned_type, Path_type, Type_type};
+use file_system::{Kind, Path, PathOwned};
 use graphics::{
     lvgl,
-    palette::{self, Hue_type},
-    Event_code_type, Window_type,
+    palette::{self, Hue},
+    EventKind, Window,
 };
-use virtual_file_system::{get_instance, Directory_type};
+use virtual_file_system::{get_instance, DirectoryType};
 
-use crate::error::{Error_type, Result_type};
+use crate::error::{Error, Result};
 
-pub struct File_manager_type {
-    window: Window_type,
+pub struct FileManagerType {
+    window: Window,
     toolbar: *mut lvgl::lv_obj_t,
     up_button: *mut lvgl::lv_obj_t,
     home_button: *mut lvgl::lv_obj_t,
@@ -25,25 +25,25 @@ pub struct File_manager_type {
     path_text_area: *mut lvgl::lv_obj_t,
     go_button: *mut lvgl::lv_obj_t,
     file_list: *mut lvgl::lv_obj_t,
-    current_path: Path_owned_type,
-    files: Vec<File_item_type>,
+    current_path: PathOwned,
+    files: Vec<FileItemType>,
     running: bool,
 }
 
 #[derive(Clone)]
-pub struct File_item_type {
+pub struct FileItemType {
     pub name: String,
-    pub r#type: Type_type,
+    pub r#type: Kind,
     pub size: u64,
 }
 
-impl File_manager_type {
-    pub async fn new() -> Result_type<Self> {
+impl FileManagerType {
+    pub async fn new() -> Result<Self> {
         let _lock = graphics::get_instance().lock().await;
 
         let mut window = graphics::get_instance().create_window().await?;
 
-        window.set_icon("Fm", palette::get(Hue_type::Cyan, palette::Tone_type::MAIN));
+        window.set_icon("Fm", palette::get(Hue::Cyan, palette::Tone::MAIN));
 
         let mut manager = Self {
             window,
@@ -54,7 +54,7 @@ impl File_manager_type {
             path_text_area: null_mut(),
             go_button: null_mut(),
             file_list: null_mut(),
-            current_path: Path_owned_type::root(),
+            current_path: PathOwned::root(),
             files: Vec::new(),
             running: true,
         };
@@ -84,18 +84,18 @@ impl File_manager_type {
             let event = match self.window.pop_event() {
                 Some(event) => event,
                 None => {
-                    task::Manager_type::sleep(Duration::from_millis(50)).await;
+                    task::Manager::sleep(Duration::from_millis(50)).await;
                     continue;
                 }
             };
 
             match event.get_code() {
-                Event_code_type::Delete => {
+                EventKind::Delete => {
                     if event.get_target() == self.window.get_object() {
                         self.running = false;
                     }
                 }
-                Event_code_type::Clicked => {
+                EventKind::Clicked => {
                     let target = event.get_target();
 
                     // Handle different button clicks
@@ -117,11 +117,11 @@ impl File_manager_type {
         }
     }
 
-    async fn create_toolbar(&mut self) -> Result_type<()> {
+    async fn create_toolbar(&mut self) -> Result<()> {
         unsafe {
             self.toolbar = lvgl::lv_obj_create(self.window.get_object());
             if self.toolbar.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
 
             // Toolbar properties - fixed height at top
@@ -142,7 +142,7 @@ impl File_manager_type {
             // Up button
             self.up_button = lvgl::lv_button_create(self.toolbar);
             if self.up_button.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
             let up_label = lvgl::lv_label_create(self.up_button);
             lvgl::lv_label_set_text(up_label, lvgl::LV_SYMBOL_UP as *const _ as *const i8);
@@ -153,7 +153,7 @@ impl File_manager_type {
             // Home button
             self.home_button = lvgl::lv_button_create(self.toolbar);
             if self.home_button.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
 
             let home_label = lvgl::lv_label_create(self.home_button);
@@ -165,7 +165,7 @@ impl File_manager_type {
             // Refresh button
             self.refresh_button = lvgl::lv_button_create(self.toolbar);
             if self.refresh_button.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
 
             let refresh_label = lvgl::lv_label_create(self.refresh_button);
@@ -181,7 +181,7 @@ impl File_manager_type {
             // Path text area - use flex grow to take remaining space
             self.path_text_area = lvgl::lv_textarea_create(self.toolbar);
             if self.path_text_area.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
 
             lvgl::lv_obj_set_flex_grow(self.path_text_area, 1); // Take remaining space
@@ -194,7 +194,7 @@ impl File_manager_type {
             // Go button
             self.go_button = lvgl::lv_button_create(self.toolbar);
             if self.go_button.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
 
             let go_label = lvgl::lv_label_create(self.go_button);
@@ -207,11 +207,11 @@ impl File_manager_type {
         Ok(())
     }
 
-    async fn create_file_list(&mut self) -> Result_type<()> {
+    async fn create_file_list(&mut self) -> Result<()> {
         unsafe {
             self.file_list = lvgl::lv_list_create(self.window.get_object());
             if self.file_list.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
 
             // File list properties - use flex grow to fill remaining space
@@ -225,13 +225,13 @@ impl File_manager_type {
         Ok(())
     }
 
-    async fn load_directory(&mut self) -> Result_type<()> {
+    async fn load_directory(&mut self) -> Result<()> {
         // Clear existing files
         self.clear_file_list();
 
         // Open directory
         let virtual_file_system = get_instance();
-        let directory = Directory_type::open(virtual_file_system, &self.current_path).await;
+        let directory = DirectoryType::open(virtual_file_system, &self.current_path).await;
 
         match directory {
             Ok(directory) => {
@@ -244,7 +244,7 @@ impl File_manager_type {
                         continue;
                     }
 
-                    let file_item = File_item_type {
+                    let file_item = FileItemType {
                         name: name.clone(),
                         r#type: entry.get_type(),
                         size: entry.get_size().as_u64(),
@@ -255,9 +255,9 @@ impl File_manager_type {
 
                 // Sort files: directories first, then files
                 self.files.sort_by(|a, b| match (a.r#type, b.r#type) {
-                    (Type_type::Directory, Type_type::Directory) => a.name.cmp(&b.name),
-                    (Type_type::Directory, _) => core::cmp::Ordering::Less,
-                    (_, Type_type::Directory) => core::cmp::Ordering::Greater,
+                    (Kind::Directory, Kind::Directory) => a.name.cmp(&b.name),
+                    (Kind::Directory, _) => core::cmp::Ordering::Less,
+                    (_, Kind::Directory) => core::cmp::Ordering::Greater,
                     _ => a.name.cmp(&b.name),
                 });
 
@@ -271,17 +271,17 @@ impl File_manager_type {
             Err(error) => {
                 // Show error message
                 self.show_error_message("Failed to open directory").await;
-                Err(Error_type::Failed_to_read_directory(error))
+                Err(Error::FailedToReadDirectory(error))
             }
         }
     }
 
-    async fn create_file_item(&mut self, index: usize) -> Result_type<()> {
+    async fn create_file_item(&mut self, index: usize) -> Result<()> {
         unsafe {
             let file = &self.files[index];
 
             let icon_symbol = match file.r#type {
-                Type_type::Directory => lvgl::LV_SYMBOL_DIRECTORY,
+                Kind::Directory => lvgl::LV_SYMBOL_DIRECTORY,
                 _ => lvgl::LV_SYMBOL_FILE,
             };
 
@@ -293,7 +293,7 @@ impl File_manager_type {
             );
 
             if button.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
 
             // Store the file index in the button's user data for identification
@@ -336,12 +336,10 @@ impl File_manager_type {
                 if index < self.files.len() {
                     let file = &self.files[index];
 
-                    if file.r#type == Type_type::Directory {
+                    if file.r#type == Kind::Directory {
                         // Navigate to directory
-                        if let Some(new_path) = self
-                            .current_path
-                            .clone()
-                            .join(Path_type::from_str(&file.name))
+                        if let Some(new_path) =
+                            self.current_path.clone().join(Path::from_str(&file.name))
                         {
                             self.current_path = new_path;
                             self.update_path_label();
@@ -370,7 +368,7 @@ impl File_manager_type {
     }
 
     async fn handle_home_click(&mut self) {
-        self.current_path = Path_owned_type::root();
+        self.current_path = PathOwned::root();
         self.update_path_label();
         if let Err(error) = self.load_directory().await {
             log::Error!("Failed to load home directory: {error:?}");
@@ -393,11 +391,10 @@ impl File_manager_type {
                     let text_cstr = core::ffi::CStr::from_ptr(text_ptr);
                     if let Ok(path_str) = text_cstr.to_str() {
                         // Try to create a path from the entered string
-                        let new_path =
-                            Path_owned_type::new(path_str.to_string()).unwrap_or_else(|| {
-                                log::Error!("Invalid path entered: {path_str}");
-                                self.current_path.clone()
-                            });
+                        let new_path = PathOwned::new(path_str.to_string()).unwrap_or_else(|| {
+                            log::Error!("Invalid path entered: {path_str}");
+                            self.current_path.clone()
+                        });
 
                         // Navigate to the new path
                         self.current_path = new_path;
@@ -415,17 +412,17 @@ impl File_manager_type {
         }
     }
 
-    pub async fn refresh(&mut self) -> Result_type<()> {
+    pub async fn refresh(&mut self) -> Result<()> {
         self.load_directory().await
     }
 
-    pub async fn navigate_to(&mut self, path: &Path_type) -> Result_type<()> {
+    pub async fn navigate_to(&mut self, path: &Path) -> Result<()> {
         self.current_path = path.to_owned();
         self.update_path_label();
         self.load_directory().await
     }
 
-    pub fn get_current_path(&self) -> &Path_type {
+    pub fn get_current_path(&self) -> &Path {
         &self.current_path
     }
 

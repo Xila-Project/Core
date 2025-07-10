@@ -11,7 +11,7 @@ use alloc::vec::Vec;
 use futures::block_on;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
-use crate::{Device_trait, Position_type, Size_type};
+use crate::{DeviceTrait, Position, Size};
 
 /// In-memory device implementation with configurable block size.
 ///
@@ -31,7 +31,7 @@ use crate::{Device_trait, Position_type, Size_type};
 /// # use file_system::*;
 ///
 /// // Create a 1MB memory device with 512-byte blocks
-/// let device = Memory_device_type::<512>::New(1024 * 1024);
+/// let device = Memory_device_type::<512>::new(1024 * 1024);
 /// let device = create_device!(device);
 ///
 /// // Write some data
@@ -49,11 +49,11 @@ use crate::{Device_trait, Position_type, Size_type};
 ///
 /// The device uses an `RwLock` to ensure thread-safe access to the underlying data.
 /// Multiple readers can access the device simultaneously, but writes are exclusive.
-pub struct Memory_device_type<const BLOCK_SIZE: usize>(
+pub struct MemoryDeviceType<const BLOCK_SIZE: usize>(
     RwLock<CriticalSectionRawMutex, (Vec<u8>, usize)>,
 );
 
-impl<const BLOCK_SIZE: usize> Memory_device_type<BLOCK_SIZE> {
+impl<const BLOCK_SIZE: usize> MemoryDeviceType<BLOCK_SIZE> {
     /// Create a new memory device with the specified size.
     ///
     /// The device will be initialized with zeros and have the specified total size.
@@ -74,7 +74,7 @@ impl<const BLOCK_SIZE: usize> Memory_device_type<BLOCK_SIZE> {
     /// # use file_system::Memory_device_type;
     ///
     /// // Create a 4KB device with 512-byte blocks
-    /// let device = Memory_device_type::<512>::New(4096);
+    /// let device = Memory_device_type::<512>::new(4096);
     /// ```
     pub fn new(size: usize) -> Self {
         assert!(size % BLOCK_SIZE == 0);
@@ -128,7 +128,7 @@ impl<const BLOCK_SIZE: usize> Memory_device_type<BLOCK_SIZE> {
     /// # extern crate alloc;
     /// # use file_system::Memory_device_type;
     ///
-    /// let device = Memory_device_type::<512>::New(2048);
+    /// let device = Memory_device_type::<512>::new(2048);
     /// assert_eq!(device.get_block_count(), 4); // 2048 / 512 = 4
     /// ```
     pub fn get_block_count(&self) -> usize {
@@ -138,16 +138,16 @@ impl<const BLOCK_SIZE: usize> Memory_device_type<BLOCK_SIZE> {
     }
 }
 
-impl<const BLOCK_SIZE: usize> Device_trait for Memory_device_type<BLOCK_SIZE> {
+impl<const BLOCK_SIZE: usize> DeviceTrait for MemoryDeviceType<BLOCK_SIZE> {
     /// Read data from the memory device.
     ///
     /// Reads data from the current position into the provided buffer.
     /// The position is automatically advanced by the number of bytes read.
-    fn read(&self, buffer: &mut [u8]) -> crate::Result_type<Size_type> {
+    fn read(&self, buffer: &mut [u8]) -> crate::Result<Size> {
         let mut inner = self
             .0
             .try_write()
-            .map_err(|_| crate::Error_type::Ressource_busy)?;
+            .map_err(|_| crate::Error::RessourceBusy)?;
         let (data, position) = &mut *inner;
 
         let read_size = buffer.len().min(data.len().saturating_sub(*position));
@@ -156,7 +156,7 @@ impl<const BLOCK_SIZE: usize> Device_trait for Memory_device_type<BLOCK_SIZE> {
         Ok(read_size.into())
     }
 
-    fn write(&self, buffer: &[u8]) -> crate::Result_type<Size_type> {
+    fn write(&self, buffer: &[u8]) -> crate::Result<Size> {
         let mut inner = block_on(self.0.write());
         let (data, position) = &mut *inner;
 
@@ -165,30 +165,30 @@ impl<const BLOCK_SIZE: usize> Device_trait for Memory_device_type<BLOCK_SIZE> {
         Ok(buffer.len().into())
     }
 
-    fn get_size(&self) -> crate::Result_type<Size_type> {
+    fn get_size(&self) -> crate::Result<Size> {
         let inner = block_on(self.0.read());
 
-        Ok(Size_type::new(inner.0.len() as u64))
+        Ok(Size::new(inner.0.len() as u64))
     }
 
-    fn set_position(&self, position: &Position_type) -> crate::Result_type<Size_type> {
+    fn set_position(&self, position: &Position) -> crate::Result<Size> {
         let mut inner = block_on(self.0.write());
         let (data, device_position) = &mut *inner;
 
         match position {
-            Position_type::Start(position) => *device_position = *position as usize,
-            Position_type::Current(position) => {
+            Position::Start(position) => *device_position = *position as usize,
+            Position::Current(position) => {
                 *device_position = (*device_position as isize + *position as isize) as usize
             }
-            Position_type::End(position) => {
+            Position::End(position) => {
                 *device_position = (data.len() as isize - *position as isize) as usize
             }
         }
 
-        Ok(Size_type::new(*device_position as u64))
+        Ok(Size::new(*device_position as u64))
     }
 
-    fn erase(&self) -> crate::Result_type<()> {
+    fn erase(&self) -> crate::Result<()> {
         let mut inner = block_on(self.0.write());
 
         let (data, position) = &mut *inner;
@@ -198,15 +198,15 @@ impl<const BLOCK_SIZE: usize> Device_trait for Memory_device_type<BLOCK_SIZE> {
         Ok(())
     }
 
-    fn flush(&self) -> crate::Result_type<()> {
+    fn flush(&self) -> crate::Result<()> {
         Ok(())
     }
 
-    fn get_block_size(&self) -> crate::Result_type<usize> {
+    fn get_block_size(&self) -> crate::Result<usize> {
         Ok(BLOCK_SIZE)
     }
 
-    fn dump_device(&self) -> crate::Result_type<Vec<u8>> {
+    fn dump_device(&self) -> crate::Result<Vec<u8>> {
         let inner = block_on(self.0.read());
 
         Ok(inner.0.clone())

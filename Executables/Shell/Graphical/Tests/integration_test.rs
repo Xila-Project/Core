@@ -1,25 +1,24 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
-use executable::Standard_type;
-use file_system::{create_device, Create_file_system, Memory_device_type, Mode_type};
-use graphical_shell::Shell_executable_type;
-use task::Test;
+use executable::Standard;
+use file_system::{create_device, Create_file_system, MemoryDeviceType, Mode};
+use graphical_shell::ShellExecutableType;
+use task::test;
 
 #[cfg(target_os = "linux")]
 #[ignore]
-#[Test]
+#[test]
 async fn main() {
     use alloc::string::ToString;
     use drivers::native::window_screen;
-    use executable::Mount_static_executables;
-    use file_system::{Flags_type, Open_type};
-    use graphics::{get_minimal_buffer_size, Input_type_type, Point_type};
-    use users::Group_identifier_type;
+    use executable::mount_static_executables;
+    use file_system::{Flags, Open};
+    use graphics::{get_minimal_buffer_size, InputKind, Point};
+    use users::GroupIdentifier;
 
-    use virtual_file_system::{File_type, Mount_static_devices};
+    use virtual_file_system::{File, Mount_static_devices};
 
     // - Initialize the task manager.
     let task_instance = task::initialize();
@@ -28,11 +27,11 @@ async fn main() {
     let _ = users::initialize();
 
     // - Initialize the time manager.
-    let _ = time::initialize(create_device!(drivers::native::Time_driver_type::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
 
     // - Initialize the graphics manager.
 
-    const RESOLUTION: Point_type = Point_type::new(800, 480);
+    const RESOLUTION: Point = Point::new(800, 480);
 
     let (screen_device, pointer_device, keyboard_device) = window_screen::new(RESOLUTION).unwrap();
 
@@ -41,23 +40,23 @@ async fn main() {
     graphics::initialize(
         screen_device,
         pointer_device,
-        Input_type_type::Pointer,
+        InputKind::Pointer,
         BUFFER_SIZE,
         true,
     )
     .await;
 
     graphics::get_instance()
-        .add_input_device(keyboard_device, Input_type_type::Keypad)
+        .add_input_device(keyboard_device, InputKind::Keypad)
         .await
         .unwrap();
 
     // - Initialize the virtual file system.
-    let memory_device = create_device!(Memory_device_type::<512>::new(1024 * 512));
+    let memory_device = create_device!(MemoryDeviceType::<512>::new(1024 * 512));
 
-    little_fs::File_system_type::format(memory_device.clone(), 256).unwrap();
+    little_fs::FileSystem::format(memory_device.clone(), 256).unwrap();
 
-    let file_system = little_fs::File_system_type::new(memory_device, 256).unwrap();
+    let file_system = little_fs::FileSystem::new(memory_device, 256).unwrap();
 
     let virtual_file_system =
         virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
@@ -68,10 +67,10 @@ async fn main() {
         .await
         .unwrap();
 
-    Mount_static_executables!(
+    mount_static_executables!(
         virtual_file_system,
         task,
-        &[(&"/Binaries/Graphical_shell", Shell_executable_type),]
+        &[(&"/Binaries/Graphical_shell", ShellExecutableType),]
     )
     .await
     .unwrap();
@@ -82,19 +81,19 @@ async fn main() {
         &[
             (
                 &"/Devices/Standard_in",
-                drivers::standard_library::console::Standard_in_device_type
+                drivers::standard_library::console::StandardInDevice
             ),
             (
                 &"/Devices/Standard_out",
-                drivers::standard_library::console::Standard_out_device_type
+                drivers::standard_library::console::StandardOutDeviceType
             ),
             (
                 &"/Devices/Standard_error",
-                drivers::standard_library::console::Standard_error_device_type
+                drivers::standard_library::console::StandardErrorDeviceType
             ),
-            (&"/Devices/Time", drivers::native::Time_driver_type),
-            (&"/Devices/Random", drivers::native::Random_device_type),
-            (&"/Devices/Null", drivers::core::Null_device_type)
+            (&"/Devices/Time", drivers::native::TimeDriverType),
+            (&"/Devices/Random", drivers::native::RandomDeviceType),
+            (&"/Devices/Null", drivers::core::NullDeviceType)
         ]
     )
     .await
@@ -109,10 +108,10 @@ async fn main() {
     for i in 0..20 {
         use alloc::format;
 
-        File_type::open(
+        FileType::open(
             virtual_file_system,
             format!("/Configuration/Shared/Shortcuts/Test{i}.json").as_str(),
-            Flags_type::new(Mode_type::WRITE_ONLY, Some(Open_type::CREATE), None),
+            Flags::new(Mode::WRITE_ONLY, Some(Open::CREATE), None),
         )
         .await
         .unwrap()
@@ -120,12 +119,12 @@ async fn main() {
             format!(
                 r#"
     {{
-        "Name": "Test{i}",
-        "Command": "/Binaries/?",
-        "Arguments": "",
-        "Terminal": false,
-        "Icon_string": "T!",
-        "Icon_color": [255, 0, 0]
+        "name": "Test{i}",
+        "command": "/Binaries/?",
+        "arguments": "",
+        "terminal": false,
+        "icon_string": "T!",
+        "icon_color": [255, 0, 0]
     }}
         "#
             )
@@ -135,7 +134,7 @@ async fn main() {
         .unwrap();
     }
 
-    let group_identifier = Group_identifier_type::new(1000);
+    let group_identifier = GroupIdentifier::new(1000);
 
     authentication::create_group(virtual_file_system, "alix_anneraud", Some(group_identifier))
         .await
@@ -151,7 +150,7 @@ async fn main() {
     .await
     .unwrap();
 
-    let standard = Standard_type::open(
+    let standard = Standard::open(
         &"/Devices/Standard_in",
         &"/Devices/Standard_out",
         &"/Devices/Standard_error",

@@ -18,7 +18,7 @@
 //!
 //! The crate is organized into several key components:
 //!
-//! - [`Manager_type`]: Global singleton that manages the WASM runtime and loaded modules
+//! - [`Manager`]: Global singleton that manages the WASM runtime and loaded modules
 //! - [`Runtime_type`]: Represents a WASM runtime instance with registered host functions
 //! - [`Module_type`]: Represents a loaded WASM module ready for instantiation
 //! - [`Instance_type`]: An instantiated WASM module that can execute functions
@@ -52,7 +52,6 @@
 //! ```
 
 #![no_std]
-#![allow(non_camel_case_types)]
 #![allow(unused_imports)]
 extern crate alloc;
 
@@ -79,7 +78,7 @@ pub use registrable::*;
 pub use runtime::*;
 
 /// Type alias for WASM pointer addresses in the 32-bit WASM address space
-pub type WASM_pointer_type = u32;
+pub type WasmPointer = u32;
 
 /// Type alias for WASM size values (32-bit)
-pub type WASM_usize_type = u32;
+pub type WasmUsize = u32;

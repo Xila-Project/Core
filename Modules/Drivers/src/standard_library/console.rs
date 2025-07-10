@@ -1,32 +1,32 @@
 use std::io::{stderr, stdin, stdout, Read, Write};
 
-use file_system::{Device_trait, Size_type};
+use file_system::{DeviceTrait, Size};
 
 use crate::standard_library::io::map_error;
 
-pub struct Standard_in_device_type;
+pub struct StandardInDevice;
 
-impl Device_trait for Standard_in_device_type {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result_type<Size_type> {
+impl DeviceTrait for StandardInDevice {
+    fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
         #[allow(clippy::unused_io_amount)]
         stdin().read(buffer).unwrap();
 
-        Ok(Size_type::new(buffer.len() as u64))
+        Ok(Size::new(buffer.len() as u64))
     }
 
-    fn write(&self, _: &[u8]) -> file_system::Result_type<Size_type> {
-        Err(file_system::Error_type::Unsupported_operation)
+    fn write(&self, _: &[u8]) -> file_system::Result<Size> {
+        Err(file_system::Error::UnsupportedOperation)
     }
 
-    fn get_size(&self) -> file_system::Result_type<Size_type> {
-        Ok(Size_type::new(0))
+    fn get_size(&self) -> file_system::Result<Size> {
+        Ok(Size::new(0))
     }
 
-    fn set_position(&self, _: &file_system::Position_type) -> file_system::Result_type<Size_type> {
-        Err(file_system::Error_type::Unsupported_operation)
+    fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {
+        Err(file_system::Error::UnsupportedOperation)
     }
 
-    fn flush(&self) -> file_system::Result_type<()> {
+    fn flush(&self) -> file_system::Result<()> {
         Ok(())
     }
 
@@ -35,28 +35,26 @@ impl Device_trait for Standard_in_device_type {
     }
 }
 
-pub struct Standard_out_device_type;
+pub struct StandardOutDeviceType;
 
-impl Device_trait for Standard_out_device_type {
-    fn read(&self, _: &mut [u8]) -> file_system::Result_type<Size_type> {
-        Err(file_system::Error_type::Unsupported_operation)
+impl DeviceTrait for StandardOutDeviceType {
+    fn read(&self, _: &mut [u8]) -> file_system::Result<Size> {
+        Err(file_system::Error::UnsupportedOperation)
     }
 
-    fn write(&self, buffer: &[u8]) -> file_system::Result_type<Size_type> {
-        Ok(Size_type::new(
-            stdout().write(buffer).map_err(map_error)? as u64
-        ))
+    fn write(&self, buffer: &[u8]) -> file_system::Result<Size> {
+        Ok(Size::new(stdout().write(buffer).map_err(map_error)? as u64))
     }
 
-    fn get_size(&self) -> file_system::Result_type<Size_type> {
-        Ok(Size_type::new(0))
+    fn get_size(&self) -> file_system::Result<Size> {
+        Ok(Size::new(0))
     }
 
-    fn set_position(&self, _: &file_system::Position_type) -> file_system::Result_type<Size_type> {
-        Err(file_system::Error_type::Unsupported_operation)
+    fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {
+        Err(file_system::Error::UnsupportedOperation)
     }
 
-    fn flush(&self) -> file_system::Result_type<()> {
+    fn flush(&self) -> file_system::Result<()> {
         stdout().flush().map_err(map_error)
     }
 
@@ -65,28 +63,26 @@ impl Device_trait for Standard_out_device_type {
     }
 }
 
-pub struct Standard_error_device_type;
+pub struct StandardErrorDeviceType;
 
-impl Device_trait for Standard_error_device_type {
-    fn read(&self, _: &mut [u8]) -> file_system::Result_type<Size_type> {
-        Err(file_system::Error_type::Unsupported_operation)
+impl DeviceTrait for StandardErrorDeviceType {
+    fn read(&self, _: &mut [u8]) -> file_system::Result<Size> {
+        Err(file_system::Error::UnsupportedOperation)
     }
 
-    fn write(&self, buffer: &[u8]) -> file_system::Result_type<Size_type> {
-        Ok(Size_type::new(
-            stderr().write(buffer).map_err(map_error)? as u64
-        ))
+    fn write(&self, buffer: &[u8]) -> file_system::Result<Size> {
+        Ok(Size::new(stderr().write(buffer).map_err(map_error)? as u64))
     }
 
-    fn get_size(&self) -> file_system::Result_type<Size_type> {
-        Ok(Size_type::new(0))
+    fn get_size(&self) -> file_system::Result<Size> {
+        Ok(Size::new(0))
     }
 
-    fn set_position(&self, _: &file_system::Position_type) -> file_system::Result_type<Size_type> {
-        Err(file_system::Error_type::Unsupported_operation)
+    fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {
+        Err(file_system::Error::UnsupportedOperation)
     }
 
-    fn flush(&self) -> file_system::Result_type<()> {
+    fn flush(&self) -> file_system::Result<()> {
         stderr().flush().map_err(map_error)
     }
 

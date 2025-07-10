@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
@@ -20,6 +19,6 @@ pub use join_handle::*;
 pub use manager::*;
 pub use signal::*;
 pub use task::*;
-pub use task_macros::{Run, Test};
+pub use task_macros::{run, test};
 
 pub use embassy_executor;

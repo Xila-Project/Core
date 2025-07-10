@@ -1,29 +1,35 @@
 use futures::block_on;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
-use task::Task_identifier_type;
+use task::TaskIdentifier;
 
-pub static CONTEXT: Context_type = Context_type::new();
+pub static CONTEXT: Context = Context::new();
 
-pub fn get_instance() -> &'static Context_type {
+pub fn get_instance() -> &'static Context {
     &CONTEXT
 }
 
-struct Inner_type {
-    task: Option<Task_identifier_type>,
+struct Inner {
+    task: Option<TaskIdentifier>,
 }
 
-pub struct Context_type(RwLock<CriticalSectionRawMutex, Inner_type>);
+pub struct Context(RwLock<CriticalSectionRawMutex, Inner>);
 
-impl Context_type {
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Context {
     pub const fn new() -> Self {
-        Self(RwLock::new(Inner_type { task: None }))
+        Self(RwLock::new(Inner { task: None }))
     }
 
-    pub fn get_current_task_identifier(&self) -> Task_identifier_type {
+    pub fn get_current_task_identifier(&self) -> TaskIdentifier {
         block_on(self.0.read()).task.expect("No current task set")
     }
 
-    pub async fn set_task(&self, task: Task_identifier_type) {
+    pub async fn set_task(&self, task: TaskIdentifier) {
         loop {
             let mut inner = self.0.write().await;
 

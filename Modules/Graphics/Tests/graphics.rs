@@ -1,28 +1,26 @@
-#![allow(non_camel_case_types)]
-
 extern crate alloc;
 
 #[cfg(target_os = "linux")]
-use task::Test;
+use task::test;
 
 #[cfg(target_os = "linux")]
-#[Test]
+#[test]
 #[ignore]
 async fn main() {
     use std::{process::exit, ptr::null_mut};
 
     use drivers::native::window_screen;
     use file_system::create_device;
-    use graphics::{lvgl, Get_recommended_buffer_size, Input_type_type, Point_type};
+    use graphics::{lvgl, Get_recommended_buffer_size, InputKind, Point};
 
     let _ = users::initialize();
 
     let task_instance = task::initialize();
 
-    time::initialize(create_device!(drivers::native::Time_driver_type::new()))
+    time::initialize(create_device!(drivers::native::TimeDriverType::new()))
         .expect("Error initializing time manager");
 
-    const RESOLUTION: Point_type = Point_type::new(800, 480);
+    const RESOLUTION: Point = Point::new(800, 480);
 
     const BUFFER_SIZE: usize = get_recommended_buffer_size(&RESOLUTION);
 
@@ -34,14 +32,14 @@ async fn main() {
     let graphics = graphics::initialize(
         screen_device,
         pointer_device,
-        Input_type_type::Pointer,
+        InputKind::Pointer,
         BUFFER_SIZE,
         true,
     )
     .await;
 
     graphics
-        .add_input_device(keyboard_device, Input_type_type::Keypad)
+        .add_input_device(keyboard_device, InputKind::Keypad)
         .await
         .unwrap();
 
@@ -73,5 +71,5 @@ async fn main() {
         );
     }
 
-    graphics.r#loop(task::Manager_type::sleep).await.unwrap();
+    graphics.r#loop(task::Manager::sleep).await.unwrap();
 }

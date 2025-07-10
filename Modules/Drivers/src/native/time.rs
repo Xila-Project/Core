@@ -1,46 +1,55 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use file_system::{Device_trait, Error_type, Result_type, Size_type};
-use shared::Duration_type;
+use core::time::Duration;
+use file_system::{DeviceTrait, Error, Result, Size};
 
-pub struct Time_driver_type;
+pub struct TimeDriverType;
 
-impl Time_driver_type {
+impl Default for TimeDriverType {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl TimeDriverType {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl Device_trait for Time_driver_type {
-    fn read(&self, buffer: &mut [u8]) -> Result_type<Size_type> {
+impl DeviceTrait for TimeDriverType {
+    fn read(&self, buffer: &mut [u8]) -> Result<Size> {
         let duration = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(|_| Error_type::Internal_error)?;
+            .map_err(|_| Error::InternalError)?;
 
-        let duration: Duration_type =
-            Duration_type::new(duration.as_secs(), duration.subsec_nanos());
+        let duration: Duration = Duration::new(duration.as_secs(), duration.subsec_nanos());
 
-        buffer.copy_from_slice(duration.as_ref());
+        let duration_bytes = unsafe {
+            core::slice::from_raw_parts(
+                &duration as *const Duration as *const u8,
+                core::mem::size_of::<Duration>(),
+            )
+        };
+
+        buffer.copy_from_slice(duration_bytes);
 
         Ok(buffer.len().into())
     }
 
-    fn write(&self, _: &[u8]) -> Result_type<file_system::Size_type> {
-        Err(Error_type::Unsupported_operation)
+    fn write(&self, _: &[u8]) -> Result<file_system::Size> {
+        Err(Error::UnsupportedOperation)
     }
 
-    fn get_size(&self) -> file_system::Result_type<file_system::Size_type> {
-        Ok(size_of::<Duration_type>().into())
+    fn get_size(&self) -> file_system::Result<file_system::Size> {
+        Ok(size_of::<Duration>().into())
     }
 
-    fn set_position(
-        &self,
-        _: &file_system::Position_type,
-    ) -> file_system::Result_type<file_system::Size_type> {
-        Err(Error_type::Unsupported_operation)
+    fn set_position(&self, _: &file_system::Position) -> file_system::Result<file_system::Size> {
+        Err(Error::UnsupportedOperation)
     }
 
-    fn flush(&self) -> file_system::Result_type<()> {
-        Err(Error_type::Unsupported_operation)
+    fn flush(&self) -> file_system::Result<()> {
+        Err(Error::UnsupportedOperation)
     }
 }

@@ -28,7 +28,6 @@
 //! - Random salt generation uses `/Devices/Random` device
 
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
@@ -60,7 +59,7 @@ const RANDOM_DEVICE_PATH: &str = "/Devices/Random";
 /// # Returns
 ///
 /// Returns `Ok(())` if all users and groups were loaded successfully,
-/// or an `Error_type` if any operation failed.
+/// or an `Error` if any operation failed.
 ///
 /// # Errors
 ///
@@ -74,15 +73,15 @@ const RANDOM_DEVICE_PATH: &str = "/Devices/Random";
 /// ```rust
 /// use authentication::Load_all_users_and_groups;
 ///
-/// # async fn example() -> Result<(), authentication::Error_type> {
+/// # async fn example() -> Result<(), authentication::Error> {
 /// Load_all_users_and_groups().await?;
 /// # Ok(())
 /// # }
 /// ```
-pub async fn load_all_users_and_groups() -> Result_type<()> {
+pub async fn load_all_users_and_groups() -> Result<()> {
     use group::read_group_file;
     use user::read_user_file;
-    use virtual_file_system::Directory_type;
+    use virtual_file_system::DirectoryType;
     // Open Xila users folder.
     let virtual_file_system = virtual_file_system::get_instance();
 
@@ -91,9 +90,9 @@ pub async fn load_all_users_and_groups() -> Result_type<()> {
     let mut buffer: Vec<u8> = vec![];
 
     {
-        let groups_directory = Directory_type::open(virtual_file_system, GROUP_FOLDER_PATH)
+        let groups_directory = DirectoryType::open(virtual_file_system, GROUP_FOLDER_PATH)
             .await
-            .map_err(Error_type::Failed_to_read_group_directory)?;
+            .map_err(Error::FailedToReadGroupDirectory)?;
 
         // Read all groups.
         for group_entry in groups_directory {
@@ -109,14 +108,14 @@ pub async fn load_all_users_and_groups() -> Result_type<()> {
             users_manager
                 .add_group(group.get_identifier(), group.get_name(), group.get_users())
                 .await
-                .map_err(Error_type::Failed_to_add_group)?;
+                .map_err(Error::FailedToAddGroup)?;
         }
     }
 
     {
-        let users_directory = Directory_type::open(virtual_file_system, USERS_FOLDER_PATH)
+        let users_directory = DirectoryType::open(virtual_file_system, USERS_FOLDER_PATH)
             .await
-            .map_err(Error_type::Failed_to_read_users_directory)?;
+            .map_err(Error::FailedToReadUsersDirectory)?;
 
         // Read all users.
         for user_entry in users_directory {
@@ -136,7 +135,7 @@ pub async fn load_all_users_and_groups() -> Result_type<()> {
                     user.get_primary_group(),
                 )
                 .await
-                .map_err(Error_type::Failed_to_add_user)?;
+                .map_err(Error::FailedToAddUser)?;
         }
     }
 

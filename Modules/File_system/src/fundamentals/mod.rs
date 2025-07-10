@@ -42,10 +42,10 @@ pub use statistics::*;
 /// assert_eq!(block.0.len(), 512);
 /// ```
 #[repr(transparent)]
-pub struct Block_type(pub [u8; 512]);
+pub struct Block(pub [u8; 512]);
 
-impl Default for Block_type {
+impl Default for Block {
     fn default() -> Self {
-        Block_type([0; 512])
+        Block([0; 512])
     }
 }

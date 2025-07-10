@@ -1,33 +1,33 @@
 use core::{fmt::Display, num::NonZeroU32};
 
-pub type Result_type<T> = Result<T, Error_type>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 #[repr(u32)]
-pub enum Error_type {
-    Already_initialized = 1,
-    Unavailable_driver,
-    Invalid_file_system,
-    Invalid_parameter,
-    Too_many_open_files,
-    Failed_to_get_task_informations,
-    File_system(file_system::Error_type) = 0xFF,
-    Network(network::Error_type) = 0x200,
+pub enum Error {
+    AlreadyInitialized = 1,
+    UnavailableDriver,
+    InvalidFileSystem,
+    InvalidParameter,
+    TooManyOpenFiles,
+    FailedToGetTaskInformations,
+    FileSystem(file_system::Error) = 0xFF,
+    Network(network::Error) = 0x200,
 }
 
-impl Error_type {
+impl Error {
     pub fn get_discriminant(&self) -> NonZeroU32 {
         unsafe { *<*const _>::from(self).cast::<NonZeroU32>() }
     }
 }
 
-impl From<Error_type> for NonZeroU32 {
-    fn from(value: Error_type) -> Self {
+impl From<Error> for NonZeroU32 {
+    fn from(value: Error) -> Self {
         let discriminant = value.get_discriminant();
 
         let offset = match value {
-            Error_type::File_system(error_type) => error_type.get_discriminant().get(),
-            Error_type::Network(error_type) => error_type.get_discriminant().get() as u32,
+            Error::FileSystem(error_type) => error_type.get_discriminant().get(),
+            Error::Network(error_type) => error_type.get_discriminant().get() as u32,
             _ => 0,
         };
 
@@ -35,31 +35,31 @@ impl From<Error_type> for NonZeroU32 {
     }
 }
 
-impl From<file_system::Error_type> for Error_type {
-    fn from(value: file_system::Error_type) -> Self {
-        Self::File_system(value)
+impl From<file_system::Error> for Error {
+    fn from(value: file_system::Error) -> Self {
+        Self::FileSystem(value)
     }
 }
 
-impl From<network::Error_type> for Error_type {
-    fn from(value: network::Error_type) -> Self {
+impl From<network::Error> for Error {
+    fn from(value: network::Error) -> Self {
         Self::Network(value)
     }
 }
 
-impl Display for Error_type {
+impl Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Error_type::Already_initialized => write!(f, "Already initialized"),
-            Error_type::Unavailable_driver => write!(f, "Unavailable driver"),
-            Error_type::Invalid_file_system => write!(f, "Invalid file system"),
-            Error_type::Invalid_parameter => write!(f, "Invalid parameter"),
-            Error_type::Too_many_open_files => write!(f, "Too many open files"),
-            Error_type::Failed_to_get_task_informations => {
+            Error::AlreadyInitialized => write!(f, "Already initialized"),
+            Error::UnavailableDriver => write!(f, "Unavailable driver"),
+            Error::InvalidFileSystem => write!(f, "Invalid file system"),
+            Error::InvalidParameter => write!(f, "Invalid parameter"),
+            Error::TooManyOpenFiles => write!(f, "Too many open files"),
+            Error::FailedToGetTaskInformations => {
                 write!(f, "Failed to get task informations")
             }
-            Error_type::File_system(err) => write!(f, "File system error: {err}"),
-            Error_type::Network(err) => write!(f, "Network error: {err}"),
+            Error::FileSystem(err) => write!(f, "File system error: {err}"),
+            Error::Network(err) => write!(f, "Network error: {err}"),
         }
     }
 }

@@ -1,22 +1,22 @@
-use core::ffi::CStr;
+pub(crate) use core::ffi::CStr;
 
 use alloc::string::ToString;
-use graphics::{lvgl, Event_code_type, Window_type};
-use users::User_identifier_type;
+use graphics::{lvgl, EventKind, Window};
+use users::UserIdentifier;
 
-use crate::error::{Error_type, Result_type};
+use crate::error::{Error, Result};
 
-pub struct Login_type {
-    window: Window_type,
+pub struct Login {
+    window: Window,
     user_name_text_area: *mut lvgl::lv_obj_t,
     password_text_area: *mut lvgl::lv_obj_t,
     button: *mut lvgl::lv_obj_t,
     error_label: *mut lvgl::lv_obj_t,
-    user: Option<User_identifier_type>,
+    user: Option<UserIdentifier>,
 }
 
-impl Login_type {
-    pub async fn new() -> Result_type<Self> {
+impl Login {
+    pub async fn new() -> Result<Self> {
         // - Lock the graphics
         let _lock = graphics::get_instance().lock();
 
@@ -74,7 +74,7 @@ impl Login_type {
             button
         };
 
-        Ok(Login_type {
+        Ok(Login {
             window,
             user_name_text_area,
             password_text_area,
@@ -84,7 +84,7 @@ impl Login_type {
         })
     }
 
-    pub fn print_error(&mut self, error: Error_type) {
+    pub fn print_error(&mut self, error: Error) {
         let error = error.to_string();
         let error = error.as_bytes();
 
@@ -101,16 +101,16 @@ impl Login_type {
         }
     }
 
-    pub async fn authenticate(&mut self) -> Result_type<()> {
+    pub async fn authenticate(&mut self) -> Result<()> {
         let (user_name, password) = unsafe {
             let user_name = lvgl::lv_textarea_get_text(self.user_name_text_area);
             let user_name = CStr::from_ptr(user_name);
 
-            let user_name = user_name.to_str().map_err(Error_type::Invalid_UTF_8)?;
+            let user_name = user_name.to_str().map_err(Error::InvalidUtf8)?;
 
             let password = lvgl::lv_textarea_get_text(self.password_text_area);
             let password = CStr::from_ptr(password);
-            let password = password.to_str().map_err(Error_type::Invalid_UTF_8)?;
+            let password = password.to_str().map_err(Error::InvalidUtf8)?;
 
             (user_name, password)
         };
@@ -122,7 +122,7 @@ impl Login_type {
             password,
         )
         .await
-        .map_err(Error_type::Authentication_failed)?;
+        .map_err(Error::AuthenticationFailed)?;
 
         // - Set the user
         let task_manager = task::get_instance();
@@ -132,7 +132,7 @@ impl Login_type {
         task_manager
             .set_user(task, user_identifier)
             .await
-            .map_err(Error_type::Failed_to_set_task_user)?;
+            .map_err(Error::FailedToSetTaskUser)?;
 
         self.user = Some(user_identifier);
 
@@ -142,16 +142,14 @@ impl Login_type {
     pub async fn event_handler(&mut self) {
         while let Some(event) = self.window.pop_event() {
             // If we are typing the user name or the password
-            if event.get_code() == Event_code_type::Value_changed
+            if event.get_code() == EventKind::ValueChanged
                 && (event.get_target() == self.user_name_text_area
                     || event.get_target() == self.password_text_area)
             {
                 self.clear_error();
             }
             // If the "Login" button is clicked
-            else if event.get_code() == Event_code_type::Clicked
-                && event.get_target() == self.button
-            {
+            else if event.get_code() == EventKind::Clicked && event.get_target() == self.button {
                 let result = self.authenticate().await;
 
                 if let Err(error) = result {
@@ -161,7 +159,7 @@ impl Login_type {
         }
     }
 
-    pub fn get_logged_user(&self) -> Option<User_identifier_type> {
+    pub fn get_logged_user(&self) -> Option<UserIdentifier> {
         self.user
     }
 }
