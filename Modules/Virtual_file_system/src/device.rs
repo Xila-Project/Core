@@ -3,113 +3,102 @@ use alloc::{collections::BTreeMap, string::String, vec::Vec};
 use futures::yield_now;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
-use task::Task_identifier_type;
+use task::TaskIdentifier;
 
 use file_system::{
-    get_new_file_identifier, get_new_inode, Device_type, Error_type, File_identifier_type,
-    Flags_type, Inode_type, Local_file_identifier_type, Mode_type, Path_owned_type, Path_type,
-    Position_type, Result_type, Size_type, Unique_file_identifier_type,
+    get_new_file_identifier, get_new_inode, DeviceType, Error, FileIdentifier, Flags, Inode,
+    LocalFileIdentifier, Mode, Path, PathOwned, Position, Result, Size, UniqueFileIdentifier,
 };
 
-type Open_device_inner_type = (Device_type, Flags_type, Unique_file_identifier_type);
+type OpenDeviceInnerType = (DeviceType, Flags, UniqueFileIdentifier);
 
 #[derive(Clone)]
-pub enum Internal_path_type<'a> {
-    Borrowed(&'a Path_type),
-    Owned(Path_owned_type),
+pub enum InternalPathType<'a> {
+    Borrowed(&'a Path),
+    Owned(PathOwned),
 }
 
-struct Inner_type<'a> {
-    pub devices: BTreeMap<Inode_type, Device_inner_type<'a>>,
-    pub open_devices: BTreeMap<Local_file_identifier_type, Open_device_inner_type>,
+struct InnerType<'a> {
+    pub devices: BTreeMap<Inode, DeviceInnerType<'a>>,
+    pub open_devices: BTreeMap<LocalFileIdentifier, OpenDeviceInnerType>,
 }
 
-type Device_inner_type<'a> = (Internal_path_type<'a>, Device_type);
+type DeviceInnerType<'a> = (InternalPathType<'a>, DeviceType);
 
-pub struct File_system_type<'a>(RwLock<CriticalSectionRawMutex, Inner_type<'a>>);
+pub struct FileSystemType<'a>(RwLock<CriticalSectionRawMutex, InnerType<'a>>);
 
-impl<'a> File_system_type<'a> {
+impl<'a> FileSystemType<'a> {
     pub fn new() -> Self {
-        Self(RwLock::new(Inner_type {
+        Self(RwLock::new(InnerType {
             devices: BTreeMap::new(),
             open_devices: BTreeMap::new(),
         }))
     }
 
     fn borrow_mutable_inner_2_splitted<'b>(
-        inner: &'b mut Inner_type<'a>,
+        inner: &'b mut InnerType<'a>,
     ) -> (
-        &'b mut BTreeMap<Inode_type, Device_inner_type<'a>>,
-        &'b mut BTreeMap<Local_file_identifier_type, Open_device_inner_type>,
+        &'b mut BTreeMap<Inode, DeviceInnerType<'a>>,
+        &'b mut BTreeMap<LocalFileIdentifier, OpenDeviceInnerType>,
     ) {
         (&mut inner.devices, &mut inner.open_devices)
     }
 
     pub async fn get_underlying_file(
         &self,
-        file: Local_file_identifier_type,
-    ) -> Result_type<Unique_file_identifier_type> {
+        file: LocalFileIdentifier,
+    ) -> Result<UniqueFileIdentifier> {
         Ok(self
             .0
             .read()
             .await
             .open_devices
             .get(&file)
-            .ok_or(Error_type::Invalid_identifier)?
+            .ok_or(Error::InvalidIdentifier)?
             .2)
     }
 
-    pub async fn mount_device(
-        &self,
-        path: Path_owned_type,
-        device: Device_type,
-    ) -> Result_type<Inode_type> {
+    pub async fn mount_device(&self, path: PathOwned, device: DeviceType) -> Result<Inode> {
         let mut inner = self.0.write().await;
 
         let (devices, _) = Self::borrow_mutable_inner_2_splitted(&mut inner);
 
         let inode = get_new_inode(devices)?;
 
-        devices.insert(inode, (Internal_path_type::Owned(path), device));
+        devices.insert(inode, (InternalPathType::Owned(path), device));
 
         Ok(inode)
     }
 
     pub async fn mount_static_device(
         &self,
-        path: &'a impl AsRef<Path_type>,
-        device: Device_type,
-    ) -> Result_type<Inode_type> {
+        path: &'a impl AsRef<Path>,
+        device: DeviceType,
+    ) -> Result<Inode> {
         let mut inner = self.0.write().await;
 
         let (devices, _) = Self::borrow_mutable_inner_2_splitted(&mut inner);
 
         let inode = get_new_inode(devices)?;
 
-        devices.insert(inode, (Internal_path_type::Borrowed(path.as_ref()), device));
+        devices.insert(inode, (InternalPathType::Borrowed(path.as_ref()), device));
 
         Ok(inode)
     }
 
-    pub async fn get_path_from_inode(
-        &self,
-        inode: Inode_type,
-    ) -> Result_type<Internal_path_type<'a>> {
+    pub async fn get_path_from_inode(&self, inode: Inode) -> Result<InternalPathType<'a>> {
         Ok(self
             .0
             .read()
             .await
             .devices
             .get(&inode)
-            .ok_or(Error_type::Invalid_identifier)?
+            .ok_or(Error::InvalidIdentifier)?
             .0
             .clone())
     }
 
-    pub async fn get_devices_from_path(
-        &self,
-        path: &'static Path_type,
-    ) -> Result_type<Vec<Inode_type>> {
+    pub async fn get_devices_from_path(&self, path: &'static Path) -> Result<Vec<Inode>> {
         Ok(self
             .0
             .read()
@@ -117,10 +106,8 @@ impl<'a> File_system_type<'a> {
             .devices
             .iter()
             .filter(|(_, (device_path, _))| match device_path {
-                Internal_path_type::Borrowed(device_path) => {
-                    device_path.strip_prefix(path).is_some()
-                }
-                Internal_path_type::Owned(device_path) => device_path.strip_prefix(path).is_some(),
+                InternalPathType::Borrowed(device_path) => device_path.strip_prefix(path).is_some(),
+                InternalPathType::Owned(device_path) => device_path.strip_prefix(path).is_some(),
             })
             .map(|(inode, _)| *inode)
             .collect())
@@ -128,16 +115,16 @@ impl<'a> File_system_type<'a> {
 
     pub async fn open(
         &self,
-        inode: Inode_type,
-        task: Task_identifier_type,
-        flags: Flags_type,
-        underlying_file: Unique_file_identifier_type,
-    ) -> Result_type<Local_file_identifier_type> {
+        inode: Inode,
+        task: TaskIdentifier,
+        flags: Flags,
+        underlying_file: UniqueFileIdentifier,
+    ) -> Result<LocalFileIdentifier> {
         let mut inner = self.0.write().await;
 
         let (devices, open_pipes) = Self::borrow_mutable_inner_2_splitted(&mut inner);
 
-        let device = devices.get(&inode).ok_or(Error_type::Invalid_identifier)?;
+        let device = devices.get(&inode).ok_or(Error::InvalidIdentifier)?;
 
         let local_file_identifier = get_new_file_identifier(task, None, None, open_pipes)?;
 
@@ -149,22 +136,19 @@ impl<'a> File_system_type<'a> {
         Ok(local_file_identifier)
     }
 
-    pub async fn close(
-        &self,
-        file: Local_file_identifier_type,
-    ) -> Result_type<Unique_file_identifier_type> {
+    pub async fn close(&self, file: LocalFileIdentifier) -> Result<UniqueFileIdentifier> {
         let (_, _, underlying_file) = self
             .0
             .write()
             .await
             .open_devices
             .remove(&file)
-            .ok_or(Error_type::Invalid_identifier)?;
+            .ok_or(Error::InvalidIdentifier)?;
 
         Ok(underlying_file)
     }
 
-    pub async fn close_all(&self, task: Task_identifier_type) -> Result_type<()> {
+    pub async fn close_all(&self, task: TaskIdentifier) -> Result<()> {
         let mut inner = self.0.write().await;
 
         // Get all the keys of the open pipes that belong to the task
@@ -187,15 +171,15 @@ impl<'a> File_system_type<'a> {
 
     pub async fn duplicate(
         &self,
-        file: Local_file_identifier_type,
-        underlying_file: Unique_file_identifier_type,
-    ) -> Result_type<Local_file_identifier_type> {
+        file: LocalFileIdentifier,
+        underlying_file: UniqueFileIdentifier,
+    ) -> Result<LocalFileIdentifier> {
         let mut inner = self.0.write().await;
 
         let (device, flags, _) = inner
             .open_devices
             .get(&file)
-            .ok_or(Error_type::Invalid_identifier)?
+            .ok_or(Error::InvalidIdentifier)?
             .clone();
 
         let new_file = get_new_file_identifier(file.split().0, None, None, &inner.open_devices)?;
@@ -209,23 +193,23 @@ impl<'a> File_system_type<'a> {
 
     pub async fn transfert(
         &self,
-        new_task: Task_identifier_type,
-        file: Local_file_identifier_type,
-        underlying_file: Unique_file_identifier_type,
-        new_file: Option<File_identifier_type>,
-    ) -> Result_type<Local_file_identifier_type> {
+        new_task: TaskIdentifier,
+        file: LocalFileIdentifier,
+        underlying_file: UniqueFileIdentifier,
+        new_file: Option<FileIdentifier>,
+    ) -> Result<LocalFileIdentifier> {
         let mut inner = self.0.write().await;
 
         let (device, flags, _) = inner
             .open_devices
             .remove(&file)
-            .ok_or(Error_type::Invalid_identifier)?;
+            .ok_or(Error::InvalidIdentifier)?;
 
         let new_file = if let Some(new_file) = new_file {
-            let file = Local_file_identifier_type::new(new_task, new_file);
+            let file = LocalFileIdentifier::new(new_task, new_file);
 
             if inner.open_devices.contains_key(&file) {
-                return Err(Error_type::Invalid_identifier);
+                return Err(Error::InvalidIdentifier);
             }
 
             file
@@ -238,35 +222,35 @@ impl<'a> File_system_type<'a> {
             .insert(new_file, (device, flags, underlying_file))
             .is_some()
         {
-            return Err(Error_type::Internal_error); // Should never happen
+            return Err(Error::InternalError); // Should never happen
         }
 
         Ok(new_file)
     }
 
-    pub async fn remove(&self, inode: Inode_type) -> Result_type<Device_inner_type<'a>> {
+    pub async fn remove(&self, inode: Inode) -> Result<DeviceInnerType<'a>> {
         self.0
             .write()
             .await
             .devices
             .remove(&inode)
-            .ok_or(Error_type::Invalid_inode)
+            .ok_or(Error::InvalidInode)
     }
 
     pub async fn read(
         &self,
-        file: Local_file_identifier_type,
+        file: LocalFileIdentifier,
         buffer: &mut [u8],
-    ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
+    ) -> Result<(Size, UniqueFileIdentifier)> {
         let inner = self.0.read().await;
 
         let (device, flags, underlying_file) = inner
             .open_devices
             .get(&file)
-            .ok_or(Error_type::Invalid_identifier)?;
+            .ok_or(Error::InvalidIdentifier)?;
 
         if !flags.get_mode().get_read() {
-            return Err(Error_type::Invalid_mode);
+            return Err(Error::InvalidMode);
         }
 
         if flags.get_status().get_non_blocking() {
@@ -285,18 +269,18 @@ impl<'a> File_system_type<'a> {
 
     pub async fn read_line(
         &self,
-        file: Local_file_identifier_type,
+        file: LocalFileIdentifier,
         buffer: &mut String,
-    ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
+    ) -> Result<(Size, UniqueFileIdentifier)> {
         let inner = self.0.read().await;
 
         let (device, flags, underlying_file) = inner
             .open_devices
             .get(&file)
-            .ok_or(Error_type::Invalid_identifier)?;
+            .ok_or(Error::InvalidIdentifier)?;
 
         if !flags.get_mode().get_read() {
-            return Err(Error_type::Invalid_mode);
+            return Err(Error::InvalidMode);
         }
 
         buffer.clear();
@@ -322,18 +306,18 @@ impl<'a> File_system_type<'a> {
 
     pub async fn write(
         &self,
-        file: Local_file_identifier_type,
+        file: LocalFileIdentifier,
         buffer: &[u8],
-    ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
+    ) -> Result<(Size, UniqueFileIdentifier)> {
         let inner = self.0.read().await;
 
         let (device, flags, underlying_file) = inner
             .open_devices
             .get(&file)
-            .ok_or(Error_type::Invalid_identifier)?;
+            .ok_or(Error::InvalidIdentifier)?;
 
         if !flags.get_mode().get_write() {
-            return Err(Error_type::Invalid_mode);
+            return Err(Error::InvalidMode);
         }
 
         if flags.get_status().get_non_blocking() {
@@ -350,67 +334,64 @@ impl<'a> File_system_type<'a> {
 
     pub async fn set_position(
         &self,
-        file: Local_file_identifier_type,
-        position: &Position_type,
-    ) -> Result_type<(Size_type, Unique_file_identifier_type)> {
+        file: LocalFileIdentifier,
+        position: &Position,
+    ) -> Result<(Size, UniqueFileIdentifier)> {
         let inner = self.0.read().await;
 
         let (device, _, underlying_file) = inner
             .open_devices
             .get(&file)
-            .ok_or(Error_type::Invalid_identifier)?;
+            .ok_or(Error::InvalidIdentifier)?;
 
         Ok((device.set_position(position)?, *underlying_file))
     }
 
-    pub async fn flush(
-        &self,
-        file: Local_file_identifier_type,
-    ) -> Result_type<Unique_file_identifier_type> {
+    pub async fn flush(&self, file: LocalFileIdentifier) -> Result<UniqueFileIdentifier> {
         let inner = self.0.read().await;
 
         let (device, _, underlying_file) = inner
             .open_devices
             .get(&file)
-            .ok_or(Error_type::Invalid_identifier)?;
+            .ok_or(Error::InvalidIdentifier)?;
 
         device.flush()?;
 
         Ok(*underlying_file)
     }
 
-    pub async fn get_mode(&self, file: Local_file_identifier_type) -> Result_type<Mode_type> {
+    pub async fn get_mode(&self, file: LocalFileIdentifier) -> Result<Mode> {
         Ok(self
             .0
             .read()
             .await
             .open_devices
             .get(&file)
-            .ok_or(Error_type::Invalid_identifier)?
+            .ok_or(Error::InvalidIdentifier)?
             .1
             .get_mode())
     }
 
-    pub async fn get_raw_device(&self, inode: Inode_type) -> Result_type<Device_type> {
+    pub async fn get_raw_device(&self, inode: Inode) -> Result<DeviceType> {
         Ok(self
             .0
             .read()
             .await
             .devices
             .get(&inode)
-            .ok_or(Error_type::Invalid_identifier)?
+            .ok_or(Error::InvalidIdentifier)?
             .1
             .clone())
     }
 
-    pub async fn is_a_terminal(&self, file: Local_file_identifier_type) -> Result_type<bool> {
+    pub async fn is_a_terminal(&self, file: LocalFileIdentifier) -> Result<bool> {
         Ok(self
             .0
             .read()
             .await
             .open_devices
             .get(&file)
-            .ok_or(Error_type::Invalid_identifier)?
+            .ok_or(Error::InvalidIdentifier)?
             .0
             .is_a_terminal())
     }
@@ -418,22 +399,23 @@ impl<'a> File_system_type<'a> {
 
 #[cfg(test)]
 mod tests {
+    extern crate std;
     use alloc::vec;
-    use file_system::{create_device, Position_type};
+    use file_system::{create_device, Position};
 
-    use file_system::Memory_device_type;
-    use task::Test;
+    use file_system::MemoryDeviceType;
+    use task::test;
 
     use super::*;
 
     pub const MEMORY_DEVICE_SIZE: usize = 1024;
     pub const MEMORY_DEVICE_BLOCK_SIZE: usize = 512;
 
-    #[Test]
+    #[test]
     async fn test_mount_device() {
-        let fs = File_system_type::new();
+        let fs = FileSystemType::new();
 
-        let memory_device = create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -444,11 +426,11 @@ mod tests {
         assert!(fs.get_raw_device(inode).await.is_ok());
     }
 
-    #[Test]
+    #[test]
     async fn test_open_close_device() {
-        let fs = File_system_type::new();
+        let fs = FileSystemType::new();
 
-        let memory_device = create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -459,8 +441,8 @@ mod tests {
         let file_id = fs
             .open(
                 inode,
-                Task_identifier_type::new(0),
-                Mode_type::READ_ONLY.into(),
+                TaskIdentifier::new(0),
+                Mode::READ_ONLY.into(),
                 0_usize.into(),
             )
             .await
@@ -468,11 +450,11 @@ mod tests {
         assert!(fs.close(file_id).await.is_ok());
     }
 
-    #[Test]
+    #[test]
     async fn test_read_write_device() {
-        let fs = File_system_type::new();
+        let fs = FileSystemType::new();
 
-        let memory_device = create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -483,8 +465,8 @@ mod tests {
         let file_id = fs
             .open(
                 inode,
-                Task_identifier_type::new(0),
-                Mode_type::READ_WRITE.into(),
+                TaskIdentifier::new(0),
+                Mode::READ_WRITE.into(),
                 0_usize.into(),
             )
             .await
@@ -493,9 +475,7 @@ mod tests {
         let write_data = b"Hello, world!";
         fs.write(file_id, write_data).await.unwrap();
 
-        fs.set_position(file_id, &Position_type::Start(0))
-            .await
-            .unwrap();
+        fs.set_position(file_id, &Position::Start(0)).await.unwrap();
 
         let mut read_data = vec![0; write_data.len()];
         fs.read(file_id, &mut read_data).await.unwrap();
@@ -503,11 +483,11 @@ mod tests {
         assert_eq!(&read_data, write_data);
     }
 
-    #[Test]
+    #[test]
     async fn test_duplicate_file_identifier() {
-        let file_system = File_system_type::new();
+        let file_system = FileSystemType::new();
 
-        let memory_device = create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -521,8 +501,8 @@ mod tests {
         let file = file_system
             .open(
                 inode,
-                Task_identifier_type::new(0),
-                Mode_type::READ_ONLY.into(),
+                TaskIdentifier::new(0),
+                Mode::READ_ONLY.into(),
                 underlying_file,
             )
             .await
@@ -543,11 +523,11 @@ mod tests {
         assert!(file_system.close(new_file).await.is_ok());
     }
 
-    #[Test]
+    #[test]
     async fn test_transfert_file_identifier() {
-        let file_system = File_system_type::new();
+        let file_system = FileSystemType::new();
 
-        let memory_device = create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -556,30 +536,30 @@ mod tests {
             .await
             .unwrap();
 
-        let task = Task_identifier_type::new(0);
+        let task = TaskIdentifier::new(0);
 
         let file_identifier = file_system
-            .open(inode, task, Mode_type::READ_ONLY.into(), 0_usize.into())
+            .open(inode, task, Mode::READ_ONLY.into(), 0_usize.into())
             .await
             .unwrap();
 
-        let new_task = Task_identifier_type::new(1);
+        let new_task = TaskIdentifier::new(1);
 
         let new_file_identifier = file_system
             .transfert(new_task, file_identifier, 0_usize.into(), None)
             .await
             .unwrap();
 
-        assert_eq!(new_file_identifier.Split().0, new_task);
+        assert_eq!(new_file_identifier.split().0, new_task);
 
         file_system.close(new_file_identifier).await.unwrap();
     }
 
-    #[Test]
+    #[test]
     async fn test_delete_device() {
-        let fs = File_system_type::new();
+        let fs = FileSystemType::new();
 
-        let memory_device = create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -590,11 +570,11 @@ mod tests {
         assert!(fs.remove(inode).await.is_ok());
     }
 
-    #[Test]
+    #[test]
     async fn test_set_position() {
-        let fs = File_system_type::new();
+        let fs = FileSystemType::new();
 
-        let memory_device = create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -605,23 +585,23 @@ mod tests {
         let file_id = fs
             .open(
                 inode,
-                Task_identifier_type::new(0),
-                Mode_type::READ_ONLY.into(),
+                TaskIdentifier::new(0),
+                Mode::READ_ONLY.into(),
                 0_usize.into(),
             )
             .await
             .unwrap();
 
-        fs.set_position(file_id, &Position_type::Start(10))
+        fs.set_position(file_id, &Position::Start(10))
             .await
             .unwrap();
     }
 
-    #[Test]
+    #[test]
     async fn test_flush() {
-        let fs = File_system_type::new();
+        let fs = FileSystemType::new();
 
-        let memory_device = create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -632,8 +612,8 @@ mod tests {
         let file_id = fs
             .open(
                 inode,
-                Task_identifier_type::new(0),
-                Mode_type::READ_ONLY.into(),
+                TaskIdentifier::new(0),
+                Mode::READ_ONLY.into(),
                 0_usize.into(),
             )
             .await
@@ -642,11 +622,11 @@ mod tests {
         assert!(fs.flush(file_id).await.is_ok());
     }
 
-    #[Test]
+    #[test]
     async fn test_get_mode() {
-        let fs = File_system_type::new();
+        let fs = FileSystemType::new();
 
-        let memory_device = create_device!(Memory_device_type::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -657,8 +637,8 @@ mod tests {
         let file_id = fs
             .open(
                 inode,
-                Task_identifier_type::new(0),
-                Mode_type::READ_ONLY.into(),
+                TaskIdentifier::new(0),
+                Mode::READ_ONLY.into(),
                 0_usize.into(),
             )
             .await

@@ -1,5 +1,5 @@
 
-#![allow(non_camel_case_types)]
+
 
 
 pub mod evaluator;
@@ -16,7 +16,7 @@ pub struct Calculator;
 impl Calculator {
     pub fn Evaluate_expression(input: &str) -> Result<f64, String> {
         // Parse the expression
-        let mut Parser = Parser_type::New(input)?;
+        let mut Parser = Parser_type::new(input)?;
         let Expr = Parser.Parse()?;
 
         // Evaluate the parsed expression

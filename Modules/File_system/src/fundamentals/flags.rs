@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use super::Permission_type;
+use super::Permission;
 
 /// The mode of a file.
 ///
@@ -15,26 +15,26 @@ use super::Permission_type;
 /// ```rust
 /// use file_system::Mode_type;
 ///
-/// let mode = Mode_type::New(true, false);
+/// let mode = Mode_type::new(true, false);
 ///
 /// assert_eq!(mode.get_read(), true);
 /// assert_eq!(mode.get_write(), false);
 ///
-/// let mode = Mode_type::New(false, true);
+/// let mode = Mode_type::new(false, true);
 ///
 /// assert_eq!(mode.get_read(), false);
 /// assert_eq!(mode.get_write(), true);
 ///
-/// let mode = Mode_type::New(true, true);
+/// let mode = Mode_type::new(true, true);
 ///
 /// assert_eq!(mode.get_read(), true);
 /// assert_eq!(mode.get_write(), true);
 /// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
-pub struct Mode_type(u8);
+pub struct Mode(u8);
 
-impl Mode_type {
+impl Mode {
     pub const READ_BIT: u8 = 1 << 0;
     pub const WRITE_BIT: u8 = 1 << 1;
 
@@ -86,7 +86,7 @@ impl Mode_type {
     }
 }
 
-impl Debug for Mode_type {
+impl Debug for Mode {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Mode_type")
@@ -109,7 +109,7 @@ impl Debug for Mode_type {
 /// ```rust
 /// use file_system::Open_type;
 ///
-/// let open = Open_type::New(true, true, false);
+/// let open = Open_type::new(true, true, false);
 ///
 /// assert_eq!(open.get_create(), true);
 /// assert_eq!(open.get_exclusive(), true);
@@ -117,9 +117,9 @@ impl Debug for Mode_type {
 /// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
-pub struct Open_type(u8);
+pub struct Open(u8);
 
-impl Open_type {
+impl Open {
     pub const CREATE_MASK: u8 = 1 << 0;
     pub const EXCLUSIVE_MASK: u8 = 1 << 1;
     pub const TRUNCATE_MASK: u8 = 1 << 2;
@@ -181,13 +181,13 @@ impl Open_type {
     }
 }
 
-impl Default for Open_type {
+impl Default for Open {
     fn default() -> Self {
         Self::NONE
     }
 }
 
-impl Debug for Open_type {
+impl Debug for Open {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Open_type")
@@ -211,7 +211,7 @@ impl Debug for Open_type {
 /// ```rust
 /// use file_system::Status_type;
 ///
-/// let status = Status_type::New(true, false, true, false);
+/// let status = Status_type::new(true, false, true, false);
 ///
 /// assert_eq!(status.get_append(), true);
 /// assert_eq!(status.get_non_blocking(), false);
@@ -220,9 +220,9 @@ impl Debug for Open_type {
 /// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
-pub struct Status_type(u8);
+pub struct Status(u8);
 
-impl Status_type {
+impl Status {
     pub const APPEND_BIT: u8 = 1 << 0;
     pub const NON_BLOCKING_BIT: u8 = 1 << 1;
     pub const SYNCHRONOUS_BIT: u8 = 1 << 2;
@@ -297,7 +297,7 @@ impl Status_type {
     }
 }
 
-impl Debug for Status_type {
+impl Debug for Status {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Status_type")
@@ -312,7 +312,7 @@ impl Debug for Status_type {
     }
 }
 
-impl Default for Status_type {
+impl Default for Status {
     fn default() -> Self {
         Self::NONE
     }
@@ -331,7 +331,7 @@ impl Default for Status_type {
 /// ```rust
 /// use file_system::{Flags_type, Mode_type, Open_type, Status_type};
 ///     
-/// let flags = Flags_type::New(Mode_type::Read_write, Some(Open_type::Create_only), Some(Status_type::Non_blocking));
+/// let flags = Flags_type::new(Mode_type::Read_write, Some(Open_type::Create_only), Some(Status_type::Non_blocking));
 ///
 /// assert_eq!(flags.get_mode(), Mode_type::Read_write);
 /// assert_eq!(flags.get_open(), Open_type::Create_only);
@@ -339,9 +339,9 @@ impl Default for Status_type {
 /// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
-pub struct Flags_type(u16);
+pub struct Flags(u16);
 
-impl Debug for Flags_type {
+impl Debug for Flags {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Flags_type")
@@ -352,29 +352,25 @@ impl Debug for Flags_type {
     }
 }
 
-impl Flags_type {
+impl Flags {
     const MODE_POSITION: u8 = 0;
-    const OPEN_POSITION: u8 = Mode_type::SIZE;
-    const STATUS_POSITION: u8 = Open_type::SIZE + Self::OPEN_POSITION;
+    const OPEN_POSITION: u8 = Mode::SIZE;
+    const STATUS_POSITION: u8 = Open::SIZE + Self::OPEN_POSITION;
 
-    const OPEN_MASK: u16 = (1 << Open_type::SIZE) - 1;
-    const STATUS_MASK: u16 = (1 << Status_type::SIZE) - 1;
-    const MODE_MASK: u16 = (1 << Mode_type::SIZE) - 1;
+    const OPEN_MASK: u16 = (1 << Open::SIZE) - 1;
+    const STATUS_MASK: u16 = (1 << Status::SIZE) - 1;
+    const MODE_MASK: u16 = (1 << Mode::SIZE) - 1;
 
-    pub const fn new(
-        mode: Mode_type,
-        open: Option<Open_type>,
-        status: Option<Status_type>,
-    ) -> Self {
+    pub const fn new(mode: Mode, open: Option<Open>, status: Option<Status>) -> Self {
         let open = if let Some(open_val) = open {
             open_val
         } else {
-            Open_type::NONE
+            Open::NONE
         };
         let status = if let Some(status_val) = status {
             status_val
         } else {
-            Status_type::NONE
+            Status::NONE
         };
 
         let mut flags: u16 = 0;
@@ -384,37 +380,37 @@ impl Flags_type {
         Self(flags)
     }
 
-    pub const fn get_mode(&self) -> Mode_type {
-        Mode_type(((self.0 >> Self::MODE_POSITION) & Self::MODE_MASK) as u8)
+    pub const fn get_mode(&self) -> Mode {
+        Mode(((self.0 >> Self::MODE_POSITION) & Self::MODE_MASK) as u8)
     }
 
-    pub const fn get_open(&self) -> Open_type {
-        Open_type(((self.0 >> Self::OPEN_POSITION) & Self::OPEN_MASK) as u8)
+    pub const fn get_open(&self) -> Open {
+        Open(((self.0 >> Self::OPEN_POSITION) & Self::OPEN_MASK) as u8)
     }
 
-    pub const fn get_status(&self) -> Status_type {
-        Status_type(((self.0 >> Self::STATUS_POSITION) & Self::STATUS_MASK) as u8)
+    pub const fn get_status(&self) -> Status {
+        Status(((self.0 >> Self::STATUS_POSITION) & Self::STATUS_MASK) as u8)
     }
 
-    pub const fn set_mode(mut self, mode: Mode_type) -> Self {
+    pub const fn set_mode(mut self, mode: Mode) -> Self {
         self.0 &= !(Self::MODE_MASK << Self::MODE_POSITION);
         self.0 |= (mode.0 as u16) << Self::MODE_POSITION;
         self
     }
 
-    pub const fn set_open(mut self, open: Open_type) -> Self {
+    pub const fn set_open(mut self, open: Open) -> Self {
         self.0 &= !(Self::OPEN_MASK << Self::OPEN_POSITION);
         self.0 |= (open.0 as u16) << Self::OPEN_POSITION;
         self
     }
 
-    pub const fn set_status(mut self, status: Status_type) -> Self {
+    pub const fn set_status(mut self, status: Status) -> Self {
         self.0 &= !(Self::STATUS_MASK << Self::STATUS_POSITION);
         self.0 |= (status.0 as u16) << Self::STATUS_POSITION;
         self
     }
 
-    pub fn is_permission_granted(&self, permission: &Permission_type) -> bool {
+    pub fn is_permission_granted(&self, permission: &Permission) -> bool {
         let mode = self.get_mode();
 
         (permission.get_read() && mode.get_read()) // Read permission
@@ -423,14 +419,14 @@ impl Flags_type {
     }
 }
 
-impl From<Mode_type> for Flags_type {
-    fn from(mode: Mode_type) -> Self {
+impl From<Mode> for Flags {
+    fn from(mode: Mode) -> Self {
         Self::new(mode, None, None)
     }
 }
 
-impl From<Flags_type> for u16 {
-    fn from(flags: Flags_type) -> Self {
+impl From<Flags> for u16 {
+    fn from(flags: Flags) -> Self {
         flags.0
     }
 }
@@ -441,22 +437,22 @@ mod tests {
 
     #[test]
     fn test_mode_type_new() {
-        let read_only = Mode_type::new(true, false);
+        let read_only = Mode::new(true, false);
         assert!(read_only.get_read());
         assert!(!read_only.get_write());
 
-        let write_only = Mode_type::new(false, true);
+        let write_only = Mode::new(false, true);
         assert!(!write_only.get_read());
         assert!(write_only.get_write());
 
-        let read_write = Mode_type::new(true, true);
+        let read_write = Mode::new(true, true);
         assert!(read_write.get_read());
         assert!(read_write.get_write());
     }
 
     #[test]
     fn test_mode_type_set_get() {
-        let mut mode = Mode_type(0);
+        let mut mode = Mode(0);
         mode = mode.set_read(true);
         assert!(mode.get_read());
         assert!(!mode.get_write());
@@ -472,7 +468,7 @@ mod tests {
 
     #[test]
     fn test_open_type_new() {
-        let open = Open_type::new(true, false, true);
+        let open = Open::new(true, false, true);
         assert!(open.get_create());
         assert!(!open.get_exclusive());
         assert!(open.get_truncate());
@@ -480,7 +476,7 @@ mod tests {
 
     #[test]
     fn test_open_type_set_get() {
-        let mut open = Open_type(0);
+        let mut open = Open(0);
         open = open.set_create(true);
         assert!(open.get_create());
         assert!(!open.get_exclusive());
@@ -495,7 +491,7 @@ mod tests {
 
     #[test]
     fn test_status_type_new() {
-        let status = Status_type::new(true, false, true, false);
+        let status = Status::new(true, false, true, false);
         assert!(status.get_append());
         assert!(!status.get_non_blocking());
         assert!(status.get_synchronous());
@@ -504,7 +500,7 @@ mod tests {
 
     #[test]
     fn test_status_type_set_get() {
-        let mut status = Status_type(0);
+        let mut status = Status(0);
         status = status.set_append(true);
         assert!(status.get_append());
         assert!(!status.get_non_blocking());
@@ -521,11 +517,11 @@ mod tests {
 
     #[test]
     fn test_flags_type_new() {
-        let mode = Mode_type::READ_WRITE;
-        let open = Open_type::new(true, false, true);
-        let status = Status_type::new(true, false, true, false);
+        let mode = Mode::READ_WRITE;
+        let open = Open::new(true, false, true);
+        let status = Status::new(true, false, true, false);
 
-        let flags = Flags_type::new(mode, Some(open), Some(status));
+        let flags = Flags::new(mode, Some(open), Some(status));
         assert_eq!(flags.get_mode(), mode);
         assert_eq!(flags.get_open(), open);
         assert_eq!(flags.get_status(), status);
@@ -533,43 +529,43 @@ mod tests {
 
     #[test]
     fn test_flags_type_set_get() {
-        let flags = Flags_type::new(Mode_type::READ_ONLY, None, None);
+        let flags = Flags::new(Mode::READ_ONLY, None, None);
 
-        let new_mode = Mode_type::WRITE_ONLY;
+        let new_mode = Mode::WRITE_ONLY;
         let flags = flags.set_mode(new_mode);
         assert_eq!(flags.get_mode(), new_mode);
 
-        let new_open = Open_type::new(true, true, false);
+        let new_open = Open::new(true, true, false);
         let flags = flags.set_open(new_open);
         assert_eq!(flags.get_open(), new_open);
 
-        let new_status = Status_type::new(false, true, false, true);
+        let new_status = Status::new(false, true, false, true);
         let flags = flags.set_status(new_status);
         assert_eq!(flags.get_status(), new_status);
     }
 
     #[test]
     fn test_flags_type_is_permission_granted() {
-        let mode = Mode_type::READ_WRITE;
-        let status = Status_type::new(true, false, false, false);
-        let flags = Flags_type::new(mode, None, Some(status));
+        let mode = Mode::READ_WRITE;
+        let status = Status::new(true, false, false, false);
+        let flags = Flags::new(mode, None, Some(status));
 
-        assert!(flags.is_permission_granted(&Permission_type::READ_ONLY));
-        assert!(flags.is_permission_granted(&Permission_type::WRITE_ONLY));
-        assert!(flags.is_permission_granted(&Permission_type::READ_WRITE));
+        assert!(flags.is_permission_granted(&Permission::READ_ONLY));
+        assert!(flags.is_permission_granted(&Permission::WRITE_ONLY));
+        assert!(flags.is_permission_granted(&Permission::READ_WRITE));
     }
 
     #[test]
     fn test_flags_type_from_mode_type() {
-        let mode = Mode_type::READ_WRITE;
-        let flags: Flags_type = mode.into();
+        let mode = Mode::READ_WRITE;
+        let flags: Flags = mode.into();
         assert_eq!(flags.get_mode(), mode);
     }
 
     #[test]
     fn test_flags_type_into_u16() {
-        let mode = Mode_type::READ_WRITE;
-        let flags = Flags_type::new(mode, None, None);
+        let mode = Mode::READ_WRITE;
+        let flags = Flags::new(mode, None, None);
         let flags_u16: u16 = flags.into();
         assert_eq!(flags_u16, flags.0);
     }

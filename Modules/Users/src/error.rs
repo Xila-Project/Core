@@ -1,57 +1,57 @@
 use core::fmt::Display;
 
-pub type Result_type<T> = core::result::Result<T, Error_type>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-pub enum Error_type {
-    Duplicate_group_identifier,
-    Duplicate_group_name,
-    Duplicate_user_identifier,
-    Duplicate_user_name,
-    Invalid_group_identifier,
-    Invalid_user_identifier,
-    Too_many_groups,
-    Too_many_users,
-    Poisoned_lock,
-    Not_initialized,
-    Already_initialized,
+pub enum Error {
+    DuplicateGroupIdentifier,
+    DuplicateGroupName,
+    DuplicateUserIdentifier,
+    DuplicateUserName,
+    InvalidGroupIdentifier,
+    InvalidUserIdentifier,
+    TooManyGroups,
+    TooManyUsers,
+    PoisonedLock,
+    NotInitialized,
+    AlreadyInitialized,
 }
 
-impl Display for Error_type {
+impl Display for Error {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
-            Self::Duplicate_group_identifier => {
+            Self::DuplicateGroupIdentifier => {
                 write!(formatter, "Duplicate group identifier")
             }
-            Self::Duplicate_group_name => {
+            Self::DuplicateGroupName => {
                 write!(formatter, "Duplicate group name")
             }
-            Self::Duplicate_user_identifier => {
+            Self::DuplicateUserIdentifier => {
                 write!(formatter, "Duplicate user identifier")
             }
-            Self::Duplicate_user_name => {
+            Self::DuplicateUserName => {
                 write!(formatter, "Duplicate user name")
             }
-            Self::Invalid_group_identifier => {
+            Self::InvalidGroupIdentifier => {
                 write!(formatter, "Invalid group identifier")
             }
-            Self::Invalid_user_identifier => {
+            Self::InvalidUserIdentifier => {
                 write!(formatter, "Invalid user identifier")
             }
-            Self::Too_many_groups => {
+            Self::TooManyGroups => {
                 write!(formatter, "Too many groups")
             }
-            Self::Too_many_users => {
+            Self::TooManyUsers => {
                 write!(formatter, "Too many users")
             }
-            Self::Poisoned_lock => {
+            Self::PoisonedLock => {
                 write!(formatter, "Poisoned lock")
             }
-            Self::Not_initialized => {
+            Self::NotInitialized => {
                 write!(formatter, "Not initialized")
             }
-            Self::Already_initialized => {
+            Self::AlreadyInitialized => {
                 write!(formatter, "Already initialized")
             }
         }

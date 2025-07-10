@@ -1,5 +1,3 @@
-#![allow(non_camel_case_types)]
-
 extern crate alloc;
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
@@ -17,8 +15,8 @@ pub mod core;
 pub mod standard_library;
 
 //pub fn Mount_devices(
-//    Task: Task_identifier_type,
-//    Virtual_file_systems: &Virtual_file_system_type,
+//    Task: TaskIdentifier,
+//    Virtual_file_systems: &VirtualFileSystemType,
 //) -> Result<(), String> {
 //    #[cfg(target_vendor = "espressif")]
 //    Espressif::Mount_devices(Virtual_file_systems)?;

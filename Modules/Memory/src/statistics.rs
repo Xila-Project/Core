@@ -1,5 +1,5 @@
 #[derive(Debug, Clone)]
-pub struct Region_statistics_type {
+pub struct RegionStatistics {
     /// Total usable size of the heap region in bytes.
     pub size: usize,
 
@@ -11,9 +11,9 @@ pub struct Region_statistics_type {
 }
 
 #[derive(Debug)]
-pub struct Statistics_type {
+pub struct Statistics {
     /// Granular stats for all the configured memory regions.
-    region_stats: [Option<Region_statistics_type>; 3],
+    region_stats: [Option<RegionStatistics>; 3],
 
     /// Total size of all combined heap regions in bytes.
     size: usize,

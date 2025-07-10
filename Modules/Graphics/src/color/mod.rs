@@ -9,6 +9,6 @@ pub use rgb565::*;
 pub use rgb888::*;
 pub use rgba8888::*;
 
-pub type Color_type = Color_RGB888_type;
+pub type Color = ColorRGB888;
 
-pub type Rendering_color_type = Color_RGB565_type;
+pub type RenderingColor = ColorRGB565;

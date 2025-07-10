@@ -1,8 +1,8 @@
-use file_system::{Path_type, Virtual_file_system_type};
+use file_system::{Path_type, VirtualFileSystemType};
 
 use crate::Enumerate_pin_devices;
 
-use crate::Espressif::Shared::{self, Result_type};
+use crate::Espressif::Shared::{self, Result};
 
 // The ESP32-S3 chip features 45 physical GPIO pins:
 // - GPIO0 ~ GPIO21
@@ -12,6 +12,6 @@ const Pin_devices: [(u8, &Path_type); 45] = Enumerate_pin_devices!(
     30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48
 );
 
-pub fn Mount_pin_devices(Virtual_file_system: &Virtual_file_system_type) -> Result_type<()> {
+pub fn Mount_pin_devices(Virtual_file_system: &VirtualFileSystemType) -> Result<()> {
     Shared::Mount_pin_devices(Virtual_file_system, &Pin_devices)
 }

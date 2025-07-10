@@ -1,8 +1,8 @@
 pub(crate) use alloc::format;
 
-use crate::Shell_type;
+use crate::Shell;
 
-impl Shell_type {
+impl Shell {
     pub async fn set_environment_variable(&mut self, arguments: &[&str]) {
         if arguments.len() != 1 {
             self.standard

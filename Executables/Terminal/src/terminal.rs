@@ -1,37 +1,37 @@
 use alloc::string::String;
 
 use core::ffi::CStr;
-use file_system::Size_type;
-use graphics::{lvgl, Color_type, Event_code_type, Key_type, Window_type};
+use file_system::Size;
+use graphics::{lvgl, Color, EventKind, Key, Window};
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
-use crate::error::Result_type;
+use crate::error::Result;
 
-pub(crate) struct Inner_type {
-    window: Window_type,
+pub(crate) struct Inner {
+    window: Window,
     buffer: String,
     display: *mut lvgl::lv_obj_t,
     input: *mut lvgl::lv_obj_t,
     validated: Option<(&'static str, usize)>,
 }
 
-pub struct Terminal_type(pub(crate) RwLock<CriticalSectionRawMutex, Inner_type>);
+pub struct Terminal(pub(crate) RwLock<CriticalSectionRawMutex, Inner>);
 
-unsafe impl Send for Terminal_type {}
+unsafe impl Send for Terminal {}
 
-unsafe impl Sync for Terminal_type {}
+unsafe impl Sync for Terminal {}
 
-impl Terminal_type {
+impl Terminal {
     const CLEAR: &'static str = "\x1B[2J";
     const HOME: &'static str = "\x1B[H";
 
-    pub async fn new() -> Result_type<Self> {
+    pub async fn new() -> Result<Self> {
         let _lock = graphics::get_instance().lock().await;
 
         let mut window = graphics::get_instance().create_window().await?;
 
         unsafe {
-            window.set_icon(">_", Color_type::BLACK);
+            window.set_icon(">_", Color::BLACK);
 
             lvgl::lv_obj_set_flex_flow(
                 window.get_object(),
@@ -55,7 +55,7 @@ impl Terminal_type {
             let label = lvgl::lv_label_create(container);
 
             if label.is_null() {
-                return Err(crate::error::Error_type::Failed_to_create_object);
+                return Err(crate::error::Error::FailedToCreateObject);
             }
 
             lvgl::lv_obj_set_width(label, lvgl::lv_pct(100));
@@ -73,7 +73,7 @@ impl Terminal_type {
             let input = lvgl::lv_textarea_create(window.get_object());
 
             if input.is_null() {
-                return Err(crate::error::Error_type::Failed_to_create_object);
+                return Err(crate::error::Error::FailedToCreateObject);
             }
 
             lvgl::lv_textarea_set_placeholder_text(input, c"Enter your command ...".as_ptr());
@@ -83,7 +83,7 @@ impl Terminal_type {
             input
         };
 
-        let inner = Inner_type {
+        let inner = Inner {
             window,
             buffer,
             display,
@@ -94,7 +94,7 @@ impl Terminal_type {
         Ok(Self(RwLock::new(inner)))
     }
 
-    pub async fn print(&self, text: &str) -> Result_type<()> {
+    pub async fn print(&self, text: &str) -> Result<()> {
         let mut inner = self.0.write().await;
 
         Self::print_internal(&mut inner, text).await?;
@@ -102,7 +102,7 @@ impl Terminal_type {
         Ok(())
     }
 
-    async fn print_internal(inner: &mut Inner_type, text: &str) -> Result_type<()> {
+    async fn print_internal(inner: &mut Inner, text: &str) -> Result<()> {
         if !inner.buffer.is_empty() {
             let last_index = inner.buffer.len() - 1;
 
@@ -136,7 +136,7 @@ impl Terminal_type {
         Ok(())
     }
 
-    async fn print_line_internal(inner: &mut Inner_type, text: &str) -> Result_type<()> {
+    async fn print_line_internal(inner: &mut Inner, text: &str) -> Result<()> {
         if !inner.buffer.is_empty() {
             let last_index = inner.buffer.len() - 1;
 
@@ -163,12 +163,12 @@ impl Terminal_type {
         Ok(())
     }
 
-    pub async fn read_input(&self, buffer: &mut [u8]) -> Result_type<Size_type> {
+    pub async fn read_input(&self, buffer: &mut [u8]) -> Result<Size> {
         let mut inner = self.0.write().await;
 
         let (string, index) = match inner.validated.as_mut() {
             Some(validated) => validated,
-            None => return Ok(Size_type::new(0)),
+            None => return Ok(Size::new(0)),
         };
 
         if *index >= string.len() {
@@ -185,7 +185,7 @@ impl Terminal_type {
                 *byte = b'\n';
             }
 
-            return Ok(Size_type::new(1));
+            return Ok(Size::new(1));
         }
 
         let mut read = 0;
@@ -199,17 +199,17 @@ impl Terminal_type {
                 read += 1;
             });
 
-        Ok(Size_type::new(read))
+        Ok(Size::new(read))
     }
 
-    pub async fn event_handler(&self) -> Result_type<bool> {
+    pub async fn event_handler(&self) -> Result<bool> {
         let mut inner = self.0.write().await;
 
         while let Some(event) = inner.window.pop_event() {
             match event.get_code() {
-                Event_code_type::Delete => return Ok(false),
-                Event_code_type::Key => {
-                    if let Some(Key_type::Character(character)) = event.get_key() {
+                EventKind::Delete => return Ok(false),
+                EventKind::Key => {
+                    if let Some(Key::Character(character)) = event.get_key() {
                         if inner.validated.is_some() {
                             continue;
                         }

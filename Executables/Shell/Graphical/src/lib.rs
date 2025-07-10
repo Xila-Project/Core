@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 mod desk;
 mod error;
@@ -11,43 +10,43 @@ mod shortcut;
 
 extern crate alloc;
 
-use ::executable::Standard_type;
+use ::executable::Standard;
 use alloc::{boxed::Box, string::String, vec::Vec};
 use core::num::NonZeroUsize;
 use core::time::Duration;
-use file_system::Path_type;
-use home::Home_type;
-use layout::Layout_type;
-use login::Login_type;
+use file_system::Path;
+use home::HomeType;
+use layout::Layout;
+use login::Login;
 
-use crate::{desk::Desk_type, error::Error_type, shortcut::Shortcut_type};
+use crate::{desk::DeskType, error::Error, shortcut::ShortcutType};
 
-pub async fn main(standard: Standard_type, arguments: String) -> Result<(), NonZeroUsize> {
-    Shell_type::new(standard).await.main(arguments).await
+pub async fn main(standard: Standard, arguments: String) -> Result<(), NonZeroUsize> {
+    ShellType::new(standard).await.main(arguments).await
 }
 
-pub struct Shell_type {
-    _standard: Standard_type,
+pub struct ShellType {
+    _standard: Standard,
     running: bool,
-    layout: Layout_type,
-    desk: Option<Box<Desk_type>>,
-    _home: Option<Box<Home_type>>,
-    login: Option<Box<Login_type>>,
+    layout: Layout,
+    desk: Option<Box<DeskType>>,
+    _home: Option<Box<HomeType>>,
+    login: Option<Box<Login>>,
 }
 
-pub struct Shell_executable_type;
+pub struct ShellExecutableType;
 
-executable::Implement_executable_device!(
-    Structure: Shell_executable_type,
+executable::implement_executable_device!(
+    Structure: ShellExecutableType,
     Mount_path: "/Binaries/Graphical_shell",
     Main_function: main,
 );
 
-impl Shell_type {
-    pub async fn new(standard: Standard_type) -> Self {
-        let layout = Layout_type::new().await.unwrap();
+impl ShellType {
+    pub async fn new(standard: Standard) -> Self {
+        let layout = Layout::new().await.unwrap();
 
-        let login = Box::new(Login_type::new().await.unwrap());
+        let login = Box::new(Login::new().await.unwrap());
 
         Self {
             _standard: standard,
@@ -64,10 +63,10 @@ impl Shell_type {
 
         if arguments.first() == Some(&"add_shortcut") {
             if arguments.len() != 2 {
-                return Err(Error_type::Missing_arguments.into());
+                return Err(Error::MissingArguments.into());
             }
 
-            Shortcut_type::add(Path_type::from_str(arguments[1])).await?;
+            ShortcutType::add(Path::from_str(arguments[1])).await?;
         }
 
         while self.running {
@@ -86,15 +85,14 @@ impl Shell_type {
                             user_name.as_str(),
                         )
                         .await
-                        .map_err(Error_type::Failed_to_set_environment_variable)?;
+                        .map_err(Error::FailedToSetEnvironmentVariable)?;
 
                     self.desk = Some(Box::new(
-                        Desk_type::new(self.layout.get_windows_parent()).await?,
+                        DeskType::new(self.layout.get_windows_parent()).await?,
                     ));
 
                     if let Some(desk) = &mut self.desk {
-                        self._home =
-                            Some(Box::new(Home_type::new(desk.get_window_object()).await?));
+                        self._home = Some(Box::new(HomeType::new(desk.get_window_object()).await?));
                     }
 
                     self.login = None;
@@ -107,7 +105,7 @@ impl Shell_type {
                 }
             }
 
-            task::Manager_type::sleep(Duration::from_millis(20)).await;
+            task::Manager::sleep(Duration::from_millis(20)).await;
         }
 
         Ok(())

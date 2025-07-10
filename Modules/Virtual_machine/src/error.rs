@@ -3,13 +3,11 @@
 //! This module defines comprehensive error types that can occur during WASM module
 //! loading, compilation, instantiation, and execution.
 
-#![allow(non_camel_case_types)]
-
 use alloc::string::String;
 use wamr_rust_sdk::RuntimeError;
 
 /// Result type alias for Virtual Machine operations
-pub type Result_type<T> = core::result::Result<T, Error_type>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 /// Comprehensive error types for Virtual Machine operations
 ///
@@ -17,71 +15,71 @@ pub type Result_type<T> = core::result::Result<T, Error_type>;
 /// WASM module lifecycle operations, from loading to execution.
 #[derive(Debug)]
 #[repr(C)]
-pub enum Error_type {
+pub enum Error {
     /// Invalid pointer provided to a function
-    Invalid_pointer,
+    InvalidPointer,
 
     /// String contains invalid UTF-8 sequences
-    Invalid_UTF8_string,
+    InvalidUtf8String,
 
     /// Failed to convert between slice types
-    Slice_conversion_failed(shared::Error_type),
+    SliceConversionFailed(shared::Error),
 
     /// Requested functionality is not yet implemented
-    Not_implemented,
+    NotImplemented,
 
     /// WASM runtime initialization failed
-    Initialization_failure,
+    InitializationFailure,
 
     /// WASM module compilation failed with detailed error message
-    Compilation_error(String),
+    CompilationError(String),
 
     /// WASM module instantiation failed with detailed error message
-    Instantiation_failure(String),
+    InstantiationFailure(String),
 
     /// WASM function execution failed with detailed error message
-    Execution_error(String),
+    ExecutionError(String),
 
     /// Requested function was not found in the module
-    Function_not_found,
+    FunctionNotFound,
 
     /// Memory allocation failed
-    Allocation_failure,
+    AllocationFailure,
 
     /// Failed to retrieve task information
-    Failed_to_get_task_informations(task::Error_type),
+    FailedToGetTaskInformations(task::Error),
 
     /// Mutex or lock was poisoned
-    Poisoned_lock,
+    PoisonedLock,
 
     /// Invalid WASM module format or structure
-    Invalid_module,
+    InvalidModule,
 
     /// Internal runtime error
-    Internal_error,
+    InternalError,
 
     /// Invalid thread identifier provided
-    Invalid_thread_identifier,
+    InvalidThreadIdentifier,
 
     /// Time-related operation failed
-    Time(time::Error_type),
+    Time(time::Error),
 }
 
-impl From<RuntimeError> for Error_type {
+impl From<RuntimeError> for Error {
     fn from(error: RuntimeError) -> Self {
         match error {
-            RuntimeError::NotImplemented => Error_type::Not_implemented,
-            RuntimeError::InitializationFailure => Error_type::Initialization_failure,
-            RuntimeError::WasmFileFSError(_) => Error_type::Initialization_failure,
-            RuntimeError::CompilationError(e) => Error_type::Compilation_error(e),
-            RuntimeError::InstantiationFailure(e) => Error_type::Instantiation_failure(e),
-            RuntimeError::ExecutionError(e) => Error_type::Execution_error(e.message),
-            RuntimeError::FunctionNotFound => Error_type::Function_not_found,
+            RuntimeError::NotImplemented => Error::NotImplemented,
+            RuntimeError::InitializationFailure => Error::InitializationFailure,
+            RuntimeError::WasmFileFSError(_) => Error::InitializationFailure,
+            RuntimeError::CompilationError(e) => Error::CompilationError(e),
+            RuntimeError::InstantiationFailure(e) => Error::InstantiationFailure(e),
+            RuntimeError::ExecutionError(e) => Error::ExecutionError(e.message),
+            RuntimeError::FunctionNotFound => Error::FunctionNotFound,
         }
     }
 }
-impl From<task::Error_type> for Error_type {
-    fn from(error: task::Error_type) -> Self {
-        Error_type::Failed_to_get_task_informations(error)
+impl From<task::Error> for Error {
+    fn from(error: task::Error) -> Self {
+        Error::FailedToGetTaskInformations(error)
     }
 }

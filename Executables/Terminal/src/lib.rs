@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
@@ -12,49 +11,49 @@ pub use executable::*;
 
 use core::num::NonZeroUsize;
 
-use ::executable::Standard_type;
+use ::executable::Standard;
 use alloc::{
     string::{String, ToString},
     sync::Arc,
 };
-use file_system::{Device_type, Flags_type, Mode_type, Unique_file_identifier_type};
+use file_system::{DeviceType, Flags, Mode, UniqueFileIdentifier};
 use futures::yield_now;
-use task::Task_identifier_type;
+use task::TaskIdentifier;
 
-use crate::{error::Result_type, terminal::Terminal_type};
+use crate::{error::Result, terminal::Terminal};
 
 pub const SHORTCUT: &str = r#"
 {
-    "Name": "Terminal",
-    "Command": "/Binaries/Terminal",
-    "Arguments": "",
-    "Terminal": false,
-    "Icon_string": ">_",
-    "Icon_color": [0, 0, 0]
+    "name": "Terminal",
+    "command": "/Binaries/Terminal",
+    "arguments": "",
+    "terminal": false,
+    "icon_string": ">_",
+    "icon_color": [0, 0, 0]
 }"#;
 
 async fn mount_and_open(
-    task: Task_identifier_type,
-    terminal: Arc<Terminal_type>,
-) -> Result_type<(
-    Unique_file_identifier_type,
-    Unique_file_identifier_type,
-    Unique_file_identifier_type,
+    task: TaskIdentifier,
+    terminal: Arc<Terminal>,
+) -> Result<(
+    UniqueFileIdentifier,
+    UniqueFileIdentifier,
+    UniqueFileIdentifier,
 )> {
     virtual_file_system::get_instance()
-        .mount_device(task, &"/Devices/Terminal", Device_type::new(terminal))
+        .mount_device(task, &"/Devices/Terminal", DeviceType::new(terminal))
         .await?;
 
     let standard_in = virtual_file_system::get_instance()
         .open(
             &"/Devices/Terminal",
-            Flags_type::new(Mode_type::READ_ONLY, None, None),
+            Flags::new(Mode::READ_ONLY, None, None),
             task,
         )
         .await?;
 
     let standard_out = virtual_file_system::get_instance()
-        .open(&"/Devices/Terminal", Mode_type::WRITE_ONLY.into(), task)
+        .open(&"/Devices/Terminal", Mode::WRITE_ONLY.into(), task)
         .await?;
 
     let standard_error = virtual_file_system::get_instance()
@@ -64,15 +63,15 @@ async fn mount_and_open(
     Ok((standard_in, standard_out, standard_error))
 }
 
-async fn inner_main(task: Task_identifier_type) -> Result_type<()> {
-    let terminal = Terminal_type::new().await?;
+async fn inner_main(task: TaskIdentifier) -> Result<()> {
+    let terminal = Terminal::new().await?;
 
-    let terminal: Arc<Terminal_type> = Arc::new(terminal);
+    let terminal: Arc<Terminal> = Arc::new(terminal);
 
     let (standard_in, standard_out, standard_error) =
         mount_and_open(task, terminal.clone()).await?;
 
-    let standard = Standard_type::new(
+    let standard = Standard::new(
         standard_in,
         standard_out,
         standard_error,
@@ -89,7 +88,7 @@ async fn inner_main(task: Task_identifier_type) -> Result_type<()> {
     Ok(())
 }
 
-pub async fn main(standard: Standard_type, _: String) -> Result<(), NonZeroUsize> {
+pub async fn main(standard: Standard, _: String) -> core::result::Result<(), NonZeroUsize> {
     if let Err(error) = inner_main(standard.get_task()).await {
         standard.print_error(&error.to_string()).await;
         return Err(error.into());

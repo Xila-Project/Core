@@ -1,50 +1,55 @@
 use std::sync::OnceLock;
 
-use file_system::Device_type;
-use shared::Duration_type;
+use core::time::Duration;
+use file_system::DeviceType;
 
-use crate::{Error_type, Result_type};
+use crate::{Error, Result};
 
-pub static MANAGER: OnceLock<Manager_type> = OnceLock::new();
+pub static MANAGER: OnceLock<Manager> = OnceLock::new();
 
-pub fn get_instance() -> &'static Manager_type {
+pub fn get_instance() -> &'static Manager {
     MANAGER.get().expect("Time manager is not initialized")
 }
 
-pub fn initialize(driver: Device_type) -> Result_type<&'static Manager_type> {
-    MANAGER.get_or_init(|| Manager_type::new(driver).expect("Failed to initialize time manager"));
+pub fn initialize(driver: DeviceType) -> Result<&'static Manager> {
+    MANAGER.get_or_init(|| Manager::new(driver).expect("Failed to initialize time manager"));
 
     Ok(get_instance())
 }
 
-pub struct Manager_type {
-    device: Device_type,
-    start_time: Duration_type,
+pub struct Manager {
+    device: DeviceType,
+    start_time: Duration,
 }
 
-impl Manager_type {
-    pub fn new(device: Device_type) -> Result_type<Self> {
-        let mut start_time = Duration_type::default();
-
-        device
-            .read(start_time.as_mut())
-            .map_err(Error_type::Device_error)?;
+impl Manager {
+    pub fn new(device: DeviceType) -> Result<Self> {
+        let start_time = Self::get_current_time_from_device(&device)?;
 
         Ok(Self { device, start_time })
     }
 
-    pub fn get_current_time_since_startup(&self) -> Result_type<Duration_type> {
+    pub fn get_current_time_since_startup(&self) -> Result<Duration> {
         let current_time = self.get_current_time()?;
 
-        Ok(current_time.get_duration_since(&self.start_time))
+        Ok(current_time.abs_diff(self.start_time))
     }
 
-    pub fn get_current_time(&self) -> Result_type<Duration_type> {
-        let mut current_time = Duration_type::default();
+    pub fn get_current_time(&self) -> Result<Duration> {
+        Self::get_current_time_from_device(&self.device)
+    }
 
-        self.device
-            .read(current_time.as_mut())
-            .map_err(Error_type::Device_error)?;
+    fn get_current_time_from_device(device: &DeviceType) -> Result<Duration> {
+        let mut current_time = Duration::default();
+
+        let current_time_raw = unsafe {
+            core::slice::from_raw_parts_mut(
+                &mut current_time as *mut Duration as *mut u8,
+                core::mem::size_of::<Duration>(),
+            )
+        };
+
+        device.read(current_time_raw).map_err(Error::DeviceError)?;
 
         Ok(current_time)
     }

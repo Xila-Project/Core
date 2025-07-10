@@ -1,23 +1,21 @@
 use alloc::string::String;
 
-use file_system::{
-    File_identifier_type, Mode_type, Path_type, Size_type, Unique_file_identifier_type,
-};
+use file_system::{FileIdentifier, Mode, Path, Size, UniqueFileIdentifier};
 use futures::block_on;
-use task::Task_identifier_type;
-use virtual_file_system::Virtual_file_system_type;
+use task::TaskIdentifier;
+use virtual_file_system::VirtualFileSystemType;
 
-use crate::Result_type;
+use crate::Result;
 
-pub struct Standard_type {
-    standard_in: Unique_file_identifier_type,
-    standard_out: Unique_file_identifier_type,
-    standard_error: Unique_file_identifier_type,
-    task: Task_identifier_type,
-    virtual_file_system: &'static Virtual_file_system_type<'static>,
+pub struct Standard {
+    standard_in: UniqueFileIdentifier,
+    standard_out: UniqueFileIdentifier,
+    standard_error: UniqueFileIdentifier,
+    task: TaskIdentifier,
+    virtual_file_system: &'static VirtualFileSystemType<'static>,
 }
 
-impl Drop for Standard_type {
+impl Drop for Standard {
     fn drop(&mut self) {
         let _ = block_on(self.virtual_file_system.close(self.standard_in, self.task));
 
@@ -30,24 +28,24 @@ impl Drop for Standard_type {
     }
 }
 
-impl Standard_type {
+impl Standard {
     pub async fn open(
-        standard_in: &impl AsRef<Path_type>,
-        standard_out: &impl AsRef<Path_type>,
-        standard_error: &impl AsRef<Path_type>,
-        task: Task_identifier_type,
-        virtual_file_system: &'static Virtual_file_system_type<'static>,
-    ) -> Result_type<Self> {
+        standard_in: &impl AsRef<Path>,
+        standard_out: &impl AsRef<Path>,
+        standard_error: &impl AsRef<Path>,
+        task: TaskIdentifier,
+        virtual_file_system: &'static VirtualFileSystemType<'static>,
+    ) -> Result<Self> {
         let standard_in = virtual_file_system
-            .open(standard_in, Mode_type::READ_ONLY.into(), task)
+            .open(standard_in, Mode::READ_ONLY.into(), task)
             .await?;
 
         let standard_out = virtual_file_system
-            .open(standard_out, Mode_type::WRITE_ONLY.into(), task)
+            .open(standard_out, Mode::WRITE_ONLY.into(), task)
             .await?;
 
         let standard_error = virtual_file_system
-            .open(standard_error, Mode_type::WRITE_ONLY.into(), task)
+            .open(standard_error, Mode::WRITE_ONLY.into(), task)
             .await?;
 
         Ok(Self::new(
@@ -60,11 +58,11 @@ impl Standard_type {
     }
 
     pub fn new(
-        standard_in: Unique_file_identifier_type,
-        standard_out: Unique_file_identifier_type,
-        standard_error: Unique_file_identifier_type,
-        task: Task_identifier_type,
-        virtual_file_system: &'static Virtual_file_system_type,
+        standard_in: UniqueFileIdentifier,
+        standard_out: UniqueFileIdentifier,
+        standard_error: UniqueFileIdentifier,
+        task: TaskIdentifier,
+        virtual_file_system: &'static VirtualFileSystemType,
     ) -> Self {
         Self {
             standard_in,
@@ -89,7 +87,7 @@ impl Standard_type {
             .unwrap();
     }
 
-    pub async fn write(&self, data: &[u8]) -> Size_type {
+    pub async fn write(&self, data: &[u8]) -> Size {
         match self
             .virtual_file_system
             .write(self.standard_out, data, self.task)
@@ -126,11 +124,11 @@ impl Standard_type {
             .await;
     }
 
-    pub fn get_task(&self) -> Task_identifier_type {
+    pub fn get_task(&self) -> TaskIdentifier {
         self.task
     }
 
-    pub async fn duplicate(&self) -> Result_type<Self> {
+    pub async fn duplicate(&self) -> Result<Self> {
         let standard_in = self
             .virtual_file_system
             .duplicate_file_identifier(self.standard_in, self.task)
@@ -158,21 +156,21 @@ impl Standard_type {
     pub fn split(
         &self,
     ) -> (
-        Unique_file_identifier_type,
-        Unique_file_identifier_type,
-        Unique_file_identifier_type,
+        UniqueFileIdentifier,
+        UniqueFileIdentifier,
+        UniqueFileIdentifier,
     ) {
         (self.standard_in, self.standard_out, self.standard_error)
     }
 
-    pub(crate) async fn transfert(mut self, task: Task_identifier_type) -> Result_type<Self> {
+    pub(crate) async fn transfert(mut self, task: TaskIdentifier) -> Result<Self> {
         self.standard_in = self
             .virtual_file_system
             .transfert(
                 self.standard_in,
                 self.task,
                 task,
-                Some(File_identifier_type::STANDARD_IN),
+                Some(FileIdentifier::STANDARD_IN),
             )
             .await?;
 
@@ -182,7 +180,7 @@ impl Standard_type {
                 self.standard_out,
                 self.task,
                 task,
-                Some(File_identifier_type::STANDARD_OUT),
+                Some(FileIdentifier::STANDARD_OUT),
             )
             .await?;
 
@@ -192,7 +190,7 @@ impl Standard_type {
                 self.standard_error,
                 self.task,
                 task,
-                Some(File_identifier_type::STANDARD_ERROR),
+                Some(FileIdentifier::STANDARD_ERROR),
             )
             .await?;
 

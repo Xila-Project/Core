@@ -1,9 +1,9 @@
 use alloc::string::String;
 
-use crate::{error::Error_type, Result_type, Shell_type};
+use crate::{error::Error, Result, Shell};
 
-impl Shell_type {
-    pub async fn authenticate(&mut self) -> Result_type<String> {
+impl Shell {
+    pub async fn authenticate(&mut self) -> Result<String> {
         self.standard.print("Username: ").await;
         self.standard.out_flush().await;
 
@@ -23,7 +23,7 @@ impl Shell_type {
             &password,
         )
         .await
-        .map_err(Error_type::Authentication_failed)?;
+        .map_err(Error::AuthenticationFailed)?;
 
         // - Set the user
         let task_manager = task::get_instance();
@@ -33,12 +33,12 @@ impl Shell_type {
         task_manager
             .set_user(task, user_identifier)
             .await
-            .map_err(Error_type::Failed_to_set_task_user)?;
+            .map_err(Error::FailedToSetTaskUser)?;
 
         task_manager
             .set_environment_variable(task, "User", &user_name)
             .await
-            .map_err(Error_type::Failed_to_set_environment_variable)?;
+            .map_err(Error::FailedToSetEnvironmentVariable)?;
 
         Ok(user_name)
     }

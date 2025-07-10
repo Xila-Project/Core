@@ -1,8 +1,8 @@
-use crate::Xila_time_type;
+use crate::XilaTime;
 
-use super::Raw_mutex_type;
+use super::RawMutex;
 
-pub struct Xila_condition_variable;
+pub struct XilaConditionVariable;
 
 /// This function is used to create a condition variable.
 ///
@@ -10,8 +10,8 @@ pub struct Xila_condition_variable;
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_condition_variable_new(
-    _condition_variable: *mut Xila_condition_variable,
+pub unsafe extern "C" fn xila_condition_variable_new(
+    _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {
     todo!()
 }
@@ -22,8 +22,8 @@ pub unsafe extern "C" fn Xila_condition_variable_new(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_condition_variable_remove(
-    _condition_variable: *mut Xila_condition_variable,
+pub unsafe extern "C" fn xila_condition_variable_remove(
+    _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {
     todo!()
 }
@@ -34,9 +34,9 @@ pub unsafe extern "C" fn Xila_condition_variable_remove(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_condition_variable_wait(
-    _condition_variable: *mut Xila_condition_variable,
-    _mutex: *mut Raw_mutex_type,
+pub unsafe extern "C" fn xila_condition_variable_wait(
+    _condition_variable: *mut XilaConditionVariable,
+    _mutex: *mut RawMutex,
 ) -> u32 {
     todo!()
 }
@@ -47,10 +47,10 @@ pub unsafe extern "C" fn Xila_condition_variable_wait(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_condition_variable_try_wait(
-    _condition_variable: *mut Xila_condition_variable,
-    _mutex: *mut Raw_mutex_type,
-    _time: Xila_time_type,
+pub unsafe extern "C" fn xila_condition_variable_try_wait(
+    _condition_variable: *mut XilaConditionVariable,
+    _mutex: *mut RawMutex,
+    _time: XilaTime,
 ) -> u32 {
     todo!()
 }
@@ -61,8 +61,8 @@ pub unsafe extern "C" fn Xila_condition_variable_try_wait(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_condition_variable_signal(
-    _condition_variable: *mut Xila_condition_variable,
+pub unsafe extern "C" fn xila_condition_variable_signal(
+    _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {
     todo!()
 }
@@ -73,8 +73,8 @@ pub unsafe extern "C" fn Xila_condition_variable_signal(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_condition_variable_broadcast(
-    _condition_variable: *mut Xila_condition_variable,
+pub unsafe extern "C" fn xila_condition_variable_broadcast(
+    _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {
     todo!()
 }

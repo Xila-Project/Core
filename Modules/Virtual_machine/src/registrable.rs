@@ -1,8 +1,6 @@
-#![allow(non_camel_case_types)]
-
 use core::ffi::c_void;
 
-pub type Function_pointer = *mut c_void;
+pub type FunctionPointer = *mut c_void;
 
 #[macro_export]
 macro_rules! Function_descriptor {
@@ -23,12 +21,12 @@ macro_rules! Function_descriptors {
     };
 }
 
-pub struct Function_descriptor_type {
+pub struct FunctionDescriptor {
     pub name: &'static str,
-    pub pointer: Function_pointer,
+    pub pointer: FunctionPointer,
 }
-pub trait Registrable_trait {
-    fn get_functions(&self) -> &[Function_descriptor_type];
+pub trait Registrable {
+    fn get_functions(&self) -> &[FunctionDescriptor];
 
     fn is_xip(&self) -> bool {
         false

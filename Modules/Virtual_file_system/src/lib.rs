@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
@@ -18,4 +17,4 @@ pub use error::*;
 pub use file::*;
 pub use file_system::*;
 pub use hierarchy::*;
-pub use socket::Socket_address_type;
+pub use socket::SockerAddress;

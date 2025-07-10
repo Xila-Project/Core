@@ -1,7 +1,8 @@
-#![allow(non_camel_case_types)]
-
 use bindings_utilities::{
-    context::LVGL_context, enumeration, format::format_rust, function::split_inputs,
+    context::LvglContext,
+    enumeration,
+    format::{format_rust, snake_ident_to_upper_camel},
+    function::split_inputs,
 };
 use std::{fs::File, io::Write, path::Path};
 
@@ -9,10 +10,10 @@ use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::{FnArg, ItemFn, ReturnType, Signature, TypePath};
 
-use bindings_utilities::type_tree::Type_tree_type;
+use bindings_utilities::type_tree::TypeTreeType;
 
 fn generate_conversion_for_argument(
-    type_tree: &Type_tree_type,
+    type_tree: &TypeTreeType,
     argument: &FnArg,
 ) -> Result<TokenStream, String> {
     match argument {
@@ -28,7 +29,7 @@ fn generate_conversion_for_argument(
 
                             let #identifier = __pointer_table.get_native_pointer(
                                 __task,
-                                #identifier.try_into().map_err(|_| Error_type::Invalid_pointer)?
+                                #identifier.try_into().map_err(|_| Error::InvalidPointer)?
                             )?;
 
                         })
@@ -116,7 +117,7 @@ fn generate_conversion_for_output(r#return: &ReturnType) -> Result<Option<TokenS
                                 __current_result
                             );
 
-                            let __result : *mut WASM_pointer_type = convert_to_native_pointer(&__environment, __result)?;
+                            let __result : *mut WasmPointer = convert_to_native_pointer(&__environment, __result)?;
                         }
                     } else {
                         quote! {
@@ -124,7 +125,7 @@ fn generate_conversion_for_output(r#return: &ReturnType) -> Result<Option<TokenS
                                 __current_result as *mut core::ffi::c_void
                             );
 
-                            let __result : *mut WASM_pointer_type = convert_to_native_pointer(&__environment, __result)?;
+                            let __result : *mut WasmPointer = convert_to_native_pointer(&__environment, __result)?;
                         }
                     }
                 }
@@ -177,7 +178,7 @@ fn generate_call_argument(argument: &FnArg) -> Result<TokenStream, String> {
 }
 
 fn generate_function_call(
-    type_tree: &Type_tree_type,
+    type_tree: &TypeTreeType,
     function: &Signature,
 ) -> Result<TokenStream, String> {
     // - Get the inputs
@@ -210,6 +211,7 @@ fn generate_function_call(
 
     // - Get the function identifier
     let function_identifier = &function.ident;
+    let variant_identifier = snake_ident_to_upper_camel(&function.ident);
 
     // - Generate the return conversion if needed (let __result = __current_result;)
     let r#return = generate_conversion_for_output(&function.output)?;
@@ -232,10 +234,10 @@ fn generate_function_call(
     };
 
     Ok(quote! {
-        Function_calls_type::#function_identifier => {
+        FunctionCall::#variant_identifier => {
             // Check arguments count
             if __arguments_count != #arguments_count {
-                return Err(Error_type::Invalid_arguments_count);
+                return Err(Error::InvalidArgumentsCount);
             }
             // Assign arguments
             #(
@@ -253,7 +255,7 @@ fn generate_function_call(
 }
 
 pub fn generate_code(
-    type_tree: &Type_tree_type,
+    type_tree: &TypeTreeType,
     signatures: Vec<Signature>,
     definitions: Vec<ItemFn>,
 ) -> Result<TokenStream, String> {
@@ -268,21 +270,21 @@ pub fn generate_code(
         #[allow(unused_variables)]
         #[allow(clippy::too_many_arguments)]
         pub unsafe fn call_function(
-            __environment: Environment_type,
-            __pointer_table: &mut Pointer_table_type,
-            __function: Function_calls_type,
-            __argument_0: WASM_usize_type,
-            __argument_1: WASM_usize_type,
-            __argument_2: WASM_usize_type,
-            __argument_3: WASM_usize_type,
-            __argument_4: WASM_usize_type,
-            __argument_5: WASM_usize_type,
-            __argument_6: WASM_usize_type,
+            __environment: Environment,
+            __pointer_table: &mut PointerTable,
+            __function: FunctionCall,
+            __argument_0: WasmUsize,
+            __argument_1: WasmUsize,
+            __argument_2: WasmUsize,
+            __argument_3: WasmUsize,
+            __argument_4: WasmUsize,
+            __argument_5: WasmUsize,
+            __argument_6: WasmUsize,
             __arguments_count: u8,
-            __result: WASM_pointer_type,
-        ) -> Result_type<()>
+            __result: WasmPointer,
+        ) -> Result<()>
         {
-            let __custom_data = __environment.get_or_initialize_custom_data().map_err(|_| Error_type::Failed_to_get_environment)?;
+            let __custom_data = __environment.get_or_initialize_custom_data().map_err(|_| Error::EnvironmentRetrievalFailed)?;
             let __task = __custom_data.get_task_identifier();
 
             match __function {
@@ -299,7 +301,7 @@ pub fn generate_code(
     .to_token_stream())
 }
 
-pub fn generate(output_path: &Path, context: &LVGL_context) -> Result<(), String> {
+pub fn generate(output_path: &Path, context: &LvglContext) -> Result<(), String> {
     // Open the output fileoutput_path
     let output_file_path = output_path.join("Bindings.rs");
     let mut output_file = File::create(&output_file_path)

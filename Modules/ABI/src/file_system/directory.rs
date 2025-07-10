@@ -6,15 +6,14 @@ use core::{
     ptr::null_mut,
 };
 
-use file_system::Error_type;
+use file_system::Error;
 use futures::block_on;
 use virtual_file_system::get_instance as get_file_system_instance;
 
 use crate::context::get_instance as get_context_instance;
 
 use super::{
-    into_u32, Xila_file_system_inode_type, Xila_file_system_size_type, Xila_file_type_type,
-    Xila_unique_file_identifier_type,
+    into_u32, XilaFileKind, XilaFileSystemInode, XilaFileSystemSize, XilaUniqueFileIdentifier,
 };
 
 /// This function is used to open a directory.
@@ -23,18 +22,18 @@ use super::{
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_file_system_open_directory(
+pub unsafe extern "C" fn xila_file_system_open_directory(
     path: *const c_char,
-    directory: *mut Xila_unique_file_identifier_type,
+    directory: *mut XilaUniqueFileIdentifier,
 ) -> u32 {
     into_u32(move || {
         if path.is_null() || directory.is_null() {
-            Err(Error_type::Invalid_parameter)?;
+            Err(Error::InvalidParameter)?;
         }
 
         let path = CStr::from_ptr(path)
             .to_str()
-            .map_err(|_| Error_type::Invalid_parameter)?;
+            .map_err(|_| Error::InvalidParameter)?;
 
         let task = get_context_instance().get_current_task_identifier();
 
@@ -52,19 +51,19 @@ pub unsafe extern "C" fn Xila_file_system_open_directory(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_file_system_read_directory(
-    file: Xila_unique_file_identifier_type,
+pub unsafe extern "C" fn xila_file_system_read_directory(
+    file: XilaUniqueFileIdentifier,
     entry_name: *mut *const c_char,
-    entry_type: *mut Xila_file_type_type,
-    entry_size: *mut Xila_file_system_size_type,
-    entry_inode: *mut Xila_file_system_inode_type,
+    entry_type: *mut XilaFileKind,
+    entry_size: *mut XilaFileSystemSize,
+    entry_inode: *mut XilaFileSystemInode,
 ) -> u32 {
     into_u32(move || {
         let task = get_context_instance().get_current_task_identifier();
 
         Debug!("Reading directory {file:?} for task {task:?}");
 
-        let file = file_system::Unique_file_identifier_type::from_raw(file);
+        let file = file_system::UniqueFileIdentifier::from_raw(file);
 
         let entry = block_on(get_file_system_instance().read_directory(file, task))?;
 
@@ -82,13 +81,11 @@ pub unsafe extern "C" fn Xila_file_system_read_directory(
 }
 
 #[no_mangle]
-pub extern "C" fn Xila_file_system_close_directory(
-    directory: Xila_unique_file_identifier_type,
-) -> u32 {
+pub extern "C" fn xila_file_system_close_directory(directory: XilaUniqueFileIdentifier) -> u32 {
     into_u32(move || {
         let task = get_context_instance().get_current_task_identifier();
 
-        let directory = file_system::Unique_file_identifier_type::from_raw(directory);
+        let directory = file_system::UniqueFileIdentifier::from_raw(directory);
 
         Debug!("Closing directory {directory:?} for task {task:?}");
 
@@ -99,13 +96,11 @@ pub extern "C" fn Xila_file_system_close_directory(
 }
 
 #[no_mangle]
-pub extern "C" fn Xila_file_system_rewind_directory(
-    directory: Xila_unique_file_identifier_type,
-) -> u32 {
+pub extern "C" fn xila_file_system_rewind_directory(directory: XilaUniqueFileIdentifier) -> u32 {
     into_u32(move || {
         let task = get_context_instance().get_current_task_identifier();
 
-        let directory = file_system::Unique_file_identifier_type::from_raw(directory);
+        let directory = file_system::UniqueFileIdentifier::from_raw(directory);
 
         Debug!("Rewinding directory {directory:?} for task {task:?}");
 
@@ -116,14 +111,14 @@ pub extern "C" fn Xila_file_system_rewind_directory(
 }
 
 #[no_mangle]
-pub extern "C" fn Xila_file_system_directory_set_position(
-    directory: Xila_unique_file_identifier_type,
-    offset: Xila_file_system_size_type,
+pub extern "C" fn xila_file_system_directory_set_position(
+    directory: XilaUniqueFileIdentifier,
+    offset: XilaFileSystemSize,
 ) -> u32 {
     into_u32(move || {
         let task = get_context_instance().get_current_task_identifier();
 
-        let directory = file_system::Unique_file_identifier_type::from_raw(directory);
+        let directory = file_system::UniqueFileIdentifier::from_raw(directory);
 
         Debug!("Setting position in directory {directory:?} to offset {offset} for task {task:?}");
 
@@ -139,33 +134,29 @@ pub extern "C" fn Xila_file_system_directory_set_position(
 
 #[cfg(test)]
 mod tests {
+    extern crate std;
 
     use super::*;
     use crate::context::get_instance as get_context_instance;
     use alloc::{ffi::CString, format, vec::Vec};
-    use file_system::{
-        create_device, Create_file_system, Memory_device_type, Mode_type, Open_type,
-        Path_owned_type,
-    };
-    use task::{Task_identifier_type, Test};
-    use virtual_file_system::Virtual_file_system_type;
+    use file_system::{create_device, Create_file_system, MemoryDeviceType, Mode, Open, PathOwned};
+    use task::{test, TaskIdentifier};
+    use virtual_file_system::VirtualFileSystemType;
 
-    async fn initialize_test_environment() -> (
-        Task_identifier_type,
-        &'static Virtual_file_system_type<'static>,
-    ) {
+    async fn initialize_test_environment(
+    ) -> (TaskIdentifier, &'static VirtualFileSystemType<'static>) {
         let _ = users::initialize();
 
-        let _ = time::initialize(create_device!(drivers::native::Time_driver_type::new()));
+        let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
 
         let task = task::get_instance().get_current_task_identifier().await;
 
-        let device = create_device!(Memory_device_type::<512>::new(1024 * 512));
+        let device = create_device!(MemoryDeviceType::<512>::new(1024 * 512));
 
         let cache_size = 256;
 
-        little_fs::File_system_type::format(device.clone(), cache_size).unwrap();
-        let file_system = little_fs::File_system_type::new(device, cache_size).unwrap();
+        little_fs::FileSystem::format(device.clone(), cache_size).unwrap();
+        let file_system = little_fs::FileSystem::new(device, cache_size).unwrap();
 
         let virtual_file_system =
             virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
@@ -173,7 +164,7 @@ mod tests {
         (task, virtual_file_system)
     }
 
-    #[Test]
+    #[test]
     async fn test_null_pointer_handling() {
         // Test that functions properly handle null pointers and return appropriate error codes
         let (_task, _vfs) = initialize_test_environment().await;
@@ -181,19 +172,19 @@ mod tests {
         let context = get_context_instance();
 
         // Test open directory with null path
-        let mut directory_id: Xila_unique_file_identifier_type = 0;
+        let mut directory_id: XilaUniqueFileIdentifier = 0;
         let result = context
             .call_abi(async || unsafe {
-                Xila_file_system_open_directory(core::ptr::null(), &mut directory_id)
+                xila_file_system_open_directory(core::ptr::null(), &mut directory_id)
             })
             .await;
         assert_ne!(result, 0, "Opening directory with null path should fail");
 
         // Test read directory with null output pointers
-        let invalid_handle: Xila_unique_file_identifier_type = 999999;
+        let invalid_handle: XilaUniqueFileIdentifier = 999999;
         let result = context
             .call_abi(async || unsafe {
-                Xila_file_system_read_directory(
+                xila_file_system_read_directory(
                     invalid_handle,
                     core::ptr::null_mut(),
                     core::ptr::null_mut(),
@@ -208,28 +199,28 @@ mod tests {
         );
     }
 
-    #[Test]
+    #[test]
     async fn test_invalid_handle_operations() {
         initialize_test_environment().await; // Ensure the test environment is initialized
                                              // Test operations on invalid directory handles
-        let invalid_handle: Xila_unique_file_identifier_type = 999999;
+        let invalid_handle: XilaUniqueFileIdentifier = 999999;
         let context = get_context_instance();
 
         // Test close with invalid handle
         let result = context
-            .call_abi(|| async { Xila_file_system_close_directory(invalid_handle) })
+            .call_abi(|| async { xila_file_system_close_directory(invalid_handle) })
             .await;
         assert_ne!(result, 0, "Closing invalid directory handle should fail");
 
         // Test rewind with invalid handle
         let result = context
-            .call_abi(|| async { Xila_file_system_rewind_directory(invalid_handle) })
+            .call_abi(|| async { xila_file_system_rewind_directory(invalid_handle) })
             .await;
         assert_ne!(result, 0, "Rewinding invalid directory handle should fail");
 
         // Test set position with invalid handle
         let result = context
-            .call_abi(|| async { Xila_file_system_directory_set_position(invalid_handle, 0) })
+            .call_abi(|| async { xila_file_system_directory_set_position(invalid_handle, 0) })
             .await;
         assert_ne!(
             result, 0,
@@ -237,22 +228,22 @@ mod tests {
         );
     }
 
-    #[Test]
+    #[test]
     async fn test_read_directory_parameter_validation() {
         initialize_test_environment().await; // Ensure the test environment is initialized
 
         // Test that read directory validates its parameters properly
-        let invalid_handle: Xila_unique_file_identifier_type = 0;
+        let invalid_handle: XilaUniqueFileIdentifier = 0;
         let mut entry_name: *const c_char = core::ptr::null();
-        let mut entry_type: Xila_file_type_type = Xila_file_type_type::File;
-        let mut entry_size: Xila_file_system_size_type = 0;
-        let mut entry_inode: Xila_file_system_inode_type = 0;
+        let mut entry_type: XilaFileKind = XilaFileKind::File;
+        let mut entry_size: XilaFileSystemSize = 0;
+        let mut entry_inode: XilaFileSystemInode = 0;
         let context = get_context_instance();
 
         // Test with invalid handle but valid output pointers
         let result = context
             .call_abi(async || unsafe {
-                Xila_file_system_read_directory(
+                xila_file_system_read_directory(
                     invalid_handle,
                     &mut entry_name,
                     &mut entry_type,
@@ -264,17 +255,17 @@ mod tests {
         assert_ne!(result, 0, "Reading from invalid handle should fail");
     }
 
-    #[Test]
+    #[test]
     async fn test_set_position_boundary_values() {
         initialize_test_environment().await; // Ensure the test environment is initialized
                                              // Test set position with boundary values
-        let invalid_handle: Xila_unique_file_identifier_type = 999999;
+        let invalid_handle: XilaUniqueFileIdentifier = 999999;
         let context = get_context_instance();
 
         // Test with maximum value
         let result = context
             .call_abi(|| async {
-                Xila_file_system_directory_set_position(invalid_handle, u64::MAX)
+                xila_file_system_directory_set_position(invalid_handle, u64::MAX)
             })
             .await;
         assert_ne!(
@@ -284,7 +275,7 @@ mod tests {
 
         // Test with zero value
         let result = context
-            .call_abi(|| async { Xila_file_system_directory_set_position(invalid_handle, 0) })
+            .call_abi(|| async { xila_file_system_directory_set_position(invalid_handle, 0) })
             .await;
         assert_ne!(
             result, 0,
@@ -292,17 +283,17 @@ mod tests {
         );
     }
 
-    #[Test]
+    #[test]
     async fn test_open_directory_valid_path() {
         let (_task, _vfs) = initialize_test_environment().await;
         let context = get_context_instance();
 
         let path = CString::new("/").unwrap();
-        let mut directory_id: Xila_unique_file_identifier_type = 0;
+        let mut directory_id: XilaUniqueFileIdentifier = 0;
 
         let result = context
             .call_abi(async || unsafe {
-                Xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
+                xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
             })
             .await;
         assert_eq!(result, 0, "Opening root directory should succeed");
@@ -310,45 +301,45 @@ mod tests {
 
         // Clean up
         let close_result = context
-            .call_abi(|| async { Xila_file_system_close_directory(directory_id) })
+            .call_abi(|| async { xila_file_system_close_directory(directory_id) })
             .await;
         assert_eq!(close_result, 0, "Closing directory should succeed");
     }
 
-    #[Test]
+    #[test]
     async fn test_open_directory_invalid_path() {
         let (_task, _vfs) = initialize_test_environment().await;
         let context = get_context_instance();
 
         let path = CString::new("/nonexistent").unwrap();
-        let mut directory_id: Xila_unique_file_identifier_type = 0;
+        let mut directory_id: XilaUniqueFileIdentifier = 0;
 
         let result = context
             .call_abi(async || unsafe {
-                Xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
+                xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
             })
             .await;
 
         assert_ne!(result, 0, "Opening nonexistent directory should fail");
     }
 
-    #[Test]
+    #[test]
     async fn test_open_directory_null_path() {
         let (_task, _vfs) = initialize_test_environment().await;
         let context = get_context_instance();
 
-        let mut directory_id: Xila_unique_file_identifier_type = 0;
+        let mut directory_id: XilaUniqueFileIdentifier = 0;
 
         let result = context
             .call_abi(async || unsafe {
-                Xila_file_system_open_directory(core::ptr::null(), &mut directory_id)
+                xila_file_system_open_directory(core::ptr::null(), &mut directory_id)
             })
             .await;
 
         assert_ne!(result, 0, "Opening directory with null path should fail");
     }
 
-    #[Test]
+    #[test]
     async fn test_read_directory_entries() {
         let (_task, vfs) = initialize_test_environment().await;
         let task = _task;
@@ -362,11 +353,7 @@ mod tests {
         let test_file = vfs
             .open(
                 &"/test_read_directory_entries.txt",
-                file_system::Flags_type::new(
-                    Mode_type::WRITE_ONLY,
-                    Some(Open_type::CREATE_ONLY),
-                    None,
-                ),
+                file_system::Flags::new(Mode::WRITE_ONLY, Some(Open::CREATE_ONLY), None),
                 task,
             )
             .await
@@ -375,11 +362,11 @@ mod tests {
 
         // Open root directory
         let path = CString::new("/").unwrap();
-        let mut directory_id: Xila_unique_file_identifier_type = 0;
+        let mut directory_id: XilaUniqueFileIdentifier = 0;
 
         let open_result = context
             .call_abi(async || unsafe {
-                Xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
+                xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
             })
             .await;
         assert_eq!(open_result, 0, "Opening root directory should succeed");
@@ -391,13 +378,13 @@ mod tests {
         // Read all entries
         loop {
             let mut entry_name: *const c_char = core::ptr::null();
-            let mut entry_type: Xila_file_type_type = Xila_file_type_type::File;
-            let mut entry_size: Xila_file_system_size_type = 0;
-            let mut entry_inode: Xila_file_system_inode_type = 0;
+            let mut entry_type: XilaFileKind = XilaFileKind::File;
+            let mut entry_size: XilaFileSystemSize = 0;
+            let mut entry_inode: XilaFileSystemInode = 0;
 
             let read_result = context
                 .call_abi(async || unsafe {
-                    Xila_file_system_read_directory(
+                    xila_file_system_read_directory(
                         directory_id,
                         &mut entry_name,
                         &mut entry_type,
@@ -437,25 +424,25 @@ mod tests {
 
         // Clean up
         let close_result = context
-            .call_abi(|| async { Xila_file_system_close_directory(directory_id) })
+            .call_abi(|| async { xila_file_system_close_directory(directory_id) })
             .await;
         assert_eq!(close_result, 0, "Closing directory should succeed");
     }
 
-    #[Test]
+    #[test]
     async fn test_read_directory_invalid_handle() {
         let (_task, _vfs) = initialize_test_environment().await;
         let context = get_context_instance();
 
-        let invalid_directory_id: Xila_unique_file_identifier_type = 999999;
+        let invalid_directory_id: XilaUniqueFileIdentifier = 999999;
         let mut entry_name: *const c_char = core::ptr::null();
-        let mut entry_type: Xila_file_type_type = Xila_file_type_type::File;
-        let mut entry_size: Xila_file_system_size_type = 0;
-        let mut entry_inode: Xila_file_system_inode_type = 0;
+        let mut entry_type: XilaFileKind = XilaFileKind::File;
+        let mut entry_size: XilaFileSystemSize = 0;
+        let mut entry_inode: XilaFileSystemInode = 0;
 
         let result = context
             .call_abi(async || unsafe {
-                Xila_file_system_read_directory(
+                xila_file_system_read_directory(
                     invalid_directory_id,
                     &mut entry_name,
                     &mut entry_type,
@@ -471,43 +458,43 @@ mod tests {
         );
     }
 
-    #[Test]
+    #[test]
     async fn test_close_directory_valid_handle() {
         let (_task, _vfs) = initialize_test_environment().await;
         let context = get_context_instance();
 
         let path = CString::new("/").unwrap();
-        let mut directory_id: Xila_unique_file_identifier_type = 0;
+        let mut directory_id: XilaUniqueFileIdentifier = 0;
 
         // Open directory
         let open_result = context
             .call_abi(async || unsafe {
-                Xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
+                xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
             })
             .await;
         assert_eq!(open_result, 0, "Opening directory should succeed");
 
         // Close directory
         let close_result = context
-            .call_abi(|| async { Xila_file_system_close_directory(directory_id) })
+            .call_abi(|| async { xila_file_system_close_directory(directory_id) })
             .await;
         assert_eq!(close_result, 0, "Closing directory should succeed");
     }
 
-    #[Test]
+    #[test]
     async fn test_close_directory_invalid_handle() {
         let (_task, _vfs) = initialize_test_environment().await;
         let context = get_context_instance();
 
-        let invalid_directory_id: Xila_unique_file_identifier_type = 999999;
+        let invalid_directory_id: XilaUniqueFileIdentifier = 999999;
 
         let result = context
-            .call_abi(|| async { Xila_file_system_close_directory(invalid_directory_id) })
+            .call_abi(|| async { xila_file_system_close_directory(invalid_directory_id) })
             .await;
         assert_ne!(result, 0, "Closing invalid directory handle should fail");
     }
 
-    #[Test]
+    #[test]
     async fn test_rewind_directory() {
         let (_task, vfs) = initialize_test_environment().await;
         let task = _task;
@@ -519,12 +506,8 @@ mod tests {
 
             let test_file = vfs
                 .open(
-                    &Path_owned_type::new(path).unwrap(),
-                    file_system::Flags_type::new(
-                        Mode_type::WRITE_ONLY,
-                        Some(Open_type::CREATE_ONLY),
-                        None,
-                    ),
+                    &PathOwned::new(path).unwrap(),
+                    file_system::Flags::new(Mode::WRITE_ONLY, Some(Open::CREATE_ONLY), None),
                     task,
                 )
                 .await
@@ -534,11 +517,11 @@ mod tests {
 
         // Open directory
         let path = CString::new("/").unwrap();
-        let mut directory_id: Xila_unique_file_identifier_type = 0;
+        let mut directory_id: XilaUniqueFileIdentifier = 0;
 
         let open_result = context
             .call_abi(async || unsafe {
-                Xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
+                xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
             })
             .await;
         assert_eq!(open_result, 0, "Opening directory should succeed");
@@ -546,13 +529,13 @@ mod tests {
         // Read a few entries
         for _ in 0..2 {
             let mut entry_name: *const c_char = core::ptr::null();
-            let mut entry_type: Xila_file_type_type = Xila_file_type_type::File;
-            let mut entry_size: Xila_file_system_size_type = 0;
-            let mut entry_inode: Xila_file_system_inode_type = 0;
+            let mut entry_type: XilaFileKind = XilaFileKind::File;
+            let mut entry_size: XilaFileSystemSize = 0;
+            let mut entry_inode: XilaFileSystemInode = 0;
 
             let read_result = context
                 .call_abi(async || unsafe {
-                    Xila_file_system_read_directory(
+                    xila_file_system_read_directory(
                         directory_id,
                         &mut entry_name,
                         &mut entry_type,
@@ -572,19 +555,19 @@ mod tests {
 
         // Rewind directory
         let rewind_result = context
-            .call_abi(|| async { Xila_file_system_rewind_directory(directory_id) })
+            .call_abi(|| async { xila_file_system_rewind_directory(directory_id) })
             .await;
         assert_eq!(rewind_result, 0, "Rewinding directory should succeed");
 
         // Read first entry again - should be "."
         let mut entry_name: *const c_char = core::ptr::null();
-        let mut entry_type: Xila_file_type_type = Xila_file_type_type::File;
-        let mut entry_size: Xila_file_system_size_type = 0;
-        let mut entry_inode: Xila_file_system_inode_type = 0;
+        let mut entry_type: XilaFileKind = XilaFileKind::File;
+        let mut entry_size: XilaFileSystemSize = 0;
+        let mut entry_inode: XilaFileSystemInode = 0;
 
         let read_result = context
             .call_abi(async || unsafe {
-                Xila_file_system_read_directory(
+                xila_file_system_read_directory(
                     directory_id,
                     &mut entry_name,
                     &mut entry_type,
@@ -611,25 +594,25 @@ mod tests {
 
         // Clean up
         let close_result = context
-            .call_abi(|| async { Xila_file_system_close_directory(directory_id) })
+            .call_abi(|| async { xila_file_system_close_directory(directory_id) })
             .await;
         assert_eq!(close_result, 0, "Closing directory should succeed");
     }
 
-    #[Test]
+    #[test]
     async fn test_rewind_directory_invalid_handle() {
         let (_task, _vfs) = initialize_test_environment().await;
         let context = get_context_instance();
 
-        let invalid_directory_id: Xila_unique_file_identifier_type = 999999;
+        let invalid_directory_id: XilaUniqueFileIdentifier = 999999;
 
         let result = context
-            .call_abi(|| async { Xila_file_system_rewind_directory(invalid_directory_id) })
+            .call_abi(|| async { xila_file_system_rewind_directory(invalid_directory_id) })
             .await;
         assert_ne!(result, 0, "Rewinding invalid directory handle should fail");
     }
 
-    #[Test]
+    #[test]
     async fn test_directory_set_position() {
         let (_task, vfs) = initialize_test_environment().await;
         let task = _task;
@@ -641,12 +624,8 @@ mod tests {
 
             let test_file = vfs
                 .open(
-                    &Path_owned_type::new(path).unwrap(),
-                    file_system::Flags_type::new(
-                        Mode_type::WRITE_ONLY,
-                        Some(Open_type::CREATE_ONLY),
-                        None,
-                    ),
+                    &PathOwned::new(path).unwrap(),
+                    file_system::Flags::new(Mode::WRITE_ONLY, Some(Open::CREATE_ONLY), None),
                     task,
                 )
                 .await
@@ -656,11 +635,11 @@ mod tests {
 
         // Open directory
         let path = CString::new("/").unwrap();
-        let mut directory_id: Xila_unique_file_identifier_type = 0;
+        let mut directory_id: XilaUniqueFileIdentifier = 0;
 
         let open_result = context
             .call_abi(async || unsafe {
-                Xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
+                xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
             })
             .await;
         assert_eq!(open_result, 0, "Opening directory should succeed");
@@ -668,13 +647,13 @@ mod tests {
         // Read a few entries to advance position
         for _ in 0..3 {
             let mut entry_name: *const c_char = core::ptr::null();
-            let mut entry_type: Xila_file_type_type = Xila_file_type_type::File;
-            let mut entry_size: Xila_file_system_size_type = 0;
-            let mut entry_inode: Xila_file_system_inode_type = 0;
+            let mut entry_type: XilaFileKind = XilaFileKind::File;
+            let mut entry_size: XilaFileSystemSize = 0;
+            let mut entry_inode: XilaFileSystemInode = 0;
 
             let read_result = context
                 .call_abi(async || unsafe {
-                    Xila_file_system_read_directory(
+                    xila_file_system_read_directory(
                         directory_id,
                         &mut entry_name,
                         &mut entry_type,
@@ -694,7 +673,7 @@ mod tests {
 
         // Set position back to start
         let set_position_result = context
-            .call_abi(|| async { Xila_file_system_directory_set_position(directory_id, 0) })
+            .call_abi(|| async { xila_file_system_directory_set_position(directory_id, 0) })
             .await;
         assert_eq!(
             set_position_result, 0,
@@ -703,13 +682,13 @@ mod tests {
 
         // Read first entry - should be "." again
         let mut entry_name: *const c_char = core::ptr::null();
-        let mut entry_type: Xila_file_type_type = Xila_file_type_type::File;
-        let mut entry_size: Xila_file_system_size_type = 0;
-        let mut entry_inode: Xila_file_system_inode_type = 0;
+        let mut entry_type: XilaFileKind = XilaFileKind::File;
+        let mut entry_size: XilaFileSystemSize = 0;
+        let mut entry_inode: XilaFileSystemInode = 0;
 
         let read_result = context
             .call_abi(async || unsafe {
-                Xila_file_system_read_directory(
+                xila_file_system_read_directory(
                     directory_id,
                     &mut entry_name,
                     &mut entry_type,
@@ -736,20 +715,20 @@ mod tests {
 
         // Clean up
         let close_result = context
-            .call_abi(|| async { Xila_file_system_close_directory(directory_id) })
+            .call_abi(|| async { xila_file_system_close_directory(directory_id) })
             .await;
         assert_eq!(close_result, 0, "Closing directory should succeed");
     }
 
-    #[Test]
+    #[test]
     async fn test_directory_set_position_invalid_handle() {
         let (_task, _vfs) = initialize_test_environment().await;
         let context = get_context_instance();
 
-        let invalid_directory_id: Xila_unique_file_identifier_type = 999999;
+        let invalid_directory_id: XilaUniqueFileIdentifier = 999999;
 
         let result = context
-            .call_abi(|| async { Xila_file_system_directory_set_position(invalid_directory_id, 0) })
+            .call_abi(|| async { xila_file_system_directory_set_position(invalid_directory_id, 0) })
             .await;
         assert_ne!(
             result, 0,
@@ -757,7 +736,7 @@ mod tests {
         );
     }
 
-    #[Test]
+    #[test]
     async fn test_directory_operations_sequence() {
         let (_task, vfs) = initialize_test_environment().await;
         let task = _task;
@@ -772,11 +751,7 @@ mod tests {
         let test_file = vfs
             .open(
                 &"/test_dir/file.txt",
-                file_system::Flags_type::new(
-                    Mode_type::WRITE_ONLY,
-                    Some(Open_type::CREATE_ONLY),
-                    None,
-                ),
+                file_system::Flags::new(Mode::WRITE_ONLY, Some(Open::CREATE_ONLY), None),
                 task,
             )
             .await
@@ -785,11 +760,11 @@ mod tests {
 
         // Test opening the created directory
         let path = CString::new("/test_dir").unwrap();
-        let mut directory_id: Xila_unique_file_identifier_type = 0;
+        let mut directory_id: XilaUniqueFileIdentifier = 0;
 
         let open_result = context
             .call_abi(async || unsafe {
-                Xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
+                xila_file_system_open_directory(path.as_ptr(), &mut directory_id)
             })
             .await;
         assert_eq!(open_result, 0, "Opening test directory should succeed");
@@ -798,13 +773,13 @@ mod tests {
         let mut entry_count = 0;
         loop {
             let mut entry_name: *const c_char = core::ptr::null();
-            let mut entry_type: Xila_file_type_type = Xila_file_type_type::File;
-            let mut entry_size: Xila_file_system_size_type = 0;
-            let mut entry_inode: Xila_file_system_inode_type = 0;
+            let mut entry_type: XilaFileKind = XilaFileKind::File;
+            let mut entry_size: XilaFileSystemSize = 0;
+            let mut entry_inode: XilaFileSystemInode = 0;
 
             let read_result = context
                 .call_abi(async || unsafe {
-                    Xila_file_system_read_directory(
+                    xila_file_system_read_directory(
                         directory_id,
                         &mut entry_name,
                         &mut entry_type,
@@ -833,20 +808,20 @@ mod tests {
 
         // Test rewind and count again
         let rewind_result = context
-            .call_abi(|| async { Xila_file_system_rewind_directory(directory_id) })
+            .call_abi(|| async { xila_file_system_rewind_directory(directory_id) })
             .await;
         assert_eq!(rewind_result, 0, "Rewinding directory should succeed");
 
         let mut rewind_count = 0;
         loop {
             let mut entry_name: *const c_char = core::ptr::null();
-            let mut entry_type: Xila_file_type_type = Xila_file_type_type::File;
-            let mut entry_size: Xila_file_system_size_type = 0;
-            let mut entry_inode: Xila_file_system_inode_type = 0;
+            let mut entry_type: XilaFileKind = XilaFileKind::File;
+            let mut entry_size: XilaFileSystemSize = 0;
+            let mut entry_inode: XilaFileSystemInode = 0;
 
             let read_result = context
                 .call_abi(async || unsafe {
-                    Xila_file_system_read_directory(
+                    xila_file_system_read_directory(
                         directory_id,
                         &mut entry_name,
                         &mut entry_type,
@@ -877,24 +852,24 @@ mod tests {
 
         // Clean up
         let close_result = context
-            .call_abi(|| async { Xila_file_system_close_directory(directory_id) })
+            .call_abi(|| async { xila_file_system_close_directory(directory_id) })
             .await;
         assert_eq!(close_result, 0, "Closing directory should succeed");
     }
 
-    #[Test]
+    #[test]
     async fn test_directory_operations_error_handling() {
         initialize_test_environment().await;
 
         let context = get_context_instance();
 
         // Test null pointer handling
-        let mut directory_id: Xila_unique_file_identifier_type = 0;
+        let mut directory_id: XilaUniqueFileIdentifier = 0;
 
         // Test with null path
         let result = context
             .call_abi(async || unsafe {
-                Xila_file_system_open_directory(core::ptr::null(), &mut directory_id)
+                xila_file_system_open_directory(core::ptr::null(), &mut directory_id)
             })
             .await;
         assert_ne!(result, 0, "Null path should cause error");
@@ -903,28 +878,28 @@ mod tests {
         let invalid_handle = 0usize;
 
         let close_result = context
-            .call_abi(|| async { Xila_file_system_close_directory(invalid_handle) })
+            .call_abi(|| async { xila_file_system_close_directory(invalid_handle) })
             .await;
         assert_ne!(close_result, 0, "Invalid close should fail");
 
         let rewind_result = context
-            .call_abi(|| async { Xila_file_system_rewind_directory(invalid_handle) })
+            .call_abi(|| async { xila_file_system_rewind_directory(invalid_handle) })
             .await;
         assert_ne!(rewind_result, 0, "Invalid rewind should fail");
 
         let set_pos_result = context
-            .call_abi(|| async { Xila_file_system_directory_set_position(invalid_handle, 0) })
+            .call_abi(|| async { xila_file_system_directory_set_position(invalid_handle, 0) })
             .await;
         assert_ne!(set_pos_result, 0, "Invalid set position should fail");
 
         let mut entry_name: *const c_char = core::ptr::null();
-        let mut entry_type: Xila_file_type_type = Xila_file_type_type::File;
-        let mut entry_size: Xila_file_system_size_type = 0;
-        let mut entry_inode: Xila_file_system_inode_type = 0;
+        let mut entry_type: XilaFileKind = XilaFileKind::File;
+        let mut entry_size: XilaFileSystemSize = 0;
+        let mut entry_inode: XilaFileSystemInode = 0;
 
         let read_result = context
             .call_abi(async || unsafe {
-                Xila_file_system_read_directory(
+                xila_file_system_read_directory(
                     invalid_handle,
                     &mut entry_name,
                     &mut entry_type,

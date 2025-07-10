@@ -1,30 +1,29 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
 use alloc::string::ToString;
-use command_line_shell::Shell_executable_type;
-use executable::{Mount_static_executables, Standard_type};
-use file_system::{create_device, Create_file_system, Memory_device_type, Mode_type};
-use task::Test;
-use users::Group_identifier_type;
+use command_line_shell::ShellExecutable;
+use executable::{mount_static_executables, Standard};
+use file_system::{create_device, Create_file_system, MemoryDeviceType, Mode};
+use task::test;
+use users::GroupIdentifier;
 use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
 
 #[ignore]
-#[Test]
+#[test]
 async fn integration_test() {
     let task_instance = task::initialize();
 
     let _ = users::initialize();
 
-    let _ = time::initialize(create_device!(drivers::native::Time_driver_type::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
 
-    let memory_device = create_device!(Memory_device_type::<512>::new(1024 * 512));
+    let memory_device = create_device!(MemoryDeviceType::<512>::new(1024 * 512));
 
-    little_fs::File_system_type::format(memory_device.clone(), 256).unwrap();
+    little_fs::FileSystem::format(memory_device.clone(), 256).unwrap();
 
-    let file_system = little_fs::File_system_type::new(memory_device, 256).unwrap();
+    let file_system = little_fs::FileSystem::new(memory_device, 256).unwrap();
 
     let virtual_file_system =
         virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
@@ -41,33 +40,33 @@ async fn integration_test() {
         &[
             (
                 &"/Devices/Standard_in",
-                drivers::standard_library::console::Standard_in_device_type
+                drivers::standard_library::console::StandardInDevice
             ),
             (
                 &"/Devices/Standard_out",
-                drivers::standard_library::console::Standard_out_device_type
+                drivers::standard_library::console::StandardOutDeviceType
             ),
             (
                 &"/Devices/Standard_error",
-                drivers::standard_library::console::Standard_error_device_type
+                drivers::standard_library::console::StandardErrorDeviceType
             ),
-            (&"/Devices/Time", drivers::native::Time_driver_type),
-            (&"/Devices/Random", drivers::native::Random_device_type),
-            (&"/Devices/Null", drivers::core::Null_device_type)
+            (&"/Devices/Time", drivers::native::TimeDriverType),
+            (&"/Devices/Random", drivers::native::RandomDeviceType),
+            (&"/Devices/Null", drivers::core::NullDeviceType)
         ]
     )
     .await
     .unwrap();
 
-    Mount_static_executables!(
+    mount_static_executables!(
         virtual_file_system,
         task,
-        &[(&"/Binaries/Command_line_shell", Shell_executable_type)]
+        &[(&"/Binaries/Command_line_shell", ShellExecutable)]
     )
     .await
     .unwrap();
 
-    let group_identifier = Group_identifier_type::new(1000);
+    let group_identifier = GroupIdentifier::new(1000);
 
     authentication::create_group(virtual_file_system, "alix_anneraud", Some(group_identifier))
         .await
@@ -84,25 +83,21 @@ async fn integration_test() {
     .unwrap();
 
     let standard_in = virtual_file_system
-        .open(&"/Devices/Standard_in", Mode_type::READ_ONLY.into(), task)
+        .open(&"/Devices/Standard_in", Mode::READ_ONLY.into(), task)
         .await
         .unwrap();
 
     let standard_out = virtual_file_system
-        .open(&"/Devices/Standard_out", Mode_type::WRITE_ONLY.into(), task)
+        .open(&"/Devices/Standard_out", Mode::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
     let standard_error = virtual_file_system
-        .open(
-            &"/Devices/Standard_error",
-            Mode_type::WRITE_ONLY.into(),
-            task,
-        )
+        .open(&"/Devices/Standard_error", Mode::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
-    let standard = Standard_type::new(
+    let standard = Standard::new(
         standard_in,
         standard_out,
         standard_error,

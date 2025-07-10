@@ -11,9 +11,9 @@ use core::fmt::Debug;
 /// in a compact bit representation.
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct Protection_type(u8);
+pub struct Protection(u8);
 
-impl Debug for Protection_type {
+impl Debug for Protection {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Protection_type")
@@ -24,7 +24,7 @@ impl Debug for Protection_type {
     }
 }
 
-impl Protection_type {
+impl Protection {
     /// Bit flag representing read permission.
     pub const READ_BIT: u8 = 1 << 0;
 
@@ -176,13 +176,13 @@ impl Protection_type {
     }
 }
 
-impl From<Protection_type> for u8 {
-    fn from(protection: Protection_type) -> Self {
+impl From<Protection> for u8 {
+    fn from(protection: Protection) -> Self {
         protection.0
     }
 }
 
-impl From<u8> for Protection_type {
+impl From<u8> for Protection {
     fn from(protection: u8) -> Self {
         Self(protection)
     }
@@ -192,4 +192,4 @@ impl From<u8> for Protection_type {
 ///
 /// This trait should be implemented by memory managers or other components
 /// that can apply protection settings to memory regions.
-pub trait Protection_trait {}
+pub trait Protectable {}

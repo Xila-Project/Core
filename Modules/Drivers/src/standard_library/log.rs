@@ -1,17 +1,17 @@
 use core::fmt;
 
-use log::Logger_trait;
+use log::LoggerTrait;
 
-pub struct Logger_type;
+pub struct LoggerType;
 
-impl Logger_trait for Logger_type {
-    fn enabled(&self, level: log::Level_type) -> bool {
+impl LoggerTrait for LoggerType {
+    fn enabled(&self, level: log::Level) -> bool {
         match level {
-            log::Level_type::Error => true,
-            log::Level_type::Warn => true,
-            log::Level_type::Info => true,
-            log::Level_type::Debug => false,
-            log::Level_type::Trace => false,
+            log::Level::Error => true,
+            log::Level::Warn => true,
+            log::Level::Info => true,
+            log::Level::Debug => false,
+            log::Level::Trace => false,
         }
     }
 
@@ -25,7 +25,7 @@ mod tests {
     use super::*;
     use log;
 
-    static LOGGER: Logger_type = Logger_type;
+    static LOGGER: LoggerType = LoggerType;
 
     #[test]
     fn test_write() {

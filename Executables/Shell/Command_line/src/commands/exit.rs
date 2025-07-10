@@ -1,6 +1,6 @@
-use crate::Shell_type;
+use crate::Shell;
 
-impl Shell_type {
+impl Shell {
     pub async fn exit(&mut self, arguments: &[&str]) {
         if !arguments.is_empty() {
             self.standard

@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
@@ -19,8 +18,8 @@ pub use user::*;
 
 #[cfg(test)]
 mod tests {
-    use drivers::standard_library::memory::Memory_manager_type;
+    use drivers::standard_library::memory::MemoryManager;
     use memory::Instantiate_global_allocator;
 
-    Instantiate_global_allocator!(Memory_manager_type);
+    Instantiate_global_allocator!(MemoryManager);
 }

@@ -33,7 +33,7 @@
 /// let near_end = Position_type::End(-10);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Position_type {
+pub enum Position {
     /// Absolute position from the start of the file.
     ///
     /// The value represents the number of bytes from the beginning of the file.

@@ -4,24 +4,24 @@ use core::{mem::forget, str};
 
 use alloc::collections::VecDeque;
 
-use crate::{event::Event_type, Color_type, Error_type, Event_code_type, Result_type};
+use crate::{event::Event, Color, Error, EventKind, Result};
 
 use super::lvgl;
 
-struct User_data_type {
-    pub queue: VecDeque<Event_type>,
+struct UserData {
+    pub queue: VecDeque<Event>,
     pub icon_text: [u8; 2],
-    pub icon_color: Color_type,
+    pub icon_color: Color,
 }
 
-pub struct Window_type {
+pub struct Window {
     window: *mut lvgl::lv_obj_t,
 }
 
-impl Drop for Window_type {
+impl Drop for Window {
     fn drop(&mut self) {
         unsafe {
-            let user_data = lvgl::lv_obj_get_user_data(self.window) as *mut User_data_type;
+            let user_data = lvgl::lv_obj_get_user_data(self.window) as *mut UserData;
 
             let _user_data = Box::from_raw(user_data);
 
@@ -33,7 +33,7 @@ impl Drop for Window_type {
 unsafe extern "C" fn event_callback(event: *mut lvgl::lv_event_t) {
     let code = lvgl::lv_event_get_code(event);
 
-    let queue = lvgl::lv_event_get_user_data(event) as *mut VecDeque<Event_type>;
+    let queue = lvgl::lv_event_get_user_data(event) as *mut VecDeque<Event>;
 
     let target = lvgl::lv_event_get_target(event) as *mut lvgl::lv_obj_t;
 
@@ -41,32 +41,20 @@ unsafe extern "C" fn event_callback(event: *mut lvgl::lv_event_t) {
         lvgl::lv_event_code_t_LV_EVENT_CHILD_CREATED => {
             lvgl::lv_obj_add_flag(target, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_EVENT_BUBBLE);
 
-            (*queue).push_back(Event_type::new(
-                Event_code_type::Child_created,
-                target,
-                None,
-            ));
+            (*queue).push_back(Event::new(EventKind::ChildCreated, target, None));
         }
         lvgl::lv_event_code_t_LV_EVENT_KEY => {
             let key = unsafe { lvgl::lv_indev_get_key(lvgl::lv_indev_active()) };
 
-            (*queue).push_back(Event_type::new(
-                Event_code_type::Key,
-                target,
-                Some(key.into()),
-            ));
+            (*queue).push_back(Event::new(EventKind::Key, target, Some(key.into())));
         }
         _ => {
-            (*queue).push_back(Event_type::new(
-                Event_code_type::from_lvgl_code(code),
-                target,
-                None,
-            ));
+            (*queue).push_back(Event::new(EventKind::from_lvgl_code(code), target, None));
         }
     }
 }
 
-impl Window_type {
+impl Window {
     /// Create a new window.
     ///
     /// # Arguments
@@ -75,23 +63,23 @@ impl Window_type {
     ///
     /// # Returns
     ///
-    /// * `Result_type<Self>` - The result of the operation.
+    /// * `Result<Self>` - The result of the operation.
     ///
     /// # Safety
     ///
     /// This function is unsafe because it may dereference raw pointers (e.g. `Parent_object`).
     ///
-    pub unsafe fn new(parent_object: *mut lvgl::lv_obj_t) -> Result_type<Self> {
+    pub unsafe fn new(parent_object: *mut lvgl::lv_obj_t) -> Result<Self> {
         let window = unsafe { lvgl::lv_obj_create(parent_object) };
 
         if window.is_null() {
-            return Err(Error_type::Failed_to_create_object);
+            return Err(Error::FailedToCreateObject);
         }
 
-        let user_data = User_data_type {
+        let user_data = UserData {
             queue: VecDeque::with_capacity(10),
             icon_text: [b'I', b'c'],
-            icon_color: Color_type::BLACK,
+            icon_color: Color::BLACK,
         };
 
         let mut user_data = Box::new(user_data);
@@ -118,8 +106,8 @@ impl Window_type {
         self.window as usize
     }
 
-    pub fn peek_event(&self) -> Option<Event_type> {
-        let user_data = unsafe { lvgl::lv_obj_get_user_data(self.window) as *mut User_data_type };
+    pub fn peek_event(&self) -> Option<Event> {
+        let user_data = unsafe { lvgl::lv_obj_get_user_data(self.window) as *mut UserData };
 
         let user_data = unsafe { Box::from_raw(user_data) };
 
@@ -130,8 +118,8 @@ impl Window_type {
         event
     }
 
-    pub fn pop_event(&mut self) -> Option<Event_type> {
-        let user_data = unsafe { lvgl::lv_obj_get_user_data(self.window) as *mut User_data_type };
+    pub fn pop_event(&mut self) -> Option<Event> {
+        let user_data = unsafe { lvgl::lv_obj_get_user_data(self.window) as *mut UserData };
 
         let mut user_data = unsafe { Box::from_raw(user_data) };
 
@@ -146,9 +134,9 @@ impl Window_type {
         self.window
     }
 
-    pub fn get_icon(&self) -> (&str, Color_type) {
+    pub fn get_icon(&self) -> (&str, Color) {
         let user_data = unsafe {
-            let user_data = lvgl::lv_obj_get_user_data(self.window) as *mut User_data_type;
+            let user_data = lvgl::lv_obj_get_user_data(self.window) as *mut UserData;
 
             &*user_data
         };
@@ -161,8 +149,8 @@ impl Window_type {
         }
     }
 
-    pub fn set_icon(&mut self, icon_string: &str, icon_color: Color_type) {
-        let user_data = unsafe { lvgl::lv_obj_get_user_data(self.window) as *mut User_data_type };
+    pub fn set_icon(&mut self, icon_string: &str, icon_color: Color) {
+        let user_data = unsafe { lvgl::lv_obj_get_user_data(self.window) as *mut UserData };
 
         let user_data = unsafe { &mut *user_data };
 

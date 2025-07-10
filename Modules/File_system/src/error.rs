@@ -7,24 +7,24 @@ use core::{fmt::Display, num::NonZeroU32};
 
 /// Standard result type for file system operations.
 ///
-/// This is a convenience alias for `Result<T, Error_type>` used throughout the file system crate.
+/// This is a convenience alias for `Result<T, Error>` used throughout the file system crate.
 /// All file system operations that can fail return this type.
 ///
 /// # Examples
 ///
 /// ```rust
 /// # extern crate alloc;
-/// use file_system::{Result_type, Error_type};
+/// use file_system::{Result, Error};
 ///
-/// fn example_operation() -> Result_type<String> {
+/// fn example_operation() -> Result<String> {
 ///     Ok("Success".into())
 /// }
 ///
-/// fn failing_operation() -> Result_type<()> {
-///     Err(Error_type::Permission_denied)
+/// fn failing_operation() -> Result<()> {
+///     Err(Error::Permission_denied)
 /// }
 /// ```
-pub type Result_type<T> = core::result::Result<T, Error_type>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 /// Comprehensive enumeration of all possible file system errors.
 ///
@@ -67,7 +67,7 @@ pub type Result_type<T> = core::result::Result<T, Error_type>;
 /// - [`Input_output`] - I/O error during operation
 /// - [`Corrupted`] - Data corruption detected
 /// - [`Ressource_busy`] - Resource temporarily unavailable
-/// - [`Unsupported_operation`] - Operation not supported by device/filesystem
+/// - [`UnsupportedOperation`] - Operation not supported by device/filesystem
 ///
 /// ## System Integration Errors
 /// - [`Failed_to_get_task_informations`] - Task manager access failed
@@ -76,7 +76,7 @@ pub type Result_type<T> = core::result::Result<T, Error_type>;
 /// - [`Failed_to_get_task_manager_instance`] - Task manager instance unavailable
 ///
 /// ## Parameter and Validation Errors
-/// - [`Invalid_parameter`] - Invalid parameter provided
+/// - [`InvalidParameter`] - Invalid parameter provided
 /// - [`Invalid_path`] - Path is malformed or invalid
 /// - [`Invalid_identifier`] - File or task identifier is invalid
 /// - [`Name_too_long`] - File or directory name exceeds limits
@@ -93,90 +93,90 @@ pub type Result_type<T> = core::result::Result<T, Error_type>;
 /// - [`Other`] - Other unclassified error
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 #[repr(C)]
-pub enum Error_type {
+pub enum Error {
     /// Failed to initialize the file system.
-    Failed_to_initialize_file_system = 1,
+    FailedToInitializeFileSystem = 1,
     /// Permission denied for the requested operation.
-    Permission_denied,
+    PermissionDenied,
     /// File, directory, or resource not found.
-    Not_found,
+    NotFound,
     /// File or directory already exists.
-    Already_exists,
+    AlreadyExists,
     /// Directory already exists (more specific than Already_exists).
-    Directory_already_exists,
+    DirectoryAlreadyExists,
     /// File system is full and cannot store more data.
-    File_system_full,
+    FileSystemFull,
     /// Generic file system error.
-    File_system_error,
+    FileSystemError,
     /// The provided path is invalid or malformed.
-    Invalid_path,
+    InvalidPath,
     /// The file is corrupted or invalid.
-    Invalid_file,
+    InvalidFile,
     /// The directory is corrupted or invalid.
-    Invalid_directory,
+    InvalidDirectory,
     /// The symbolic link is invalid or broken.
-    Invalid_symbolic_link,
+    InvalidSymbolicLink,
     /// Unknown or unspecified error.
     Unknown,
     /// File or task identifier is invalid.
-    Invalid_identifier,
+    InvalidIdentifier,
     /// Failed to retrieve task information from task manager.
-    Failed_to_get_task_informations,
+    FailedToGetTaskInformations,
     /// Failed to retrieve user information from user manager.
-    Failed_to_get_users_informations,
+    FailedToGetUsersInformations,
     /// Maximum number of mounted file systems exceeded.
-    Too_many_mounted_file_systems,
+    TooManyMountedFileSystems,
     /// Maximum number of open files exceeded.
-    Too_many_open_files,
+    TooManyOpenFiles,
     /// Internal implementation error.
-    Internal_error,
+    InternalError,
     /// Invalid access mode specified.
-    Invalid_mode,
+    InvalidMode,
     /// Operation is not supported by the device or file system.
-    Unsupported_operation,
+    UnsupportedOperation,
     /// Resource is temporarily busy or unavailable.
-    Ressource_busy,
+    RessourceBusy,
     /// System or component is already initialized.
-    Already_initialized,
+    AlreadyInitialized,
     /// System or component is not initialized.
-    Not_initialized,
+    NotInitialized,
     /// Failed to get users manager instance.
-    Failed_to_get_users_manager_instance,
+    FailedToGetUsersManagerInstance,
     /// Failed to get task manager instance.
-    Failed_to_get_task_manager_instance,
+    FailedToGetTaskManagerInstance,
     /// Invalid parameter provided to function.
-    Invalid_parameter,
+    InvalidParameter,
     /// Invalid flags specified for operation.
-    Invalid_flags,
+    InvalidFlags,
     /// Expected a directory but found a file.
-    Not_directory,
+    NotDirectory,
     /// Expected a file but found a directory.
-    is_directory,
+    IsDirectory,
     /// Input/output error during operation.
-    Input_output,
+    InputOutput,
     /// Directory is not empty and cannot be removed.
-    Directory_not_empty,
+    DirectoryNotEmpty,
     /// File size exceeds maximum allowed size.
-    File_too_large,
+    FileTooLarge,
     /// Requested attribute does not exist.
-    No_attribute,
+    NoAttribute,
     /// File or directory name is too long.
-    Name_too_long,
+    NameTooLong,
     /// Data corruption detected.
     Corrupted,
     /// Insufficient memory for operation.
-    No_memory,
+    NoMemory,
     /// No space left on device.
-    No_space_left,
+    NoSpaceLeft,
     /// Error in timestamp or time-related operation.
-    Time_error,
+    TimeError,
     /// Invalid inode reference.
-    Invalid_inode,
+    InvalidInode,
     /// Other unclassified error.
     Other,
 }
 
-impl Error_type {
+impl Error {
     /// Get the numeric discriminant of the error as a non-zero u32.
     ///
     /// This is useful for FFI operations where errors need to be represented
@@ -190,9 +190,9 @@ impl Error_type {
     ///
     /// ```rust
     /// # extern crate alloc;
-    /// use file_system::Error_type;
+    /// use file_system::Error;
     ///
-    /// let error = Error_type::Permission_denied;
+    /// let error = Error::Permission_denied;
     /// let code = error.get_discriminant();
     /// assert_eq!(code.get(), 2); // Permission_denied has discriminant 2
     /// ```
@@ -204,26 +204,26 @@ impl Error_type {
 /// Convert Task module errors to file system errors.
 ///
 /// This allows transparent handling of task-related errors in file system operations.
-impl From<task::Error_type> for Error_type {
-    fn from(_: task::Error_type) -> Self {
-        Error_type::Failed_to_get_task_informations
+impl From<task::Error> for Error {
+    fn from(_: task::Error) -> Self {
+        Error::FailedToGetTaskInformations
     }
 }
 
 /// Convert Users module errors to file system errors.
 ///
 /// This allows transparent handling of user-related errors in file system operations.
-impl From<users::Error_type> for Error_type {
-    fn from(_: users::Error_type) -> Self {
-        Error_type::Failed_to_get_users_informations
+impl From<users::Error> for Error {
+    fn from(_: users::Error) -> Self {
+        Error::FailedToGetUsersInformations
     }
 }
 
 /// Convert file system errors to numeric discriminants.
 ///
 /// This conversion is useful for FFI where errors need to be represented as numbers.
-impl From<Error_type> for NonZeroU32 {
-    fn from(error: Error_type) -> Self {
+impl From<Error> for NonZeroU32 {
+    fn from(error: Error) -> Self {
         error.get_discriminant()
     }
 }
@@ -231,53 +231,49 @@ impl From<Error_type> for NonZeroU32 {
 /// Display implementation for user-friendly error messages.
 ///
 /// Provides human-readable descriptions of all error variants.
-impl Display for Error_type {
+impl Display for Error {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         let string = match self {
-            Error_type::Failed_to_initialize_file_system => "Failed to initialize file system",
-            Error_type::Permission_denied => "Permission denied",
-            Error_type::Not_found => "Not found",
-            Error_type::Already_exists => "Already exists",
-            Error_type::Directory_already_exists => "Directory already exists",
-            Error_type::File_system_full => "File system full",
-            Error_type::File_system_error => "File system error",
-            Error_type::Invalid_path => "Invalid path",
-            Error_type::Invalid_file => "Invalid file",
-            Error_type::Invalid_directory => "Invalid directory",
-            Error_type::Invalid_symbolic_link => "Invalid symbolic link",
-            Error_type::Unknown => "Unknown",
-            Error_type::Invalid_identifier => "Invalid identifier",
-            Error_type::Failed_to_get_task_informations => "Failed to get task informations",
-            Error_type::Failed_to_get_users_informations => "Failed to get users informations",
-            Error_type::Too_many_mounted_file_systems => "Too many mounted file systems",
-            Error_type::Too_many_open_files => "Too many open files",
-            Error_type::Internal_error => "Internal error",
-            Error_type::Invalid_mode => "Invalid mode",
-            Error_type::Unsupported_operation => "Unsupported operation",
-            Error_type::Ressource_busy => "Ressource busy",
-            Error_type::Already_initialized => "Already initialized",
-            Error_type::Not_initialized => "Not initialized",
-            Error_type::Failed_to_get_users_manager_instance => {
-                "Failed to get users manager instance"
-            }
-            Error_type::Failed_to_get_task_manager_instance => {
-                "Failed to get task manager instance"
-            }
-            Error_type::Invalid_parameter => "Invalid parameter",
-            Error_type::Invalid_flags => "Invalid flags",
-            Error_type::Not_directory => "Not directory",
-            Error_type::is_directory => "Is directory",
-            Error_type::Input_output => "Input output",
-            Error_type::Directory_not_empty => "Directory not empty",
-            Error_type::File_too_large => "File too large",
-            Error_type::No_attribute => "No attribute",
-            Error_type::Name_too_long => "Name too long",
-            Error_type::Corrupted => "Corrupted",
-            Error_type::No_memory => "No memory",
-            Error_type::No_space_left => "No space left",
-            Error_type::Time_error => "Time error",
-            Error_type::Invalid_inode => "Invalid inode",
-            Error_type::Other => "Other",
+            Error::FailedToInitializeFileSystem => "Failed to initialize file system",
+            Error::PermissionDenied => "Permission denied",
+            Error::NotFound => "Not found",
+            Error::AlreadyExists => "Already exists",
+            Error::DirectoryAlreadyExists => "Directory already exists",
+            Error::FileSystemFull => "File system full",
+            Error::FileSystemError => "File system error",
+            Error::InvalidPath => "Invalid path",
+            Error::InvalidFile => "Invalid file",
+            Error::InvalidDirectory => "Invalid directory",
+            Error::InvalidSymbolicLink => "Invalid symbolic link",
+            Error::Unknown => "Unknown",
+            Error::InvalidIdentifier => "Invalid identifier",
+            Error::FailedToGetTaskInformations => "Failed to get task informations",
+            Error::FailedToGetUsersInformations => "Failed to get users informations",
+            Error::TooManyMountedFileSystems => "Too many mounted file systems",
+            Error::TooManyOpenFiles => "Too many open files",
+            Error::InternalError => "Internal error",
+            Error::InvalidMode => "Invalid mode",
+            Error::UnsupportedOperation => "Unsupported operation",
+            Error::RessourceBusy => "Ressource busy",
+            Error::AlreadyInitialized => "Already initialized",
+            Error::NotInitialized => "Not initialized",
+            Error::FailedToGetUsersManagerInstance => "Failed to get users manager instance",
+            Error::FailedToGetTaskManagerInstance => "Failed to get task manager instance",
+            Error::InvalidParameter => "Invalid parameter",
+            Error::InvalidFlags => "Invalid flags",
+            Error::NotDirectory => "Not directory",
+            Error::IsDirectory => "Is directory",
+            Error::InputOutput => "Input output",
+            Error::DirectoryNotEmpty => "Directory not empty",
+            Error::FileTooLarge => "File too large",
+            Error::NoAttribute => "No attribute",
+            Error::NameTooLong => "Name too long",
+            Error::Corrupted => "Corrupted",
+            Error::NoMemory => "No memory",
+            Error::NoSpaceLeft => "No space left",
+            Error::TimeError => "Time error",
+            Error::InvalidInode => "Invalid inode",
+            Error::Other => "Other",
         };
 
         write!(formatter, "{string}")
@@ -293,133 +289,108 @@ mod tests {
     fn test_error_discriminants() {
         // Test that each error has a unique discriminant
         assert_eq!(
-            Error_type::Failed_to_initialize_file_system
-                .get_discriminant()
-                .get(),
+            Error::FailedToInitializeFileSystem.get_discriminant().get(),
             1
         );
-        assert_eq!(Error_type::Permission_denied.get_discriminant().get(), 2);
-        assert_eq!(Error_type::Not_found.get_discriminant().get(), 3);
-        assert_eq!(Error_type::Already_exists.get_discriminant().get(), 4);
-        assert_eq!(
-            Error_type::Directory_already_exists
-                .get_discriminant()
-                .get(),
-            5
-        );
+        assert_eq!(Error::PermissionDenied.get_discriminant().get(), 2);
+        assert_eq!(Error::NotFound.get_discriminant().get(), 3);
+        assert_eq!(Error::AlreadyExists.get_discriminant().get(), 4);
+        assert_eq!(Error::DirectoryAlreadyExists.get_discriminant().get(), 5);
 
         // Test a few more to ensure discriminants are sequential
-        assert_eq!(Error_type::File_system_full.get_discriminant().get(), 6);
-        assert_eq!(Error_type::File_system_error.get_discriminant().get(), 7);
-        assert_eq!(Error_type::Invalid_path.get_discriminant().get(), 8);
+        assert_eq!(Error::FileSystemFull.get_discriminant().get(), 6);
+        assert_eq!(Error::FileSystemError.get_discriminant().get(), 7);
+        assert_eq!(Error::InvalidPath.get_discriminant().get(), 8);
     }
 
     #[test]
     fn test_error_display() {
         // Test display formatting for all error types
         assert_eq!(
-            format!("{}", Error_type::Failed_to_initialize_file_system),
+            format!("{}", Error::FailedToInitializeFileSystem),
             "Failed to initialize file system"
         );
+        assert_eq!(format!("{}", Error::PermissionDenied), "Permission denied");
+        assert_eq!(format!("{}", Error::NotFound), "Not found");
+        assert_eq!(format!("{}", Error::AlreadyExists), "Already exists");
         assert_eq!(
-            format!("{}", Error_type::Permission_denied),
-            "Permission denied"
-        );
-        assert_eq!(format!("{}", Error_type::Not_found), "Not found");
-        assert_eq!(format!("{}", Error_type::Already_exists), "Already exists");
-        assert_eq!(
-            format!("{}", Error_type::Directory_already_exists),
+            format!("{}", Error::DirectoryAlreadyExists),
             "Directory already exists"
         );
+        assert_eq!(format!("{}", Error::FileSystemFull), "File system full");
+        assert_eq!(format!("{}", Error::FileSystemError), "File system error");
+        assert_eq!(format!("{}", Error::InvalidPath), "Invalid path");
+        assert_eq!(format!("{}", Error::InvalidFile), "Invalid file");
+        assert_eq!(format!("{}", Error::InvalidDirectory), "Invalid directory");
         assert_eq!(
-            format!("{}", Error_type::File_system_full),
-            "File system full"
-        );
-        assert_eq!(
-            format!("{}", Error_type::File_system_error),
-            "File system error"
-        );
-        assert_eq!(format!("{}", Error_type::Invalid_path), "Invalid path");
-        assert_eq!(format!("{}", Error_type::Invalid_file), "Invalid file");
-        assert_eq!(
-            format!("{}", Error_type::Invalid_directory),
-            "Invalid directory"
-        );
-        assert_eq!(
-            format!("{}", Error_type::Invalid_symbolic_link),
+            format!("{}", Error::InvalidSymbolicLink),
             "Invalid symbolic link"
         );
-        assert_eq!(format!("{}", Error_type::Unknown), "Unknown");
+        assert_eq!(format!("{}", Error::Unknown), "Unknown");
         assert_eq!(
-            format!("{}", Error_type::Invalid_identifier),
+            format!("{}", Error::InvalidIdentifier),
             "Invalid identifier"
         );
         assert_eq!(
-            format!("{}", Error_type::Failed_to_get_task_informations),
+            format!("{}", Error::FailedToGetTaskInformations),
             "Failed to get task informations"
         );
         assert_eq!(
-            format!("{}", Error_type::Failed_to_get_users_informations),
+            format!("{}", Error::FailedToGetUsersInformations),
             "Failed to get users informations"
         );
         assert_eq!(
-            format!("{}", Error_type::Too_many_mounted_file_systems),
+            format!("{}", Error::TooManyMountedFileSystems),
             "Too many mounted file systems"
         );
         assert_eq!(
-            format!("{}", Error_type::Too_many_open_files),
+            format!("{}", Error::TooManyOpenFiles),
             "Too many open files"
         );
-        assert_eq!(format!("{}", Error_type::Internal_error), "Internal error");
-        assert_eq!(format!("{}", Error_type::Invalid_mode), "Invalid mode");
+        assert_eq!(format!("{}", Error::InternalError), "Internal error");
+        assert_eq!(format!("{}", Error::InvalidMode), "Invalid mode");
         assert_eq!(
-            format!("{}", Error_type::Unsupported_operation),
+            format!("{}", Error::UnsupportedOperation),
             "Unsupported operation"
         );
-        assert_eq!(format!("{}", Error_type::Ressource_busy), "Ressource busy");
+        assert_eq!(format!("{}", Error::RessourceBusy), "Ressource busy");
         assert_eq!(
-            format!("{}", Error_type::Already_initialized),
+            format!("{}", Error::AlreadyInitialized),
             "Already initialized"
         );
+        assert_eq!(format!("{}", Error::NotInitialized), "Not initialized");
         assert_eq!(
-            format!("{}", Error_type::Not_initialized),
-            "Not initialized"
-        );
-        assert_eq!(
-            format!("{}", Error_type::Failed_to_get_users_manager_instance),
+            format!("{}", Error::FailedToGetUsersManagerInstance),
             "Failed to get users manager instance"
         );
         assert_eq!(
-            format!("{}", Error_type::Failed_to_get_task_manager_instance),
+            format!("{}", Error::FailedToGetTaskManagerInstance),
             "Failed to get task manager instance"
         );
+        assert_eq!(format!("{}", Error::InvalidParameter), "Invalid parameter");
+        assert_eq!(format!("{}", Error::InvalidFlags), "Invalid flags");
+        assert_eq!(format!("{}", Error::NotDirectory), "Not directory");
+        assert_eq!(format!("{}", Error::IsDirectory), "Is directory");
+        assert_eq!(format!("{}", Error::InputOutput), "Input output");
         assert_eq!(
-            format!("{}", Error_type::Invalid_parameter),
-            "Invalid parameter"
-        );
-        assert_eq!(format!("{}", Error_type::Invalid_flags), "Invalid flags");
-        assert_eq!(format!("{}", Error_type::Not_directory), "Not directory");
-        assert_eq!(format!("{}", Error_type::is_directory), "Is directory");
-        assert_eq!(format!("{}", Error_type::Input_output), "Input output");
-        assert_eq!(
-            format!("{}", Error_type::Directory_not_empty),
+            format!("{}", Error::DirectoryNotEmpty),
             "Directory not empty"
         );
-        assert_eq!(format!("{}", Error_type::File_too_large), "File too large");
-        assert_eq!(format!("{}", Error_type::No_attribute), "No attribute");
-        assert_eq!(format!("{}", Error_type::Name_too_long), "Name too long");
-        assert_eq!(format!("{}", Error_type::Corrupted), "Corrupted");
-        assert_eq!(format!("{}", Error_type::No_memory), "No memory");
-        assert_eq!(format!("{}", Error_type::No_space_left), "No space left");
-        assert_eq!(format!("{}", Error_type::Time_error), "Time error");
-        assert_eq!(format!("{}", Error_type::Invalid_inode), "Invalid inode");
-        assert_eq!(format!("{}", Error_type::Other), "Other");
+        assert_eq!(format!("{}", Error::FileTooLarge), "File too large");
+        assert_eq!(format!("{}", Error::NoAttribute), "No attribute");
+        assert_eq!(format!("{}", Error::NameTooLong), "Name too long");
+        assert_eq!(format!("{}", Error::Corrupted), "Corrupted");
+        assert_eq!(format!("{}", Error::NoMemory), "No memory");
+        assert_eq!(format!("{}", Error::NoSpaceLeft), "No space left");
+        assert_eq!(format!("{}", Error::TimeError), "Time error");
+        assert_eq!(format!("{}", Error::InvalidInode), "Invalid inode");
+        assert_eq!(format!("{}", Error::Other), "Other");
     }
 
     #[test]
     fn test_error_debug() {
         // Test debug formatting
-        let error = Error_type::Permission_denied;
+        let error = Error::PermissionDenied;
         let debug_str = format!("{error:?}");
         assert_eq!(debug_str, "Permission_denied");
     }
@@ -427,9 +398,9 @@ mod tests {
     #[test]
     fn test_error_equality() {
         // Test equality and cloning
-        let error1 = Error_type::Not_found;
-        let error2 = Error_type::Not_found;
-        let error3 = Error_type::Permission_denied;
+        let error1 = Error::NotFound;
+        let error2 = Error::NotFound;
+        let error3 = Error::PermissionDenied;
 
         assert_eq!(error1, error2);
         assert_ne!(error1, error3);
@@ -441,7 +412,7 @@ mod tests {
     #[test]
     fn test_error_conversions() {
         // Test conversion to NonZeroU32
-        let error = Error_type::Not_found;
+        let error = Error::NotFound;
         let discriminant: NonZeroU32 = error.into();
         assert_eq!(discriminant.get(), 3);
 
@@ -451,13 +422,13 @@ mod tests {
 
     #[test]
     fn test_result_type() {
-        // Test the Result_type alias
-        let success: Result_type<i32> = Ok(42);
-        let failure: Result_type<i32> = Err(Error_type::Permission_denied);
+        // Test the Result alias
+        let success: Result<i32> = Ok(42);
+        let failure: Result<i32> = Err(Error::PermissionDenied);
 
         assert_eq!(success, Ok(42));
 
-        assert_eq!(failure, Err(Error_type::Permission_denied));
+        assert_eq!(failure, Err(Error::PermissionDenied));
     }
 
     #[test]
@@ -466,109 +437,96 @@ mod tests {
 
         // Initialization errors (1-3 range roughly)
         assert!(matches!(
-            Error_type::Failed_to_initialize_file_system
-                .get_discriminant()
-                .get(),
+            Error::FailedToInitializeFileSystem.get_discriminant().get(),
             1
         ));
         assert!(matches!(
-            Error_type::Already_initialized.get_discriminant().get(),
+            Error::AlreadyInitialized.get_discriminant().get(),
             22
         ));
-        assert!(matches!(
-            Error_type::Not_initialized.get_discriminant().get(),
-            23
-        ));
+        assert!(matches!(Error::NotInitialized.get_discriminant().get(), 23));
 
         // Permission errors
         assert!(matches!(
-            Error_type::Permission_denied.get_discriminant().get(),
+            Error::PermissionDenied.get_discriminant().get(),
             2
         ));
-        assert!(matches!(
-            Error_type::Invalid_mode.get_discriminant().get(),
-            19
-        ));
+        assert!(matches!(Error::InvalidMode.get_discriminant().get(), 19));
 
         // File/Directory errors
-        assert!(matches!(Error_type::Not_found.get_discriminant().get(), 3));
+        assert!(matches!(Error::NotFound.get_discriminant().get(), 3));
+        assert!(matches!(Error::AlreadyExists.get_discriminant().get(), 4));
         assert!(matches!(
-            Error_type::Already_exists.get_discriminant().get(),
-            4
-        ));
-        assert!(matches!(
-            Error_type::Directory_already_exists
-                .get_discriminant()
-                .get(),
+            Error::DirectoryAlreadyExists.get_discriminant().get(),
             5
         ));
     }
 
     #[test]
     fn test_error_copy_semantics() {
-        // Test that Error_type implements Copy
-        let error = Error_type::File_system_full;
+        // Test that Error implements Copy
+        let error = Error::FileSystemFull;
         let copied = error; // This should work due to Copy trait
 
         // Both should be usable
-        assert_eq!(error, Error_type::File_system_full);
-        assert_eq!(copied, Error_type::File_system_full);
+        assert_eq!(error, Error::FileSystemFull);
+        assert_eq!(copied, Error::FileSystemFull);
         assert_eq!(error, copied);
     }
 
     #[test]
     fn test_error_size() {
-        // Ensure Error_type has a reasonable size for an enum
+        // Ensure Error has a reasonable size for an enum
         use core::mem::size_of;
 
         // Should be small since it's a C-style enum
-        assert!(size_of::<Error_type>() <= 4); // Should be 4 bytes or less
+        assert!(size_of::<Error>() <= 4); // Should be 4 bytes or less
     }
 
     #[test]
     fn test_nonzero_conversion() {
         // Test that all errors convert to valid NonZeroU32
         let errors = [
-            Error_type::Failed_to_initialize_file_system,
-            Error_type::Permission_denied,
-            Error_type::Not_found,
-            Error_type::Already_exists,
-            Error_type::Directory_already_exists,
-            Error_type::File_system_full,
-            Error_type::File_system_error,
-            Error_type::Invalid_path,
-            Error_type::Invalid_file,
-            Error_type::Invalid_directory,
-            Error_type::Invalid_symbolic_link,
-            Error_type::Unknown,
-            Error_type::Invalid_identifier,
-            Error_type::Failed_to_get_task_informations,
-            Error_type::Failed_to_get_users_informations,
-            Error_type::Too_many_mounted_file_systems,
-            Error_type::Too_many_open_files,
-            Error_type::Internal_error,
-            Error_type::Invalid_mode,
-            Error_type::Unsupported_operation,
-            Error_type::Ressource_busy,
-            Error_type::Already_initialized,
-            Error_type::Not_initialized,
-            Error_type::Failed_to_get_users_manager_instance,
-            Error_type::Failed_to_get_task_manager_instance,
-            Error_type::Invalid_parameter,
-            Error_type::Invalid_flags,
-            Error_type::Not_directory,
-            Error_type::is_directory,
-            Error_type::Input_output,
-            Error_type::Directory_not_empty,
-            Error_type::File_too_large,
-            Error_type::No_attribute,
-            Error_type::Name_too_long,
-            Error_type::Corrupted,
-            Error_type::No_memory,
-            Error_type::No_space_left,
-            Error_type::Time_error,
-            Error_type::Invalid_inode,
-            Error_type::Other,
+            Error::FailedToInitializeFileSystem,
+            Error::PermissionDenied,
+            Error::NotFound,
+            Error::AlreadyExists,
+            Error::DirectoryAlreadyExists,
+            Error::FileSystemFull,
+            Error::FileSystemError,
+            Error::InvalidPath,
+            Error::InvalidFile,
+            Error::InvalidDirectory,
+            Error::InvalidSymbolicLink,
+            Error::Unknown,
+            Error::InvalidIdentifier,
+            Error::FailedToGetTaskInformations,
+            Error::FailedToGetUsersInformations,
+            Error::TooManyMountedFileSystems,
+            Error::TooManyOpenFiles,
+            Error::InternalError,
+            Error::InvalidMode,
+            Error::UnsupportedOperation,
+            Error::RessourceBusy,
+            Error::AlreadyInitialized,
+            Error::NotInitialized,
+            Error::FailedToGetUsersManagerInstance,
+            Error::FailedToGetTaskManagerInstance,
+            Error::InvalidParameter,
+            Error::InvalidFlags,
+            Error::NotDirectory,
+            Error::IsDirectory,
+            Error::InputOutput,
+            Error::DirectoryNotEmpty,
+            Error::FileTooLarge,
+            Error::NoAttribute,
+            Error::NameTooLong,
+            Error::Corrupted,
+            Error::NoMemory,
+            Error::NoSpaceLeft,
+            Error::TimeError,
+            Error::InvalidInode,
+            Error::Other,
         ];
 
         for error in errors.iter() {

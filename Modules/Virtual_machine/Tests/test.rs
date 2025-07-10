@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
@@ -7,22 +6,21 @@ use alloc::vec;
 
 use wamr_rust_sdk::value::WasmValue;
 
-use drivers::standard_library::memory::Memory_manager_type;
-use file_system::{create_device, Create_file_system, Memory_device_type};
+use drivers::standard_library::memory::MemoryManager;
+use file_system::{create_device, Create_file_system, MemoryDeviceType};
 use memory::Instantiate_global_allocator;
-use task::Test;
+use task::test;
 use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
 use virtual_machine::{
-    Environment_type, Function_descriptor_type, Function_descriptors, Instance_type, Module_type,
-    Registrable_trait, Runtime_type,
+    Environment, FunctionDescriptor, Function_descriptors, Instance, Module, Registrable, Runtime,
 };
 
-Instantiate_global_allocator!(Memory_manager_type);
+Instantiate_global_allocator!(MemoryManager);
 
 pub struct Registrable;
 
-impl Registrable_trait for Registrable {
-    fn get_functions(&self) -> &[Function_descriptor_type] {
+impl Registrable for Registrable {
+    fn get_functions(&self) -> &[FunctionDescriptor] {
         &FUNCTIONS
     }
 
@@ -31,27 +29,27 @@ impl Registrable_trait for Registrable {
     }
 }
 
-const FUNCTIONS: [Function_descriptor_type; 0] = Function_descriptors! {};
+const FUNCTIONS: [FunctionDescriptor; 0] = Function_descriptors! {};
 
 #[ignore]
-#[Test]
+#[test]
 async fn integration_test() {
     let task_instance = task::initialize();
 
-    static LOGGER: drivers::standard_library::log::Logger_type =
-        drivers::standard_library::log::Logger_type;
+    static LOGGER: drivers::standard_library::log::LoggerType =
+        drivers::standard_library::log::LoggerType;
 
     log::initialize(&LOGGER).expect("Failed to initialize logger");
 
     users::initialize();
 
-    time::initialize(create_device!(drivers::native::Time_driver_type::new()))
+    time::initialize(create_device!(drivers::native::TimeDriverType::new()))
         .expect("Failed to initialize time manager");
 
-    let device = create_device!(Memory_device_type::<512>::new(1024 * 512));
+    let device = create_device!(MemoryDeviceType::<512>::new(1024 * 512));
 
-    little_fs::File_system_type::format(device.clone(), 512).unwrap();
-    let file_system = Create_file_system!(little_fs::File_system_type::new(device, 256).unwrap());
+    little_fs::FileSystem::format(device.clone(), 512).unwrap();
+    let file_system = Create_file_system!(little_fs::FileSystemType::new(device, 256).unwrap());
 
     let virtual_file_system = virtual_file_system::initialize(file_system, None).unwrap();
 
@@ -68,19 +66,19 @@ async fn integration_test() {
         &[
             (
                 &"/Devices/Standard_in",
-                drivers::standard_library::console::Standard_in_device_type
+                drivers::standard_library::console::StandardInDevice
             ),
             (
                 &"/Devices/Standard_out",
-                drivers::standard_library::console::Standard_out_device_type
+                drivers::standard_library::console::StandardOutDeviceType
             ),
             (
                 &"/Devices/Standard_error",
-                drivers::standard_library::console::Standard_error_device_type
+                drivers::standard_library::console::StandardErrorDeviceType
             ),
-            (&"/Devices/Time", drivers::native::Time_driver_type),
-            (&"/Devices/Random", drivers::native::Random_device_type),
-            (&"/Devices/Null", drivers::core::Null_device_type)
+            (&"/Devices/Time", drivers::native::TimeDriverType),
+            (&"/Devices/Random", drivers::native::RandomDeviceType),
+            (&"/Devices/Null", drivers::core::NullDeviceType)
         ]
     )
     .await
@@ -98,7 +96,7 @@ async fn integration_test() {
     let standard_in = virtual_file_system
         .open(
             &"/Devices/Standard_in",
-            file_system::Mode_type::READ_ONLY.into(),
+            file_system::Mode::READ_ONLY.into(),
             task,
         )
         .await
@@ -106,7 +104,7 @@ async fn integration_test() {
     let standard_out = virtual_file_system
         .open(
             &"/Devices/Standard_out",
-            file_system::Mode_type::WRITE_ONLY.into(),
+            file_system::Mode::WRITE_ONLY.into(),
             task,
         )
         .await
@@ -114,7 +112,7 @@ async fn integration_test() {
     let standard_error = virtual_file_system
         .open(
             &"/Devices/Standard_error",
-            file_system::Mode_type::WRITE_ONLY.into(),
+            file_system::Mode::WRITE_ONLY.into(),
             task,
         )
         .await
@@ -129,12 +127,9 @@ async fn integration_test() {
         .call_abi(async || {
             // Register the functions
 
-            let runtime = Runtime_type::builder()
-                .register(&Registrable)
-                .build()
-                .unwrap();
+            let runtime = Runtime::builder().register(&Registrable).build().unwrap();
 
-            let module = Module_type::from_buffer(
+            let module = Module::from_buffer(
                 &runtime,
                 binary_buffer.to_vec(),
                 "main",
@@ -145,11 +140,11 @@ async fn integration_test() {
             .await
             .unwrap();
 
-            let mut instance = Instance_type::new(&runtime, &module, 1024 * 4)
-                .expect("Failed to instantiate module");
+            let mut instance =
+                Instance::new(&runtime, &module, 1024 * 4).expect("Failed to instantiate module");
 
-            let _ = Environment_type::from_instance(&instance)
-                .expect("Failed to get execution environment");
+            let _ =
+                Environment::from_instance(&instance).expect("Failed to get execution environment");
 
             assert_eq!(instance.call_main(&vec![]).unwrap(), [WasmValue::Void]);
 

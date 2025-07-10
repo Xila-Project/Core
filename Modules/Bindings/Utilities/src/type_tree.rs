@@ -4,11 +4,11 @@ use quote::ToTokens;
 use syn::Path;
 
 #[derive(Debug)]
-pub struct Type_tree_type {
+pub struct TypeTreeType {
     type_tree: HashMap<String, String>,
 }
 
-impl Default for Type_tree_type {
+impl Default for TypeTreeType {
     fn default() -> Self {
         let map = HashMap::new();
 
@@ -16,7 +16,7 @@ impl Default for Type_tree_type {
     }
 }
 
-impl Type_tree_type {
+impl TypeTreeType {
     pub fn insert(&mut self, r#type: String, alias: String) {
         self.type_tree.insert(r#type, alias);
     }

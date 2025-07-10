@@ -1,6 +1,6 @@
 use core::ptr::NonNull;
 
-use crate::{Capabilities_type, Layout_type};
+use crate::{CapabilitiesType, Layout};
 
 /// Trait that defines the interface for memory allocators in the Xila system.
 ///
@@ -15,7 +15,7 @@ use crate::{Capabilities_type, Layout_type};
 /// - Deallocating memory that wasn't allocated with the same allocator
 /// - Using memory after it has been deallocated
 /// - Deallocating the same memory multiple times
-pub trait Manager_trait: Send + Sync {
+pub trait ManagerTrait: Send + Sync {
     /// Allocates memory with the specified capabilities and layout.
     ///
     /// # Parameters
@@ -32,8 +32,8 @@ pub trait Manager_trait: Send + Sync {
     unsafe fn allocate(
         &self,
 
-        capabilities: Capabilities_type,
-        layout: Layout_type,
+        capabilities: CapabilitiesType,
+        layout: Layout,
     ) -> Option<NonNull<u8>>;
 
     /// Deallocates memory previously allocated by this allocator.
@@ -48,7 +48,7 @@ pub trait Manager_trait: Send + Sync {
     /// - The layout matches the one used for allocation
     /// - The memory is not used after deallocation
     /// - The memory is not deallocated multiple times
-    unsafe fn deallocate(&self, pointer: NonNull<u8>, layout: Layout_type);
+    unsafe fn deallocate(&self, pointer: NonNull<u8>, layout: Layout);
 
     /// Reallocates memory with a new layout.
     ///
@@ -75,11 +75,11 @@ pub trait Manager_trait: Send + Sync {
     unsafe fn reallocate(
         &self,
         pointer: Option<NonNull<u8>>,
-        old_layout: Layout_type,
-        new_layout: Layout_type,
+        old_layout: Layout,
+        new_layout: Layout,
     ) -> Option<NonNull<u8>> {
         // Default implementation simply deallocates and allocates again
-        let memory = self.allocate(Capabilities_type::default(), new_layout)?;
+        let memory = self.allocate(CapabilitiesType::default(), new_layout)?;
 
         // Copy the old data to the new memory
         let pointer = match pointer {

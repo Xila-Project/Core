@@ -1,12 +1,13 @@
 // Tests module - contains all Manager tests
+extern crate std;
 
 use super::*;
-use crate::Test;
+use crate::test;
 use alloc::{collections::BTreeMap, format, vec::Vec};
 use core::time::Duration;
-use users::{Group_identifier_type, User_identifier_type};
+use users::{GroupIdentifier, UserIdentifier};
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_get_task_name() {
     let manager = initialize();
 
@@ -26,33 +27,30 @@ async fn test_get_task_name() {
         .await;
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_set_get_owner() {
     let manager = initialize();
 
     let task = manager.get_current_task_identifier().await;
 
     // Set user and group to root
+    manager.set_user(task, UserIdentifier::ROOT).await.unwrap();
     manager
-        .set_user(task, User_identifier_type::ROOT)
-        .await
-        .unwrap();
-    manager
-        .set_group(task, Group_identifier_type::ROOT)
+        .set_group(task, GroupIdentifier::ROOT)
         .await
         .unwrap();
 
     assert_eq!(
         get_instance().get_user(task).await.unwrap(),
-        User_identifier_type::ROOT
+        UserIdentifier::ROOT
     );
     assert_eq!(
         get_instance().get_group(task).await.unwrap(),
-        Group_identifier_type::ROOT
+        GroupIdentifier::ROOT
     );
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_get_current_task_identifier() {
     let manager = initialize();
 
@@ -71,13 +69,13 @@ async fn test_get_current_task_identifier() {
         .await;
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_task_owner_inheritance() {
     let manager = initialize();
 
     let task = manager.get_current_task_identifier().await;
-    let user_identifier = User_identifier_type::new(123);
-    let group_identifier = Group_identifier_type::new(456);
+    let user_identifier = UserIdentifier::new(123);
+    let group_identifier = GroupIdentifier::new(456);
 
     manager.set_user(task, user_identifier).await.unwrap();
     manager.set_group(task, group_identifier).await.unwrap();
@@ -133,7 +131,7 @@ async fn test_task_owner_inheritance() {
         .await;
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_environment_variables() {
     let manager = initialize();
 
@@ -163,7 +161,7 @@ async fn test_environment_variables() {
         .is_err());
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_environment_variable_inheritance() {
     let manager = initialize();
 
@@ -196,7 +194,7 @@ async fn test_environment_variable_inheritance() {
         .await;
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_join_handle() {
     let manager = initialize();
 
@@ -210,33 +208,33 @@ async fn test_join_handle() {
     assert_eq!(join_handle.0.join().await, 42);
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_set_user() {
     let manager = initialize();
 
     let task = manager.get_current_task_identifier().await;
 
-    let user = User_identifier_type::new(123); // Assuming User_identifier_type is i32 for example
+    let user = UserIdentifier::new(123); // Assuming User_identifier_type is i32 for example
 
     manager.set_user(task, user).await.unwrap();
 
     assert_eq!(manager.get_user(task).await.unwrap(), user);
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_set_group() {
     let manager = initialize();
 
     let task = manager.get_current_task_identifier().await;
 
-    let group = Group_identifier_type::new(456); // Assuming Group_identifier_type is i32 for example
+    let group = GroupIdentifier::new(456); // Assuming Group_identifier_type is i32 for example
 
     manager.set_group(task, group).await.unwrap();
 
     assert_eq!(manager.get_group(task).await.unwrap(), group);
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_signal() {
     let manager = initialize();
 
@@ -246,38 +244,38 @@ async fn test_signal() {
 
     let (child_handle, child_identifier) = manager
         .spawn(task, "Task with signal", Some(spawner), async |task| {
-            Manager_type::sleep(Duration::from_millis(10)).await; // Allow the parent task to set signals
+            Manager::sleep(Duration::from_millis(10)).await; // Allow the parent task to set signals
 
             assert_eq!(
                 get_instance().peek_signal(task).await.unwrap(),
-                Some(Signal_type::Hangup)
+                Some(SignalType::Hangup)
             );
 
             assert_eq!(
                 get_instance().pop_signal(task).await.unwrap(),
-                Some(Signal_type::Hangup)
+                Some(SignalType::Hangup)
             );
 
             assert_eq!(
                 get_instance().peek_signal(task).await.unwrap(),
-                Some(Signal_type::Kill)
+                Some(SignalType::Kill)
             );
 
             assert_eq!(
                 get_instance().pop_signal(task).await.unwrap(),
-                Some(Signal_type::Kill)
+                Some(SignalType::Kill)
             );
         })
         .await
         .unwrap();
 
     get_instance()
-        .send_signal(child_identifier, Signal_type::Kill)
+        .send_signal(child_identifier, SignalType::Kill)
         .await
         .unwrap();
 
     get_instance()
-        .send_signal(child_identifier, Signal_type::Hangup)
+        .send_signal(child_identifier, SignalType::Hangup)
         .await
         .unwrap();
 
@@ -290,7 +288,7 @@ fn test_find_first_available_identifier_empty_map() {
     let map: BTreeMap<u32, ()> = BTreeMap::new();
     let range = 0u32..10u32;
 
-    let result = Manager_type::find_first_available_identifier(&map, range);
+    let result = Manager::find_first_available_identifier(&map, range);
     assert_eq!(result, Some(0u32));
 }
 
@@ -302,7 +300,7 @@ fn test_find_first_available_identifier_no_gaps() {
     map.insert(2, ());
 
     let range = 0u32..10u32;
-    let result = Manager_type::find_first_available_identifier(&map, range);
+    let result = Manager::find_first_available_identifier(&map, range);
     assert_eq!(result, Some(3u32));
 }
 
@@ -314,7 +312,7 @@ fn test_find_first_available_identifier_with_gap() {
     map.insert(3, ());
 
     let range = 0u32..10u32;
-    let result = Manager_type::find_first_available_identifier(&map, range);
+    let result = Manager::find_first_available_identifier(&map, range);
     assert_eq!(result, Some(1u32));
 }
 
@@ -325,7 +323,7 @@ fn test_find_first_available_identifier_range_exhausted() {
     map.insert(1, ());
 
     let range = 0u32..2u32;
-    let result = Manager_type::find_first_available_identifier(&map, range);
+    let result = Manager::find_first_available_identifier(&map, range);
     assert_eq!(result, None);
 }
 
@@ -335,7 +333,7 @@ fn test_find_first_available_identifier_single_element() {
     map.insert(1, ());
 
     let range = 0u32..5u32;
-    let result = Manager_type::find_first_available_identifier(&map, range);
+    let result = Manager::find_first_available_identifier(&map, range);
     assert_eq!(result, Some(0u32));
 }
 
@@ -346,7 +344,7 @@ fn test_find_first_available_identifier_large_gap() {
     map.insert(100, ());
 
     let range = 0u32..200u32;
-    let result = Manager_type::find_first_available_identifier(&map, range);
+    let result = Manager::find_first_available_identifier(&map, range);
     assert_eq!(result, Some(1u32));
 }
 
@@ -357,7 +355,7 @@ fn test_find_first_available_identifier_step_range() {
     map.insert(2, ());
 
     let range = (0..10).step_by(2);
-    let result = Manager_type::find_first_available_identifier(&map, range);
+    let result = Manager::find_first_available_identifier(&map, range);
     assert_eq!(result, Some(4));
 }
 
@@ -369,7 +367,7 @@ fn test_find_first_available_identifier_unordered_keys() {
     map.insert(3, ());
 
     let range = 0u32..10u32;
-    let result = Manager_type::find_first_available_identifier(&map, range);
+    let result = Manager::find_first_available_identifier(&map, range);
     // BTreeMap orders keys, so iteration will be 1, 3, 5
     // Range starts at 0, so first mismatch is at position 0
     assert_eq!(result, Some(0u32));
@@ -383,7 +381,7 @@ fn test_find_first_available_identifier_exact_match_sequence() {
     }
 
     let range = 5u32..15u32;
-    let result = Manager_type::find_first_available_identifier(&map, range);
+    let result = Manager::find_first_available_identifier(&map, range);
     assert_eq!(result, Some(10u32));
 }
 
@@ -393,11 +391,11 @@ fn test_find_first_available_identifier_empty_range() {
     map.insert(0, ());
 
     let range = 5u32..5u32; // Empty range
-    let result = Manager_type::find_first_available_identifier(&map, range);
+    let result = Manager::find_first_available_identifier(&map, range);
     assert_eq!(result, None);
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_spawn() {
     let manager = initialize();
 
@@ -415,7 +413,7 @@ async fn test_spawn() {
         .await;
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_get_parent() {
     let manager = initialize();
 
@@ -441,7 +439,7 @@ async fn test_get_parent() {
     child_handle.join().await;
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_get_children() {
     let manager = initialize();
 
@@ -456,7 +454,7 @@ async fn test_get_children() {
     // Spawn first child
     let (child1_handle, child1_task) = manager
         .spawn(root_task, "Child Task 1", Some(spawner), async move |_| {
-            Manager_type::sleep(core::time::Duration::from_millis(50)).await;
+            Manager::sleep(core::time::Duration::from_millis(50)).await;
         })
         .await
         .unwrap();
@@ -464,7 +462,7 @@ async fn test_get_children() {
     // Spawn second child
     let (child2_handle, child2_task) = manager
         .spawn(root_task, "Child Task 2", Some(spawner), async move |_| {
-            Manager_type::sleep(core::time::Duration::from_millis(50)).await;
+            Manager::sleep(core::time::Duration::from_millis(50)).await;
         })
         .await
         .unwrap();
@@ -484,7 +482,7 @@ async fn test_get_children() {
     assert_eq!(final_children.len(), initial_count);
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_get_children_with_nested_tasks() {
     let manager = initialize();
 
@@ -534,23 +532,23 @@ async fn test_get_children_with_nested_tasks() {
     parent_handle.join().await;
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_get_parent_invalid_task() {
     let manager = initialize();
 
     // Test with an invalid task identifier
-    let invalid_task = Task_identifier_type::new(99999);
+    let invalid_task = TaskIdentifier::new(99999);
     let result = manager.get_parent(invalid_task).await;
 
     assert!(result.is_err());
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_get_children_invalid_task() {
     let manager = initialize();
 
     // Test with an invalid task identifier
-    let invalid_task = Task_identifier_type::new(99999);
+    let invalid_task = TaskIdentifier::new(99999);
     let result = manager.get_children(invalid_task).await;
 
     // get_children should return an empty vector for invalid task
@@ -559,7 +557,7 @@ async fn test_get_children_invalid_task() {
     assert_eq!(result.unwrap().len(), 0);
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_root_task_parent() {
     let manager = initialize();
 
@@ -567,10 +565,10 @@ async fn test_root_task_parent() {
 
     // Root task should be its own parent
     let parent = manager.get_parent(root_task).await.unwrap();
-    assert_eq!(parent, Manager_type::ROOT_TASK_IDENTIFIER);
+    assert_eq!(parent, Manager::ROOT_TASK_IDENTIFIER);
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_multiple_generation_relationships() {
     let manager = initialize();
 
@@ -650,7 +648,7 @@ async fn test_multiple_generation_relationships() {
     level1_handle.join().await;
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_register_spawner() {
     let manager = initialize();
 
@@ -671,13 +669,10 @@ async fn test_register_spawner() {
     let invalid_spawner_id = 99999;
     let result = manager.unregister_spawner(invalid_spawner_id);
     assert!(result.is_err());
-    assert!(matches!(
-        result.unwrap_err(),
-        Error_type::No_spawner_available
-    ));
+    assert!(matches!(result.unwrap_err(), Error::No_spawner_available));
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_unregister_spawner() {
     let manager = initialize();
 
@@ -685,21 +680,18 @@ async fn test_unregister_spawner() {
     let invalid_spawner_id = 99999;
     let result = manager.unregister_spawner(invalid_spawner_id);
     assert!(result.is_err());
-    assert!(matches!(
-        result.unwrap_err(),
-        Error_type::No_spawner_available
-    ));
+    assert!(matches!(result.unwrap_err(), Error::No_spawner_available));
 
     // Test unregistering the same spawner twice
     let second_result = manager.unregister_spawner(invalid_spawner_id);
     assert!(second_result.is_err());
     assert!(matches!(
         second_result.unwrap_err(),
-        Error_type::No_spawner_available
+        Error::No_spawner_available
     ));
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_unregister_nonexistent_spawner() {
     let manager = initialize();
 
@@ -708,13 +700,10 @@ async fn test_unregister_nonexistent_spawner() {
     let result = manager.unregister_spawner(invalid_id);
 
     assert!(result.is_err());
-    assert!(matches!(
-        result.unwrap_err(),
-        Error_type::No_spawner_available
-    ));
+    assert!(matches!(result.unwrap_err(), Error::No_spawner_available));
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_register_multiple_spawners() {
     let manager = initialize();
 
@@ -730,10 +719,7 @@ async fn test_register_multiple_spawners() {
     for invalid_id in invalid_ids {
         let result = manager.unregister_spawner(invalid_id);
         assert!(result.is_err());
-        assert!(matches!(
-            result.unwrap_err(),
-            Error_type::No_spawner_available
-        ));
+        assert!(matches!(result.unwrap_err(), Error::No_spawner_available));
     }
 }
 
@@ -755,7 +741,7 @@ async fn _test_spawner_load_balancing() {
         let task_name = format!("Load Balance Task {i}");
         let (handle, _) = manager
             .spawn(parent_task, &task_name, None, async move |task| {
-                Manager_type::sleep(core::time::Duration::from_millis(10)).await;
+                Manager::sleep(core::time::Duration::from_millis(10)).await;
                 get_instance().get_spawner(task).await.unwrap()
             })
             .await
@@ -785,22 +771,19 @@ async fn _test_spawner_load_balancing() {
     }
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_get_spawner_invalid_task() {
     let manager = initialize();
 
     // Test with an invalid task identifier
-    let invalid_task = Task_identifier_type::new(99999);
+    let invalid_task = TaskIdentifier::new(99999);
     let result = manager.get_spawner(invalid_task).await;
 
     assert!(result.is_err());
-    assert!(matches!(
-        result.unwrap_err(),
-        Error_type::Invalid_task_identifier
-    ));
+    assert!(matches!(result.unwrap_err(), Error::InvalidTaskIdentifier));
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_get_spawner_valid_task() {
     let manager = initialize();
 
@@ -811,7 +794,7 @@ async fn test_get_spawner_valid_task() {
     assert!(spawner_result.is_ok());
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_spawner_with_explicit_selection() {
     let manager = initialize();
 
@@ -833,7 +816,7 @@ async fn test_spawner_with_explicit_selection() {
     assert_eq!(used_spawner, current_spawner_id);
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_spawner_with_invalid_selection() {
     let manager = initialize();
 
@@ -852,11 +835,11 @@ async fn test_spawner_with_invalid_selection() {
 
     assert!(result.is_err());
     if let Err(error) = result {
-        assert!(matches!(error, Error_type::Invalid_spawner_identifier));
+        assert!(matches!(error, Error::Invalid_spawner_identifier));
     }
 }
 
-#[Test(task_path = crate)]
+#[test(task_path = crate)]
 async fn test_spawner_reuse_after_unregister() {
     let manager = initialize();
 
@@ -868,18 +851,12 @@ async fn test_spawner_reuse_after_unregister() {
     let invalid_spawner_id = 99999;
     let result1 = manager.unregister_spawner(invalid_spawner_id);
     assert!(result1.is_err());
-    assert!(matches!(
-        result1.unwrap_err(),
-        Error_type::No_spawner_available
-    ));
+    assert!(matches!(result1.unwrap_err(), Error::No_spawner_available));
 
     // Test that the same invalid ID consistently fails
     let result2 = manager.unregister_spawner(invalid_spawner_id);
     assert!(result2.is_err());
-    assert!(matches!(
-        result2.unwrap_err(),
-        Error_type::No_spawner_available
-    ));
+    assert!(matches!(result2.unwrap_err(), Error::No_spawner_available));
 
     // Verify that valid spawner operations still work
     let current_task = manager.get_current_task_identifier().await;

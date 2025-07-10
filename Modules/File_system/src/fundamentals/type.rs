@@ -38,33 +38,33 @@ use core::fmt::Display;
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
-pub enum Type_type {
+pub enum Kind {
     /// Regular file containing data
     File,
     /// Directory containing other file system objects
     Directory,
     /// Block-oriented device (e.g., disk drives, storage devices)
-    Block_device,
+    BlockDevice,
     /// Character-oriented device (e.g., terminals, serial ports)
-    Character_device,
+    CharacterDevice,
     /// Named pipe (FIFO) for inter-process communication
     Pipe,
     /// Unix domain socket for inter-process communication
     Socket,
     /// Symbolic link pointing to another file system object
-    Symbolic_link,
+    SymbolicLink,
 }
 
-impl Display for Type_type {
+impl Display for Kind {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         let type_value = match self {
-            Type_type::File => "File",
-            Type_type::Directory => "Directory",
-            Type_type::Block_device => "Block device",
-            Type_type::Character_device => "Character device",
-            Type_type::Pipe => "Pipe",
-            Type_type::Socket => "Socket",
-            Type_type::Symbolic_link => "Symbolic link",
+            Kind::File => "File",
+            Kind::Directory => "Directory",
+            Kind::BlockDevice => "Block device",
+            Kind::CharacterDevice => "Character device",
+            Kind::Pipe => "Pipe",
+            Kind::Socket => "Socket",
+            Kind::SymbolicLink => "Symbolic link",
         };
 
         write!(f, "{type_value}")
@@ -79,13 +79,13 @@ mod tests {
     #[test]
     fn test_type_variants() {
         // Test that all variants can be created
-        let file = Type_type::File;
-        let directory = Type_type::Directory;
-        let block_device = Type_type::Block_device;
-        let character_device = Type_type::Character_device;
-        let pipe = Type_type::Pipe;
-        let socket = Type_type::Socket;
-        let symbolic_link = Type_type::Symbolic_link;
+        let file = Kind::File;
+        let directory = Kind::Directory;
+        let block_device = Kind::BlockDevice;
+        let character_device = Kind::CharacterDevice;
+        let pipe = Kind::Pipe;
+        let socket = Kind::Socket;
+        let symbolic_link = Kind::SymbolicLink;
 
         // Basic verification they're different
         assert_ne!(file, directory);
@@ -98,9 +98,9 @@ mod tests {
 
     #[test]
     fn test_type_equality() {
-        let file1 = Type_type::File;
-        let file2 = Type_type::File;
-        let directory = Type_type::Directory;
+        let file1 = Kind::File;
+        let file2 = Kind::File;
+        let directory = Kind::Directory;
 
         assert_eq!(file1, file2);
         assert_ne!(file1, directory);
@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     fn test_type_clone_copy() {
-        let original = Type_type::File;
+        let original = Kind::File;
         let cloned = original;
         let copied = original;
 
@@ -119,27 +119,24 @@ mod tests {
 
     #[test]
     fn test_type_debug() {
-        let file_type = Type_type::File;
+        let file_type = Kind::File;
         let debug_str = format!("{file_type:?}");
         assert_eq!(debug_str, "File");
 
-        let directory_type = Type_type::Directory;
+        let directory_type = Kind::Directory;
         let debug_str = format!("{directory_type:?}");
         assert_eq!(debug_str, "Directory");
     }
 
     #[test]
     fn test_type_display() {
-        assert_eq!(format!("{}", Type_type::File), "File");
-        assert_eq!(format!("{}", Type_type::Directory), "Directory");
-        assert_eq!(format!("{}", Type_type::Block_device), "Block device");
-        assert_eq!(
-            format!("{}", Type_type::Character_device),
-            "Character device"
-        );
-        assert_eq!(format!("{}", Type_type::Pipe), "Pipe");
-        assert_eq!(format!("{}", Type_type::Socket), "Socket");
-        assert_eq!(format!("{}", Type_type::Symbolic_link), "Symbolic link");
+        assert_eq!(format!("{}", Kind::File), "File");
+        assert_eq!(format!("{}", Kind::Directory), "Directory");
+        assert_eq!(format!("{}", Kind::BlockDevice), "Block device");
+        assert_eq!(format!("{}", Kind::CharacterDevice), "Character device");
+        assert_eq!(format!("{}", Kind::Pipe), "Pipe");
+        assert_eq!(format!("{}", Kind::Socket), "Socket");
+        assert_eq!(format!("{}", Kind::SymbolicLink), "Symbolic link");
     }
 
     #[test]
@@ -148,19 +145,19 @@ mod tests {
         use core::mem::size_of;
 
         // Should be 1 byte due to repr(u8)
-        assert_eq!(size_of::<Type_type>(), 1);
+        assert_eq!(size_of::<Kind>(), 1);
     }
 
     #[test]
     fn test_type_discriminants() {
         // Test that different variants have different discriminants
-        let file = Type_type::File as u8;
-        let directory = Type_type::Directory as u8;
-        let block_device = Type_type::Block_device as u8;
-        let character_device = Type_type::Character_device as u8;
-        let pipe = Type_type::Pipe as u8;
-        let socket = Type_type::Socket as u8;
-        let symbolic_link = Type_type::Symbolic_link as u8;
+        let file = Kind::File as u8;
+        let directory = Kind::Directory as u8;
+        let block_device = Kind::BlockDevice as u8;
+        let character_device = Kind::CharacterDevice as u8;
+        let pipe = Kind::Pipe as u8;
+        let socket = Kind::Socket as u8;
+        let symbolic_link = Kind::SymbolicLink as u8;
 
         // All should be different
         let discriminants = [
@@ -185,16 +182,16 @@ mod tests {
 
     #[test]
     fn test_type_pattern_matching() {
-        let file_type = Type_type::File;
+        let file_type = Kind::File;
 
         let description = match file_type {
-            Type_type::File => "regular file",
-            Type_type::Directory => "directory",
-            Type_type::Block_device => "block device",
-            Type_type::Character_device => "character device",
-            Type_type::Pipe => "pipe",
-            Type_type::Socket => "socket",
-            Type_type::Symbolic_link => "symbolic link",
+            Kind::File => "regular file",
+            Kind::Directory => "directory",
+            Kind::BlockDevice => "block device",
+            Kind::CharacterDevice => "character device",
+            Kind::Pipe => "pipe",
+            Kind::Socket => "socket",
+            Kind::SymbolicLink => "symbolic link",
         };
 
         assert_eq!(description, "regular file");
@@ -203,67 +200,63 @@ mod tests {
     #[test]
     fn test_type_all_variants_pattern_matching() {
         let types = [
-            Type_type::File,
-            Type_type::Directory,
-            Type_type::Block_device,
-            Type_type::Character_device,
-            Type_type::Pipe,
-            Type_type::Socket,
-            Type_type::Symbolic_link,
+            Kind::File,
+            Kind::Directory,
+            Kind::BlockDevice,
+            Kind::CharacterDevice,
+            Kind::Pipe,
+            Kind::Socket,
+            Kind::SymbolicLink,
         ];
 
         for type_variant in types.iter() {
             // Test that each variant can be matched
             let _matched = match type_variant {
-                Type_type::File => "file",
-                Type_type::Directory => "directory",
-                Type_type::Block_device => "block",
-                Type_type::Character_device => "char",
-                Type_type::Pipe => "pipe",
-                Type_type::Socket => "socket",
-                Type_type::Symbolic_link => "symlink",
+                Kind::File => "file",
+                Kind::Directory => "directory",
+                Kind::BlockDevice => "block",
+                Kind::CharacterDevice => "char",
+                Kind::Pipe => "pipe",
+                Kind::Socket => "socket",
+                Kind::SymbolicLink => "symlink",
             };
         }
     }
 
     #[test]
     fn test_type_in_collections() {
-        let types = [
-            Type_type::File,
-            Type_type::Directory,
-            Type_type::Symbolic_link,
-        ];
+        let types = [Kind::File, Kind::Directory, Kind::SymbolicLink];
 
         assert_eq!(types.len(), 3);
-        assert_eq!(types[0], Type_type::File);
-        assert_eq!(types[1], Type_type::Directory);
-        assert_eq!(types[2], Type_type::Symbolic_link);
+        assert_eq!(types[0], Kind::File);
+        assert_eq!(types[1], Kind::Directory);
+        assert_eq!(types[2], Kind::SymbolicLink);
     }
 
     #[test]
     fn test_type_is_specific_type() {
         // Helper functions that might be useful
-        fn is_file(t: Type_type) -> bool {
-            matches!(t, Type_type::File)
+        fn is_file(t: Kind) -> bool {
+            matches!(t, Kind::File)
         }
 
-        fn is_directory(t: Type_type) -> bool {
-            matches!(t, Type_type::Directory)
+        fn is_directory(t: Kind) -> bool {
+            matches!(t, Kind::Directory)
         }
 
-        fn is_device(t: Type_type) -> bool {
-            matches!(t, Type_type::Block_device | Type_type::Character_device)
+        fn is_device(t: Kind) -> bool {
+            matches!(t, Kind::BlockDevice | Kind::CharacterDevice)
         }
 
-        assert!(is_file(Type_type::File));
-        assert!(!is_file(Type_type::Directory));
+        assert!(is_file(Kind::File));
+        assert!(!is_file(Kind::Directory));
 
-        assert!(is_directory(Type_type::Directory));
-        assert!(!is_directory(Type_type::File));
+        assert!(is_directory(Kind::Directory));
+        assert!(!is_directory(Kind::File));
 
-        assert!(is_device(Type_type::Block_device));
-        assert!(is_device(Type_type::Character_device));
-        assert!(!is_device(Type_type::File));
+        assert!(is_device(Kind::BlockDevice));
+        assert!(is_device(Kind::CharacterDevice));
+        assert!(!is_device(Kind::File));
     }
 
     #[test]
@@ -272,19 +265,19 @@ mod tests {
         let mut type_counts = alloc::collections::BTreeMap::new();
 
         let types = [
-            Type_type::File,
-            Type_type::File,
-            Type_type::Directory,
-            Type_type::File,
-            Type_type::Symbolic_link,
+            Kind::File,
+            Kind::File,
+            Kind::Directory,
+            Kind::File,
+            Kind::SymbolicLink,
         ];
 
         for t in types.iter() {
             *type_counts.entry(*t).or_insert(0) += 1;
         }
 
-        assert_eq!(type_counts[&Type_type::File], 3);
-        assert_eq!(type_counts[&Type_type::Directory], 1);
-        assert_eq!(type_counts[&Type_type::Symbolic_link], 1);
+        assert_eq!(type_counts[&Kind::File], 3);
+        assert_eq!(type_counts[&Kind::Directory], 1);
+        assert_eq!(type_counts[&Kind::SymbolicLink], 1);
     }
 }

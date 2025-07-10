@@ -1,4 +1,3 @@
-#![allow(non_camel_case_types)]
 #![allow(clippy::upper_case_acronyms)]
 
 pub mod additional;

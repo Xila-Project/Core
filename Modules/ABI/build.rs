@@ -1,8 +1,6 @@
-#![allow(non_camel_case_types)]
-
 pub fn main() {
     let out_dir = "./include";
-    let out_file = format!("{out_dir}/Xila.h");
+    let out_file = format!("{out_dir}/xila.h");
 
     let enumeration_configuration = cbindgen::EnumConfig {
         prefix_with_name: true,

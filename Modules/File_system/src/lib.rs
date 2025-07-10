@@ -20,9 +20,9 @@
 //! - Support for POSIX-like operations with task and user isolation
 //!
 //! ### Device Management
-//! - [`Device_trait`] - Abstraction for storage devices
+//! - [`DeviceTrait`] - Abstraction for storage devices
 //! - [`Memory_device_type`] - In-memory device implementation for testing
-//! - [`Device_type`] - Thread-safe device wrapper
+//! - [`DeviceType`] - Thread-safe device wrapper
 //!
 //! ### Partition Support
 //! - [`Partition_device_type`] - Device representing a partition on a larger device
@@ -36,8 +36,8 @@
 //!
 //! ### Fundamental Types
 //! - [`Path_type`] - File system path representation
-//! - [`Error_type`] - File system error enumeration
-//! - [`Size_type`] - Size and position types
+//! - [`Error`] - File system error enumeration
+//! - [`Size`] - Size and position types
 //! - [`Time_type`] - Timestamp handling
 //! - [`Flags_type`] - File operation flags
 //!
@@ -55,7 +55,7 @@
 //! # use file_system::*;
 //!
 //! // Create an in-memory device for testing
-//! let device = create_device!(Memory_device_type::<512>::New(1024 * 1024));
+//! let device = create_device!(Memory_device_type::<512>::new(1024 * 1024));
 //!
 //! // Write some data
 //! let data = b"Hello, File System!";
@@ -70,7 +70,7 @@
 //! # use file_system::*;
 //!
 //! // Create a device and format it with MBR
-//! let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+//! let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
 //!
 //! // Create MBR and add a partition
 //! let mut mbr = MBR_type::New_with_signature(0x12345678);
@@ -91,11 +91,10 @@
 //!
 //! ## Error Handling
 //!
-//! All operations return [`Result_type<T>`] which is an alias for `Result<T, Error_type>`.
-//! The [`Error_type`] enum provides comprehensive error reporting for all file system operations.
+//! All operations return [`Result<T>`] which is an alias for `Result<T, Error>`.
+//! The [`Error`] enum provides comprehensive error reporting for all file system operations.
 
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
@@ -112,7 +111,7 @@ mod partition;
 mod memory_device;
 mod time;
 
-pub use device::{Device_trait, Device_type};
+pub use device::{DeviceTrait, DeviceType};
 pub use error::*;
 
 pub use file_system::*;

@@ -1,10 +1,10 @@
 use alloc::{borrow::ToOwned, format, string::ToString};
 
-use file_system::{Inode_type, Path_type};
+use file_system::{Inode, Path};
 
-use crate::Shell_type;
+use crate::Shell;
 
-impl Shell_type {
+impl Shell {
     pub async fn statistics(&mut self, arguments: &[&str]) {
         if arguments.len() != 1 {
             self.standard
@@ -13,7 +13,7 @@ impl Shell_type {
             return;
         }
 
-        let path = Path_type::from_str(arguments[0]);
+        let path = Path::from_str(arguments[0]);
 
         let path = if path.is_absolute() {
             path.to_owned()
@@ -58,7 +58,7 @@ impl Shell_type {
             }
         };
 
-        let inode = metadata.get_inode().unwrap_or(Inode_type::new(0)).as_u64();
+        let inode = metadata.get_inode().unwrap_or(Inode::new(0)).as_u64();
 
         self.standard
             .print_line(&format!(

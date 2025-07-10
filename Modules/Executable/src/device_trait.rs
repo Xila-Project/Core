@@ -1,18 +1,18 @@
 use alloc::string::String;
-use file_system::Device_trait;
-use task::Task_identifier_type;
-use virtual_file_system::Virtual_file_system_type;
+use file_system::DeviceTrait;
+use task::TaskIdentifier;
+use virtual_file_system::VirtualFileSystemType;
 
-pub trait Device_executable_trait: Device_trait {
+pub trait DeviceExecutableTrait: DeviceTrait {
     fn mount<'a>(
-        virtual_file_system: &'a Virtual_file_system_type<'a>,
-        task: Task_identifier_type,
+        virtual_file_system: &'a VirtualFileSystemType<'a>,
+        task: TaskIdentifier,
     ) -> Result<(), String>;
 }
 
-/// Macro to automatically implement Device_executable_trait for a struct with a main function.
+/// Macro to automatically implement DeviceExecutableTrait for a struct with a main function.
 ///
-/// This macro generates both the Device_executable_trait implementation and the Device_trait
+/// This macro generates both the DeviceExecutableTrait implementation and the DeviceTrait
 /// implementation for executable devices.
 ///
 /// # Usage
@@ -26,18 +26,18 @@ pub trait Device_executable_trait: Device_trait {
 /// );
 /// ```
 #[macro_export]
-macro_rules! Implement_executable_device {
+macro_rules! implement_executable_device {
     // Simple executable without constructor
     (
         Structure: $struct_name:ident,
         Mount_path: $mount_path:expr,
         Main_function: $main_function:path,
     ) => {
-        impl executable::Device_executable_trait for $struct_name {
+        impl executable::DeviceExecutableTrait for $struct_name {
             fn mount<'a>(
-                virtual_file_system: &'a virtual_file_system::Virtual_file_system_type<'a>,
-                task: task::Task_identifier_type,
-            ) -> Result<(), alloc::string::String> {
+                virtual_file_system: &'a virtual_file_system::VirtualFileSystemType<'a>,
+                task: task::TaskIdentifier,
+            ) -> core::result::Result<(), alloc::string::String> {
                 use alloc::string::ToString;
 
                 futures::block_on(virtual_file_system.mount_static_device(
@@ -51,51 +51,51 @@ macro_rules! Implement_executable_device {
             }
         }
 
-        impl file_system::Device_trait for $struct_name {
-            fn read(&self, buffer: &mut [u8]) -> file_system::Result_type<file_system::Size_type> {
-                let read_data: &mut executable::Read_data_type = buffer
+        impl file_system::DeviceTrait for $struct_name {
+            fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
+                let read_data: &mut executable::ReadData = buffer
                     .try_into()
-                    .map_err(|_| file_system::Error_type::Invalid_parameter)?;
+                    .map_err(|_| file_system::Error::InvalidParameter)?;
 
-                *read_data = executable::Read_data_type::new($main_function);
+                *read_data = executable::ReadData::new($main_function);
 
-                Ok(core::mem::size_of::<executable::Read_data_type>().into())
+                Ok(core::mem::size_of::<executable::ReadData>().into())
             }
 
-            fn write(&self, _: &[u8]) -> file_system::Result_type<file_system::Size_type> {
-                Err(file_system::Error_type::Unsupported_operation)
+            fn write(&self, _: &[u8]) -> file_system::Result<file_system::Size> {
+                Err(file_system::Error::UnsupportedOperation)
             }
 
-            fn get_size(&self) -> file_system::Result_type<file_system::Size_type> {
-                Err(file_system::Error_type::Unsupported_operation)
+            fn get_size(&self) -> file_system::Result<file_system::Size> {
+                Err(file_system::Error::UnsupportedOperation)
             }
 
             fn set_position(
                 &self,
-                _: &file_system::Position_type,
-            ) -> file_system::Result_type<file_system::Size_type> {
-                Err(file_system::Error_type::Unsupported_operation)
+                _: &file_system::Position,
+            ) -> file_system::Result<file_system::Size> {
+                Err(file_system::Error::UnsupportedOperation)
             }
 
-            fn flush(&self) -> file_system::Result_type<()> {
-                Err(file_system::Error_type::Unsupported_operation)
+            fn flush(&self) -> file_system::Result<()> {
+                Err(file_system::Error::UnsupportedOperation)
             }
         }
     };
 }
 
 #[macro_export]
-macro_rules! Mount_static_executables {
+macro_rules! mount_static_executables {
 
     ( $Virtual_file_system:expr, $Task_identifier:expr, &[ $( ($Path:expr, $Device:expr) ),* $(,)? ] ) => {
 
-    async || -> Result<(), file_system::Error_type>
+    async || -> Result<(), file_system::Error>
     {
-        use file_system::{create_device, Permissions_type};
+        use file_system::{create_device, Permissions};
 
         $(
             $Virtual_file_system.mount_static_device($Task_identifier, $Path, create_device!($Device)).await?;
-            $Virtual_file_system.set_permissions($Path, Permissions_type::EXECUTABLE ).await?;
+            $Virtual_file_system.set_permissions($Path, Permissions::EXECUTABLE ).await?;
         )*
 
         Ok(())

@@ -1,12 +1,12 @@
 use super::lvgl;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub struct Point_type {
+pub struct Point {
     x: i16,
     y: i16,
 }
 
-impl Point_type {
+impl Point {
     pub const fn new(x: i16, y: i16) -> Self {
         Self { x, y }
     }
@@ -39,27 +39,27 @@ impl Point_type {
         self
     }
 
-    pub fn get_distance(&self, other: Point_type) -> f32 {
+    pub fn get_distance(&self, other: Point) -> f32 {
         let x = (self.x - other.x) as f32;
         let y = (self.y - other.y) as f32;
         (x * x + y * y).sqrt()
     }
 }
 
-impl From<(i16, i16)> for Point_type {
+impl From<(i16, i16)> for Point {
     fn from((x, y): (i16, i16)) -> Self {
         Self::new(x, y)
     }
 }
 
-impl From<Point_type> for (i16, i16) {
-    fn from(point: Point_type) -> Self {
+impl From<Point> for (i16, i16) {
+    fn from(point: Point) -> Self {
         point.split()
     }
 }
 
-impl From<Point_type> for lvgl::lv_point_t {
-    fn from(point: Point_type) -> Self {
+impl From<Point> for lvgl::lv_point_t {
+    fn from(point: Point) -> Self {
         Self {
             x: point.x as i32,
             y: point.y as i32,

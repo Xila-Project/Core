@@ -1,4 +1,4 @@
-#include "../../../ABI/include/Xila.h"
+#include "../../../ABI/include/xila.h"
 #include "../include/Internal.h"
 #include "platform_internal.h"
 
@@ -33,7 +33,7 @@
 int os_thread_create(korp_tid *p_tid, thread_start_routine_t start, void *arg,
                      unsigned int stack_size)
 {
-    return Xila_thread_create(start, arg, stack_size, p_tid);
+    return xila_thread_create(start, arg, stack_size, p_tid);
 }
 
 /**
@@ -50,7 +50,7 @@ int os_thread_create(korp_tid *p_tid, thread_start_routine_t start, void *arg,
 int os_thread_create_with_prio(korp_tid *p_tid, thread_start_routine_t start,
                                void *arg, unsigned int stack_size, int prio)
 {
-    return Xila_thread_create(start, arg, stack_size, p_tid);
+    return xila_thread_create(start, arg, stack_size, p_tid);
 }
 
 /**
@@ -63,7 +63,7 @@ int os_thread_create_with_prio(korp_tid *p_tid, thread_start_routine_t start,
  */
 int os_thread_join(korp_tid thread, void **retval)
 {
-    return Xila_thread_join(thread);
+    return xila_thread_join(thread);
 }
 
 /**
@@ -75,7 +75,7 @@ int os_thread_join(korp_tid thread, void **retval)
  */
 int os_thread_detach(korp_tid Thread)
 {
-    return Xila_thread_detach(Thread);
+    return xila_thread_detach(Thread);
 }
 
 /**
@@ -85,7 +85,7 @@ int os_thread_detach(korp_tid Thread)
  */
 void os_thread_exit(void *retval)
 {
-    Xila_thread_exit();
+    xila_thread_exit();
 }
 
 /* Try to define os_atomic_thread_fence if it isn't defined in
@@ -156,7 +156,7 @@ void os_thread_exit(void *retval)
  */
 int os_usleep(uint32 usec)
 {
-    Xila_thread_sleep_exact(usec);
+    xila_thread_sleep_exact(usec);
 
     return 0;
 }
@@ -170,7 +170,7 @@ int os_usleep(uint32 usec)
  */
 int os_recursive_mutex_init(korp_mutex *mutex)
 {
-    if (Xila_initialize_recursive_mutex(mutex))
+    if (xila_initialize_recursive_mutex(mutex))
         return 0;
 
     return -1;
@@ -185,7 +185,7 @@ int os_recursive_mutex_init(korp_mutex *mutex)
  */
 int os_cond_init(korp_cond *cond)
 {
-    return Xila_condition_variable_new(cond);
+    return xila_condition_variable_new(cond);
 }
 
 /**
@@ -197,7 +197,7 @@ int os_cond_init(korp_cond *cond)
  */
 int os_cond_destroy(korp_cond *cond)
 {
-    return Xila_condition_variable_remove(cond);
+    return xila_condition_variable_remove(cond);
 }
 
 /**
@@ -210,7 +210,7 @@ int os_cond_destroy(korp_cond *cond)
  */
 int os_cond_wait(korp_cond *cond, korp_mutex *mutex)
 {
-    return Xila_condition_variable_wait(cond, mutex);
+    return xila_condition_variable_wait(cond, mutex);
 }
 
 /**
@@ -224,7 +224,7 @@ int os_cond_wait(korp_cond *cond, korp_mutex *mutex)
  */
 int os_cond_reltimedwait(korp_cond *cond, korp_mutex *mutex, uint64 useconds)
 {
-    return Xila_condition_variable_try_wait(cond, mutex, useconds);
+    return xila_condition_variable_try_wait(cond, mutex, useconds);
 }
 
 /**
@@ -236,7 +236,7 @@ int os_cond_reltimedwait(korp_cond *cond, korp_mutex *mutex, uint64 useconds)
  */
 int os_cond_signal(korp_cond *cond)
 {
-    return Xila_condition_variable_signal(cond);
+    return xila_condition_variable_signal(cond);
 }
 
 /**
@@ -248,7 +248,7 @@ int os_cond_signal(korp_cond *cond)
  */
 int os_cond_broadcast(korp_cond *cond)
 {
-    return Xila_condition_variable_broadcast(cond);
+    return xila_condition_variable_broadcast(cond);
 }
 
 /**
@@ -260,7 +260,7 @@ int os_cond_broadcast(korp_cond *cond)
  */
 int os_rwlock_init(korp_rwlock *lock)
 {
-    return !Xila_initialize_rwlock(lock);
+    return !xila_initialize_rwlock(lock);
 }
 
 /**
@@ -272,7 +272,7 @@ int os_rwlock_init(korp_rwlock *lock)
  */
 int os_rwlock_rdlock(korp_rwlock *lock)
 {
-    return !Xila_read_rwlock(lock);
+    return !xila_read_rwlock(lock);
 }
 
 /**
@@ -284,7 +284,7 @@ int os_rwlock_rdlock(korp_rwlock *lock)
  */
 int os_rwlock_wrlock(korp_rwlock *lock)
 {
-    return !Xila_write_rwlock(lock);
+    return !xila_write_rwlock(lock);
 }
 
 /**
@@ -296,7 +296,7 @@ int os_rwlock_wrlock(korp_rwlock *lock)
  */
 int os_rwlock_unlock(korp_rwlock *lock)
 {
-    return !Xila_unlock_rwlock(lock);
+    return !xila_unlock_rwlock(lock);
 }
 
 /**
@@ -308,7 +308,7 @@ int os_rwlock_unlock(korp_rwlock *lock)
  */
 int os_rwlock_destroy(korp_rwlock *lock)
 {
-    return !Xila_destroy_rwlock(lock);
+    return !xila_destroy_rwlock(lock);
 }
 
 /**
@@ -327,7 +327,7 @@ int os_rwlock_destroy(korp_rwlock *lock)
 korp_sem *
 os_sem_open(const char *name, int oflags, int mode, int val)
 {
-    return Xila_semaphore_open(name, oflags, mode, val);
+    return xila_semaphore_open(name, oflags, mode, val);
 }
 
 /**
@@ -341,7 +341,7 @@ os_sem_open(const char *name, int oflags, int mode, int val)
  */
 int os_sem_close(korp_sem *sem)
 {
-    return Xila_semaphore_close(sem);
+    return xila_semaphore_close(sem);
 }
 
 /**
@@ -357,7 +357,7 @@ int os_sem_close(korp_sem *sem)
  */
 int os_sem_wait(korp_sem *sem)
 {
-    return Xila_semaphore_wait(sem);
+    return xila_semaphore_wait(sem);
 }
 
 /**
@@ -369,7 +369,7 @@ int os_sem_wait(korp_sem *sem)
  */
 int os_sem_trywait(korp_sem *sem)
 {
-    return Xila_semaphore_try_wait(sem);
+    return xila_semaphore_try_wait(sem);
 }
 
 /**
@@ -382,7 +382,7 @@ int os_sem_trywait(korp_sem *sem)
  */
 int os_sem_post(korp_sem *sem)
 {
-    return Xila_semaphore_post(sem);
+    return xila_semaphore_post(sem);
 }
 
 /**
@@ -393,7 +393,7 @@ int os_sem_post(korp_sem *sem)
  */
 int os_sem_getvalue(korp_sem *sem, int *sval)
 {
-    return Xila_semaphore_get_value(sem, sval);
+    return xila_semaphore_get_value(sem, sval);
 }
 
 /**
@@ -408,7 +408,7 @@ int os_sem_getvalue(korp_sem *sem, int *sval)
  */
 int os_sem_unlink(const char *name)
 {
-    return Xila_semaphore_remove(name);
+    return xila_semaphore_remove(name);
 }
 
 /**
@@ -424,7 +424,7 @@ int os_blocking_op_init()
  */
 void os_begin_blocking_op()
 {
-    Xila_thread_begin_blocking_operation();
+    xila_thread_begin_blocking_operation();
 }
 
 /**
@@ -432,7 +432,7 @@ void os_begin_blocking_op()
  */
 void os_end_blocking_op()
 {
-    Xila_thread_end_blocking_operation();
+    xila_thread_end_blocking_operation();
 }
 
 /**
@@ -444,7 +444,7 @@ void os_end_blocking_op()
  */
 int os_wakeup_blocking_op(korp_tid tid)
 {
-    return Xila_thread_wake_up(tid);
+    return xila_thread_wake_up(tid);
 }
 
 /****************************************************
@@ -1309,9 +1309,9 @@ os_invalid_raw_handle()
 __wasi_errno_t
 os_fstat(os_file_handle handle, struct __wasi_filestat_t *buf)
 {
-    Xila_file_system_statistics_type Statistics;
+    XilaFileSystemStatistics Statistics;
 
-    Xila_file_system_result_type Result = Xila_file_system_get_statistics(handle, &Statistics);
+    XilaFileSystemResult Result = xila_file_system_get_statistics(handle, &Statistics);
 
     if (Result == 0)
         Into_WASI_file_statistics(&Statistics, buf);
@@ -1332,13 +1332,13 @@ __wasi_errno_t
 os_fstatat(os_file_handle handle, const char *path,
            struct __wasi_filestat_t *buf, __wasi_lookupflags_t lookup_flags)
 {
-    bool Follow = lookup_flags & __WASI_LOOKUP_SYMLINK_FOLLOW;
+    bool follow = lookup_flags & __WASI_LOOKUP_SYMLINK_FOLLOW;
 
-    Xila_file_system_statistics_type Statistics;
+    XilaFileSystemStatistics statistics;
 
-    Xila_file_system_result_type Result = Xila_file_system_get_statistics_from_path(path, &Statistics, Follow);
+    XilaFileSystemResult result = xila_file_system_get_statistics_from_path(path, &statistics, follow);
 
-    return Into_WASI_Error(Result);
+    return Into_WASI_Error(result);
 }
 
 /**
@@ -1351,7 +1351,7 @@ os_fstatat(os_file_handle handle, const char *path,
 __wasi_errno_t
 os_file_get_fdflags(os_file_handle handle, __wasi_fdflags_t *flags)
 {
-    return Xila_file_system_get_flags(handle, flags);
+    return xila_file_system_get_flags(handle, flags);
 }
 
 /**
@@ -1364,7 +1364,7 @@ os_file_get_fdflags(os_file_handle handle, __wasi_fdflags_t *flags)
 __wasi_errno_t
 os_file_set_fdflags(os_file_handle handle, __wasi_fdflags_t flags)
 {
-    return Xila_file_system_set_flags(handle, flags);
+    return xila_file_system_set_flags(handle, flags);
 }
 
 /**
@@ -1375,7 +1375,7 @@ os_file_set_fdflags(os_file_handle handle, __wasi_fdflags_t flags)
 __wasi_errno_t
 os_fdatasync(os_file_handle handle)
 {
-    return Into_WASI_Error(Xila_file_system_flush(handle, false));
+    return Into_WASI_Error(xila_file_system_flush(handle, false));
 }
 
 /**
@@ -1386,7 +1386,7 @@ os_fdatasync(os_file_handle handle)
 __wasi_errno_t
 os_fsync(os_file_handle handle)
 {
-    return Into_WASI_Error(Xila_file_system_flush(handle, true));
+    return Into_WASI_Error(xila_file_system_flush(handle, true));
 }
 
 /**
@@ -1399,7 +1399,7 @@ os_fsync(os_file_handle handle)
 __wasi_errno_t
 os_open_preopendir(const char *path, os_file_handle *out)
 {
-    Xila_file_system_result_type Result = Xila_file_system_open_directory(path, out);
+    XilaFileSystemResult Result = xila_file_system_open_directory(path, out);
 
     return Into_WASI_Error(Result);
 }
@@ -1431,18 +1431,18 @@ os_openat(os_file_handle handle, const char *path, __wasi_oflags_t oflags,
             strncpy(New_path, path, Path_size);
             New_path[0] = '/';
 
-            return Into_WASI_Error(Xila_file_system_open_directory(New_path, out));
+            return Into_WASI_Error(xila_file_system_open_directory(New_path, out));
         }
         else
         {
-            return Into_WASI_Error(Xila_file_system_open_directory(path, out));
+            return Into_WASI_Error(xila_file_system_open_directory(path, out));
         }
     }
     else
     {
-        Xila_file_system_mode_type Mode = Into_Xila_mode(access_mode);
-        Xila_file_system_open_type Open = Into_Xila_open(oflags);
-        Xila_file_system_status_type Status = Into_Xila_status(fd_flags);
+        XilaFileSystemMode Mode = Into_xila_mode(access_mode);
+        XilaFileSystemOpen Open = Into_xila_open(oflags);
+        XilaFileSystemStatus Status = Into_xila_status(fd_flags);
 
         if (path[0] != '/')
         {
@@ -1451,10 +1451,10 @@ os_openat(os_file_handle handle, const char *path, __wasi_oflags_t oflags,
             strncpy(New_path + 1, path, Path_size);
             New_path[0] = '/';
 
-            return Into_WASI_Error(Xila_file_system_open(New_path, Mode, Open, Status, out));
+            return Into_WASI_Error(xila_file_system_open(New_path, Mode, Open, Status, out));
         }
 
-        return Into_WASI_Error(Xila_file_system_open(path, Mode, Open, Status, out));
+        return Into_WASI_Error(xila_file_system_open(path, Mode, Open, Status, out));
     }
 }
 
@@ -1472,7 +1472,7 @@ os_file_get_access_mode(os_file_handle handle,
 {
     uint8_t Mode;
 
-    Xila_file_system_result_type Result = Xila_file_system_get_access_mode(handle, &Mode);
+    XilaFileSystemResult Result = xila_file_system_get_access_mode(handle, &Mode);
 
     if (Result == 0)
     {
@@ -1492,7 +1492,7 @@ os_file_get_access_mode(os_file_handle handle,
 __wasi_errno_t
 os_close(os_file_handle handle, bool is_stdio)
 {
-    return Into_WASI_Error(Xila_file_system_close(handle));
+    return Into_WASI_Error(xila_file_system_close(handle));
 }
 
 /**
@@ -1517,7 +1517,7 @@ os_preadv(os_file_handle handle, const struct __wasi_iovec_t *iov, int iovcnt,
         Lengths[i] = iov[i].buf_len;
     }
 
-    Xila_file_system_result_type Result = Xila_file_system_read_at_position_vectored(handle, Buffers, Lengths, iovcnt, offset, nread);
+    XilaFileSystemResult Result = xila_file_system_read_at_position_vectored(handle, Buffers, Lengths, iovcnt, offset, nread);
 
     return Into_WASI_Error(Result);
 }
@@ -1544,7 +1544,7 @@ os_pwritev(os_file_handle handle, const struct __wasi_ciovec_t *iov, int iovcnt,
         Lengths[i] = iov[i].buf_len;
     }
 
-    Xila_file_system_result_type Result = Xila_file_system_write_at_position_vectored(handle, Buffers, Lengths, iovcnt, offset, nwritten);
+    XilaFileSystemResult Result = xila_file_system_write_at_position_vectored(handle, Buffers, Lengths, iovcnt, offset, nwritten);
 
     return Into_WASI_Error(Result);
 }
@@ -1570,7 +1570,7 @@ os_readv(os_file_handle handle, const struct __wasi_iovec_t *iov, int iovcnt,
         Lengths[i] = iov[i].buf_len;
     }
 
-    return Xila_file_system_read_vectored(handle, Buffers, Lengths, iovcnt, nread);
+    return xila_file_system_read_vectored(handle, Buffers, Lengths, iovcnt, nread);
 }
 
 /**
@@ -1594,7 +1594,7 @@ os_writev(os_file_handle handle, const struct __wasi_ciovec_t *iov, int iovcnt,
         Lengths[i] = iov[i].buf_len;
     }
 
-    return Xila_file_system_write_vectored(handle, Buffers, Lengths, iovcnt, nwritten);
+    return xila_file_system_write_vectored(handle, Buffers, Lengths, iovcnt, nwritten);
 }
 
 /**
@@ -1609,7 +1609,7 @@ __wasi_errno_t
 os_fallocate(os_file_handle handle, __wasi_filesize_t offset,
              __wasi_filesize_t length)
 {
-    return Xila_file_system_allocate(handle, offset, length);
+    return xila_file_system_allocate(handle, offset, length);
 }
 
 /**
@@ -1621,7 +1621,7 @@ os_fallocate(os_file_handle handle, __wasi_filesize_t offset,
 __wasi_errno_t
 os_ftruncate(os_file_handle handle, __wasi_filesize_t size)
 {
-    return Xila_file_system_truncate(handle, size);
+    return xila_file_system_truncate(handle, size);
 }
 
 /**
@@ -1637,7 +1637,7 @@ __wasi_errno_t
 os_futimens(os_file_handle handle, __wasi_timestamp_t access_time,
             __wasi_timestamp_t modification_time, __wasi_fstflags_t fstflags)
 {
-    return Xila_file_system_set_times(handle, access_time, modification_time, fstflags);
+    return xila_file_system_set_times(handle, access_time, modification_time, fstflags);
 }
 
 /**
@@ -1659,7 +1659,7 @@ os_utimensat(os_file_handle handle, const char *path,
 {
     bool Follow = lookup_flags & __WASI_LOOKUP_SYMLINK_FOLLOW;
 
-    return Xila_file_system_set_times_from_path(path, access_time, modification_time,
+    return xila_file_system_set_times_from_path(path, access_time, modification_time,
                                                 (uint8_t)fstflags, Follow);
 }
 
@@ -1697,7 +1697,7 @@ os_linkat(os_file_handle from_handle, const char *from_path,
           __wasi_lookupflags_t lookup_flags)
 {
     return Into_WASI_Error(
-        Xila_file_system_link(from_path, to_path));
+        xila_file_system_link(from_path, to_path));
 }
 
 /**
@@ -1710,7 +1710,7 @@ os_linkat(os_file_handle from_handle, const char *from_path,
 __wasi_errno_t
 os_symlinkat(const char *old_path, os_file_handle handle, const char *new_path)
 {
-    return Into_WASI_Error(Xila_file_system_create_symbolic_link_at(handle, old_path, new_path));
+    return Into_WASI_Error(xila_file_system_create_symbolic_link_at(handle, old_path, new_path));
 }
 
 /**
@@ -1730,10 +1730,10 @@ os_mkdirat(os_file_handle handle, const char *path)
         New_path[0] = '/';
         strncpy(New_path + 1, path, Path_size);
 
-        return Into_WASI_Error(Xila_file_system_create_directory(New_path));
+        return Into_WASI_Error(xila_file_system_create_directory(New_path));
     }
 
-    return Into_WASI_Error(Xila_file_system_create_directory(path));
+    return Into_WASI_Error(xila_file_system_create_directory(path));
 }
 
 /**
@@ -1763,7 +1763,7 @@ os_renameat(os_file_handle old_handle, const char *old_path,
     New_new_path[0] = '/';
     strncpy(New_new_path + 1, new_path, New_path_size);
 
-    return Into_WASI_Error(Xila_file_system_rename(Old_new_path, New_new_path));
+    return Into_WASI_Error(xila_file_system_rename(Old_new_path, New_new_path));
 }
 
 /**
@@ -1776,7 +1776,7 @@ os_renameat(os_file_handle old_handle, const char *old_path,
 __wasi_errno_t
 os_unlinkat(os_file_handle handle, const char *path, bool is_dir)
 {
-    return Xila_file_system_remove(path);
+    return xila_file_system_remove(path);
 }
 
 /**
@@ -1791,9 +1791,9 @@ __wasi_errno_t
 os_lseek(os_file_handle handle, __wasi_filedelta_t offset,
          __wasi_whence_t whence, __wasi_filesize_t *new_offset)
 {
-    Xila_file_system_whence_type Whence = Into_Xila_whence(whence);
+    XilaFileSystemWhence Whence = Into_xila_whence(whence);
 
-    return Into_WASI_Error(Xila_file_system_set_position(handle, offset, Whence, new_offset));
+    return Into_WASI_Error(xila_file_system_set_position(handle, offset, Whence, new_offset));
 }
 
 /**
@@ -1812,7 +1812,7 @@ __wasi_errno_t
 os_fadvise(os_file_handle handle, __wasi_filesize_t offset,
            __wasi_filesize_t length, __wasi_advice_t advice)
 {
-    return Xila_file_system_advise(handle, offset, length, advice);
+    return xila_file_system_advise(handle, offset, length, advice);
 }
 
 /**
@@ -1827,7 +1827,7 @@ os_isatty(os_file_handle handle)
 {
     bool Is_Terminal = false;
 
-    Xila_file_system_result_type Result = Xila_file_system_is_a_terminal(handle, &Is_Terminal);
+    XilaFileSystemResult Result = xila_file_system_is_a_terminal(handle, &Is_Terminal);
 
     if (Is_Terminal)
     {
@@ -1905,7 +1905,7 @@ os_fdopendir(os_file_handle handle, os_dir_stream *dir_stream)
 __wasi_errno_t
 os_rewinddir(os_dir_stream dir_stream)
 {
-    return Into_WASI_Error(Xila_file_system_rewind_directory(dir_stream));
+    return Into_WASI_Error(xila_file_system_rewind_directory(dir_stream));
 }
 
 /**
@@ -1917,7 +1917,7 @@ os_rewinddir(os_dir_stream dir_stream)
 __wasi_errno_t
 os_seekdir(os_dir_stream dir_stream, __wasi_dircookie_t position)
 {
-    Xila_file_system_result_type Result = Xila_file_system_directory_set_position(dir_stream, position);
+    XilaFileSystemResult Result = xila_file_system_directory_set_position(dir_stream, position);
 
     return Into_WASI_Error(Result);
 }
@@ -1933,11 +1933,11 @@ os_seekdir(os_dir_stream dir_stream, __wasi_dircookie_t position)
  */
 __wasi_errno_t os_readdir(os_dir_stream dir_stream, __wasi_dirent_t *entry, const char **d_name)
 {
-    Xila_file_system_size_type Size = 0;
-    Xila_file_system_inode_type Inode = 0;
-    Xila_file_type_type Type = 0;
+    XilaFileSystemSize Size = 0;
+    XilaFileSystemInode Inode = 0;
+    XilaFileKind Type = 0;
 
-    Xila_file_system_result_type Result = Xila_file_system_read_directory(dir_stream, d_name, &Type, &Size, &Inode);
+    XilaFileSystemResult Result = xila_file_system_read_directory(dir_stream, d_name, &Type, &Size, &Inode);
 
     if ((*d_name) != NULL)
     {
@@ -1957,7 +1957,7 @@ __wasi_errno_t os_readdir(os_dir_stream dir_stream, __wasi_dirent_t *entry, cons
 __wasi_errno_t
 os_closedir(os_dir_stream dir_stream)
 {
-    return Into_WASI_Error(Xila_file_system_close_directory(dir_stream));
+    return Into_WASI_Error(xila_file_system_close_directory(dir_stream));
 }
 
 /**
@@ -2006,7 +2006,7 @@ bool os_is_handle_valid(os_file_handle *handle)
 char *os_realpath(const char *path, char *resolved_path)
 {
  
-    // Xila_file_system_result_type Result = Xila_file_system_resolve_path(path, resolved_path, PATH_MAX);
+    // XilaFileSystemResult Result = xila_file_system_resolve_path(path, resolved_path, PATH_MAX);
 
     // printf("os_realpath: %s - %u\n", resolved_path, Result);
 
@@ -2039,7 +2039,7 @@ char *os_realpath(const char *path, char *resolved_path)
  */
 __wasi_errno_t os_clock_res_get(__wasi_clockid_t clock_id, __wasi_timestamp_t *resolution)
 {
-    return Xila_time_get_resolution(clock_id, resolution);
+    return xila_time_get_resolution(clock_id, resolution);
 }
 
 /**
@@ -2053,20 +2053,20 @@ __wasi_errno_t os_clock_res_get(__wasi_clockid_t clock_id, __wasi_timestamp_t *r
 __wasi_errno_t os_clock_time_get(__wasi_clockid_t clock_id, __wasi_timestamp_t precision,
                                  __wasi_timestamp_t *time)
 {
-    return Xila_time_get_time(clock_id, precision, time);
+    return xila_time_get_time(clock_id, precision, time);
 }
 
 bool os_is_stdin_handle(os_file_handle fd)
 {
-    return Xila_file_system_is_stdin(fd);
+    return xila_file_system_is_stdin(fd);
 }
 
 bool os_is_stdout_handle(os_file_handle fd)
 {
-    return Xila_file_system_is_stdout(fd);
+    return xila_file_system_is_stdout(fd);
 }
 
 bool os_is_stderr_handle(os_file_handle fd)
 {
-    return Xila_file_system_is_stderr(fd);
+    return xila_file_system_is_stderr(fd);
 }

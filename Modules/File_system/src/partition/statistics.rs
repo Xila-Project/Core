@@ -1,4 +1,4 @@
-use crate::MBR_type;
+use crate::Mbr;
 
 /// Comprehensive statistics about partitions in an MBR.
 ///
@@ -28,7 +28,7 @@ use crate::MBR_type;
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+/// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
 /// // Create an MBR with some partitions
 /// let mut mbr = MBR_type::New_with_signature(0x12345678);
 /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
@@ -43,7 +43,7 @@ use crate::MBR_type;
 /// println!("Total used sectors: {}", stats.Total_used_sectors);
 /// ```
 #[derive(Debug, Clone)]
-pub struct Partition_statistics_type {
+pub struct PartitionStatisticsType {
     /// Total number of valid partitions in the MBR.
     pub total_partitions: usize,
     /// Number of partitions marked as bootable.
@@ -66,7 +66,7 @@ pub struct Partition_statistics_type {
     pub smallest_partition_sectors: u32,
 }
 
-impl Partition_statistics_type {
+impl PartitionStatisticsType {
     /// Generate comprehensive statistics from an MBR.
     ///
     /// This method analyzes all partitions in the provided MBR and generates
@@ -86,7 +86,7 @@ impl Partition_statistics_type {
     /// extern crate alloc;
     /// use file_system::*;
     ///
-    /// let device = create_device!(Memory_device_type::<512>::New(4 * 1024 * 1024));
+    /// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
     /// // Create an MBR with some partitions
     /// let mut mbr = MBR_type::New_with_signature(0x12345678);
     /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
@@ -101,7 +101,7 @@ impl Partition_statistics_type {
     ///              stats.Total_used_sectors / stats.Total_partitions as u64);
     /// }
     /// ```
-    pub fn from_mbr(mbr: &MBR_type) -> Self {
+    pub fn from_mbr(mbr: &Mbr) -> Self {
         mbr.generate_statistics()
     }
 }

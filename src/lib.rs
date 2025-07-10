@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 #[cfg(all(target_arch = "wasm32", feature = "WASM"))]
 pub use wasm_bindings as bindings;

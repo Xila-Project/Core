@@ -2,9 +2,9 @@ use alloc::{format, string::String};
 use graphics::lvgl;
 use shared::unix_to_human_time;
 
-use crate::error::{Error_type, Result_type};
+use crate::error::{Error, Result};
 
-pub struct Layout_type {
+pub struct Layout {
     window: *mut lvgl::lv_obj_t,
     _header: *mut lvgl::lv_obj_t,
     _body: *mut lvgl::lv_obj_t,
@@ -14,13 +14,13 @@ pub struct Layout_type {
     _wi_fi: *mut lvgl::lv_obj_t,
 }
 
-impl Drop for Layout_type {
+impl Drop for Layout {
     fn drop(&mut self) {
         unsafe { lvgl::lv_obj_delete(self.window) }
     }
 }
 
-impl Layout_type {
+impl Layout {
     pub async fn r#loop(&mut self) {
         self.update_clock().await;
     }
@@ -30,7 +30,7 @@ impl Layout_type {
         let current_time = time::get_instance().get_current_time();
 
         if let Ok(current_time) = current_time {
-            let (_, _, _, hour, minute, _) = unix_to_human_time(current_time.as_seconds() as i64);
+            let (_, _, _, hour, minute, _) = unix_to_human_time(current_time.as_secs() as i64);
 
             let _ = graphics::get_instance().lock().await;
 
@@ -46,7 +46,7 @@ impl Layout_type {
         self.window
     }
 
-    pub async fn new() -> Result_type<Self> {
+    pub async fn new() -> Result<Self> {
         let _lock = graphics::get_instance().lock().await; // Lock the graphics
 
         // - Create a window
@@ -54,7 +54,7 @@ impl Layout_type {
             let window = lvgl::lv_screen_active();
 
             if window.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
 
             lvgl::lv_obj_set_size(window, lvgl::lv_pct(100), lvgl::lv_pct(100));
@@ -72,7 +72,7 @@ impl Layout_type {
             let header = lvgl::lv_obj_create(window);
 
             if header.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
             lvgl::lv_obj_set_size(header, lvgl::lv_pct(100), 32);
             lvgl::lv_obj_set_style_border_width(header, 0, lvgl::LV_STATE_DEFAULT); // Remove the default border
@@ -94,7 +94,7 @@ impl Layout_type {
             let clock = lvgl::lv_label_create(header);
 
             if clock.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
 
             lvgl::lv_obj_set_align(clock, lvgl::lv_align_t_LV_ALIGN_CENTER);
@@ -108,7 +108,7 @@ impl Layout_type {
             let battery = lvgl::lv_label_create(header);
 
             if battery.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
 
             lvgl::lv_obj_set_align(battery, lvgl::lv_align_t_LV_ALIGN_RIGHT_MID);
@@ -125,7 +125,7 @@ impl Layout_type {
             let wi_fi = lvgl::lv_label_create(header);
 
             if wi_fi.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
 
             lvgl::lv_obj_align_to(wi_fi, battery, lvgl::lv_align_t_LV_ALIGN_OUT_LEFT_MID, 0, 0);
@@ -140,7 +140,7 @@ impl Layout_type {
             let body = lvgl::lv_obj_create(window);
 
             if body.is_null() {
-                return Err(Error_type::Failed_to_create_object);
+                return Err(Error::FailedToCreateObject);
             }
 
             lvgl::lv_obj_set_width(body, lvgl::lv_pct(100));

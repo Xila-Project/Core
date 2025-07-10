@@ -1,8 +1,8 @@
 use time::get_instance;
 
-pub type Xila_time_type = u64;
+pub type XilaTime = u64;
 
-pub type Xila_time_clock_identifier_type = usize;
+pub type XilaTimeClockIdentifier = usize;
 
 /// Retrieve the current time since the system startup in microseconds.
 ///
@@ -10,15 +10,15 @@ pub type Xila_time_clock_identifier_type = usize;
 ///
 /// The current time since the system startup in microseconds.
 #[no_mangle]
-pub extern "C" fn Xila_time_get_time_since_startup_microseconds() -> u64 {
+pub extern "C" fn xila_time_get_time_since_startup_microseconds() -> u64 {
     get_instance()
         .get_current_time_since_startup()
         .unwrap_or_default()
-        .as_microseconds() as u64
+        .as_micros() as u64
 }
 
 #[no_mangle]
-pub extern "C" fn Xila_time_get_cpu() -> u64 {
+pub extern "C" fn xila_time_get_cpu() -> u64 {
     todo!()
 }
 
@@ -28,9 +28,9 @@ pub extern "C" fn Xila_time_get_cpu() -> u64 {
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub unsafe extern "C" fn Xila_time_get_resolution(
-    _clock_identifier: Xila_time_clock_identifier_type,
-    _resolution: *mut Xila_time_type,
+pub unsafe extern "C" fn xila_time_get_resolution(
+    _clock_identifier: XilaTimeClockIdentifier,
+    _resolution: *mut XilaTime,
 ) -> u32 {
     todo!()
 }
@@ -41,10 +41,10 @@ pub unsafe extern "C" fn Xila_time_get_resolution(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[no_mangle]
-pub extern "C" fn Xila_time_get_time(
-    _clock_identifier: Xila_time_clock_identifier_type,
+pub extern "C" fn xila_time_get_time(
+    _clock_identifier: XilaTimeClockIdentifier,
     _precision: u64,
-    _time: *mut Xila_time_type,
+    _time: *mut XilaTime,
 ) -> u32 {
     todo!()
 }

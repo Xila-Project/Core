@@ -1,20 +1,20 @@
 use quote::ToTokens;
 use syn::{visit::Visit, ForeignItemFn, ItemFn, ItemStruct, ItemType, ItemUnion, Signature};
 
-use super::type_tree::Type_tree_type;
+use super::type_tree::TypeTreeType;
 
 #[derive(Default)]
-pub struct LVGL_context {
+pub struct LvglContext {
     signatures: Vec<Signature>,
     definitions: Vec<ItemFn>,
-    type_tree: Type_tree_type,
+    type_tree: TypeTreeType,
     types: Vec<ItemType>,
     structures: Vec<ItemStruct>,
     unions: Vec<ItemUnion>,
     function_filtering: Option<fn(&Signature) -> bool>,
 }
 
-impl LVGL_context {
+impl LvglContext {
     pub fn set_function_filtering(&mut self, function_filtering: Option<fn(&Signature) -> bool>) {
         self.function_filtering = function_filtering;
     }
@@ -27,7 +27,7 @@ impl LVGL_context {
         self.definitions.clone()
     }
 
-    pub fn get_type_tree(&self) -> &Type_tree_type {
+    pub fn get_type_tree(&self) -> &TypeTreeType {
         &self.type_tree
     }
 
@@ -149,7 +149,7 @@ impl LVGL_context {
     }
 }
 
-impl Visit<'_> for LVGL_context {
+impl Visit<'_> for LvglContext {
     fn visit_foreign_item_fn(&mut self, foreign_item_function: &ForeignItemFn) {
         if let Some(filter_function) = self.function_filtering {
             if !filter_function(&foreign_item_function.sig) {

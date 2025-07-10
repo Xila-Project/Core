@@ -1,6 +1,6 @@
-use crate::Shell_type;
+use crate::Shell;
 
-impl Shell_type {
+impl Shell {
     pub async fn echo(&mut self, arguments: &[&str]) {
         for argument in arguments {
             self.standard.print(argument).await;

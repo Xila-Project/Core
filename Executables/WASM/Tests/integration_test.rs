@@ -1,39 +1,37 @@
-#![allow(non_camel_case_types)]
-
 extern crate alloc;
 
-use command_line_shell::Shell_executable_type;
-use drivers::standard_library::loader::Loader_type;
-use executable::{Mount_static_executables, Standard_type};
-use file_system::{create_device, Create_file_system, Memory_device_type, Mode_type};
+use command_line_shell::ShellExecutable;
+use drivers::standard_library::loader::LoaderType;
+use executable::{mount_static_executables, Standard};
+use file_system::{create_device, Create_file_system, MemoryDeviceType, Mode};
 use memory::Instantiate_global_allocator;
-use task::Test;
+use task::test;
 use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
-use wasm::WASM_device_type;
+use wasm::WasmDeviceType;
 
-Instantiate_global_allocator!(drivers::standard_library::memory::Memory_manager_type);
+Instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
 
 #[ignore]
-#[Test]
+#[test]
 async fn i() {
     let task_instance = task::initialize();
 
     let _ = users::initialize();
 
-    let _ = time::Initialize(create_device!(drivers::native::Time_driver_type::new()));
+    let _ = time::Initialize(create_device!(drivers::native::TimeDriverType::new()));
 
     let _ = virtual_machine::initialize(&[]);
 
-    let memory_device = create_device!(Memory_device_type::<512>::new(1024 * 1024 * 512));
+    let memory_device = create_device!(MemoryDeviceType::<512>::new(1024 * 1024 * 512));
 
-    little_fs::File_system_type::format(memory_device.clone(), 256).unwrap();
+    little_fs::FileSystem::format(memory_device.clone(), 256).unwrap();
 
-    let mut file_system = little_fs::File_system_type::new(memory_device, 256).unwrap();
+    let mut file_system = little_fs::FileSystem::new(memory_device, 256).unwrap();
 
     let wasm_executable_path = "./Tests/WASM_test/target/wasm32-wasip1/release/WASM_test.wasm";
     let destination = "/Test.wasm";
 
-    Loader_type::new()
+    LoaderType::new()
         .add_file(wasm_executable_path, destination)
         .load(&mut file_system)
         .unwrap();
@@ -53,55 +51,51 @@ async fn i() {
         &[
             (
                 &"/Devices/Standard_in",
-                drivers::standard_library::console::Standard_in_device_type
+                drivers::standard_library::console::StandardInDevice
             ),
             (
                 &"/Devices/Standard_out",
-                drivers::standard_library::console::Standard_out_device_type
+                drivers::standard_library::console::StandardOutDeviceType
             ),
             (
                 &"/Devices/Standard_error",
-                drivers::standard_library::console::Standard_error_device_type
+                drivers::standard_library::console::StandardErrorDeviceType
             ),
-            (&"/Devices/Time", drivers::native::Time_driver_type),
-            (&"/Devices/Random", drivers::native::Random_device_type),
-            (&"/Devices/Null", drivers::core::Null_device_type)
+            (&"/Devices/Time", drivers::native::TimeDriverType),
+            (&"/Devices/Random", drivers::native::RandomDeviceType),
+            (&"/Devices/Null", drivers::core::NullDeviceType)
         ]
     )
     .await
     .unwrap();
 
-    Mount_static_executables!(
+    mount_static_executables!(
         virtual_file_system,
         task,
         &[
-            (&"/Binaries/Command_line_shell", Shell_executable_type),
-            (&"/Binaries/WASM", WASM_device_type)
+            (&"/Binaries/Command_line_shell", ShellExecutable),
+            (&"/Binaries/WASM", WasmDeviceType)
         ]
     )
     .await
     .unwrap();
 
     let standard_in = virtual_file_system
-        .open(&"/Devices/Standard_in", Mode_type::READ_ONLY.into(), task)
+        .open(&"/Devices/Standard_in", Mode::READ_ONLY.into(), task)
         .await
         .unwrap();
 
     let standard_out = virtual_file_system
-        .open(&"/Devices/Standard_out", Mode_type::WRITE_ONLY.into(), task)
+        .open(&"/Devices/Standard_out", Mode::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
     let standard_error = virtual_file_system
-        .open(
-            &"/Devices/Standard_error",
-            Mode_type::WRITE_ONLY.into(),
-            task,
-        )
+        .open(&"/Devices/Standard_error", Mode::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
-    let standard = Standard_type::new(
+    let standard = Standard::new(
         standard_in,
         standard_out,
         standard_error,

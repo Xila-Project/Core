@@ -1,9 +1,9 @@
 use std::env;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Architecture_type {
-    x86,
-    x86_64,
+pub enum Architecture {
+    X86,
+    X86_64,
     Arm,
     Aarch64,
     Xtensa,
@@ -12,9 +12,9 @@ pub enum Architecture_type {
     WASM64,
 }
 
-impl Architecture_type {
-    pub fn get() -> Architecture_type {
-        Architecture_type::from(Self::get_raw())
+impl Architecture {
+    pub fn get() -> Architecture {
+        Architecture::from(Self::get_raw())
     }
 
     pub fn get_raw() -> String {
@@ -22,17 +22,17 @@ impl Architecture_type {
     }
 }
 
-impl From<String> for Architecture_type {
+impl From<String> for Architecture {
     fn from(s: String) -> Self {
         match s.as_str() {
-            "x86" => Architecture_type::x86,
-            "x86_64" => Architecture_type::x86_64,
-            "arm" => Architecture_type::Arm,
-            "aarch64" => Architecture_type::Aarch64,
-            "xtensa" => Architecture_type::Xtensa,
-            "riscv" => Architecture_type::RiscV,
-            "wasm32" => Architecture_type::WASM32,
-            "wasm64" => Architecture_type::WASM64,
+            "x86" => Architecture::X86,
+            "x86_64" => Architecture::X86_64,
+            "arm" => Architecture::Arm,
+            "aarch64" => Architecture::Aarch64,
+            "xtensa" => Architecture::Xtensa,
+            "riscv" => Architecture::RiscV,
+            "wasm32" => Architecture::WASM32,
+            "wasm64" => Architecture::WASM64,
             _ => panic!("Unknown architecture type : {s}"),
         }
     }

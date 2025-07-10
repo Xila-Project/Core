@@ -178,7 +178,7 @@ impl<const Regions_count: usize> Region_allocator_type<Regions_count> {
 
 unsafe impl GlobalAlloc for Region_allocator_type {
     unsafe fn alloc(&self, Layout: Layout) -> *mut u8 {
-        self.Allocate(Capabilities_type::New(false, false), Layout)
+        self.Allocate(Capabilities_type::new(false, false), Layout)
     }
 
     unsafe fn dealloc(&self, Pointer: *mut u8, Layout: Layout) {

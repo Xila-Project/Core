@@ -2,24 +2,25 @@ use core::{future::Future, mem::transmute, num::NonZeroUsize, pin::Pin};
 
 use alloc::{boxed::Box, string::String};
 
-use crate::Standard_type;
+use crate::Standard;
 
-pub type Main_function_type = Box<
+pub type MainFunctionType = Box<
     dyn Fn(
-            Standard_type,
+            Standard,
             String,
-        ) -> Pin<Box<dyn Future<Output = Result<(), NonZeroUsize>> + 'static>>
+        )
+            -> Pin<Box<dyn Future<Output = core::result::Result<(), NonZeroUsize>> + 'static>>
         + 'static,
 >;
 
-pub struct Read_data_type {
-    main: Option<Main_function_type>,
+pub struct ReadData {
+    main: Option<MainFunctionType>,
 }
 
-impl Read_data_type {
-    pub fn new<F>(main: impl Fn(Standard_type, String) -> F + 'static) -> Self
+impl ReadData {
+    pub fn new<F>(main: impl Fn(Standard, String) -> F + 'static) -> Self
     where
-        F: Future<Output = Result<(), NonZeroUsize>> + 'static,
+        F: Future<Output = core::result::Result<(), NonZeroUsize>> + 'static,
     {
         Self {
             main: Some(Box::new(move |standard, arguments| {
@@ -36,19 +37,19 @@ impl Read_data_type {
         size_of::<Self>()
     }
 
-    pub fn get_main(self) -> Option<Main_function_type> {
+    pub fn get_main(self) -> Option<MainFunctionType> {
         self.main
     }
 }
 
-impl TryFrom<&mut [u8]> for &mut Read_data_type {
+impl TryFrom<&mut [u8]> for &mut ReadData {
     type Error = ();
 
-    fn try_from(value: &mut [u8]) -> Result<Self, Self::Error> {
-        if value.len() != size_of::<Read_data_type>() {
+    fn try_from(value: &mut [u8]) -> core::result::Result<Self, Self::Error> {
+        if value.len() != size_of::<ReadData>() {
             return Err(());
         }
-        if !(value.as_ptr() as usize).is_multiple_of(core::mem::align_of::<Read_data_type>()) {
+        if !(value.as_ptr() as usize).is_multiple_of(core::mem::align_of::<ReadData>()) {
             return Err(());
         }
 
@@ -57,15 +58,15 @@ impl TryFrom<&mut [u8]> for &mut Read_data_type {
     }
 }
 
-impl TryFrom<[u8; size_of::<Read_data_type>()]> for Read_data_type {
+impl TryFrom<[u8; size_of::<ReadData>()]> for ReadData {
     type Error = ();
 
-    fn try_from(value: [u8; size_of::<Read_data_type>()]) -> Result<Self, Self::Error> {
-        Ok(unsafe { transmute::<[u8; size_of::<Read_data_type>()], Self>(value) })
+    fn try_from(value: [u8; size_of::<ReadData>()]) -> core::result::Result<Self, Self::Error> {
+        Ok(unsafe { transmute::<[u8; size_of::<ReadData>()], Self>(value) })
     }
 }
 
-impl AsMut<[u8]> for Read_data_type {
+impl AsMut<[u8]> for ReadData {
     fn as_mut(&mut self) -> &mut [u8] {
         unsafe { core::slice::from_raw_parts_mut(self as *mut _ as *mut u8, size_of::<Self>()) }
     }

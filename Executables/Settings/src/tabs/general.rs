@@ -1,11 +1,11 @@
-use crate::error::Result_type;
-use graphics::{lvgl, Event_type};
+use crate::error::Result;
+use graphics::{lvgl, Event};
 
-pub struct General_tab_type {
+pub struct GeneralTabType {
     tab_container: *mut lvgl::lv_obj_t,
 }
 
-impl General_tab_type {
+impl GeneralTabType {
     pub fn new() -> Self {
         Self {
             tab_container: core::ptr::null_mut(),
@@ -15,12 +15,12 @@ impl General_tab_type {
     pub fn create_ui(
         &mut self,
         parent_tabview: *mut lvgl::lv_obj_t,
-    ) -> Result_type<*mut lvgl::lv_obj_t> {
+    ) -> Result<*mut lvgl::lv_obj_t> {
         let tab_container =
             unsafe { lvgl::lv_tabview_add_tab(parent_tabview, c"General".as_ptr()) };
 
         if tab_container.is_null() {
-            return Err(crate::error::Error_type::Failed_to_create_UI_element);
+            return Err(crate::error::Error::FailedToCreateUiElement);
         }
 
         self.tab_container = tab_container;
@@ -38,7 +38,7 @@ impl General_tab_type {
         Ok(tab_container)
     }
 
-    pub async fn handle_event(&mut self, _event: &Event_type) -> bool {
+    pub async fn handle_event(&mut self, _event: &Event) -> bool {
         // For now, the general tab doesn't handle any specific events
         false
     }

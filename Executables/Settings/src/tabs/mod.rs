@@ -1,24 +1,24 @@
-use crate::error::Result_type;
-use graphics::{lvgl, Event_type};
+use crate::error::Result;
+use graphics::{lvgl, Event};
 
 /// Enum to hold all tab types (avoids dyn compatibility issues with async traits)
-pub enum Tab_type {
-    General_tab(General_tab_type),
-    Password_tab(Password_tab_type),
+pub enum TabType {
+    GeneralTab(GeneralTabType),
+    PasswordTab(PasswordTabType),
 }
 
-impl Tab_type {
-    pub fn create_ui(&mut self, parent: *mut lvgl::lv_obj_t) -> Result_type<*mut lvgl::lv_obj_t> {
+impl TabType {
+    pub fn create_ui(&mut self, parent: *mut lvgl::lv_obj_t) -> Result<*mut lvgl::lv_obj_t> {
         match self {
-            Tab_type::General_tab(tab) => tab.create_ui(parent),
-            Tab_type::Password_tab(tab) => tab.create_ui(parent),
+            TabType::GeneralTab(tab) => tab.create_ui(parent),
+            TabType::PasswordTab(tab) => tab.create_ui(parent),
         }
     }
 
-    pub async fn handle_event(&mut self, event: &Event_type) -> bool {
+    pub async fn handle_event(&mut self, event: &Event) -> bool {
         match self {
-            Tab_type::General_tab(tab) => tab.handle_event(event).await,
-            Tab_type::Password_tab(tab) => tab.handle_event(event).await,
+            TabType::GeneralTab(tab) => tab.handle_event(event).await,
+            TabType::PasswordTab(tab) => tab.handle_event(event).await,
         }
     }
 }
@@ -27,5 +27,5 @@ impl Tab_type {
 pub mod general;
 pub mod password;
 
-pub use general::General_tab_type;
-pub use password::Password_tab_type;
+pub use general::GeneralTabType;
+pub use password::PasswordTabType;

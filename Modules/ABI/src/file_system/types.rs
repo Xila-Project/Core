@@ -1,113 +1,112 @@
-use file_system::{Position_type, Type_type};
+use file_system::{Kind, Position};
 
-use crate::{Xila_group_identifier_type, Xila_time_type, Xila_user_identifier_type};
+use crate::{XilaGroupIdentifier, XilaTime, XilaUserIdentifier};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
-pub enum Xila_file_system_whence_type {
+pub enum XilaFileSystemWhence {
     Start,
     Current,
     End,
 }
 
-pub const fn into_position(whence: Xila_file_system_whence_type, offset: i64) -> Position_type {
+pub const fn into_position(whence: XilaFileSystemWhence, offset: i64) -> Position {
     match whence {
-        Xila_file_system_whence_type::Start => Position_type::Start(offset as u64),
-        Xila_file_system_whence_type::Current => Position_type::Current(offset),
-        Xila_file_system_whence_type::End => Position_type::End(offset),
+        XilaFileSystemWhence::Start => Position::Start(offset as u64),
+        XilaFileSystemWhence::Current => Position::Current(offset),
+        XilaFileSystemWhence::End => Position::End(offset),
     }
 }
 
 #[repr(u8)]
-pub enum Xila_file_type_type {
+pub enum XilaFileKind {
     File,
     Directory,
-    Block_device,
-    Character_device,
+    BlockDevice,
+    CharacterDevice,
     Pipe,
     Socket,
-    Symbolic_link,
+    SymbolicLink,
 }
 
-impl From<Xila_file_type_type> for file_system::Type_type {
-    fn from(type_value: Xila_file_type_type) -> Self {
+impl From<XilaFileKind> for file_system::Kind {
+    fn from(type_value: XilaFileKind) -> Self {
         match type_value {
-            Xila_file_type_type::File => Type_type::File,
-            Xila_file_type_type::Directory => file_system::Type_type::Directory,
-            Xila_file_type_type::Block_device => file_system::Type_type::Block_device,
-            Xila_file_type_type::Character_device => file_system::Type_type::Character_device,
-            Xila_file_type_type::Pipe => file_system::Type_type::Pipe,
-            Xila_file_type_type::Socket => file_system::Type_type::Socket,
-            Xila_file_type_type::Symbolic_link => file_system::Type_type::Symbolic_link,
+            XilaFileKind::File => Kind::File,
+            XilaFileKind::Directory => file_system::Kind::Directory,
+            XilaFileKind::BlockDevice => file_system::Kind::BlockDevice,
+            XilaFileKind::CharacterDevice => file_system::Kind::CharacterDevice,
+            XilaFileKind::Pipe => file_system::Kind::Pipe,
+            XilaFileKind::Socket => file_system::Kind::Socket,
+            XilaFileKind::SymbolicLink => file_system::Kind::SymbolicLink,
         }
     }
 }
 
-impl From<file_system::Type_type> for Xila_file_type_type {
-    fn from(type_value: file_system::Type_type) -> Self {
+impl From<file_system::Kind> for XilaFileKind {
+    fn from(type_value: file_system::Kind) -> Self {
         match type_value {
-            file_system::Type_type::File => Xila_file_type_type::File,
-            file_system::Type_type::Directory => Xila_file_type_type::Directory,
-            file_system::Type_type::Block_device => Xila_file_type_type::Block_device,
-            file_system::Type_type::Character_device => Xila_file_type_type::Character_device,
-            file_system::Type_type::Pipe => Xila_file_type_type::Pipe,
-            file_system::Type_type::Socket => Xila_file_type_type::Socket,
-            file_system::Type_type::Symbolic_link => Xila_file_type_type::Symbolic_link,
+            file_system::Kind::File => XilaFileKind::File,
+            file_system::Kind::Directory => XilaFileKind::Directory,
+            file_system::Kind::BlockDevice => XilaFileKind::BlockDevice,
+            file_system::Kind::CharacterDevice => XilaFileKind::CharacterDevice,
+            file_system::Kind::Pipe => XilaFileKind::Pipe,
+            file_system::Kind::Socket => XilaFileKind::Socket,
+            file_system::Kind::SymbolicLink => XilaFileKind::SymbolicLink,
         }
     }
 }
 
-pub type Xila_file_system_mode_type = u8;
+pub type XilaFileSystemMode = u8;
 
 #[no_mangle]
-pub static XILA_FILE_SYSTEM_MODE_READ_MASK: u8 = file_system::Mode_type::READ_BIT;
+pub static XILA_FILE_SYSTEM_MODE_READ_MASK: u8 = file_system::Mode::READ_BIT;
 #[no_mangle]
-pub static XILA_FILE_SYSTEM_MODE_WRITE_MASK: u8 = file_system::Mode_type::WRITE_BIT;
+pub static XILA_FILE_SYSTEM_MODE_WRITE_MASK: u8 = file_system::Mode::WRITE_BIT;
 
-pub type Xila_file_system_open_type = u8;
-
-#[no_mangle]
-pub static XILA_FILE_SYSTEM_OPEN_CREATE_MASK: u8 = file_system::Open_type::CREATE_MASK;
-#[no_mangle]
-pub static XILA_FILE_SYSTEM_OPEN_CREATE_ONLY_MASK: u8 = file_system::Open_type::EXCLUSIVE_MASK;
-#[no_mangle]
-pub static XILA_FILE_SYSTEM_OPEN_TRUNCATE_MASK: u8 = file_system::Open_type::TRUNCATE_MASK;
-
-pub type Xila_file_system_status_type = u8;
+pub type XilaFileSystemOpen = u8;
 
 #[no_mangle]
-pub static XILA_FILE_SYSTEM_STATUS_APPEND_MASK: u8 = file_system::Status_type::APPEND_BIT;
+pub static XILA_FILE_SYSTEM_OPEN_CREATE_MASK: u8 = file_system::Open::CREATE_MASK;
 #[no_mangle]
-pub static XILA_FILE_SYSTEM_STATUS_NON_BLOCKING_MASK: u8 =
-    file_system::Status_type::NON_BLOCKING_BIT;
+pub static XILA_FILE_SYSTEM_OPEN_CREATE_ONLY_MASK: u8 = file_system::Open::EXCLUSIVE_MASK;
 #[no_mangle]
-pub static XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_MASK: u8 = file_system::Status_type::SYNCHRONOUS_BIT;
+pub static XILA_FILE_SYSTEM_OPEN_TRUNCATE_MASK: u8 = file_system::Open::TRUNCATE_MASK;
+
+pub type XilaFileSystemStatus = u8;
+
+#[no_mangle]
+pub static XILA_FILE_SYSTEM_STATUS_APPEND_MASK: u8 = file_system::Status::APPEND_BIT;
+#[no_mangle]
+pub static XILA_FILE_SYSTEM_STATUS_NON_BLOCKING_MASK: u8 = file_system::Status::NON_BLOCKING_BIT;
+#[no_mangle]
+pub static XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_MASK: u8 = file_system::Status::SYNCHRONOUS_BIT;
 #[no_mangle]
 pub static XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_DATA_ONLY_MASK: u8 =
-    file_system::Status_type::SYNCHRONOUS_DATA_ONLY_BIT;
+    file_system::Status::SYNCHRONOUS_DATA_ONLY_BIT;
 
-pub type Xila_file_system_inode_type = u64;
+pub type XilaFileSystemInode = u64;
 
-type Xila_file_system_identifier_type = u32;
+type XilaFileSystemIdentifier = u32;
 
-type Permissions_type = u16;
+type Permissions = u16;
 
 #[repr(C)]
-pub struct Xila_file_system_statistics_type {
-    file_system: Xila_file_system_identifier_type,
-    inode: Xila_file_system_inode_type,
+pub struct XilaFileSystemStatistics {
+    file_system: XilaFileSystemIdentifier,
+    inode: XilaFileSystemInode,
     links: u64,
-    size: Xila_file_system_size_type,
-    last_access: Xila_time_type,
-    last_modification: Xila_time_type,
-    last_status_change: Xila_time_type,
-    r#type: Xila_file_type_type,
-    permissions: Permissions_type,
-    user: Xila_user_identifier_type,
-    group: Xila_group_identifier_type,
+    size: XilaFileSystemSize,
+    last_access: XilaTime,
+    last_modification: XilaTime,
+    last_status_change: XilaTime,
+    r#type: XilaFileKind,
+    permissions: Permissions,
+    user: XilaUserIdentifier,
+    group: XilaGroupIdentifier,
 }
 
-impl Xila_file_system_statistics_type {
+impl XilaFileSystemStatistics {
     pub fn from_statistics(statistics: file_system::Statistics_type) -> Self {
         Self {
             file_system: statistics.get_file_system().as_inner(),
@@ -125,13 +124,13 @@ impl Xila_file_system_statistics_type {
     }
 
     pub fn from_mutable_pointer(
-        pointer: *mut Xila_file_system_statistics_type,
-    ) -> Option<*mut Xila_file_system_statistics_type> {
+        pointer: *mut XilaFileSystemStatistics,
+    ) -> Option<*mut XilaFileSystemStatistics> {
         if pointer.is_null() {
             return None;
         }
 
-        if pointer as usize % align_of::<Xila_file_system_statistics_type>() != 0 {
+        if pointer as usize % align_of::<XilaFileSystemStatistics>() != 0 {
             return None;
         }
 
@@ -139,7 +138,7 @@ impl Xila_file_system_statistics_type {
     }
 }
 
-pub type Xila_unique_file_identifier_type = usize;
-pub type Xila_file_system_size_type = u64;
+pub type XilaUniqueFileIdentifier = usize;
+pub type XilaFileSystemSize = u64;
 
-pub type Xila_file_system_result_type = u32;
+pub type XilaFileSystemResult = u32;

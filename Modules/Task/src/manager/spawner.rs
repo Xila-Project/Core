@@ -5,15 +5,15 @@ use super::*;
 use alloc::collections::BTreeMap;
 use embassy_executor::Spawner;
 
-impl Manager_type {
-    pub fn register_spawner(&'static self, spawner: Spawner) -> Result_type<usize> {
+impl Manager {
+    pub fn register_spawner(&'static self, spawner: Spawner) -> Result<usize> {
         let mut inner = embassy_futures::block_on(self.0.write());
 
         let identifier = Self::find_first_available_identifier(
             &inner.spawners,
             (usize::MIN..usize::MAX).step_by(1),
         )
-        .ok_or(Error_type::Too_many_spawners)?;
+        .ok_or(Error::TooManySpawners)?;
 
         if inner.spawners.insert(identifier, spawner).is_some() {
             unreachable!("Spawner identifier already exists");
@@ -22,21 +22,21 @@ impl Manager_type {
         Ok(identifier)
     }
 
-    pub fn unregister_spawner(&'static self, identifier: usize) -> Result_type<()> {
+    pub fn unregister_spawner(&'static self, identifier: usize) -> Result<()> {
         let mut inner = embassy_futures::block_on(self.0.write());
 
         inner
             .spawners
             .remove(&identifier)
-            .ok_or(Error_type::No_spawner_available)?;
+            .ok_or(Error::NoSpawnerAvailable)?;
 
         Ok(())
     }
 
     /// Select the best spawner for a new task using load balancing algorithm
-    pub(crate) fn select_best_spawner(inner: &Inner_type) -> Result_type<usize> {
+    pub(crate) fn select_best_spawner(inner: &InnerType) -> Result<usize> {
         if inner.spawners.is_empty() {
-            return Err(Error_type::No_spawner_available);
+            return Err(Error::NoSpawnerAvailable);
         }
 
         let mut map = BTreeMap::new();
@@ -65,9 +65,9 @@ impl Manager_type {
         Ok(best_index)
     }
 
-    pub async fn get_spawner(&self, task: Task_identifier_type) -> Result_type<usize> {
+    pub async fn get_spawner(&self, task: TaskIdentifier) -> Result<usize> {
         Self::get_task(&*self.0.read().await, task)
             .map(|task| task.spawner_identifier)
-            .map_err(|_| Error_type::Invalid_task_identifier)
+            .map_err(|_| Error::InvalidTaskIdentifier)
     }
 }

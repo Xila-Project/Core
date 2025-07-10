@@ -1,6 +1,6 @@
 
 
-#![allow(non_camel_case_types)]
+
 
 use env_logger::{Builder, Env};
 use std::{collections::VecDeque, io::Write, process};

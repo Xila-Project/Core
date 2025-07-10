@@ -1,28 +1,25 @@
-use file_system::{Device_trait, Size_type};
+use file_system::{DeviceTrait, Size};
 
-pub struct Null_device_type;
+pub struct NullDeviceType;
 
-impl Device_trait for Null_device_type {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result_type<file_system::Size_type> {
-        Ok(Size_type::new(buffer.len() as u64))
+impl DeviceTrait for NullDeviceType {
+    fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
+        Ok(Size::new(buffer.len() as u64))
     }
 
-    fn write(&self, buffer: &[u8]) -> file_system::Result_type<file_system::Size_type> {
-        Ok(Size_type::new(buffer.len() as u64))
+    fn write(&self, buffer: &[u8]) -> file_system::Result<file_system::Size> {
+        Ok(Size::new(buffer.len() as u64))
     }
 
-    fn get_size(&self) -> file_system::Result_type<file_system::Size_type> {
-        Ok(Size_type::new(0))
+    fn get_size(&self) -> file_system::Result<file_system::Size> {
+        Ok(Size::new(0))
     }
 
-    fn set_position(
-        &self,
-        _: &file_system::Position_type,
-    ) -> file_system::Result_type<file_system::Size_type> {
-        Ok(Size_type::new(0))
+    fn set_position(&self, _: &file_system::Position) -> file_system::Result<file_system::Size> {
+        Ok(Size::new(0))
     }
 
-    fn flush(&self) -> file_system::Result_type<()> {
+    fn flush(&self) -> file_system::Result<()> {
         Ok(())
     }
 }

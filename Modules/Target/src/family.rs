@@ -1,15 +1,15 @@
 use std::env;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Family_type {
+pub enum Family {
     Unix,
     Windows,
     Wasm,
 }
 
-impl Family_type {
-    pub fn get() -> Family_type {
-        Family_type::from(Self::get_raw())
+impl Family {
+    pub fn get() -> Family {
+        Family::from(Self::get_raw())
     }
 
     pub fn get_raw() -> String {
@@ -17,12 +17,12 @@ impl Family_type {
     }
 }
 
-impl From<String> for Family_type {
+impl From<String> for Family {
     fn from(s: String) -> Self {
         match s.as_str() {
-            "unix" => Family_type::Unix,
-            "windows" => Family_type::Windows,
-            "wasm" => Family_type::Wasm,
+            "unix" => Family::Unix,
+            "windows" => Family::Windows,
+            "wasm" => Family::Wasm,
             _ => panic!("Unknown family type : {s}"),
         }
     }

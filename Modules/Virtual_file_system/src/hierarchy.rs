@@ -1,55 +1,55 @@
 /// Hierarchy of the file system.
-use file_system::{Error_type, Path_type, Result_type, Type_type};
-use task::Task_identifier_type;
+use file_system::{Error, Kind, Path, Result};
+use task::TaskIdentifier;
 
-use crate::{Directory_type, Virtual_file_system_type};
+use crate::{DirectoryType, VirtualFileSystemType};
 
 /// Create the default hierarchy of the file system.
 pub async fn create_default_hierarchy(
-    virtual_file_system: &Virtual_file_system_type<'_>,
-    task: Task_identifier_type,
-) -> Result_type<()> {
+    virtual_file_system: &VirtualFileSystemType<'_>,
+    task: TaskIdentifier,
+) -> Result<()> {
     virtual_file_system
-        .create_directory(&Path_type::SYSTEM, task)
+        .create_directory(&Path::SYSTEM, task)
         .await?;
     virtual_file_system
-        .create_directory(&Path_type::CONFIGURATION, task)
+        .create_directory(&Path::CONFIGURATION, task)
         .await?;
     virtual_file_system
-        .create_directory(&Path_type::SHARED_CONFIGURATION, task)
+        .create_directory(&Path::SHARED_CONFIGURATION, task)
         .await?;
     virtual_file_system
-        .create_directory(&Path_type::DEVICES, task)
+        .create_directory(&Path::DEVICES, task)
         .await?;
     virtual_file_system
-        .create_directory(&Path_type::USERS, task)
+        .create_directory(&Path::USERS, task)
         .await?;
     virtual_file_system
-        .create_directory(&Path_type::DATA, task)
+        .create_directory(&Path::DATA, task)
         .await?;
     virtual_file_system
-        .create_directory(&Path_type::SHARED_DATA, task)
+        .create_directory(&Path::SHARED_DATA, task)
         .await?;
     virtual_file_system
-        .create_directory(&Path_type::BINARIES, task)
+        .create_directory(&Path::BINARIES, task)
         .await?;
     virtual_file_system
-        .create_directory(&Path_type::TEMPORARY, task)
+        .create_directory(&Path::TEMPORARY, task)
         .await?;
     virtual_file_system
-        .create_directory(&Path_type::LOGS, task)
+        .create_directory(&Path::LOGS, task)
         .await?;
 
     Ok(())
 }
 
 pub async fn clean_devices_in_directory<'a>(
-    virtual_file_system: &'a Virtual_file_system_type<'a>,
-    path: &Path_type,
-) -> Result_type<()> {
+    virtual_file_system: &'a VirtualFileSystemType<'a>,
+    path: &Path,
+) -> Result<()> {
     // For each entry in the directory.
-    for entry in Directory_type::open(virtual_file_system, path).await? {
-        if entry.get_type() != Type_type::File {
+    for entry in DirectoryType::open(virtual_file_system, path).await? {
+        if entry.get_type() != Kind::File {
             continue;
         }
 
@@ -59,18 +59,18 @@ pub async fn clean_devices_in_directory<'a>(
             .get_metadata_from_path(&entry_path)
             .await?
             .get_type()
-            != Type_type::Character_device
+            != Kind::CharacterDevice
             && virtual_file_system
                 .get_metadata_from_path(&entry_path)
                 .await?
                 .get_type()
-                != Type_type::Block_device
+                != Kind::BlockDevice
         {
             continue;
         }
 
         match virtual_file_system.remove(&entry_path).await {
-            Ok(_) | Err(Error_type::Invalid_identifier) => {}
+            Ok(_) | Err(Error::InvalidIdentifier) => {}
             Err(error) => {
                 return Err(error);
             }
@@ -80,12 +80,10 @@ pub async fn clean_devices_in_directory<'a>(
     Ok(())
 }
 
-pub async fn clean_devices<'a>(
-    virtual_file_system: &'a Virtual_file_system_type<'a>,
-) -> Result_type<()> {
-    clean_devices_in_directory(virtual_file_system, Path_type::DEVICES).await?;
+pub async fn clean_devices<'a>(virtual_file_system: &'a VirtualFileSystemType<'a>) -> Result<()> {
+    clean_devices_in_directory(virtual_file_system, Path::DEVICES).await?;
 
-    clean_devices_in_directory(virtual_file_system, Path_type::BINARIES).await?;
+    clean_devices_in_directory(virtual_file_system, Path::BINARIES).await?;
 
     Ok(())
 }

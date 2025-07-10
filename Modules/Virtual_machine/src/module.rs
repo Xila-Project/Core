@@ -1,30 +1,30 @@
 use core::{ffi::CStr, ptr::null_mut};
 
 use alloc::vec::Vec;
-use file_system::Unique_file_identifier_type;
-use wamr_rust_sdk::{module::Module, sys::wasm_runtime_set_wasi_args_ex};
+use file_system::UniqueFileIdentifier;
+use wamr_rust_sdk::{module, sys::wasm_runtime_set_wasi_args_ex};
 
-use crate::{runtime::Runtime_type, Error_type, Result_type};
+use crate::{runtime::Runtime, Error, Result};
 
-pub struct Module_type<'runtime> {
-    module: Module<'runtime>,
+pub struct Module<'runtime> {
+    module: module::Module<'runtime>,
     _environment_variables_raw: Vec<*const i8>,
 }
 
-unsafe impl Send for Module_type<'_> {}
+unsafe impl Send for Module<'_> {}
 
 const DIRECTORY_PATHS: [&CStr; 1] = [c"/"];
 const DIRECTORY_PATHS_RAW: [*const i8; 1] = [DIRECTORY_PATHS[0].as_ptr()];
 
-impl<'runtime> Module_type<'runtime> {
+impl<'runtime> Module<'runtime> {
     pub async fn from_buffer(
-        runtime: &'runtime Runtime_type,
+        runtime: &'runtime Runtime,
         buffer: Vec<u8>,
         name: &str,
-        standard_in: Unique_file_identifier_type,
-        standard_out: Unique_file_identifier_type,
-        standard_error: Unique_file_identifier_type,
-    ) -> Result_type<Self> {
+        standard_in: UniqueFileIdentifier,
+        standard_out: UniqueFileIdentifier,
+        standard_error: UniqueFileIdentifier,
+    ) -> Result<Self> {
         // - Environment variables.
         let task_instance = task::get_instance();
 
@@ -32,7 +32,7 @@ impl<'runtime> Module_type<'runtime> {
         let mut environment_variables_raw: Vec<*const i8> = task_instance
             .get_environment_variables(task)
             .await
-            .map_err(Error_type::Failed_to_get_task_informations)?
+            .map_err(Error::FailedToGetTaskInformations)?
             .into_iter()
             .map(|x| x.get_raw().as_ptr())
             .collect();
@@ -42,8 +42,8 @@ impl<'runtime> Module_type<'runtime> {
         let environment_variables_length = environment_variables_raw.len();
 
         // - Create the module.
-        let module = Module_type {
-            module: Module::from_vec(runtime.get_inner_reference(), buffer, name)?,
+        let module = Self {
+            module: module::Module::from_vec(runtime.get_inner_reference(), buffer, name)?,
             _environment_variables_raw: environment_variables_raw,
         };
 
@@ -72,7 +72,7 @@ impl<'runtime> Module_type<'runtime> {
         Ok(module)
     }
 
-    pub(crate) fn get_inner_reference(&self) -> &Module {
+    pub(crate) fn get_inner_reference(&self) -> &module::Module {
         &self.module
     }
 }

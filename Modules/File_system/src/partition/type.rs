@@ -49,58 +49,58 @@ use core::fmt;
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
-pub enum Partition_type_type {
+pub enum PartitionKind {
     /// Empty/unused partition slot
     Empty = 0x00,
     /// FAT12 file system
     Fat12 = 0x01,
     /// FAT16 file system (small partitions < 32MB)
-    Fat16_small = 0x04,
+    Fat16Small = 0x04,
     /// Extended partition (CHS addressing)
     Extended = 0x05,
     /// FAT16 file system
     Fat16 = 0x06,
     /// NTFS or exFAT file system
-    Ntfs_exfat = 0x07,
+    NtfsExfat = 0x07,
     /// FAT32 file system (CHS addressing)
     Fat32 = 0x0B,
     /// FAT32 file system (LBA addressing - recommended)
-    Fat32_lba = 0x0C,
+    Fat32Lba = 0x0C,
     /// FAT16 file system (LBA addressing)
-    Fat16_lba = 0x0E,
+    Fat16Lba = 0x0E,
     /// Extended partition (LBA addressing)
-    Extended_lba = 0x0F,
+    ExtendedLba = 0x0F,
     /// Hidden FAT12 partition
-    Hidden_fat12 = 0x11,
+    HiddenFat12 = 0x11,
     /// Hidden FAT16 partition (small)
-    Hidden_fat16_small = 0x14,
+    HiddenFat16Small = 0x14,
     /// Hidden FAT16 partition
-    Hidden_fat16 = 0x16,
+    HiddenFat16 = 0x16,
     /// Hidden NTFS/exFAT partition
-    Hidden_ntfs_exfat = 0x17,
+    HiddenNtfsExfat = 0x17,
     /// Hidden FAT32 partition
-    Hidden_fat32 = 0x1B,
+    HiddenFat32 = 0x1B,
     /// Hidden FAT32 partition (LBA addressing)
-    Hidden_fat32_lba = 0x1C,
+    HiddenFat32Lba = 0x1C,
     /// Hidden FAT16 partition (LBA addressing)
-    Hidden_fat16_lba = 0x1E,
+    HiddenFat16Lba = 0x1E,
     /// Linux swap partition
-    Linux_swap = 0x82,
+    LinuxSwap = 0x82,
     /// Linux native partition (typically ext2/3/4)
     Linux = 0x83,
     /// Linux LVM (Logical Volume Manager)
-    Linux_lvm = 0x8E,
+    LinuxLvm = 0x8E,
     /// GPT protective partition (indicates GPT, not MBR)
-    Gpt_protective = 0xEE,
+    GptProtective = 0xEE,
     /// EFI System Partition
-    Efi_system = 0xEF,
+    EfiSystem = 0xEF,
     /// Xila
     Xila = 0xDA,
     /// Unknown or custom partition type
     Unknown(u8),
 }
 
-impl Partition_type_type {
+impl PartitionKind {
     /// Create a partition type from a raw u8 value.
     ///
     /// This function maps standard partition type IDs to their corresponding
@@ -129,90 +129,90 @@ impl Partition_type_type {
     /// ```
     pub fn from_u8(value: u8) -> Self {
         match value {
-            0x00 => Partition_type_type::Empty,
-            0x01 => Partition_type_type::Fat12,
-            0x04 => Partition_type_type::Fat16_small,
-            0x05 => Partition_type_type::Extended,
-            0x06 => Partition_type_type::Fat16,
-            0x07 => Partition_type_type::Ntfs_exfat,
-            0x0B => Partition_type_type::Fat32,
-            0x0C => Partition_type_type::Fat32_lba,
-            0x0E => Partition_type_type::Fat16_lba,
-            0x0F => Partition_type_type::Extended_lba,
-            0x11 => Partition_type_type::Hidden_fat12,
-            0x14 => Partition_type_type::Hidden_fat16_small,
-            0x16 => Partition_type_type::Hidden_fat16,
-            0x17 => Partition_type_type::Hidden_ntfs_exfat,
-            0x1B => Partition_type_type::Hidden_fat32,
-            0x1C => Partition_type_type::Hidden_fat32_lba,
-            0x1E => Partition_type_type::Hidden_fat16_lba,
-            0x82 => Partition_type_type::Linux_swap,
-            0x83 => Partition_type_type::Linux,
-            0x8E => Partition_type_type::Linux_lvm,
-            0xEE => Partition_type_type::Gpt_protective,
-            0xEF => Partition_type_type::Efi_system,
-            0xDA => Partition_type_type::Xila,
-            _ => Partition_type_type::Unknown(value),
+            0x00 => PartitionKind::Empty,
+            0x01 => PartitionKind::Fat12,
+            0x04 => PartitionKind::Fat16Small,
+            0x05 => PartitionKind::Extended,
+            0x06 => PartitionKind::Fat16,
+            0x07 => PartitionKind::NtfsExfat,
+            0x0B => PartitionKind::Fat32,
+            0x0C => PartitionKind::Fat32Lba,
+            0x0E => PartitionKind::Fat16Lba,
+            0x0F => PartitionKind::ExtendedLba,
+            0x11 => PartitionKind::HiddenFat12,
+            0x14 => PartitionKind::HiddenFat16Small,
+            0x16 => PartitionKind::HiddenFat16,
+            0x17 => PartitionKind::HiddenNtfsExfat,
+            0x1B => PartitionKind::HiddenFat32,
+            0x1C => PartitionKind::HiddenFat32Lba,
+            0x1E => PartitionKind::HiddenFat16Lba,
+            0x82 => PartitionKind::LinuxSwap,
+            0x83 => PartitionKind::Linux,
+            0x8E => PartitionKind::LinuxLvm,
+            0xEE => PartitionKind::GptProtective,
+            0xEF => PartitionKind::EfiSystem,
+            0xDA => PartitionKind::Xila,
+            _ => PartitionKind::Unknown(value),
         }
     }
 
     /// Convert the partition type to its raw u8 value
     pub fn to_u8(&self) -> u8 {
         match self {
-            Partition_type_type::Empty => 0x00,
-            Partition_type_type::Fat12 => 0x01,
-            Partition_type_type::Fat16_small => 0x04,
-            Partition_type_type::Extended => 0x05,
-            Partition_type_type::Fat16 => 0x06,
-            Partition_type_type::Ntfs_exfat => 0x07,
-            Partition_type_type::Fat32 => 0x0B,
-            Partition_type_type::Fat32_lba => 0x0C,
-            Partition_type_type::Fat16_lba => 0x0E,
-            Partition_type_type::Extended_lba => 0x0F,
-            Partition_type_type::Hidden_fat12 => 0x11,
-            Partition_type_type::Hidden_fat16_small => 0x14,
-            Partition_type_type::Hidden_fat16 => 0x16,
-            Partition_type_type::Hidden_ntfs_exfat => 0x17,
-            Partition_type_type::Hidden_fat32 => 0x1B,
-            Partition_type_type::Hidden_fat32_lba => 0x1C,
-            Partition_type_type::Hidden_fat16_lba => 0x1E,
-            Partition_type_type::Linux_swap => 0x82,
-            Partition_type_type::Linux => 0x83,
-            Partition_type_type::Linux_lvm => 0x8E,
-            Partition_type_type::Gpt_protective => 0xEE,
-            Partition_type_type::Efi_system => 0xEF,
-            Partition_type_type::Xila => 0xDA,
-            Partition_type_type::Unknown(value) => *value,
+            PartitionKind::Empty => 0x00,
+            PartitionKind::Fat12 => 0x01,
+            PartitionKind::Fat16Small => 0x04,
+            PartitionKind::Extended => 0x05,
+            PartitionKind::Fat16 => 0x06,
+            PartitionKind::NtfsExfat => 0x07,
+            PartitionKind::Fat32 => 0x0B,
+            PartitionKind::Fat32Lba => 0x0C,
+            PartitionKind::Fat16Lba => 0x0E,
+            PartitionKind::ExtendedLba => 0x0F,
+            PartitionKind::HiddenFat12 => 0x11,
+            PartitionKind::HiddenFat16Small => 0x14,
+            PartitionKind::HiddenFat16 => 0x16,
+            PartitionKind::HiddenNtfsExfat => 0x17,
+            PartitionKind::HiddenFat32 => 0x1B,
+            PartitionKind::HiddenFat32Lba => 0x1C,
+            PartitionKind::HiddenFat16Lba => 0x1E,
+            PartitionKind::LinuxSwap => 0x82,
+            PartitionKind::Linux => 0x83,
+            PartitionKind::LinuxLvm => 0x8E,
+            PartitionKind::GptProtective => 0xEE,
+            PartitionKind::EfiSystem => 0xEF,
+            PartitionKind::Xila => 0xDA,
+            PartitionKind::Unknown(value) => *value,
         }
     }
 
     /// Get the human-readable name of the partition type
     pub fn get_name(&self) -> &'static str {
         match self {
-            Partition_type_type::Empty => "Empty",
-            Partition_type_type::Fat12 => "FAT12",
-            Partition_type_type::Fat16_small => "FAT16 <32M",
-            Partition_type_type::Extended => "Extended",
-            Partition_type_type::Fat16 => "FAT16",
-            Partition_type_type::Ntfs_exfat => "NTFS/exFAT",
-            Partition_type_type::Fat32 => "FAT32",
-            Partition_type_type::Fat32_lba => "FAT32 LBA",
-            Partition_type_type::Fat16_lba => "FAT16 LBA",
-            Partition_type_type::Extended_lba => "Extended LBA",
-            Partition_type_type::Hidden_fat12 => "Hidden FAT12",
-            Partition_type_type::Hidden_fat16_small => "Hidden FAT16 <32M",
-            Partition_type_type::Hidden_fat16 => "Hidden FAT16",
-            Partition_type_type::Hidden_ntfs_exfat => "Hidden NTFS/exFAT",
-            Partition_type_type::Hidden_fat32 => "Hidden FAT32",
-            Partition_type_type::Hidden_fat32_lba => "Hidden FAT32 LBA",
-            Partition_type_type::Hidden_fat16_lba => "Hidden FAT16 LBA",
-            Partition_type_type::Linux_swap => "Linux swap",
-            Partition_type_type::Linux => "Linux",
-            Partition_type_type::Linux_lvm => "Linux LVM",
-            Partition_type_type::Gpt_protective => "GPT protective",
-            Partition_type_type::Efi_system => "EFI System",
-            Partition_type_type::Xila => "Xila",
-            Partition_type_type::Unknown(_) => "Unknown",
+            PartitionKind::Empty => "Empty",
+            PartitionKind::Fat12 => "FAT12",
+            PartitionKind::Fat16Small => "FAT16 <32M",
+            PartitionKind::Extended => "Extended",
+            PartitionKind::Fat16 => "FAT16",
+            PartitionKind::NtfsExfat => "NTFS/exFAT",
+            PartitionKind::Fat32 => "FAT32",
+            PartitionKind::Fat32Lba => "FAT32 LBA",
+            PartitionKind::Fat16Lba => "FAT16 LBA",
+            PartitionKind::ExtendedLba => "Extended LBA",
+            PartitionKind::HiddenFat12 => "Hidden FAT12",
+            PartitionKind::HiddenFat16Small => "Hidden FAT16 <32M",
+            PartitionKind::HiddenFat16 => "Hidden FAT16",
+            PartitionKind::HiddenNtfsExfat => "Hidden NTFS/exFAT",
+            PartitionKind::HiddenFat32 => "Hidden FAT32",
+            PartitionKind::HiddenFat32Lba => "Hidden FAT32 LBA",
+            PartitionKind::HiddenFat16Lba => "Hidden FAT16 LBA",
+            PartitionKind::LinuxSwap => "Linux swap",
+            PartitionKind::Linux => "Linux",
+            PartitionKind::LinuxLvm => "Linux LVM",
+            PartitionKind::GptProtective => "GPT protective",
+            PartitionKind::EfiSystem => "EFI System",
+            PartitionKind::Xila => "Xila",
+            PartitionKind::Unknown(_) => "Unknown",
         }
     }
 
@@ -220,18 +220,18 @@ impl Partition_type_type {
     pub fn is_fat(&self) -> bool {
         matches!(
             self,
-            Partition_type_type::Fat12
-                | Partition_type_type::Fat16_small
-                | Partition_type_type::Fat16
-                | Partition_type_type::Fat32
-                | Partition_type_type::Fat32_lba
-                | Partition_type_type::Fat16_lba
-                | Partition_type_type::Hidden_fat12
-                | Partition_type_type::Hidden_fat16_small
-                | Partition_type_type::Hidden_fat16
-                | Partition_type_type::Hidden_fat32
-                | Partition_type_type::Hidden_fat32_lba
-                | Partition_type_type::Hidden_fat16_lba
+            PartitionKind::Fat12
+                | PartitionKind::Fat16Small
+                | PartitionKind::Fat16
+                | PartitionKind::Fat32
+                | PartitionKind::Fat32Lba
+                | PartitionKind::Fat16Lba
+                | PartitionKind::HiddenFat12
+                | PartitionKind::HiddenFat16Small
+                | PartitionKind::HiddenFat16
+                | PartitionKind::HiddenFat32
+                | PartitionKind::HiddenFat32Lba
+                | PartitionKind::HiddenFat16Lba
         )
     }
 
@@ -239,39 +239,34 @@ impl Partition_type_type {
     pub fn is_hidden(&self) -> bool {
         matches!(
             self,
-            Partition_type_type::Hidden_fat12
-                | Partition_type_type::Hidden_fat16_small
-                | Partition_type_type::Hidden_fat16
-                | Partition_type_type::Hidden_ntfs_exfat
-                | Partition_type_type::Hidden_fat32
-                | Partition_type_type::Hidden_fat32_lba
-                | Partition_type_type::Hidden_fat16_lba
+            PartitionKind::HiddenFat12
+                | PartitionKind::HiddenFat16Small
+                | PartitionKind::HiddenFat16
+                | PartitionKind::HiddenNtfsExfat
+                | PartitionKind::HiddenFat32
+                | PartitionKind::HiddenFat32Lba
+                | PartitionKind::HiddenFat16Lba
         )
     }
 
     /// Check if this partition type is an extended partition
     pub fn is_extended(&self) -> bool {
-        matches!(
-            self,
-            Partition_type_type::Extended | Partition_type_type::Extended_lba
-        )
+        matches!(self, PartitionKind::Extended | PartitionKind::ExtendedLba)
     }
 
     /// Check if this partition type is Linux-related
     pub fn is_linux(&self) -> bool {
         matches!(
             self,
-            Partition_type_type::Linux
-                | Partition_type_type::Linux_swap
-                | Partition_type_type::Linux_lvm
+            PartitionKind::Linux | PartitionKind::LinuxSwap | PartitionKind::LinuxLvm
         )
     }
 }
 
-impl fmt::Display for Partition_type_type {
+impl fmt::Display for PartitionKind {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Partition_type_type::Unknown(value) => write!(formatter, "Unknown (0x{value:02X})"),
+            PartitionKind::Unknown(value) => write!(formatter, "Unknown (0x{value:02X})"),
             _ => write!(formatter, "{} (0x{:02X})", self.get_name(), self.to_u8()),
         }
     }
@@ -284,35 +279,20 @@ mod tests {
 
     #[test]
     fn test_partition_type_from_u8() {
-        assert_eq!(
-            Partition_type_type::from_u8(0x00),
-            Partition_type_type::Empty
-        );
-        assert_eq!(
-            Partition_type_type::from_u8(0x0C),
-            Partition_type_type::Fat32_lba
-        );
-        assert_eq!(
-            Partition_type_type::from_u8(0x83),
-            Partition_type_type::Linux
-        );
-        assert_eq!(
-            Partition_type_type::from_u8(0xEE),
-            Partition_type_type::Gpt_protective
-        );
-        assert_eq!(
-            Partition_type_type::from_u8(0xFF),
-            Partition_type_type::Unknown(0xFF)
-        );
+        assert_eq!(PartitionKind::from_u8(0x00), PartitionKind::Empty);
+        assert_eq!(PartitionKind::from_u8(0x0C), PartitionKind::Fat32Lba);
+        assert_eq!(PartitionKind::from_u8(0x83), PartitionKind::Linux);
+        assert_eq!(PartitionKind::from_u8(0xEE), PartitionKind::GptProtective);
+        assert_eq!(PartitionKind::from_u8(0xFF), PartitionKind::Unknown(0xFF));
     }
 
     #[test]
     fn test_partition_type_to_u8() {
-        assert_eq!(Partition_type_type::Empty.to_u8(), 0x00);
-        assert_eq!(Partition_type_type::Fat32_lba.to_u8(), 0x0C);
-        assert_eq!(Partition_type_type::Linux.to_u8(), 0x83);
-        assert_eq!(Partition_type_type::Gpt_protective.to_u8(), 0xEE);
-        assert_eq!(Partition_type_type::Unknown(0xFF).to_u8(), 0xFF);
+        assert_eq!(PartitionKind::Empty.to_u8(), 0x00);
+        assert_eq!(PartitionKind::Fat32Lba.to_u8(), 0x0C);
+        assert_eq!(PartitionKind::Linux.to_u8(), 0x83);
+        assert_eq!(PartitionKind::GptProtective.to_u8(), 0xEE);
+        assert_eq!(PartitionKind::Unknown(0xFF).to_u8(), 0xFF);
     }
 
     #[test]
@@ -323,7 +303,7 @@ mod tests {
         ];
 
         for type_value in types {
-            let partition_type = Partition_type_type::from_u8(type_value);
+            let partition_type = PartitionKind::from_u8(type_value);
             assert_eq!(partition_type.to_u8(), type_value);
         }
     }
@@ -331,55 +311,52 @@ mod tests {
     #[test]
     fn test_partition_type_properties() {
         // Test FAT detection
-        assert!(Partition_type_type::Fat12.is_fat());
-        assert!(Partition_type_type::Fat16.is_fat());
-        assert!(Partition_type_type::Fat32.is_fat());
-        assert!(Partition_type_type::Fat32_lba.is_fat());
-        assert!(Partition_type_type::Hidden_fat32.is_fat());
-        assert!(!Partition_type_type::Linux.is_fat());
-        assert!(!Partition_type_type::Ntfs_exfat.is_fat());
+        assert!(PartitionKind::Fat12.is_fat());
+        assert!(PartitionKind::Fat16.is_fat());
+        assert!(PartitionKind::Fat32.is_fat());
+        assert!(PartitionKind::Fat32Lba.is_fat());
+        assert!(PartitionKind::HiddenFat32.is_fat());
+        assert!(!PartitionKind::Linux.is_fat());
+        assert!(!PartitionKind::NtfsExfat.is_fat());
 
         // Test hidden detection
-        assert!(Partition_type_type::Hidden_fat12.is_hidden());
-        assert!(Partition_type_type::Hidden_fat32.is_hidden());
-        assert!(Partition_type_type::Hidden_ntfs_exfat.is_hidden());
-        assert!(!Partition_type_type::Fat32.is_hidden());
-        assert!(!Partition_type_type::Linux.is_hidden());
+        assert!(PartitionKind::HiddenFat12.is_hidden());
+        assert!(PartitionKind::HiddenFat32.is_hidden());
+        assert!(PartitionKind::HiddenNtfsExfat.is_hidden());
+        assert!(!PartitionKind::Fat32.is_hidden());
+        assert!(!PartitionKind::Linux.is_hidden());
 
         // Test extended detection
-        assert!(Partition_type_type::Extended.is_extended());
-        assert!(Partition_type_type::Extended_lba.is_extended());
-        assert!(!Partition_type_type::Fat32.is_extended());
-        assert!(!Partition_type_type::Linux.is_extended());
+        assert!(PartitionKind::Extended.is_extended());
+        assert!(PartitionKind::ExtendedLba.is_extended());
+        assert!(!PartitionKind::Fat32.is_extended());
+        assert!(!PartitionKind::Linux.is_extended());
 
         // Test Linux detection
-        assert!(Partition_type_type::Linux.is_linux());
-        assert!(Partition_type_type::Linux_swap.is_linux());
-        assert!(Partition_type_type::Linux_lvm.is_linux());
-        assert!(!Partition_type_type::Fat32.is_linux());
-        assert!(!Partition_type_type::Ntfs_exfat.is_linux());
+        assert!(PartitionKind::Linux.is_linux());
+        assert!(PartitionKind::LinuxSwap.is_linux());
+        assert!(PartitionKind::LinuxLvm.is_linux());
+        assert!(!PartitionKind::Fat32.is_linux());
+        assert!(!PartitionKind::NtfsExfat.is_linux());
     }
 
     #[test]
     fn test_partition_type_names() {
-        assert_eq!(Partition_type_type::Empty.get_name(), "Empty");
-        assert_eq!(Partition_type_type::Fat32_lba.get_name(), "FAT32 LBA");
-        assert_eq!(Partition_type_type::Linux.get_name(), "Linux");
-        assert_eq!(
-            Partition_type_type::Gpt_protective.get_name(),
-            "GPT protective"
-        );
-        assert_eq!(Partition_type_type::Unknown(0x42).get_name(), "Unknown");
+        assert_eq!(PartitionKind::Empty.get_name(), "Empty");
+        assert_eq!(PartitionKind::Fat32Lba.get_name(), "FAT32 LBA");
+        assert_eq!(PartitionKind::Linux.get_name(), "Linux");
+        assert_eq!(PartitionKind::GptProtective.get_name(), "GPT protective");
+        assert_eq!(PartitionKind::Unknown(0x42).get_name(), "Unknown");
     }
 
     #[test]
     fn test_partition_type_display() {
-        let fat32_variant = Partition_type_type::Fat32_lba;
+        let fat32_variant = PartitionKind::Fat32Lba;
         let display_string = format!("{fat32_variant}");
         assert!(display_string.contains("FAT32 LBA"));
         assert!(display_string.contains("0x0C"));
 
-        let unknown = Partition_type_type::Unknown(0x42);
+        let unknown = PartitionKind::Unknown(0x42);
         let unknown_string = format!("{unknown}");
         assert!(unknown_string.contains("Unknown"));
         assert!(unknown_string.contains("0x42"));

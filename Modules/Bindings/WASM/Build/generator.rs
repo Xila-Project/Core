@@ -3,7 +3,7 @@ use std::{fs::File, io::Write, path::Path};
 
 use bindings_utilities::format::format_identifier;
 
-use bindings_utilities::context::LVGL_context;
+use bindings_utilities::context::LvglContext;
 use bindings_utilities::format::format_c;
 use bindings_utilities::function::split_inputs;
 use quote::ToTokens;
@@ -167,7 +167,7 @@ fn generate_graphics_call(signature: &Signature) -> String {
     )
 }
 
-pub fn generate_types(lvgl_functions: &LVGL_context) -> String {
+pub fn generate_types(lvgl_functions: &LvglContext) -> String {
     //Read to string
     let includes: String = fs::read_to_string("./Build/Includes.h").unwrap();
 
@@ -184,7 +184,7 @@ pub fn generate_types(lvgl_functions: &LVGL_context) -> String {
     format!("{includes}\n{opaque_types}\n{types}")
 }
 
-pub fn generate_header(output_file: &mut File, lvgl_functions: &LVGL_context) {
+pub fn generate_header(output_file: &mut File, lvgl_functions: &LvglContext) {
     output_file
         .write_all(
             r#"
@@ -259,7 +259,7 @@ pub fn generate_c_function_definition(signature: &Signature) -> String {
     format!("{c_signature}\n{{\n{graphics_call}\n}}\n")
 }
 
-pub fn generate_source(output_file: &mut File, context: &LVGL_context) {
+pub fn generate_source(output_file: &mut File, context: &LvglContext) {
     output_file
         .write_all("#include \"Xila_graphics.h\"\n".as_bytes())
         .unwrap();
@@ -284,7 +284,7 @@ pub fn generate_source(output_file: &mut File, context: &LVGL_context) {
     output_file.write_all(graphics_calls.as_bytes()).unwrap();
 }
 
-pub fn generate(output_path: &Path, lvgl_functions: &LVGL_context) -> Result<(), String> {
+pub fn generate(output_path: &Path, lvgl_functions: &LvglContext) -> Result<(), String> {
     let header_file_path = output_path.join("Xila_graphics.h");
     let source_file_path = output_path.join("Xila_graphics.c");
 

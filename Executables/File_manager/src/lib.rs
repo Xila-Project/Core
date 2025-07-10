@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(non_camel_case_types)]
 
 extern crate alloc;
 
@@ -10,42 +9,42 @@ use alloc::string::{String, ToString};
 use core::num::NonZeroUsize;
 pub use error::*;
 pub use file_manager::*;
-use file_system::{Flags_type, Mode_type, Open_type};
-use task::Task_identifier_type;
-use virtual_file_system::{File_type, Virtual_file_system_type};
+use file_system::{Flags, Mode, Open};
+use task::TaskIdentifier;
+use virtual_file_system::{File, VirtualFileSystemType};
 
-use executable::Standard_type;
+use executable::Standard;
 
 pub const SHORTCUT: &str = r#"
 {
-    "Name": "File manager",
-    "Command": "/Binaries/File_manager",
-    "Arguments": "",
-    "Terminal": false,
-    "Icon_string": "Fm",
-    "Icon_color": [0, 188, 212]
+    "name": "File manager",
+    "command": "/Binaries/File_manager",
+    "arguments": "",
+    "terminal": false,
+    "icon_string": "Fm",
+    "icon_color": [0, 188, 212]
 }"#;
 
-pub struct File_manager_executable_type;
+pub struct FileManagerExecutableType;
 
-impl File_manager_executable_type {
+impl FileManagerExecutableType {
     pub async fn new<'a>(
-        virtual_file_system: &'a Virtual_file_system_type<'a>,
-        task: Task_identifier_type,
-    ) -> Result<Self, String> {
+        virtual_file_system: &'a VirtualFileSystemType<'a>,
+        task: TaskIdentifier,
+    ) -> core::result::Result<Self, String> {
         let _ = virtual_file_system
             .create_directory(&"/Configuration/Shared/Shortcuts", task)
             .await;
 
-        let file = match File_type::open(
+        let file = match File::open(
             virtual_file_system,
             "/Configuration/Shared/Shortcuts/File_manager.json",
-            Flags_type::new(Mode_type::WRITE_ONLY, Open_type::CREATE_ONLY.into(), None),
+            Flags::new(Mode::WRITE_ONLY, Open::CREATE_ONLY.into(), None),
         )
         .await
         {
             Ok(file) => file,
-            Err(file_system::Error_type::Already_exists) => {
+            Err(file_system::Error::AlreadyExists) => {
                 return Ok(Self);
             }
             Err(error) => Err(error.to_string())?,
@@ -59,14 +58,14 @@ impl File_manager_executable_type {
     }
 }
 
-executable::Implement_executable_device!(
-    Structure: File_manager_executable_type,
+executable::implement_executable_device!(
+    Structure: FileManagerExecutableType,
     Mount_path: "/Binaries/File_manager",
     Main_function: main,
 );
 
-pub async fn main(_: Standard_type, _: String) -> Result<(), NonZeroUsize> {
-    let mut file_manager = File_manager_type::new()
+pub async fn main(_: Standard, _: String) -> core::result::Result<(), NonZeroUsize> {
+    let mut file_manager = FileManagerType::new()
         .await
         .map_err(|_| NonZeroUsize::new(1).unwrap())?;
 

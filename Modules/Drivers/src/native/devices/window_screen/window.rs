@@ -1,28 +1,26 @@
 use std::collections::VecDeque;
 
-use graphics::{
-    Color_RGBA8888_type, Input_data_type, Key_type, Point_type, Screen_write_data_type, State_type,
-};
+use graphics::{ColorRGBA8888, Input_data_type, Key, Point, ScreenWriteData, State};
 use pixels::{Pixels, SurfaceTexture};
 use winit::{
     application::ApplicationHandler,
     dpi::LogicalSize,
     event::{ElementState, WindowEvent},
     event_loop::ActiveEventLoop,
-    window::{Window, WindowId},
+    window::{self, WindowId},
 };
 
 #[derive(Default)]
-pub struct Window_type {
-    resolution: Point_type,
-    window: Option<Window>,
+pub struct Window {
+    resolution: Point,
+    window: Option<window::Window>,
     pixels: Option<Pixels>,
     pointer_data: Input_data_type,
-    keyboard_data: VecDeque<(State_type, Key_type)>,
+    keyboard_data: VecDeque<(State, Key)>,
 }
 
-impl Window_type {
-    pub fn new(resolution: Point_type) -> Self {
+impl Window {
+    pub fn new(resolution: Point) -> Self {
         Self {
             resolution,
             keyboard_data: VecDeque::with_capacity(16),
@@ -34,7 +32,7 @@ impl Window_type {
         &self.pointer_data
     }
 
-    pub fn pop_keyboard_data(&mut self) -> Option<(State_type, Key_type, bool)> {
+    pub fn pop_keyboard_data(&mut self) -> Option<(State, Key, bool)> {
         let (state, key) = self.keyboard_data.pop_front()?;
 
         let r#continue = self.keyboard_data.is_empty();
@@ -42,14 +40,14 @@ impl Window_type {
         Some((state, key, r#continue))
     }
 
-    pub fn get_resolution(&self) -> Option<Point_type> {
+    pub fn get_resolution(&self) -> Option<Point> {
         self.window.as_ref().map(|window| {
             let size = window.inner_size();
-            Point_type::new(size.width as i16, size.height as i16)
+            Point::new(size.width as i16, size.height as i16)
         })
     }
 
-    pub fn draw(&mut self, data: &Screen_write_data_type) -> Result<(), String> {
+    pub fn draw(&mut self, data: &ScreenWriteData) -> Result<(), String> {
         let frame_width = self.resolution.get_x() as usize;
         let data_area = data.get_area();
 
@@ -64,8 +62,8 @@ impl Window_type {
         let frame = pixels.frame_mut();
         let frame = unsafe {
             core::slice::from_raw_parts_mut(
-                frame.as_mut_ptr() as *mut Color_RGBA8888_type,
-                frame.len() / size_of::<Color_RGBA8888_type>(),
+                frame.as_mut_ptr() as *mut ColorRGBA8888,
+                frame.len() / size_of::<ColorRGBA8888>(),
             )
         };
 
@@ -85,7 +83,7 @@ impl Window_type {
                 .iter_mut()
                 .zip(data_row.iter())
                 .for_each(|(destination, &source)| {
-                    let source = Color_RGBA8888_type::from_rgb565(source);
+                    let source = ColorRGBA8888::from_rgb565(source);
                     *destination = source;
                 });
         }
@@ -100,7 +98,7 @@ impl Window_type {
     }
 }
 
-impl ApplicationHandler for Window_type {
+impl ApplicationHandler for Window {
     fn about_to_wait(&mut self, _: &ActiveEventLoop) {
         if let Some(window) = &self.window {
             window.request_redraw();
@@ -114,7 +112,7 @@ impl ApplicationHandler for Window_type {
                 self.resolution.get_y() as f64,
             );
 
-            let window_attributes = Window::default_attributes()
+            let window_attributes = window::Window::default_attributes()
                 .with_title("Xila")
                 .with_inner_size(size)
                 .with_min_inner_size(size);
@@ -173,30 +171,30 @@ impl ApplicationHandler for Window_type {
                         let key = text.as_bytes()[0];
 
                         self.keyboard_data
-                            .push_back((State_type::Pressed, Key_type::Character(key)));
+                            .push_back((State::Pressed, Key::Character(key)));
                         self.keyboard_data
-                            .push_back((State_type::Released, Key_type::Character(key)));
+                            .push_back((State::Released, Key::Character(key)));
                     }
                 } else if let winit::keyboard::Key::Named(key) = event.logical_key {
                     let state = match event.state {
-                        ElementState::Pressed => State_type::Pressed,
-                        ElementState::Released => State_type::Released,
+                        ElementState::Pressed => State::Pressed,
+                        ElementState::Released => State::Released,
                     };
 
                     let key = match key {
-                        winit::keyboard::NamedKey::ArrowUp => Key_type::Up,
-                        winit::keyboard::NamedKey::ArrowDown => Key_type::Down,
-                        winit::keyboard::NamedKey::ArrowLeft => Key_type::Left,
-                        winit::keyboard::NamedKey::ArrowRight => Key_type::Right,
-                        winit::keyboard::NamedKey::Escape => Key_type::Escape,
-                        winit::keyboard::NamedKey::Delete => Key_type::Delete,
-                        winit::keyboard::NamedKey::Backspace => Key_type::Backspace,
-                        winit::keyboard::NamedKey::Enter => Key_type::Enter,
-                        winit::keyboard::NamedKey::NavigateNext => Key_type::Next,
-                        winit::keyboard::NamedKey::NavigatePrevious => Key_type::Previous,
-                        winit::keyboard::NamedKey::Home => Key_type::Home,
-                        winit::keyboard::NamedKey::End => Key_type::End,
-                        _ => Key_type::Character(0),
+                        winit::keyboard::NamedKey::ArrowUp => Key::Up,
+                        winit::keyboard::NamedKey::ArrowDown => Key::Down,
+                        winit::keyboard::NamedKey::ArrowLeft => Key::Left,
+                        winit::keyboard::NamedKey::ArrowRight => Key::Right,
+                        winit::keyboard::NamedKey::Escape => Key::Escape,
+                        winit::keyboard::NamedKey::Delete => Key::Delete,
+                        winit::keyboard::NamedKey::Backspace => Key::Backspace,
+                        winit::keyboard::NamedKey::Enter => Key::Enter,
+                        winit::keyboard::NamedKey::NavigateNext => Key::Next,
+                        winit::keyboard::NamedKey::NavigatePrevious => Key::Previous,
+                        winit::keyboard::NamedKey::Home => Key::Home,
+                        winit::keyboard::NamedKey::End => Key::End,
+                        _ => Key::Character(0),
                     };
 
                     self.keyboard_data.push_back((state, key));
@@ -214,11 +212,11 @@ impl ApplicationHandler for Window_type {
                 button: _,
             } => match state {
                 ElementState::Pressed => {
-                    self.pointer_data.set_state(State_type::Pressed);
+                    self.pointer_data.set_state(State::Pressed);
                 }
 
                 ElementState::Released => {
-                    self.pointer_data.set_state(State_type::Released);
+                    self.pointer_data.set_state(State::Released);
                 }
             },
             _ => {}

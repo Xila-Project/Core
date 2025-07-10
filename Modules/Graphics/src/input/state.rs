@@ -2,28 +2,28 @@ use crate::lvgl;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 #[repr(u8)]
-pub enum State_type {
+pub enum State {
     #[default]
     Released,
     Pressed,
 }
 
-impl From<State_type> for lvgl::lv_indev_state_t {
-    fn from(value: State_type) -> lvgl::lv_indev_state_t {
+impl From<State> for lvgl::lv_indev_state_t {
+    fn from(value: State) -> lvgl::lv_indev_state_t {
         match value {
-            State_type::Pressed => lvgl::lv_indev_state_t_LV_INDEV_STATE_PRESSED,
-            State_type::Released => lvgl::lv_indev_state_t_LV_INDEV_STATE_RELEASED,
+            State::Pressed => lvgl::lv_indev_state_t_LV_INDEV_STATE_PRESSED,
+            State::Released => lvgl::lv_indev_state_t_LV_INDEV_STATE_RELEASED,
         }
     }
 }
 
-impl From<State_type> for u8 {
-    fn from(value: State_type) -> u8 {
+impl From<State> for u8 {
+    fn from(value: State) -> u8 {
         value as u8
     }
 }
 
-impl TryFrom<u8> for State_type {
+impl TryFrom<u8> for State {
     type Error = ();
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
