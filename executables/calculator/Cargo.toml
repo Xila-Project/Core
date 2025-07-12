@@ -1,0 +1,14 @@
+[package]
+name = "calculator"
+version = "0.1.0"
+edition = "2024"
+build = "build.rs"
+
+[dependencies]
+
+[dev-dependencies]
+xila = { path = "../../", features = ["Host"] }
+
+[[test]]
+name = "calculator_test"
+path = "tests/test.rs"

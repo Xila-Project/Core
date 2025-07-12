@@ -1,0 +1,21 @@
+[package]
+name = "authentication"
+version = "0.1.0"
+edition = "2021"
+description = "User and group authentication module for Xila OS with secure password hashing"
+keywords = ["authentication", "security", "users", "groups", "no-std"]
+categories = ["authentication", "no-std", "os"]
+license = "See main project license"
+documentation = "README.md"
+readme = "README.md"
+
+[dependencies]
+# Core Xila modules
+virtual_file_system = { path = "../virtual_file_system" }
+users = { path = "../users" }
+task = { path = "../task" }
+file_system = { path = "../file_system" }
+
+# External dependencies
+sha2 = { version = "0.10", features = ["asm"] }  # SHA-512 cryptographic hashing
+miniserde = "0.1"  # Lightweight JSON serialization for no-std environments

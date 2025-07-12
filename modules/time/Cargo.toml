@@ -1,0 +1,17 @@
+[package]
+name = "time"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+file_system = { path = "../file_system" }
+log = { path = "../log" }
+shared = { path = "../shared" }
+
+[dev-dependencies]
+drivers = { path = "../drivers" }
+log = { path = "../log" }
+
+[[test]]
+name = "integration"
+path = "Tests/integration.rs"

@@ -1,0 +1,33 @@
+[package]
+name = "graphics"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cstr_core = "0.2.6"
+file_system = { path = "../file_system" }
+lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
+#lvgl_rust_sys = { path = "../../../lvgl_rust_sys", default-features = false }
+syn = { version = "2.0", features = ["full"] }
+quote = "1.0"
+time = { path = "../time" }
+shared = { path = "../shared" }
+synchronization = { version = "0.1.0", path = "../synchronization" }
+log = { version = "0.1.0", path = "../log" }
+
+
+[dev-dependencies]
+drivers = { path = "../drivers" }
+users = { path = "../users" }
+task = { path = "../task" }
+futures = { path = "../futures" }
+
+[features]
+default = ["RGB565"]
+RGB565 = []
+ARGB8888 = []
+RGBA8888 = []
+
+[[test]]
+name = "graphics"
+path = "Tests/graphics.rs"

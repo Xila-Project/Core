@@ -1,0 +1,12 @@
+[package]
+name = "users"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+synchronization = { version = "0.1.0", path = "../synchronization" }
+
+[dev-dependencies]
+drivers = { path = "../drivers" }
+futures = { path = "../futures" }
+task = { path = "../task" }

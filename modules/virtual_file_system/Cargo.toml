@@ -1,0 +1,23 @@
+[package]
+name = "virtual_file_system"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+file_system = { path = "../file_system" }
+task = { path = "../task" }
+users = { path = "../users" }
+time = { path = "../time" }
+network = { path = "../network" }
+synchronization = { version = "0.1.0", path = "../synchronization" }
+futures = { version = "0.1.0", path = "../futures" }
+log = { version = "0.1.0", path = "../log" }
+
+[dev-dependencies]
+drivers = { path = "../drivers" }
+# drivers = { path = "../drivers" }
+# little_fs = { path = "../little_fs" }
+
+# [[test]]
+# name = "integration"
+# path = "Tests/Integration.rs"

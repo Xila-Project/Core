@@ -1,0 +1,45 @@
+[package]
+name = "drivers"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+quote = "1.0.36"
+log = { path = "../log" }
+file_system = { path = "../file_system" }
+virtual_file_system = { path = "../virtual_file_system" }
+task = { path = "../task" }
+users = { path = "../users" }
+graphics = { path = "../graphics" }
+time = { path = "../time" }
+shared = { path = "../shared" }
+peripherals = { path = "../peripherals" }
+network = { path = "../network" }
+memory = { path = "../memory" }
+synchronization = { path = "../synchronization" }
+linked_list_allocator = { version = "0.10", default-features = false, features = [
+    "const_mut_refs",
+] }
+
+embassy-sync = { version = "0.7" }
+futures = { version = "0.1.0", path = "../futures" }
+embassy-executor = { version = "0.7.0" }
+
+
+[dev-dependencies]
+little_fs = { path = "../little_fs" }
+
+
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
+#graphics = { path = "../graphics", features = ["RGB565"] }
+
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
+pixels = "0.14"
+winit = { version = "0.30", features = ["rwh_05"] }
+rand = "0.9.0"
+libc = { version = "0.2" }
+
+
+#[[te0.9.0.0]
+#name = "native_graphics"
+#path = "Tests/Native/graphics.rs"
