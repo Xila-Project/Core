@@ -1,0 +1,27 @@
+[package]
+name = "wasm"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+file_system = { path = "../../modules/file_system" }
+virtual_file_system = { path = "../../modules/virtual_file_system" }
+executable = { path = "../../modules/executable" }
+task = { path = "../../modules/task" }
+users = { path = "../../modules/users" }
+virtual_machine = { path = "../../modules/virtual_machine" }
+authentication = { path = "../../modules/authentication" }
+futures = { version = "0.1.0", path = "../../modules/futures" }
+
+[dev-dependencies]
+drivers = { path = "../../modules/drivers" }
+time = { path = "../../modules/time" }
+little_fs = { path = "../../modules/little_fs" }
+command_line_shell = { path = "../shell/command_line" }
+task = { path = "../../modules/task" }
+memory = { path = "../../modules/memory" }
+
+[[test]]
+name = "integration_test"
+path = "tests/integration_test.rs"

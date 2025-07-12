@@ -1,0 +1,15 @@
+[package]
+name = "executable"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+file_system = { path = "../file_system" }
+virtual_file_system = { path = "../virtual_file_system" }
+task = { path = "../task" }
+users = { path = "../users" }
+futures = { version = "0.1.0", path = "../futures" }
+log = { version = "0.1.0", path = "../log" }
+
+[dev-dependencies]
+drivers = { path = "../drivers" }

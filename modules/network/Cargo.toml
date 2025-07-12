@@ -1,0 +1,10 @@
+[package]
+name = "network"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+file_system = { path = "../file_system" }
+futures = { version = "0.1.0", path = "../futures" }
+synchronization = { version = "0.1.0", path = "../synchronization" }
+time = { path = "../time" }

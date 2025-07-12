@@ -8,29 +8,29 @@ rust-version = "1.82.0"
 
 [dependencies]
 # - WASM
-wasm_bindings = { path = "Modules/Bindings/WASM", optional = true }
+wasm_bindings = { path = "modules/bindings/wasm", optional = true }
 # - Host
-abi = { path = "Modules/ABI", optional = true }
-little_fs = { path = "Modules/LittleFS", optional = true }
-virtual_machine = { path = "Modules/Virtual_machine", optional = true }
-virtual_file_system = { path = "Modules/Virtual_file_system", optional = true }
-graphics = { path = "Modules/Graphics", optional = true }
-time = { path = "Modules/Time", optional = true }
-task = { path = "Modules/Task", optional = true }
-users = { path = "Modules/Users", optional = true }
-drivers = { path = "Modules/Drivers", optional = true }
-memory = { path = "Modules/Memory", optional = true }
-executable = { path = "Modules/Executable", optional = true }
-file_system = { path = "Modules/File_system", optional = true }
-host_bindings = { path = "Modules/Bindings/Host", optional = true }
-authentication = { path = "Modules/Authentication", optional = true }
-log = { path = "Modules/Log", optional = true }
-futures = { path = "Modules/Futures", optional = true }
-shared = { path = "Modules/Shared", optional = true }
-synchronization = { path = "Modules/Synchronization", optional = true }
+abi = { path = "modules/abi", optional = true }
+little_fs = { path = "modules/little_fs", optional = true }
+virtual_machine = { path = "modules/virtual_machine", optional = true }
+virtual_file_system = { path = "modules/virtual_file_system", optional = true }
+graphics = { path = "modules/graphics", optional = true }
+time = { path = "modules/time", optional = true }
+task = { path = "modules/task", optional = true }
+users = { path = "modules/users", optional = true }
+drivers = { path = "modules/drivers", optional = true }
+memory = { path = "modules/memory", optional = true }
+executable = { path = "modules/executable", optional = true }
+file_system = { path = "modules/file_system", optional = true }
+host_bindings = { path = "modules/bindings/host", optional = true }
+authentication = { path = "modules/authentication", optional = true }
+log = { path = "modules/log", optional = true }
+futures = { path = "modules/futures", optional = true }
+shared = { path = "modules/shared", optional = true }
+synchronization = { path = "modules/synchronization", optional = true }
 
 [build-dependencies]
-target = { path = "Modules/Target", optional = true }
+target = { path = "modules/target", optional = true }
 
 [features]
 default = []
@@ -61,39 +61,40 @@ WASM = ["dep:wasm_bindings"]
 
 [workspace]
 members = [
-    "Modules/File_system",
-    "Modules/Virtual_machine",
-    "Modules/Graphics",
-    "Modules/Task",
-    "Modules/Users",
-    "Modules/Drivers",
-    "Modules/Peripherals",
-    "Modules/Memory",
-    "Modules/Time",
-    "Modules/ABI",
-    "Modules/Virtual_file_system",
-    "Modules/LittleFS",
-    "Modules/Target",
-    "Modules/Bindings/Utilities",
-    "Modules/Bindings/Host",
-    "Modules/Bindings/WASM",
-    "Executables/File_manager",
-    "Executables/Shell/Command_line",
-    "Modules/Executable",
-    "Executables/WASM",
-    "Executables/Shell/Graphical",
-    "Executables/Terminal",
-    "Executables/Settings",
-    "Modules/Authentication",
-    "Modules/Network",
-    "Modules/Synchronization",
-    "Modules/Task/Task_macros",
-    "Modules/Futures",
-    "Modules/Log",
-    "Examples/Native", "Executables/Calculator",
+    "modules/file_system",
+    "modules/virtual_machine",
+    "modules/graphics",
+    "modules/task",
+    "modules/users",
+    "modules/drivers",
+    "modules/peripherals",
+    "modules/memory",
+    "modules/time",
+    "modules/abi",
+    "modules/virtual_file_system",
+    "modules/little_fs",
+    "modules/target",
+    "modules/bindings/utilities",
+    "modules/bindings/host",
+    "modules/bindings/wasm",
+    "executables/file_manager",
+    "executables/shell/command_line",
+    "modules/executable",
+    "executables/wasm",
+    "executables/shell/graphical",
+    "executables/terminal",
+    "executables/settings",
+    "modules/authentication",
+    "modules/network",
+    "modules/synchronization",
+    "modules/task/task_macros",
+    "modules/futures",
+    "modules/log",
+    "examples/native",
+    "executables/calculator",
 ]
 exclude = [
-    "Modules/Virtual_machine/Tests/WASM_test",
-    "Modules/Bindings/Tests/WASM_test",
+    "modules/virtual_machine/Tests/wasm_test",
+    "modules/bindings/Tests/wasm_test",
     "Build_tool",
 ]

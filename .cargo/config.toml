@@ -18,11 +18,11 @@ rustflags = [
 
 [env]
 
-DEP_LV_CONFIG_PATH = { value = "Modules/Graphics/include", relative = true }
+DEP_LV_CONFIG_PATH = { value = "modules/graphics/include", relative = true }
 
 WAMR_BUILD_PLATFORM = "XILA"
 
-WAMR_SHARED_PLATFORM_CONFIG = { value = "Modules/Virtual_machine/WAMR/shared_platform.cmake", relative = true }
+WAMR_SHARED_PLATFORM_CONFIG = { value = "modules/virtual_machine/wamr/shared_platform.cmake", relative = true }
 LLVM_LIB_CFG_PATH = "/usr/lib/llvm-19/cmake/"
 
 [build]
