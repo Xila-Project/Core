@@ -83,9 +83,9 @@ pub trait LoggerTrait: Send + Sync {
     }
 }
 
-struct LoggerType(&'static dyn LoggerTrait);
+struct Logger(&'static dyn LoggerTrait);
 
-impl Log for LoggerType {
+impl Log for Logger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         self.0.enabled(Level::from(metadata.level()))
     }
@@ -102,10 +102,10 @@ impl Log for LoggerType {
     }
 }
 
-static LOGGER_INSTANCE: OnceLock<LoggerType> = OnceLock::new();
+static LOGGER_INSTANCE: OnceLock<Logger> = OnceLock::new();
 
 pub fn initialize(logger: &'static dyn LoggerTrait) -> Result<(), log_external::SetLoggerError> {
-    let logger = LOGGER_INSTANCE.get_or_init(|| LoggerType(logger));
+    let logger = LOGGER_INSTANCE.get_or_init(|| Logger(logger));
 
     set_logger(logger).expect("Failed to set logger");
     set_max_level(log_external::LevelFilter::Trace);

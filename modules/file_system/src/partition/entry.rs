@@ -42,7 +42,7 @@ use core::fmt;
 /// ```
 #[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
-pub struct PartitionEntryType {
+pub struct PartitionEntry {
     /// Boot indicator (0x80 = bootable, 0x00 = non-bootable)
     pub bootable: u8,
     /// Starting head
@@ -65,7 +65,7 @@ pub struct PartitionEntryType {
     pub size_sectors: u32,
 }
 
-impl PartitionEntryType {
+impl PartitionEntry {
     /// Create a new empty (invalid) partition entry.
     ///
     /// All fields are initialized to zero, making this an invalid partition entry
@@ -231,13 +231,13 @@ impl PartitionEntryType {
     }
 }
 
-impl Default for PartitionEntryType {
+impl Default for PartitionEntry {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl fmt::Display for PartitionEntryType {
+impl fmt::Display for PartitionEntry {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         if !self.is_valid() {
             write!(formatter, "Empty partition")
@@ -258,12 +258,12 @@ impl fmt::Display for PartitionEntryType {
 
 #[cfg(test)]
 mod tests {
-    use super::PartitionEntryType;
+    use super::PartitionEntry;
     use crate::PartitionKind;
     use alloc::format;
 
-    fn create_test_partition() -> PartitionEntryType {
-        PartitionEntryType::new_with_params(
+    fn create_test_partition() -> PartitionEntry {
+        PartitionEntry::new_with_params(
             true,                    // Bootable
             PartitionKind::Fat32Lba, // Type
             2048,                    // Start LBA
@@ -273,7 +273,7 @@ mod tests {
 
     #[test]
     fn test_partition_entry_new() {
-        let entry = PartitionEntryType::new();
+        let entry = PartitionEntry::new();
         assert!(!entry.is_valid());
         assert!(!entry.is_bootable());
         assert_eq!(entry.get_start_lba(), 0);
@@ -293,7 +293,7 @@ mod tests {
 
     #[test]
     fn test_partition_entry_bootable() {
-        let mut entry = PartitionEntryType::new();
+        let mut entry = PartitionEntry::new();
         assert!(!entry.is_bootable());
 
         entry.set_bootable(true);
@@ -307,7 +307,7 @@ mod tests {
 
     #[test]
     fn test_partition_entry_lba() {
-        let mut entry = PartitionEntryType::new();
+        let mut entry = PartitionEntry::new();
         assert_eq!(entry.get_start_lba(), 0);
 
         entry.set_start_lba(12345);
@@ -316,7 +316,7 @@ mod tests {
 
     #[test]
     fn test_partition_entry_size() {
-        let mut entry = PartitionEntryType::new();
+        let mut entry = PartitionEntry::new();
         assert_eq!(entry.get_size_sectors(), 0);
 
         entry.set_size_sectors(67890);
@@ -326,7 +326,7 @@ mod tests {
 
     #[test]
     fn test_partition_entry_type() {
-        let mut entry = PartitionEntryType::new();
+        let mut entry = PartitionEntry::new();
         assert_eq!(entry.get_partition_type(), PartitionKind::Empty);
 
         entry.set_partition_type(PartitionKind::Linux);
@@ -342,12 +342,10 @@ mod tests {
 
     #[test]
     fn test_partition_entry_overlaps() {
-        let partition1 =
-            PartitionEntryType::new_with_params(false, PartitionKind::Fat32, 1000, 2000);
-        let partition2 =
-            PartitionEntryType::new_with_params(false, PartitionKind::Linux, 2400, 1000);
+        let partition1 = PartitionEntry::new_with_params(false, PartitionKind::Fat32, 1000, 2000);
+        let partition2 = PartitionEntry::new_with_params(false, PartitionKind::Linux, 2400, 1000);
         let partition3 =
-            PartitionEntryType::new_with_params(false, PartitionKind::LinuxSwap, 1500, 1000);
+            PartitionEntry::new_with_params(false, PartitionKind::LinuxSwap, 1500, 1000);
 
         // Partition1: 1000-2999, Partition2: 2400-3399, Partition3: 1500-2499
         assert!(partition1.overlaps_with(&partition3)); // 1000-2999 overlaps 1500-2499
@@ -357,10 +355,8 @@ mod tests {
 
     #[test]
     fn test_partition_entry_no_overlap() {
-        let partition1 =
-            PartitionEntryType::new_with_params(false, PartitionKind::Fat32, 1000, 1000);
-        let partition2 =
-            PartitionEntryType::new_with_params(false, PartitionKind::Linux, 2000, 1000);
+        let partition1 = PartitionEntry::new_with_params(false, PartitionKind::Fat32, 1000, 1000);
+        let partition2 = PartitionEntry::new_with_params(false, PartitionKind::Linux, 2000, 1000);
 
         // Partition1: 1000-1999, Partition2: 2000-2999
         assert!(!partition1.overlaps_with(&partition2));
@@ -392,7 +388,7 @@ mod tests {
 
     #[test]
     fn test_partition_entry_default() {
-        let entry = PartitionEntryType::default();
+        let entry = PartitionEntry::default();
         assert!(!entry.is_valid());
         assert_eq!(entry.get_partition_type(), PartitionKind::Empty);
     }
@@ -408,29 +404,29 @@ mod tests {
         assert!(display_string.contains("Size=204800"));
         assert!(display_string.contains("Bootable=true"));
 
-        let empty_entry = PartitionEntryType::new();
+        let empty_entry = PartitionEntry::new();
         let empty_string = format!("{empty_entry}");
         assert!(empty_string.contains("Empty partition"));
     }
 
     #[test]
     fn test_partition_entry_size_bytes() {
-        let entry = PartitionEntryType::new_with_params(false, PartitionKind::Linux, 0, 2048);
+        let entry = PartitionEntry::new_with_params(false, PartitionKind::Linux, 0, 2048);
         assert_eq!(entry.get_size_bytes(), 2048 * 512); // 1MB
     }
 
     #[test]
     fn test_partition_entry_validity() {
         // Valid partition must have non-zero type and size
-        let valid = PartitionEntryType::new_with_params(false, PartitionKind::Linux, 100, 200);
+        let valid = PartitionEntry::new_with_params(false, PartitionKind::Linux, 100, 200);
         assert!(valid.is_valid());
 
         // Zero size makes it invalid
-        let zero_size = PartitionEntryType::new_with_params(false, PartitionKind::Linux, 100, 0);
+        let zero_size = PartitionEntry::new_with_params(false, PartitionKind::Linux, 100, 0);
         assert!(!zero_size.is_valid());
 
         // Empty type makes it invalid
-        let empty_type = PartitionEntryType::new_with_params(false, PartitionKind::Empty, 100, 200);
+        let empty_type = PartitionEntry::new_with_params(false, PartitionKind::Empty, 100, 200);
         assert!(!empty_type.is_valid());
     }
 }

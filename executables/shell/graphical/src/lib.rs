@@ -15,34 +15,34 @@ use alloc::{boxed::Box, string::String, vec::Vec};
 use core::num::NonZeroUsize;
 use core::time::Duration;
 use file_system::Path;
-use home::HomeType;
+use home::Home;
 use layout::Layout;
 use login::Login;
 
-use crate::{desk::DeskType, error::Error, shortcut::ShortcutType};
+use crate::{desk::Desk, error::Error, shortcut::Shortcut};
 
 pub async fn main(standard: Standard, arguments: String) -> Result<(), NonZeroUsize> {
-    ShellType::new(standard).await.main(arguments).await
+    Shell::new(standard).await.main(arguments).await
 }
 
-pub struct ShellType {
+pub struct Shell {
     _standard: Standard,
     running: bool,
     layout: Layout,
-    desk: Option<Box<DeskType>>,
-    _home: Option<Box<HomeType>>,
+    desk: Option<Box<Desk>>,
+    _home: Option<Box<Home>>,
     login: Option<Box<Login>>,
 }
 
-pub struct ShellExecutableType;
+pub struct ShellExecutable;
 
 executable::implement_executable_device!(
-    Structure: ShellExecutableType,
+    Structure: ShellExecutable,
     Mount_path: "/binaries/Graphical_shell",
     Main_function: main,
 );
 
-impl ShellType {
+impl Shell {
     pub async fn new(standard: Standard) -> Self {
         let layout = Layout::new().await.unwrap();
 
@@ -66,7 +66,7 @@ impl ShellType {
                 return Err(Error::MissingArguments.into());
             }
 
-            ShortcutType::add(Path::from_str(arguments[1])).await?;
+            Shortcut::add(Path::from_str(arguments[1])).await?;
         }
 
         while self.running {
@@ -87,12 +87,10 @@ impl ShellType {
                         .await
                         .map_err(Error::FailedToSetEnvironmentVariable)?;
 
-                    self.desk = Some(Box::new(
-                        DeskType::new(self.layout.get_windows_parent()).await?,
-                    ));
+                    self.desk = Some(Box::new(Desk::new(self.layout.get_windows_parent()).await?));
 
                     if let Some(desk) = &mut self.desk {
-                        self._home = Some(Box::new(HomeType::new(desk.get_window_object()).await?));
+                        self._home = Some(Box::new(Home::new(desk.get_window_object()).await?));
                     }
 
                     self.login = None;

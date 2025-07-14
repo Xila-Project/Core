@@ -1,20 +1,20 @@
 use file_system::{DeviceTrait, Size};
 
-pub struct RandomDeviceType;
+pub struct RandomDevice;
 
-impl Default for RandomDeviceType {
+impl Default for RandomDevice {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RandomDeviceType {
+impl RandomDevice {
     pub fn new() -> Self {
         Self
     }
 }
 
-impl DeviceTrait for RandomDeviceType {
+impl DeviceTrait for RandomDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
         rand::fill(buffer);
 

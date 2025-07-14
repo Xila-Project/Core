@@ -29,13 +29,13 @@ fn convert_position(position: &Position) -> (i32, i32) {
     }
 }
 
-struct InnerType {
+struct Inner {
     file: littlefs::lfs_file_t,
     flags: Flags,
     cache_size: usize,
 }
 
-impl Drop for InnerType {
+impl Drop for Inner {
     fn drop(&mut self) {
         unsafe {
             let configuration = Box::from_raw(self.file.cfg as *mut littlefs::lfs_file_config);
@@ -50,9 +50,9 @@ impl Drop for InnerType {
 }
 
 #[derive(Clone)]
-pub struct FileType(Rc<InnerType>);
+pub struct File(Rc<Inner>);
 
-impl FileType {
+impl File {
     pub fn open(
         file_system: &mut super::littlefs::lfs_t,
         path: &Path,
@@ -94,7 +94,7 @@ impl FileType {
         let file = unsafe {
             let file = MaybeUninit::<littlefs::lfs_file_t>::uninit();
 
-            let file = Self(Rc::new(InnerType {
+            let file = Self(Rc::new(Inner {
                 file: file.assume_init(),
                 flags,
                 cache_size,

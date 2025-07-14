@@ -25,9 +25,9 @@ pub const SHORTCUT: &str = r#"
     "icon_color": [0, 188, 212]
 }"#;
 
-pub struct FileManagerExecutableType;
+pub struct FileManagerExecutable;
 
-impl FileManagerExecutableType {
+impl FileManagerExecutable {
     pub async fn new<'a>(
         virtual_file_system: &'a VirtualFileSystem<'a>,
         task: TaskIdentifier,
@@ -59,13 +59,13 @@ impl FileManagerExecutableType {
 }
 
 executable::implement_executable_device!(
-    Structure: FileManagerExecutableType,
+    Structure: FileManagerExecutable,
     Mount_path: "/binaries/File_manager",
     Main_function: main,
 );
 
 pub async fn main(_: Standard, _: String) -> core::result::Result<(), NonZeroUsize> {
-    let mut file_manager = FileManagerType::new()
+    let mut file_manager = FileManager::new()
         .await
         .map_err(|_| NonZeroUsize::new(1).unwrap())?;
 

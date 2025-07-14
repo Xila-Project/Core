@@ -2,25 +2,25 @@ use alloc::boxed::Box;
 
 use core::{ffi::c_void, ptr::null_mut, slice};
 
-use file_system::DeviceType;
+use file_system::Device;
 
 use crate::{draw_buffer::Buffer, Area, Point, RenderingColor, Result, ScreenWriteData};
 
 use super::lvgl;
 
 struct UserData {
-    device: DeviceType,
+    device: Device,
 }
 
-pub struct DisplayType {
+pub struct Display {
     display: *mut lvgl::lv_display_t,
     _buffer_1: Buffer,
     _buffer_2: Option<Buffer>,
 }
 
-unsafe impl Send for DisplayType {}
+unsafe impl Send for Display {}
 
-unsafe impl Sync for DisplayType {}
+unsafe impl Sync for Display {}
 
 unsafe extern "C" fn binding_callback_function(
     display: *mut lvgl::lv_disp_t,
@@ -46,7 +46,7 @@ unsafe extern "C" fn binding_callback_function(
     lvgl::lv_display_flush_ready(display);
 }
 
-impl Drop for DisplayType {
+impl Drop for Display {
     fn drop(&mut self) {
         unsafe {
             lvgl::lv_display_delete(self.display);
@@ -54,9 +54,9 @@ impl Drop for DisplayType {
     }
 }
 
-impl DisplayType {
+impl Display {
     pub fn new(
-        file: DeviceType,
+        file: Device,
         resolution: Point,
         buffer_size: usize,
         double_buffered: bool,

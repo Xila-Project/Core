@@ -30,10 +30,7 @@ impl Manager {
         range.next().map(|key| key.into())
     }
 
-    pub(crate) fn get_task(
-        inner: &InnerType,
-        task_identifier: TaskIdentifier,
-    ) -> Result<&MetadataType> {
+    pub(crate) fn get_task(inner: &Inner, task_identifier: TaskIdentifier) -> Result<&Metadata> {
         inner
             .tasks
             .get(&task_identifier)
@@ -41,9 +38,9 @@ impl Manager {
     }
 
     pub(crate) fn get_task_mutable(
-        inner: &mut InnerType,
+        inner: &mut Inner,
         task_identifier: TaskIdentifier,
-    ) -> Result<&mut MetadataType> {
+    ) -> Result<&mut Metadata> {
         inner
             .tasks
             .get_mut(&task_identifier)

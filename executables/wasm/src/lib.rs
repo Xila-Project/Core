@@ -22,10 +22,10 @@ use crate::Error;
 pub use error::*;
 use executable::implement_executable_device;
 
-pub struct WasmDeviceType;
+pub struct WasmDevice;
 
 implement_executable_device!(
-    Structure: WasmDeviceType,
+    Structure: WasmDevice,
     Mount_path: "/binaries/WASM",
     Main_function: main,
 );

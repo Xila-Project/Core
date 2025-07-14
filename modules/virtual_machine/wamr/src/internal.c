@@ -4,8 +4,8 @@
 #include "platform_common.h"
 #include "platform_wasi_types.h"
 
-XilaFileSystemWhence Into_xila_whence(__wasi_whence_t Whence) {
-  switch (Whence) {
+XilaFileSystemWhence into_xila_whence(__wasi_whence_t whence) {
+  switch (whence) {
   case __WASI_WHENCE_CUR:
     return XilaFileSystemWhence_Current;
   case __WASI_WHENCE_END:
@@ -15,18 +15,18 @@ XilaFileSystemWhence Into_xila_whence(__wasi_whence_t Whence) {
   }
 }
 
-__wasi_errno_t Into_WASI_Error(XilaFileSystemResult Error) {
-  switch (Error) {
+__wasi_errno_t into_wasi_error(XilaFileSystemResult error) {
+  switch (error) {
   case 0:
     return __WASI_ESUCCESS;
   default:
-    return Error;
+    return error;
     break;
   }
 }
 
-__wasi_filetype_t Into_WASI_file_type(XilaFileKind Type) {
-  switch (Type) {
+__wasi_filetype_t into_wasi_file_type(XilaFileKind type) {
+  switch (type) {
   case XilaFileKind_File:
     return __WASI_FILETYPE_REGULAR_FILE;
   case XilaFileKind_Directory:
@@ -44,24 +44,24 @@ __wasi_filetype_t Into_WASI_file_type(XilaFileKind Type) {
   }
 }
 
-void Into_WASI_file_statistics(
-    const XilaFileSystemStatistics *Statistics,
-    __wasi_filestat_t *WASI_Statistics) {
-  WASI_Statistics->st_dev = Statistics->file_system;
-  WASI_Statistics->st_ino = Statistics->inode;
-  WASI_Statistics->st_nlink = Statistics->links;
-  WASI_Statistics->st_size = Statistics->size;
-  WASI_Statistics->st_atim = Statistics->last_access;
-  WASI_Statistics->st_mtim = Statistics->last_modification;
-  WASI_Statistics->st_ctim = Statistics->last_status_change;
-  WASI_Statistics->st_filetype = Into_WASI_file_type(Statistics->type);
+void into_wasi_file_statistics(
+    const XilaFileSystemStatistics *statistics,
+    __wasi_filestat_t *wasi_statistics) {
+  wasi_statistics->st_dev = statistics->file_system;
+  wasi_statistics->st_ino = statistics->inode;
+  wasi_statistics->st_nlink = statistics->links;
+  wasi_statistics->st_size = statistics->size;
+  wasi_statistics->st_atim = statistics->last_access;
+  wasi_statistics->st_mtim = statistics->last_modification;
+  wasi_statistics->st_ctim = statistics->last_status_change;
+  wasi_statistics->st_filetype = into_wasi_file_type(statistics->type);
 }
 
 wasi_libc_file_access_mode
-Into_WASI_access_mode(XilaFileSystemMode Mode) {
+into_wasi_access_mode(XilaFileSystemMode mode) {
 
-  if (Mode & XILA_FILE_SYSTEM_MODE_WRITE_MASK) {
-    if (Mode & XILA_FILE_SYSTEM_MODE_READ_MASK) {
+  if (mode & XILA_FILE_SYSTEM_MODE_WRITE_MASK) {
+    if (mode & XILA_FILE_SYSTEM_MODE_READ_MASK) {
       return WASI_LIBC_ACCESS_MODE_READ_WRITE;
     }
 
@@ -71,8 +71,8 @@ Into_WASI_access_mode(XilaFileSystemMode Mode) {
   return WASI_LIBC_ACCESS_MODE_READ_ONLY;
 }
 
-XilaFileSystemMode Into_xila_mode(wasi_libc_file_access_mode Mode) {
-  switch (Mode) {
+XilaFileSystemMode into_xila_mode(wasi_libc_file_access_mode mode) {
+  switch (mode) {
   case WASI_LIBC_ACCESS_MODE_READ_ONLY:
     return XILA_FILE_SYSTEM_MODE_READ_MASK;
 
@@ -85,35 +85,35 @@ XilaFileSystemMode Into_xila_mode(wasi_libc_file_access_mode Mode) {
   }
 }
 
-XilaFileSystemOpen Into_xila_open(__wasi_oflags_t WASI_open) {
-  XilaFileSystemOpen Open = 0;
+XilaFileSystemOpen into_xila_open(__wasi_oflags_t wasi_open) {
+  XilaFileSystemOpen open = 0;
 
-  if (WASI_open & __WASI_O_CREAT)
-    Open |= XILA_FILE_SYSTEM_OPEN_CREATE_MASK;
+  if (wasi_open & __WASI_O_CREAT)
+    open |= XILA_FILE_SYSTEM_OPEN_CREATE_MASK;
 
-  if (WASI_open & __WASI_O_EXCL)
-    Open |= XILA_FILE_SYSTEM_OPEN_CREATE_ONLY_MASK;
+  if (wasi_open & __WASI_O_EXCL)
+    open |= XILA_FILE_SYSTEM_OPEN_CREATE_ONLY_MASK;
 
-  if (WASI_open & __WASI_O_TRUNC)
-    Open |= XILA_FILE_SYSTEM_OPEN_TRUNCATE_MASK;
+  if (wasi_open & __WASI_O_TRUNC)
+    open |= XILA_FILE_SYSTEM_OPEN_TRUNCATE_MASK;
 
-  return Open;
+  return open;
 }
 
-XilaFileSystemStatus Into_xila_status(__wasi_fdflags_t WASI_status) {
-  XilaFileSystemStatus Status = 0;
+XilaFileSystemStatus into_xila_status(__wasi_fdflags_t wasi_status) {
+  XilaFileSystemStatus status = 0;
 
-  if (WASI_status & __WASI_FDFLAG_APPEND)
-    Status |= XILA_FILE_SYSTEM_STATUS_APPEND_MASK;
+  if (wasi_status & __WASI_FDFLAG_APPEND)
+    status |= XILA_FILE_SYSTEM_STATUS_APPEND_MASK;
 
-  if (WASI_status & __WASI_FDFLAG_SYNC)
-    Status |= XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_MASK;
+  if (wasi_status & __WASI_FDFLAG_SYNC)
+    status |= XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_MASK;
 
-  if (WASI_status & __WASI_FDFLAG_DSYNC)
-    Status |= XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_DATA_ONLY_MASK;
+  if (wasi_status & __WASI_FDFLAG_DSYNC)
+    status |= XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_DATA_ONLY_MASK;
 
-  if (WASI_status & __WASI_FDFLAG_NONBLOCK)
-    Status |= XILA_FILE_SYSTEM_STATUS_NON_BLOCKING_MASK;
+  if (wasi_status & __WASI_FDFLAG_NONBLOCK)
+    status |= XILA_FILE_SYSTEM_STATUS_NON_BLOCKING_MASK;
 
-  return Status;
+  return status;
 }

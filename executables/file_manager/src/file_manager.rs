@@ -12,11 +12,11 @@ use graphics::{
     palette::{self, Hue},
     EventKind, Window,
 };
-use virtual_file_system::{get_instance, DirectoryType};
+use virtual_file_system::{get_instance, Directory};
 
 use crate::error::{Error, Result};
 
-pub struct FileManagerType {
+pub struct FileManager {
     window: Window,
     toolbar: *mut lvgl::lv_obj_t,
     up_button: *mut lvgl::lv_obj_t,
@@ -26,18 +26,18 @@ pub struct FileManagerType {
     go_button: *mut lvgl::lv_obj_t,
     file_list: *mut lvgl::lv_obj_t,
     current_path: PathOwned,
-    files: Vec<FileItemType>,
+    files: Vec<FileItem>,
     running: bool,
 }
 
 #[derive(Clone)]
-pub struct FileItemType {
+pub struct FileItem {
     pub name: String,
     pub r#type: Kind,
     pub size: u64,
 }
 
-impl FileManagerType {
+impl FileManager {
     pub async fn new() -> Result<Self> {
         let _lock = graphics::get_instance().lock().await;
 
@@ -231,7 +231,7 @@ impl FileManagerType {
 
         // Open directory
         let virtual_file_system = get_instance();
-        let directory = DirectoryType::open(virtual_file_system, &self.current_path).await;
+        let directory = Directory::open(virtual_file_system, &self.current_path).await;
 
         match directory {
             Ok(directory) => {
@@ -244,7 +244,7 @@ impl FileManagerType {
                         continue;
                     }
 
-                    let file_item = FileItemType {
+                    let file_item = FileItem {
                         name: name.clone(),
                         r#type: entry.get_type(),
                         size: entry.get_size().as_u64(),

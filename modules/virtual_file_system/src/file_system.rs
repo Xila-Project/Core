@@ -15,7 +15,7 @@ use time::Duration;
 use users::{GroupIdentifier, UserIdentifier};
 
 use file_system::{
-    DeviceType, Entry, FileIdentifier, Inode, Kind, LocalFileIdentifier, Metadata, Mode, Open,
+    Device, Entry, FileIdentifier, Inode, Kind, LocalFileIdentifier, Metadata, Mode, Open,
     Statistics_type, Time,
 };
 
@@ -24,7 +24,7 @@ use file_system::{
     Result, Size, Status, UniqueFileIdentifier,
 };
 
-use crate::device::InternalPathType;
+use crate::device::InternalPath;
 use crate::{device, pipe, SockerAddress};
 
 struct InternalFileSystem {
@@ -118,10 +118,10 @@ impl<'a> VirtualFileSystem<'a> {
             for inode in inodes {
                 if let Ok(path) = self.device_file_system.get_path_from_inode(inode).await {
                     match path {
-                        InternalPathType::Owned(path) => {
+                        InternalPath::Owned(path) => {
                             let _ = self.remove(path).await;
                         }
-                        InternalPathType::Borrowed(path) => {
+                        InternalPath::Borrowed(path) => {
                             let _ = self.remove(path).await;
                         }
                     }
@@ -677,7 +677,7 @@ impl<'a> VirtualFileSystem<'a> {
         &self,
         task: TaskIdentifier,
         path: &impl AsRef<Path>,
-        device: DeviceType,
+        device: Device,
     ) -> Result<()> {
         let file_systems = self.file_systems.read().await; // Get the file systems
 
@@ -731,7 +731,7 @@ impl<'a> VirtualFileSystem<'a> {
         &self,
         task: TaskIdentifier,
         path: &'a impl AsRef<Path>,
-        device: DeviceType,
+        device: Device,
     ) -> Result<()> {
         let file_systems = self.file_systems.read().await; // Get the file systems
 
@@ -1350,7 +1350,7 @@ impl<'a> VirtualFileSystem<'a> {
         }
     }
 
-    pub async fn get_raw_device(&self, path: &impl AsRef<Path>) -> Result<DeviceType> {
+    pub async fn get_raw_device(&self, path: &impl AsRef<Path>) -> Result<Device> {
         let file_systems = self.file_systems.read().await;
 
         let (_, file_system, relative_path) = Self::get_file_system_from_path(&file_systems, path)?; // Get the file system identifier and the relative path

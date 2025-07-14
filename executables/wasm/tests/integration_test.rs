@@ -1,13 +1,13 @@
 extern crate alloc;
 
 use command_line_shell::ShellExecutable;
-use drivers::standard_library::loader::LoaderType;
+use drivers::standard_library::loader::Loader;
 use executable::{mount_static_executables, Standard};
 use file_system::{create_device, create_file_system, MemoryDevice, Mode};
 use memory::instantiate_global_allocator;
 use task::test;
 use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
-use wasm::WasmDeviceType;
+use wasm::WasmDevice;
 
 instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
 
@@ -18,7 +18,7 @@ async fn i() {
 
     let _ = users::initialize();
 
-    let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
 
     let _ = virtual_machine::initialize(&[]);
 
@@ -31,7 +31,7 @@ async fn i() {
     let wasm_executable_path = "./tests/wasm_test/target/wasm32-wasip1/release/WASM_test.wasm";
     let destination = "/test.wasm";
 
-    LoaderType::new()
+    Loader::new()
         .add_file(wasm_executable_path, destination)
         .load(&mut file_system)
         .unwrap();
@@ -55,15 +55,15 @@ async fn i() {
             ),
             (
                 &"/devices/Standard_out",
-                drivers::standard_library::console::StandardOutDeviceType
+                drivers::standard_library::console::StandardOutDevice
             ),
             (
                 &"/devices/Standard_error",
-                drivers::standard_library::console::StandardErrorDeviceType
+                drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/Time", drivers::native::TimeDriverType),
-            (&"/devices/Random", drivers::native::RandomDeviceType),
-            (&"/devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriver),
+            (&"/devices/Random", drivers::native::RandomDevice),
+            (&"/devices/Null", drivers::core::NullDevice)
         ]
     )
     .await
@@ -74,7 +74,7 @@ async fn i() {
         task,
         &[
             (&"/binaries/Command_line_shell", ShellExecutable),
-            (&"/binaries/WASM", WasmDeviceType)
+            (&"/binaries/WASM", WasmDevice)
         ]
     )
     .await

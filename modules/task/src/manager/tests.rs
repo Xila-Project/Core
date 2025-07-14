@@ -248,34 +248,34 @@ async fn test_signal() {
 
             assert_eq!(
                 get_instance().peek_signal(task).await.unwrap(),
-                Some(SignalType::Hangup)
+                Some(Signal::Hangup)
             );
 
             assert_eq!(
                 get_instance().pop_signal(task).await.unwrap(),
-                Some(SignalType::Hangup)
+                Some(Signal::Hangup)
             );
 
             assert_eq!(
                 get_instance().peek_signal(task).await.unwrap(),
-                Some(SignalType::Kill)
+                Some(Signal::Kill)
             );
 
             assert_eq!(
                 get_instance().pop_signal(task).await.unwrap(),
-                Some(SignalType::Kill)
+                Some(Signal::Kill)
             );
         })
         .await
         .unwrap();
 
     get_instance()
-        .send_signal(child_identifier, SignalType::Kill)
+        .send_signal(child_identifier, Signal::Kill)
         .await
         .unwrap();
 
     get_instance()
-        .send_signal(child_identifier, SignalType::Hangup)
+        .send_signal(child_identifier, Signal::Hangup)
         .await
         .unwrap();
 

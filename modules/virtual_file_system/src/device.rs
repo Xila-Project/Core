@@ -6,40 +6,40 @@ use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLo
 use task::TaskIdentifier;
 
 use file_system::{
-    get_new_file_identifier, get_new_inode, DeviceType, Error, FileIdentifier, Flags, Inode,
+    get_new_file_identifier, get_new_inode, Device, Error, FileIdentifier, Flags, Inode,
     LocalFileIdentifier, Mode, Path, PathOwned, Position, Result, Size, UniqueFileIdentifier,
 };
 
-type OpenDeviceInnerType = (DeviceType, Flags, UniqueFileIdentifier);
+type OpenDeviceInner = (Device, Flags, UniqueFileIdentifier);
 
 #[derive(Clone)]
-pub enum InternalPathType<'a> {
+pub enum InternalPath<'a> {
     Borrowed(&'a Path),
     Owned(PathOwned),
 }
 
-struct InnerType<'a> {
-    pub devices: BTreeMap<Inode, DeviceInnerType<'a>>,
-    pub open_devices: BTreeMap<LocalFileIdentifier, OpenDeviceInnerType>,
+struct Inner<'a> {
+    pub devices: BTreeMap<Inode, DeviceInner<'a>>,
+    pub open_devices: BTreeMap<LocalFileIdentifier, OpenDeviceInner>,
 }
 
-type DeviceInnerType<'a> = (InternalPathType<'a>, DeviceType);
+type DeviceInner<'a> = (InternalPath<'a>, Device);
 
-pub struct FileSystem<'a>(RwLock<CriticalSectionRawMutex, InnerType<'a>>);
+pub struct FileSystem<'a>(RwLock<CriticalSectionRawMutex, Inner<'a>>);
 
 impl<'a> FileSystem<'a> {
     pub fn new() -> Self {
-        Self(RwLock::new(InnerType {
+        Self(RwLock::new(Inner {
             devices: BTreeMap::new(),
             open_devices: BTreeMap::new(),
         }))
     }
 
     fn borrow_mutable_inner_2_splitted<'b>(
-        inner: &'b mut InnerType<'a>,
+        inner: &'b mut Inner<'a>,
     ) -> (
-        &'b mut BTreeMap<Inode, DeviceInnerType<'a>>,
-        &'b mut BTreeMap<LocalFileIdentifier, OpenDeviceInnerType>,
+        &'b mut BTreeMap<Inode, DeviceInner<'a>>,
+        &'b mut BTreeMap<LocalFileIdentifier, OpenDeviceInner>,
     ) {
         (&mut inner.devices, &mut inner.open_devices)
     }
@@ -58,14 +58,14 @@ impl<'a> FileSystem<'a> {
             .2)
     }
 
-    pub async fn mount_device(&self, path: PathOwned, device: DeviceType) -> Result<Inode> {
+    pub async fn mount_device(&self, path: PathOwned, device: Device) -> Result<Inode> {
         let mut inner = self.0.write().await;
 
         let (devices, _) = Self::borrow_mutable_inner_2_splitted(&mut inner);
 
         let inode = get_new_inode(devices)?;
 
-        devices.insert(inode, (InternalPathType::Owned(path), device));
+        devices.insert(inode, (InternalPath::Owned(path), device));
 
         Ok(inode)
     }
@@ -73,7 +73,7 @@ impl<'a> FileSystem<'a> {
     pub async fn mount_static_device(
         &self,
         path: &'a impl AsRef<Path>,
-        device: DeviceType,
+        device: Device,
     ) -> Result<Inode> {
         let mut inner = self.0.write().await;
 
@@ -81,12 +81,12 @@ impl<'a> FileSystem<'a> {
 
         let inode = get_new_inode(devices)?;
 
-        devices.insert(inode, (InternalPathType::Borrowed(path.as_ref()), device));
+        devices.insert(inode, (InternalPath::Borrowed(path.as_ref()), device));
 
         Ok(inode)
     }
 
-    pub async fn get_path_from_inode(&self, inode: Inode) -> Result<InternalPathType<'a>> {
+    pub async fn get_path_from_inode(&self, inode: Inode) -> Result<InternalPath<'a>> {
         Ok(self
             .0
             .read()
@@ -106,8 +106,8 @@ impl<'a> FileSystem<'a> {
             .devices
             .iter()
             .filter(|(_, (device_path, _))| match device_path {
-                InternalPathType::Borrowed(device_path) => device_path.strip_prefix(path).is_some(),
-                InternalPathType::Owned(device_path) => device_path.strip_prefix(path).is_some(),
+                InternalPath::Borrowed(device_path) => device_path.strip_prefix(path).is_some(),
+                InternalPath::Owned(device_path) => device_path.strip_prefix(path).is_some(),
             })
             .map(|(inode, _)| *inode)
             .collect())
@@ -228,7 +228,7 @@ impl<'a> FileSystem<'a> {
         Ok(new_file)
     }
 
-    pub async fn remove(&self, inode: Inode) -> Result<DeviceInnerType<'a>> {
+    pub async fn remove(&self, inode: Inode) -> Result<DeviceInner<'a>> {
         self.0
             .write()
             .await
@@ -372,7 +372,7 @@ impl<'a> FileSystem<'a> {
             .get_mode())
     }
 
-    pub async fn get_raw_device(&self, inode: Inode) -> Result<DeviceType> {
+    pub async fn get_raw_device(&self, inode: Inode) -> Result<Device> {
         Ok(self
             .0
             .read()

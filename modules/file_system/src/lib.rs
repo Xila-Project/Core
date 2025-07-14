@@ -111,7 +111,7 @@ mod partition;
 mod memory_device;
 mod time;
 
-pub use device::{DeviceTrait, DeviceType};
+pub use device::{Device, DeviceTrait};
 pub use error::*;
 
 pub use file_system::*;

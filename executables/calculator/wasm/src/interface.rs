@@ -1,6 +1,6 @@
 use crate::Calculator;
 use std::thread::sleep;
-use xila::Bindings::*;
+use xila::bindings::*;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
@@ -63,15 +63,15 @@ impl ButtonId {
         self as u8
     }
 
-    pub fn from_u8(Identifier: u8) -> Option<Self> {
-        if Identifier > ButtonId::Random.to_u8() {
+    pub fn from_u8(identifier: u8) -> Option<Self> {
+        if identifier > ButtonId::Random.to_u8() {
             return None; // Invalid button ID
         }
-        unsafe { Some(std::mem::transmute(Identifier)) }
+        unsafe { Some(std::mem::transmute(identifier)) }
     }
 }
 
-pub struct Interface_type {
+pub struct Interface {
     window: Xila_graphics_object_t,
     display: Xila_graphics_object_t,
     display_label: Xila_graphics_object_t,
@@ -81,7 +81,7 @@ pub struct Interface_type {
     is_radian_mode: bool, // true for radians, false for degrees
 }
 
-impl Interface_type {
+impl Interface {
     pub fn new() -> Self {
         Self {
             window: Xila_graphics_object_t::MAX,
@@ -276,9 +276,9 @@ impl Interface_type {
                         expression = expression.replace("tan(", "tand(");
                     }
 
-                    match Calculator::Evaluate_expression(&expression) {
+                    match Calculator::evaluate_expression(&expression) {
                         Ok(result) => {
-                            self.current_expression = Calculator::Format_result(result);
+                            self.current_expression = Calculator::format_result(result);
                             self.show_result = true;
                         }
                         Err(e) => {
@@ -318,7 +318,7 @@ impl Interface_type {
                 use std::hash::{Hash, Hasher};
 
                 let mut hasher = DefaultHasher::new();
-                std::time::Systemtime::now()
+                std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap_or_default()
                     .as_nanos()

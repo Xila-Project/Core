@@ -34,7 +34,7 @@ impl Manager {
     }
 
     /// Select the best spawner for a new task using load balancing algorithm
-    pub(crate) fn select_best_spawner(inner: &InnerType) -> Result<usize> {
+    pub(crate) fn select_best_spawner(inner: &Inner) -> Result<usize> {
         if inner.spawners.is_empty() {
             return Err(Error::NoSpawnerAvailable);
         }

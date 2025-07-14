@@ -2,7 +2,7 @@ use core::ffi::c_int;
 use core::mem::forget;
 
 use alloc::boxed::Box;
-use file_system::{DeviceType, Error, Position};
+use file_system::{Device, Error, Position};
 
 use super::littlefs;
 
@@ -13,7 +13,7 @@ pub unsafe extern "C" fn read_callback(
     buffer: *mut core::ffi::c_void,
     size: littlefs::lfs_size_t,
 ) -> c_int {
-    let device = unsafe { Box::from_raw(configuration.read().context as *mut DeviceType) };
+    let device = unsafe { Box::from_raw(configuration.read().context as *mut Device) };
 
     let buffer = unsafe { core::slice::from_raw_parts_mut(buffer as *mut u8, size as usize) };
 
@@ -49,7 +49,7 @@ pub unsafe extern "C" fn programm_callback(
     buffer: *const core::ffi::c_void,
     size: littlefs::lfs_size_t,
 ) -> c_int {
-    let device = unsafe { Box::from_raw(configuration.read().context as *mut DeviceType) };
+    let device = unsafe { Box::from_raw(configuration.read().context as *mut Device) };
 
     let buffer = unsafe { core::slice::from_raw_parts(buffer as *const u8, size as usize) };
 
@@ -82,7 +82,7 @@ pub unsafe extern "C" fn erase_callback(
     configuration: *const littlefs::lfs_config,
     block: littlefs::lfs_block_t,
 ) -> c_int {
-    let device = unsafe { Box::from_raw(configuration.read().context as *mut DeviceType) };
+    let device = unsafe { Box::from_raw(configuration.read().context as *mut Device) };
 
     let block_size = unsafe { configuration.read().block_size };
 
@@ -110,7 +110,7 @@ pub unsafe extern "C" fn erase_callback(
 }
 
 pub unsafe extern "C" fn flush_callback(configuration: *const littlefs::lfs_config) -> c_int {
-    let device = unsafe { Box::from_raw(configuration.read().context as *mut DeviceType) };
+    let device = unsafe { Box::from_raw(configuration.read().context as *mut Device) };
 
     loop {
         match device.flush() {

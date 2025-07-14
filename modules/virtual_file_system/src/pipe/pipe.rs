@@ -6,12 +6,12 @@ use file_system::{Error, Result, Size};
 
 /// A pipe is a FIFO (ring) buffer that can be used to communicate between tasks.
 #[derive(Debug, Clone)]
-pub struct PipeType(Arc<RwLock<CriticalSectionRawMutex, VecDeque<u8>>>);
+pub struct Pipe(Arc<RwLock<CriticalSectionRawMutex, VecDeque<u8>>>);
 
-impl PipeType {
+impl Pipe {
     /// Create a new pipe with a buffer of the specified size.
     pub fn new(buffer_size: usize) -> Self {
-        PipeType(Arc::new(RwLock::new(VecDeque::with_capacity(buffer_size))))
+        Pipe(Arc::new(RwLock::new(VecDeque::with_capacity(buffer_size))))
     }
 
     pub async fn write(&self, data: &[u8]) -> Result<Size> {

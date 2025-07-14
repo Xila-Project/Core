@@ -7,7 +7,7 @@ use task;
 use users;
 use virtual_file_system;
 
-pub struct PasswordTabType {
+pub struct PasswordTab {
     tab_container: *mut lvgl::lv_obj_t,
     current_password_text_area: *mut lvgl::lv_obj_t,
     new_password_text_area: *mut lvgl::lv_obj_t,
@@ -16,7 +16,7 @@ pub struct PasswordTabType {
     password_status_label: *mut lvgl::lv_obj_t,
 }
 
-impl PasswordTabType {
+impl PasswordTab {
     pub fn new() -> Self {
         Self {
             tab_container: core::ptr::null_mut(),
@@ -185,7 +185,7 @@ impl PasswordTabType {
     }
 }
 
-impl PasswordTabType {
+impl PasswordTab {
     pub fn create_ui(
         &mut self,
         parent_tabview: *mut lvgl::lv_obj_t,

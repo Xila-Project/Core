@@ -15,7 +15,7 @@ async fn integration_test() {
 
     let _ = users::initialize();
 
-    let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
 
     let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
 
@@ -42,15 +42,15 @@ async fn integration_test() {
             ),
             (
                 &"/devices/Standard_out",
-                drivers::standard_library::console::StandardOutDeviceType
+                drivers::standard_library::console::StandardOutDevice
             ),
             (
                 &"/devices/Standard_error",
-                drivers::standard_library::console::StandardErrorDeviceType
+                drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/Time", drivers::native::TimeDriverType),
-            (&"/devices/Random", drivers::native::RandomDeviceType),
-            (&"/devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriver),
+            (&"/devices/Random", drivers::native::RandomDevice),
+            (&"/devices/Null", drivers::core::NullDevice)
         ]
     )
     .await

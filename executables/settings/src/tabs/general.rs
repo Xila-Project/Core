@@ -1,11 +1,11 @@
 use crate::error::Result;
 use graphics::{lvgl, Event};
 
-pub struct GeneralTabType {
+pub struct GeneralTab {
     tab_container: *mut lvgl::lv_obj_t,
 }
 
-impl GeneralTabType {
+impl GeneralTab {
     pub fn new() -> Self {
         Self {
             tab_container: core::ptr::null_mut(),

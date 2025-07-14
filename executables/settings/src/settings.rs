@@ -9,22 +9,22 @@ use graphics::{
 };
 
 use crate::error::Result;
-use crate::tabs::{GeneralTabType, PasswordTabType, TabType};
+use crate::tabs::{GeneralTab, PasswordTab, Tab};
 
-pub struct SettingsType {
+pub struct Settings {
     window: Window,
     running: bool,
-    tabs: [TabType; 2],
+    tabs: [Tab; 2],
 }
 
 #[derive(Clone)]
-pub struct FileItemType {
+pub struct FileItem {
     pub name: String,
     pub r#type: Kind,
     pub size: u64,
 }
 
-impl SettingsType {
+impl Settings {
     pub async fn new() -> Result<Self> {
         let _lock = graphics::get_instance().lock().await;
 
@@ -44,8 +44,8 @@ impl SettingsType {
 
         // Create tabs
         let mut tabs = [
-            TabType::GeneralTab(GeneralTabType::new()),
-            TabType::PasswordTab(PasswordTabType::new()),
+            Tab::GeneralTab(GeneralTab::new()),
+            Tab::PasswordTab(PasswordTab::new()),
         ];
 
         tabs.iter_mut().for_each(|tab| {

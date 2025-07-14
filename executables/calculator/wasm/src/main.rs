@@ -7,23 +7,23 @@ pub mod interface;
 pub mod parser;
 pub mod token;
 
-use evaluator::Evaluator_type;
-use interface::Interface_type;
-use parser::Parser_type;
+use evaluator::Evaluator;
+use interface::Interface;
+use parser::Parser;
 
 pub struct Calculator;
 
 impl Calculator {
-    pub fn Evaluate_expression(input: &str) -> Result<f64, String> {
+    pub fn evaluate_expression(input: &str) -> Result<f64, String> {
         // Parse the expression
-        let mut Parser = Parser_type::new(input)?;
-        let Expr = Parser.Parse()?;
+        let mut parser = Parser::new(input)?;
+        let expression = parser.parse()?;
 
         // Evaluate the parsed expression
-        Evaluator_type::Evaluate(&Expr)
+        Evaluator::evaluate(&expression)
     }
 
-    pub fn Format_result(result: f64) -> String {
+    pub fn format_result(result: f64) -> String {
         if result.fract() == 0.0 && result.abs() < 1e15 {
             format!("{:.0}", result)
         } else {
@@ -36,7 +36,7 @@ impl Calculator {
 }
 
 fn main() {
-    let mut calculator_gui = Interface_type::new();
+    let mut calculator_gui = Interface::new();
     unsafe {
         calculator_gui.run();
     }

@@ -169,7 +169,7 @@ fn generate_graphics_call(signature: &Signature) -> String {
 
 pub fn generate_types(lvgl_functions: &LvglContext) -> String {
     //Read to string
-    let includes: String = fs::read_to_string("./Build/Includes.h").unwrap();
+    let includes: String = fs::read_to_string("./build/includes.h").unwrap();
 
     let structures_name = lvgl_functions
         .get_structures()
@@ -179,7 +179,7 @@ pub fn generate_types(lvgl_functions: &LvglContext) -> String {
 
     let opaque_types = generate_opaque_types(structures_name);
 
-    let types = fs::read_to_string("./Build/Types.h").unwrap();
+    let types = fs::read_to_string("./build/types.h").unwrap();
 
     format!("{includes}\n{opaque_types}\n{types}")
 }
@@ -261,14 +261,14 @@ pub fn generate_c_function_definition(signature: &Signature) -> String {
 
 pub fn generate_source(output_file: &mut File, context: &LvglContext) {
     output_file
-        .write_all("#include \"Xila_graphics.h\"\n".as_bytes())
+        .write_all("#include \"xila_graphics.h\"\n".as_bytes())
         .unwrap();
 
     output_file
         .write_all(generate_code_enumeration(context.get_signatures()).as_bytes())
         .unwrap();
 
-    let prelude = fs::read_to_string("./Build/Prelude.c").unwrap();
+    let prelude = fs::read_to_string("./build/prelude.c").unwrap();
 
     output_file
         .write_all(prelude.as_bytes())
@@ -285,8 +285,8 @@ pub fn generate_source(output_file: &mut File, context: &LvglContext) {
 }
 
 pub fn generate(output_path: &Path, lvgl_functions: &LvglContext) -> Result<(), String> {
-    let header_file_path = output_path.join("Xila_graphics.h");
-    let source_file_path = output_path.join("Xila_graphics.c");
+    let header_file_path = output_path.join("xila_graphics.h");
+    let source_file_path = output_path.join("xila_graphics.c");
 
     let mut header_file =
         File::create(&header_file_path).map_err(|_| "Error creating header file")?;

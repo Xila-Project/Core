@@ -7,7 +7,7 @@ use log::Information;
 
 #[test]
 fn test_get_current_time() {
-    let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
 
     let current_time = time::get_instance().get_current_time().unwrap();
 
@@ -18,7 +18,7 @@ fn test_get_current_time() {
 
 #[test]
 fn test_get_current_time_since_startup() {
-    let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
 
     let current_time = time::get_instance()
         .get_current_time_since_startup()

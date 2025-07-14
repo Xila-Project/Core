@@ -2,7 +2,7 @@ extern crate alloc;
 
 use executable::Standard;
 use file_system::{create_device, create_file_system, MemoryDevice, Mode};
-use settings::SettingsExecutableType;
+use settings::SettingsExecutable;
 use task::test;
 
 #[cfg(target_os = "linux")]
@@ -23,7 +23,7 @@ async fn main() {
     let _ = users::initialize();
 
     // - Initialize the time manager.
-    let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
 
     // - Initialize the virtual file system.
     let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
@@ -73,15 +73,15 @@ async fn main() {
             ),
             (
                 &"/devices/Standard_out",
-                drivers::standard_library::console::StandardOutDeviceType
+                drivers::standard_library::console::StandardOutDevice
             ),
             (
                 &"/devices/Standard_error",
-                drivers::standard_library::console::StandardErrorDeviceType
+                drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/Time", drivers::native::TimeDriverType),
-            (&"/devices/Random", drivers::native::RandomDeviceType),
-            (&"/devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriver),
+            (&"/devices/Random", drivers::native::RandomDevice),
+            (&"/devices/Null", drivers::core::NullDevice)
         ]
     )
     .await
@@ -92,7 +92,7 @@ async fn main() {
         task,
         &[
             (&"/binaries/Command_line_shell", ShellExecutable),
-            (&"/binaries/Settings", SettingsExecutableType)
+            (&"/binaries/Settings", SettingsExecutable)
         ]
     )
     .await

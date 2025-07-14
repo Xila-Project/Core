@@ -1309,14 +1309,14 @@ os_invalid_raw_handle()
 __wasi_errno_t
 os_fstat(os_file_handle handle, struct __wasi_filestat_t *buf)
 {
-    XilaFileSystemStatistics Statistics;
+    XilaFileSystemStatistics file_system_statistics;
 
-    XilaFileSystemResult Result = xila_file_system_get_statistics(handle, &Statistics);
+    XilaFileSystemResult file_system_result = xila_file_system_get_statistics(handle, &file_system_statistics);
 
-    if (Result == 0)
-        Into_WASI_file_statistics(&Statistics, buf);
+    if (file_system_result == 0)
+        into_wasi_file_statistics(&file_system_statistics, buf);
 
-    return Into_WASI_Error(Result);
+    return into_wasi_error(file_system_result);
 }
 
 /**
@@ -1332,13 +1332,13 @@ __wasi_errno_t
 os_fstatat(os_file_handle handle, const char *path,
            struct __wasi_filestat_t *buf, __wasi_lookupflags_t lookup_flags)
 {
-    bool follow = lookup_flags & __WASI_LOOKUP_SYMLINK_FOLLOW;
+    bool follow_symlink = lookup_flags & __WASI_LOOKUP_SYMLINK_FOLLOW;
 
-    XilaFileSystemStatistics statistics;
+    XilaFileSystemStatistics file_system_statistics;
 
-    XilaFileSystemResult result = xila_file_system_get_statistics_from_path(path, &statistics, follow);
+    XilaFileSystemResult file_system_result = xila_file_system_get_statistics_from_path(path, &file_system_statistics, follow_symlink);
 
-    return Into_WASI_Error(result);
+    return into_wasi_error(file_system_result);
 }
 
 /**
@@ -1375,7 +1375,7 @@ os_file_set_fdflags(os_file_handle handle, __wasi_fdflags_t flags)
 __wasi_errno_t
 os_fdatasync(os_file_handle handle)
 {
-    return Into_WASI_Error(xila_file_system_flush(handle, false));
+    return into_wasi_error(xila_file_system_flush(handle, false));
 }
 
 /**
@@ -1386,7 +1386,7 @@ os_fdatasync(os_file_handle handle)
 __wasi_errno_t
 os_fsync(os_file_handle handle)
 {
-    return Into_WASI_Error(xila_file_system_flush(handle, true));
+    return into_wasi_error(xila_file_system_flush(handle, true));
 }
 
 /**
@@ -1399,9 +1399,9 @@ os_fsync(os_file_handle handle)
 __wasi_errno_t
 os_open_preopendir(const char *path, os_file_handle *out)
 {
-    XilaFileSystemResult Result = xila_file_system_open_directory(path, out);
+    XilaFileSystemResult result = xila_file_system_open_directory(path, out);
 
-    return Into_WASI_Error(Result);
+    return into_wasi_error(result);
 }
 
 /**
@@ -1426,35 +1426,35 @@ os_openat(os_file_handle handle, const char *path, __wasi_oflags_t oflags,
     {
         if (path[0] == '.')
         {
-            size_t Path_size = strlen(path) + 1;
-            char New_path[Path_size];
-            strncpy(New_path, path, Path_size);
-            New_path[0] = '/';
+            size_t path_size = strlen(path) + 1;
+            char new_path[path_size];
+            strncpy(new_path, path, path_size);
+            new_path[0] = '/';
 
-            return Into_WASI_Error(xila_file_system_open_directory(New_path, out));
+            return into_wasi_error(xila_file_system_open_directory(new_path, out));
         }
         else
         {
-            return Into_WASI_Error(xila_file_system_open_directory(path, out));
+            return into_wasi_error(xila_file_system_open_directory(path, out));
         }
     }
     else
     {
-        XilaFileSystemMode Mode = Into_xila_mode(access_mode);
-        XilaFileSystemOpen Open = Into_xila_open(oflags);
-        XilaFileSystemStatus Status = Into_xila_status(fd_flags);
+        XilaFileSystemMode mode = into_xila_mode(access_mode);
+        XilaFileSystemOpen open = into_xila_open(oflags);
+        XilaFileSystemStatus status = into_xila_status(fd_flags);
 
         if (path[0] != '/')
         {
-            size_t Path_size = strlen(path) + 1;
-            char New_path[Path_size];
-            strncpy(New_path + 1, path, Path_size);
-            New_path[0] = '/';
+            size_t path_size = strlen(path) + 1;
+            char new_path[path_size];
+            strncpy(new_path + 1, path, path_size);
+            new_path[0] = '/';
 
-            return Into_WASI_Error(xila_file_system_open(New_path, Mode, Open, Status, out));
+            return into_wasi_error(xila_file_system_open(new_path, mode, open, status, out));
         }
 
-        return Into_WASI_Error(xila_file_system_open(path, Mode, Open, Status, out));
+        return into_wasi_error(xila_file_system_open(path, mode, open, status, out));
     }
 }
 
@@ -1470,16 +1470,16 @@ __wasi_errno_t
 os_file_get_access_mode(os_file_handle handle,
                         wasi_libc_file_access_mode *access_mode)
 {
-    uint8_t Mode;
+    uint8_t mode;
 
-    XilaFileSystemResult Result = xila_file_system_get_access_mode(handle, &Mode);
+    XilaFileSystemResult file_system_result = xila_file_system_get_access_mode(handle, &mode);
 
-    if (Result == 0)
+    if (file_system_result == 0)
     {
-        *access_mode = Into_WASI_access_mode(Mode);
+        *access_mode = into_wasi_access_mode(mode);
     }
 
-    return Into_WASI_Error(Result);
+    return into_wasi_error(file_system_result);
 }
 
 /**
@@ -1492,7 +1492,7 @@ os_file_get_access_mode(os_file_handle handle,
 __wasi_errno_t
 os_close(os_file_handle handle, bool is_stdio)
 {
-    return Into_WASI_Error(xila_file_system_close(handle));
+    return into_wasi_error(xila_file_system_close(handle));
 }
 
 /**
@@ -1508,18 +1508,18 @@ __wasi_errno_t
 os_preadv(os_file_handle handle, const struct __wasi_iovec_t *iov, int iovcnt,
           __wasi_filesize_t offset, size_t *nread)
 {
-    uint8_t *Buffers[iovcnt];
-    size_t Lengths[iovcnt];
+    uint8_t *buffers[iovcnt];
+    size_t lengths[iovcnt];
 
     for (int i = 0; i < iovcnt; i++)
     {
-        Buffers[i] = iov[i].buf;
-        Lengths[i] = iov[i].buf_len;
+        buffers[i] = iov[i].buf;
+        lengths[i] = iov[i].buf_len;
     }
 
-    XilaFileSystemResult Result = xila_file_system_read_at_position_vectored(handle, Buffers, Lengths, iovcnt, offset, nread);
+    XilaFileSystemResult file_system_result = xila_file_system_read_at_position_vectored(handle, buffers, lengths, iovcnt, offset, nread);
 
-    return Into_WASI_Error(Result);
+    return into_wasi_error(file_system_result);
 }
 
 /**
@@ -1535,18 +1535,18 @@ __wasi_errno_t
 os_pwritev(os_file_handle handle, const struct __wasi_ciovec_t *iov, int iovcnt,
            __wasi_filesize_t offset, size_t *nwritten)
 {
-    const uint8_t *Buffers[iovcnt];
-    size_t Lengths[iovcnt];
+    const uint8_t *buffers[iovcnt];
+    size_t lengths[iovcnt];
 
     for (int i = 0; i < iovcnt; i++)
     {
-        Buffers[i] = iov[i].buf;
-        Lengths[i] = iov[i].buf_len;
+        buffers[i] = iov[i].buf;
+        lengths[i] = iov[i].buf_len;
     }
 
-    XilaFileSystemResult Result = xila_file_system_write_at_position_vectored(handle, Buffers, Lengths, iovcnt, offset, nwritten);
+    XilaFileSystemResult file_system_result = xila_file_system_write_at_position_vectored(handle, buffers, lengths, iovcnt, offset, nwritten);
 
-    return Into_WASI_Error(Result);
+    return into_wasi_error(file_system_result);
 }
 
 /**
@@ -1561,16 +1561,16 @@ __wasi_errno_t
 os_readv(os_file_handle handle, const struct __wasi_iovec_t *iov, int iovcnt,
          size_t *nread)
 {
-    uint8_t *Buffers[iovcnt];
-    size_t Lengths[iovcnt];
+    uint8_t *buffers[iovcnt];
+    size_t lengths[iovcnt];
 
     for (int i = 0; i < iovcnt; i++)
     {
-        Buffers[i] = iov[i].buf;
-        Lengths[i] = iov[i].buf_len;
+        buffers[i] = iov[i].buf;
+        lengths[i] = iov[i].buf_len;
     }
 
-    return xila_file_system_read_vectored(handle, Buffers, Lengths, iovcnt, nread);
+    return xila_file_system_read_vectored(handle, buffers, lengths, iovcnt, nread);
 }
 
 /**
@@ -1585,16 +1585,16 @@ __wasi_errno_t
 os_writev(os_file_handle handle, const struct __wasi_ciovec_t *iov, int iovcnt,
           size_t *nwritten)
 {
-    const uint8_t *Buffers[iovcnt];
-    size_t Lengths[iovcnt];
+    const uint8_t *buffers[iovcnt];
+    size_t lengths[iovcnt];
 
     for (int i = 0; i < iovcnt; i++)
     {
-        Buffers[i] = iov[i].buf;
-        Lengths[i] = iov[i].buf_len;
+        buffers[i] = iov[i].buf;
+        lengths[i] = iov[i].buf_len;
     }
 
-    return xila_file_system_write_vectored(handle, Buffers, Lengths, iovcnt, nwritten);
+    return xila_file_system_write_vectored(handle, buffers, lengths, iovcnt, nwritten);
 }
 
 /**
@@ -1696,7 +1696,7 @@ os_linkat(os_file_handle from_handle, const char *from_path,
           os_file_handle to_handle, const char *to_path,
           __wasi_lookupflags_t lookup_flags)
 {
-    return Into_WASI_Error(
+    return into_wasi_error(
         xila_file_system_link(from_path, to_path));
 }
 
@@ -1710,7 +1710,7 @@ os_linkat(os_file_handle from_handle, const char *from_path,
 __wasi_errno_t
 os_symlinkat(const char *old_path, os_file_handle handle, const char *new_path)
 {
-    return Into_WASI_Error(xila_file_system_create_symbolic_link_at(handle, old_path, new_path));
+    return into_wasi_error(xila_file_system_create_symbolic_link_at(handle, old_path, new_path));
 }
 
 /**
@@ -1724,16 +1724,16 @@ os_mkdirat(os_file_handle handle, const char *path)
 {
     if (path[0] != '/')
     {
-        size_t Path_size = strlen(path) + 2;
-        char New_path[strlen(path) + 2];
+        size_t path_size = strlen(path) + 2;
+        char new_path[strlen(path) + 2];
 
-        New_path[0] = '/';
-        strncpy(New_path + 1, path, Path_size);
+        new_path[0] = '/';
+        strncpy(new_path + 1, path, path_size);
 
-        return Into_WASI_Error(xila_file_system_create_directory(New_path));
+        return into_wasi_error(xila_file_system_create_directory(new_path));
     }
 
-    return Into_WASI_Error(xila_file_system_create_directory(path));
+    return into_wasi_error(xila_file_system_create_directory(path));
 }
 
 /**
@@ -1749,21 +1749,21 @@ __wasi_errno_t
 os_renameat(os_file_handle old_handle, const char *old_path,
             os_file_handle new_handle, const char *new_path)
 {
-    size_t Old_path_size = strlen(old_path) + 2;
+    size_t old_path_size = strlen(old_path) + 2;
 
-    char Old_new_path[Old_path_size];
+    char old_new_path[old_path_size];
 
-    Old_new_path[0] = '/';
-    strncpy(Old_new_path + 1, old_path, Old_path_size);
+    old_new_path[0] = '/';
+    strncpy(old_new_path + 1, old_path, old_path_size);
 
-    size_t New_path_size = strlen(new_path) + 2;
+    size_t new_path_size = strlen(new_path) + 2;
 
-    char New_new_path[New_path_size];
+    char new_new_path[new_path_size];
 
-    New_new_path[0] = '/';
-    strncpy(New_new_path + 1, new_path, New_path_size);
+    new_new_path[0] = '/';
+    strncpy(new_new_path + 1, new_path, new_path_size);
 
-    return Into_WASI_Error(xila_file_system_rename(Old_new_path, New_new_path));
+    return into_wasi_error(xila_file_system_rename(old_new_path, new_new_path));
 }
 
 /**
@@ -1791,9 +1791,9 @@ __wasi_errno_t
 os_lseek(os_file_handle handle, __wasi_filedelta_t offset,
          __wasi_whence_t whence, __wasi_filesize_t *new_offset)
 {
-    XilaFileSystemWhence Whence = Into_xila_whence(whence);
+    XilaFileSystemWhence Whence = into_xila_whence(whence);
 
-    return Into_WASI_Error(xila_file_system_set_position(handle, offset, Whence, new_offset));
+    return into_wasi_error(xila_file_system_set_position(handle, offset, Whence, new_offset));
 }
 
 /**
@@ -1834,7 +1834,7 @@ os_isatty(os_file_handle handle)
         return __WASI_ESUCCESS;
     }
 
-    return Into_WASI_Error(Result);
+    return into_wasi_error(Result);
 }
 
 /**
@@ -1905,7 +1905,7 @@ os_fdopendir(os_file_handle handle, os_dir_stream *dir_stream)
 __wasi_errno_t
 os_rewinddir(os_dir_stream dir_stream)
 {
-    return Into_WASI_Error(xila_file_system_rewind_directory(dir_stream));
+    return into_wasi_error(xila_file_system_rewind_directory(dir_stream));
 }
 
 /**
@@ -1919,7 +1919,7 @@ os_seekdir(os_dir_stream dir_stream, __wasi_dircookie_t position)
 {
     XilaFileSystemResult Result = xila_file_system_directory_set_position(dir_stream, position);
 
-    return Into_WASI_Error(Result);
+    return into_wasi_error(Result);
 }
 
 /**
@@ -1933,19 +1933,19 @@ os_seekdir(os_dir_stream dir_stream, __wasi_dircookie_t position)
  */
 __wasi_errno_t os_readdir(os_dir_stream dir_stream, __wasi_dirent_t *entry, const char **d_name)
 {
-    XilaFileSystemSize Size = 0;
-    XilaFileSystemInode Inode = 0;
-    XilaFileKind Type = 0;
+    XilaFileSystemSize size = 0;
+    XilaFileSystemInode inode = 0;
+    XilaFileKind type = 0;
 
-    XilaFileSystemResult Result = xila_file_system_read_directory(dir_stream, d_name, &Type, &Size, &Inode);
+    XilaFileSystemResult file_system_result = xila_file_system_read_directory(dir_stream, d_name, &type, &size, &inode);
 
     if ((*d_name) != NULL)
     {
-        entry->d_ino = Inode;
+        entry->d_ino = inode;
         entry->d_namlen = strlen(*d_name);
-        entry->d_type = Into_WASI_file_type(Type);
+        entry->d_type = into_wasi_file_type(type);
     }
-    return Into_WASI_Error(Result);
+    return into_wasi_error(file_system_result);
 }
 
 /**
@@ -1957,7 +1957,7 @@ __wasi_errno_t os_readdir(os_dir_stream dir_stream, __wasi_dirent_t *entry, cons
 __wasi_errno_t
 os_closedir(os_dir_stream dir_stream)
 {
-    return Into_WASI_Error(xila_file_system_close_directory(dir_stream));
+    return into_wasi_error(xila_file_system_close_directory(dir_stream));
 }
 
 /**

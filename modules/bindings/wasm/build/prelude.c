@@ -1,4 +1,4 @@
-#include "Xila_graphics.h"
+#include "xila_graphics.h"
 
 typedef uint16_t Function_call_type;
 

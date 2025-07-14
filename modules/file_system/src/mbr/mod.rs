@@ -49,12 +49,12 @@ if let Some(partition) = partitions.first() {
 use alloc::vec::Vec;
 use core::fmt;
 
-use crate::{PartitionDeviceType, PartitionStatisticsType};
+use crate::{PartitionDevice, PartitionStatistics};
 
 mod utilities;
 pub use utilities::*;
 
-use crate::{DeviceType, Error, PartitionEntryType, PartitionKind, Result};
+use crate::{Device, Error, PartitionEntry, PartitionKind, Result};
 
 #[cfg(test)]
 use crate::MemoryDevice;
@@ -69,7 +69,7 @@ pub struct Mbr {
     /// Reserved (usually 0x0000)
     pub reserved: [u8; 2],
     /// Partition table (4 entries × 16 bytes = 64 bytes)
-    pub partitions: [PartitionEntryType; 4],
+    pub partitions: [PartitionEntry; 4],
     /// Boot signature (0x55AA)
     pub boot_signature: [u8; 2],
 }
@@ -90,7 +90,7 @@ impl Mbr {
             bootstrap_code: [0; 440],
             disk_signature: [0; 4],
             reserved: [0; 2],
-            partitions: [PartitionEntryType::new(); 4],
+            partitions: [PartitionEntry::new(); 4],
             boot_signature: Self::SIGNATURE,
         }
     }
@@ -117,7 +117,7 @@ impl Mbr {
             bootstrap_code: [0; 440],
             disk_signature: [0; 4],
             reserved: [0; 2],
-            partitions: [PartitionEntryType::new(); 4],
+            partitions: [PartitionEntry::new(); 4],
             boot_signature: [0; 2],
         };
 
@@ -164,7 +164,7 @@ impl Mbr {
     }
 
     /// Read and parse MBR from a device
-    pub fn read_from_device(device: &DeviceType) -> Result<Self> {
+    pub fn read_from_device(device: &Device) -> Result<Self> {
         // Read the first 512 bytes (MBR sector)
         let mut buffer = [0u8; Self::SIZE];
 
@@ -182,7 +182,7 @@ impl Mbr {
     }
 
     /// Write MBR to a device
-    pub fn write_to_device(&self, device: &DeviceType) -> Result<()> {
+    pub fn write_to_device(&self, device: &Device) -> Result<()> {
         // Set position to the beginning of the device
         device.set_position(&crate::Position::Start(0))?;
 
@@ -204,7 +204,7 @@ impl Mbr {
     }
 
     /// Get all valid partitions
-    pub fn get_valid_partitions(&self) -> Vec<&PartitionEntryType> {
+    pub fn get_valid_partitions(&self) -> Vec<&PartitionEntry> {
         self.partitions
             .iter()
             .filter(|partition| partition.is_valid())
@@ -212,7 +212,7 @@ impl Mbr {
     }
 
     /// Get all valid partitions (mutable)
-    pub fn get_valid_partitions_mut(&mut self) -> Vec<&mut PartitionEntryType> {
+    pub fn get_valid_partitions_mut(&mut self) -> Vec<&mut PartitionEntry> {
         self.partitions
             .iter_mut()
             .filter(|partition| partition.is_valid())
@@ -220,14 +220,14 @@ impl Mbr {
     }
 
     /// Get bootable partition (if any)
-    pub fn get_bootable_partition(&self) -> Option<&PartitionEntryType> {
+    pub fn get_bootable_partition(&self) -> Option<&PartitionEntry> {
         self.partitions
             .iter()
             .find(|partition| partition.is_bootable())
     }
 
     /// Get bootable partition (mutable, if any)
-    pub fn get_bootable_partition_mut(&mut self) -> Option<&mut PartitionEntryType> {
+    pub fn get_bootable_partition_mut(&mut self) -> Option<&mut PartitionEntry> {
         self.partitions
             .iter_mut()
             .find(|partition| partition.is_bootable())
@@ -286,7 +286,7 @@ impl Mbr {
             .ok_or(Error::FileSystemFull)?;
 
         let new_partition =
-            PartitionEntryType::new_with_params(bootable, partition_type, start_lba, size_sectors);
+            PartitionEntry::new_with_params(bootable, partition_type, start_lba, size_sectors);
 
         // Check for overlaps with existing partitions
         for existing in &self.partitions {
@@ -374,8 +374,8 @@ impl Mbr {
     /// ```
     pub fn create_all_partition_devices(
         &self,
-        base_device: DeviceType,
-    ) -> Result<Vec<PartitionDeviceType>> {
+        base_device: Device,
+    ) -> Result<Vec<PartitionDevice>> {
         let mut devices = Vec::new();
 
         for partition in &self.partitions {
@@ -424,7 +424,7 @@ impl Mbr {
     pub fn find_partitions_by_type(
         &self,
         partition_type: crate::PartitionKind,
-    ) -> Vec<(usize, &PartitionEntryType)> {
+    ) -> Vec<(usize, &PartitionEntry)> {
         self.partitions
             .iter()
             .enumerate()
@@ -517,7 +517,7 @@ impl Mbr {
     ///              stats.Total_used_sectors / stats.Total_partitions as u64);
     /// }
     /// ```
-    pub fn generate_statistics(&self) -> PartitionStatisticsType {
+    pub fn generate_statistics(&self) -> PartitionStatistics {
         let valid_partitions: Vec<_> = self.get_valid_partitions();
 
         let total_partitions = valid_partitions.len();
@@ -565,7 +565,7 @@ impl Mbr {
             .min()
             .unwrap_or(0);
 
-        PartitionStatisticsType {
+        PartitionStatistics {
             total_partitions,
             bootable_partitions,
             fat_partitions,
@@ -704,10 +704,10 @@ impl Mbr {
     /// assert!(partition.is_valid());
     /// ```
     pub fn find_or_create_partition_with_signature(
-        device: &DeviceType,
+        device: &Device,
         target_signature: u32,
         partition_type: crate::PartitionKind,
-    ) -> Result<PartitionDeviceType> {
+    ) -> Result<PartitionDevice> {
         // Try to read existing MBR from device
         if let Ok(existing_mbr) = Self::read_from_device(device) {
             // Check if the MBR has the target signature
@@ -764,10 +764,10 @@ impl Mbr {
     /// assert_eq!(partition.get_start_lba(), 2048); // Standard alignment
     /// ```
     pub fn format_disk_with_signature_and_partition(
-        device: &DeviceType,
+        device: &Device,
         disk_signature: u32,
         partition_type: crate::PartitionKind,
-    ) -> Result<PartitionDeviceType> {
+    ) -> Result<PartitionDevice> {
         // Get device size in sectors
         let device_size = device.get_size()?;
         let block_size = device.get_block_size()?;
@@ -847,7 +847,7 @@ impl fmt::Display for Mbr {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::PartitionEntryType;
+    use crate::PartitionEntry;
     use alloc::{format, vec};
 
     fn create_sample_mbr_bytes() -> [u8; 512] {
@@ -1115,7 +1115,7 @@ mod tests {
 
         // Manually create overlapping partitions (bypassing validation)
         mbr.partitions[2] =
-            PartitionEntryType::new_with_params(false, super::PartitionKind::LinuxSwap, 1500, 1000);
+            PartitionEntry::new_with_params(false, super::PartitionKind::LinuxSwap, 1500, 1000);
         assert!(mbr.has_overlapping_partitions());
     }
 

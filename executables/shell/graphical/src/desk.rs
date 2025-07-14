@@ -3,7 +3,7 @@ use core::ffi::c_void;
 use crate::{
     error::{Error, Result},
     icon::create_icon,
-    shortcut::{ShortcutType, SHORTCUT_PATH},
+    shortcut::{Shortcut, SHORTCUT_PATH},
 };
 
 use alloc::{
@@ -18,11 +18,11 @@ use file_system::{Kind, Mode};
 use futures::block_on;
 use graphics::{lvgl, Color, EventKind, Point, Window};
 use log::Error;
-use virtual_file_system::DirectoryType;
+use virtual_file_system::Directory;
 
 pub const WINDOWS_PARENT_CHILD_CHANGED: graphics::EventKind = graphics::EventKind::Custom2;
 
-pub struct DeskType {
+pub struct Desk {
     window: Window,
     tile_view: *mut lvgl::lv_obj_t,
     drawer_tile: *mut lvgl::lv_obj_t,
@@ -56,7 +56,7 @@ unsafe extern "C" fn event_handler(event: *mut lvgl::lv_event_t) {
     }
 }
 
-impl Drop for DeskType {
+impl Drop for Desk {
     fn drop(&mut self) {
         unsafe {
             let _lock = block_on(graphics::get_instance().lock());
@@ -66,7 +66,7 @@ impl Drop for DeskType {
     }
 }
 
-impl DeskType {
+impl Desk {
     const DOCK_ICON_SIZE: Point = Point::new(32, 32);
     const DRAWER_ICON_SIZE: Point = Point::new(48, 48);
 
@@ -192,7 +192,7 @@ impl DeskType {
 
         let shortcuts = BTreeMap::new();
 
-        let desk: DeskType = Self {
+        let desk: Desk = Self {
             window,
             tile_view,
             desk_tile,
@@ -255,7 +255,7 @@ impl DeskType {
 
         let mut buffer: Vec<u8> = vec![];
 
-        let shortcuts_directory = DirectoryType::open(virtual_file_system, SHORTCUT_PATH)
+        let shortcuts_directory = Directory::open(virtual_file_system, SHORTCUT_PATH)
             .await
             .map_err(Error::FailedToReadShortcutDirectory)?;
 
@@ -268,7 +268,7 @@ impl DeskType {
                 continue;
             }
 
-            match ShortcutType::read(shortcut_entry.get_name(), &mut buffer).await {
+            match Shortcut::read(shortcut_entry.get_name(), &mut buffer).await {
                 Ok(shortcut) => {
                     self.create_drawer_shortcut(
                         shortcut_entry.get_name(),
@@ -296,7 +296,7 @@ impl DeskType {
 
         let mut buffer = vec![];
 
-        let shortcut = ShortcutType::read(shortcut_name, &mut buffer).await?;
+        let shortcut = Shortcut::read(shortcut_name, &mut buffer).await?;
 
         let standard_in = virtual_file_system::get_instance()
             .open(&"/devices/Null", Mode::READ_ONLY.into(), task)

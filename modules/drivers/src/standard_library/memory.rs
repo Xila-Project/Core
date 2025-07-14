@@ -10,7 +10,7 @@ use libc::{
     PROT_READ, PROT_WRITE, _SC_PAGE_SIZE,
 };
 use linked_list_allocator::Heap;
-use memory::{CapabilitiesType, Layout, ManagerTrait};
+use memory::{Capabilities, Layout, ManagerTrait};
 use synchronization::blocking_mutex::{CriticalSectionMutex, Mutex};
 
 // Initial heap size and growth constants
@@ -18,7 +18,7 @@ const INITIAL_HEAP_SIZE: usize = 1024 * 1024; // 1MB
 
 struct Region {
     pub heap: Heap,
-    pub capabilities: CapabilitiesType,
+    pub capabilities: Capabilities,
     pub slice: &'static mut [MaybeUninit<u8>],
 }
 
@@ -38,12 +38,12 @@ impl MemoryManager {
             regions: Mutex::new(RefCell::new([
                 Region {
                     heap: Heap::empty(),
-                    capabilities: CapabilitiesType::new(false, false),
+                    capabilities: Capabilities::new(false, false),
                     slice: &mut [],
                 },
                 Region {
                     heap: Heap::empty(),
-                    capabilities: CapabilitiesType::new(true, false),
+                    capabilities: Capabilities::new(true, false),
                     slice: &mut [],
                 },
             ])),
@@ -67,11 +67,7 @@ impl Drop for MemoryManager {
 }
 
 impl ManagerTrait for MemoryManager {
-    unsafe fn allocate(
-        &self,
-        capabilities: CapabilitiesType,
-        layout: Layout,
-    ) -> Option<NonNull<u8>> {
+    unsafe fn allocate(&self, capabilities: Capabilities, layout: Layout) -> Option<NonNull<u8>> {
         self.regions.lock(|regions| {
             let mut regions = regions.try_borrow_mut().ok()?;
 
@@ -196,7 +192,7 @@ const fn round_page_size(size: usize, page_size: usize) -> usize {
     (size + page_size - 1) & !(page_size - 1) // Round up to the nearest page size
 }
 
-unsafe fn map(size: usize, capabilities: CapabilitiesType) -> &'static mut [MaybeUninit<u8>] {
+unsafe fn map(size: usize, capabilities: Capabilities) -> &'static mut [MaybeUninit<u8>] {
     let page_size = get_page_size();
     let size = round_page_size(size, page_size);
 
@@ -257,7 +253,7 @@ mod tests {
 
         // Allocate some memory using the test manager directly
         let layout = Layout::from_size_align(128, 8).unwrap();
-        let capabilities = CapabilitiesType::new(false, false);
+        let capabilities = Capabilities::new(false, false);
 
         unsafe {
             let allocation = test_manager.allocate(capabilities, layout);
@@ -281,7 +277,7 @@ mod tests {
 
             // Allocate some memory
             let layout = Layout::from_size_align(128, 8).unwrap();
-            let capabilities = CapabilitiesType::new(false, false);
+            let capabilities = Capabilities::new(false, false);
 
             let allocation = manager.allocate(capabilities, layout);
             assert!(allocation.is_some());
@@ -306,7 +302,7 @@ mod tests {
 
             // Perform an initial allocation to trigger initialization
             let layout = Layout::from(Layout::from_size_align(128, 8).unwrap());
-            let capabilities = CapabilitiesType::new(false, false);
+            let capabilities = Capabilities::new(false, false);
             let allocation = manager.allocate(capabilities, layout);
             assert!(allocation.is_some());
             if let Some(pointer) = allocation {
@@ -314,7 +310,7 @@ mod tests {
                 manager.deallocate(pointer, layout);
             }
 
-            let capabilities = CapabilitiesType::new(true, false);
+            let capabilities = Capabilities::new(true, false);
             let allocation = manager.allocate(capabilities, layout);
             assert!(allocation.is_some());
             if let Some(pointer) = allocation {
@@ -340,7 +336,7 @@ mod tests {
 
             // Allocate some memory
             let layout = Layout::from_size_align(128, 8).unwrap();
-            let capabilities = CapabilitiesType::new(false, false);
+            let capabilities = Capabilities::new(false, false);
 
             let allocation = manager.allocate(capabilities, layout);
             assert!(allocation.is_some());
@@ -359,7 +355,7 @@ mod tests {
 
             // Allocate some executable memory
             let layout = Layout::from_size_align(128, 8).unwrap();
-            let capabilities = CapabilitiesType::new(true, false);
+            let capabilities = Capabilities::new(true, false);
 
             let allocation = manager.allocate(capabilities, layout);
             assert!(allocation.is_some());
@@ -380,7 +376,7 @@ mod tests {
             // to trigger expansion
             let _page_size = get_page_size();
             let layout = Layout::from_size_align(INITIAL_HEAP_SIZE, 8).unwrap();
-            let capabilities: CapabilitiesType = CapabilitiesType::new(false, false);
+            let capabilities: Capabilities = Capabilities::new(false, false);
 
             let allocation1 = manager.allocate(capabilities, layout);
             assert!(allocation1.is_some());
@@ -406,7 +402,7 @@ mod tests {
 
             // Allocate some memory
             let layout = Layout::from_size_align(128, 8).unwrap();
-            let capabilities = CapabilitiesType::new(false, false);
+            let capabilities = Capabilities::new(false, false);
 
             let allocation = manager.allocate(capabilities, layout);
             assert!(allocation.is_some());

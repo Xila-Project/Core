@@ -1,6 +1,6 @@
 use core::{alloc::GlobalAlloc, ptr::NonNull};
 
-use crate::{CapabilitiesType, Layout, ManagerTrait};
+use crate::{Capabilities, Layout, ManagerTrait};
 
 unsafe extern "Rust" {
     unsafe static __XILA_MEMORY_ALLOCATOR: &'static dyn ManagerTrait;
@@ -39,7 +39,7 @@ impl Manager {
 unsafe impl GlobalAlloc for Manager {
     unsafe fn alloc(&self, layout: core::alloc::Layout) -> *mut u8 {
         self.0
-            .allocate(CapabilitiesType::default(), Layout::from(layout))
+            .allocate(Capabilities::default(), Layout::from(layout))
             .map_or(core::ptr::null_mut(), |pointer| pointer.as_ptr())
     }
 

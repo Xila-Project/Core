@@ -23,7 +23,7 @@ pub struct File<'a> {
 impl Debug for File<'_> {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
-            .debug_struct("FileType")
+            .debug_struct("File")
             .field("File_identifier", &self.file_identifier)
             .field("File_system", &(self.file_system as *const _))
             .finish()

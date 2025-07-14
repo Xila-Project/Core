@@ -37,7 +37,7 @@ mod generated_bindings {
             .ok_or(Error::InvalidPointer)
     }
 
-    include!(concat!(env!("OUT_DIR"), "/Bindings.rs"));
+    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
 pub struct GraphicsBindings;

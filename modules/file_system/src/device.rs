@@ -28,7 +28,7 @@ use crate::{Error, Position, Result, Size};
 #[macro_export]
 macro_rules! create_device {
     ($Device:expr) => {
-        $crate::DeviceType::new(alloc::sync::Arc::new($Device))
+        $crate::Device::new(alloc::sync::Arc::new($Device))
     };
 }
 
@@ -262,15 +262,15 @@ pub trait DeviceTrait: Send + Sync {
 /// ```
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct DeviceType(Arc<dyn DeviceTrait>);
+pub struct Device(Arc<dyn DeviceTrait>);
 
-impl Debug for DeviceType {
+impl Debug for Device {
     fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
-        write!(formatter, "DeviceType")
+        write!(formatter, "Device")
     }
 }
 
-impl DeviceType {
+impl Device {
     /// Create a new device wrapper from any implementation of [`DeviceTrait`].
     ///
     /// # Arguments
@@ -288,7 +288,7 @@ impl DeviceType {
     /// let device = DeviceType::new(Arc::new(memory_device));
     /// ```
     pub fn new(device: Arc<dyn DeviceTrait>) -> Self {
-        DeviceType(device)
+        Device(device)
     }
 
     /// Read data from the device at the current position.

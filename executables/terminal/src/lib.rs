@@ -16,7 +16,7 @@ use alloc::{
     string::{String, ToString},
     sync::Arc,
 };
-use file_system::{DeviceType, Flags, Mode, UniqueFileIdentifier};
+use file_system::{Device, Flags, Mode, UniqueFileIdentifier};
 use futures::yield_now;
 use task::TaskIdentifier;
 
@@ -41,7 +41,7 @@ async fn mount_and_open(
     UniqueFileIdentifier,
 )> {
     virtual_file_system::get_instance()
-        .mount_device(task, &"/devices/Terminal", DeviceType::new(terminal))
+        .mount_device(task, &"/devices/Terminal", Device::new(terminal))
         .await?;
 
     let standard_in = virtual_file_system::get_instance()

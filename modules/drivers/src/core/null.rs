@@ -1,8 +1,8 @@
 use file_system::{DeviceTrait, Size};
 
-pub struct NullDeviceType;
+pub struct NullDevice;
 
-impl DeviceTrait for NullDeviceType {
+impl DeviceTrait for NullDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
         Ok(Size::new(buffer.len() as u64))
     }

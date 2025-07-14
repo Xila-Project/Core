@@ -26,9 +26,9 @@ pub const SHORTCUT: &str = r#"
     "icon_color": [158, 158, 158]
 }"#;
 
-pub struct SettingsExecutableType;
+pub struct SettingsExecutable;
 
-impl SettingsExecutableType {
+impl SettingsExecutable {
     pub async fn new<'a>(
         virtual_file_system: &'a VirtualFileSystem<'a>,
         task: TaskIdentifier,
@@ -60,13 +60,13 @@ impl SettingsExecutableType {
 }
 
 executable::implement_executable_device!(
-    Structure: SettingsExecutableType,
+    Structure: SettingsExecutable,
     Mount_path: "/binaries/Settings",
     Main_function: main,
 );
 
 pub async fn main(_: Standard, _: String) -> core::result::Result<(), NonZeroUsize> {
-    let mut settings = SettingsType::new()
+    let mut settings = Settings::new()
         .await
         .map_err(|_| NonZeroUsize::new(1).unwrap())?;
 

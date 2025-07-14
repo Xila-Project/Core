@@ -9,7 +9,7 @@ use crate::error::{Error, Result};
 pub const SHORTCUT_PATH: &Path = Path::from_str("/Configuration/Shared/Shortcuts");
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct ShortcutType {
+pub struct Shortcut {
     name: String,
     command: String,
     #[serde(rename = "terminal")]
@@ -19,9 +19,9 @@ pub struct ShortcutType {
     icon_color: [u8; 3],
 }
 
-impl ShortcutType {
+impl Shortcut {
     pub async fn add(path: &Path) -> Result<()> {
-        let shortcut = ShortcutType::read_from_path(path, &mut Vec::new()).await?;
+        let shortcut = Shortcut::read_from_path(path, &mut Vec::new()).await?;
 
         let new_shortcut_path = SHORTCUT_PATH
             .append(shortcut.get_name())
@@ -37,7 +37,7 @@ impl ShortcutType {
         Ok(())
     }
 
-    pub async fn read_from_path(path: &Path, buffer: &mut Vec<u8>) -> Result<ShortcutType> {
+    pub async fn read_from_path(path: &Path, buffer: &mut Vec<u8>) -> Result<Shortcut> {
         let virtual_file_system = virtual_file_system::get_instance();
 
         let shortcut_file = File::open(virtual_file_system, path, Mode::READ_ONLY.into())
@@ -53,17 +53,17 @@ impl ShortcutType {
 
         let string = core::str::from_utf8(buffer).map_err(Error::InvalidUtf8)?;
 
-        let shortcut = ShortcutType::from_str(string)?;
+        let shortcut = Shortcut::from_str(string)?;
 
         Ok(shortcut)
     }
 
-    pub async fn read(entry_name: &str, buffer: &mut Vec<u8>) -> Result<ShortcutType> {
+    pub async fn read(entry_name: &str, buffer: &mut Vec<u8>) -> Result<Shortcut> {
         let shortcut_file_path = SHORTCUT_PATH
             .append(entry_name)
             .ok_or(Error::FailedToGetShortcutFilePath)?;
 
-        let shortcut = ShortcutType::read_from_path(&shortcut_file_path, buffer).await?;
+        let shortcut = Shortcut::read_from_path(&shortcut_file_path, buffer).await?;
 
         Ok(shortcut)
     }

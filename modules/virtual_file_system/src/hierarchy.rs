@@ -2,7 +2,7 @@
 use file_system::{Error, Kind, Path, Result};
 use task::TaskIdentifier;
 
-use crate::{DirectoryType, VirtualFileSystem};
+use crate::{Directory, VirtualFileSystem};
 
 /// Create the default hierarchy of the file system.
 pub async fn create_default_hierarchy(
@@ -48,7 +48,7 @@ pub async fn clean_devices_in_directory<'a>(
     path: &Path,
 ) -> Result<()> {
     // For each entry in the directory.
-    for entry in DirectoryType::open(virtual_file_system, path).await? {
+    for entry in Directory::open(virtual_file_system, path).await? {
         if entry.get_type() != Kind::File {
             continue;
         }

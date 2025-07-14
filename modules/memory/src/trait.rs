@@ -1,6 +1,6 @@
 use core::ptr::NonNull;
 
-use crate::{CapabilitiesType, Layout};
+use crate::{Capabilities, Layout};
 
 /// Trait that defines the interface for memory allocators in the Xila system.
 ///
@@ -29,12 +29,7 @@ pub trait ManagerTrait: Send + Sync {
     /// This function is unsafe because the caller must ensure that:
     /// - The returned memory is properly initialized before use
     /// - The memory is properly deallocated when no longer needed
-    unsafe fn allocate(
-        &self,
-
-        capabilities: CapabilitiesType,
-        layout: Layout,
-    ) -> Option<NonNull<u8>>;
+    unsafe fn allocate(&self, capabilities: Capabilities, layout: Layout) -> Option<NonNull<u8>>;
 
     /// Deallocates memory previously allocated by this allocator.
     ///
@@ -79,7 +74,7 @@ pub trait ManagerTrait: Send + Sync {
         new_layout: Layout,
     ) -> Option<NonNull<u8>> {
         // Default implementation simply deallocates and allocates again
-        let memory = self.allocate(CapabilitiesType::default(), new_layout)?;
+        let memory = self.allocate(Capabilities::default(), new_layout)?;
 
         // Copy the old data to the new memory
         let pointer = match pointer {

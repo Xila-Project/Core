@@ -1,4 +1,4 @@
-use file_system::DeviceType;
+use file_system::Device;
 
 use crate::lvgl;
 
@@ -13,7 +13,7 @@ pub unsafe extern "C" fn binding_callback_function(
     input_device: *mut lvgl::lv_indev_t,
     data: *mut lvgl::lv_indev_data_t,
 ) {
-    let user_data = unsafe { lvgl::lv_indev_get_user_data(input_device) as *mut UserDataType };
+    let user_data = unsafe { lvgl::lv_indev_get_user_data(input_device) as *mut UserData };
 
     let device = &(*user_data).device;
 
@@ -28,6 +28,6 @@ pub unsafe extern "C" fn binding_callback_function(
     }
 }
 
-pub struct UserDataType {
-    pub device: DeviceType,
+pub struct UserData {
+    pub device: Device,
 }

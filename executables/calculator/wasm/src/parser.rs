@@ -1,25 +1,25 @@
-use crate::Token::{Lexer_type, Token_type};
+use crate::token::{Lexer, Token};
 
 #[derive(Debug, Clone)]
-pub enum Expression_type {
+pub enum Expression {
     Number(f64),
     BinaryOp {
-        left: Box<Expression_type>,
-        op: Binary_operator_type,
-        right: Box<Expression_type>,
+        left: Box<Expression>,
+        op: BinaryOperator,
+        right: Box<Expression>,
     },
     UnaryOp {
-        op: Unary_operator_type,
-        expr: Box<Expression_type>,
+        op: UnaryOperator,
+        expr: Box<Expression>,
     },
     FunctionCall {
         name: String,
-        arg: Box<Expression_type>,
+        arg: Box<Expression>,
     },
 }
 
 #[derive(Debug, Clone)]
-pub enum Binary_operator_type {
+pub enum BinaryOperator {
     Add,
     Subtract,
     Multiply,
@@ -30,30 +30,30 @@ pub enum Binary_operator_type {
 }
 
 #[derive(Debug, Clone)]
-pub enum Unary_operator_type {
+pub enum UnaryOperator {
     Plus,
     Minus,
 }
 
 #[derive(Debug)]
-pub struct Parser_type {
-    tokens: Vec<Token_type>,
+pub struct Parser {
+    tokens: Vec<Token>,
     position: usize,
 }
 
-impl Parser_type {
-    pub fn New(Input: &str) -> Result<Self, String> {
-        let mut Lexer = Lexer_type::new(Input);
-        let Tokens = Lexer.tokenize();
+impl Parser {
+    pub fn new(input: &str) -> Result<Self, String> {
+        let mut lexer = Lexer::new(input);
+        let tokens = lexer.tokenize();
 
         Ok(Self {
-            tokens: Tokens,
+            tokens,
             position: 0,
         })
     }
 
-    fn current_token(&self) -> &Token_type {
-        self.tokens.get(self.position).unwrap_or(&Token_type::EOF)
+    fn current_token(&self) -> &Token {
+        self.tokens.get(self.position).unwrap_or(&Token::EOF)
     }
 
     fn advance(&mut self) {
@@ -62,104 +62,104 @@ impl Parser_type {
         }
     }
 
-    fn expect_token(&mut self, Expected: Token_type) -> Result<(), String> {
-        if std::mem::discriminant(self.current_token()) == std::mem::discriminant(&Expected) {
+    fn expect_token(&mut self, expected: Token) -> Result<(), String> {
+        if std::mem::discriminant(self.current_token()) == std::mem::discriminant(&expected) {
             self.advance();
             Ok(())
         } else {
             Err(format!(
                 "Expected {:?}, found {:?}",
-                Expected,
+                expected,
                 self.current_token()
             ))
         }
     }
 
-    pub fn Parse(&mut self) -> Result<Expression_type, String> {
+    pub fn parse(&mut self) -> Result<Expression, String> {
         self.parse_expression()
     }
 
     // Expression = Term (('+' | '-') Term)*
-    fn parse_expression(&mut self) -> Result<Expression_type, String> {
-        let mut Left = self.parse_term()?;
+    fn parse_expression(&mut self) -> Result<Expression, String> {
+        let mut left = self.parse_term()?;
 
-        while matches!(self.current_token(), Token_type::Plus | Token_type::Minus) {
-            let Op = match self.current_token() {
-                Token_type::Plus => Binary_operator_type::Add,
-                Token_type::Minus => Binary_operator_type::Subtract,
+        while matches!(self.current_token(), Token::Plus | Token::Minus) {
+            let op = match self.current_token() {
+                Token::Plus => BinaryOperator::Add,
+                Token::Minus => BinaryOperator::Subtract,
                 _ => unreachable!(),
             };
             self.advance();
-            let Right = self.parse_term()?;
-            Left = Expression_type::BinaryOp {
-                left: Box::new(Left),
-                op: Op,
-                right: Box::new(Right),
+            let right = self.parse_term()?;
+            left = Expression::BinaryOp {
+                left: Box::new(left),
+                op,
+                right: Box::new(right),
             };
         }
 
-        Ok(Left)
+        Ok(left)
     }
 
     // Term = Factor (('*' | '/' | 'mod' | '%') Factor)*
-    fn parse_term(&mut self) -> Result<Expression_type, String> {
-        let mut Left = self.parse_factor()?;
+    fn parse_term(&mut self) -> Result<Expression, String> {
+        let mut left = self.parse_factor()?;
 
         loop {
-            let Op = match self.current_token() {
-                Token_type::Multiply => Binary_operator_type::Multiply,
-                Token_type::Divide => Binary_operator_type::Divide,
-                Token_type::Identifier(s) if s == "mod" => Binary_operator_type::Modulo,
-                Token_type::Identifier(s) if s == "percent" => Binary_operator_type::Percent,
+            let op = match self.current_token() {
+                Token::Multiply => BinaryOperator::Multiply,
+                Token::Divide => BinaryOperator::Divide,
+                Token::Identifier(s) if s == "mod" => BinaryOperator::Modulo,
+                Token::Identifier(s) if s == "percent" => BinaryOperator::Percent,
                 _ => break,
             };
 
             self.advance();
-            let Right = self.parse_factor()?;
-            Left = Expression_type::BinaryOp {
-                left: Box::new(Left),
-                op: Op,
-                right: Box::new(Right),
+            let right = self.parse_factor()?;
+            left = Expression::BinaryOp {
+                left: Box::new(left),
+                op: op,
+                right: Box::new(right),
             };
         }
 
-        Ok(Left)
+        Ok(left)
     }
 
     // Factor = Power ('^' Power)*
-    fn parse_factor(&mut self) -> Result<Expression_type, String> {
-        let mut Left = self.parse_power()?;
+    fn parse_factor(&mut self) -> Result<Expression, String> {
+        let mut left = self.parse_power()?;
 
-        while matches!(self.current_token(), Token_type::Power) {
+        while matches!(self.current_token(), Token::Power) {
             self.advance();
-            let Right = self.parse_power()?;
-            Left = Expression_type::BinaryOp {
-                left: Box::new(Left),
-                op: Binary_operator_type::Power,
-                right: Box::new(Right),
+            let right = self.parse_power()?;
+            left = Expression::BinaryOp {
+                left: Box::new(left),
+                op: BinaryOperator::Power,
+                right: Box::new(right),
             };
         }
 
-        Ok(Left)
+        Ok(left)
     }
 
     // Power = ('+' | '-')? Primary
-    fn parse_power(&mut self) -> Result<Expression_type, String> {
+    fn parse_power(&mut self) -> Result<Expression, String> {
         match self.current_token() {
-            Token_type::Plus => {
+            Token::Plus => {
                 self.advance();
-                let Expression = self.parse_primary()?;
-                Ok(Expression_type::UnaryOp {
-                    op: Unary_operator_type::Plus,
-                    expr: Box::new(Expression),
+                let expr = self.parse_primary()?;
+                Ok(Expression::UnaryOp {
+                    op: UnaryOperator::Plus,
+                    expr: Box::new(expr),
                 })
             }
-            Token_type::Minus => {
+            Token::Minus => {
                 self.advance();
-                let Expression = self.parse_primary()?;
-                Ok(Expression_type::UnaryOp {
-                    op: Unary_operator_type::Minus,
-                    expr: Box::new(Expression),
+                let expr = self.parse_primary()?;
+                Ok(Expression::UnaryOp {
+                    op: UnaryOperator::Minus,
+                    expr: Box::new(expr),
                 })
             }
             _ => self.parse_primary(),
@@ -167,35 +167,35 @@ impl Parser_type {
     }
 
     // Primary = Number | '(' Expression ')' | Function '(' Expression ')' | Identifier
-    fn parse_primary(&mut self) -> Result<Expression_type, String> {
+    fn parse_primary(&mut self) -> Result<Expression, String> {
         match self.current_token().clone() {
-            Token_type::Number(Value) => {
+            Token::Number(value) => {
                 self.advance();
-                Ok(Expression_type::Number(Value))
+                Ok(Expression::Number(value))
             }
-            Token_type::LeftParen => {
+            Token::LeftParen => {
                 self.advance();
-                let Expression = self.parse_expression()?;
-                self.expect_token(Token_type::RightParen)?;
-                Ok(Expression)
+                let expr = self.parse_expression()?;
+                self.expect_token(Token::RightParen)?;
+                Ok(expr)
             }
-            Token_type::Function(Name) => {
+            Token::Function(name) => {
                 self.advance();
-                self.expect_token(Token_type::LeftParen)?;
-                let Arg = self.parse_expression()?;
-                self.expect_token(Token_type::RightParen)?;
-                Ok(Expression_type::FunctionCall {
-                    name: Name,
-                    arg: Box::new(Arg),
+                self.expect_token(Token::LeftParen)?;
+                let arg = self.parse_expression()?;
+                self.expect_token(Token::RightParen)?;
+                Ok(Expression::FunctionCall {
+                    name: name,
+                    arg: Box::new(arg),
                 })
             }
-            Token_type::Identifier(Name) => {
+            Token::Identifier(name) => {
                 self.advance();
                 // Handle constants like pi, e
-                match Name.as_str() {
-                    "pi" | "PI" => Ok(Expression_type::Number(std::f64::consts::PI)),
-                    "e" | "E" => Ok(Expression_type::Number(std::f64::consts::E)),
-                    _ => Err(format!("Unknown identifier: {}", Name)),
+                match name.as_str() {
+                    "pi" | "PI" => Ok(Expression::Number(std::f64::consts::PI)),
+                    "e" | "E" => Ok(Expression::Number(std::f64::consts::E)),
+                    _ => Err(format!("Unknown identifier: {}", name)),
                 }
             }
             _ => Err(format!("Unexpected token: {:?}", self.current_token())),

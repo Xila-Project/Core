@@ -2,22 +2,21 @@ use alloc::boxed::Box;
 
 use core::ffi::c_void;
 
-use file_system::DeviceType;
+use file_system::Device;
 
 use crate::{lvgl, Result};
 
-use super::{binding_callback_function, InputKind, UserDataType};
+use super::{binding_callback_function, InputKind, UserData};
 
-pub struct InputType {
+pub struct Input {
     #[allow(dead_code)]
     input_device: *mut lvgl::lv_indev_t,
 }
 
-impl Drop for InputType {
+impl Drop for Input {
     fn drop(&mut self) {
         unsafe {
-            let _ =
-                Box::from_raw(lvgl::lv_indev_get_user_data(self.input_device) as *mut UserDataType);
+            let _ = Box::from_raw(lvgl::lv_indev_get_user_data(self.input_device) as *mut UserData);
 
             lvgl::lv_indev_delete(self.input_device);
 
@@ -26,14 +25,14 @@ impl Drop for InputType {
     }
 }
 
-unsafe impl Send for InputType {}
+unsafe impl Send for Input {}
 
-unsafe impl Sync for InputType {}
+unsafe impl Sync for Input {}
 
-impl InputType {
-    pub fn new(device: DeviceType, r#type: InputKind) -> Result<Self> {
+impl Input {
+    pub fn new(device: Device, r#type: InputKind) -> Result<Self> {
         // User_data is a pinned box, so it's ownership can be transferred to LVGL and will not move or dropper until the Input_device is dropped.
-        let user_data = Box::new(UserDataType { device });
+        let user_data = Box::new(UserData { device });
 
         let input_device = unsafe {
             let input_device = lvgl::lv_indev_create();

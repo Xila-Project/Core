@@ -43,7 +43,7 @@ use crate::Mbr;
 /// println!("Total used sectors: {}", stats.Total_used_sectors);
 /// ```
 #[derive(Debug, Clone)]
-pub struct PartitionStatisticsType {
+pub struct PartitionStatistics {
     /// Total number of valid partitions in the MBR.
     pub total_partitions: usize,
     /// Number of partitions marked as bootable.
@@ -66,7 +66,7 @@ pub struct PartitionStatisticsType {
     pub smallest_partition_sectors: u32,
 }
 
-impl PartitionStatisticsType {
+impl PartitionStatistics {
     /// Generate comprehensive statistics from an MBR.
     ///
     /// This method analyzes all partitions in the provided MBR and generates

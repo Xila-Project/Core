@@ -1,13 +1,13 @@
 use quote::ToTokens;
 use syn::{visit::Visit, ForeignItemFn, ItemFn, ItemStruct, ItemType, ItemUnion, Signature};
 
-use super::type_tree::TypeTreeType;
+use super::type_tree::TypeTree;
 
 #[derive(Default)]
 pub struct LvglContext {
     signatures: Vec<Signature>,
     definitions: Vec<ItemFn>,
-    type_tree: TypeTreeType,
+    type_tree: TypeTree,
     types: Vec<ItemType>,
     structures: Vec<ItemStruct>,
     unions: Vec<ItemUnion>,
@@ -27,7 +27,7 @@ impl LvglContext {
         self.definitions.clone()
     }
 
-    pub fn get_type_tree(&self) -> &TypeTreeType {
+    pub fn get_type_tree(&self) -> &TypeTree {
         &self.type_tree
     }
 

@@ -5,19 +5,19 @@ use graphics::{ScreenReadData, ScreenWriteData};
 
 use super::Inner;
 
-pub struct ScreenDeviceType(Arc<Mutex<Inner>>);
+pub struct ScreenDevice(Arc<Mutex<Inner>>);
 
-unsafe impl Sync for ScreenDeviceType {}
+unsafe impl Sync for ScreenDevice {}
 
-unsafe impl Send for ScreenDeviceType {}
+unsafe impl Send for ScreenDevice {}
 
-impl ScreenDeviceType {
+impl ScreenDevice {
     pub fn new(inner: Arc<Mutex<Inner>>) -> Self {
         Self(inner)
     }
 }
 
-impl DeviceTrait for ScreenDeviceType {
+impl DeviceTrait for ScreenDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
         let data: &mut ScreenReadData = buffer
             .try_into()

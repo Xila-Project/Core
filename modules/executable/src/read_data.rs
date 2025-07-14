@@ -4,7 +4,7 @@ use alloc::{boxed::Box, string::String};
 
 use crate::Standard;
 
-pub type MainFunctionType = Box<
+pub type MainFunction = Box<
     dyn Fn(
             Standard,
             String,
@@ -14,7 +14,7 @@ pub type MainFunctionType = Box<
 >;
 
 pub struct ReadData {
-    main: Option<MainFunctionType>,
+    main: Option<MainFunction>,
 }
 
 impl ReadData {
@@ -37,7 +37,7 @@ impl ReadData {
         size_of::<Self>()
     }
 
-    pub fn get_main(self) -> Option<MainFunctionType> {
+    pub fn get_main(self) -> Option<MainFunction> {
         self.main
     }
 }

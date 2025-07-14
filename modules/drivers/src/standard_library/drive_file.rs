@@ -8,9 +8,9 @@ use file_system::{DeviceTrait, Error, Path, Size};
 
 use crate::standard_library::io::map_error;
 
-pub struct FileDriveDeviceType(RwLock<File>);
+pub struct FileDriveDevice(RwLock<File>);
 
-impl FileDriveDeviceType {
+impl FileDriveDevice {
     pub fn new(path: &impl AsRef<Path>) -> Self {
         let path = path.as_ref().as_str();
 
@@ -26,7 +26,7 @@ impl FileDriveDeviceType {
     }
 }
 
-impl DeviceTrait for FileDriveDeviceType {
+impl DeviceTrait for FileDriveDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
         self.0
             .try_write()
@@ -87,7 +87,7 @@ mod tests {
 
     #[test]
     fn test_read_write() {
-        let file = FileDriveDeviceType::new(&"./Test.img");
+        let file = FileDriveDevice::new(&"./Test.img");
 
         let data = [1, 2, 3, 4, 5];
 
@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn test_read_write_at_position() {
-        let file = FileDriveDeviceType::new(&"./Test.img");
+        let file = FileDriveDevice::new(&"./Test.img");
 
         file.set_position(&file_system::Position::Start(10))
             .unwrap();
