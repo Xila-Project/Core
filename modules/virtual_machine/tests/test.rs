@@ -34,14 +34,13 @@ const FUNCTIONS: [FunctionDescriptor; 0] = Function_descriptors! {};
 async fn integration_test() {
     let task_instance = task::initialize();
 
-    static LOGGER: drivers::standard_library::log::LoggerType =
-        drivers::standard_library::log::LoggerType;
+    static LOGGER: drivers::standard_library::log::Logger = drivers::standard_library::log::Logger;
 
     log::initialize(&LOGGER).expect("Failed to initialize logger");
 
     users::initialize();
 
-    time::initialize(create_device!(drivers::native::TimeDriverType::new()))
+    time::initialize(create_device!(drivers::native::TimeDriver::new()))
         .expect("Failed to initialize time manager");
 
     let device = create_device!(MemoryDevice::<512>::new(1024 * 512));
@@ -68,15 +67,15 @@ async fn integration_test() {
             ),
             (
                 &"/devices/Standard_out",
-                drivers::standard_library::console::StandardOutDeviceType
+                drivers::standard_library::console::StandardOutDevice
             ),
             (
                 &"/devices/Standard_error",
-                drivers::standard_library::console::StandardErrorDeviceType
+                drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/Time", drivers::native::TimeDriverType),
-            (&"/devices/Random", drivers::native::RandomDeviceType),
-            (&"/devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriver),
+            (&"/devices/Random", drivers::native::RandomDevice),
+            (&"/devices/Null", drivers::core::NullDevice)
         ]
     )
     .await
@@ -89,7 +88,7 @@ async fn integration_test() {
 
     // Load the WASM binary
     let binary_buffer =
-        include_bytes!("./WASM_test/target/wasm32-wasip1/release/Virtual_machine_WASM_test.wasm");
+        include_bytes!("./wasm_test/target/wasm32-wasip1/release/virtual_machine_wasm_test.wasm");
 
     let standard_in = virtual_file_system
         .open(

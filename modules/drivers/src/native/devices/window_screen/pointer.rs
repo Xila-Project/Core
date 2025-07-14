@@ -5,15 +5,15 @@ use graphics::Input_data_type;
 
 use super::Inner;
 
-pub struct PointerDeviceType(Arc<Mutex<Inner>>);
+pub struct PointerDevice(Arc<Mutex<Inner>>);
 
-impl PointerDeviceType {
+impl PointerDevice {
     pub fn new(inner: Arc<Mutex<Inner>>) -> Self {
         Self(inner)
     }
 }
 
-impl DeviceTrait for PointerDeviceType {
+impl DeviceTrait for PointerDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
         // - Cast the pointer data to the buffer.
         let data: &mut Input_data_type = buffer

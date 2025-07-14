@@ -17,7 +17,7 @@ async fn main() {
 
     let task_instance = task::initialize();
 
-    time::initialize(create_device!(drivers::native::TimeDriverType::new()))
+    time::initialize(create_device!(drivers::native::TimeDriver::new()))
         .expect("Error initializing time manager");
 
     const RESOLUTION: Point = Point::new(800, 480);

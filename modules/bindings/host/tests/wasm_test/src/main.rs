@@ -9,30 +9,30 @@ use std::thread::sleep;
 fn main() {
     println!("Hello, world!");
 
-    let mut Window = Xila_graphics_object_t::MAX;
-    let mut Button = Xila_graphics_object_t::MAX;
-    let mut Label = Xila_graphics_object_t::MAX;
+    let mut window = Xila_graphics_object_t::MAX;
+    let mut button = Xila_graphics_object_t::MAX;
+    let mut label = Xila_graphics_object_t::MAX;
 
     unsafe {
-        println!("Window : {:x}", Window);
+        println!("Window : {:x}", window);
 
-        Xila_graphics_window_create(&mut Window as *mut _);
+        Xila_graphics_window_create(&mut window as *mut _);
 
-        println!("Window : {:x}", Window);
+        println!("Window : {:x}", window);
 
-        Xila_graphics_button_create(Window, &mut Button as *mut _);
+        Xila_graphics_button_create(window, &mut button as *mut _);
 
-        println!("Button : {:x}", Button);
+        println!("Button : {:x}", button);
 
-        Xila_graphics_label_create(Button, &mut Label as *mut _);
-        Xila_graphics_label_set_text(Label, c"Hello, world!".as_ptr() as *mut _);
+        Xila_graphics_label_create(button, &mut label as *mut _);
+        Xila_graphics_label_set_text(label, c"Hello, world!".as_ptr() as *mut _);
 
-        println!("Label : {:x}", Label);
+        println!("Label : {:x}", label);
 
         loop {
             let mut Code = Xila_graphics_event_code_t_LV_EVENT_ALL;
 
-            Xila_graphics_window_get_event_code(Window, &mut Code as *mut _);
+            Xila_graphics_window_get_event_code(window, &mut Code as *mut _);
 
             if Code != Xila_graphics_event_code_t_LV_EVENT_ALL {
                 match Code {
@@ -41,11 +41,11 @@ fn main() {
 
                         let mut Target = Xila_graphics_object_t::MAX;
 
-                        Xila_graphics_window_get_event_target(Window, &mut Target as *mut _);
+                        Xila_graphics_window_get_event_target(window, &mut Target as *mut _);
 
-                        if Target == Button {
+                        if Target == button {
                             Xila_graphics_label_set_text(
-                                Label,
+                                label,
                                 c"Button pressed!".as_ptr() as *mut _,
                             );
                         }
@@ -55,7 +55,7 @@ fn main() {
                     }
                 }
 
-                Xila_graphics_window_next_event(Window);
+                Xila_graphics_window_next_event(window);
             }
 
             sleep(std::time::Duration::from_millis(10));

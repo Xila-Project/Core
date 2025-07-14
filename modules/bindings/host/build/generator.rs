@@ -10,10 +10,10 @@ use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::{FnArg, ItemFn, ReturnType, Signature, TypePath};
 
-use bindings_utilities::type_tree::TypeTreeType;
+use bindings_utilities::type_tree::TypeTree;
 
 fn generate_conversion_for_argument(
-    type_tree: &TypeTreeType,
+    type_tree: &TypeTree,
     argument: &FnArg,
 ) -> Result<TokenStream, String> {
     match argument {
@@ -178,7 +178,7 @@ fn generate_call_argument(argument: &FnArg) -> Result<TokenStream, String> {
 }
 
 fn generate_function_call(
-    type_tree: &TypeTreeType,
+    type_tree: &TypeTree,
     function: &Signature,
 ) -> Result<TokenStream, String> {
     // - Get the inputs
@@ -255,7 +255,7 @@ fn generate_function_call(
 }
 
 pub fn generate_code(
-    type_tree: &TypeTreeType,
+    type_tree: &TypeTree,
     signatures: Vec<Signature>,
     definitions: Vec<ItemFn>,
 ) -> Result<TokenStream, String> {
@@ -303,7 +303,7 @@ pub fn generate_code(
 
 pub fn generate(output_path: &Path, context: &LvglContext) -> Result<(), String> {
     // Open the output fileoutput_path
-    let output_file_path = output_path.join("Bindings.rs");
+    let output_file_path = output_path.join("bindings.rs");
     let mut output_file = File::create(&output_file_path)
         .map_err(|error| format!("Error creating output file : {error}"))?;
 

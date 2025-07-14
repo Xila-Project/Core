@@ -30,17 +30,17 @@ impl From<io::Error> for Error {
     }
 }
 
-pub struct LoaderType {
+pub struct Loader {
     paths: Vec<(path::PathBuf, PathOwned)>,
 }
 
-impl Default for LoaderType {
+impl Default for Loader {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl LoaderType {
+impl Loader {
     pub fn new() -> Self {
         Self { paths: Vec::new() }
     }
@@ -119,7 +119,7 @@ mod tests {
         little_fs::FileSystem::format(device.clone(), 256).unwrap();
         let mut file_system = little_fs::FileSystem::new(device, 256).unwrap();
 
-        let loader = LoaderType::new().add_file(source_path, destination_path);
+        let loader = Loader::new().add_file(source_path, destination_path);
 
         loader.load(&mut file_system).unwrap();
 

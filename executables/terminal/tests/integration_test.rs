@@ -3,7 +3,7 @@ extern crate alloc;
 use executable::Standard;
 use file_system::{create_device, create_file_system, MemoryDevice, Mode};
 use task::test;
-use terminal::TerminalExecutableType;
+use terminal::TerminalExecutable;
 
 #[cfg(target_os = "linux")]
 #[ignore]
@@ -16,7 +16,7 @@ async fn main() {
     use graphics::{get_minimal_buffer_size, InputKind, Point};
     use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
 
-    log::initialize(&drivers::standard_library::log::LoggerType).unwrap();
+    log::initialize(&drivers::standard_library::log::Logger).unwrap();
 
     // - Initialize the task manager.
     let task_instance = task::initialize();
@@ -25,7 +25,7 @@ async fn main() {
     let _ = users::initialize();
 
     // - Initialize the time manager.
-    let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
 
     // - Initialize the graphics manager.
 
@@ -75,15 +75,15 @@ async fn main() {
             ),
             (
                 &"/devices/Standard_out",
-                drivers::standard_library::console::StandardOutDeviceType
+                drivers::standard_library::console::StandardOutDevice
             ),
             (
                 &"/devices/Standard_error",
-                drivers::standard_library::console::StandardErrorDeviceType
+                drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/Time", drivers::native::TimeDriverType),
-            (&"/devices/Random", drivers::native::RandomDeviceType),
-            (&"/devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriver),
+            (&"/devices/Random", drivers::native::RandomDevice),
+            (&"/devices/Null", drivers::core::NullDevice)
         ]
     )
     .await
@@ -94,7 +94,7 @@ async fn main() {
         task,
         &[
             (&"/binaries/Command_line_shell", ShellExecutable),
-            (&"/binaries/Terminal", TerminalExecutableType)
+            (&"/binaries/Terminal", TerminalExecutable)
         ]
     )
     .await

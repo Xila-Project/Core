@@ -14,7 +14,7 @@ async fn initialize<'a>() -> (TaskIdentifier, VirtualFileSystem<'a>) {
 
     let _ = users::initialize();
 
-    let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
 
     let task = task_instance.get_current_task_identifier().await;
 

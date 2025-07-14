@@ -2,7 +2,7 @@ use core::mem::MaybeUninit;
 
 use alloc::{boxed::Box, collections::btree_map::BTreeMap, ffi::CString, vec::Vec};
 use file_system::{
-    get_new_file_identifier, DeviceType, Entry, FileIdentifier, FileIdentifierInner,
+    get_new_file_identifier, Device, Entry, FileIdentifier, FileIdentifierInner,
     FileSystemIdentifier, FileSystemTraits, Flags, Inode, Kind, LocalFileIdentifier, Metadata,
     Mode, Path, Permissions, Position, Size, Statistics_type, Time,
 };
@@ -10,18 +10,18 @@ use futures::block_on;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use users::{GroupIdentifier, UserIdentifier};
 
-use super::{convert_result, littlefs, ConfigurationType, Directory, FileType};
+use super::{convert_result, littlefs, Configuration, Directory, File};
 
 use file_system::{Error, Result};
 
-struct InnerType {
+struct Inner {
     file_system: littlefs::lfs_t,
-    open_files: BTreeMap<LocalFileIdentifier, FileType>,
+    open_files: BTreeMap<LocalFileIdentifier, File>,
     open_directories: BTreeMap<LocalFileIdentifier, Directory>,
 }
 
 pub struct FileSystem {
-    inner: RwLock<CriticalSectionRawMutex, InnerType>,
+    inner: RwLock<CriticalSectionRawMutex, Inner>,
     cache_size: usize,
 }
 
@@ -64,8 +64,7 @@ impl Drop for FileSystem {
         };
 
         // Get the device
-        let _device =
-            unsafe { Box::from_raw(inner.file_system.cfg.read().context as *mut DeviceType) };
+        let _device = unsafe { Box::from_raw(inner.file_system.cfg.read().context as *mut Device) };
 
         // - Unmount the file system
         unsafe {
@@ -77,11 +76,11 @@ impl Drop for FileSystem {
 }
 
 impl FileSystem {
-    pub fn new(device: DeviceType, cache_size: usize) -> Result<Self> {
+    pub fn new(device: Device, cache_size: usize) -> Result<Self> {
         let block_size = device.get_block_size().map_err(|_| Error::InputOutput)?;
         let size = device.get_size().map_err(|_| Error::InputOutput)?;
 
-        let configuration: littlefs::lfs_config = ConfigurationType::new(
+        let configuration: littlefs::lfs_config = Configuration::new(
             device,
             block_size,
             usize::from(size),
@@ -103,7 +102,7 @@ impl FileSystem {
             )
         })?;
 
-        let inner = InnerType {
+        let inner = Inner {
             file_system: unsafe { file_system.assume_init() },
             open_files: BTreeMap::new(),
             open_directories: BTreeMap::new(),
@@ -115,11 +114,11 @@ impl FileSystem {
         })
     }
 
-    pub fn format(device: DeviceType, cache_size: usize) -> Result<()> {
+    pub fn format(device: Device, cache_size: usize) -> Result<()> {
         let block_size = device.get_block_size().map_err(|_| Error::InputOutput)?;
         let size = device.get_size().map_err(|_| Error::InputOutput)?;
 
-        let configuration: littlefs::lfs_config = ConfigurationType::new(
+        let configuration: littlefs::lfs_config = Configuration::new(
             device,
             block_size,
             usize::from(size),
@@ -142,10 +141,10 @@ impl FileSystem {
     }
 
     fn borrow_mutable_inner_2_splitted(
-        inner_2: &mut InnerType,
+        inner_2: &mut Inner,
     ) -> (
         &mut littlefs::lfs_t,
-        &mut BTreeMap<LocalFileIdentifier, FileType>,
+        &mut BTreeMap<LocalFileIdentifier, File>,
         &mut BTreeMap<LocalFileIdentifier, Directory>,
     ) {
         (
@@ -168,13 +167,13 @@ impl FileSystem {
 
     fn read_inner(
         &self,
-    ) -> synchronization::rwlock::RwLockReadGuard<'_, CriticalSectionRawMutex, InnerType> {
+    ) -> synchronization::rwlock::RwLockReadGuard<'_, CriticalSectionRawMutex, Inner> {
         block_on(self.inner.read())
     }
 
     fn write_inner(
         &self,
-    ) -> synchronization::rwlock::RwLockWriteGuard<'_, CriticalSectionRawMutex, InnerType> {
+    ) -> synchronization::rwlock::RwLockWriteGuard<'_, CriticalSectionRawMutex, Inner> {
         block_on(self.inner.write())
     }
 }
@@ -195,7 +194,7 @@ impl FileSystemTraits for FileSystem {
     ) -> Result<LocalFileIdentifier> {
         let mut inner = self.write_inner();
 
-        let file = FileType::open(
+        let file = File::open(
             &mut inner.file_system,
             path,
             flags,
@@ -539,7 +538,7 @@ impl FileSystemTraits for FileSystem {
         let metadata = Metadata::get_default(Kind::Directory, time, user, group)
             .ok_or(Error::InvalidParameter)?;
 
-        FileType::set_metadata_from_path(&mut inner.file_system, path, &metadata)?;
+        File::set_metadata_from_path(&mut inner.file_system, path, &metadata)?;
 
         Ok(())
     }
@@ -559,7 +558,7 @@ impl FileSystemTraits for FileSystem {
     fn set_metadata_from_path(&self, path: &Path, metadata: &Metadata) -> Result<()> {
         let mut inner = self.write_inner();
 
-        FileType::set_metadata_from_path(&mut inner.file_system, path, metadata)?;
+        File::set_metadata_from_path(&mut inner.file_system, path, metadata)?;
 
         Ok(())
     }
@@ -567,7 +566,7 @@ impl FileSystemTraits for FileSystem {
     fn get_metadata_from_path(&self, path: &Path) -> Result<Metadata> {
         let mut inner = self.write_inner();
 
-        FileType::get_metadata_from_path(&mut inner.file_system, path)
+        File::get_metadata_from_path(&mut inner.file_system, path)
     }
 
     fn get_metadata(&self, file: LocalFileIdentifier) -> Result<Metadata> {
@@ -598,11 +597,11 @@ mod tests {
 
         task::initialize();
 
-        let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
+        let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
 
         let mock_device = MemoryDevice::<512>::new(2048 * 512);
 
-        let device = DeviceType::new(Arc::new(mock_device));
+        let device = Device::new(Arc::new(mock_device));
 
         FileSystem::format(device.clone(), CACHE_SIZE).unwrap();
 

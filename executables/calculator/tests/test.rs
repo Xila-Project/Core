@@ -1,7 +1,7 @@
 extern crate alloc;
 
 use xila::drivers;
-use xila::drivers::native::TimeDriverType;
+use xila::drivers::native::TimeDriver;
 use xila::file_system;
 use xila::file_system::{MemoryDevice, create_device, create_file_system};
 use xila::graphics;
@@ -33,9 +33,9 @@ async fn run_graphics() {
 #[ignore]
 async fn integration_test() {
     // - Initialize the system
-    log::initialize(&drivers::standard_library::log::LoggerType).unwrap();
+    log::initialize(&drivers::standard_library::log::Logger).unwrap();
 
-    let binary_buffer = include_bytes!("../wasm/target/wasm32-wasip1/release/Calculator.wasm");
+    let binary_buffer = include_bytes!("../wasm/target/wasm32-wasip1/release/calculator.wasm");
 
     users::initialize();
 
@@ -43,8 +43,7 @@ async fn integration_test() {
 
     let task = task_instance.get_current_task_identifier().await;
 
-    time::initialize(create_device!(TimeDriverType::new()))
-        .expect("Error initializing time manager");
+    time::initialize(create_device!(TimeDriver::new())).expect("Error initializing time manager");
 
     let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
     little_fs::FileSystem::format(memory_device.clone(), 512).unwrap();
@@ -69,15 +68,15 @@ async fn integration_test() {
             ),
             (
                 &"/devices/Standard_out",
-                drivers::standard_library::console::StandardOutDeviceType
+                drivers::standard_library::console::StandardOutDevice
             ),
             (
                 &"/devices/Standard_error",
-                drivers::standard_library::console::StandardErrorDeviceType
+                drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/Time", drivers::native::TimeDriverType),
-            (&"/devices/Random", drivers::native::RandomDeviceType),
-            (&"/devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriver),
+            (&"/devices/Random", drivers::native::RandomDevice),
+            (&"/devices/Null", drivers::core::NullDevice)
         ]
     )
     .await

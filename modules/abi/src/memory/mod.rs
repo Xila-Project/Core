@@ -42,7 +42,7 @@ use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 
 use synchronization::rwlock::RwLock;
 
-use memory::{CapabilitiesType, Layout};
+use memory::{Capabilities, Layout};
 
 /// Memory protection flags that can be combined using bitwise OR.
 /// These flags determine what operations are allowed on memory regions.
@@ -67,12 +67,12 @@ pub type XilaMemoryCapabilities = u8;
 /// Executable capability - memory can be used for code execution
 #[no_mangle]
 pub static XILA_MEMORY_CAPABILITIES_EXECUTE: XilaMemoryCapabilities =
-    memory::CapabilitiesType::EXECUTABLE_FLAG;
+    memory::Capabilities::EXECUTABLE_FLAG;
 
 /// Direct Memory Access (DMA) capability - memory is accessible by DMA controllers
 #[no_mangle]
 pub static XILA_MEMORY_CAPABILITIES_DIRECT_MEMORY_ACCESS: XilaMemoryCapabilities =
-    memory::CapabilitiesType::DIRECT_MEMORY_ACCESS_FLAG;
+    memory::Capabilities::DIRECT_MEMORY_ACCESS_FLAG;
 
 /// No special capabilities required - standard memory allocation
 #[no_mangle]
@@ -316,7 +316,7 @@ pub unsafe extern "C" fn xila_memory_allocate(
         let layout = Layout::from_size_align(size, alignment)
             .expect("Failed to create layout for memory allocation");
 
-        let capabilities = CapabilitiesType::from_u8(capabilities);
+        let capabilities = Capabilities::from_u8(capabilities);
 
         let result = memory::get_instance().allocate(capabilities, layout);
 

@@ -17,7 +17,7 @@ use alloc::{
 use file_system::{Flags, Mode, Open, Path, PathOwned};
 use miniserde::{Deserialize, Serialize};
 use users::{GroupIdentifier, GroupIdentifierInner, UserIdentifier, UserIdentifierInner};
-use virtual_file_system::{DirectoryType, File, VirtualFileSystem};
+use virtual_file_system::{Directory, File, VirtualFileSystem};
 
 use crate::{Error, Result, GROUP_FOLDER_PATH};
 
@@ -27,7 +27,7 @@ use crate::{Error, Result, GROUP_FOLDER_PATH};
 /// in the system, including its unique identifier, name, and list of users
 /// that belong to the group.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GroupType {
+pub struct Group {
     /// Unique identifier for the group
     identifier: GroupIdentifierInner,
     /// Human-readable group name
@@ -36,7 +36,7 @@ pub struct GroupType {
     users: Vec<UserIdentifierInner>,
 }
 
-impl GroupType {
+impl Group {
     /// Creates a new group instance with the provided information.
     ///
     /// # Arguments
@@ -135,7 +135,7 @@ pub async fn read_group_file<'a>(
     virtual_file_system: &'a VirtualFileSystem<'a>,
     buffer: &mut Vec<u8>,
     file: &str,
-) -> Result<GroupType> {
+) -> Result<Group> {
     let group_file_path = Path::new(GROUP_FOLDER_PATH)
         .to_owned()
         .append(file)
@@ -206,9 +206,9 @@ pub async fn create_group<'a>(
         .map_err(Error::FailedToAddGroup)?;
 
     // - Write group file.
-    let group = GroupType::new(group_identifier.as_u16(), group_name.to_string(), vec![]);
+    let group = Group::new(group_identifier.as_u16(), group_name.to_string(), vec![]);
 
-    match DirectoryType::create(virtual_file_system, GROUP_FOLDER_PATH).await {
+    match Directory::create(virtual_file_system, GROUP_FOLDER_PATH).await {
         Ok(_) | Err(file_system::Error::AlreadyExists) => {}
         Err(error) => Err(Error::FailedToCreateGroupsDirectory(error))?,
     };

@@ -18,7 +18,7 @@ use alloc::{
 use file_system::{Flags, Mode, Open, Path, PathOwned};
 use miniserde::{Deserialize, Serialize};
 use users::{GroupIdentifier, GroupIdentifierInner, UserIdentifier, UserIdentifierInner};
-use virtual_file_system::{DirectoryType, File, VirtualFileSystem};
+use virtual_file_system::{Directory, File, VirtualFileSystem};
 
 use crate::{
     hash::{generate_salt, hash_password},
@@ -31,7 +31,7 @@ use crate::{
 /// in the system, including their unique identifier, name, primary group,
 /// and hashed password with salt for security.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct UserType {
+pub struct User {
     /// Unique identifier for the user
     identifier: UserIdentifierInner,
     /// Human-readable username
@@ -44,7 +44,7 @@ pub struct UserType {
     salt: String,
 }
 
-impl UserType {
+impl User {
     /// Creates a new user instance with the provided information.
     ///
     /// # Arguments
@@ -215,7 +215,7 @@ pub async fn authenticate_user<'a>(
         .await
         .map_err(Error::FailedToReadUserFile)?;
 
-    let user: UserType = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
+    let user: User = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
         .map_err(Error::FailedToParseUserFile)?;
 
     if hash_password(password, user.get_salt()) == user.get_hash() {
@@ -284,7 +284,7 @@ pub async fn create_user<'a>(
     let hash = hash_password(password, &salt);
 
     // - Write user file.
-    let user = UserType::new(
+    let user = User::new(
         user_identifier.as_u16(),
         user_name.to_string(),
         primary_group.as_u16(),
@@ -292,7 +292,7 @@ pub async fn create_user<'a>(
         salt,
     );
 
-    match DirectoryType::create(virtual_file_system, USERS_FOLDER_PATH).await {
+    match Directory::create(virtual_file_system, USERS_FOLDER_PATH).await {
         Ok(_) | Err(file_system::Error::AlreadyExists) => {}
         Err(error) => Err(Error::FailedToCreateUsersDirectory(error))?,
     }
@@ -374,7 +374,7 @@ pub async fn change_user_password<'a>(
         .await
         .map_err(Error::FailedToReadUserFile)?;
 
-    let mut user: UserType = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
+    let mut user: User = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
         .map_err(Error::FailedToParseUserFile)?;
 
     user.set_hash(hash);
@@ -433,7 +433,7 @@ pub async fn change_user_name<'a>(
         .await
         .map_err(Error::FailedToReadUserFile)?;
 
-    let mut user: UserType = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
+    let mut user: User = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
         .map_err(Error::FailedToParseUserFile)?;
 
     user.set_name(new_name.to_string());
@@ -474,7 +474,7 @@ pub async fn read_user_file<'a>(
     virtual_file_system: &'a VirtualFileSystem<'a>,
     buffer: &mut Vec<u8>,
     file: &str,
-) -> Result<UserType> {
+) -> Result<User> {
     let user_file_path = get_user_file_path(file)?;
 
     let user_file = File::open(virtual_file_system, user_file_path, Mode::READ_ONLY.into())

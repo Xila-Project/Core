@@ -28,22 +28,22 @@ fn main() {
     generator::generate(out_directory, &context).expect("Error generating WASM bindings");
 
     cc::Build::new()
-        .file(out_directory.join("Xila_graphics.c"))
+        .file(out_directory.join("xila_graphics.c"))
         .include(out_directory)
         .warnings(true)
-        .compile("Xila_graphics");
+        .compile("xila_graphics");
 
     println!("cargo:rustc-link-search=native={}", out_directory.display());
-    println!("cargo:rustc-link-lib=static=Xila_graphics");
+    println!("cargo:rustc-link-lib=static=xila_graphics");
 
     bindgen::builder()
-        .header(out_directory.join("Xila_graphics.h").to_str().unwrap())
+        .header(out_directory.join("xila_graphics.h").to_str().unwrap())
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .use_core()
         .ctypes_prefix("::core::ffi")
         .clang_arg("-fvisibility=default")
         .generate()
         .expect("Unable to generate bindings")
-        .write_to_file(out_directory.join("Bindings.rs"))
+        .write_to_file(out_directory.join("bindings.rs"))
         .expect("Unable to write bindings");
 }

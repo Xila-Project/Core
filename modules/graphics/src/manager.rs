@@ -10,7 +10,7 @@ use synchronization::{once_lock::OnceLock, rwlock::RwLock};
 use core::{future::Future, mem::forget};
 
 use core::time::Duration;
-use file_system::DeviceType;
+use file_system::Device;
 
 use super::lvgl;
 
@@ -18,16 +18,16 @@ use super::Point;
 
 use crate::window::Window;
 use crate::Color;
-use crate::DisplayType;
+use crate::Display;
+use crate::Input;
 use crate::InputKind;
-use crate::InputType;
 use crate::{Error, Result, ScreenReadData};
 
 static MANAGER_INSTANCE: OnceLock<Manager> = OnceLock::new();
 
 pub async fn initialize(
-    screen_device: DeviceType,
-    input_device: DeviceType,
+    screen_device: Device,
+    input_device: Device,
     input_device_type: InputKind,
     buffer_size: usize,
     double_buffered: bool,
@@ -51,14 +51,14 @@ pub fn get_instance() -> &'static Manager {
         .expect("Graphics manager not initialized")
 }
 
-struct InnerType {
-    _inputs: Vec<InputType>,
-    _displays: Vec<DisplayType>,
+struct Inner {
+    _inputs: Vec<Input>,
+    _displays: Vec<Display>,
     window_parent: *mut lvgl::lv_obj_t,
 }
 
 pub struct Manager {
-    inner: RwLock<CriticalSectionRawMutex, InnerType>,
+    inner: RwLock<CriticalSectionRawMutex, Inner>,
     global_lock: Mutex<CriticalSectionRawMutex, ()>,
 }
 
@@ -84,8 +84,8 @@ unsafe impl Sync for Manager {}
 impl Manager {
     fn new(
         _: &time::Manager,
-        screen_device: DeviceType,
-        input_device: DeviceType,
+        screen_device: Device,
+        input_device: Device,
         input_device_type: InputKind,
         buffer_size: usize,
         double_buffered: bool,
@@ -116,7 +116,7 @@ impl Manager {
         }
 
         Ok(Self {
-            inner: RwLock::new(InnerType {
+            inner: RwLock::new(Inner {
                 _inputs: vec![input],
                 _displays: vec![display],
 
@@ -157,10 +157,10 @@ impl Manager {
     pub async fn add_input_device(
         &self,
 
-        input_device: DeviceType,
+        input_device: Device,
         input_type: InputKind,
     ) -> Result<()> {
-        let input = InputType::new(input_device, input_type)?;
+        let input = Input::new(input_device, input_type)?;
 
         self.inner.write().await._inputs.push(input);
 
@@ -168,12 +168,12 @@ impl Manager {
     }
 
     fn create_display(
-        screen_device: DeviceType,
+        screen_device: Device,
         buffer_size: usize,
-        input_device: DeviceType,
+        input_device: Device,
         input_device_type: InputKind,
         double_buffered: bool,
-    ) -> Result<(DisplayType, InputType)> {
+    ) -> Result<(Display, Input)> {
         let mut screen_read_data = ScreenReadData::default();
 
         screen_device
@@ -182,9 +182,9 @@ impl Manager {
 
         let resolution: Point = screen_read_data.get_resolution();
 
-        let display = DisplayType::new(screen_device, resolution, buffer_size, double_buffered)?;
+        let display = Display::new(screen_device, resolution, buffer_size, double_buffered)?;
 
-        let input = InputType::new(input_device, input_device_type)?;
+        let input = Input::new(input_device, input_device_type)?;
 
         Ok((display, input))
     }

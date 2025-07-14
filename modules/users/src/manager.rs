@@ -21,29 +21,29 @@ pub fn get_instance() -> &'static Manager {
         .expect("User manager instance not initialized")
 }
 
-struct InternalUserType {
+struct InternalUser {
     pub name: String,
     pub primary_group: GroupIdentifier,
 }
 
-struct InternalGroupType {
+struct InternalGroup {
     pub name: String,
     pub users: BTreeSet<UserIdentifier>,
 }
 
-struct InternalManagerType {
-    pub users: BTreeMap<UserIdentifier, InternalUserType>,
-    pub groups: BTreeMap<GroupIdentifier, InternalGroupType>,
+struct InternalManager {
+    pub users: BTreeMap<UserIdentifier, InternalUser>,
+    pub groups: BTreeMap<GroupIdentifier, InternalGroup>,
 }
 
-pub struct Manager(RwLock<CriticalSectionRawMutex, InternalManagerType>);
+pub struct Manager(RwLock<CriticalSectionRawMutex, InternalManager>);
 
 impl Manager {
     fn new() -> Self {
         let mut groups = BTreeMap::new();
         groups.insert(
             GroupIdentifier::ROOT,
-            InternalGroupType {
+            InternalGroup {
                 name: "Root".to_string(),
                 users: BTreeSet::new(),
             },
@@ -52,13 +52,13 @@ impl Manager {
         let mut users = BTreeMap::new();
         users.insert(
             UserIdentifier::ROOT,
-            InternalUserType {
+            InternalUser {
                 name: "Root".to_string(),
                 primary_group: GroupIdentifier::ROOT,
             },
         );
 
-        Self(RwLock::new(InternalManagerType { users, groups }))
+        Self(RwLock::new(InternalManager { users, groups }))
     }
 
     pub async fn get_new_group_identifier(&self) -> Result<GroupIdentifier> {
@@ -112,7 +112,7 @@ impl Manager {
         }
 
         // - Add user to the users map
-        let user = InternalUserType {
+        let user = InternalUser {
             name: name.to_string(),
             primary_group,
         };
@@ -153,7 +153,7 @@ impl Manager {
             return Err(Error::DuplicateGroupName);
         }
 
-        let group = InternalGroupType {
+        let group = InternalGroup {
             name: name.to_string(),
             users: BTreeSet::from_iter(users.iter().cloned()),
         };

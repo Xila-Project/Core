@@ -1,7 +1,7 @@
 // Registration module - handles task registration and basic task data
 
 use super::*;
-use crate::manager::MetadataType;
+use crate::manager::Metadata;
 use alloc::vec::Vec;
 use smol_str::SmolStr;
 use users::{GroupIdentifier, UserIdentifier};
@@ -51,14 +51,14 @@ impl Manager {
 
         let name = SmolStr::new_inline(name);
 
-        let metadata = MetadataType {
+        let metadata = Metadata {
             internal_identifier: 0, // Will be set later
             name: name.clone(),
             parent: parent_task_identifier,
             user,
             group,
             environment_variables: parent_environment_variables,
-            signals: SignalAccumulatorType::new(),
+            signals: SignalAccumulator::new(),
             spawner_identifier: 0, // Will be set later
         };
 
@@ -88,7 +88,7 @@ impl Manager {
     /// Unregister task.
     ///
     /// If the task has children tasks, the root task adopts them.
-    pub(crate) async fn unregister(&self, identifier: TaskIdentifier) -> Result<MetadataType> {
+    pub(crate) async fn unregister(&self, identifier: TaskIdentifier) -> Result<Metadata> {
         let mut inner = self.0.write().await;
 
         // Root task adopts all children of the task

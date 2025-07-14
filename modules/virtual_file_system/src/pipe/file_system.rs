@@ -9,20 +9,20 @@ use file_system::{
     LocalFileIdentifier, Mode, Result, Size, Status, UniqueFileIdentifier,
 };
 
-use super::PipeType;
+use super::Pipe;
 
-type OpenPipesInnerType = (PipeType, Flags, Option<UniqueFileIdentifier>);
+type OpenPipesInner = (Pipe, Flags, Option<UniqueFileIdentifier>);
 
-struct InnerType {
-    pub named_pipes: BTreeMap<Inode, PipeType>,
-    pub open_pipes: BTreeMap<LocalFileIdentifier, OpenPipesInnerType>,
+struct Inner {
+    pub named_pipes: BTreeMap<Inode, Pipe>,
+    pub open_pipes: BTreeMap<LocalFileIdentifier, OpenPipesInner>,
 }
 
-pub struct FileSystem(RwLock<CriticalSectionRawMutex, InnerType>);
+pub struct FileSystem(RwLock<CriticalSectionRawMutex, Inner>);
 
 impl FileSystem {
     pub fn new() -> Self {
-        Self(RwLock::new(InnerType {
+        Self(RwLock::new(Inner {
             named_pipes: BTreeMap::new(),
             open_pipes: BTreeMap::new(),
         }))
@@ -51,7 +51,7 @@ impl FileSystem {
         let mut inner = self.0.write().await;
 
         // Create the pipe
-        let pipe = PipeType::new(buffer_size);
+        let pipe = Pipe::new(buffer_size);
 
         // - Create the read file
         let read_flags = Flags::new(Mode::READ_ONLY, None, Some(status));
@@ -83,10 +83,10 @@ impl FileSystem {
     }
 
     fn borrow_mutable_inner_2_splited(
-        inner: &mut InnerType,
+        inner: &mut Inner,
     ) -> (
-        &mut BTreeMap<Inode, PipeType>,
-        &mut BTreeMap<LocalFileIdentifier, OpenPipesInnerType>,
+        &mut BTreeMap<Inode, Pipe>,
+        &mut BTreeMap<LocalFileIdentifier, OpenPipesInner>,
     ) {
         (&mut inner.named_pipes, &mut inner.open_pipes)
     }
@@ -96,7 +96,7 @@ impl FileSystem {
 
         let inode = get_new_inode(&inner.named_pipes)?;
 
-        let pipe = PipeType::new(buffer_size);
+        let pipe = Pipe::new(buffer_size);
 
         if inner.named_pipes.insert(inode, pipe).is_some() {
             return Err(Error::InternalError); // Should never happen

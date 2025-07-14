@@ -5,15 +5,15 @@ use graphics::Input_data_type;
 
 use super::Inner;
 
-pub struct KeyboardDeviceType(Arc<Mutex<Inner>>);
+pub struct KeyboardDevice(Arc<Mutex<Inner>>);
 
-impl KeyboardDeviceType {
+impl KeyboardDevice {
     pub fn new(inner: Arc<Mutex<Inner>>) -> Self {
         Self(inner)
     }
 }
 
-impl DeviceTrait for KeyboardDeviceType {
+impl DeviceTrait for KeyboardDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
         // - Cast
         let data: &mut Input_data_type = buffer

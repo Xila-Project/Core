@@ -1,13 +1,13 @@
 use core::{ffi::c_void, mem::forget};
 
 use alloc::{boxed::Box, vec};
-use file_system::DeviceType;
+use file_system::Device;
 
 use super::{callbacks, littlefs};
 
 #[derive(Debug, Clone)]
-pub struct ConfigurationType {
-    context: DeviceType,
+pub struct Configuration {
+    context: Device,
     read_size: usize,
     program_size: usize,
     block_size: usize,
@@ -23,7 +23,7 @@ pub struct ConfigurationType {
     inline_maximum: Option<usize>,
 }
 
-impl ConfigurationType {
+impl Configuration {
     pub const DEFAULT_RAW: littlefs::lfs_config = littlefs::lfs_config {
         context: 0 as *mut c_void,
         read: None,
@@ -49,7 +49,7 @@ impl ConfigurationType {
     };
 
     pub fn new(
-        device: DeviceType,
+        device: Device,
         block_size: usize,
         total_size: usize,
         cache_size: usize,
@@ -144,10 +144,10 @@ impl ConfigurationType {
     }
 }
 
-impl TryFrom<ConfigurationType> for littlefs::lfs_config {
+impl TryFrom<Configuration> for littlefs::lfs_config {
     type Error = ();
 
-    fn try_from(configuration: ConfigurationType) -> Result<Self, Self::Error> {
+    fn try_from(configuration: Configuration) -> Result<Self, Self::Error> {
         let mut read_buffer = vec![0_u8; configuration.cache_size];
         let mut write_buffer = read_buffer.clone();
         let mut look_ahead_buffer = vec![0_u8; configuration.look_ahead_size];

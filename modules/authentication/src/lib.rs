@@ -81,7 +81,7 @@ const RANDOM_DEVICE_PATH: &str = "/devices/Random";
 pub async fn load_all_users_and_groups() -> Result<()> {
     use group::read_group_file;
     use user::read_user_file;
-    use virtual_file_system::DirectoryType;
+    use virtual_file_system::Directory;
     // Open Xila users folder.
     let virtual_file_system = virtual_file_system::get_instance();
 
@@ -90,7 +90,7 @@ pub async fn load_all_users_and_groups() -> Result<()> {
     let mut buffer: Vec<u8> = vec![];
 
     {
-        let groups_directory = DirectoryType::open(virtual_file_system, GROUP_FOLDER_PATH)
+        let groups_directory = Directory::open(virtual_file_system, GROUP_FOLDER_PATH)
             .await
             .map_err(Error::FailedToReadGroupDirectory)?;
 
@@ -113,7 +113,7 @@ pub async fn load_all_users_and_groups() -> Result<()> {
     }
 
     {
-        let users_directory = DirectoryType::open(virtual_file_system, USERS_FOLDER_PATH)
+        let users_directory = Directory::open(virtual_file_system, USERS_FOLDER_PATH)
             .await
             .map_err(Error::FailedToReadUsersDirectory)?;
 

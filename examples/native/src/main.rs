@@ -32,7 +32,7 @@ instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
 #[task::run(task_path = task, executor = instantiate_static_executor!())]
 async fn main() {
     // - Initialize the system
-    log::initialize(&drivers::standard_library::log::LoggerType).unwrap();
+    log::initialize(&drivers::standard_library::log::Logger).unwrap();
 
     // Initialize the task manager
     let task_manager = task::initialize();
@@ -42,7 +42,7 @@ async fn main() {
     // Initialize the users manager
     users::initialize();
     // Initialize the time manager
-    time::initialize(create_device!(drivers::native::TimeDriverType::new())).unwrap();
+    time::initialize(create_device!(drivers::native::TimeDriver::new())).unwrap();
 
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
@@ -73,9 +73,9 @@ async fn main() {
 
     // - Initialize the file system
     // Create a memory device
-    let drive = create_device!(
-        drivers::standard_library::drive_file::FileDriveDeviceType::new(&"./Drive.img")
-    );
+    let drive = create_device!(drivers::standard_library::drive_file::FileDriveDevice::new(
+        &"./Drive.img"
+    ));
 
     // Create a partition type
     let partition = create_device!(
@@ -127,15 +127,15 @@ async fn main() {
             ),
             (
                 &"/devices/Standard_out",
-                drivers::standard_library::console::StandardOutDeviceType
+                drivers::standard_library::console::StandardOutDevice
             ),
             (
                 &"/devices/Standard_error",
-                drivers::standard_library::console::StandardErrorDeviceType
+                drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/Time", drivers::native::TimeDriverType),
-            (&"/devices/Random", drivers::native::RandomDeviceType),
-            (&"/devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriver),
+            (&"/devices/Random", drivers::native::RandomDevice),
+            (&"/devices/Null", drivers::core::NullDevice)
         ]
     )
     .await
@@ -154,11 +154,11 @@ async fn main() {
         &[
             (
                 &"/binaries/Graphical_shell",
-                graphical_shell::ShellExecutableType
+                graphical_shell::ShellExecutable
             ),
             (
                 &"/binaries/File_manager",
-                file_manager::FileManagerExecutableType::new(virtual_file_system, task)
+                file_manager::FileManagerExecutable::new(virtual_file_system, task)
                     .await
                     .unwrap()
             ),
@@ -168,17 +168,17 @@ async fn main() {
             ),
             (
                 &"/binaries/Terminal",
-                terminal::TerminalExecutableType::new(virtual_file_system::get_instance(), task)
+                terminal::TerminalExecutable::new(virtual_file_system::get_instance(), task)
                     .await
                     .unwrap()
             ),
             (
                 &"/binaries/Settings",
-                settings::SettingsExecutableType::new(virtual_file_system, task)
+                settings::SettingsExecutable::new(virtual_file_system, task)
                     .await
                     .unwrap()
             ),
-            (&"/binaries/WASM", wasm::WasmDeviceType)
+            (&"/binaries/WASM", wasm::WasmDevice)
         ]
     )
     .await

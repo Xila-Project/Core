@@ -3,7 +3,7 @@ use core::fmt::Debug;
 /// POSIX signals enumeration
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
-pub enum SignalType {
+pub enum Signal {
     /// Hangup detected on controlling terminal or death of controlling process (SIGHUP)
     Hangup = 0,
     /// Interrupt from keyboard (SIGINT)
@@ -68,7 +68,7 @@ pub enum SignalType {
     BadSystemCall,
 }
 
-impl SignalType {
+impl Signal {
     pub const FIRST: Self = Self::Hangup;
     pub const LAST: Self = Self::BadSystemCall;
 
@@ -79,36 +79,36 @@ impl SignalType {
 
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
-pub struct SignalAccumulatorType {
+pub struct SignalAccumulator {
     accumulator: u32,
 }
 
-impl Default for SignalAccumulatorType {
+impl Default for SignalAccumulator {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl SignalAccumulatorType {
+impl SignalAccumulator {
     pub const fn new() -> Self {
         Self { accumulator: 0 }
     }
 
-    pub const fn send(&mut self, signal: SignalType) {
+    pub const fn send(&mut self, signal: Signal) {
         self.accumulator |= 1 << signal as u32;
     }
 
-    pub const fn clear(&mut self, signal: SignalType) {
+    pub const fn clear(&mut self, signal: Signal) {
         self.accumulator &= !(1 << signal as u32);
     }
 
-    pub const fn has_signal(&self, signal: SignalType) -> bool {
+    pub const fn has_signal(&self, signal: Signal) -> bool {
         self.accumulator & (1 << signal as u32) != 0
     }
 
-    pub fn peek(&self) -> Option<SignalType> {
-        for bit in SignalType::FIRST as u8..=SignalType::LAST as u8 {
-            let signal = unsafe { core::mem::transmute::<u8, SignalType>(bit) };
+    pub fn peek(&self) -> Option<Signal> {
+        for bit in Signal::FIRST as u8..=Signal::LAST as u8 {
+            let signal = unsafe { core::mem::transmute::<u8, Signal>(bit) };
 
             if self.has_signal(signal) {
                 return Some(signal);
@@ -118,7 +118,7 @@ impl SignalAccumulatorType {
         None
     }
 
-    pub fn pop(&mut self) -> Option<SignalType> {
+    pub fn pop(&mut self) -> Option<Signal> {
         if let Some(signal) = self.peek() {
             self.clear(signal);
 
@@ -135,36 +135,36 @@ mod tests {
 
     #[test]
     fn test_send_and_has_signal() {
-        let mut acc = SignalAccumulatorType::new();
-        acc.send(SignalType::Interrupt);
-        assert!(acc.has_signal(SignalType::Interrupt));
+        let mut acc = SignalAccumulator::new();
+        acc.send(Signal::Interrupt);
+        assert!(acc.has_signal(Signal::Interrupt));
     }
 
     #[test]
     fn test_clear_signal() {
-        let mut acc = SignalAccumulatorType::new();
-        acc.send(SignalType::Quit);
-        acc.clear(SignalType::Quit);
-        assert!(!acc.has_signal(SignalType::Quit));
+        let mut acc = SignalAccumulator::new();
+        acc.send(Signal::Quit);
+        acc.clear(Signal::Quit);
+        assert!(!acc.has_signal(Signal::Quit));
     }
 
     #[test]
     fn test_peek_and_pop() {
-        let mut acc = SignalAccumulatorType::new();
-        acc.send(SignalType::Hangup);
-        acc.send(SignalType::User1);
-        assert_eq!(acc.peek(), Some(SignalType::Hangup));
-        assert_eq!(acc.pop(), Some(SignalType::Hangup));
-        assert_eq!(acc.peek(), Some(SignalType::User1));
-        assert_eq!(acc.pop(), Some(SignalType::User1));
+        let mut acc = SignalAccumulator::new();
+        acc.send(Signal::Hangup);
+        acc.send(Signal::User1);
+        assert_eq!(acc.peek(), Some(Signal::Hangup));
+        assert_eq!(acc.pop(), Some(Signal::Hangup));
+        assert_eq!(acc.peek(), Some(Signal::User1));
+        assert_eq!(acc.pop(), Some(Signal::User1));
         assert_eq!(acc.pop(), None);
     }
 
     #[test]
     fn test_signal_discriminant() {
         assert_eq!(
-            SignalType::PowerFailure.get_discriminant(),
-            SignalType::PowerFailure as u8
+            Signal::PowerFailure.get_discriminant(),
+            Signal::PowerFailure as u8
         );
     }
 }

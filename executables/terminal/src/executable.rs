@@ -5,9 +5,9 @@ use file_system::{Flags, Mode, Open};
 use task::TaskIdentifier;
 use virtual_file_system::{File, VirtualFileSystem};
 
-pub struct TerminalExecutableType;
+pub struct TerminalExecutable;
 
-impl TerminalExecutableType {
+impl TerminalExecutable {
     pub async fn new<'a>(
         virtual_file_system: &'a VirtualFileSystem<'a>,
         task: TaskIdentifier,
@@ -39,7 +39,7 @@ impl TerminalExecutableType {
 }
 
 implement_executable_device!(
-    Structure: TerminalExecutableType,
+    Structure: TerminalExecutable,
     Mount_path: "/binaries/Terminal",
     Main_function: main,
 );

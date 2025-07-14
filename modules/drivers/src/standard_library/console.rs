@@ -35,9 +35,9 @@ impl DeviceTrait for StandardInDevice {
     }
 }
 
-pub struct StandardOutDeviceType;
+pub struct StandardOutDevice;
 
-impl DeviceTrait for StandardOutDeviceType {
+impl DeviceTrait for StandardOutDevice {
     fn read(&self, _: &mut [u8]) -> file_system::Result<Size> {
         Err(file_system::Error::UnsupportedOperation)
     }
@@ -63,9 +63,9 @@ impl DeviceTrait for StandardOutDeviceType {
     }
 }
 
-pub struct StandardErrorDeviceType;
+pub struct StandardErrorDevice;
 
-impl DeviceTrait for StandardErrorDeviceType {
+impl DeviceTrait for StandardErrorDevice {
     fn read(&self, _: &mut [u8]) -> file_system::Result<Size> {
         Err(file_system::Error::UnsupportedOperation)
     }

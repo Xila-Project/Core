@@ -11,7 +11,3 @@ strip = true
 lto = true
 
 [dependencies]
-
-[feature]
-default = []
-Execution_in_place = []

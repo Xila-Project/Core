@@ -2,9 +2,9 @@ use core::fmt;
 
 use log::LoggerTrait;
 
-pub struct LoggerType;
+pub struct Logger;
 
-impl LoggerTrait for LoggerType {
+impl LoggerTrait for Logger {
     fn enabled(&self, level: log::Level) -> bool {
         match level {
             log::Level::Error => true,
@@ -25,7 +25,7 @@ mod tests {
     use super::*;
     use log;
 
-    static LOGGER: LoggerType = LoggerType;
+    static LOGGER: Logger = Logger;
 
     #[test]
     fn test_write() {

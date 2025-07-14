@@ -164,7 +164,7 @@ int os_mutex_unlock(korp_mutex *mutex)
  **************************************************/
 
 
-XilaMemoryCapabilities To_xila_memory_capability(int prot)
+XilaMemoryCapabilities to_xila_memory_capability(int prot)
 {
     XilaMemoryCapabilities xila_protection = 0;
 
@@ -177,7 +177,7 @@ XilaMemoryCapabilities To_xila_memory_capability(int prot)
 
 void *os_mmap(void *hint, size_t size, int prot, int flags, os_file_handle file)
 {
-    XilaMemoryCapabilities xila_protection = To_xila_memory_capability(prot);
+    XilaMemoryCapabilities xila_protection = to_xila_memory_capability(prot);
 
     //xila_memory_flags_type xila_flags = To_xila_memory_flags(flags);
 

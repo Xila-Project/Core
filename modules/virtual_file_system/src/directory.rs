@@ -6,13 +6,13 @@ use task::TaskIdentifier;
 
 use crate::VirtualFileSystem;
 
-pub struct DirectoryType<'a> {
+pub struct Directory<'a> {
     directory_identifier: UniqueFileIdentifier,
     virtual_file_system: &'a VirtualFileSystem<'a>,
     task: TaskIdentifier,
 }
 
-impl Debug for DirectoryType<'_> {
+impl Debug for Directory<'_> {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Directory_type")
@@ -25,7 +25,7 @@ impl Debug for DirectoryType<'_> {
     }
 }
 
-impl DirectoryType<'_> {
+impl Directory<'_> {
     pub async fn create<'a>(
         virtual_file_system: &'a VirtualFileSystem<'a>,
         path: impl AsRef<Path>,
@@ -38,12 +38,12 @@ impl DirectoryType<'_> {
     pub async fn open<'a>(
         virtual_file_system: &'a VirtualFileSystem<'a>,
         path: impl AsRef<Path>,
-    ) -> Result<DirectoryType<'a>> {
+    ) -> Result<Directory<'a>> {
         let task = task::get_instance().get_current_task_identifier().await;
 
         let directory_identifier = virtual_file_system.open_directory(&path, task).await?;
 
-        Ok(DirectoryType {
+        Ok(Directory {
             directory_identifier,
             virtual_file_system,
             task,
@@ -57,7 +57,7 @@ impl DirectoryType<'_> {
     }
 }
 
-impl Drop for DirectoryType<'_> {
+impl Drop for Directory<'_> {
     fn drop(&mut self) {
         block_on(
             self.virtual_file_system
@@ -67,7 +67,7 @@ impl Drop for DirectoryType<'_> {
     }
 }
 
-impl Iterator for DirectoryType<'_> {
+impl Iterator for Directory<'_> {
     type Item = Entry;
 
     fn next(&mut self) -> Option<Self::Item> {

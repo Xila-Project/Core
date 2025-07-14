@@ -2,7 +2,7 @@
 name = "host_bindings"
 version = "0.1.0"
 edition = "2021"
-build = "Build/main.rs"
+build = "build/main.rs"
 
 [dependencies]
 file_system = { path = "../../file_system" }
