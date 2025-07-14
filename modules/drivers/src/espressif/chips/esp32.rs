@@ -1,4 +1,4 @@
-use file_system::{Path_type, VirtualFileSystemType};
+use file_system::{Path_type, VirtualFileSystem};
 
 use crate::Enumerate_pin_devices;
 
@@ -14,6 +14,6 @@ const Pin_devices: [(u8, &Path_type); 34] = Enumerate_pin_devices!(
     32, 33, 34, 35, 36, 37, 38, 39
 );
 
-pub fn Mount_pin_devices(Virtual_file_system: &'static VirtualFileSystemType) -> Result<()> {
+pub fn Mount_pin_devices(Virtual_file_system: &'static VirtualFileSystem) -> Result<()> {
     Shared::Mount_pin_devices(Virtual_file_system, &Pin_devices)
 }

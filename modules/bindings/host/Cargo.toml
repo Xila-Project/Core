@@ -35,4 +35,4 @@ proc-macro2 = "1.0"
 
 [[test]]
 name = "graphics_bindings_tests"
-path = "Tests/graphics.rs"
+path = "tests/graphics.rs"

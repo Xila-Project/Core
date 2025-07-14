@@ -3,7 +3,7 @@ use alloc::string::String;
 use file_system::{FileIdentifier, Mode, Path, Size, UniqueFileIdentifier};
 use futures::block_on;
 use task::TaskIdentifier;
-use virtual_file_system::VirtualFileSystemType;
+use virtual_file_system::VirtualFileSystem;
 
 use crate::Result;
 
@@ -12,7 +12,7 @@ pub struct Standard {
     standard_out: UniqueFileIdentifier,
     standard_error: UniqueFileIdentifier,
     task: TaskIdentifier,
-    virtual_file_system: &'static VirtualFileSystemType<'static>,
+    virtual_file_system: &'static VirtualFileSystem<'static>,
 }
 
 impl Drop for Standard {
@@ -34,7 +34,7 @@ impl Standard {
         standard_out: &impl AsRef<Path>,
         standard_error: &impl AsRef<Path>,
         task: TaskIdentifier,
-        virtual_file_system: &'static VirtualFileSystemType<'static>,
+        virtual_file_system: &'static VirtualFileSystem<'static>,
     ) -> Result<Self> {
         let standard_in = virtual_file_system
             .open(standard_in, Mode::READ_ONLY.into(), task)
@@ -62,7 +62,7 @@ impl Standard {
         standard_out: UniqueFileIdentifier,
         standard_error: UniqueFileIdentifier,
         task: TaskIdentifier,
-        virtual_file_system: &'static VirtualFileSystemType,
+        virtual_file_system: &'static VirtualFileSystem,
     ) -> Self {
         Self {
             standard_in,

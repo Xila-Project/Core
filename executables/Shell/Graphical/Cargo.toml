@@ -1,0 +1,27 @@
+[package]
+name = "graphical_shell"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+graphics = { path = "../../../modules/graphics" }
+file_system = { path = "../../../modules/file_system" }
+virtual_file_system = { path = "../../../modules/virtual_file_system" }
+executable = { path = "../../../modules/executable" }
+task = { path = "../../../modules/task" }
+users = { path = "../../../modules/users" }
+shared = { path = "../../../modules/shared" }
+time = { path = "../../../modules/time" }
+authentication = { path = "../../../modules/authentication" }
+miniserde = "0.1"
+futures = { version = "0.1.0", path = "../../../modules/futures" }
+log = { version = "0.1.0", path = "../../../modules/log" }
+
+[dev-dependencies]
+drivers = { path = "../../../modules/drivers" }
+time = { path = "../../../modules/time" }
+little_fs = { path = "../../../modules/little_fs" }
+
+[[test]]
+name = "integration_test"
+path = "tests/integration_test.rs"

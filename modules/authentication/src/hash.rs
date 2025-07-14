@@ -9,7 +9,7 @@
 //!
 //! - **SHA-512 Hashing**: Uses the SHA-512 cryptographic hash function
 //! - **Random Salt Generation**: Each password gets a unique 16-byte salt
-//! - **Salt Source**: Uses the system's `/Devices/Random` device for entropy
+//! - **Salt Source**: Uses the system's `/devices/Random` device for entropy
 //! - **No Plain Text Storage**: Passwords are only stored as hash+salt combinations
 
 use alloc::{

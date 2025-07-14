@@ -3,16 +3,16 @@
 extern crate alloc;
 
 use alloc::fmt;
-use log::Log;
-use log::Metadata;
-pub use log::Record;
-pub use log::debug as Debug;
-pub use log::error as Error;
-pub use log::info as Information;
-use log::set_logger;
-use log::set_max_level;
-pub use log::trace as Trace;
-pub use log::warn as Warning;
+use log_external::Log;
+use log_external::Metadata;
+pub use log_external::Record;
+pub use log_external::debug as Debug;
+pub use log_external::error as Error;
+pub use log_external::info as Information;
+use log_external::set_logger;
+use log_external::set_max_level;
+pub use log_external::trace as Trace;
+pub use log_external::warn as Warning;
 use synchronization::once_lock::OnceLock;
 
 const BOLD: &str = "\x1b[0;1m";
@@ -32,14 +32,14 @@ pub enum Level {
     Trace,
 }
 
-impl From<log::Level> for Level {
-    fn from(level: log::Level) -> Self {
+impl From<log_external::Level> for Level {
+    fn from(level: log_external::Level) -> Self {
         match level {
-            log::Level::Error => Level::Error,
-            log::Level::Warn => Level::Warn,
-            log::Level::Info => Level::Info,
-            log::Level::Debug => Level::Debug,
-            log::Level::Trace => Level::Trace,
+            log_external::Level::Error => Level::Error,
+            log_external::Level::Warn => Level::Warn,
+            log_external::Level::Info => Level::Info,
+            log_external::Level::Debug => Level::Debug,
+            log_external::Level::Trace => Level::Trace,
         }
     }
 }
@@ -51,19 +51,19 @@ pub trait LoggerTrait: Send + Sync {
 
     fn log(&self, record: &Record) {
         let letter = match record.level() {
-            log::Level::Error => "E",
-            log::Level::Warn => "W",
-            log::Level::Info => "I",
-            log::Level::Debug => "D",
-            log::Level::Trace => "T",
+            log_external::Level::Error => "E",
+            log_external::Level::Warn => "W",
+            log_external::Level::Info => "I",
+            log_external::Level::Debug => "D",
+            log_external::Level::Trace => "T",
         };
 
         let color = match record.level() {
-            log::Level::Error => RED,
-            log::Level::Warn => YELLOW,
-            log::Level::Info => BLUE,
-            log::Level::Debug => GREEN,
-            log::Level::Trace => GREY,
+            log_external::Level::Error => RED,
+            log_external::Level::Warn => YELLOW,
+            log_external::Level::Info => BLUE,
+            log_external::Level::Debug => GREEN,
+            log_external::Level::Trace => GREY,
         };
 
         self.write(format_args!(
@@ -104,11 +104,11 @@ impl Log for LoggerType {
 
 static LOGGER_INSTANCE: OnceLock<LoggerType> = OnceLock::new();
 
-pub fn initialize(logger: &'static dyn LoggerTrait) -> Result<(), log::SetLoggerError> {
+pub fn initialize(logger: &'static dyn LoggerTrait) -> Result<(), log_external::SetLoggerError> {
     let logger = LOGGER_INSTANCE.get_or_init(|| LoggerType(logger));
 
     set_logger(logger).expect("Failed to set logger");
-    set_max_level(log::LevelFilter::Trace);
+    set_max_level(log_external::LevelFilter::Trace);
     Ok(())
 }
 
@@ -121,31 +121,31 @@ pub fn test_write(logger: &impl LoggerTrait) {
 pub fn test_log(logger: &impl LoggerTrait) {
     logger.log(
         &Record::builder()
-            .level(log::Level::Info)
+            .level(log_external::Level::Info)
             .args(format_args!("This is a test log message."))
             .build(),
     );
     logger.log(
         &Record::builder()
-            .level(log::Level::Warn)
+            .level(log_external::Level::Warn)
             .args(format_args!("This is a test warning message."))
             .build(),
     );
     logger.log(
         &Record::builder()
-            .level(log::Level::Error)
+            .level(log_external::Level::Error)
             .args(format_args!("This is a test error message."))
             .build(),
     );
     logger.log(
         &Record::builder()
-            .level(log::Level::Debug)
+            .level(log_external::Level::Debug)
             .args(format_args!("This is a test debug message."))
             .build(),
     );
     logger.log(
         &Record::builder()
-            .level(log::Level::Trace)
+            .level(log_external::Level::Trace)
             .args(format_args!("This is a test trace message."))
             .build(),
     );

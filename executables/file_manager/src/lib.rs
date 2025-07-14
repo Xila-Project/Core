@@ -11,14 +11,14 @@ pub use error::*;
 pub use file_manager::*;
 use file_system::{Flags, Mode, Open};
 use task::TaskIdentifier;
-use virtual_file_system::{File, VirtualFileSystemType};
+use virtual_file_system::{File, VirtualFileSystem};
 
 use executable::Standard;
 
 pub const SHORTCUT: &str = r#"
 {
     "name": "File manager",
-    "command": "/Binaries/File_manager",
+    "command": "/binaries/File_manager",
     "arguments": "",
     "terminal": false,
     "icon_string": "Fm",
@@ -29,7 +29,7 @@ pub struct FileManagerExecutableType;
 
 impl FileManagerExecutableType {
     pub async fn new<'a>(
-        virtual_file_system: &'a VirtualFileSystemType<'a>,
+        virtual_file_system: &'a VirtualFileSystem<'a>,
         task: TaskIdentifier,
     ) -> core::result::Result<Self, String> {
         let _ = virtual_file_system
@@ -60,7 +60,7 @@ impl FileManagerExecutableType {
 
 executable::implement_executable_device!(
     Structure: FileManagerExecutableType,
-    Mount_path: "/Binaries/File_manager",
+    Mount_path: "/binaries/File_manager",
     Main_function: main,
 );
 

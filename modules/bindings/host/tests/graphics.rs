@@ -1,16 +1,16 @@
 extern crate alloc;
 
 use drivers::native::TimeDriverType;
-use file_system::{create_device, Create_file_system, MemoryDeviceType};
+use file_system::{create_device, create_file_system, MemoryDevice};
 use graphics::lvgl;
-use memory::Instantiate_global_allocator;
+use memory::instantiate_global_allocator;
 use task::test;
 use time::Duration;
 use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
 
-Instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
+instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
 
-#[task::Run(executor = drivers::standard_library::executor::instantiate_static_executor!())]
+#[task::run(executor = drivers::standard_library::executor::instantiate_static_executor!())]
 async fn run_graphics() {
     graphics::get_instance()
         .r#loop(task::Manager::sleep)
@@ -24,9 +24,9 @@ async fn i() {
     // - Initialize the system
     log::initialize(&drivers::standard_library::log::LoggerType).unwrap();
 
-    let binary_buffer = include_bytes!("./WASM_test/target/wasm32-wasip1/release/WASM_test.wasm");
+    let binary_buffer = include_bytes!("./wasm_test/target/wasm32-wasip1/release/WASM_test.wasm");
 
-    users::Initialize();
+    users::initialize();
 
     let task_instance = task::initialize();
 
@@ -35,11 +35,11 @@ async fn i() {
     time::initialize(create_device!(TimeDriverType::new()))
         .expect("Error initializing time manager");
 
-    let memory_device = create_device!(MemoryDeviceType::<512>::new(1024 * 512));
+    let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
     little_fs::FileSystem::format(memory_device.clone(), 512).unwrap();
 
     let virtual_file_system = virtual_file_system::initialize(
-        Create_file_system!(little_fs::FileSystemType::new(memory_device, 256).unwrap()),
+        create_file_system!(little_fs::FileSystem::new(memory_device, 256).unwrap()),
         None,
     )
     .unwrap();
@@ -53,20 +53,20 @@ async fn i() {
         task,
         &[
             (
-                &"/Devices/Standard_in",
+                &"/devices/Standard_in",
                 drivers::standard_library::console::StandardInDevice
             ),
             (
-                &"/Devices/Standard_out",
+                &"/devices/Standard_out",
                 drivers::standard_library::console::StandardOutDeviceType
             ),
             (
-                &"/Devices/Standard_error",
+                &"/devices/Standard_error",
                 drivers::standard_library::console::StandardErrorDeviceType
             ),
-            (&"/Devices/Time", drivers::native::TimeDriverType),
-            (&"/Devices/Random", drivers::native::RandomDeviceType),
-            (&"/Devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriverType),
+            (&"/devices/Random", drivers::native::RandomDeviceType),
+            (&"/devices/Null", drivers::core::NullDeviceType)
         ]
     )
     .await
@@ -105,7 +105,7 @@ async fn i() {
 
     let standard_in = virtual_file_system
         .open(
-            &"/Devices/Standard_in",
+            &"/devices/Standard_in",
             file_system::Mode::READ_ONLY.into(),
             task,
         )
@@ -114,7 +114,7 @@ async fn i() {
 
     let standard_out = virtual_file_system
         .open(
-            &"/Devices/Standard_out",
+            &"/devices/Standard_out",
             file_system::Mode::WRITE_ONLY.into(),
             task,
         )
@@ -123,7 +123,7 @@ async fn i() {
 
     let standard_error = virtual_file_system
         .open(
-            &"/Devices/Standard_out",
+            &"/devices/Standard_out",
             file_system::Mode::WRITE_ONLY.into(),
             task,
         )

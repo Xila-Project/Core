@@ -1,5 +1,3 @@
-//#![no_std]
-
 extern crate alloc;
 
 use alloc::vec;
@@ -7,20 +5,20 @@ use alloc::vec;
 use wamr_rust_sdk::{function::Function, value::WasmValue, RuntimeError};
 
 use drivers::standard_library::memory::MemoryManager;
-use file_system::{create_device, Create_file_system, MemoryDeviceType};
+use file_system::{create_device, create_file_system, MemoryDevice};
 use log::Information;
-use memory::Instantiate_global_allocator;
+use memory::instantiate_global_allocator;
 use task::test;
 use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
 use virtual_machine::{
     Environment, FunctionDescriptor, Function_descriptors, Instance, Module, Registrable, Runtime,
 };
 
-Instantiate_global_allocator!(MemoryManager);
+instantiate_global_allocator!(MemoryManager);
 
-pub struct Registrable;
+pub struct WasmTest;
 
-impl Registrable for Registrable {
+impl Registrable for WasmTest {
     fn get_functions(&self) -> &[FunctionDescriptor] {
         &FUNCTIONS
     }
@@ -47,10 +45,10 @@ async fn integration_test() {
     time::initialize(create_device!(drivers::native::TimeDriverType::new()))
         .expect("Failed to initialize time manager");
 
-    let device = create_device!(MemoryDeviceType::<512>::new(1024 * 512));
+    let device = create_device!(MemoryDevice::<512>::new(1024 * 512));
 
     little_fs::FileSystem::format(device.clone(), 512).unwrap();
-    let file_system = Create_file_system!(little_fs::FileSystemType::new(device, 256).unwrap());
+    let file_system = create_file_system!(little_fs::FileSystem::new(device, 256).unwrap());
 
     let virtual_file_system = virtual_file_system::initialize(file_system, None).unwrap();
 
@@ -66,20 +64,20 @@ async fn integration_test() {
         task,
         &[
             (
-                &"/Devices/Standard_in",
+                &"/devices/Standard_in",
                 drivers::standard_library::console::StandardInDevice
             ),
             (
-                &"/Devices/Standard_out",
+                &"/devices/Standard_out",
                 drivers::standard_library::console::StandardOutDeviceType
             ),
             (
-                &"/Devices/Standard_error",
+                &"/devices/Standard_error",
                 drivers::standard_library::console::StandardErrorDeviceType
             ),
-            (&"/Devices/Time", drivers::native::TimeDriverType),
-            (&"/Devices/Random", drivers::native::RandomDeviceType),
-            (&"/Devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriverType),
+            (&"/devices/Random", drivers::native::RandomDeviceType),
+            (&"/devices/Null", drivers::core::NullDeviceType)
         ]
     )
     .await
@@ -96,7 +94,7 @@ async fn integration_test() {
 
     let standard_in = virtual_file_system
         .open(
-            &"/Devices/Standard_in",
+            &"/devices/Standard_in",
             file_system::Mode::READ_ONLY.into(),
             task,
         )
@@ -104,7 +102,7 @@ async fn integration_test() {
         .expect("Failed to open stdin");
     let standard_out = virtual_file_system
         .open(
-            &"/Devices/Standard_out",
+            &"/devices/Standard_out",
             file_system::Mode::WRITE_ONLY.into(),
             task,
         )
@@ -112,7 +110,7 @@ async fn integration_test() {
         .expect("Failed to open stdout");
     let standard_error = virtual_file_system
         .open(
-            &"/Devices/Standard_error",
+            &"/devices/Standard_error",
             file_system::Mode::WRITE_ONLY.into(),
             task,
         )
@@ -128,7 +126,7 @@ async fn integration_test() {
         .call_abi(async || {
             // Register the functions
 
-            let runtime = Runtime::builder().register(&Registrable).build().unwrap();
+            let runtime = Runtime::builder().register(&WasmTest).build().unwrap();
 
             let module = Module::from_buffer(
                 &runtime,

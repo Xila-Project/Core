@@ -14,12 +14,12 @@ pub use error::*;
 use file_system::{Flags, Mode, Open};
 pub use settings::*;
 use task::TaskIdentifier;
-use virtual_file_system::{File, VirtualFileSystemType};
+use virtual_file_system::{File, VirtualFileSystem};
 
 pub const SHORTCUT: &str = r#"
 {
     "name": "Settings",
-    "command": "/Binaries/Settings",
+    "command": "/binaries/Settings",
     "arguments": "",
     "terminal": false,
     "icon_string": "Se",
@@ -30,7 +30,7 @@ pub struct SettingsExecutableType;
 
 impl SettingsExecutableType {
     pub async fn new<'a>(
-        virtual_file_system: &'a VirtualFileSystemType<'a>,
+        virtual_file_system: &'a VirtualFileSystem<'a>,
         task: TaskIdentifier,
     ) -> core::result::Result<Self, String> {
         let _ = virtual_file_system
@@ -61,7 +61,7 @@ impl SettingsExecutableType {
 
 executable::implement_executable_device!(
     Structure: SettingsExecutableType,
-    Mount_path: "/Binaries/Settings",
+    Mount_path: "/binaries/Settings",
     Main_function: main,
 );
 

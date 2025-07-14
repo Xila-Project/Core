@@ -38,7 +38,7 @@ pub struct ShellExecutableType;
 
 executable::implement_executable_device!(
     Structure: ShellExecutableType,
-    Mount_path: "/Binaries/Graphical_shell",
+    Mount_path: "/binaries/Graphical_shell",
     Main_function: main,
 );
 

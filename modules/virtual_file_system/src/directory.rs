@@ -4,11 +4,11 @@ use file_system::{Entry, Path, Result, UniqueFileIdentifier};
 use futures::block_on;
 use task::TaskIdentifier;
 
-use crate::VirtualFileSystemType;
+use crate::VirtualFileSystem;
 
 pub struct DirectoryType<'a> {
     directory_identifier: UniqueFileIdentifier,
-    virtual_file_system: &'a VirtualFileSystemType<'a>,
+    virtual_file_system: &'a VirtualFileSystem<'a>,
     task: TaskIdentifier,
 }
 
@@ -27,7 +27,7 @@ impl Debug for DirectoryType<'_> {
 
 impl DirectoryType<'_> {
     pub async fn create<'a>(
-        virtual_file_system: &'a VirtualFileSystemType<'a>,
+        virtual_file_system: &'a VirtualFileSystem<'a>,
         path: impl AsRef<Path>,
     ) -> Result<()> {
         let task = task::get_instance().get_current_task_identifier().await;
@@ -36,7 +36,7 @@ impl DirectoryType<'_> {
     }
 
     pub async fn open<'a>(
-        virtual_file_system: &'a VirtualFileSystemType<'a>,
+        virtual_file_system: &'a VirtualFileSystem<'a>,
         path: impl AsRef<Path>,
     ) -> Result<DirectoryType<'a>> {
         let task = task::get_instance().get_current_task_identifier().await;

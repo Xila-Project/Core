@@ -25,9 +25,9 @@ struct InnerType<'a> {
 
 type DeviceInnerType<'a> = (InternalPathType<'a>, DeviceType);
 
-pub struct FileSystemType<'a>(RwLock<CriticalSectionRawMutex, InnerType<'a>>);
+pub struct FileSystem<'a>(RwLock<CriticalSectionRawMutex, InnerType<'a>>);
 
-impl<'a> FileSystemType<'a> {
+impl<'a> FileSystem<'a> {
     pub fn new() -> Self {
         Self(RwLock::new(InnerType {
             devices: BTreeMap::new(),
@@ -403,7 +403,7 @@ mod tests {
     use alloc::vec;
     use file_system::{create_device, Position};
 
-    use file_system::MemoryDeviceType;
+    use file_system::MemoryDevice;
     use task::test;
 
     use super::*;
@@ -413,9 +413,9 @@ mod tests {
 
     #[test]
     async fn test_mount_device() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
 
-        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDevice::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -428,9 +428,9 @@ mod tests {
 
     #[test]
     async fn test_open_close_device() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
 
-        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDevice::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -452,9 +452,9 @@ mod tests {
 
     #[test]
     async fn test_read_write_device() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
 
-        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDevice::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -485,9 +485,9 @@ mod tests {
 
     #[test]
     async fn test_duplicate_file_identifier() {
-        let file_system = FileSystemType::new();
+        let file_system = FileSystem::new();
 
-        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDevice::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -525,9 +525,9 @@ mod tests {
 
     #[test]
     async fn test_transfert_file_identifier() {
-        let file_system = FileSystemType::new();
+        let file_system = FileSystem::new();
 
-        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDevice::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -557,9 +557,9 @@ mod tests {
 
     #[test]
     async fn test_delete_device() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
 
-        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDevice::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -572,9 +572,9 @@ mod tests {
 
     #[test]
     async fn test_set_position() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
 
-        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDevice::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -599,9 +599,9 @@ mod tests {
 
     #[test]
     async fn test_flush() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
 
-        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDevice::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 
@@ -624,9 +624,9 @@ mod tests {
 
     #[test]
     async fn test_get_mode() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
 
-        let memory_device = create_device!(MemoryDeviceType::<MEMORY_DEVICE_BLOCK_SIZE>::new(
+        let memory_device = create_device!(MemoryDevice::<MEMORY_DEVICE_BLOCK_SIZE>::new(
             MEMORY_DEVICE_SIZE
         ));
 

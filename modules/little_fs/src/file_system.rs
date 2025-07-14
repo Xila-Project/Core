@@ -583,9 +583,10 @@ impl FileSystemTraits for FileSystem {
 
 #[cfg(test)]
 mod tests {
+    extern crate std;
 
     use alloc::sync::Arc;
-    use file_system::{create_device, MemoryDeviceType};
+    use file_system::{create_device, MemoryDevice};
     use task::test;
 
     use super::*;
@@ -597,9 +598,9 @@ mod tests {
 
         task::initialize();
 
-        let _ = time::initialize(create_device!(drivers::native::Time_driver_type::new()));
+        let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
 
-        let mock_device = MemoryDeviceType::<512>::new(2048 * 512);
+        let mock_device = MemoryDevice::<512>::new(2048 * 512);
 
         let device = DeviceType::new(Arc::new(mock_device));
 

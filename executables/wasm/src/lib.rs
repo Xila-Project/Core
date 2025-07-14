@@ -26,7 +26,7 @@ pub struct WasmDeviceType;
 
 implement_executable_device!(
     Structure: WasmDeviceType,
-    Mount_path: "/Binaries/WASM",
+    Mount_path: "/binaries/WASM",
     Main_function: main,
 );
 

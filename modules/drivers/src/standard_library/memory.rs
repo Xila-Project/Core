@@ -246,9 +246,9 @@ mod tests {
     use super::*;
 
     use core::ptr::NonNull;
-    use memory::Instantiate_global_allocator;
+    use memory::instantiate_global_allocator;
 
-    Instantiate_global_allocator!(MemoryManager);
+    instantiate_global_allocator!(MemoryManager);
 
     #[test]
     fn test_global_allocator() {

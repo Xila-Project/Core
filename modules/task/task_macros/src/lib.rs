@@ -115,14 +115,14 @@ pub fn test(arguments: TokenStream, input: TokenStream) -> TokenStream {
                 let __EXECUTOR = #executor;
 
                 __EXECUTOR.run(|Spawner, __executor| {
-                    let Manager = #task_path::initialize();
+                    let manager = #task_path::initialize();
 
                     unsafe {
-                        __SPAWNER = Manager.register_spawner(Spawner).expect("Failed to register spawner");
+                        __SPAWNER = manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
                     #task_path::futures::block_on(async move {
-                        Manager.spawn(
+                        manager.spawn(
                             #task_path::Manager::ROOT_TASK_IDENTIFIER,
                             #function_name_string,
                             Some(__SPAWNER),
@@ -247,14 +247,14 @@ pub fn run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                 let __EXECUTOR : &'static mut _ = #Executor_expression;
 
                 __EXECUTOR.run(|Spawner, __EXECUTOR| {
-                    let Manager = #Task_path::initialize();
+                    let manager = #Task_path::initialize();
 
                     unsafe {
-                        __SPAWNER = Manager.register_spawner(Spawner).expect("Failed to register spawner");
+                        __SPAWNER = manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
                     #Task_path::futures::block_on(async move {
-                        Manager.spawn(
+                        manager.spawn(
                             #Task_path::Manager::ROOT_TASK_IDENTIFIER,
                             #Function_name_string,
                             Some(__SPAWNER),

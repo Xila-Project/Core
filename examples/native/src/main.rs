@@ -11,13 +11,13 @@ use xila::executable::mount_static_executables;
 use xila::file_system;
 use xila::file_system::Mbr;
 use xila::file_system::PartitionKind;
-use xila::file_system::{Create_file_system, create_device};
+use xila::file_system::{create_device, create_file_system};
 use xila::graphics;
 use xila::host_bindings;
 use xila::little_fs;
 use xila::log;
 use xila::log::Information;
-use xila::memory::Instantiate_global_allocator;
+use xila::memory::instantiate_global_allocator;
 use xila::task;
 use xila::time;
 use xila::users;
@@ -27,7 +27,7 @@ use xila::virtual_machine;
 
 use alloc::string::String;
 
-Instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
+instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
 
 #[task::run(task_path = task, executor = instantiate_static_executor!())]
 async fn main() {
@@ -103,7 +103,7 @@ async fn main() {
         }
     };
     // Initialize the virtual file system
-    virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
+    virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
 
     // - - Mount the devices
 
@@ -122,20 +122,20 @@ async fn main() {
         task,
         &[
             (
-                &"/Devices/Standard_in",
+                &"/devices/Standard_in",
                 drivers::standard_library::console::StandardInDevice
             ),
             (
-                &"/Devices/Standard_out",
+                &"/devices/Standard_out",
                 drivers::standard_library::console::StandardOutDeviceType
             ),
             (
-                &"/Devices/Standard_error",
+                &"/devices/Standard_error",
                 drivers::standard_library::console::StandardErrorDeviceType
             ),
-            (&"/Devices/Time", drivers::native::TimeDriverType),
-            (&"/Devices/Random", drivers::native::RandomDeviceType),
-            (&"/Devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriverType),
+            (&"/devices/Random", drivers::native::RandomDeviceType),
+            (&"/devices/Null", drivers::core::NullDeviceType)
         ]
     )
     .await
@@ -153,32 +153,32 @@ async fn main() {
         task,
         &[
             (
-                &"/Binaries/Graphical_shell",
+                &"/binaries/Graphical_shell",
                 graphical_shell::ShellExecutableType
             ),
             (
-                &"/Binaries/File_manager",
+                &"/binaries/File_manager",
                 file_manager::FileManagerExecutableType::new(virtual_file_system, task)
                     .await
                     .unwrap()
             ),
             (
-                &"/Binaries/Command_line_shell",
+                &"/binaries/Command_line_shell",
                 command_line_shell::ShellExecutable
             ),
             (
-                &"/Binaries/Terminal",
+                &"/binaries/Terminal",
                 terminal::TerminalExecutableType::new(virtual_file_system::get_instance(), task)
                     .await
                     .unwrap()
             ),
             (
-                &"/Binaries/Settings",
+                &"/binaries/Settings",
                 settings::SettingsExecutableType::new(virtual_file_system, task)
                     .await
                     .unwrap()
             ),
-            (&"/Binaries/WASM", wasm::WasmDeviceType)
+            (&"/binaries/WASM", wasm::WasmDeviceType)
         ]
     )
     .await
@@ -187,9 +187,9 @@ async fn main() {
     // - Execute the shell
     // - - Open the standard input, output and error
     let standard = Standard::open(
-        &"/Devices/Standard_in",
-        &"/Devices/Standard_out",
-        &"/Devices/Standard_error",
+        &"/devices/Standard_in",
+        &"/devices/Standard_out",
+        &"/devices/Standard_error",
         task,
         virtual_file_system::get_instance(),
     )
@@ -226,7 +226,7 @@ async fn main() {
         .await
         .unwrap();
     // - - Execute the shell
-    let _ = executable::execute("/Binaries/Graphical_shell", String::from(""), standard)
+    let _ = executable::execute("/binaries/Graphical_shell", String::from(""), standard)
         .await
         .unwrap()
         .join()

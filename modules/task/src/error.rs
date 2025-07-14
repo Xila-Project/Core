@@ -55,7 +55,7 @@ mod tests {
     fn test_error_type_debug() {
         let error = Error::InvalidSpawnerIdentifier;
         let debug_string = format!("{error:?}");
-        assert_eq!(debug_string, "Invalid_spawner_identifier");
+        assert_eq!(debug_string, "InvalidSpawnerIdentifier");
 
         let error = Error::ThreadNotRegistered;
         let debug_string = format!("{error:?}");
@@ -220,6 +220,6 @@ mod tests {
         assert_eq!(format!("{task_error}"), "InvalidTaskIdentifier");
 
         let spawner_error = Error::InvalidSpawnerIdentifier;
-        assert_eq!(format!("{spawner_error}"), "Invalid_spawner_identifier");
+        assert_eq!(format!("{spawner_error}"), "InvalidSpawnerIdentifier");
     }
 }
