@@ -1,9 +1,7 @@
-#![no_std]
-
 extern crate alloc;
 
 use executable::Standard;
-use file_system::{create_device, Create_file_system, MemoryDeviceType, Mode};
+use file_system::{create_device, create_file_system, MemoryDevice, Mode};
 use task::test;
 use terminal::TerminalExecutableType;
 
@@ -52,14 +50,14 @@ async fn main() {
         .unwrap();
 
     // - Initialize the virtual file system.
-    let memory_device = create_device!(MemoryDeviceType::<512>::new(1024 * 512));
+    let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
 
     little_fs::FileSystem::format(memory_device.clone(), 256).unwrap();
 
     let file_system = little_fs::FileSystem::new(memory_device, 256).unwrap();
 
     let virtual_file_system =
-        virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
+        virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
 
     let task = task_instance.get_current_task_identifier().await;
 
@@ -72,20 +70,20 @@ async fn main() {
         task,
         &[
             (
-                &"/Devices/Standard_in",
+                &"/devices/Standard_in",
                 drivers::standard_library::console::StandardInDevice
             ),
             (
-                &"/Devices/Standard_out",
+                &"/devices/Standard_out",
                 drivers::standard_library::console::StandardOutDeviceType
             ),
             (
-                &"/Devices/Standard_error",
+                &"/devices/Standard_error",
                 drivers::standard_library::console::StandardErrorDeviceType
             ),
-            (&"/Devices/Time", drivers::native::TimeDriverType),
-            (&"/Devices/Random", drivers::native::RandomDeviceType),
-            (&"/Devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriverType),
+            (&"/devices/Random", drivers::native::RandomDeviceType),
+            (&"/devices/Null", drivers::core::NullDeviceType)
         ]
     )
     .await
@@ -95,25 +93,25 @@ async fn main() {
         virtual_file_system,
         task,
         &[
-            (&"/Binaries/Command_line_shell", ShellExecutable),
-            (&"/Binaries/Terminal", TerminalExecutableType)
+            (&"/binaries/Command_line_shell", ShellExecutable),
+            (&"/binaries/Terminal", TerminalExecutableType)
         ]
     )
     .await
     .unwrap();
 
     let standard_in = virtual_file_system
-        .open(&"/Devices/Standard_in", Mode::READ_ONLY.into(), task)
+        .open(&"/devices/Standard_in", Mode::READ_ONLY.into(), task)
         .await
         .unwrap();
 
     let standard_out = virtual_file_system
-        .open(&"/Devices/Standard_out", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/Standard_out", Mode::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
     let standard_error = virtual_file_system
-        .open(&"/Devices/Standard_error", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/Standard_error", Mode::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
@@ -140,7 +138,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = executable::execute("/Binaries/Terminal", "".to_string(), standard)
+    let result = executable::execute("/binaries/Terminal", "".to_string(), standard)
         .await
         .unwrap()
         .join()

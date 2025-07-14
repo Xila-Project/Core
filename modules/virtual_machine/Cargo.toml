@@ -33,8 +33,8 @@ log = { path = "../log" }
 
 [[test]]
 name = "virtual_machine_test"
-path = "Tests/test.rs"
+path = "tests/test.rs"
 
 [[test]]
 name = "virtual_machine_test_2"
-path = "Tests/test_2.rs"
+path = "tests/test_2.rs"

@@ -49,11 +49,9 @@ use crate::{DeviceTrait, Position, Size};
 ///
 /// The device uses an `RwLock` to ensure thread-safe access to the underlying data.
 /// Multiple readers can access the device simultaneously, but writes are exclusive.
-pub struct MemoryDeviceType<const BLOCK_SIZE: usize>(
-    RwLock<CriticalSectionRawMutex, (Vec<u8>, usize)>,
-);
+pub struct MemoryDevice<const BLOCK_SIZE: usize>(RwLock<CriticalSectionRawMutex, (Vec<u8>, usize)>);
 
-impl<const BLOCK_SIZE: usize> MemoryDeviceType<BLOCK_SIZE> {
+impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
     /// Create a new memory device with the specified size.
     ///
     /// The device will be initialized with zeros and have the specified total size.
@@ -138,7 +136,7 @@ impl<const BLOCK_SIZE: usize> MemoryDeviceType<BLOCK_SIZE> {
     }
 }
 
-impl<const BLOCK_SIZE: usize> DeviceTrait for MemoryDeviceType<BLOCK_SIZE> {
+impl<const BLOCK_SIZE: usize> DeviceTrait for MemoryDevice<BLOCK_SIZE> {
     /// Read data from the memory device.
     ///
     /// Reads data from the current position into the provided buffer.

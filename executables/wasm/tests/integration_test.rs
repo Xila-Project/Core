@@ -3,13 +3,13 @@ extern crate alloc;
 use command_line_shell::ShellExecutable;
 use drivers::standard_library::loader::LoaderType;
 use executable::{mount_static_executables, Standard};
-use file_system::{create_device, Create_file_system, MemoryDeviceType, Mode};
-use memory::Instantiate_global_allocator;
+use file_system::{create_device, create_file_system, MemoryDevice, Mode};
+use memory::instantiate_global_allocator;
 use task::test;
 use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
 use wasm::WasmDeviceType;
 
-Instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
+instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
 
 #[ignore]
 #[test]
@@ -18,18 +18,18 @@ async fn i() {
 
     let _ = users::initialize();
 
-    let _ = time::Initialize(create_device!(drivers::native::TimeDriverType::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
 
     let _ = virtual_machine::initialize(&[]);
 
-    let memory_device = create_device!(MemoryDeviceType::<512>::new(1024 * 1024 * 512));
+    let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 1024 * 512));
 
     little_fs::FileSystem::format(memory_device.clone(), 256).unwrap();
 
     let mut file_system = little_fs::FileSystem::new(memory_device, 256).unwrap();
 
-    let wasm_executable_path = "./Tests/WASM_test/target/wasm32-wasip1/release/WASM_test.wasm";
-    let destination = "/Test.wasm";
+    let wasm_executable_path = "./tests/wasm_test/target/wasm32-wasip1/release/WASM_test.wasm";
+    let destination = "/test.wasm";
 
     LoaderType::new()
         .add_file(wasm_executable_path, destination)
@@ -37,7 +37,7 @@ async fn i() {
         .unwrap();
 
     let virtual_file_system =
-        virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
+        virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
 
     let task = task_instance.get_current_task_identifier().await;
 
@@ -50,20 +50,20 @@ async fn i() {
         task,
         &[
             (
-                &"/Devices/Standard_in",
+                &"/devices/Standard_in",
                 drivers::standard_library::console::StandardInDevice
             ),
             (
-                &"/Devices/Standard_out",
+                &"/devices/Standard_out",
                 drivers::standard_library::console::StandardOutDeviceType
             ),
             (
-                &"/Devices/Standard_error",
+                &"/devices/Standard_error",
                 drivers::standard_library::console::StandardErrorDeviceType
             ),
-            (&"/Devices/Time", drivers::native::TimeDriverType),
-            (&"/Devices/Random", drivers::native::RandomDeviceType),
-            (&"/Devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriverType),
+            (&"/devices/Random", drivers::native::RandomDeviceType),
+            (&"/devices/Null", drivers::core::NullDeviceType)
         ]
     )
     .await
@@ -73,25 +73,25 @@ async fn i() {
         virtual_file_system,
         task,
         &[
-            (&"/Binaries/Command_line_shell", ShellExecutable),
-            (&"/Binaries/WASM", WasmDeviceType)
+            (&"/binaries/Command_line_shell", ShellExecutable),
+            (&"/binaries/WASM", WasmDeviceType)
         ]
     )
     .await
     .unwrap();
 
     let standard_in = virtual_file_system
-        .open(&"/Devices/Standard_in", Mode::READ_ONLY.into(), task)
+        .open(&"/devices/Standard_in", Mode::READ_ONLY.into(), task)
         .await
         .unwrap();
 
     let standard_out = virtual_file_system
-        .open(&"/Devices/Standard_out", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/Standard_out", Mode::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
     let standard_error = virtual_file_system
-        .open(&"/Devices/Standard_error", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/Standard_error", Mode::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
@@ -110,7 +110,7 @@ async fn i() {
         .await
         .unwrap();
 
-    let result = executable::execute("/Binaries/Command_line_shell", "".to_string(), standard)
+    let result = executable::execute("/binaries/Command_line_shell", "".to_string(), standard)
         .await
         .unwrap()
         .join()

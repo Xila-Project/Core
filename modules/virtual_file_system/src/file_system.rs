@@ -27,7 +27,7 @@ use file_system::{
 use crate::device::InternalPathType;
 use crate::{device, pipe, SockerAddress};
 
-struct InternalFileSystemType {
+struct InternalFileSystem {
     pub mount_point: PathOwned,
     pub inner: Box<dyn FileSystemTraits>,
 }
@@ -38,13 +38,13 @@ struct InternalFileSystemType {
 /// I know, it is not safe to use mutable static variables.
 /// It is thread safe (after initialization) because it is only read after initialization.
 /// It is a pragmatic choice for efficiency in embedded systems contexts (avoid using Arc).
-static VIRTUAL_FILE_SYSTEM_INSTANCE: OnceLock<VirtualFileSystemType> = OnceLock::new();
+static VIRTUAL_FILE_SYSTEM_INSTANCE: OnceLock<VirtualFileSystem> = OnceLock::new();
 
 pub fn initialize(
     root_file_system: Box<dyn FileSystemTraits>,
     network_socket_driver: Option<&'static dyn SocketDriver>,
-) -> Result<&'static VirtualFileSystemType<'static>> {
-    let virtual_file_system = VirtualFileSystemType::new(
+) -> Result<&'static VirtualFileSystem<'static>> {
+    let virtual_file_system = VirtualFileSystem::new(
         task::get_instance(),
         users::get_instance(),
         time::get_instance(),
@@ -55,7 +55,7 @@ pub fn initialize(
     Ok(VIRTUAL_FILE_SYSTEM_INSTANCE.get_or_init(|| virtual_file_system))
 }
 
-pub fn get_instance() -> &'static VirtualFileSystemType<'static> {
+pub fn get_instance() -> &'static VirtualFileSystem<'static> {
     VIRTUAL_FILE_SYSTEM_INSTANCE
         .try_get()
         .expect("Virtual file system not initialized")
@@ -64,19 +64,19 @@ pub fn get_instance() -> &'static VirtualFileSystemType<'static> {
 /// The virtual file system.
 ///
 /// It is a singleton.
-pub struct VirtualFileSystemType<'a> {
+pub struct VirtualFileSystem<'a> {
     /// Mounted file systems.
     file_systems:
-        RwLock<CriticalSectionRawMutex, BTreeMap<FileSystemIdentifier, InternalFileSystemType>>,
+        RwLock<CriticalSectionRawMutex, BTreeMap<FileSystemIdentifier, InternalFileSystem>>,
     /// Devices.
-    device_file_system: device::FileSystemType<'a>,
+    device_file_system: device::FileSystem<'a>,
     /// Pipes.
-    pipe_file_system: pipe::FileSystemType,
+    pipe_file_system: pipe::FileSystem,
     /// Network sockets.
     network_socket_driver: Option<&'a dyn SocketDriver>,
 }
 
-impl<'a> VirtualFileSystemType<'a> {
+impl<'a> VirtualFileSystem<'a> {
     pub const STANDARD_INPUT_FILE_IDENTIFIER: FileIdentifier = FileIdentifier::new(0);
     pub const STANDARD_OUTPUT_FILE_IDENTIFIER: FileIdentifier = FileIdentifier::new(1);
     pub const STANDARD_ERROR_FILE_IDENTIFIER: FileIdentifier = FileIdentifier::new(2);
@@ -95,7 +95,7 @@ impl<'a> VirtualFileSystemType<'a> {
 
         file_systems.insert(
             identifier,
-            InternalFileSystemType {
+            InternalFileSystem {
                 mount_point: PathOwned::new("/".to_string()).unwrap(),
                 inner: root_file_system,
             },
@@ -103,8 +103,8 @@ impl<'a> VirtualFileSystemType<'a> {
 
         Ok(Self {
             file_systems: RwLock::new(file_systems),
-            device_file_system: device::FileSystemType::new(),
-            pipe_file_system: pipe::FileSystemType::new(),
+            device_file_system: device::FileSystem::new(),
+            pipe_file_system: pipe::FileSystem::new(),
             network_socket_driver,
         })
     }
@@ -131,7 +131,7 @@ impl<'a> VirtualFileSystemType<'a> {
     }
 
     fn get_new_file_system_identifier(
-        file_systems: &BTreeMap<FileSystemIdentifier, InternalFileSystemType>,
+        file_systems: &BTreeMap<FileSystemIdentifier, InternalFileSystem>,
     ) -> Option<FileSystemIdentifier> {
         let mut file_system_identifier = FileSystemIdentifier::MINIMUM;
 
@@ -143,9 +143,9 @@ impl<'a> VirtualFileSystemType<'a> {
     }
 
     fn get_file_system_from_identifier(
-        file_systems: &BTreeMap<FileSystemIdentifier, InternalFileSystemType>,
+        file_systems: &BTreeMap<FileSystemIdentifier, InternalFileSystem>,
         file_system_identifier: FileSystemIdentifier,
-    ) -> Result<&InternalFileSystemType> {
+    ) -> Result<&InternalFileSystem> {
         file_systems
             .get(&file_system_identifier)
             .ok_or(Error::InvalidIdentifier)
@@ -191,7 +191,7 @@ impl<'a> VirtualFileSystemType<'a> {
 
         file_systems.insert(
             file_system_identifier,
-            InternalFileSystemType {
+            InternalFileSystem {
                 mount_point: path.to_owned(),
                 inner: file_system,
             },
@@ -239,7 +239,7 @@ impl<'a> VirtualFileSystemType<'a> {
     }
 
     fn get_file_system_from_path<'b>(
-        file_systems: &'b BTreeMap<FileSystemIdentifier, InternalFileSystemType>,
+        file_systems: &'b BTreeMap<FileSystemIdentifier, InternalFileSystem>,
         path: &'b impl AsRef<Path>,
     ) -> Result<(FileSystemIdentifier, &'b dyn FileSystemTraits, &'b Path)> {
         let mut result_score = 0;
@@ -1704,9 +1704,9 @@ mod tests {
 
     use super::*;
 
-    struct DummyFileSystemType;
+    struct DummyFileSystem;
 
-    impl FileSystemTraits for DummyFileSystemType {
+    impl FileSystemTraits for DummyFileSystem {
         fn open(
             &self,
             _: TaskIdentifier,
@@ -1821,54 +1821,52 @@ mod tests {
 
     #[test]
     fn test_get_file_system_from_path() {
-        let mut file_systems: BTreeMap<FileSystemIdentifier, InternalFileSystemType> =
-            BTreeMap::new();
+        let mut file_systems: BTreeMap<FileSystemIdentifier, InternalFileSystem> = BTreeMap::new();
 
         file_systems.insert(
             1.into(),
-            InternalFileSystemType {
+            InternalFileSystem {
                 mount_point: PathOwned::new("/".to_string()).unwrap(),
-                inner: Box::new(DummyFileSystemType),
+                inner: Box::new(DummyFileSystem),
             },
         );
 
         file_systems.insert(
             2.into(),
-            InternalFileSystemType {
+            InternalFileSystem {
                 mount_point: PathOwned::new("/Foo".to_string()).unwrap(),
-                inner: Box::new(DummyFileSystemType),
+                inner: Box::new(DummyFileSystem),
             },
         );
 
         file_systems.insert(
             3.into(),
-            InternalFileSystemType {
+            InternalFileSystem {
                 mount_point: PathOwned::new("/Foo/Bar".to_string()).unwrap(),
-                inner: Box::new(DummyFileSystemType),
+                inner: Box::new(DummyFileSystem),
             },
         );
 
         let (file_system, _, relative_path) =
-            VirtualFileSystemType::get_file_system_from_path(&file_systems, &"/").unwrap();
+            VirtualFileSystem::get_file_system_from_path(&file_systems, &"/").unwrap();
 
         assert_eq!(file_system, 1.into());
         assert_eq!(relative_path, Path::ROOT);
 
         let (file_system, _, relative_path) =
-            VirtualFileSystemType::get_file_system_from_path(&file_systems, &"/Foo/Bar").unwrap();
+            VirtualFileSystem::get_file_system_from_path(&file_systems, &"/Foo/Bar").unwrap();
 
         assert_eq!(file_system, 3.into());
         assert_eq!(relative_path, Path::ROOT);
 
         let (file_system, _, relative_path) =
-            VirtualFileSystemType::get_file_system_from_path(&file_systems, &"/Foo/Bar/Baz")
-                .unwrap();
+            VirtualFileSystem::get_file_system_from_path(&file_systems, &"/Foo/Bar/Baz").unwrap();
 
         assert_eq!(file_system, 3.into());
         assert_eq!(relative_path, "/Baz".as_ref());
 
         let (file_system, _, relative_path) =
-            VirtualFileSystemType::get_file_system_from_path(&file_systems, &"/Foo").unwrap();
+            VirtualFileSystem::get_file_system_from_path(&file_systems, &"/Foo").unwrap();
 
         assert_eq!(file_system, 2.into());
         assert_eq!(relative_path, Path::ROOT);

@@ -283,8 +283,8 @@ async fn test_signal() {
     child_handle.join().await;
 }
 
-#[test]
-fn test_find_first_available_identifier_empty_map() {
+#[test(task_path = crate)]
+async fn test_find_first_available_identifier_empty_map() {
     let map: BTreeMap<u32, ()> = BTreeMap::new();
     let range = 0u32..10u32;
 
@@ -292,8 +292,8 @@ fn test_find_first_available_identifier_empty_map() {
     assert_eq!(result, Some(0u32));
 }
 
-#[test]
-fn test_find_first_available_identifier_no_gaps() {
+#[test(task_path = crate)]
+async fn test_find_first_available_identifier_no_gaps() {
     let mut map: BTreeMap<u32, ()> = BTreeMap::new();
     map.insert(0, ());
     map.insert(1, ());
@@ -304,8 +304,8 @@ fn test_find_first_available_identifier_no_gaps() {
     assert_eq!(result, Some(3u32));
 }
 
-#[test]
-fn test_find_first_available_identifier_with_gap() {
+#[test(task_path = crate)]
+async fn test_find_first_available_identifier_with_gap() {
     let mut map: BTreeMap<u32, ()> = BTreeMap::new();
     map.insert(0, ());
     map.insert(2, ());
@@ -316,8 +316,8 @@ fn test_find_first_available_identifier_with_gap() {
     assert_eq!(result, Some(1u32));
 }
 
-#[test]
-fn test_find_first_available_identifier_range_exhausted() {
+#[test(task_path = crate)]
+async fn test_find_first_available_identifier_range_exhausted() {
     let mut map: BTreeMap<u32, ()> = BTreeMap::new();
     map.insert(0, ());
     map.insert(1, ());
@@ -327,8 +327,8 @@ fn test_find_first_available_identifier_range_exhausted() {
     assert_eq!(result, None);
 }
 
-#[test]
-fn test_find_first_available_identifier_single_element() {
+#[test(task_path = crate)]
+async fn test_find_first_available_identifier_single_element() {
     let mut map: BTreeMap<u32, ()> = BTreeMap::new();
     map.insert(1, ());
 
@@ -337,8 +337,8 @@ fn test_find_first_available_identifier_single_element() {
     assert_eq!(result, Some(0u32));
 }
 
-#[test]
-fn test_find_first_available_identifier_large_gap() {
+#[test(task_path = crate)]
+async fn test_find_first_available_identifier_large_gap() {
     let mut map: BTreeMap<u32, ()> = BTreeMap::new();
     map.insert(0, ());
     map.insert(100, ());
@@ -348,8 +348,8 @@ fn test_find_first_available_identifier_large_gap() {
     assert_eq!(result, Some(1u32));
 }
 
-#[test]
-fn test_find_first_available_identifier_step_range() {
+#[test(task_path = crate)]
+async fn test_find_first_available_identifier_step_range() {
     let mut map: BTreeMap<usize, ()> = BTreeMap::new();
     map.insert(0, ());
     map.insert(2, ());
@@ -359,8 +359,8 @@ fn test_find_first_available_identifier_step_range() {
     assert_eq!(result, Some(4));
 }
 
-#[test]
-fn test_find_first_available_identifier_unordered_keys() {
+#[test(task_path = crate)]
+async fn test_find_first_available_identifier_unordered_keys() {
     let mut map: BTreeMap<u32, ()> = BTreeMap::new();
     map.insert(5, ());
     map.insert(1, ());
@@ -373,8 +373,8 @@ fn test_find_first_available_identifier_unordered_keys() {
     assert_eq!(result, Some(0u32));
 }
 
-#[test]
-fn test_find_first_available_identifier_exact_match_sequence() {
+#[test(task_path = crate)]
+async fn test_find_first_available_identifier_exact_match_sequence() {
     let mut map: BTreeMap<u32, ()> = BTreeMap::new();
     for i in 5..10 {
         map.insert(i, ());
@@ -385,8 +385,8 @@ fn test_find_first_available_identifier_exact_match_sequence() {
     assert_eq!(result, Some(10u32));
 }
 
-#[test]
-fn test_find_first_available_identifier_empty_range() {
+#[test(task_path = crate)]
+async fn test_find_first_available_identifier_empty_range() {
     let mut map: BTreeMap<u32, ()> = BTreeMap::new();
     map.insert(0, ());
 
@@ -669,7 +669,7 @@ async fn test_register_spawner() {
     let invalid_spawner_id = 99999;
     let result = manager.unregister_spawner(invalid_spawner_id);
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), Error::No_spawner_available));
+    assert!(matches!(result.unwrap_err(), Error::NoSpawnerAvailable));
 }
 
 #[test(task_path = crate)]
@@ -680,14 +680,14 @@ async fn test_unregister_spawner() {
     let invalid_spawner_id = 99999;
     let result = manager.unregister_spawner(invalid_spawner_id);
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), Error::No_spawner_available));
+    assert!(matches!(result.unwrap_err(), Error::NoSpawnerAvailable));
 
     // Test unregistering the same spawner twice
     let second_result = manager.unregister_spawner(invalid_spawner_id);
     assert!(second_result.is_err());
     assert!(matches!(
         second_result.unwrap_err(),
-        Error::No_spawner_available
+        Error::NoSpawnerAvailable
     ));
 }
 
@@ -700,7 +700,7 @@ async fn test_unregister_nonexistent_spawner() {
     let result = manager.unregister_spawner(invalid_id);
 
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), Error::No_spawner_available));
+    assert!(matches!(result.unwrap_err(), Error::NoSpawnerAvailable));
 }
 
 #[test(task_path = crate)]
@@ -719,7 +719,7 @@ async fn test_register_multiple_spawners() {
     for invalid_id in invalid_ids {
         let result = manager.unregister_spawner(invalid_id);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), Error::No_spawner_available));
+        assert!(matches!(result.unwrap_err(), Error::NoSpawnerAvailable));
     }
 }
 
@@ -835,7 +835,7 @@ async fn test_spawner_with_invalid_selection() {
 
     assert!(result.is_err());
     if let Err(error) = result {
-        assert!(matches!(error, Error::Invalid_spawner_identifier));
+        assert!(matches!(error, Error::InvalidSpawnerIdentifier));
     }
 }
 
@@ -851,12 +851,12 @@ async fn test_spawner_reuse_after_unregister() {
     let invalid_spawner_id = 99999;
     let result1 = manager.unregister_spawner(invalid_spawner_id);
     assert!(result1.is_err());
-    assert!(matches!(result1.unwrap_err(), Error::No_spawner_available));
+    assert!(matches!(result1.unwrap_err(), Error::NoSpawnerAvailable));
 
     // Test that the same invalid ID consistently fails
     let result2 = manager.unregister_spawner(invalid_spawner_id);
     assert!(result2.is_err());
-    assert!(matches!(result2.unwrap_err(), Error::No_spawner_available));
+    assert!(matches!(result2.unwrap_err(), Error::NoSpawnerAvailable));
 
     // Verify that valid spawner operations still work
     let current_task = manager.get_current_task_identifier().await;

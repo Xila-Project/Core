@@ -2,11 +2,11 @@
 use file_system::{Error, Kind, Path, Result};
 use task::TaskIdentifier;
 
-use crate::{DirectoryType, VirtualFileSystemType};
+use crate::{DirectoryType, VirtualFileSystem};
 
 /// Create the default hierarchy of the file system.
 pub async fn create_default_hierarchy(
-    virtual_file_system: &VirtualFileSystemType<'_>,
+    virtual_file_system: &VirtualFileSystem<'_>,
     task: TaskIdentifier,
 ) -> Result<()> {
     virtual_file_system
@@ -44,7 +44,7 @@ pub async fn create_default_hierarchy(
 }
 
 pub async fn clean_devices_in_directory<'a>(
-    virtual_file_system: &'a VirtualFileSystemType<'a>,
+    virtual_file_system: &'a VirtualFileSystem<'a>,
     path: &Path,
 ) -> Result<()> {
     // For each entry in the directory.
@@ -80,7 +80,7 @@ pub async fn clean_devices_in_directory<'a>(
     Ok(())
 }
 
-pub async fn clean_devices<'a>(virtual_file_system: &'a VirtualFileSystemType<'a>) -> Result<()> {
+pub async fn clean_devices<'a>(virtual_file_system: &'a VirtualFileSystem<'a>) -> Result<()> {
     clean_devices_in_directory(virtual_file_system, Path::DEVICES).await?;
 
     clean_devices_in_directory(virtual_file_system, Path::BINARIES).await?;

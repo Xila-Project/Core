@@ -30,4 +30,4 @@ RGBA8888 = []
 
 [[test]]
 name = "graphics"
-path = "Tests/graphics.rs"
+path = "tests/graphics.rs"

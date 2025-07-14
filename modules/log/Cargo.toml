@@ -5,4 +5,4 @@ edition = "2024"
 
 [dependencies]
 synchronization = { version = "0.1.0", path = "../synchronization" }
-log = { version="0.4" }
+log_external = { package = "log", version = "0.4" }

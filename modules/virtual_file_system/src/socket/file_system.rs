@@ -4,7 +4,7 @@ use core::{
 };
 
 use file_system::{Inode_type, Local_file_identifier_type, Path_owned_type};
-use virtual_file_system::VirtualFileSystemType;
+use virtual_file_system::VirtualFileSystem;
 
 use crate::Result;
 
@@ -14,7 +14,7 @@ struct Socket_type<'a> {
 }
 
 pub struct Local_socket_manager_type<'a> {
-    Virtual_file_system: &'a VirtualFileSystemType<'a>,
+    Virtual_file_system: &'a VirtualFileSystem<'a>,
     Open_sockets: RwLock<BTreeMap<Local_file_identifier_type, Arc<Socket_type<'a>>>>,
     Sockets: RwLock<BTreeMap<Inode_type, Arc<Socket_type<'a>>>>,
 }
@@ -27,7 +27,7 @@ impl<'a> Local_socket_manager_type<'a> {
         Ok(self.Open_sockets.read().unwrap().contains_key(&Socket))
     }
 
-    pub fn New(Virtual_file_system: &'a VirtualFileSystemType<'a>) -> Self {
+    pub fn New(Virtual_file_system: &'a VirtualFileSystem<'a>) -> Self {
         Self {
             Virtual_file_system,
             Open_sockets: RwLock::new(BTreeMap::new()),

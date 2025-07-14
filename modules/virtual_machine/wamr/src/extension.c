@@ -1,5 +1,5 @@
 #include "../../../abi/include/xila.h"
-#include "../include/Internal.h"
+#include "../include/internal.h"
 #include "platform_internal.h"
 
 /***************************************************

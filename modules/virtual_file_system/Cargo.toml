@@ -15,9 +15,8 @@ log = { version = "0.1.0", path = "../log" }
 
 [dev-dependencies]
 drivers = { path = "../drivers" }
-# drivers = { path = "../drivers" }
-# little_fs = { path = "../little_fs" }
+little_fs = { path = "../little_fs" }
 
-# [[test]]
-# name = "integration"
-# path = "Tests/Integration.rs"
+[[test]]
+name = "integration"
+path = "tests/integration.rs"

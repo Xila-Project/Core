@@ -94,7 +94,7 @@ members = [
     "executables/calculator",
 ]
 exclude = [
-    "modules/virtual_machine/Tests/wasm_test",
-    "modules/bindings/Tests/wasm_test",
+    "modules/virtual_machine/tests/wasm_test",
+    "modules/bindings/tests/wasm_test",
     "Build_tool",
 ]

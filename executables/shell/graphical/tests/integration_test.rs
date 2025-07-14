@@ -1,9 +1,7 @@
-#![no_std]
-
 extern crate alloc;
 
 use executable::Standard;
-use file_system::{create_device, Create_file_system, MemoryDeviceType, Mode};
+use file_system::{create_device, create_file_system, MemoryDevice, Mode};
 use graphical_shell::ShellExecutableType;
 use task::test;
 
@@ -52,14 +50,14 @@ async fn main() {
         .unwrap();
 
     // - Initialize the virtual file system.
-    let memory_device = create_device!(MemoryDeviceType::<512>::new(1024 * 512));
+    let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
 
     little_fs::FileSystem::format(memory_device.clone(), 256).unwrap();
 
     let file_system = little_fs::FileSystem::new(memory_device, 256).unwrap();
 
     let virtual_file_system =
-        virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
+        virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
 
     let task = task_instance.get_current_task_identifier().await;
 
@@ -70,7 +68,7 @@ async fn main() {
     mount_static_executables!(
         virtual_file_system,
         task,
-        &[(&"/Binaries/Graphical_shell", ShellExecutableType),]
+        &[(&"/binaries/Graphical_shell", ShellExecutableType),]
     )
     .await
     .unwrap();
@@ -80,20 +78,20 @@ async fn main() {
         task,
         &[
             (
-                &"/Devices/Standard_in",
+                &"/devices/Standard_in",
                 drivers::standard_library::console::StandardInDevice
             ),
             (
-                &"/Devices/Standard_out",
+                &"/devices/Standard_out",
                 drivers::standard_library::console::StandardOutDeviceType
             ),
             (
-                &"/Devices/Standard_error",
+                &"/devices/Standard_error",
                 drivers::standard_library::console::StandardErrorDeviceType
             ),
-            (&"/Devices/Time", drivers::native::TimeDriverType),
-            (&"/Devices/Random", drivers::native::RandomDeviceType),
-            (&"/Devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriverType),
+            (&"/devices/Random", drivers::native::RandomDeviceType),
+            (&"/devices/Null", drivers::core::NullDeviceType)
         ]
     )
     .await
@@ -108,7 +106,7 @@ async fn main() {
     for i in 0..20 {
         use alloc::format;
 
-        FileType::open(
+        File::open(
             virtual_file_system,
             format!("/Configuration/Shared/Shortcuts/Test{i}.json").as_str(),
             Flags::new(Mode::WRITE_ONLY, Some(Open::CREATE), None),
@@ -120,7 +118,7 @@ async fn main() {
                 r#"
     {{
         "name": "Test{i}",
-        "command": "/Binaries/?",
+        "command": "/binaries/?",
         "arguments": "",
         "terminal": false,
         "icon_string": "T!",
@@ -151,9 +149,9 @@ async fn main() {
     .unwrap();
 
     let standard = Standard::open(
-        &"/Devices/Standard_in",
-        &"/Devices/Standard_out",
-        &"/Devices/Standard_error",
+        &"/devices/Standard_in",
+        &"/devices/Standard_out",
+        &"/devices/Standard_error",
         task,
         virtual_file_system,
     )
@@ -170,7 +168,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = executable::execute("/Binaries/Graphical_shell", "".to_string(), standard)
+    let result = executable::execute("/binaries/Graphical_shell", "".to_string(), standard)
         .await
         .unwrap()
         .join()

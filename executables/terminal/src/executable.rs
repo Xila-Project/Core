@@ -3,13 +3,13 @@ use alloc::string::{String, ToString};
 use executable::implement_executable_device;
 use file_system::{Flags, Mode, Open};
 use task::TaskIdentifier;
-use virtual_file_system::{File, VirtualFileSystemType};
+use virtual_file_system::{File, VirtualFileSystem};
 
 pub struct TerminalExecutableType;
 
 impl TerminalExecutableType {
     pub async fn new<'a>(
-        virtual_file_system: &'a VirtualFileSystemType<'a>,
+        virtual_file_system: &'a VirtualFileSystem<'a>,
         task: TaskIdentifier,
     ) -> Result<Self, String> {
         let _ = virtual_file_system
@@ -40,6 +40,6 @@ impl TerminalExecutableType {
 
 implement_executable_device!(
     Structure: TerminalExecutableType,
-    Mount_path: "/Binaries/Terminal",
+    Mount_path: "/binaries/Terminal",
     Main_function: main,
 );

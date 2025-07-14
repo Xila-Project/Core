@@ -31,7 +31,7 @@ use users::{GroupIdentifier, UserIdentifier};
 /// // let fs = Create_file_system!(MyFileSystem::new());
 /// ```
 #[macro_export]
-macro_rules! Create_file_system {
+macro_rules! create_file_system {
     ($file_system:expr) => {
         alloc::boxed::Box::new($file_system)
     };

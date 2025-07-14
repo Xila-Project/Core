@@ -528,7 +528,7 @@ pub fn format_disk_and_get_first_partition(
 mod tests {
     use super::*;
     use crate::{
-        DeviceTrait, DeviceType, Error, MemoryDeviceType, PartitionKind, PartitionStatisticsType,
+        DeviceTrait, DeviceType, Error, MemoryDevice, PartitionKind, PartitionStatisticsType,
     };
     use alloc::vec;
 
@@ -541,13 +541,13 @@ mod tests {
         let mbr_bytes = mbr.to_bytes();
         data[0..512].copy_from_slice(&mbr_bytes);
 
-        let memory_device = MemoryDeviceType::<512>::from_vec(data);
+        let memory_device = MemoryDevice::<512>::from_vec(data);
         crate::create_device!(memory_device)
     }
 
     /// Create a test device without valid MBR
     fn create_test_device_no_mbr() -> DeviceType {
-        let memory_device = MemoryDeviceType::<512>::new(4096 * 1024); // Make it large enough (4MB = 8192 sectors)
+        let memory_device = MemoryDevice::<512>::new(4096 * 1024); // Make it large enough (4MB = 8192 sectors)
         crate::create_device!(memory_device)
     }
 
@@ -763,7 +763,7 @@ mod tests {
         let mut data = vec![0u8; 4096 * 1024];
         let mbr_bytes = mbr.to_bytes();
         data[0..512].copy_from_slice(&mbr_bytes);
-        let memory_device = MemoryDeviceType::<512>::from_vec(data);
+        let memory_device = MemoryDevice::<512>::from_vec(data);
         let gpt_device = crate::create_device!(memory_device);
 
         assert!(is_gpt_disk(&gpt_device));
@@ -803,7 +803,7 @@ mod tests {
     fn test_clone_mbr() {
         let source_device = create_test_device_with_mbr();
         let target_data = vec![0u8; 4096 * 1024];
-        let memory_device = MemoryDeviceType::<512>::from_vec(target_data);
+        let memory_device = MemoryDevice::<512>::from_vec(target_data);
         let target_device = crate::create_device!(memory_device);
 
         let clone_result = clone_mbr(&source_device, &target_device);
@@ -827,7 +827,7 @@ mod tests {
 
         // Create a new device with zeros
         let target_data = vec![0u8; 4096 * 1024];
-        let memory_device = MemoryDeviceType::<512>::from_vec(target_data);
+        let memory_device = MemoryDevice::<512>::from_vec(target_data);
         let target_device = crate::create_device!(memory_device);
 
         // Restore MBR
@@ -902,7 +902,7 @@ mod tests {
         let mut empty_data = vec![0u8; 4096 * 1024];
         let empty_mbr_bytes = empty_mbr.to_bytes();
         empty_data[0..512].copy_from_slice(&empty_mbr_bytes);
-        let memory_device = MemoryDeviceType::<512>::from_vec(empty_data);
+        let memory_device = MemoryDevice::<512>::from_vec(empty_data);
         let empty_device = crate::create_device!(memory_device);
 
         let scan_result = scan_mbr_partitions(&empty_device);
@@ -975,7 +975,7 @@ mod tests {
     fn test_format_disk_and_get_first_partition_device_too_small() {
         // Create a very small device (less than 2048 sectors)
         let small_data = vec![0u8; 1024]; // 2 sectors of 512 bytes each
-        let memory_device = MemoryDeviceType::<512>::from_vec(small_data);
+        let memory_device = MemoryDevice::<512>::from_vec(small_data);
         let small_device = crate::create_device!(memory_device);
 
         let partition_device_result = format_disk_and_get_first_partition(
@@ -998,7 +998,7 @@ mod tests {
         let mbr_bytes = empty_mbr.to_bytes();
         data[0..512].copy_from_slice(&mbr_bytes);
 
-        let memory_device = MemoryDeviceType::<512>::from_vec(data);
+        let memory_device = MemoryDevice::<512>::from_vec(data);
         let device = crate::create_device!(memory_device);
 
         let partition_device_result =

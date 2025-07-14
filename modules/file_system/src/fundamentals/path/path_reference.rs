@@ -17,34 +17,34 @@ impl Path {
 
     /// Contains the OS core, including the kernel, init system, and critical drivers.
     /// Prevents modification by regular users.
-    pub const SYSTEM: &'static Path = Self::from_str("/System");
+    pub const SYSTEM: &'static Path = Self::from_str("/system");
 
     /// Stores system-wide settings in a structured format (e.g., JSON, TOML).
-    pub const DEVICES: &'static Path = Self::from_str("/Devices");
+    pub const DEVICES: &'static Path = Self::from_str("/devices");
 
     /// Hardware devices, symlinks for human-friendly names.
-    pub const CONFIGURATION: &'static Path = Self::from_str("/Configuration");
+    pub const CONFIGURATION: &'static Path = Self::from_str("/configuration");
 
     /// Contains the shared configurations between applications.
-    pub const SHARED_CONFIGURATION: &'static Path = Self::from_str("/Configuration/Shared");
+    pub const SHARED_CONFIGURATION: &'static Path = Self::from_str("/configuration/shared");
 
     /// Binaries data.
-    pub const DATA: &'static Path = Self::from_str("/Data");
+    pub const DATA: &'static Path = Self::from_str("/data");
 
     /// Shared data between binaries.
-    pub const SHARED_DATA: &'static Path = Self::from_str("/Data/Shared");
+    pub const SHARED_DATA: &'static Path = Self::from_str("/data/shared");
 
     /// Contains the system's binaries, including the shell and other executables.
-    pub const BINARIES: &'static Path = Self::from_str("/Binaries");
+    pub const BINARIES: &'static Path = Self::from_str("/binaries");
 
     /// Contains the user's data, including documents, downloads, and other files.
-    pub const USERS: &'static Path = Self::from_str("/Users");
+    pub const USERS: &'static Path = Self::from_str("/users");
 
     /// Contains temporary files, including logs and caches.
-    pub const TEMPORARY: &'static Path = Self::from_str("/Temporary");
+    pub const TEMPORARY: &'static Path = Self::from_str("/temporary");
 
     /// Contains logs, including system logs and application logs.
-    pub const LOGS: &'static Path = Self::from_str("/Temporary/Logs");
+    pub const LOGS: &'static Path = Self::from_str("/temporary/logs");
 
     /// # Safety
     /// The caller must ensure that the string is a valid path string.

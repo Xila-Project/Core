@@ -25,7 +25,7 @@
 //! - Users are stored in `/System/Users/` directory
 //! - Groups are stored in `/System/Groups/` directory
 //! - Each user/group has their own JSON file containing their data
-//! - Random salt generation uses `/Devices/Random` device
+//! - Random salt generation uses `/devices/Random` device
 
 #![no_std]
 
@@ -48,7 +48,7 @@ const USERS_FOLDER_PATH: &str = "/System/Users";
 const GROUP_FOLDER_PATH: &str = "/System/Groups";
 
 /// Path to the random device used for salt generation
-const RANDOM_DEVICE_PATH: &str = "/Devices/Random";
+const RANDOM_DEVICE_PATH: &str = "/devices/Random";
 
 /// Loads all users and groups from the filesystem into memory.
 ///
@@ -71,12 +71,12 @@ const RANDOM_DEVICE_PATH: &str = "/Devices/Random";
 /// # Examples
 ///
 /// ```rust
-/// use authentication::Load_all_users_and_groups;
+/// use authentication::load_all_users_and_groups;
 ///
-/// # async fn example() -> Result<(), authentication::Error> {
-/// Load_all_users_and_groups().await?;
-/// # Ok(())
-/// # }
+/// async fn example() -> Result<(), authentication::Error> {
+///     load_all_users_and_groups().await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn load_all_users_and_groups() -> Result<()> {
     use group::read_group_file;

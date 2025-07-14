@@ -18,9 +18,9 @@ struct InnerType {
     pub open_pipes: BTreeMap<LocalFileIdentifier, OpenPipesInnerType>,
 }
 
-pub struct FileSystemType(RwLock<CriticalSectionRawMutex, InnerType>);
+pub struct FileSystem(RwLock<CriticalSectionRawMutex, InnerType>);
 
-impl FileSystemType {
+impl FileSystem {
     pub fn new() -> Self {
         Self(RwLock::new(InnerType {
             named_pipes: BTreeMap::new(),
@@ -329,13 +329,15 @@ impl FileSystemType {
 
 #[cfg(test)]
 mod tests {
+    extern crate std;
+
     use task::test;
 
     use super::*;
 
     #[test]
     async fn test_create_unnamed_pipe() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
         let task_id = TaskIdentifier::new(0);
         let status = Status::default();
         let buffer_size = 1024;
@@ -350,7 +352,7 @@ mod tests {
 
     #[test]
     async fn test_create_named_pipe() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
         let buffer_size = 1024;
 
         let result = fs.create_named_pipe(buffer_size).await;
@@ -362,7 +364,7 @@ mod tests {
 
     #[test]
     async fn test_open_and_close_named_pipe() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
         let buffer_size = 1024;
         let task_id = TaskIdentifier::new(0);
         let flags = Flags::new(Mode::READ_WRITE, None, None);
@@ -381,7 +383,7 @@ mod tests {
 
     #[test]
     async fn test_duplicate_file_identifier() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
         let task_id = TaskIdentifier::new(0);
         let status = Status::default();
         let buffer_size = 1024;
@@ -398,7 +400,7 @@ mod tests {
 
     #[test]
     async fn test_transfert_file_identifier() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
         let task_id = TaskIdentifier::new(0);
         let new_task_id = TaskIdentifier::new(1);
         let status = Status::default();
@@ -416,7 +418,7 @@ mod tests {
 
     #[test]
     async fn test_delete_named_pipe() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
         let buffer_size = 1024;
 
         let inode = fs.create_named_pipe(buffer_size).await.unwrap();
@@ -427,7 +429,7 @@ mod tests {
 
     #[test]
     async fn test_read_and_write_pipe() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
         let task_id = TaskIdentifier::new(0);
         let status = Status::default();
         let buffer_size = 1024;
@@ -449,7 +451,7 @@ mod tests {
 
     #[test]
     async fn test_get_mode() {
-        let fs = FileSystemType::new();
+        let fs = FileSystem::new();
         let task_id = TaskIdentifier::new(0);
         let status = Status::default();
         let buffer_size = 1024;

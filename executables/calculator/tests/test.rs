@@ -3,13 +3,13 @@ extern crate alloc;
 use xila::drivers;
 use xila::drivers::native::TimeDriverType;
 use xila::file_system;
-use xila::file_system::{Create_file_system, MemoryDeviceType, create_device};
+use xila::file_system::{MemoryDevice, create_device, create_file_system};
 use xila::graphics;
 use xila::graphics::lvgl;
 use xila::host_bindings;
 use xila::little_fs;
 use xila::log;
-use xila::memory::Instantiate_global_allocator;
+use xila::memory::instantiate_global_allocator;
 use xila::task;
 use xila::task::test;
 use xila::time;
@@ -19,7 +19,7 @@ use xila::virtual_file_system;
 use xila::virtual_file_system::{Mount_static_devices, create_default_hierarchy};
 use xila::virtual_machine;
 
-Instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
+instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
 
 #[task::run(executor = drivers::standard_library::executor::instantiate_static_executor!())]
 async fn run_graphics() {
@@ -29,13 +29,13 @@ async fn run_graphics() {
         .unwrap();
 }
 
-#[ignore]
 #[test]
+#[ignore]
 async fn integration_test() {
     // - Initialize the system
     log::initialize(&drivers::standard_library::log::LoggerType).unwrap();
 
-    let binary_buffer = include_bytes!("../WASM/target/wasm32-wasip1/release/Calculator.wasm");
+    let binary_buffer = include_bytes!("../wasm/target/wasm32-wasip1/release/Calculator.wasm");
 
     users::initialize();
 
@@ -46,11 +46,11 @@ async fn integration_test() {
     time::initialize(create_device!(TimeDriverType::new()))
         .expect("Error initializing time manager");
 
-    let memory_device = create_device!(MemoryDeviceType::<512>::new(1024 * 512));
+    let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
     little_fs::FileSystem::format(memory_device.clone(), 512).unwrap();
 
     let virtual_file_system = virtual_file_system::initialize(
-        Create_file_system!(little_fs::FileSystem::new(memory_device, 256).unwrap()),
+        create_file_system!(little_fs::FileSystem::new(memory_device, 256).unwrap()),
         None,
     )
     .unwrap();
@@ -64,20 +64,20 @@ async fn integration_test() {
         task,
         &[
             (
-                &"/Devices/Standard_in",
+                &"/devices/Standard_in",
                 drivers::standard_library::console::StandardInDevice
             ),
             (
-                &"/Devices/Standard_out",
+                &"/devices/Standard_out",
                 drivers::standard_library::console::StandardOutDeviceType
             ),
             (
-                &"/Devices/Standard_error",
+                &"/devices/Standard_error",
                 drivers::standard_library::console::StandardErrorDeviceType
             ),
-            (&"/Devices/Time", drivers::native::TimeDriverType),
-            (&"/Devices/Random", drivers::native::RandomDeviceType),
-            (&"/Devices/Null", drivers::core::NullDeviceType)
+            (&"/devices/Time", drivers::native::TimeDriverType),
+            (&"/devices/Random", drivers::native::RandomDeviceType),
+            (&"/devices/Null", drivers::core::NullDeviceType)
         ]
     )
     .await
@@ -116,7 +116,7 @@ async fn integration_test() {
 
     let standard_in = virtual_file_system
         .open(
-            &"/Devices/Standard_in",
+            &"/devices/Standard_in",
             file_system::Mode::READ_ONLY.into(),
             task,
         )
@@ -125,7 +125,7 @@ async fn integration_test() {
 
     let standard_out = virtual_file_system
         .open(
-            &"/Devices/Standard_out",
+            &"/devices/Standard_out",
             file_system::Mode::WRITE_ONLY.into(),
             task,
         )
@@ -134,7 +134,7 @@ async fn integration_test() {
 
     let standard_error = virtual_file_system
         .open(
-            &"/Devices/Standard_out",
+            &"/devices/Standard_out",
             file_system::Mode::WRITE_ONLY.into(),
             task,
         )

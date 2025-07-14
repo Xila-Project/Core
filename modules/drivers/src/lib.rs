@@ -16,7 +16,7 @@ pub mod standard_library;
 
 //pub fn Mount_devices(
 //    Task: TaskIdentifier,
-//    Virtual_file_systems: &VirtualFileSystemType,
+//    Virtual_file_systems: &VirtualFileSystem,
 //) -> Result<(), String> {
 //    #[cfg(target_vendor = "espressif")]
 //    Espressif::Mount_devices(Virtual_file_systems)?;

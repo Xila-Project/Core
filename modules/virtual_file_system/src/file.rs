@@ -8,7 +8,7 @@ use file_system::{
     Flags, Path, Position, Result, Size, Statistics_type, Status, UniqueFileIdentifier,
 };
 
-use super::VirtualFileSystemType;
+use super::VirtualFileSystem;
 
 /// File structure.
 ///
@@ -16,7 +16,7 @@ use super::VirtualFileSystemType;
 /// This is a wrapper around the virtual file system file identifier.
 pub struct File<'a> {
     file_identifier: UniqueFileIdentifier,
-    file_system: &'a VirtualFileSystemType<'a>,
+    file_system: &'a VirtualFileSystem<'a>,
     task: TaskIdentifier,
 }
 
@@ -32,7 +32,7 @@ impl Debug for File<'_> {
 
 impl<'a> File<'a> {
     pub async fn open(
-        file_system: &'a VirtualFileSystemType<'a>,
+        file_system: &'a VirtualFileSystem<'a>,
         path: impl AsRef<Path>,
         flags: Flags,
     ) -> Result<Self> {
@@ -48,7 +48,7 @@ impl<'a> File<'a> {
     }
 
     pub async fn create_unnamed_pipe(
-        file_system: &'a VirtualFileSystemType<'a>,
+        file_system: &'a VirtualFileSystem<'a>,
         size: usize,
         status: Status,
         task: TaskIdentifier,

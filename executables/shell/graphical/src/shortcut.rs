@@ -12,7 +12,7 @@ pub const SHORTCUT_PATH: &Path = Path::from_str("/Configuration/Shared/Shortcuts
 pub struct ShortcutType {
     name: String,
     command: String,
-    #[serde(rename = "Terminal")]
+    #[serde(rename = "terminal")]
     _terminal: bool,
     arguments: String,
     icon_string: String,

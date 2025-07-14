@@ -139,19 +139,19 @@ mod tests {
     use super::*;
     use crate::context::get_instance as get_context_instance;
     use alloc::{ffi::CString, format, vec::Vec};
-    use file_system::{create_device, Create_file_system, MemoryDeviceType, Mode, Open, PathOwned};
+    use file_system::{create_device, create_file_system, MemoryDevice, Mode, Open, PathOwned};
     use task::{test, TaskIdentifier};
-    use virtual_file_system::VirtualFileSystemType;
+    use virtual_file_system::VirtualFileSystem;
 
-    async fn initialize_test_environment(
-    ) -> (TaskIdentifier, &'static VirtualFileSystemType<'static>) {
+    async fn initialize_test_environment() -> (TaskIdentifier, &'static VirtualFileSystem<'static>)
+    {
         let _ = users::initialize();
 
         let _ = time::initialize(create_device!(drivers::native::TimeDriverType::new()));
 
         let task = task::get_instance().get_current_task_identifier().await;
 
-        let device = create_device!(MemoryDeviceType::<512>::new(1024 * 512));
+        let device = create_device!(MemoryDevice::<512>::new(1024 * 512));
 
         let cache_size = 256;
 
@@ -159,7 +159,7 @@ mod tests {
         let file_system = little_fs::FileSystem::new(device, cache_size).unwrap();
 
         let virtual_file_system =
-            virtual_file_system::initialize(Create_file_system!(file_system), None).unwrap();
+            virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
 
         (task, virtual_file_system)
     }

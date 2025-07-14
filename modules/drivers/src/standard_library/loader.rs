@@ -113,9 +113,8 @@ mod tests {
         let source_path = "Cargo.toml";
         let destination_path = "/Cargo.toml";
 
-        let device = file_system::create_device!(file_system::MemoryDeviceType::<512>::new(
-            1024 * 1024 * 512
-        ));
+        let device =
+            file_system::create_device!(file_system::MemoryDevice::<512>::new(1024 * 1024 * 512));
 
         little_fs::FileSystem::format(device.clone(), 256).unwrap();
         let mut file_system = little_fs::FileSystem::new(device, 256).unwrap();

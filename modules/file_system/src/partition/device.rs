@@ -365,11 +365,11 @@ impl fmt::Display for PartitionDeviceType {
 #[cfg(test)]
 mod tests {
     use super::PartitionDeviceType;
-    use crate::{DeviceTrait, DeviceType, MemoryDeviceType, Position};
+    use crate::{DeviceTrait, DeviceType, MemoryDevice, Position};
 
     /// Create a mock memory device for testing
     fn create_test_device() -> DeviceType {
-        let memory_device = MemoryDeviceType::<512>::new(4096);
+        let memory_device = MemoryDevice::<512>::new(4096);
         crate::create_device!(memory_device)
     }
 

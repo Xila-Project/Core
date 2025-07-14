@@ -17,7 +17,7 @@ use alloc::{
 use file_system::{Flags, Mode, Open, Path, PathOwned};
 use miniserde::{Deserialize, Serialize};
 use users::{GroupIdentifier, GroupIdentifierInner, UserIdentifier, UserIdentifierInner};
-use virtual_file_system::{DirectoryType, File, VirtualFileSystemType};
+use virtual_file_system::{DirectoryType, File, VirtualFileSystem};
 
 use crate::{Error, Result, GROUP_FOLDER_PATH};
 
@@ -132,7 +132,7 @@ pub fn get_group_file_path(group_name: &str) -> Result<PathOwned> {
 /// - File system errors (opening, reading)
 /// - JSON parsing errors
 pub async fn read_group_file<'a>(
-    virtual_file_system: &'a VirtualFileSystemType<'a>,
+    virtual_file_system: &'a VirtualFileSystem<'a>,
     buffer: &mut Vec<u8>,
     file: &str,
 ) -> Result<GroupType> {
@@ -183,7 +183,7 @@ pub async fn read_group_file<'a>(
 /// - File system operations (directory creation, file writing)
 /// - Users manager operations (adding group)
 pub async fn create_group<'a>(
-    virtual_file_system: &'a VirtualFileSystemType<'a>,
+    virtual_file_system: &'a VirtualFileSystem<'a>,
     group_name: &str,
     group_identifier: Option<GroupIdentifier>,
 ) -> Result<GroupIdentifier> {

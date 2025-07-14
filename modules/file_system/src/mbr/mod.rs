@@ -57,7 +57,7 @@ pub use utilities::*;
 use crate::{DeviceType, Error, PartitionEntryType, PartitionKind, Result};
 
 #[cfg(test)]
-use crate::MemoryDeviceType;
+use crate::MemoryDevice;
 
 /// Master Boot Record structure (512 bytes)
 #[derive(Debug, Clone)]
@@ -1154,7 +1154,7 @@ mod tests {
         let mut data = vec![0u8; 4096 * 1024];
         data[0..512].copy_from_slice(&mbr_data);
 
-        let memory_device = MemoryDeviceType::<512>::from_vec(data);
+        let memory_device = MemoryDevice::<512>::from_vec(data);
         let device = crate::create_device!(memory_device);
 
         // The sample MBR has signature 0x12345678
@@ -1177,7 +1177,7 @@ mod tests {
         let mut data = vec![0u8; 4096 * 1024];
         data[0..512].copy_from_slice(&mbr_data);
 
-        let memory_device = MemoryDeviceType::<512>::from_vec(data);
+        let memory_device = MemoryDevice::<512>::from_vec(data);
         let device = crate::create_device!(memory_device);
 
         // Request different signature than what's in the sample MBR
@@ -1209,7 +1209,7 @@ mod tests {
     fn test_find_or_create_partition_with_signature_no_mbr() {
         // Create device with no MBR
         let data = vec![0u8; 4096 * 1024]; // 8MB device with no MBR
-        let memory_device = MemoryDeviceType::<512>::from_vec(data);
+        let memory_device = MemoryDevice::<512>::from_vec(data);
         let device = crate::create_device!(memory_device);
 
         let result = Mbr::find_or_create_partition_with_signature(
@@ -1237,7 +1237,7 @@ mod tests {
         let mbr_bytes = empty_mbr.to_bytes();
         data[0..512].copy_from_slice(&mbr_bytes);
 
-        let memory_device = MemoryDeviceType::<512>::from_vec(data);
+        let memory_device = MemoryDevice::<512>::from_vec(data);
         let device = crate::create_device!(memory_device);
 
         let result = Mbr::find_or_create_partition_with_signature(
@@ -1264,7 +1264,7 @@ mod tests {
     #[test]
     fn test_format_disk_with_signature_and_partition() {
         let data = vec![0u8; 2048 * 1024]; // 4MB device
-        let memory_device = MemoryDeviceType::<512>::from_vec(data);
+        let memory_device = MemoryDevice::<512>::from_vec(data);
         let device = crate::create_device!(memory_device);
 
         let result = Mbr::format_disk_with_signature_and_partition(
@@ -1296,7 +1296,7 @@ mod tests {
     fn test_format_disk_with_signature_and_partition_device_too_small() {
         // Create very small device (less than 2048 sectors)
         let data = vec![0u8; 1024]; // 2 sectors only
-        let memory_device = MemoryDeviceType::<512>::from_vec(data);
+        let memory_device = MemoryDevice::<512>::from_vec(data);
         let device = crate::create_device!(memory_device);
 
         let result = Mbr::format_disk_with_signature_and_partition(

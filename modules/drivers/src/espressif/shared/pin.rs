@@ -15,14 +15,14 @@ macro_rules! Enumerate_pin_devices {
             [
                 $((
                     $Pin,
-                    Path_type::New_unchecked_constant(concat!("/Devices/Pin", $Pin))
+                    Path_type::New_unchecked_constant(concat!("/devices/Pin", $Pin))
                 ),)*
             ] }
     };
 }
 
 pub fn Mount_pin_devices(
-    Virtual_file_system: &file_system::VirtualFileSystemType,
+    Virtual_file_system: &file_system::VirtualFileSystem,
     Pin_devices: &'static [(u8, &'static file_system::Path_type)],
 ) -> Result<()> {
     for (i, Path) in Pin_devices.iter() {

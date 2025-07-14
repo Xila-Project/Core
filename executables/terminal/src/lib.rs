@@ -25,7 +25,7 @@ use crate::{error::Result, terminal::Terminal};
 pub const SHORTCUT: &str = r#"
 {
     "name": "Terminal",
-    "command": "/Binaries/Terminal",
+    "command": "/binaries/Terminal",
     "arguments": "",
     "terminal": false,
     "icon_string": ">_",
@@ -41,19 +41,19 @@ async fn mount_and_open(
     UniqueFileIdentifier,
 )> {
     virtual_file_system::get_instance()
-        .mount_device(task, &"/Devices/Terminal", DeviceType::new(terminal))
+        .mount_device(task, &"/devices/Terminal", DeviceType::new(terminal))
         .await?;
 
     let standard_in = virtual_file_system::get_instance()
         .open(
-            &"/Devices/Terminal",
+            &"/devices/Terminal",
             Flags::new(Mode::READ_ONLY, None, None),
             task,
         )
         .await?;
 
     let standard_out = virtual_file_system::get_instance()
-        .open(&"/Devices/Terminal", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/Terminal", Mode::WRITE_ONLY.into(), task)
         .await?;
 
     let standard_error = virtual_file_system::get_instance()
@@ -79,7 +79,7 @@ async fn inner_main(task: TaskIdentifier) -> Result<()> {
         virtual_file_system::get_instance(),
     );
 
-    ::executable::execute("/Binaries/Command_line_shell", "".to_string(), standard).await?;
+    ::executable::execute("/binaries/Command_line_shell", "".to_string(), standard).await?;
 
     while terminal.event_handler().await? {
         yield_now().await;

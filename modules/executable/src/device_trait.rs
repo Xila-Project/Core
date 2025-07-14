@@ -1,11 +1,11 @@
 use alloc::string::String;
 use file_system::DeviceTrait;
 use task::TaskIdentifier;
-use virtual_file_system::VirtualFileSystemType;
+use virtual_file_system::VirtualFileSystem;
 
 pub trait DeviceExecutableTrait: DeviceTrait {
     fn mount<'a>(
-        virtual_file_system: &'a VirtualFileSystemType<'a>,
+        virtual_file_system: &'a VirtualFileSystem<'a>,
         task: TaskIdentifier,
     ) -> Result<(), String>;
 }
@@ -19,9 +19,22 @@ pub trait DeviceExecutableTrait: DeviceTrait {
 ///
 /// For simple executables:
 /// ```rust
-/// Implement_executable_device!(
+/// extern crate alloc;
+///
+/// pub struct MyExecutableType;
+///
+/// async fn my_main_function(
+///     standard: executable::Standard,
+///     arguments: String
+/// ) -> Result<(), core::num::NonZeroUsize> {
+///    standard.print_line(&arguments);
+///
+///    Ok(())
+/// }
+///
+/// executable::implement_executable_device!(
 ///     Structure: MyExecutableType,
-///     Mount_path: "/Binaries/MyExecutable",
+///     Mount_path: "/binaries/MyExecutable",
 ///     Main_function: my_main_function,
 /// );
 /// ```
@@ -35,7 +48,7 @@ macro_rules! implement_executable_device {
     ) => {
         impl executable::DeviceExecutableTrait for $struct_name {
             fn mount<'a>(
-                virtual_file_system: &'a virtual_file_system::VirtualFileSystemType<'a>,
+                virtual_file_system: &'a virtual_file_system::VirtualFileSystem<'a>,
                 task: task::TaskIdentifier,
             ) -> core::result::Result<(), alloc::string::String> {
                 use alloc::string::ToString;
