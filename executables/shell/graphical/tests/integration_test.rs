@@ -16,10 +16,12 @@ async fn main() {
     use graphics::{get_minimal_buffer_size, InputKind, Point};
     use users::GroupIdentifier;
 
-    use virtual_file_system::{File, Mount_static_devices};
+    use virtual_file_system::{mount_static_devices, File};
 
     // - Initialize the task manager.
-    let task_instance = task::initialize();
+    let task_manager = task::initialize();
+
+    let task = task_manager.get_current_task_identifier().await;
 
     // - Initialize the user manager.
     let _ = users::initialize();
@@ -35,7 +37,7 @@ async fn main() {
 
     const BUFFER_SIZE: usize = get_minimal_buffer_size(&RESOLUTION);
 
-    graphics::initialize(
+    let graphics_manager = graphics::initialize(
         screen_device,
         pointer_device,
         InputKind::Pointer,
@@ -44,8 +46,15 @@ async fn main() {
     )
     .await;
 
-    graphics::get_instance()
+    graphics_manager
         .add_input_device(keyboard_device, InputKind::Keypad)
+        .await
+        .unwrap();
+
+    task_manager
+        .spawn(task, "Graphics", None, |_| {
+            graphics_manager.r#loop(task::Manager::sleep)
+        })
         .await
         .unwrap();
 
@@ -59,7 +68,7 @@ async fn main() {
     let virtual_file_system =
         virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
 
-    let task = task_instance.get_current_task_identifier().await;
+    let task = task_manager.get_current_task_identifier().await;
 
     virtual_file_system::create_default_hierarchy(virtual_file_system, task)
         .await
@@ -68,37 +77,37 @@ async fn main() {
     mount_static_executables!(
         virtual_file_system,
         task,
-        &[(&"/binaries/Graphical_shell", ShellExecutable),]
+        &[(&"/binaries/graphical_shell", ShellExecutable),]
     )
     .await
     .unwrap();
 
-    Mount_static_devices!(
+    mount_static_devices!(
         virtual_file_system,
         task,
         &[
             (
-                &"/devices/Standard_in",
+                &"/devices/standard_in",
                 drivers::standard_library::console::StandardInDevice
             ),
             (
-                &"/devices/Standard_out",
+                &"/devices/standard_out",
                 drivers::standard_library::console::StandardOutDevice
             ),
             (
-                &"/devices/Standard_error",
+                &"/devices/standard_error",
                 drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/Time", drivers::native::TimeDriver),
-            (&"/devices/Random", drivers::native::RandomDevice),
-            (&"/devices/Null", drivers::core::NullDevice)
+            (&"/devices/time", drivers::native::TimeDriver),
+            (&"/devices/random", drivers::native::RandomDevice),
+            (&"/devices/null", drivers::core::NullDevice)
         ]
     )
     .await
     .unwrap();
 
     virtual_file_system
-        .create_directory(&"/Configuration/Shared/Shortcuts", task)
+        .create_directory(&"/configuration/shared/shortcuts", task)
         .await
         .unwrap();
 
@@ -108,7 +117,7 @@ async fn main() {
 
         File::open(
             virtual_file_system,
-            format!("/Configuration/Shared/Shortcuts/Test{i}.json").as_str(),
+            format!("/configuration/shared/shortcuts/test{i}.json").as_str(),
             Flags::new(Mode::WRITE_ONLY, Some(Open::CREATE), None),
         )
         .await
@@ -149,26 +158,26 @@ async fn main() {
     .unwrap();
 
     let standard = Standard::open(
-        &"/devices/Standard_in",
-        &"/devices/Standard_out",
-        &"/devices/Standard_error",
+        &"/devices/standard_in",
+        &"/devices/standard_out",
+        &"/devices/standard_error",
         task,
         virtual_file_system,
     )
     .await
     .unwrap();
 
-    task_instance
+    task_manager
         .set_environment_variable(task, "Paths", "/")
         .await
         .unwrap();
 
-    task_instance
+    task_manager
         .set_environment_variable(task, "Host", "xila")
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/Graphical_shell", "".to_string(), standard)
+    let result = executable::execute("/binaries/graphical_shell", "".to_string(), standard)
         .await
         .unwrap()
         .join()

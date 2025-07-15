@@ -1,14 +1,18 @@
 extern crate alloc;
+extern crate std;
+
+use std::fs;
 
 use alloc::vec;
 
+use executable::build_crate;
 use wamr_rust_sdk::value::WasmValue;
 
 use drivers::standard_library::memory::MemoryManager;
 use file_system::{create_device, create_file_system, MemoryDevice};
 use memory::instantiate_global_allocator;
 use task::test;
-use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
+use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 use virtual_machine::{
     Environment, FunctionDescriptor, Function_descriptors, Instance, Module, Registrable, Runtime,
 };
@@ -57,25 +61,25 @@ async fn integration_test() {
         .await
         .unwrap();
 
-    Mount_static_devices!(
+    mount_static_devices!(
         virtual_file_system,
         task,
         &[
             (
-                &"/devices/Standard_in",
+                &"/devices/standard_in",
                 drivers::standard_library::console::StandardInDevice
             ),
             (
-                &"/devices/Standard_out",
+                &"/devices/standard_out",
                 drivers::standard_library::console::StandardOutDevice
             ),
             (
-                &"/devices/Standard_error",
+                &"/devices/standard_error",
                 drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/Time", drivers::native::TimeDriver),
-            (&"/devices/Random", drivers::native::RandomDevice),
-            (&"/devices/Null", drivers::core::NullDevice)
+            (&"/devices/time", drivers::native::TimeDriver),
+            (&"/devices/random", drivers::native::RandomDevice),
+            (&"/devices/null", drivers::core::NullDevice)
         ]
     )
     .await
@@ -86,13 +90,15 @@ async fn integration_test() {
         .await
         .unwrap();
 
-    // Load the WASM binary
-    let binary_buffer =
-        include_bytes!("./wasm_test/target/wasm32-wasip1/release/virtual_machine_wasm_test.wasm");
+    let wasm_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("./tests/wasm_test");
+
+    let binary_path = build_crate(&wasm_path).unwrap();
+
+    let binary_buffer = fs::read(&binary_path).expect("Failed to read the binary file");
 
     let standard_in = virtual_file_system
         .open(
-            &"/devices/Standard_in",
+            &"/devices/standard_in",
             file_system::Mode::READ_ONLY.into(),
             task,
         )
@@ -100,7 +106,7 @@ async fn integration_test() {
         .expect("Failed to open stdin");
     let standard_out = virtual_file_system
         .open(
-            &"/devices/Standard_out",
+            &"/devices/standard_out",
             file_system::Mode::WRITE_ONLY.into(),
             task,
         )
@@ -108,7 +114,7 @@ async fn integration_test() {
         .expect("Failed to open stdout");
     let standard_error = virtual_file_system
         .open(
-            &"/devices/Standard_error",
+            &"/devices/standard_error",
             file_system::Mode::WRITE_ONLY.into(),
             task,
         )
@@ -147,7 +153,7 @@ async fn integration_test() {
 
             assert_eq!(
                 instance
-                    .call_export_function("GCD", &vec![WasmValue::I32(9), WasmValue::I32(27)])
+                    .call_export_function("gcd", &vec![WasmValue::I32(9), WasmValue::I32(27)])
                     .unwrap(),
                 [WasmValue::I32(9)]
             );

@@ -19,7 +19,7 @@ use virtual_file_system::{File, VirtualFileSystem};
 pub const SHORTCUT: &str = r#"
 {
     "name": "Settings",
-    "command": "/binaries/Settings",
+    "command": "/binaries/settings",
     "arguments": "",
     "terminal": false,
     "icon_string": "Se",
@@ -34,12 +34,12 @@ impl SettingsExecutable {
         task: TaskIdentifier,
     ) -> core::result::Result<Self, String> {
         let _ = virtual_file_system
-            .create_directory(&"/Configuration/Shared/Shortcuts", task)
+            .create_directory(&"/configuration/shared/shortcuts", task)
             .await;
 
         let file = match File::open(
             virtual_file_system,
-            "/Configuration/Shared/Shortcuts/Settings.json",
+            "/configuration/shared/shortcuts/settings.json",
             Flags::new(Mode::WRITE_ONLY, Open::CREATE_ONLY.into(), None),
         )
         .await
@@ -61,7 +61,7 @@ impl SettingsExecutable {
 
 executable::implement_executable_device!(
     Structure: SettingsExecutable,
-    Mount_path: "/binaries/Settings",
+    Mount_path: "/binaries/settings",
     Main_function: main,
 );
 

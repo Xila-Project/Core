@@ -16,7 +16,7 @@ use xila::time;
 use xila::time::Duration;
 use xila::users;
 use xila::virtual_file_system;
-use xila::virtual_file_system::{Mount_static_devices, create_default_hierarchy};
+use xila::virtual_file_system::{create_default_hierarchy, mount_static_devices};
 use xila::virtual_machine;
 
 instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
@@ -58,25 +58,25 @@ async fn integration_test() {
         .await
         .unwrap();
 
-    Mount_static_devices!(
+    mount_static_devices!(
         virtual_file_system,
         task,
         &[
             (
-                &"/devices/Standard_in",
+                &"/devices/standard_in",
                 drivers::standard_library::console::StandardInDevice
             ),
             (
-                &"/devices/Standard_out",
+                &"/devices/standard_out",
                 drivers::standard_library::console::StandardOutDevice
             ),
             (
-                &"/devices/Standard_error",
+                &"/devices/standard_error",
                 drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/Time", drivers::native::TimeDriver),
-            (&"/devices/Random", drivers::native::RandomDevice),
-            (&"/devices/Null", drivers::core::NullDevice)
+            (&"/devices/time", drivers::native::TimeDriver),
+            (&"/devices/random", drivers::native::RandomDevice),
+            (&"/devices/null", drivers::core::NullDevice)
         ]
     )
     .await
@@ -115,7 +115,7 @@ async fn integration_test() {
 
     let standard_in = virtual_file_system
         .open(
-            &"/devices/Standard_in",
+            &"/devices/standard_in",
             file_system::Mode::READ_ONLY.into(),
             task,
         )
@@ -124,7 +124,7 @@ async fn integration_test() {
 
     let standard_out = virtual_file_system
         .open(
-            &"/devices/Standard_out",
+            &"/devices/standard_out",
             file_system::Mode::WRITE_ONLY.into(),
             task,
         )
@@ -133,7 +133,7 @@ async fn integration_test() {
 
     let standard_error = virtual_file_system
         .open(
-            &"/devices/Standard_out",
+            &"/devices/standard_out",
             file_system::Mode::WRITE_ONLY.into(),
             task,
         )

@@ -25,7 +25,7 @@
 //! - Users are stored in `/System/Users/` directory
 //! - Groups are stored in `/System/Groups/` directory
 //! - Each user/group has their own JSON file containing their data
-//! - Random salt generation uses `/devices/Random` device
+//! - Random salt generation uses `/devices/random` device
 
 #![no_std]
 
@@ -42,13 +42,13 @@ pub use group::*;
 pub use user::*;
 
 /// Path to the users directory in the filesystem
-const USERS_FOLDER_PATH: &str = "/System/Users";
+const USERS_FOLDER_PATH: &str = "/system/users";
 
 /// Path to the groups directory in the filesystem
-const GROUP_FOLDER_PATH: &str = "/System/Groups";
+const GROUP_FOLDER_PATH: &str = "/system/groups";
 
 /// Path to the random device used for salt generation
-const RANDOM_DEVICE_PATH: &str = "/devices/Random";
+const RANDOM_DEVICE_PATH: &str = "/devices/random";
 
 /// Loads all users and groups from the filesystem into memory.
 ///

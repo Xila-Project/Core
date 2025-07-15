@@ -2,11 +2,11 @@ extern crate alloc;
 
 use command_line_shell::ShellExecutable;
 use drivers::standard_library::loader::Loader;
-use executable::{mount_static_executables, Standard};
-use file_system::{create_device, create_file_system, MemoryDevice, Mode};
+use executable::{build_crate, mount_static_executables, Standard};
+use file_system::{create_device, create_file_system, MemoryDevice, Mode, Path};
 use memory::instantiate_global_allocator;
 use task::test;
-use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
+use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 use wasm::WasmDevice;
 
 instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
@@ -28,11 +28,13 @@ async fn i() {
 
     let mut file_system = little_fs::FileSystem::new(memory_device, 256).unwrap();
 
-    let wasm_executable_path = "./tests/wasm_test/target/wasm32-wasip1/release/WASM_test.wasm";
-    let destination = "/test.wasm";
+    let crate_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("./tests/wasm_test");
+    let binary_path = build_crate(&crate_path).unwrap();
+
+    let destination = Path::new("/test_wasm.wasm");
 
     Loader::new()
-        .add_file(wasm_executable_path, destination)
+        .add_file(binary_path, destination)
         .load(&mut file_system)
         .unwrap();
 
@@ -45,25 +47,25 @@ async fn i() {
         .await
         .unwrap();
 
-    Mount_static_devices!(
+    mount_static_devices!(
         virtual_file_system,
         task,
         &[
             (
-                &"/devices/Standard_in",
+                &"/devices/standard_in",
                 drivers::standard_library::console::StandardInDevice
             ),
             (
-                &"/devices/Standard_out",
+                &"/devices/standard_out",
                 drivers::standard_library::console::StandardOutDevice
             ),
             (
-                &"/devices/Standard_error",
+                &"/devices/standard_error",
                 drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/Time", drivers::native::TimeDriver),
-            (&"/devices/Random", drivers::native::RandomDevice),
-            (&"/devices/Null", drivers::core::NullDevice)
+            (&"/devices/time", drivers::native::TimeDriver),
+            (&"/devices/random", drivers::native::RandomDevice),
+            (&"/devices/null", drivers::core::NullDevice)
         ]
     )
     .await
@@ -73,25 +75,25 @@ async fn i() {
         virtual_file_system,
         task,
         &[
-            (&"/binaries/Command_line_shell", ShellExecutable),
-            (&"/binaries/WASM", WasmDevice)
+            (&"/binaries/command_line_shell", ShellExecutable),
+            (&"/binaries/wasm", WasmDevice)
         ]
     )
     .await
     .unwrap();
 
     let standard_in = virtual_file_system
-        .open(&"/devices/Standard_in", Mode::READ_ONLY.into(), task)
+        .open(&"/devices/standard_in", Mode::READ_ONLY.into(), task)
         .await
         .unwrap();
 
     let standard_out = virtual_file_system
-        .open(&"/devices/Standard_out", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/standard_out", Mode::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
     let standard_error = virtual_file_system
-        .open(&"/devices/Standard_error", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/standard_error", Mode::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
@@ -110,7 +112,7 @@ async fn i() {
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/Command_line_shell", "".to_string(), standard)
+    let result = executable::execute("/binaries/command_line_shell", "".to_string(), standard)
         .await
         .unwrap()
         .join()

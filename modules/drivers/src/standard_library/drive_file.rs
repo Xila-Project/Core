@@ -87,7 +87,7 @@ mod tests {
 
     #[test]
     fn test_read_write() {
-        let file = FileDriveDevice::new(&"./Test.img");
+        let file = FileDriveDevice::new(&"./test.img");
 
         let data = [1, 2, 3, 4, 5];
 
@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn test_read_write_at_position() {
-        let file = FileDriveDevice::new(&"./Test.img");
+        let file = FileDriveDevice::new(&"./test.img");
 
         file.set_position(&file_system::Position::Start(10))
             .unwrap();

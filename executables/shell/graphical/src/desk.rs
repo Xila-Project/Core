@@ -299,17 +299,17 @@ impl Desk {
         let shortcut = Shortcut::read(shortcut_name, &mut buffer).await?;
 
         let standard_in = virtual_file_system::get_instance()
-            .open(&"/devices/Null", Mode::READ_ONLY.into(), task)
+            .open(&"/devices/null", Mode::READ_ONLY.into(), task)
             .await
             .map_err(Error::FailedToOpenStandardFile)?;
 
         let standard_out = virtual_file_system::get_instance()
-            .open(&"/devices/Null", Mode::WRITE_ONLY.into(), task)
+            .open(&"/devices/null", Mode::WRITE_ONLY.into(), task)
             .await
             .map_err(Error::FailedToOpenStandardFile)?;
 
         let standard_err = virtual_file_system::get_instance()
-            .open(&"/devices/Null", Mode::WRITE_ONLY.into(), task)
+            .open(&"/devices/null", Mode::WRITE_ONLY.into(), task)
             .await
             .map_err(Error::FailedToOpenStandardFile)?;
 

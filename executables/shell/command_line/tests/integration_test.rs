@@ -6,7 +6,7 @@ use executable::{mount_static_executables, Standard};
 use file_system::{create_device, create_file_system, MemoryDevice, Mode};
 use task::test;
 use users::GroupIdentifier;
-use virtual_file_system::{create_default_hierarchy, Mount_static_devices};
+use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 
 #[ignore]
 #[test]
@@ -32,25 +32,25 @@ async fn integration_test() {
         .await
         .unwrap();
 
-    Mount_static_devices!(
+    mount_static_devices!(
         virtual_file_system,
         task,
         &[
             (
-                &"/devices/Standard_in",
+                &"/devices/standard_in",
                 drivers::standard_library::console::StandardInDevice
             ),
             (
-                &"/devices/Standard_out",
+                &"/devices/standard_out",
                 drivers::standard_library::console::StandardOutDevice
             ),
             (
-                &"/devices/Standard_error",
+                &"/devices/standard_error",
                 drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/Time", drivers::native::TimeDriver),
-            (&"/devices/Random", drivers::native::RandomDevice),
-            (&"/devices/Null", drivers::core::NullDevice)
+            (&"/devices/time", drivers::native::TimeDriver),
+            (&"/devices/random", drivers::native::RandomDevice),
+            (&"/devices/null", drivers::core::NullDevice)
         ]
     )
     .await
@@ -59,7 +59,7 @@ async fn integration_test() {
     mount_static_executables!(
         virtual_file_system,
         task,
-        &[(&"/binaries/Command_line_shell", ShellExecutable)]
+        &[(&"/binaries/command_line_shell", ShellExecutable)]
     )
     .await
     .unwrap();
@@ -81,17 +81,17 @@ async fn integration_test() {
     .unwrap();
 
     let standard_in = virtual_file_system
-        .open(&"/devices/Standard_in", Mode::READ_ONLY.into(), task)
+        .open(&"/devices/standard_in", Mode::READ_ONLY.into(), task)
         .await
         .unwrap();
 
     let standard_out = virtual_file_system
-        .open(&"/devices/Standard_out", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/standard_out", Mode::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
     let standard_error = virtual_file_system
-        .open(&"/devices/Standard_error", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/standard_error", Mode::WRITE_ONLY.into(), task)
         .await
         .unwrap();
 
@@ -113,7 +113,7 @@ async fn integration_test() {
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/Command_line_shell", "".to_string(), standard)
+    let result = executable::execute("/binaries/command_line_shell", "".to_string(), standard)
         .await
         .unwrap()
         .join()

@@ -18,7 +18,7 @@ use executable::Standard;
 pub const SHORTCUT: &str = r#"
 {
     "name": "File manager",
-    "command": "/binaries/File_manager",
+    "command": "/binaries/file_manager",
     "arguments": "",
     "terminal": false,
     "icon_string": "Fm",
@@ -33,12 +33,12 @@ impl FileManagerExecutable {
         task: TaskIdentifier,
     ) -> core::result::Result<Self, String> {
         let _ = virtual_file_system
-            .create_directory(&"/Configuration/Shared/Shortcuts", task)
+            .create_directory(&"/configuration/shared/shortcuts", task)
             .await;
 
         let file = match File::open(
             virtual_file_system,
-            "/Configuration/Shared/Shortcuts/File_manager.json",
+            "/configuration/shared/shortcuts/file_manager.json",
             Flags::new(Mode::WRITE_ONLY, Open::CREATE_ONLY.into(), None),
         )
         .await
@@ -60,7 +60,7 @@ impl FileManagerExecutable {
 
 executable::implement_executable_device!(
     Structure: FileManagerExecutable,
-    Mount_path: "/binaries/File_manager",
+    Mount_path: "/binaries/file_manager",
     Main_function: main,
 );
 

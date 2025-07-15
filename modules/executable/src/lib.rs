@@ -2,12 +2,16 @@
 
 extern crate alloc;
 
+#[cfg(feature = "building")]
+mod building;
 mod device_trait;
 mod error;
 mod read_data;
 mod standard;
 
 use alloc::string::String;
+#[cfg(feature = "building")]
+pub use building::*;
 pub use device_trait::*;
 pub use error::*;
 pub use read_data::*;

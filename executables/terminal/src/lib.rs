@@ -25,7 +25,7 @@ use crate::{error::Result, terminal::Terminal};
 pub const SHORTCUT: &str = r#"
 {
     "name": "Terminal",
-    "command": "/binaries/Terminal",
+    "command": "/binaries/terminal",
     "arguments": "",
     "terminal": false,
     "icon_string": ">_",
@@ -79,7 +79,7 @@ async fn inner_main(task: TaskIdentifier) -> Result<()> {
         virtual_file_system::get_instance(),
     );
 
-    ::executable::execute("/binaries/Command_line_shell", "".to_string(), standard).await?;
+    ::executable::execute("/binaries/command_line_shell", "".to_string(), standard).await?;
 
     while terminal.event_handler().await? {
         yield_now().await;

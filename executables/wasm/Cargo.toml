@@ -2,7 +2,6 @@
 name = "wasm"
 version = "0.1.0"
 edition = "2021"
-build = "build.rs"
 
 [dependencies]
 file_system = { path = "../../modules/file_system" }
@@ -21,6 +20,7 @@ little_fs = { path = "../../modules/little_fs" }
 command_line_shell = { path = "../shell/command_line" }
 task = { path = "../../modules/task" }
 memory = { path = "../../modules/memory" }
+executable = { path = "../../modules/executable", features = ["building"] }
 
 [[test]]
 name = "integration_test"
