@@ -19,6 +19,7 @@ log = { path = "../../log" }
 
 [dev-dependencies]
 drivers = { path = "../../drivers" }
+executable = { path = "../../executable", features = ["building"] }
 little_fs = { path = "../../little_fs" }
 memory = { path = "../../memory" }
 virtual_file_system = { path = "../../virtual_file_system" }

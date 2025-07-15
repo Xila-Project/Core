@@ -39,7 +39,7 @@ pub struct ShellExecutable;
 
 executable::implement_executable_device!(
     Structure: ShellExecutable,
-    Mount_path: "/binaries/Command_line_shell",
+    Mount_path: "/binaries/command_line_shell",
     Main_function: main,
 );
 

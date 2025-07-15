@@ -13,12 +13,12 @@ impl TerminalExecutable {
         task: TaskIdentifier,
     ) -> Result<Self, String> {
         let _ = virtual_file_system
-            .create_directory(&"/Configuration/Shared/Shortcuts", task)
+            .create_directory(&"/configuration/shared/shortcuts", task)
             .await;
 
         let file = match File::open(
             virtual_file_system,
-            "/Configuration/Shared/Shortcuts/Terminal.json",
+            "/configuration/shared/shortcuts/terminal.json",
             Flags::new(Mode::WRITE_ONLY, Open::CREATE_ONLY.into(), None),
         )
         .await
@@ -40,6 +40,6 @@ impl TerminalExecutable {
 
 implement_executable_device!(
     Structure: TerminalExecutable,
-    Mount_path: "/binaries/Terminal",
+    Mount_path: "/binaries/terminal",
     Main_function: main,
 );

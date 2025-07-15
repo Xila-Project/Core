@@ -1,14 +1,9 @@
-use std::prelude::rust_2024::*;
-
-use std::io;
-
-use std::{fs::File, io::Read, path};
-
 use file_system::{FileSystemTraits, Flags, Mode, Open, Path, PathOwned, Time};
-
-use users::{GroupIdentifier, UserIdentifier};
-
+use std::io;
+use std::prelude::rust_2024::*;
+use std::{fs::File, io::Read, path};
 use task::TaskIdentifier;
+use users::{GroupIdentifier, UserIdentifier};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -30,19 +25,40 @@ impl From<io::Error> for Error {
     }
 }
 
-pub struct Loader {
+pub struct Loader<'a> {
     paths: Vec<(path::PathBuf, PathOwned)>,
+    buffers: Vec<(&'a [u8], PathOwned)>,
 }
 
-impl Default for Loader {
+impl Default for Loader<'_> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Loader {
+impl<'a> Loader<'a> {
     pub fn new() -> Self {
-        Self { paths: Vec::new() }
+        Self {
+            paths: vec![],
+            buffers: vec![],
+        }
+    }
+
+    pub fn add_file_from_buffer(mut self, buffer: &'a [u8], destination: impl AsRef<Path>) -> Self {
+        self.buffers.push((buffer, destination.as_ref().to_owned()));
+
+        self
+    }
+
+    pub fn add_files_from_buffers(
+        mut self,
+        buffers: impl IntoIterator<Item = (&'a [u8], PathOwned)>,
+    ) -> Self {
+        for (buffer, destination) in buffers {
+            self = self.add_file_from_buffer(buffer, destination);
+        }
+
+        self
     }
 
     pub fn add_file(
@@ -95,6 +111,21 @@ impl Loader {
                 file_system.write(destination_file, &buffer[..read], Time::new(0))?;
             }
 
+            file_system.close(destination_file)?;
+        }
+
+        // Write buffers to file system
+        for (buffer, destination_path) in &self.buffers {
+            let destination_file = file_system.open(
+                TaskIdentifier::new(0),
+                destination_path,
+                Flags::new(Mode::READ_ONLY, Some(Open::CREATE), None),
+                Time::new(0),
+                UserIdentifier::ROOT,
+                GroupIdentifier::ROOT,
+            )?;
+
+            file_system.write(destination_file, buffer, Time::new(0))?;
             file_system.close(destination_file)?;
         }
 

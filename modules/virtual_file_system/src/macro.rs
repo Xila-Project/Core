@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! Mount_static_devices {
+macro_rules! mount_static_devices {
 
     ( $Virtual_file_system:expr, $Task_identifier:expr, &[ $( ($Path:expr, $Device:expr) ),* $(,)? ] ) => {
 

@@ -93,8 +93,3 @@ members = [
     "examples/native",
     "executables/calculator",
 ]
-exclude = [
-    "modules/virtual_machine/tests/wasm_test",
-    "modules/bindings/tests/wasm_test",
-    "Build_tool",
-]
