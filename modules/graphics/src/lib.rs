@@ -12,6 +12,7 @@ mod input;
 mod manager;
 mod point;
 mod screen;
+mod stubs;
 mod window;
 
 pub mod lvgl;
@@ -26,4 +27,5 @@ pub use input::*;
 pub use manager::*;
 pub use point::*;
 pub use screen::*;
+pub use stubs::*;
 pub use window::*;

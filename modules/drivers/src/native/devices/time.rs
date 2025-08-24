@@ -3,21 +3,21 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use core::time::Duration;
 use file_system::{DeviceTrait, Error, Result, Size};
 
-pub struct TimeDriver;
+pub struct TimeDevice;
 
-impl Default for TimeDriver {
+impl Default for TimeDevice {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl TimeDriver {
+impl TimeDevice {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl DeviceTrait for TimeDriver {
+impl DeviceTrait for TimeDevice {
     fn read(&self, buffer: &mut [u8]) -> Result<Size> {
         let duration = SystemTime::now()
             .duration_since(UNIX_EPOCH)

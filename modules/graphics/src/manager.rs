@@ -16,11 +16,11 @@ use super::lvgl;
 
 use super::Point;
 
-use crate::window::Window;
 use crate::Color;
 use crate::Display;
 use crate::Input;
 use crate::InputKind;
+use crate::window::Window;
 use crate::{Error, Result, ScreenReadData};
 
 static MANAGER_INSTANCE: OnceLock<Manager> = OnceLock::new();

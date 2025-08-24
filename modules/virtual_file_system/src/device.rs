@@ -6,8 +6,8 @@ use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLo
 use task::TaskIdentifier;
 
 use file_system::{
-    get_new_file_identifier, get_new_inode, Device, Error, FileIdentifier, Flags, Inode,
-    LocalFileIdentifier, Mode, Path, PathOwned, Position, Result, Size, UniqueFileIdentifier,
+    Device, Error, FileIdentifier, Flags, Inode, LocalFileIdentifier, Mode, Path, PathOwned,
+    Position, Result, Size, UniqueFileIdentifier, get_new_file_identifier, get_new_inode,
 };
 
 type OpenDeviceInner = (Device, Flags, UniqueFileIdentifier);
@@ -401,7 +401,7 @@ impl<'a> FileSystem<'a> {
 mod tests {
     extern crate std;
     use alloc::vec;
-    use file_system::{create_device, Position};
+    use file_system::{Position, create_device};
 
     use file_system::MemoryDevice;
     use task::test;

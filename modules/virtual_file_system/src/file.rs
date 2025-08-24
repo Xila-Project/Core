@@ -130,9 +130,11 @@ impl<'a> File<'a> {
 
 impl Drop for File<'_> {
     fn drop(&mut self) {
+        log::information!("Closing file");
         let _ = block_on(
             self.file_system
                 .close(self.get_file_identifier(), self.task),
-        );
+        )
+        .map_err(|error| log::error!("Failed to close file: {error:?}"));
     }
 }

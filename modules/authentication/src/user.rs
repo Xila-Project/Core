@@ -21,8 +21,8 @@ use users::{GroupIdentifier, GroupIdentifierInner, UserIdentifier, UserIdentifie
 use virtual_file_system::{Directory, File, VirtualFileSystem};
 
 use crate::{
-    hash::{generate_salt, hash_password},
     Error, Result, USERS_FOLDER_PATH,
+    hash::{generate_salt, hash_password},
 };
 
 /// Represents a user account with all associated metadata.

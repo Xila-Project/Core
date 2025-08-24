@@ -1,7 +1,7 @@
 [package]
 name = "abi"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 build = "build.rs"
 
 [dependencies]
@@ -14,10 +14,11 @@ network = { path = "../network" }
 synchronization = { version = "0.1.0", path = "../synchronization" }
 futures = { version = "0.1.0", path = "../futures" }
 log = { version = "0.1.0", path = "../log" }
+libc = { version = "0.2.174" }
 
 [build-dependencies]
 cbindgen = "0.29"
- 
+
 [dev-dependencies]
 drivers = { path = "../drivers" }
 little_fs = { path = "../little_fs" }

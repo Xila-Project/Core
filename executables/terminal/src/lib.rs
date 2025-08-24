@@ -89,6 +89,7 @@ async fn inner_main(task: TaskIdentifier) -> Result<()> {
 }
 
 pub async fn main(standard: Standard, _: String) -> core::result::Result<(), NonZeroUsize> {
+    log::information!("Starting terminal...");
     if let Err(error) = inner_main(standard.get_task()).await {
         standard.print_error(&error.to_string()).await;
         return Err(error.into());

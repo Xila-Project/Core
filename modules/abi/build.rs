@@ -1,6 +1,6 @@
 pub fn main() {
     let out_dir = "./include";
-    let out_file = format!("{out_dir}/xila.h");
+    let out_file = format!("{out_dir}/__xila_abi_generated.h");
 
     let enumeration_configuration = cbindgen::EnumConfig {
         prefix_with_name: true,
@@ -9,8 +9,14 @@ pub fn main() {
 
     let configuration: cbindgen::Config = cbindgen::Config {
         language: cbindgen::Language::C,
-        include_guard: Some("XILA_H_INCLUDED".to_string()),
+        include_guard: Some("__XILA_GENERATED_H_INCLUDED".to_string()),
         enumeration: enumeration_configuration,
+        sys_includes: vec![
+            "stddef.h".to_string(),
+            "stdint.h".to_string(),
+            "stdbool.h".to_string(),
+        ],
+        no_includes: true,
         ..Default::default()
     };
 

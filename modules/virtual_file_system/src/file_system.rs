@@ -9,7 +9,7 @@ use synchronization::{
 
 use alloc::{boxed::Box, collections::BTreeMap};
 
-use network::{Port, Protocol, SocketDriver, IP};
+use network::{IP, Port, Protocol, SocketDriver};
 use task::TaskIdentifier;
 use time::Duration;
 use users::{GroupIdentifier, UserIdentifier};
@@ -25,7 +25,7 @@ use file_system::{
 };
 
 use crate::device::InternalPath;
-use crate::{device, pipe, SockerAddress};
+use crate::{SockerAddress, device, pipe};
 
 struct InternalFileSystem {
     pub mount_point: PathOwned,
@@ -285,6 +285,9 @@ impl<'a> VirtualFileSystem<'a> {
         flags: Flags,
         task: TaskIdentifier,
     ) -> Result<UniqueFileIdentifier> {
+        let p = path.as_ref();
+        log::information!("Open file - {flags:?} : {p:?}");
+
         let file_systems = self.file_systems.read().await; // Get the file systems
 
         let (file_system_identifier, file_system, relative_path) =
@@ -425,7 +428,7 @@ impl<'a> VirtualFileSystem<'a> {
                     .get(&file_system)
                     .ok_or(Error::InvalidIdentifier)?
                     .inner
-                    .read(local_file_identifier, buffer, time)
+                    .read(local_file_identifier, buffer, time);
             }
         };
 
@@ -517,6 +520,9 @@ impl<'a> VirtualFileSystem<'a> {
                 break;
             }
 
+            log::information!("Read {} bytes", size);
+            log::information!("Chunk: {chunk:?}");
+
             buffer.extend_from_slice(&chunk[..size]);
 
             read_size += size;
@@ -559,7 +565,7 @@ impl<'a> VirtualFileSystem<'a> {
                     .get(&file_system)
                     .ok_or(Error::InvalidIdentifier)?
                     .inner
-                    .write(local_file_identifier, buffer, time)
+                    .write(local_file_identifier, buffer, time);
             }
         };
 

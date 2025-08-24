@@ -11,6 +11,7 @@ mod error;
 mod file;
 mod file_system;
 mod flags;
+mod stubs;
 
 use configuration::*;
 use directory::*;
@@ -18,3 +19,4 @@ use error::*;
 use file::*;
 pub use file_system::*;
 use flags::*;
+pub use stubs::*;

@@ -1,3 +1,5 @@
+use core::fmt::Display;
+
 #[cfg(target_pointer_width = "32")]
 pub type TaskIdentifierInner = u16;
 #[cfg(target_pointer_width = "64")]
@@ -37,6 +39,12 @@ impl From<TaskIdentifier> for TaskIdentifierInner {
 impl PartialEq<TaskIdentifierInner> for TaskIdentifier {
     fn eq(&self, other: &TaskIdentifierInner) -> bool {
         self.0 == *other
+    }
+}
+
+impl Display for TaskIdentifier {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

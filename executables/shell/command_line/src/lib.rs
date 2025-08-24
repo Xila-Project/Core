@@ -15,7 +15,7 @@ use alloc::{
 use executable::execute;
 use file_system::Path;
 
-use crate::{parser::parse, resolver::resolve, tokenizer::tokenize, Error, Result};
+use crate::{Error, Result, parser::parse, resolver::resolve, tokenizer::tokenize};
 
 mod commands;
 mod error;
@@ -164,6 +164,7 @@ impl Shell {
     }
 
     pub async fn main(&mut self, arguments: String) -> core::result::Result<(), NonZeroUsize> {
+        log::information!("Starting command line shell...");
         let user = match task::get_instance()
             .get_environment_variable(self.standard.get_task(), "User")
             .await

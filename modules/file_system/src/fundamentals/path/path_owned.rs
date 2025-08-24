@@ -8,7 +8,7 @@ use alloc::{
     vec::Vec,
 };
 
-use super::{Path, EXTENSION_SEPARATOR, SEPARATOR};
+use super::{EXTENSION_SEPARATOR, Path, SEPARATOR};
 
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 #[repr(transparent)]

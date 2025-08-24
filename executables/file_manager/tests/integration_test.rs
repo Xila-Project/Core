@@ -2,7 +2,7 @@ extern crate alloc;
 
 use executable::Standard;
 use file_manager::FileManagerExecutable;
-use file_system::{create_device, create_file_system, MemoryDevice, Mode};
+use file_system::{MemoryDevice, Mode, create_device, create_file_system};
 use task::test;
 
 #[cfg(target_os = "linux")]
@@ -13,7 +13,7 @@ async fn main() {
     use command_line_shell::ShellExecutable;
     use drivers::native::window_screen;
     use executable::mount_static_executables;
-    use graphics::{get_minimal_buffer_size, InputKind, Point};
+    use graphics::{InputKind, Point, get_minimal_buffer_size};
     use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 
     // - Initialize the task manager.
@@ -25,7 +25,7 @@ async fn main() {
     let _ = users::initialize();
 
     // - Initialize the time manager.
-    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDevice::new()));
 
     // - Initialize the virtual file system.
     let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
@@ -86,7 +86,7 @@ async fn main() {
                 &"/devices/standard_error",
                 drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers::native::TimeDriver),
+            (&"/devices/time", drivers::native::TimeDevice),
             (&"/devices/random", drivers::native::RandomDevice),
             (&"/devices/null", drivers::core::NullDevice)
         ]

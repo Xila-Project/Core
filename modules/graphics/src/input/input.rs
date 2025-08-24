@@ -4,9 +4,9 @@ use core::ffi::c_void;
 
 use file_system::Device;
 
-use crate::{lvgl, Result};
+use crate::{Result, lvgl};
 
-use super::{binding_callback_function, InputKind, UserData};
+use super::{InputKind, UserData, binding_callback_function};
 
 pub struct Input {
     #[allow(dead_code)]

@@ -1,5 +1,5 @@
 use core::{
-    ffi::{c_void, CStr},
+    ffi::{CStr, c_void},
     marker::PhantomData,
 };
 

@@ -2,7 +2,7 @@ use core::{
     mem::{align_of, size_of},
     ptr::drop_in_place,
 };
-use synchronization::blocking_mutex::{raw::CriticalSectionRawMutex, Mutex};
+use synchronization::blocking_mutex::{Mutex, raw::CriticalSectionRawMutex};
 
 pub struct RawRwLock {
     /// Mutex to protect the lock state.
@@ -117,7 +117,7 @@ impl RawRwLock {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static RAW_RWLOCK_SIZE: usize = size_of::<RawRwLock>();
 
 /// This function is used to initialize a rwlock.
@@ -129,7 +129,7 @@ pub static RAW_RWLOCK_SIZE: usize = size_of::<RawRwLock>();
 /// # Errors
 ///
 /// This function may return an error if the rwlock is not initialized.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_initialize_rwlock(rwlock: *mut RawRwLock) -> bool {
     if rwlock.is_null() {
         return false;
@@ -151,7 +151,7 @@ pub unsafe extern "C" fn xila_initialize_rwlock(rwlock: *mut RawRwLock) -> bool 
 /// The caller must ensure:
 /// - `rwlock` points to a valid, initialized `Raw_rwlock_type`
 /// - The rwlock remains valid for the duration of the call
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_read_rwlock(rwlock: *mut RawRwLock) -> bool {
     let rwlock = match RawRwLock::from_mutable_pointer(rwlock) {
         Some(rwlock) => rwlock,
@@ -168,7 +168,7 @@ pub unsafe extern "C" fn xila_read_rwlock(rwlock: *mut RawRwLock) -> bool {
 /// The caller must ensure:
 /// - `rwlock` points to a valid, initialized `Raw_rwlock_type`
 /// - The rwlock remains valid for the duration of the call
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_write_rwlock(rwlock: *mut RawRwLock) -> bool {
     let rwlock = match RawRwLock::from_mutable_pointer(rwlock) {
         Some(rwlock) => rwlock,
@@ -186,7 +186,7 @@ pub unsafe extern "C" fn xila_write_rwlock(rwlock: *mut RawRwLock) -> bool {
 /// - `rwlock` points to a valid, initialized `Raw_rwlock_type`
 /// - The rwlock remains valid for the duration of the call
 /// - The current task owns the lock (either read or write)
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_unlock_rwlock(rwlock: *mut RawRwLock) -> bool {
     let rwlock = match RawRwLock::from_mutable_pointer(rwlock) {
         Some(rwlock) => rwlock,
@@ -204,7 +204,7 @@ pub unsafe extern "C" fn xila_unlock_rwlock(rwlock: *mut RawRwLock) -> bool {
 /// - `rwlock` points to a valid, initialized `Raw_rwlock_type` allocated with Box
 /// - The rwlock is not currently locked
 /// - No other threads are waiting on the rwlock
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_destroy_rwlock(rwlock: *mut RawRwLock) -> bool {
     let _ = match RawRwLock::from_mutable_pointer(rwlock) {
         Some(rw_lock) => rw_lock,

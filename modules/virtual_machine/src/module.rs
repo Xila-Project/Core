@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use file_system::UniqueFileIdentifier;
 use wamr_rust_sdk::{module, sys::wasm_runtime_set_wasi_args_ex};
 
-use crate::{runtime::Runtime, Error, Result};
+use crate::{Error, Result, runtime::Runtime};
 
 pub struct Module<'runtime> {
     module: module::Module<'runtime>,

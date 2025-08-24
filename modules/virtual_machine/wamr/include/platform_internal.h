@@ -7,25 +7,25 @@
 #define _XILA_PLATFORM_INTERNAL_H
 
 #include "../../../abi/include/xila.h"
+#include "../../../abi/include/stubs.h"
+
 
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdbool.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <errno.h>
-#include <math.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/uio.h>
-#include <poll.h>
+#include <stddef.h>
 #include <limits.h>
-#include <assert.h>
-#include <sys/ioctl.h>
+
+#include "errno.h"
+#include "string.h"
+#include "assert.h"
+#include "types.h"
+#include "poll.h"
+#include "time.h"
+#include "stdio.h"
+#include "inet.h"
+#include "pthread.h"
+
 
 #ifdef __cplusplus
 extern "C"
@@ -51,8 +51,8 @@ extern "C"
 
     typedef struct RawMutex korp_mutex;
 
-    typedef pthread_cond_t korp_cond;
-    typedef pthread_t korp_thread;
+    typedef XilaConditionVariable korp_cond;
+    typedef int* korp_thread;
 
     struct RawRwLock
     {
@@ -125,11 +125,26 @@ extern "C"
 
     typedef uint64_t os_dir_stream;
     typedef uint64_t os_raw_file_handle;
-    typedef uint64_t os_file_handle;
+    typedef XilaUniqueFileIdentifier os_file_handle;
 
-    uint64_t os_get_invalid_handle();
+    XilaUniqueFileIdentifier os_get_invalid_handle();
 
     int os_getpagesize();
+
+
+    // pthread types and constants
+    typedef struct { int _dummy; } pthread_condattr_t;
+    typedef struct { int _dummy; } pthread_cond_t;
+    typedef struct { int _dummy; } pthread_t;
+    #define CLOCK_MONOTONIC 1
+    
+    // pthread function prototypes
+    int pthread_condattr_init(pthread_condattr_t *attr);
+    int pthread_condattr_destroy(pthread_condattr_t *attr);
+    int pthread_condattr_setclock(pthread_condattr_t *attr, int clock_id);
+    int pthread_cond_init(korp_cond *cond, const pthread_condattr_t *attr);
+
+    typedef pthread_condattr_t os_cond_attr_t; ;
 
 #ifdef __cplusplus
 }

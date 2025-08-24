@@ -1,4 +1,4 @@
-use crate::{lvgl, Point};
+use crate::{Point, lvgl};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Area(Point, Point);

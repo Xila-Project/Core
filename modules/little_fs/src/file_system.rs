@@ -2,15 +2,15 @@ use core::mem::MaybeUninit;
 
 use alloc::{boxed::Box, collections::btree_map::BTreeMap, ffi::CString, vec::Vec};
 use file_system::{
-    get_new_file_identifier, Device, Entry, FileIdentifier, FileIdentifierInner,
-    FileSystemIdentifier, FileSystemTraits, Flags, Inode, Kind, LocalFileIdentifier, Metadata,
-    Mode, Path, Permissions, Position, Size, Statistics_type, Time,
+    Device, Entry, FileIdentifier, FileIdentifierInner, FileSystemIdentifier, FileSystemTraits,
+    Flags, Inode, Kind, LocalFileIdentifier, Metadata, Mode, Path, Permissions, Position, Size,
+    Statistics_type, Time, get_new_file_identifier,
 };
 use futures::block_on;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use users::{GroupIdentifier, UserIdentifier};
 
-use super::{convert_result, littlefs, Configuration, Directory, File};
+use super::{Configuration, Directory, File, convert_result, littlefs};
 
 use file_system::{Error, Result};
 
@@ -157,7 +157,7 @@ impl FileSystem {
     #[cfg(target_pointer_width = "64")]
     const DIRECTORY_FLAG: FileIdentifierInner = 1 << 31;
     #[cfg(target_pointer_width = "32")]
-    const Directory_flag: FileIdentifierInner = 1 << 15;
+    const DIRECTORY_FLAG: FileIdentifierInner = 1 << 15;
 
     const DIRECTORY_MINIMUM: FileIdentifier = FileIdentifier::new(Self::DIRECTORY_FLAG);
 
@@ -585,7 +585,7 @@ mod tests {
     extern crate std;
 
     use alloc::sync::Arc;
-    use file_system::{create_device, MemoryDevice};
+    use file_system::{MemoryDevice, create_device};
     use task::test;
 
     use super::*;

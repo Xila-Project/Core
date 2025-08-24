@@ -3,8 +3,8 @@ use core::mem::{size_of, transmute};
 use crate::{Area, Point, RenderingColor};
 
 pub struct ScreenWriteData<'a> {
-    area: Area,
-    buffer: &'a [RenderingColor],
+    pub area: Area,
+    pub buffer: &'a [RenderingColor],
 }
 
 impl<'a> ScreenWriteData<'a> {

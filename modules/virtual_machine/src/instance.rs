@@ -11,7 +11,7 @@ use wamr_rust_sdk::{
     value::WasmValue,
 };
 
-use crate::{module::Module, runtime::Runtime, CustomData, Error, Result, WasmPointer};
+use crate::{CustomData, Error, Result, WasmPointer, module::Module, runtime::Runtime};
 
 pub struct Instance<'module> {
     instance: instance::Instance<'module>,

@@ -51,7 +51,12 @@ impl Shortcut {
             .await
             .map_err(Error::FailedToReadShortcutFile)?;
 
+        log::information!("Shortcut buffer: {buffer:?}");
+
         let string = core::str::from_utf8(buffer).map_err(Error::InvalidUtf8)?;
+
+        log::information!("Reading shortcut from path: {path:?}");
+        log::information!("Shortcut content: {string}");
 
         let shortcut = Shortcut::from_str(string)?;
 
@@ -69,7 +74,12 @@ impl Shortcut {
     }
 
     pub fn from_str(string: &str) -> Result<Self> {
-        miniserde::json::from_str(string).map_err(Error::FailedToDeserializeShortcut)
+        miniserde::json::from_str(string).map_err(|e| {
+            log::error!("Failed to deserialize shortcut: {e}");
+            log::error!("String: {string}");
+
+            Error::FailedToDeserializeShortcut(e)
+        })
     }
 
     pub fn get_name(&self) -> &str {

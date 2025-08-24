@@ -2,9 +2,11 @@
 name = "xila"
 version = "0.1.0"
 authors = ["Alix ANNERAUD <alix@anneraud.fr>"]
-edition = "2021"
+edition = "2024"
 resolver = "2"
-rust-version = "1.82.0"
+
+[profile.release]
+debug = true
 
 [dependencies]
 # - WASM
@@ -92,4 +94,5 @@ members = [
     "modules/log",
     "examples/native",
     "executables/calculator",
+    "examples/wasm",
 ]

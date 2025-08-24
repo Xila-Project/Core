@@ -14,6 +14,11 @@ pub mod core;
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 pub mod standard_library;
 
+pub mod shared;
+
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;
+
 //pub fn Mount_devices(
 //    Task: TaskIdentifier,
 //    Virtual_file_systems: &VirtualFileSystem,

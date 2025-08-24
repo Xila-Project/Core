@@ -8,11 +8,10 @@ use core::{ptr::null_mut, time::Duration};
 
 use file_system::{Kind, Path, PathOwned};
 use graphics::{
-    lvgl,
+    EventKind, Window, lvgl,
     palette::{self, Hue},
-    EventKind, Window,
 };
-use virtual_file_system::{get_instance, Directory};
+use virtual_file_system::{Directory, get_instance};
 
 use crate::error::{Error, Result};
 
@@ -345,7 +344,7 @@ impl FileManager {
                             self.update_path_label();
                             // Reload directory contents
                             if let Err(error) = self.load_directory().await {
-                                log::Error!("Failed to load directory: {error:?}");
+                                log::error!("Failed to load directory: {error:?}");
                             }
                         }
                     } else {
@@ -362,7 +361,7 @@ impl FileManager {
             self.current_path = parent_path.to_owned();
             self.update_path_label();
             if let Err(error) = self.load_directory().await {
-                log::Error!("Failed to load parent directory: {error:?}");
+                log::error!("Failed to load parent directory: {error:?}");
             }
         }
     }
@@ -371,13 +370,13 @@ impl FileManager {
         self.current_path = PathOwned::root();
         self.update_path_label();
         if let Err(error) = self.load_directory().await {
-            log::Error!("Failed to load home directory: {error:?}");
+            log::error!("Failed to load home directory: {error:?}");
         }
     }
 
     async fn handle_refresh_click(&mut self) {
         if let Err(error) = self.load_directory().await {
-            log::Error!("Failed to refresh directory: {error:?}");
+            log::error!("Failed to refresh directory: {error:?}");
         }
     }
 
@@ -392,7 +391,7 @@ impl FileManager {
                     if let Ok(path_str) = text_cstr.to_str() {
                         // Try to create a path from the entered string
                         let new_path = PathOwned::new(path_str.to_string()).unwrap_or_else(|| {
-                            log::Error!("Invalid path entered: {path_str}");
+                            log::error!("Invalid path entered: {path_str}");
                             self.current_path.clone()
                         });
 
@@ -402,7 +401,7 @@ impl FileManager {
 
                         // Try to load the directory
                         if let Err(error) = self.load_directory().await {
-                            log::Error!("Failed to navigate to path '{path_str}': {error:?}");
+                            log::error!("Failed to navigate to path '{path_str}': {error:?}");
                             // If navigation fails, revert to previous path
                             // For now, just stay on the current path
                         }

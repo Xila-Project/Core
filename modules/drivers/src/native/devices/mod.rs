@@ -1,5 +1,4 @@
-mod random;
-
+mod time;
 pub mod window_screen;
 
-pub use random::*;
+pub use time::*;

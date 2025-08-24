@@ -1,12 +1,13 @@
 use std::{
     cell::OnceCell,
-    collections::{btree_map::Entry, BTreeMap},
+    collections::{BTreeMap, btree_map::Entry},
     os::raw::c_void,
 };
 
 use futures::block_on;
 pub use graphics::lvgl;
 
+use shared::size_of_bits;
 use task::TaskIdentifier;
 use virtual_machine::{
     Environment, EnvironmentPointer, FunctionDescriptor, Registrable, WasmPointer, WasmUsize,
@@ -25,7 +26,7 @@ pub enum Error {
 pub type Result<T> = core::result::Result<T, Error>;
 
 mod generated_bindings {
-    use super::{lvgl::*, Error, PointerTable, Result, TaskIdentifier};
+    use super::{Error, PointerTable, Result, TaskIdentifier, lvgl::*};
     use virtual_machine::{Environment, WasmPointer, WasmUsize};
 
     unsafe fn convert_to_native_pointer<T>(
@@ -47,7 +48,7 @@ impl Registrable for GraphicsBindings {
         &GRAPHICS_BINDINGS_FUNCTIONS
     }
 
-    #[cfg(not(target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     fn is_XIP(&self) -> bool {
         true
     }
@@ -71,7 +72,7 @@ impl PointerTable {
     }
 
     const fn get_identifier(task: TaskIdentifier, identifier: u16) -> usize {
-        (task.into_inner() as usize) << 32 | identifier as usize
+        (task.into_inner() as usize) << size_of_bits::<TaskIdentifier>() | identifier as usize
     }
 
     pub fn insert(&mut self, task: TaskIdentifier, pointer: *mut c_void) -> Result<u16> {
@@ -174,7 +175,7 @@ pub unsafe fn call(
         arguments_count,
         result,
     ) {
-        log::Error!(
+        log::error!(
             "Error {error:?} durring graphics call: {function:?} with arguments: {argument_0:x}, {argument_1:x}, {argument_2:x}, {argument_3:x}, {argument_4:x}, {argument_5:x}, {argument_6:x}",
         );
     }

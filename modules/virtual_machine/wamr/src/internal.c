@@ -44,9 +44,14 @@ __wasi_filetype_t into_wasi_file_type(XilaFileKind type) {
   }
 }
 
-void into_wasi_file_statistics(
-    const XilaFileSystemStatistics *statistics,
-    __wasi_filestat_t *wasi_statistics) {
+__wasi_fdflags_t into_wasi_fdflags(XilaFileSystemStatus status) {
+  __wasi_fdflags_t flags = 0;
+
+  return flags;
+}
+
+void into_wasi_file_statistics(const XilaFileSystemStatistics *statistics,
+                               __wasi_filestat_t *wasi_statistics) {
   wasi_statistics->st_dev = statistics->file_system;
   wasi_statistics->st_ino = statistics->inode;
   wasi_statistics->st_nlink = statistics->links;
@@ -57,8 +62,7 @@ void into_wasi_file_statistics(
   wasi_statistics->st_filetype = into_wasi_file_type(statistics->type);
 }
 
-wasi_libc_file_access_mode
-into_wasi_access_mode(XilaFileSystemMode mode) {
+wasi_libc_file_access_mode into_wasi_access_mode(XilaFileSystemMode mode) {
 
   if (mode & XILA_FILE_SYSTEM_MODE_WRITE_MASK) {
     if (mode & XILA_FILE_SYSTEM_MODE_READ_MASK) {

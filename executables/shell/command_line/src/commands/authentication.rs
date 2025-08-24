@@ -1,6 +1,6 @@
 use alloc::string::String;
 
-use crate::{error::Error, Result, Shell};
+use crate::{Result, Shell, error::Error};
 
 impl Shell {
     pub async fn authenticate(&mut self) -> Result<String> {

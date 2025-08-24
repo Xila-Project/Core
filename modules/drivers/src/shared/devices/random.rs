@@ -16,7 +16,7 @@ impl RandomDevice {
 
 impl DeviceTrait for RandomDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
-        rand::fill(buffer);
+        getrandom::fill(buffer).map_err(|_| file_system::Error::Other)?;
 
         Ok(buffer.len().into())
     }

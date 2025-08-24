@@ -1,5 +1,5 @@
 use crate::error::Result;
-use graphics::{lvgl, Event};
+use graphics::{Event, lvgl};
 
 /// Enum to hold all tab types (avoids dyn compatibility issues with async traits)
 pub enum Tab {

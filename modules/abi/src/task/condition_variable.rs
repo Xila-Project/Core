@@ -2,14 +2,14 @@ use crate::XilaTime;
 
 use super::RawMutex;
 
-pub struct XilaConditionVariable;
+pub type XilaConditionVariable = u32;
 
 /// This function is used to create a condition variable.
 ///
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_new(
     _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {
@@ -21,7 +21,7 @@ pub unsafe extern "C" fn xila_condition_variable_new(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_remove(
     _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {
@@ -33,7 +33,7 @@ pub unsafe extern "C" fn xila_condition_variable_remove(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_wait(
     _condition_variable: *mut XilaConditionVariable,
     _mutex: *mut RawMutex,
@@ -46,7 +46,7 @@ pub unsafe extern "C" fn xila_condition_variable_wait(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_try_wait(
     _condition_variable: *mut XilaConditionVariable,
     _mutex: *mut RawMutex,
@@ -60,7 +60,7 @@ pub unsafe extern "C" fn xila_condition_variable_try_wait(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_signal(
     _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {
@@ -72,7 +72,7 @@ pub unsafe extern "C" fn xila_condition_variable_signal(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_broadcast(
     _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {

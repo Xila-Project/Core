@@ -9,12 +9,12 @@ use executable::build_crate;
 use wamr_rust_sdk::value::WasmValue;
 
 use drivers::standard_library::memory::MemoryManager;
-use file_system::{create_device, create_file_system, MemoryDevice};
+use file_system::{MemoryDevice, create_device, create_file_system};
 use memory::instantiate_global_allocator;
 use task::test;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 use virtual_machine::{
-    Environment, FunctionDescriptor, Function_descriptors, Instance, Module, Registrable, Runtime,
+    Environment, Function_descriptors, FunctionDescriptor, Instance, Module, Registrable, Runtime,
 };
 
 instantiate_global_allocator!(MemoryManager);
@@ -44,7 +44,7 @@ async fn integration_test() {
 
     users::initialize();
 
-    time::initialize(create_device!(drivers::native::TimeDriver::new()))
+    time::initialize(create_device!(drivers::native::TimeDevice::new()))
         .expect("Failed to initialize time manager");
 
     let device = create_device!(MemoryDevice::<512>::new(1024 * 512));
@@ -77,7 +77,7 @@ async fn integration_test() {
                 &"/devices/standard_error",
                 drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers::native::TimeDriver),
+            (&"/devices/time", drivers::native::TimeDevice),
             (&"/devices/random", drivers::native::RandomDevice),
             (&"/devices/null", drivers::core::NullDevice)
         ]

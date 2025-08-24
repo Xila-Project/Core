@@ -1,7 +1,7 @@
 extern crate alloc;
 
 use xila::drivers;
-use xila::drivers::native::TimeDriver;
+use xila::drivers::native::TimeDevice;
 use xila::file_system;
 use xila::file_system::{MemoryDevice, create_device, create_file_system};
 use xila::graphics;
@@ -43,7 +43,7 @@ async fn integration_test() {
 
     let task = task_instance.get_current_task_identifier().await;
 
-    time::initialize(create_device!(TimeDriver::new())).expect("Error initializing time manager");
+    time::initialize(create_device!(TimeDevice::new())).expect("Error initializing time manager");
 
     let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
     little_fs::FileSystem::format(memory_device.clone(), 512).unwrap();
@@ -74,7 +74,7 @@ async fn integration_test() {
                 &"/devices/standard_error",
                 drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers::native::TimeDriver),
+            (&"/devices/time", drivers::native::TimeDevice),
             (&"/devices/random", drivers::native::RandomDevice),
             (&"/devices/null", drivers::core::NullDevice)
         ]

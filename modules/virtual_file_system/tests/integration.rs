@@ -3,7 +3,7 @@ extern crate alloc;
 use task::TaskIdentifier;
 
 use file_system::{
-    create_device, create_file_system, Flags, MemoryDevice, Mode, Open, Path, Position, Status,
+    Flags, MemoryDevice, Mode, Open, Path, Position, Status, create_device, create_file_system,
 };
 #[cfg(target_os = "linux")]
 use task::test;
@@ -14,7 +14,7 @@ async fn initialize<'a>() -> (TaskIdentifier, VirtualFileSystem<'a>) {
 
     let _ = users::initialize();
 
-    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDevice::new()));
 
     let task = task_instance.get_current_task_identifier().await;
 

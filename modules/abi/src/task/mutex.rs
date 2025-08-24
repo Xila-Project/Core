@@ -2,7 +2,7 @@ use core::{
     mem::{align_of, size_of},
     ptr::drop_in_place,
 };
-use synchronization::blocking_mutex::{raw::CriticalSectionRawMutex, Mutex};
+use synchronization::blocking_mutex::{Mutex, raw::CriticalSectionRawMutex};
 
 use crate::context;
 
@@ -107,7 +107,7 @@ impl RawMutex {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static RAW_MUTEX_SIZE: usize = size_of::<RawMutex>();
 
 /// This function is used to initialize a mutex.
@@ -119,7 +119,7 @@ pub static RAW_MUTEX_SIZE: usize = size_of::<RawMutex>();
 /// # Errors
 ///
 /// This function may return an error if the mutex is not initialized.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_initialize_mutex(mutex: *mut RawMutex) -> bool {
     if mutex.is_null() {
         return false;
@@ -142,7 +142,7 @@ pub unsafe extern "C" fn xila_initialize_mutex(mutex: *mut RawMutex) -> bool {
 /// - `mutex` points to valid, uninitialized memory
 /// - The memory is properly aligned for `Raw_mutex_type`
 /// - The memory will remain valid for the lifetime of the mutex
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_initialize_recursive_mutex(mutex: *mut RawMutex) -> bool {
     if mutex.is_null() {
         return false;
@@ -164,7 +164,7 @@ pub unsafe extern "C" fn xila_initialize_recursive_mutex(mutex: *mut RawMutex) -
 /// The caller must ensure:
 /// - `mutex` points to a valid, initialized `Raw_mutex_type`
 /// - The mutex remains valid for the duration of the call
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_lock_mutex(mutex: *mut RawMutex) -> bool {
     let mutex = match RawMutex::from_mutable_pointer(mutex) {
         Some(mutex) => mutex,
@@ -182,7 +182,7 @@ pub unsafe extern "C" fn xila_lock_mutex(mutex: *mut RawMutex) -> bool {
 /// - `mutex` points to a valid, initialized `Raw_mutex_type`
 /// - The mutex remains valid for the duration of the call
 /// - The current task owns the mutex
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_unlock_mutex(mutex: *mut RawMutex) -> bool {
     let mutex = match RawMutex::from_mutable_pointer(mutex) {
         Some(mutex) => mutex,
@@ -200,7 +200,7 @@ pub unsafe extern "C" fn xila_unlock_mutex(mutex: *mut RawMutex) -> bool {
 /// - `mutex` points to a valid, initialized `Raw_mutex_type` allocated with Box
 /// - The mutex is not currently locked
 /// - No other threads are waiting on the mutex
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_destroy_mutex(mutex: *mut RawMutex) -> bool {
     let mutex = match RawMutex::from_mutable_pointer(mutex) {
         Some(mutex) => mutex,

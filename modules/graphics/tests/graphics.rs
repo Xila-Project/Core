@@ -11,13 +11,13 @@ async fn main() {
 
     use drivers::native::window_screen;
     use file_system::create_device;
-    use graphics::{get_recommended_buffer_size, lvgl, InputKind, Point};
+    use graphics::{InputKind, Point, get_recommended_buffer_size, lvgl};
 
     let _ = users::initialize();
 
     let task_instance = task::initialize();
 
-    time::initialize(create_device!(drivers::native::TimeDriver::new()))
+    time::initialize(create_device!(drivers::native::TimeDevice::new()))
         .expect("Error initializing time manager");
 
     const RESOLUTION: Point = Point::new(800, 480);

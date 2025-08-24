@@ -2,8 +2,8 @@ extern crate alloc;
 
 use alloc::string::ToString;
 use command_line_shell::ShellExecutable;
-use executable::{mount_static_executables, Standard};
-use file_system::{create_device, create_file_system, MemoryDevice, Mode};
+use executable::{Standard, mount_static_executables};
+use file_system::{MemoryDevice, Mode, create_device, create_file_system};
 use task::test;
 use users::GroupIdentifier;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};
@@ -15,7 +15,7 @@ async fn integration_test() {
 
     let _ = users::initialize();
 
-    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
+    let _ = time::initialize(create_device!(drivers::native::TimeDevice::new()));
 
     let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
 
@@ -48,7 +48,7 @@ async fn integration_test() {
                 &"/devices/standard_error",
                 drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers::native::TimeDriver),
+            (&"/devices/time", drivers::native::TimeDevice),
             (&"/devices/random", drivers::native::RandomDevice),
             (&"/devices/null", drivers::core::NullDevice)
         ]

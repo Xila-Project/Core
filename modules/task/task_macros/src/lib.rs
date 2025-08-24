@@ -246,7 +246,7 @@ pub fn run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
             unsafe {
                 let __EXECUTOR : &'static mut _ = #Executor_expression;
 
-                __EXECUTOR.run(|Spawner, __EXECUTOR| {
+                __EXECUTOR.start(|Spawner| {
                     let manager = #Task_path::initialize();
 
                     unsafe {
@@ -260,14 +260,10 @@ pub fn run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                             Some(__SPAWNER),
                             async move |_task| {
                                 __inner().await;
-                                __EXECUTOR.stop();
                             }
                         ).await
                     }).expect("Failed to spawn task");
                 });
-            }
-            unsafe {
-                #Task_path::get_instance().unregister_spawner(__SPAWNER).expect("Failed to unregister spawner");
             }
         }
     }

@@ -22,9 +22,9 @@ pub use metadata::*;
 pub use path::*;
 pub use permission::*;
 pub use position::*;
-pub use r#type::*;
 pub use size::*;
 pub use statistics::*;
+pub use r#type::*;
 
 /// Standard block size representation for file system operations.
 ///

@@ -16,7 +16,7 @@ use xila::graphics;
 use xila::host_bindings;
 use xila::little_fs;
 use xila::log;
-use xila::log::Information;
+use xila::log::information;
 use xila::memory::instantiate_global_allocator;
 use xila::task;
 use xila::time;
@@ -27,7 +27,10 @@ use xila::virtual_machine;
 
 use alloc::string::String;
 
-instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
+static MEMORY_MANAGER: drivers::standard_library::memory::MemoryManager =
+    drivers::standard_library::memory::MemoryManager::new();
+
+instantiate_global_allocator!(&MEMORY_MANAGER);
 
 #[task::run(task_path = task, executor = instantiate_static_executor!())]
 async fn main() {
@@ -42,7 +45,7 @@ async fn main() {
     // Initialize the users manager
     users::initialize();
     // Initialize the time manager
-    time::initialize(create_device!(drivers::native::TimeDriver::new())).unwrap();
+    time::initialize(create_device!(drivers::native::TimeDevice::new())).unwrap();
 
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
@@ -74,7 +77,7 @@ async fn main() {
     // - Initialize the file system
     // Create a memory device
     let drive = create_device!(drivers::standard_library::drive_file::FileDriveDevice::new(
-        &"./Drive.img"
+        &"./drive.img"
     ));
 
     // Create a partition type
@@ -86,7 +89,7 @@ async fn main() {
     // Print MBR information
     let mbr = Mbr::read_from_device(&drive).unwrap();
 
-    Information!("MBR information: {mbr}");
+    information!("MBR information: {mbr}");
 
     // Mount the file system
     let file_system = match little_fs::FileSystem::new(partition.clone(), 256) {
@@ -133,7 +136,7 @@ async fn main() {
                 &"/devices/standard_error",
                 drivers::standard_library::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers::native::TimeDriver),
+            (&"/devices/time", drivers::native::TimeDevice),
             (&"/devices/random", drivers::native::RandomDevice),
             (&"/devices/null", drivers::core::NullDevice)
         ]

@@ -51,6 +51,7 @@ void os_free(void *ptr)
 
 int os_printf(const char *format, ...)
 {
+/*
     printf("os_printf: \n");
 
     int ret = 0;
@@ -63,17 +64,13 @@ int os_printf(const char *format, ...)
 #endif
     va_end(args);
     return ret;
+*/
+    return 0; // No printf support
 }
 
 int os_vprintf(const char *format, va_list ap)
 {
-    printf("os_vprintf: \n");
-
-#ifndef BH_VPRINTF
-    return vprintf(format, ap);
-#else
-    return BH_VPRINTF(format, ap);
-#endif
+    return 0; // No vprintf support
 }
 
 /**

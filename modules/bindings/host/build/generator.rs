@@ -7,7 +7,7 @@ use bindings_utilities::{
 use std::{fs::File, io::Write, path::Path};
 
 use proc_macro2::{Literal, TokenStream};
-use quote::{format_ident, quote, ToTokens};
+use quote::{ToTokens, format_ident, quote};
 use syn::{FnArg, ItemFn, ReturnType, Signature, TypePath};
 
 use bindings_utilities::type_tree::TypeTree;

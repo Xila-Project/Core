@@ -1,7 +1,7 @@
 /// This module implements the POSIX like file system C ABI.
 use core::{
     cmp::min,
-    ffi::{c_char, CStr},
+    ffi::{CStr, c_char},
     num::NonZeroU32,
     ptr::copy_nonoverlapping,
 };
@@ -11,7 +11,7 @@ use futures::block_on;
 use file_system::{Error, FileIdentifier, Flags, Mode, Open, Status};
 use virtual_file_system::get_instance as get_file_system_instance;
 
-use crate::{context, into_position, XilaTime};
+use crate::{XilaTime, context, into_position};
 
 use super::{
     XilaFileSystemMode, XilaFileSystemOpen, XilaFileSystemResult, XilaFileSystemSize,
@@ -38,7 +38,7 @@ where
 /// # Errors
 ///
 /// This function may return an error if the file system fails to open the file.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_get_statistics(
     file: XilaUniqueFileIdentifier,
     statistics: *mut XilaFileSystemStatistics,
@@ -65,7 +65,7 @@ pub unsafe extern "C" fn xila_file_system_get_statistics(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_get_statistics_from_path(
     path: *const c_char,
     statistics: *mut XilaFileSystemStatistics,
@@ -96,7 +96,7 @@ pub unsafe extern "C" fn xila_file_system_get_statistics_from_path(
 /// # Errors
 ///
 /// This function may return an error if the file system fails to get the access mode of the file.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_get_access_mode(
     file: XilaUniqueFileIdentifier,
     mode: *mut XilaFileSystemMode,
@@ -124,7 +124,7 @@ pub unsafe extern "C" fn xila_file_system_get_access_mode(
 ///
 /// This function may return an error if the file system fails to close the file.
 ///
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_close(file: XilaUniqueFileIdentifier) -> XilaFileSystemResult {
     into_u32(move || {
         let task_identifier = context::get_instance().get_current_task_identifier();
@@ -148,7 +148,7 @@ pub extern "C" fn xila_file_system_close(file: XilaUniqueFileIdentifier) -> Xila
 /// This function may return an error if the file system fails to open the file.
 ///
 /// # Example
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_write_vectored(
     file: XilaUniqueFileIdentifier,
     buffers: *const *const u8,
@@ -193,7 +193,7 @@ pub unsafe extern "C" fn xila_file_system_write_vectored(
 /// # Errors
 ///
 /// This function may return an error if the file system fails to open the file.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_read_vectored(
     file: XilaUniqueFileIdentifier,
     buffers: *mut *mut u8,
@@ -232,7 +232,7 @@ pub unsafe extern "C" fn xila_file_system_read_vectored(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_read_at_position_vectored(
     file: XilaUniqueFileIdentifier,
     buffers: *mut *mut u8,
@@ -279,7 +279,7 @@ pub unsafe extern "C" fn xila_file_system_read_at_position_vectored(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_write_at_position_vectored(
     file: XilaUniqueFileIdentifier,
     buffers: *const *const u8,
@@ -332,7 +332,7 @@ pub unsafe extern "C" fn xila_file_system_write_at_position_vectored(
 /// # Errors
 ///
 /// This function may return an error if the file system fails to open the file.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_is_a_terminal(
     file: XilaUniqueFileIdentifier,
     is_a_terminal: *mut bool,
@@ -352,7 +352,7 @@ pub unsafe extern "C" fn xila_file_system_is_a_terminal(
     })
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_is_stdin(file: XilaUniqueFileIdentifier) -> bool {
     let file = file_system::UniqueFileIdentifier::from_raw(file);
 
@@ -363,7 +363,7 @@ pub extern "C" fn xila_file_system_is_stdin(file: XilaUniqueFileIdentifier) -> b
     file == FileIdentifier::STANDARD_IN
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_is_stderr(file: XilaUniqueFileIdentifier) -> bool {
     let file = file_system::UniqueFileIdentifier::from_raw(file);
 
@@ -374,7 +374,7 @@ pub extern "C" fn xila_file_system_is_stderr(file: XilaUniqueFileIdentifier) -> 
     file == FileIdentifier::STANDARD_ERROR
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_is_stdout(file: XilaUniqueFileIdentifier) -> bool {
     let file = file_system::UniqueFileIdentifier::from_raw(file);
 
@@ -390,7 +390,7 @@ pub extern "C" fn xila_file_system_is_stdout(file: XilaUniqueFileIdentifier) -> 
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_open(
     path: *const c_char,
     mode: XilaFileSystemMode,
@@ -421,7 +421,7 @@ pub unsafe extern "C" fn xila_file_system_open(
     })
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_set_flags(
     _file: XilaUniqueFileIdentifier,
     _status: XilaFileSystemStatus,
@@ -434,7 +434,7 @@ pub extern "C" fn xila_file_system_set_flags(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_get_flags(
     _file: XilaUniqueFileIdentifier,
     _status: *mut XilaFileSystemStatus,
@@ -447,7 +447,7 @@ pub unsafe extern "C" fn xila_file_system_get_flags(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_resolve_path(
     path: *const i8,
     resolved_path: *mut u8,
@@ -471,7 +471,7 @@ pub unsafe extern "C" fn xila_file_system_resolve_path(
     })
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_flush(
     file: XilaUniqueFileIdentifier,
     _: bool,
@@ -487,7 +487,7 @@ pub extern "C" fn xila_file_system_flush(
     })
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_create_symbolic_link_at(
     _: XilaUniqueFileIdentifier,
     _: *const c_char,
@@ -496,7 +496,7 @@ pub extern "C" fn xila_file_system_create_symbolic_link_at(
     todo!()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_read_link_at(
     _directory: XilaUniqueFileIdentifier,
     _path: *mut i8,
@@ -511,7 +511,7 @@ pub extern "C" fn xila_file_system_read_link_at(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_set_position(
     file: XilaUniqueFileIdentifier,
     offset: i64,
@@ -539,7 +539,7 @@ pub unsafe extern "C" fn xila_file_system_set_position(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_create_directory(
     path: *const c_char,
 ) -> XilaFileSystemResult {
@@ -562,7 +562,7 @@ pub unsafe extern "C" fn xila_file_system_create_directory(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_rename(
     old_path: *const c_char,
     new_path: *const c_char,
@@ -584,7 +584,7 @@ pub unsafe extern "C" fn xila_file_system_rename(
     })
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_set_times(
     _: XilaUniqueFileIdentifier,
     _: XilaTime,
@@ -599,7 +599,7 @@ pub extern "C" fn xila_file_system_set_times(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_set_times_from_path(
     _path: *const c_char,
     _access: XilaTime,
@@ -615,7 +615,7 @@ pub unsafe extern "C" fn xila_file_system_set_times_from_path(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_remove(_path: *const c_char) -> XilaFileSystemResult {
     into_u32(|| {
         let path = CStr::from_ptr(_path)
@@ -629,7 +629,7 @@ pub unsafe extern "C" fn xila_file_system_remove(_path: *const c_char) -> XilaFi
 }
 
 /// This function is used to truncate a file.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_truncate(
     _file: XilaUniqueFileIdentifier,
     _length: XilaFileSystemSize,
@@ -648,7 +648,7 @@ pub extern "C" fn xila_file_system_truncate(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_link(
     _path: *const c_char,
     _link: *const c_char,
@@ -657,7 +657,7 @@ pub unsafe extern "C" fn xila_file_system_link(
 }
 
 /// This function is used to advice the file system about the access pattern of a file.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_advise(
     _file: XilaUniqueFileIdentifier,
     _offset: XilaFileSystemSize,
@@ -667,7 +667,7 @@ pub extern "C" fn xila_file_system_advise(
     todo!()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_allocate(
     _file: XilaUniqueFileIdentifier,
     _offset: XilaFileSystemSize,

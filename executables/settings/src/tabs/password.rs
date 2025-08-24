@@ -2,7 +2,7 @@ use crate::error::Result;
 
 use alloc::ffi::CString;
 use authentication;
-use graphics::{lvgl, Event, EventKind};
+use graphics::{Event, EventKind, lvgl};
 use task;
 use users;
 use virtual_file_system;
