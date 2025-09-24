@@ -44,6 +44,7 @@ pub(crate) struct Inner {
 }
 
 unsafe impl Send for Manager {}
+unsafe impl Sync for Manager {}
 
 /// A manager for tasks.
 pub struct Manager(pub(crate) RwLock<CriticalSectionRawMutex, Inner>);
