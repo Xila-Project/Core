@@ -1,3 +1,5 @@
+use core::slice;
+
 use alloc::sync::Arc;
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use file_system::DeviceTrait;
@@ -39,26 +41,25 @@ impl Inner {
     }
 
     fn draw_buffer(&mut self, area: Area, buffer: &[RenderingColor]) -> Result<(), String> {
-        self.conversion_buffer.resize(
-            area.get_width() as usize * area.get_height() as usize * size_of::<RenderingColor>(),
-            0,
-        );
+        let pixel_count = area.get_width() as usize * area.get_height() as usize;
+        self.conversion_buffer
+            .resize(pixel_count * size_of::<RenderingColor>(), 0);
 
-        // Optimized conversion: RGBA8888 -> BGRA8888
-        // Direct bit manipulation is much faster than struct conversions
-        buffer
-            .iter()
-            .zip(self.conversion_buffer.chunks_exact_mut(4))
-            .for_each(|(&source, dest)| {
-                let rgba = source.as_u32();
-                // Convert RGBA to BGRA by swapping R and B channels
-                // RGBA: [R, G, B, A] -> BGRA: [B, G, R, A]
-                let bgra = (rgba & 0xFF00_FF00) | // Keep G and A in place
-                          ((rgba & 0x0000_00FF) << 16) | // Move R to B position  
-                          ((rgba & 0x00FF_0000) >> 16); // Move B to R position
-                dest.copy_from_slice(&bgra.to_le_bytes());
-            });
+        let dst_u32 = unsafe {
+            slice::from_raw_parts_mut(self.conversion_buffer.as_mut_ptr() as *mut u32, pixel_count)
+        };
 
+        // reinterpret the input as u32 too if possible
+        let src_u32 = unsafe { slice::from_raw_parts(buffer.as_ptr() as *const u32, pixel_count) };
+
+        for (src, dst) in src_u32.iter().zip(dst_u32.iter_mut()) {
+            let rgba = u32::from_le(*src);
+            let bgra =
+                (rgba & 0xFF00_FF00) | ((rgba & 0x0000_00FF) << 16) | ((rgba & 0x00FF_0000) >> 16);
+            *dst = bgra;
+        }
+
+        // now conversion_buffer is ready as &[u8]
         let image_data = ImageData::new_with_u8_clamped_array_and_sh(
             Clamped(&self.conversion_buffer),
             area.get_width() as _,
@@ -67,10 +68,9 @@ impl Inner {
         .expect("Failed to create ImageData");
 
         let (x, y) = area.get_point_1().into();
-
         self.context
             .put_image_data(&image_data, x as _, y as _)
-            .expect("Failed to put image data");
+            .unwrap();
 
         Ok(())
     }
