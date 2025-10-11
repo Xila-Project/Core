@@ -34,8 +34,11 @@ jobs:
         with:
           targets: wasm32-unknown-unknown, wasm32-wasip1
 
+      - name: Setup | Cargo binstall
+        uses: cargo-bins/cargo-binstall@main
+
       - name: Setup | Trunk
-        run: cargo install trunk
+        run: cargo binstall trunk --no-confirm
 
       - name: Build | Documentation
         run: |
