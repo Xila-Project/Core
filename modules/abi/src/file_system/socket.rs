@@ -8,7 +8,7 @@ use virtual_file_system::{Error, get_instance as get_file_system_instance};
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_send(
     socket: XilaUniqueFileIdentifier,
     buffer: *const u8,
@@ -40,7 +40,7 @@ pub unsafe extern "C" fn xila_file_system_send(
 /// # Errors
 ///
 /// This function may return an error if the file system fails to receive the data.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_receive(
     socket: XilaUniqueFileIdentifier,
     buffer: *mut u8,

@@ -21,7 +21,7 @@ use super::{
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_open_directory(
     path: *const c_char,
     directory: *mut XilaUniqueFileIdentifier,
@@ -50,7 +50,7 @@ pub unsafe extern "C" fn xila_file_system_open_directory(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_read_directory(
     file: XilaUniqueFileIdentifier,
     entry_name: *mut *const c_char,
@@ -80,7 +80,7 @@ pub unsafe extern "C" fn xila_file_system_read_directory(
     })
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_close_directory(directory: XilaUniqueFileIdentifier) -> u32 {
     into_u32(move || {
         let task = get_context_instance().get_current_task_identifier();
@@ -95,7 +95,7 @@ pub extern "C" fn xila_file_system_close_directory(directory: XilaUniqueFileIden
     })
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_rewind_directory(directory: XilaUniqueFileIdentifier) -> u32 {
     into_u32(move || {
         let task = get_context_instance().get_current_task_identifier();
@@ -110,7 +110,7 @@ pub extern "C" fn xila_file_system_rewind_directory(directory: XilaUniqueFileIde
     })
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_directory_set_position(
     directory: XilaUniqueFileIdentifier,
     offset: XilaFileSystemSize,

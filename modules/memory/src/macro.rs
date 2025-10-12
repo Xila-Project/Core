@@ -9,7 +9,7 @@ macro_rules! instantiate_global_allocator {
         static A: $Allocator = <$Allocator>::new();
 
         #[global_allocator]
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub static __XILA_MEMORY_ALLOCATOR: $crate::Manager = $crate::Manager::new(&A);
     };
 }

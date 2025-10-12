@@ -12,14 +12,14 @@ pub type XilaConditionVariableAttribute = usize;
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_new(
     _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {
     todo!()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_initialize(
     _condition_variable: *mut XilaConditionVariable,
     _attribute: *const XilaConditionVariableAttribute,
@@ -32,7 +32,7 @@ pub unsafe extern "C" fn xila_condition_variable_initialize(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_remove(
     _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {
@@ -44,7 +44,7 @@ pub unsafe extern "C" fn xila_condition_variable_remove(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_wait(
     _condition_variable: *mut XilaConditionVariable,
     _mutex: *mut RawMutex,
@@ -57,7 +57,7 @@ pub unsafe extern "C" fn xila_condition_variable_wait(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_try_wait(
     _condition_variable: *mut XilaConditionVariable,
     _mutex: *mut RawMutex,
@@ -71,7 +71,7 @@ pub unsafe extern "C" fn xila_condition_variable_try_wait(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_signal(
     _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {
@@ -83,21 +83,21 @@ pub unsafe extern "C" fn xila_condition_variable_signal(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_broadcast(
     _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {
     todo!()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_attribute_initialize(
     _attribute: *mut XilaConditionVariableAttribute,
 ) -> c_int {
     todo!()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_attribute_set_clock(
     _attribute: *mut XilaConditionVariableAttribute,
     _clock: XilaTimeClockIdentifier,
@@ -105,7 +105,7 @@ pub unsafe extern "C" fn xila_condition_variable_attribute_set_clock(
     todo!()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_attribute_destroy(
     _attribute: *mut XilaConditionVariableAttribute,
 ) -> c_int {

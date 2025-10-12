@@ -59,29 +59,29 @@ impl From<file_system::Kind> for XilaFileKind {
 
 pub type XilaFileSystemMode = u8;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static XILA_FILE_SYSTEM_MODE_READ_MASK: u8 = file_system::Mode::READ_BIT;
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static XILA_FILE_SYSTEM_MODE_WRITE_MASK: u8 = file_system::Mode::WRITE_BIT;
 
 pub type XilaFileSystemOpen = u8;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static XILA_FILE_SYSTEM_OPEN_CREATE_MASK: u8 = file_system::Open::CREATE_MASK;
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static XILA_FILE_SYSTEM_OPEN_CREATE_ONLY_MASK: u8 = file_system::Open::EXCLUSIVE_MASK;
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static XILA_FILE_SYSTEM_OPEN_TRUNCATE_MASK: u8 = file_system::Open::TRUNCATE_MASK;
 
 pub type XilaFileSystemStatus = u8;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static XILA_FILE_SYSTEM_STATUS_APPEND_MASK: u8 = file_system::Status::APPEND_BIT;
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static XILA_FILE_SYSTEM_STATUS_NON_BLOCKING_MASK: u8 = file_system::Status::NON_BLOCKING_BIT;
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_MASK: u8 = file_system::Status::SYNCHRONOUS_BIT;
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_DATA_ONLY_MASK: u8 =
     file_system::Status::SYNCHRONOUS_DATA_ONLY_BIT;
 
