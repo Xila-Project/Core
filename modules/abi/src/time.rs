@@ -1,8 +1,19 @@
+use core::ffi::{c_int, c_void};
+
 use time::get_instance;
 
 pub type XilaTime = u64;
 
-pub type XilaTimeClockIdentifier = usize;
+#[repr(u8)]
+pub enum XilaTimeClockIdentifier {
+    Monotonic,
+    Realtime,
+}
+
+#[repr(u8)]
+pub enum XilaTimerFlags {
+    Absolute,
+}
 
 /// Retrieve the current time since the system startup in microseconds.
 ///
@@ -46,5 +57,15 @@ pub extern "C" fn xila_time_get_time(
     _precision: u64,
     _time: *mut XilaTime,
 ) -> u32 {
+    todo!()
+}
+
+#[no_mangle]
+pub extern "C" fn xila_time_nano_sleep(
+    _clock_identifier: XilaTimeClockIdentifier,
+    _flags: XilaTimerFlags,
+    _time: *const c_void,
+    _remaining: *mut XilaTime,
+) -> c_int {
     todo!()
 }
