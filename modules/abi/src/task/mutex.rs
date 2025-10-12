@@ -36,10 +36,12 @@ impl RawMutex {
     /// This function is unsafe because it dereferences a raw pointer.
     /// The caller must ensure the pointer is valid and points to properly initialized memory.
     pub unsafe fn from_pointer<'a>(pointer: *const RawMutex) -> Option<&'a Self> {
-        if !Self::is_valid_pointer(pointer) {
-            return None;
+        unsafe {
+            if !Self::is_valid_pointer(pointer) {
+                return None;
+            }
+            Some(&*pointer)
         }
-        Some(&*pointer)
     }
 
     /// Transforms a mutable pointer to a mutable reference.
@@ -49,10 +51,12 @@ impl RawMutex {
     /// This function is unsafe because it dereferences a raw pointer.
     /// The caller must ensure the pointer is valid and points to properly initialized memory.
     pub unsafe fn from_mutable_pointer<'a>(pointer: *mut RawMutex) -> Option<&'a mut Self> {
-        if !Self::is_valid_pointer(pointer) {
-            return None;
+        unsafe {
+            if !Self::is_valid_pointer(pointer) {
+                return None;
+            }
+            Some(&mut *pointer)
         }
-        Some(&mut *pointer)
     }
 
     pub fn lock(&self) -> bool {
@@ -121,17 +125,19 @@ pub static RAW_MUTEX_SIZE: usize = size_of::<RawMutex>();
 /// This function may return an error if the mutex is not initialized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_initialize_mutex(mutex: *mut RawMutex) -> bool {
-    if mutex.is_null() {
-        return false;
+    unsafe {
+        if mutex.is_null() {
+            return false;
+        }
+
+        if mutex as usize % align_of::<RawMutex>() != 0 {
+            return false;
+        }
+
+        mutex.write(RawMutex::new(false));
+
+        true
     }
-
-    if mutex as usize % align_of::<RawMutex>() != 0 {
-        return false;
-    }
-
-    mutex.write(RawMutex::new(false));
-
-    true
 }
 
 /// Initialize a recursive mutex.
@@ -144,17 +150,19 @@ pub unsafe extern "C" fn xila_initialize_mutex(mutex: *mut RawMutex) -> bool {
 /// - The memory will remain valid for the lifetime of the mutex
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_initialize_recursive_mutex(mutex: *mut RawMutex) -> bool {
-    if mutex.is_null() {
-        return false;
+    unsafe {
+        if mutex.is_null() {
+            return false;
+        }
+
+        if mutex as usize % align_of::<RawMutex>() != 0 {
+            return false;
+        }
+
+        mutex.write(RawMutex::new(true));
+
+        true
     }
-
-    if mutex as usize % align_of::<RawMutex>() != 0 {
-        return false;
-    }
-
-    mutex.write(RawMutex::new(true));
-
-    true
 }
 
 /// Lock a mutex (blocking).
@@ -166,12 +174,14 @@ pub unsafe extern "C" fn xila_initialize_recursive_mutex(mutex: *mut RawMutex) -
 /// - The mutex remains valid for the duration of the call
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_lock_mutex(mutex: *mut RawMutex) -> bool {
-    let mutex = match RawMutex::from_mutable_pointer(mutex) {
-        Some(mutex) => mutex,
-        None => return false,
-    };
+    unsafe {
+        let mutex = match RawMutex::from_mutable_pointer(mutex) {
+            Some(mutex) => mutex,
+            None => return false,
+        };
 
-    mutex.lock()
+        mutex.lock()
+    }
 }
 
 /// Unlock a mutex (blocking).
@@ -184,12 +194,14 @@ pub unsafe extern "C" fn xila_lock_mutex(mutex: *mut RawMutex) -> bool {
 /// - The current task owns the mutex
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_unlock_mutex(mutex: *mut RawMutex) -> bool {
-    let mutex = match RawMutex::from_mutable_pointer(mutex) {
-        Some(mutex) => mutex,
-        None => return false,
-    };
+    unsafe {
+        let mutex = match RawMutex::from_mutable_pointer(mutex) {
+            Some(mutex) => mutex,
+            None => return false,
+        };
 
-    mutex.unlock()
+        mutex.unlock()
+    }
 }
 
 /// Destroy a mutex.
@@ -202,13 +214,15 @@ pub unsafe extern "C" fn xila_unlock_mutex(mutex: *mut RawMutex) -> bool {
 /// - No other threads are waiting on the mutex
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_destroy_mutex(mutex: *mut RawMutex) -> bool {
-    let mutex = match RawMutex::from_mutable_pointer(mutex) {
-        Some(mutex) => mutex,
-        None => return false,
-    };
+    unsafe {
+        let mutex = match RawMutex::from_mutable_pointer(mutex) {
+            Some(mutex) => mutex,
+            None => return false,
+        };
 
-    // Drop the mutex, which will release any resources it holds
-    drop_in_place(mutex);
+        // Drop the mutex, which will release any resources it holds
+        drop_in_place(mutex);
 
-    true // Mutex is dropped here
+        true // Mutex is dropped here
+    }
 }

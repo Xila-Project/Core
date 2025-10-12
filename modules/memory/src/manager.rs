@@ -38,15 +38,19 @@ impl Manager {
 /// - Deallocation uses the same layout that was used for allocation
 unsafe impl GlobalAlloc for Manager {
     unsafe fn alloc(&self, layout: core::alloc::Layout) -> *mut u8 {
-        self.0
-            .allocate(Capabilities::default(), Layout::from(layout))
-            .map_or(core::ptr::null_mut(), |pointer| pointer.as_ptr())
+        unsafe {
+            self.0
+                .allocate(Capabilities::default(), Layout::from(layout))
+                .map_or(core::ptr::null_mut(), |pointer| pointer.as_ptr())
+        }
     }
 
     unsafe fn dealloc(&self, pointer: *mut u8, layout: core::alloc::Layout) {
         if !pointer.is_null() {
-            self.0
-                .deallocate(NonNull::new_unchecked(pointer), Layout::from(layout))
+            unsafe {
+                self.0
+                    .deallocate(NonNull::new_unchecked(pointer), Layout::from(layout))
+            }
         }
     }
 }

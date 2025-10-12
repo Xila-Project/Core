@@ -81,13 +81,16 @@ impl Environment<'_> {
     /// This function is unsafe because it is not checked that the address is valid.
     /// Please use `Validate_WASM_pointer` to check the address.
     pub unsafe fn convert_to_native_pointer<T>(&self, address: WasmPointer) -> Option<*mut T> {
-        let pointer = wasm_runtime_addr_app_to_native(self.get_instance_pointer(), address as u64);
+        unsafe {
+            let pointer =
+                wasm_runtime_addr_app_to_native(self.get_instance_pointer(), address as u64);
 
-        if pointer.is_null() {
-            return None;
+            if pointer.is_null() {
+                return None;
+            }
+
+            Some(pointer as *mut T)
         }
-
-        Some(pointer as *mut T)
     }
 
     /// # Safety
@@ -95,8 +98,10 @@ impl Environment<'_> {
     /// This function is unsafe because it is not checked that the address is valid.
     /// Please use `Validate_WASM_pointer` to check the address.
     pub unsafe fn convert_to_wasm_pointer<T>(&self, pointer: *const T) -> WasmPointer {
-        wasm_runtime_addr_native_to_app(self.get_instance_pointer(), pointer as *mut c_void)
-            as WasmPointer
+        unsafe {
+            wasm_runtime_addr_native_to_app(self.get_instance_pointer(), pointer as *mut c_void)
+                as WasmPointer
+        }
     }
 
     pub fn validate_wasm_pointer(&self, address: WasmPointer, size: WasmUsize) -> bool {

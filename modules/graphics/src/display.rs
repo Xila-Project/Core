@@ -43,7 +43,7 @@ unsafe extern "C" fn binding_callback_function(
         .write(screen_write_data.as_ref())
         .expect("Error writing to display");
 
-    lvgl::lv_display_flush_ready(display);
+    unsafe { lvgl::lv_display_flush_ready(display) };
 }
 
 impl Drop for Display {

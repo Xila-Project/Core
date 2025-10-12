@@ -35,10 +35,10 @@ fn generate_conversion_for_argument(
                         })
                     } else {
                         Ok(quote! {
-                            let #identifier : #type_value = convert_to_native_pointer(
+                            let #identifier : #type_value = unsafe { convert_to_native_pointer(
                                 &__environment,
                                 #identifier
-                            )?;
+                            )? };
                         })
                     }
                 }
@@ -63,16 +63,16 @@ fn generate_conversion_for_argument(
                         })
                     } else if path_string_stripped == "lv_color32_t" {
                         Ok(quote! {
-                            let #identifier = core::mem::transmute::<u32, #path_string_identifier>(#identifier);
+                            let #identifier = unsafe { core::mem::transmute::<u32, #path_string_identifier>(#identifier) };
                         })
                     } else if path_string_stripped == "lv_color16_t" {
                         Ok(quote! {
-                            let #identifier = core::mem::transmute::<u16, #path_string_identifier>(#identifier as u16);
+                            let #identifier = unsafe { core::mem::transmute::<u16, #path_string_identifier>(#identifier as u16) };
                         })
                     } else if path_string_stripped == "lv_style_value_t" {
                         Ok(quote! {
                             let #identifier = #identifier as *mut lv_style_value_t;
-                            let #identifier = *#identifier;
+                            let #identifier = unsafe { *#identifier };
                         })
                     } else if path_string_stripped == "u32" {
                         Ok(quote! {})
@@ -99,9 +99,9 @@ fn generate_conversion_for_output(r#return: &ReturnType) -> Result<Option<TokenS
                     if type_string == "lv_obj_t" {
                         quote! {
 
-                            let __result_2 : *mut u16 = convert_to_native_pointer(&__environment, __result)?;
+                            let __result_2 : *mut u16 = unsafe { convert_to_native_pointer(&__environment, __result)? };
 
-                            let __result : *mut u16 = convert_to_native_pointer(&__environment, __result)?;
+                            let __result : *mut u16 = unsafe { convert_to_native_pointer(&__environment, __result)? };
 
                             let __current_result = __pointer_table.insert(
                                 __task,
@@ -109,29 +109,31 @@ fn generate_conversion_for_output(r#return: &ReturnType) -> Result<Option<TokenS
                             )?;
 
 
-                            *__result = __current_result;
+                            unsafe {
+                                *__result =  __current_result;
+                            }
                         }
                     } else if type_string == "core :: ffi :: c_void" {
                         quote! {
-                            let __current_result = __environment.convert_to_wasm_pointer(
+                            let __current_result = unsafe { __environment.convert_to_wasm_pointer(
                                 __current_result
-                            );
+                            ) };
 
-                            let __result : *mut WasmPointer = convert_to_native_pointer(&__environment, __result)?;
+                            let __result : *mut WasmPointer = unsafe { convert_to_native_pointer(&__environment, __result)? };
                         }
                     } else {
                         quote! {
-                            let __current_result = __environment.convert_to_wasm_pointer(
+                            let __current_result = unsafe { __environment.convert_to_wasm_pointer(
                                 __current_result as *mut core::ffi::c_void
-                            );
+                            ) };
 
-                            let __result : *mut WasmPointer = convert_to_native_pointer(&__environment, __result)?;
+                            let __result : *mut WasmPointer = unsafe { convert_to_native_pointer(&__environment, __result)? };
                         }
                     }
                 }
                 syn::Type::Path(r#type) => {
                     quote! {
-                        let __result : *mut #r#type = convert_to_native_pointer(&__environment, __result)?;
+                        let __result : *mut #r#type = unsafe { convert_to_native_pointer(&__environment, __result)? };
                     }
                 }
 
@@ -143,8 +145,9 @@ fn generate_conversion_for_output(r#return: &ReturnType) -> Result<Option<TokenS
             Ok(Some(quote! {
                 #conversion
 
-                *__result = __current_result;
-
+                unsafe {
+                    *__result = __current_result;
+                }
             }))
         }
         // If the return type is not specified, we don't need to convert it
@@ -219,17 +222,19 @@ fn generate_function_call(
     // - Generate the code for the function call (let __current_result = Function_identifier(arguments);)
     let function_call = if let Some(r#return) = &r#return {
         quote! {
-            let __current_result = #function_identifier(#(
+            let __current_result = unsafe { #function_identifier(#(
                 #call_arguments,
-            )*);
+            )*) };
 
             #r#return
         }
     } else {
         quote! {
-            #function_identifier(#(
-                #call_arguments,
-            )*);
+            unsafe {
+                #function_identifier(#(
+                    #call_arguments,
+                )*);
+            }
         }
     };
 

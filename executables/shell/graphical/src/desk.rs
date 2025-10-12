@@ -33,26 +33,29 @@ pub struct Desk {
 }
 
 unsafe extern "C" fn event_handler(event: *mut lvgl::lv_event_t) {
-    let code = EventKind::from_lvgl_code(lvgl::lv_event_get_code(event));
+    unsafe {
+        let raw_code = lvgl::lv_event_get_code(event);
+        let code = EventKind::from_lvgl_code(raw_code);
 
-    if code == EventKind::ChildCreated || code == EventKind::ChildDeleted {
-        let target = lvgl::lv_event_get_target(event) as *mut lvgl::lv_obj_t;
-        let target_parent = lvgl::lv_obj_get_parent(target);
+        if code == EventKind::ChildCreated || code == EventKind::ChildDeleted {
+            let target = lvgl::lv_event_get_target(event) as *mut lvgl::lv_obj_t;
+            let target_parent = lvgl::lv_obj_get_parent(target);
 
-        let current_target = lvgl::lv_event_get_current_target(event) as *mut lvgl::lv_obj_t;
+            let current_target = lvgl::lv_event_get_current_target(event) as *mut lvgl::lv_obj_t;
 
-        // If the event is not for the current target, ignore it (not the parent window)
-        if target_parent != current_target {
-            return;
+            // If the event is not for the current target, ignore it (not the parent window)
+            if target_parent != current_target {
+                return;
+            }
+
+            let desk = lvgl::lv_event_get_user_data(event) as *mut lvgl::lv_obj_t;
+
+            lvgl::lv_obj_send_event(
+                desk,
+                WINDOWS_PARENT_CHILD_CHANGED as u32,
+                target as *mut c_void,
+            );
         }
-
-        let desk = lvgl::lv_event_get_user_data(event) as *mut lvgl::lv_obj_t;
-
-        lvgl::lv_obj_send_event(
-            desk,
-            WINDOWS_PARENT_CHILD_CHANGED as u32,
-            target as *mut c_void,
-        );
     }
 }
 
@@ -245,50 +248,52 @@ impl Desk {
     }
 
     async unsafe fn create_drawer_interface(&mut self, drawer: *mut lvgl::lv_obj_t) -> Result<()> {
-        let task = task::get_instance().get_current_task_identifier().await;
+        unsafe {
+            let task = task::get_instance().get_current_task_identifier().await;
 
-        let virtual_file_system = virtual_file_system::get_instance();
+            let virtual_file_system = virtual_file_system::get_instance();
 
-        let _ = virtual_file_system
-            .create_directory(&SHORTCUT_PATH, task)
-            .await;
+            let _ = virtual_file_system
+                .create_directory(&SHORTCUT_PATH, task)
+                .await;
 
-        let mut buffer: Vec<u8> = vec![];
+            let mut buffer: Vec<u8> = vec![];
 
-        let shortcuts_directory = Directory::open(virtual_file_system, SHORTCUT_PATH)
-            .await
-            .map_err(Error::FailedToReadShortcutDirectory)?;
+            let shortcuts_directory = Directory::open(virtual_file_system, SHORTCUT_PATH)
+                .await
+                .map_err(Error::FailedToReadShortcutDirectory)?;
 
-        for shortcut_entry in shortcuts_directory {
-            if shortcut_entry.get_type() != Kind::File {
-                continue;
-            }
-
-            if !shortcut_entry.get_name().ends_with(".json") {
-                continue;
-            }
-
-            match Shortcut::read(shortcut_entry.get_name(), &mut buffer).await {
-                Ok(shortcut) => {
-                    self.create_drawer_shortcut(
-                        shortcut_entry.get_name(),
-                        shortcut.get_name(),
-                        shortcut.get_icon_color(),
-                        shortcut.get_icon_string(),
-                        drawer,
-                    )?;
-                }
-                Err(e) => {
-                    Error!(
-                        "Failed to read shortcut {}: {e:?}",
-                        shortcut_entry.get_name()
-                    );
+            for shortcut_entry in shortcuts_directory {
+                if shortcut_entry.get_type() != Kind::File {
                     continue;
                 }
-            }
-        }
 
-        Ok(())
+                if !shortcut_entry.get_name().ends_with(".json") {
+                    continue;
+                }
+
+                match Shortcut::read(shortcut_entry.get_name(), &mut buffer).await {
+                    Ok(shortcut) => {
+                        self.create_drawer_shortcut(
+                            shortcut_entry.get_name(),
+                            shortcut.get_name(),
+                            shortcut.get_icon_color(),
+                            shortcut.get_icon_string(),
+                            drawer,
+                        )?;
+                    }
+                    Err(e) => {
+                        Error!(
+                            "Failed to read shortcut {}: {e:?}",
+                            shortcut_entry.get_name()
+                        );
+                        continue;
+                    }
+                }
+            }
+
+            Ok(())
+        }
     }
 
     async fn execute_shortcut(&self, shortcut_name: &str) -> Result<()> {
@@ -513,24 +518,26 @@ unsafe fn create_logo(
     factor: u8,
     color: Color,
 ) -> Result<*mut lvgl::lv_obj_t> {
-    let logo = lvgl::lv_button_create(parent);
+    unsafe {
+        let logo = lvgl::lv_button_create(parent);
 
-    if logo.is_null() {
-        return Err(Error::FailedToCreateObject);
+        if logo.is_null() {
+            return Err(Error::FailedToCreateObject);
+        }
+
+        lvgl::lv_obj_set_size(logo, 32 * factor as i32, 32 * factor as i32);
+        lvgl::lv_obj_set_style_bg_opa(logo, lvgl::LV_OPA_0 as u8, lvgl::LV_STATE_DEFAULT);
+        lvgl::lv_obj_set_style_pad_all(logo, 0, lvgl::LV_STATE_DEFAULT);
+        lvgl::lv_obj_set_style_radius(logo, 0, lvgl::LV_STATE_DEFAULT);
+        lvgl::lv_obj_set_style_border_width(logo, 0, lvgl::LV_STATE_DEFAULT);
+
+        new_part(logo, lvgl::lv_align_t_LV_ALIGN_TOP_RIGHT, factor, color)?;
+        new_part(logo, lvgl::lv_align_t_LV_ALIGN_BOTTOM_RIGHT, factor, color)?;
+        new_part(logo, lvgl::lv_align_t_LV_ALIGN_BOTTOM_LEFT, factor, color)?;
+        new_part(logo, lvgl::lv_align_t_LV_ALIGN_TOP_LEFT, factor, color)?;
+
+        Ok(logo)
     }
-
-    lvgl::lv_obj_set_size(logo, 32 * factor as i32, 32 * factor as i32);
-    lvgl::lv_obj_set_style_bg_opa(logo, lvgl::LV_OPA_0 as u8, lvgl::LV_STATE_DEFAULT);
-    lvgl::lv_obj_set_style_pad_all(logo, 0, lvgl::LV_STATE_DEFAULT);
-    lvgl::lv_obj_set_style_radius(logo, 0, lvgl::LV_STATE_DEFAULT);
-    lvgl::lv_obj_set_style_border_width(logo, 0, lvgl::LV_STATE_DEFAULT);
-
-    new_part(logo, lvgl::lv_align_t_LV_ALIGN_TOP_RIGHT, factor, color)?;
-    new_part(logo, lvgl::lv_align_t_LV_ALIGN_BOTTOM_RIGHT, factor, color)?;
-    new_part(logo, lvgl::lv_align_t_LV_ALIGN_BOTTOM_LEFT, factor, color)?;
-    new_part(logo, lvgl::lv_align_t_LV_ALIGN_TOP_LEFT, factor, color)?;
-
-    Ok(logo)
 }
 
 fn new_part(

@@ -60,34 +60,38 @@ impl Home {
 }
 
 unsafe extern "C" fn handle_pressing(event: *mut lvgl::lv_event_t) {
-    let object = lvgl::lv_event_get_target(event) as *mut lvgl::lv_obj_t;
+    unsafe {
+        let object = lvgl::lv_event_get_target(event) as *mut lvgl::lv_obj_t;
 
-    let input_device = lvgl::lv_indev_active();
+        let input_device = lvgl::lv_indev_active();
 
-    let mut vector = lvgl::lv_point_t::default();
+        let mut vector = lvgl::lv_point_t::default();
 
-    lvgl::lv_indev_get_vect(input_device, &mut vector as *mut lvgl::lv_point_t);
+        lvgl::lv_indev_get_vect(input_device, &mut vector as *mut lvgl::lv_point_t);
 
-    let y = lvgl::lv_obj_get_y_aligned(object) + vector.y;
+        let y = lvgl::lv_obj_get_y_aligned(object) + vector.y;
 
-    let y = y.max(-40);
+        let y = y.max(-40);
 
-    lvgl::lv_obj_set_y(object, y);
+        lvgl::lv_obj_set_y(object, y);
+    }
 }
 
 unsafe extern "C" fn handle_released(event: *mut lvgl::lv_event_t) {
-    let object = lvgl::lv_event_get_target(event) as *mut lvgl::lv_obj_t;
+    unsafe {
+        let object = lvgl::lv_event_get_target(event) as *mut lvgl::lv_obj_t;
 
-    let y = lvgl::lv_obj_get_y_aligned(object);
+        let y = lvgl::lv_obj_get_y_aligned(object);
 
-    lvgl::lv_obj_set_y(object, -5);
+        lvgl::lv_obj_set_y(object, -5);
 
-    if y < -20 {
-        let desk = lvgl::lv_event_get_user_data(event) as *mut lvgl::lv_obj_t;
+        if y < -20 {
+            let desk = lvgl::lv_event_get_user_data(event) as *mut lvgl::lv_obj_t;
 
-        lvgl::lv_obj_remove_flag(desk, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
-        lvgl::lv_obj_move_foreground(desk);
+            lvgl::lv_obj_remove_flag(desk, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
+            lvgl::lv_obj_move_foreground(desk);
 
-        lvgl::lv_obj_send_event(desk, Desk::HOME_EVENT.into_lvgl_code(), null_mut());
+            lvgl::lv_obj_send_event(desk, Desk::HOME_EVENT.into_lvgl_code(), null_mut());
+        }
     }
 }

@@ -87,10 +87,12 @@ impl<'module> Instance<'module> {
     /// This function is unsafe because it is not checked that the address is valid.
     #[allow(clippy::mut_from_ref)]
     pub unsafe fn convert_to_native_pointer<T>(&self, address: WasmPointer) -> *mut T {
-        wasm_runtime_addr_app_to_native(
-            self.get_inner_reference().get_inner_instance(),
-            address as u64,
-        ) as *mut T
+        unsafe {
+            wasm_runtime_addr_app_to_native(
+                self.get_inner_reference().get_inner_instance(),
+                address as u64,
+            ) as *mut T
+        }
     }
 
     pub fn call_export_function(
@@ -131,7 +133,7 @@ impl<'module> Instance<'module> {
         let _ = self.call_export_function("Deallocate", &vec![WasmValue::I32(data as i32)]);
     }
 
-    pub fn get_inner_reference(&self) -> &instance::Instance {
+    pub fn get_inner_reference(&'_ self) -> &'_ instance::Instance<'_> {
         &self.instance
     }
 }

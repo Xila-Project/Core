@@ -223,38 +223,40 @@ pub extern "C" fn xila_memory_deallocate(pointer: *mut c_void) {
 /// ```
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_memory_reallocate(pointer: *mut c_void, size: usize) -> *mut c_void {
-    into_pointer(|| {
-        let pointer = NonNull::new(pointer as *mut u8);
+    unsafe {
+        into_pointer(|| {
+            let pointer = NonNull::new(pointer as *mut u8);
 
-        let mut allocation_table = block_on(ALLOCATIONS_TABLE.write());
+            let mut allocation_table = block_on(ALLOCATIONS_TABLE.write());
 
-        let old_layout = match pointer {
-            None => Layout::from_size_align(size, 1)
-                .expect("Failed to create layout for memory reallocation"),
-            Some(pointer) =>
-            // Get the layout from the allocation table using the pointer's address
-            {
-                allocation_table
-                    .get(&(pointer.as_ptr() as usize))
-                    .cloned()?
-            }
-        };
+            let old_layout = match pointer {
+                None => Layout::from_size_align(size, 1)
+                    .expect("Failed to create layout for memory reallocation"),
+                Some(pointer) =>
+                // Get the layout from the allocation table using the pointer's address
+                {
+                    allocation_table
+                        .get(&(pointer.as_ptr() as usize))
+                        .cloned()?
+                }
+            };
 
-        let new_layout = Layout::from_size_align(size, old_layout.align()).ok()?;
+            let new_layout = Layout::from_size_align(size, old_layout.align()).ok()?;
 
-        Debug!(
-            "xila_memory_reallocate called with Pointer: {:#x}, Old_layout: {:?}, New_layout: {:?}",
-            pointer.map_or(0, |p| p.as_ptr() as usize),
-            old_layout,
-            new_layout
-        );
+            Debug!(
+                "xila_memory_reallocate called with Pointer: {:#x}, Old_layout: {:?}, New_layout: {:?}",
+                pointer.map_or(0, |p| p.as_ptr() as usize),
+                old_layout,
+                new_layout
+            );
 
-        let allocated = memory::get_instance().reallocate(pointer, old_layout, new_layout)?;
+            let allocated = memory::get_instance().reallocate(pointer, old_layout, new_layout)?;
 
-        allocation_table.insert(allocated.as_ptr() as usize, new_layout);
+            allocation_table.insert(allocated.as_ptr() as usize, new_layout);
 
-        Some(allocated)
-    })
+            Some(allocated)
+        })
+    }
 }
 
 /// Allocates a memory block with specified properties.
@@ -309,31 +311,33 @@ pub unsafe extern "C" fn xila_memory_allocate(
     alignment: usize,
     capabilities: XilaMemoryCapabilities,
 ) -> *mut c_void {
-    into_pointer(|| {
-        Trace!(
-            "xila_memory_allocate called with Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
-        );
-        let layout = Layout::from_size_align(size, alignment)
-            .expect("Failed to create layout for memory allocation");
+    unsafe {
+        into_pointer(|| {
+            Trace!(
+                "xila_memory_allocate called with Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
+            );
+            let layout = Layout::from_size_align(size, alignment)
+                .expect("Failed to create layout for memory allocation");
 
-        let capabilities = Capabilities::from_u8(capabilities);
+            let capabilities = Capabilities::from_u8(capabilities);
 
-        let result = memory::get_instance().allocate(capabilities, layout);
+            let result = memory::get_instance().allocate(capabilities, layout);
 
-        if result.is_some() {
-            Write_allocations_table!().insert(result.unwrap().as_ptr() as usize, layout);
-            Debug! {
-                "xila_memory_allocate called with Size: {}, Alignment: {}, Capabilities: {:?}, allocated memory at {:#x}",
-                size, alignment, capabilities, result.unwrap().as_ptr() as usize
-            };
-        } else {
-            Warning! {
-                "xila_memory_allocate failed with Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
-            };
-        }
+            if result.is_some() {
+                Write_allocations_table!().insert(result.unwrap().as_ptr() as usize, layout);
+                Debug! {
+                    "xila_memory_allocate called with Size: {}, Alignment: {}, Capabilities: {:?}, allocated memory at {:#x}",
+                    size, alignment, capabilities, result.unwrap().as_ptr() as usize
+                };
+            } else {
+                Warning! {
+                    "xila_memory_allocate failed with Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
+                };
+            }
 
-        result
-    })
+            result
+        })
+    }
 }
 
 /// Returns the system's memory page size.

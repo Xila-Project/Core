@@ -43,21 +43,23 @@ pub unsafe extern "C" fn xila_file_system_get_statistics(
     file: XilaUniqueFileIdentifier,
     statistics: *mut XilaFileSystemStatistics,
 ) -> XilaFileSystemResult {
-    into_u32(move || {
-        let task_identifier = context::get_instance().get_current_task_identifier();
+    unsafe {
+        into_u32(move || {
+            let task_identifier = context::get_instance().get_current_task_identifier();
 
-        let statistics = XilaFileSystemStatistics::from_mutable_pointer(statistics)
-            .ok_or(Error::InvalidParameter)?;
+            let statistics = XilaFileSystemStatistics::from_mutable_pointer(statistics)
+                .ok_or(Error::InvalidParameter)?;
 
-        let file = file_system::UniqueFileIdentifier::from_raw(file);
+            let file = file_system::UniqueFileIdentifier::from_raw(file);
 
-        *statistics = XilaFileSystemStatistics::from_statistics(
-            block_on(get_file_system_instance().get_statistics(file, task_identifier))
-                .expect("Failed to get file statistics."),
-        );
+            *statistics = XilaFileSystemStatistics::from_statistics(
+                block_on(get_file_system_instance().get_statistics(file, task_identifier))
+                    .expect("Failed to get file statistics."),
+            );
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to get the statistics of a file from its path.
@@ -71,20 +73,22 @@ pub unsafe extern "C" fn xila_file_system_get_statistics_from_path(
     statistics: *mut XilaFileSystemStatistics,
     _: bool,
 ) -> XilaFileSystemResult {
-    into_u32(move || {
-        let path = CStr::from_ptr(path)
-            .to_str()
-            .map_err(|_| Error::InvalidParameter)?;
+    unsafe {
+        into_u32(move || {
+            let path = CStr::from_ptr(path)
+                .to_str()
+                .map_err(|_| Error::InvalidParameter)?;
 
-        let statistics = XilaFileSystemStatistics::from_mutable_pointer(statistics)
-            .ok_or(Error::InvalidParameter)?;
+            let statistics = XilaFileSystemStatistics::from_mutable_pointer(statistics)
+                .ok_or(Error::InvalidParameter)?;
 
-        *statistics = XilaFileSystemStatistics::from_statistics(block_on(
-            get_file_system_instance().get_statistics_from_path(&path),
-        )?);
+            *statistics = XilaFileSystemStatistics::from_statistics(block_on(
+                get_file_system_instance().get_statistics_from_path(&path),
+            )?);
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to get the access mode of a file.
@@ -101,21 +105,25 @@ pub unsafe extern "C" fn xila_file_system_get_access_mode(
     file: XilaUniqueFileIdentifier,
     mode: *mut XilaFileSystemMode,
 ) -> XilaFileSystemResult {
-    // Debug: Getting file access mode
+    unsafe {
+        // Debug: Getting file access mode
 
-    into_u32(move || {
-        let task_identifier = context::get_instance().get_current_task_identifier();
+        into_u32(move || {
+            let task_identifier = context::get_instance().get_current_task_identifier();
 
-        if mode.is_null() {
-            Err(Error::InvalidParameter)?;
-        }
+            if mode.is_null() {
+                Err(Error::InvalidParameter)?;
+            }
 
-        let file = file_system::UniqueFileIdentifier::from_raw(file);
+            let file = file_system::UniqueFileIdentifier::from_raw(file);
 
-        mode.write(block_on(get_file_system_instance().get_mode(file, task_identifier))?.as_u8());
+            mode.write(
+                block_on(get_file_system_instance().get_mode(file, task_identifier))?.as_u8(),
+            );
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to close a file.
@@ -156,32 +164,34 @@ pub unsafe extern "C" fn xila_file_system_write_vectored(
     buffer_count: usize,
     written: *mut usize,
 ) -> XilaFileSystemResult {
-    into_u32(move || {
-        let task_identifier = context::get_instance().get_current_task_identifier();
+    unsafe {
+        into_u32(move || {
+            let task_identifier = context::get_instance().get_current_task_identifier();
 
-        let buffers = core::slice::from_raw_parts(buffers, buffer_count);
-        let buffers_length = core::slice::from_raw_parts(buffers_length, buffer_count);
+            let buffers = core::slice::from_raw_parts(buffers, buffer_count);
+            let buffers_length = core::slice::from_raw_parts(buffers_length, buffer_count);
 
-        let mut current_written = 0;
+            let mut current_written = 0;
 
-        let file = file_system::UniqueFileIdentifier::from_raw(file);
+            let file = file_system::UniqueFileIdentifier::from_raw(file);
 
-        for (buffer, length) in buffers.iter().zip(buffers_length.iter()) {
-            let buffer_slice = core::slice::from_raw_parts(*buffer, *length);
+            for (buffer, length) in buffers.iter().zip(buffers_length.iter()) {
+                let buffer_slice = core::slice::from_raw_parts(*buffer, *length);
 
-            current_written += usize::from(block_on(get_file_system_instance().write(
-                file,
-                buffer_slice,
-                task_identifier,
-            ))?);
-        }
+                current_written += usize::from(block_on(get_file_system_instance().write(
+                    file,
+                    buffer_slice,
+                    task_identifier,
+                ))?);
+            }
 
-        if !written.is_null() {
-            *written = current_written;
-        }
+            if !written.is_null() {
+                *written = current_written;
+            }
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to perform a write operation on a file.
@@ -201,30 +211,34 @@ pub unsafe extern "C" fn xila_file_system_read_vectored(
     buffer_count: usize,
     read: *mut usize,
 ) -> XilaFileSystemResult {
-    into_u32(move || {
-        let task_identifier = context::get_instance().get_current_task_identifier();
+    unsafe {
+        into_u32(move || {
+            let task_identifier = context::get_instance().get_current_task_identifier();
 
-        let buffers = core::slice::from_raw_parts_mut(buffers, buffer_count);
-        let buffers_length = core::slice::from_raw_parts_mut(buffers_length, buffer_count);
+            let buffers = core::slice::from_raw_parts_mut(buffers, buffer_count);
+            let buffers_length = core::slice::from_raw_parts_mut(buffers_length, buffer_count);
 
-        let mut current_read = 0;
+            let mut current_read = 0;
 
-        let file = file_system::UniqueFileIdentifier::from_raw(file);
+            let file = file_system::UniqueFileIdentifier::from_raw(file);
 
-        for (buffer_pointer, buffer_length) in buffers.iter_mut().zip(buffers_length.iter_mut()) {
-            let buffer = core::slice::from_raw_parts_mut(*buffer_pointer, *buffer_length);
+            for (buffer_pointer, buffer_length) in buffers.iter_mut().zip(buffers_length.iter_mut())
+            {
+                let buffer = core::slice::from_raw_parts_mut(*buffer_pointer, *buffer_length);
 
-            let read = block_on(get_file_system_instance().read(file, buffer, task_identifier))?;
+                let read =
+                    block_on(get_file_system_instance().read(file, buffer, task_identifier))?;
 
-            current_read += usize::from(read);
-        }
+                current_read += usize::from(read);
+            }
 
-        if !read.is_null() {
-            *read = current_read;
-        }
+            if !read.is_null() {
+                *read = current_read;
+            }
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to perform a read operation on a file at a specific position.
@@ -241,37 +255,41 @@ pub unsafe extern "C" fn xila_file_system_read_at_position_vectored(
     position: u64,
     read: *mut usize,
 ) -> XilaFileSystemResult {
-    into_u32(move || {
-        let task_identifier = context::get_instance().get_current_task_identifier();
+    unsafe {
+        into_u32(move || {
+            let task_identifier = context::get_instance().get_current_task_identifier();
 
-        let buffers = core::slice::from_raw_parts_mut(buffers, buffer_count);
-        let buffers_length = core::slice::from_raw_parts_mut(buffers_length, buffer_count);
+            let buffers = core::slice::from_raw_parts_mut(buffers, buffer_count);
+            let buffers_length = core::slice::from_raw_parts_mut(buffers_length, buffer_count);
 
-        let mut current_read = 0;
+            let mut current_read = 0;
 
-        let file: file_system::UniqueFileIdentifier =
-            file_system::UniqueFileIdentifier::from_raw(file);
+            let file: file_system::UniqueFileIdentifier =
+                file_system::UniqueFileIdentifier::from_raw(file);
 
-        block_on(get_file_system_instance().set_position(
-            file,
-            &file_system::Position::Start(position),
-            task_identifier,
-        ))?;
+            block_on(get_file_system_instance().set_position(
+                file,
+                &file_system::Position::Start(position),
+                task_identifier,
+            ))?;
 
-        for (buffer_pointer, buffer_length) in buffers.iter_mut().zip(buffers_length.iter_mut()) {
-            let buffer = core::slice::from_raw_parts_mut(*buffer_pointer, *buffer_length);
+            for (buffer_pointer, buffer_length) in buffers.iter_mut().zip(buffers_length.iter_mut())
+            {
+                let buffer = core::slice::from_raw_parts_mut(*buffer_pointer, *buffer_length);
 
-            let read = block_on(get_file_system_instance().read(file, buffer, task_identifier))?;
+                let read =
+                    block_on(get_file_system_instance().read(file, buffer, task_identifier))?;
 
-            current_read += usize::from(read);
-        }
+                current_read += usize::from(read);
+            }
 
-        if !read.is_null() {
-            *read = current_read;
-        }
+            if !read.is_null() {
+                *read = current_read;
+            }
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to perform a write operation on a file at a specific position.
@@ -288,39 +306,41 @@ pub unsafe extern "C" fn xila_file_system_write_at_position_vectored(
     position: u64,
     written: *mut usize,
 ) -> XilaFileSystemResult {
-    into_u32(move || {
-        let task_identifier = context::get_instance().get_current_task_identifier();
+    unsafe {
+        into_u32(move || {
+            let task_identifier = context::get_instance().get_current_task_identifier();
 
-        let buffers = core::slice::from_raw_parts(buffers, buffer_count);
-        let buffers_length = core::slice::from_raw_parts(buffers_length, buffer_count);
+            let buffers = core::slice::from_raw_parts(buffers, buffer_count);
+            let buffers_length = core::slice::from_raw_parts(buffers_length, buffer_count);
 
-        let mut current_written = 0;
+            let mut current_written = 0;
 
-        let file: file_system::UniqueFileIdentifier =
-            file_system::UniqueFileIdentifier::from_raw(file);
+            let file: file_system::UniqueFileIdentifier =
+                file_system::UniqueFileIdentifier::from_raw(file);
 
-        block_on(get_file_system_instance().set_position(
-            file,
-            &file_system::Position::Start(position),
-            task_identifier,
-        ))?;
-
-        for (buffer, length) in buffers.iter().zip(buffers_length.iter()) {
-            let buffer_slice = core::slice::from_raw_parts(*buffer, *length);
-
-            current_written += usize::from(block_on(get_file_system_instance().write(
+            block_on(get_file_system_instance().set_position(
                 file,
-                buffer_slice,
+                &file_system::Position::Start(position),
                 task_identifier,
-            ))?);
-        }
+            ))?;
 
-        if !written.is_null() {
-            *written = current_written;
-        }
+            for (buffer, length) in buffers.iter().zip(buffers_length.iter()) {
+                let buffer_slice = core::slice::from_raw_parts(*buffer, *length);
 
-        Ok(())
-    })
+                current_written += usize::from(block_on(get_file_system_instance().write(
+                    file,
+                    buffer_slice,
+                    task_identifier,
+                ))?);
+            }
+
+            if !written.is_null() {
+                *written = current_written;
+            }
+
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to check if a file is a terminal.
@@ -337,19 +357,22 @@ pub unsafe extern "C" fn xila_file_system_is_a_terminal(
     file: XilaUniqueFileIdentifier,
     is_a_terminal: *mut bool,
 ) -> XilaFileSystemResult {
-    into_u32(move || {
-        let task_identifier = context::get_instance().get_current_task_identifier();
+    unsafe {
+        into_u32(move || {
+            let task_identifier = context::get_instance().get_current_task_identifier();
 
-        if is_a_terminal.is_null() {
-            Err(Error::InvalidParameter)?;
-        }
+            if is_a_terminal.is_null() {
+                Err(Error::InvalidParameter)?;
+            }
 
-        let file = file_system::UniqueFileIdentifier::from_raw(file);
+            let file = file_system::UniqueFileIdentifier::from_raw(file);
 
-        *is_a_terminal = block_on(get_file_system_instance().is_a_terminal(file, task_identifier))?;
+            *is_a_terminal =
+                block_on(get_file_system_instance().is_a_terminal(file, task_identifier))?;
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -398,27 +421,29 @@ pub unsafe extern "C" fn xila_file_system_open(
     status: XilaFileSystemStatus,
     file: *mut XilaUniqueFileIdentifier,
 ) -> XilaFileSystemResult {
-    into_u32(move || {
-        let path = core::ffi::CStr::from_ptr(path)
-            .to_str()
-            .map_err(|_| Error::InvalidParameter)?;
+    unsafe {
+        into_u32(move || {
+            let path = core::ffi::CStr::from_ptr(path)
+                .to_str()
+                .map_err(|_| Error::InvalidParameter)?;
 
-        let mode = Mode::from_u8(mode);
-        let open = Open::from_u8(open);
-        let status = Status::from_u8(status);
+            let mode = Mode::from_u8(mode);
+            let open = Open::from_u8(open);
+            let status = Status::from_u8(status);
 
-        let flags = Flags::new(mode, Some(open), Some(status));
+            let flags = Flags::new(mode, Some(open), Some(status));
 
-        // Debug: Opening file
+            // Debug: Opening file
 
-        let task = context::get_instance().get_current_task_identifier();
+            let task = context::get_instance().get_current_task_identifier();
 
-        *file = block_on(get_file_system_instance().open(&path, flags, task))
-            .expect("Failed to open file")
-            .into_inner();
+            *file = block_on(get_file_system_instance().open(&path, flags, task))
+                .expect("Failed to open file")
+                .into_inner();
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -453,22 +478,24 @@ pub unsafe extern "C" fn xila_file_system_resolve_path(
     resolved_path: *mut u8,
     resolved_path_size: usize,
 ) -> XilaFileSystemResult {
-    into_u32(move || {
-        let path = core::ffi::CStr::from_ptr(path)
-            .to_str()
-            .map_err(|_| Error::InvalidParameter)?;
+    unsafe {
+        into_u32(move || {
+            let path = core::ffi::CStr::from_ptr(path)
+                .to_str()
+                .map_err(|_| Error::InvalidParameter)?;
 
-        // Debug: Resolving path
+            // Debug: Resolving path
 
-        // Copy path to resolved path.
-        copy_nonoverlapping(
-            path.as_ptr(),
-            resolved_path,
-            min(resolved_path_size, path.len()),
-        );
+            // Copy path to resolved path.
+            copy_nonoverlapping(
+                path.as_ptr(),
+                resolved_path,
+                min(resolved_path_size, path.len()),
+            );
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -518,20 +545,22 @@ pub unsafe extern "C" fn xila_file_system_set_position(
     whence: XilaFileSystemWhence,
     position: *mut XilaFileSystemSize,
 ) -> XilaFileSystemResult {
-    into_u32(move || {
-        let task = context::get_instance().get_current_task_identifier();
-        let current_position = into_position(whence, offset);
+    unsafe {
+        into_u32(move || {
+            let task = context::get_instance().get_current_task_identifier();
+            let current_position = into_position(whence, offset);
 
-        // Debug: Setting position
+            // Debug: Setting position
 
-        let file = file_system::UniqueFileIdentifier::from_raw(file);
+            let file = file_system::UniqueFileIdentifier::from_raw(file);
 
-        *position =
-            block_on(get_file_system_instance().set_position(file, &current_position, task))?
-                .as_u64();
+            *position =
+                block_on(get_file_system_instance().set_position(file, &current_position, task))?
+                    .as_u64();
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to get the position in a file.
@@ -543,18 +572,20 @@ pub unsafe extern "C" fn xila_file_system_set_position(
 pub unsafe extern "C" fn xila_file_system_create_directory(
     path: *const c_char,
 ) -> XilaFileSystemResult {
-    into_u32(move || {
-        let path = CStr::from_ptr(path)
-            .to_str()
-            .map_err(|_| Error::InvalidParameter)?;
+    unsafe {
+        into_u32(move || {
+            let path = CStr::from_ptr(path)
+                .to_str()
+                .map_err(|_| Error::InvalidParameter)?;
 
-        // Debug: Creating directory
+            // Debug: Creating directory
 
-        let task = context::get_instance().get_current_task_identifier();
-        block_on(get_file_system_instance().create_directory(&path, task))?;
+            let task = context::get_instance().get_current_task_identifier();
+            block_on(get_file_system_instance().create_directory(&path, task))?;
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to rename (move) a file.
@@ -567,21 +598,23 @@ pub unsafe extern "C" fn xila_file_system_rename(
     old_path: *const c_char,
     new_path: *const c_char,
 ) -> XilaFileSystemResult {
-    into_u32(move || {
-        let old_path = CStr::from_ptr(old_path)
-            .to_str()
-            .map_err(|_| Error::InvalidParameter)?;
+    unsafe {
+        into_u32(move || {
+            let old_path = CStr::from_ptr(old_path)
+                .to_str()
+                .map_err(|_| Error::InvalidParameter)?;
 
-        let new_path = CStr::from_ptr(new_path)
-            .to_str()
-            .map_err(|_| Error::InvalidParameter)?;
+            let new_path = CStr::from_ptr(new_path)
+                .to_str()
+                .map_err(|_| Error::InvalidParameter)?;
 
-        // Debug: Renaming files
+            // Debug: Renaming files
 
-        block_on(get_file_system_instance().rename(&old_path, &new_path))?;
+            block_on(get_file_system_instance().rename(&old_path, &new_path))?;
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -617,15 +650,17 @@ pub unsafe extern "C" fn xila_file_system_set_times_from_path(
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_remove(_path: *const c_char) -> XilaFileSystemResult {
-    into_u32(|| {
-        let path = CStr::from_ptr(_path)
-            .to_str()
-            .map_err(|_| Error::InvalidParameter)?;
+    unsafe {
+        into_u32(|| {
+            let path = CStr::from_ptr(_path)
+                .to_str()
+                .map_err(|_| Error::InvalidParameter)?;
 
-        block_on(get_file_system_instance().remove(path))?;
+            block_on(get_file_system_instance().remove(path))?;
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to truncate a file.

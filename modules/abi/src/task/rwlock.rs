@@ -42,10 +42,12 @@ impl RawRwLock {
     /// This function is unsafe because it dereferences a raw pointer.
     /// The caller must ensure the pointer is valid and points to properly initialized memory.
     pub unsafe fn from_pointer<'a>(pointer: *const RawRwLock) -> Option<&'a Self> {
-        if !Self::is_valid_pointer(pointer) {
-            return None;
+        unsafe {
+            if !Self::is_valid_pointer(pointer) {
+                return None;
+            }
+            Some(&*pointer)
         }
-        Some(&*pointer)
     }
 
     /// Transforms a mutable pointer to a mutable reference.
@@ -55,10 +57,12 @@ impl RawRwLock {
     /// This function is unsafe because it dereferences a raw pointer.
     /// The caller must ensure the pointer is valid and points to properly initialized memory.
     pub unsafe fn from_mutable_pointer<'a>(pointer: *mut RawRwLock) -> Option<&'a mut Self> {
-        if !Self::is_valid_pointer(pointer) {
-            return None;
+        unsafe {
+            if !Self::is_valid_pointer(pointer) {
+                return None;
+            }
+            Some(&mut *pointer)
         }
-        Some(&mut *pointer)
     }
 
     pub fn read(&self) -> bool {
@@ -131,17 +135,19 @@ pub static RAW_RWLOCK_SIZE: usize = size_of::<RawRwLock>();
 /// This function may return an error if the rwlock is not initialized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_initialize_rwlock(rwlock: *mut RawRwLock) -> bool {
-    if rwlock.is_null() {
-        return false;
+    unsafe {
+        if rwlock.is_null() {
+            return false;
+        }
+
+        if rwlock as usize % align_of::<RawRwLock>() != 0 {
+            return false;
+        }
+
+        rwlock.write(RawRwLock::new());
+
+        true
     }
-
-    if rwlock as usize % align_of::<RawRwLock>() != 0 {
-        return false;
-    }
-
-    rwlock.write(RawRwLock::new());
-
-    true
 }
 
 /// Read lock a rwlock.
@@ -153,12 +159,14 @@ pub unsafe extern "C" fn xila_initialize_rwlock(rwlock: *mut RawRwLock) -> bool 
 /// - The rwlock remains valid for the duration of the call
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_read_rwlock(rwlock: *mut RawRwLock) -> bool {
-    let rwlock = match RawRwLock::from_mutable_pointer(rwlock) {
-        Some(rwlock) => rwlock,
-        None => return false,
-    };
+    unsafe {
+        let rwlock = match RawRwLock::from_mutable_pointer(rwlock) {
+            Some(rwlock) => rwlock,
+            None => return false,
+        };
 
-    rwlock.read()
+        rwlock.read()
+    }
 }
 
 /// Write lock a rwlock.
@@ -170,12 +178,14 @@ pub unsafe extern "C" fn xila_read_rwlock(rwlock: *mut RawRwLock) -> bool {
 /// - The rwlock remains valid for the duration of the call
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_write_rwlock(rwlock: *mut RawRwLock) -> bool {
-    let rwlock = match RawRwLock::from_mutable_pointer(rwlock) {
-        Some(rwlock) => rwlock,
-        None => return false,
-    };
+    unsafe {
+        let rwlock = match RawRwLock::from_mutable_pointer(rwlock) {
+            Some(rwlock) => rwlock,
+            None => return false,
+        };
 
-    rwlock.write()
+        rwlock.write()
+    }
 }
 
 /// Unlock a rwlock.
@@ -188,12 +198,14 @@ pub unsafe extern "C" fn xila_write_rwlock(rwlock: *mut RawRwLock) -> bool {
 /// - The current task owns the lock (either read or write)
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_unlock_rwlock(rwlock: *mut RawRwLock) -> bool {
-    let rwlock = match RawRwLock::from_mutable_pointer(rwlock) {
-        Some(rwlock) => rwlock,
-        None => return false,
-    };
+    unsafe {
+        let rwlock = match RawRwLock::from_mutable_pointer(rwlock) {
+            Some(rwlock) => rwlock,
+            None => return false,
+        };
 
-    rwlock.unlock()
+        rwlock.unlock()
+    }
 }
 
 /// Destroy a rwlock.
@@ -206,12 +218,14 @@ pub unsafe extern "C" fn xila_unlock_rwlock(rwlock: *mut RawRwLock) -> bool {
 /// - No other threads are waiting on the rwlock
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_destroy_rwlock(rwlock: *mut RawRwLock) -> bool {
-    let _ = match RawRwLock::from_mutable_pointer(rwlock) {
-        Some(rw_lock) => rw_lock,
-        None => return false,
-    };
+    unsafe {
+        let _ = match RawRwLock::from_mutable_pointer(rwlock) {
+            Some(rw_lock) => rw_lock,
+            None => return false,
+        };
 
-    drop_in_place(rwlock); // Drop the rwlock, releasing resources
+        drop_in_place(rwlock); // Drop the rwlock, releasing resources
 
-    true // RwLock is dropped here
+        true // RwLock is dropped here
+    }
 }

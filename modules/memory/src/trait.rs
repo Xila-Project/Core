@@ -74,7 +74,7 @@ pub trait ManagerTrait: Send + Sync {
         new_layout: Layout,
     ) -> Option<NonNull<u8>> {
         // Default implementation simply deallocates and allocates again
-        let memory = self.allocate(Capabilities::default(), new_layout)?;
+        let memory = unsafe { self.allocate(Capabilities::default(), new_layout) }?;
 
         // Copy the old data to the new memory
         let pointer = match pointer {
@@ -87,10 +87,12 @@ pub trait ManagerTrait: Send + Sync {
         if old_size > 0 && new_size > 0 {
             let old_ptr = pointer.as_ptr();
             let new_ptr = memory.as_ptr();
-            core::ptr::copy_nonoverlapping(old_ptr, new_ptr, core::cmp::min(old_size, new_size));
+            unsafe {
+                core::ptr::copy_nonoverlapping(old_ptr, new_ptr, core::cmp::min(old_size, new_size))
+            };
         }
         // Deallocate the old memory
-        self.deallocate(pointer, old_layout);
+        unsafe { self.deallocate(pointer, old_layout) };
 
         Some(memory)
     }

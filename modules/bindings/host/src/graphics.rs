@@ -32,9 +32,11 @@ mod generated_bindings {
         environment: &Environment,
         pointer: WasmPointer,
     ) -> Result<*mut T> {
-        environment
-            .convert_to_native_pointer(pointer)
-            .ok_or(Error::InvalidPointer)
+        unsafe {
+            environment
+                .convert_to_native_pointer(pointer)
+                .ok_or(Error::InvalidPointer)
+        }
     }
 
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
@@ -148,38 +150,40 @@ pub unsafe fn call(
     arguments_count: u8,
     result: WasmPointer,
 ) {
-    let environment = Environment::from_raw_pointer(environment).unwrap();
+    unsafe {
+        let environment = Environment::from_raw_pointer(environment).unwrap();
 
-    let instance = graphics::get_instance();
+        let instance = graphics::get_instance();
 
-    let _lock = block_on(instance.lock());
+        let _lock = block_on(instance.lock());
 
-    let pointer_table_reference = &raw mut POINTER_TABLE;
+        let pointer_table_reference = &raw mut POINTER_TABLE;
 
-    let _ = (*pointer_table_reference).get_or_init(PointerTable::new);
+        let _ = (*pointer_table_reference).get_or_init(PointerTable::new);
 
-    let pointer_table_reference = (*pointer_table_reference).get_mut().unwrap();
+        let pointer_table_reference = (*pointer_table_reference).get_mut().unwrap();
 
-    if let Err(error) = generated_bindings::call_function(
-        environment,
-        pointer_table_reference,
-        function,
-        argument_0,
-        argument_1,
-        argument_2,
-        argument_3,
-        argument_4,
-        argument_5,
-        argument_6,
-        arguments_count,
-        result,
-    ) {
-        log::Error!(
-            "Error {error:?} durring graphics call: {function:?} with arguments: {argument_0:x}, {argument_1:x}, {argument_2:x}, {argument_3:x}, {argument_4:x}, {argument_5:x}, {argument_6:x}",
-        );
+        if let Err(error) = generated_bindings::call_function(
+            environment,
+            pointer_table_reference,
+            function,
+            argument_0,
+            argument_1,
+            argument_2,
+            argument_3,
+            argument_4,
+            argument_5,
+            argument_6,
+            arguments_count,
+            result,
+        ) {
+            log::Error!(
+                "Error {error:?} durring graphics call: {function:?} with arguments: {argument_0:x}, {argument_1:x}, {argument_2:x}, {argument_3:x}, {argument_4:x}, {argument_5:x}, {argument_6:x}",
+            );
+        }
+
+        // Lock is automatically released here.
     }
-
-    // Lock is automatically released here.
 }
 
 const GRAPHICS_BINDINGS_FUNCTIONS: [FunctionDescriptor; 1] = [FunctionDescriptor {

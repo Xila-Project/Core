@@ -184,7 +184,7 @@ impl Path {
         Some(Self::from_str(stripped_suffix))
     }
 
-    pub fn get_components(&self) -> Components {
+    pub fn get_components(&'_ self) -> Components<'_> {
         Components::new(self)
     }
 

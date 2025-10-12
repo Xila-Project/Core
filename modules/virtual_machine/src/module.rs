@@ -72,7 +72,7 @@ impl<'runtime> Module<'runtime> {
         Ok(module)
     }
 
-    pub(crate) fn get_inner_reference(&self) -> &module::Module {
+    pub(crate) fn get_inner_reference(&'_ self) -> &'_ module::Module<'_> {
         &self.module
     }
 }

@@ -26,23 +26,26 @@ pub unsafe extern "C" fn xila_file_system_open_directory(
     path: *const c_char,
     directory: *mut XilaUniqueFileIdentifier,
 ) -> u32 {
-    into_u32(move || {
-        if path.is_null() || directory.is_null() {
-            Err(Error::InvalidParameter)?;
-        }
+    unsafe {
+        into_u32(move || {
+            if path.is_null() || directory.is_null() {
+                Err(Error::InvalidParameter)?;
+            }
 
-        let path = CStr::from_ptr(path)
-            .to_str()
-            .map_err(|_| Error::InvalidParameter)?;
+            let path = CStr::from_ptr(path)
+                .to_str()
+                .map_err(|_| Error::InvalidParameter)?;
 
-        let task = get_context_instance().get_current_task_identifier();
+            let task = get_context_instance().get_current_task_identifier();
 
-        Debug!("Opening directory {path:?} for task {task:?}");
+            Debug!("Opening directory {path:?} for task {task:?}");
 
-        *directory = block_on(get_file_system_instance().open_directory(&path, task))?.into_inner();
+            *directory =
+                block_on(get_file_system_instance().open_directory(&path, task))?.into_inner();
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to read a directory.
@@ -58,26 +61,28 @@ pub unsafe extern "C" fn xila_file_system_read_directory(
     entry_size: *mut XilaFileSystemSize,
     entry_inode: *mut XilaFileSystemInode,
 ) -> u32 {
-    into_u32(move || {
-        let task = get_context_instance().get_current_task_identifier();
+    unsafe {
+        into_u32(move || {
+            let task = get_context_instance().get_current_task_identifier();
 
-        Debug!("Reading directory {file:?} for task {task:?}");
+            Debug!("Reading directory {file:?} for task {task:?}");
 
-        let file = file_system::UniqueFileIdentifier::from_raw(file);
+            let file = file_system::UniqueFileIdentifier::from_raw(file);
 
-        let entry = block_on(get_file_system_instance().read_directory(file, task))?;
+            let entry = block_on(get_file_system_instance().read_directory(file, task))?;
 
-        if let Some(entry) = entry {
-            *entry_name = CString::new(entry.get_name().as_str()).unwrap().into_raw();
-            *entry_type = entry.get_type().into();
-            *entry_size = entry.get_size().as_u64();
-            *entry_inode = entry.get_inode().into();
-        } else {
-            *entry_name = null_mut();
-        }
+            if let Some(entry) = entry {
+                *entry_name = CString::new(entry.get_name().as_str()).unwrap().into_raw();
+                *entry_type = entry.get_type().into();
+                *entry_size = entry.get_size().as_u64();
+                *entry_inode = entry.get_inode().into();
+            } else {
+                *entry_name = null_mut();
+            }
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 #[unsafe(no_mangle)]
