@@ -50,9 +50,6 @@ jobs:
       - name: Setup | Install necessary dependencies
         run: sudo apt update && sudo apt install -y gcc-multilib clang-format
 
-      - name: Setup | Build and source build tool
-        run: source Export.sh
-
       - name: Check | Formatting
         run: cargo fmt --all -- --check
 
