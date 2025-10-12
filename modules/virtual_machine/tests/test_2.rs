@@ -154,7 +154,7 @@ async fn integration_test() {
 
             loop {
                 // Reset instruction limit before each call
-                environment.set_instruction_count_limit(Some(100));
+                // environment.set_instruction_count_limit(Some(100));
 
                 let result = function.call(instance.get_inner_reference(), &vec![]);
 

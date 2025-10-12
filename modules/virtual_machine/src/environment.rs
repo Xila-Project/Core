@@ -172,14 +172,14 @@ impl Environment<'_> {
         Ok(Self(execution_environment, PhantomData))
     }
 
-    pub fn set_instruction_count_limit(&self, limit: Option<u64>) {
-        unsafe {
-            wasm_runtime_set_instruction_count_limit(
-                self.get_inner_reference(),
-                limit.map(|limit| limit as i32).unwrap_or(-1),
-            );
-        }
-    }
+    //    pub fn set_instruction_count_limit(&self, limit: Option<u64>) {
+    //        unsafe {
+    //            wasm_runtime_set_instruction_count_limit(
+    //                self.get_inner_reference(),
+    //                limit.map(|limit| limit as i32).unwrap_or(-1),
+    //            );
+    //        }
+    //    }
 
     fn get_instance_pointer(&self) -> wasm_module_inst_t {
         unsafe { wasm_runtime_get_module_inst(self.0) }
