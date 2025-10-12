@@ -48,6 +48,8 @@ unsafe impl Send for Manager {}
 /// A manager for tasks.
 pub struct Manager(pub(crate) RwLock<CriticalSectionRawMutex, Inner>);
 
+unsafe impl Sync for Manager {}
+
 impl Manager {
     pub const ROOT_TASK_IDENTIFIER: TaskIdentifier = TaskIdentifier::new(0);
 
