@@ -67,5 +67,5 @@ pub extern "C" fn xila_time_nano_sleep(
     _time: *const c_void,
     _remaining: *mut XilaTime,
 ) -> c_int {
-    todo!()
+    return 0;
 }
