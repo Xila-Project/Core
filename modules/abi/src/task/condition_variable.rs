@@ -1,8 +1,11 @@
-use crate::XilaTime;
+use core::ffi::c_int;
+
+use crate::{XilaTime, XilaTimeClockIdentifier};
 
 use super::RawMutex;
 
-pub struct XilaConditionVariable;
+pub type XilaConditionVariable = usize;
+pub type XilaConditionVariableAttribute = usize;
 
 /// This function is used to create a condition variable.
 ///
@@ -12,6 +15,14 @@ pub struct XilaConditionVariable;
 #[no_mangle]
 pub unsafe extern "C" fn xila_condition_variable_new(
     _condition_variable: *mut XilaConditionVariable,
+) -> u32 {
+    todo!()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xila_condition_variable_initialize(
+    _condition_variable: *mut XilaConditionVariable,
+    _attribute: *const XilaConditionVariableAttribute,
 ) -> u32 {
     todo!()
 }
@@ -76,5 +87,27 @@ pub unsafe extern "C" fn xila_condition_variable_signal(
 pub unsafe extern "C" fn xila_condition_variable_broadcast(
     _condition_variable: *mut XilaConditionVariable,
 ) -> u32 {
+    todo!()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xila_condition_variable_attribute_initialize(
+    _attribute: *mut XilaConditionVariableAttribute,
+) -> c_int {
+    todo!()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xila_condition_variable_attribute_set_clock(
+    _attribute: *mut XilaConditionVariableAttribute,
+    _clock: XilaTimeClockIdentifier,
+) -> c_int {
+    todo!()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xila_condition_variable_attribute_destroy(
+    _attribute: *mut XilaConditionVariableAttribute,
+) -> c_int {
     todo!()
 }
