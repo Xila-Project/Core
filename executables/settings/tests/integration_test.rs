@@ -1,7 +1,7 @@
 extern crate alloc;
 
 use executable::Standard;
-use file_system::{create_device, create_file_system, MemoryDevice, Mode};
+use file_system::{MemoryDevice, Mode, create_device, create_file_system};
 use settings::SettingsExecutable;
 use task::test;
 
@@ -13,7 +13,7 @@ async fn main() {
     use command_line_shell::ShellExecutable;
     use drivers::native::window_screen;
     use executable::mount_static_executables;
-    use graphics::{get_minimal_buffer_size, InputKind, Point};
+    use graphics::{InputKind, Point, get_minimal_buffer_size};
     use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 
     // - Initialize the task manager.

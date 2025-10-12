@@ -5,8 +5,8 @@ use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLo
 use task::TaskIdentifier;
 
 use file_system::{
-    get_new_file_identifier, get_new_inode, Error, FileIdentifier, Flags, Inode,
-    LocalFileIdentifier, Mode, Result, Size, Status, UniqueFileIdentifier,
+    Error, FileIdentifier, Flags, Inode, LocalFileIdentifier, Mode, Result, Size, Status,
+    UniqueFileIdentifier, get_new_file_identifier, get_new_inode,
 };
 
 use super::Pipe;

@@ -1,7 +1,7 @@
 pub(crate) use core::ffi::CStr;
 
 use alloc::string::ToString;
-use graphics::{lvgl, EventKind, Window};
+use graphics::{EventKind, Window, lvgl};
 use users::UserIdentifier;
 
 use crate::error::{Error, Result};

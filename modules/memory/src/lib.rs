@@ -14,7 +14,7 @@ pub use cache::*;
 pub use capability::*;
 pub use manager::*;
 pub use protection::*;
-pub use r#trait::*;
 pub use statistics::*;
+pub use r#trait::*;
 
 pub type Layout = core::alloc::Layout;

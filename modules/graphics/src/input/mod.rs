@@ -12,5 +12,5 @@ use binding::*;
 pub use data::*;
 pub use input::*;
 pub use key::*;
-pub use r#type::*;
 pub use state::*;
+pub use r#type::*;

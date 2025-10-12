@@ -15,7 +15,7 @@ use alloc::{
 use executable::execute;
 use file_system::Path;
 
-use crate::{parser::parse, resolver::resolve, tokenizer::tokenize, Error, Result};
+use crate::{Error, Result, parser::parse, resolver::resolve, tokenizer::tokenize};
 
 mod commands;
 mod error;

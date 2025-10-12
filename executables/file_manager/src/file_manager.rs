@@ -8,11 +8,10 @@ use core::{ptr::null_mut, time::Duration};
 
 use file_system::{Kind, Path, PathOwned};
 use graphics::{
-    lvgl,
+    EventKind, Window, lvgl,
     palette::{self, Hue},
-    EventKind, Window,
 };
-use virtual_file_system::{get_instance, Directory};
+use virtual_file_system::{Directory, get_instance};
 
 use crate::error::{Error, Result};
 

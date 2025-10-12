@@ -1,5 +1,5 @@
 use alloc::ffi::CString;
-use graphics::{lvgl, Color, Point};
+use graphics::{Color, Point, lvgl};
 
 use crate::error::{Error, Result};
 

@@ -1,5 +1,5 @@
 use proc_macro2::{Literal, TokenStream};
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use syn::Signature;
 
 use crate::format::snake_ident_to_upper_camel;

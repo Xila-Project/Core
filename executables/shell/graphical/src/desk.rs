@@ -3,7 +3,7 @@ use core::ffi::c_void;
 use crate::{
     error::{Error, Result},
     icon::create_icon,
-    shortcut::{Shortcut, SHORTCUT_PATH},
+    shortcut::{SHORTCUT_PATH, Shortcut},
 };
 
 use alloc::{
@@ -16,7 +16,7 @@ use alloc::{
 use executable::Standard;
 use file_system::{Kind, Mode};
 use futures::block_on;
-use graphics::{lvgl, Color, EventKind, Point, Window};
+use graphics::{Color, EventKind, Point, Window, lvgl};
 use log::Error;
 use virtual_file_system::Directory;
 

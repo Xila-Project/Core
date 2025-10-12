@@ -2,8 +2,8 @@ extern crate alloc;
 
 use alloc::string::ToString;
 use command_line_shell::ShellExecutable;
-use executable::{mount_static_executables, Standard};
-use file_system::{create_device, create_file_system, MemoryDevice, Mode};
+use executable::{Standard, mount_static_executables};
+use file_system::{MemoryDevice, Mode, create_device, create_file_system};
 use task::test;
 use users::GroupIdentifier;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};

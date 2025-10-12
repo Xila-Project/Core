@@ -1,6 +1,6 @@
 use std::{
     cell::OnceCell,
-    collections::{btree_map::Entry, BTreeMap},
+    collections::{BTreeMap, btree_map::Entry},
     os::raw::c_void,
 };
 
@@ -25,7 +25,7 @@ pub enum Error {
 pub type Result<T> = core::result::Result<T, Error>;
 
 mod generated_bindings {
-    use super::{lvgl::*, Error, PointerTable, Result, TaskIdentifier};
+    use super::{Error, PointerTable, Result, TaskIdentifier, lvgl::*};
     use virtual_machine::{Environment, WasmPointer, WasmUsize};
 
     unsafe fn convert_to_native_pointer<T>(

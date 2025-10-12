@@ -1,7 +1,7 @@
-use super::{into_u32, XilaFileSystemResult, XilaUniqueFileIdentifier};
+use super::{XilaFileSystemResult, XilaUniqueFileIdentifier, into_u32};
 use futures::block_on;
 use task::get_instance as get_task_manager_instance;
-use virtual_file_system::{get_instance as get_file_system_instance, Error};
+use virtual_file_system::{Error, get_instance as get_file_system_instance};
 
 /// This function is used to send data through a socket.
 ///

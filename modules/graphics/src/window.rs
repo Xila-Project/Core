@@ -4,7 +4,7 @@ use core::{mem::forget, str};
 
 use alloc::collections::VecDeque;
 
-use crate::{event::Event, Color, Error, EventKind, Result};
+use crate::{Color, Error, EventKind, Result, event::Event};
 
 use super::lvgl;
 

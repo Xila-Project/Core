@@ -1,5 +1,5 @@
 use quote::ToTokens;
-use syn::{visit::Visit, ForeignItemFn, ItemFn, ItemStruct, ItemType, ItemUnion, Signature};
+use syn::{ForeignItemFn, ItemFn, ItemStruct, ItemType, ItemUnion, Signature, visit::Visit};
 
 use super::type_tree::TypeTree;
 

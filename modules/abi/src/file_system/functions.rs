@@ -1,7 +1,7 @@
 /// This module implements the POSIX like file system C ABI.
 use core::{
     cmp::min,
-    ffi::{c_char, CStr},
+    ffi::{CStr, c_char},
     num::NonZeroU32,
     ptr::copy_nonoverlapping,
 };
@@ -11,7 +11,7 @@ use futures::block_on;
 use file_system::{Error, FileIdentifier, Flags, Mode, Open, Status};
 use virtual_file_system::get_instance as get_file_system_instance;
 
-use crate::{context, into_position, XilaTime};
+use crate::{XilaTime, context, into_position};
 
 use super::{
     XilaFileSystemMode, XilaFileSystemOpen, XilaFileSystemResult, XilaFileSystemSize,

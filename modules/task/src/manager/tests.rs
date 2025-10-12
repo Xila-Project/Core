@@ -155,10 +155,12 @@ async fn test_environment_variables() {
         .remove_environment_variable(task_identifier, name)
         .await
         .unwrap();
-    assert!(manager
-        .get_environment_variable(task_identifier, name)
-        .await
-        .is_err());
+    assert!(
+        manager
+            .get_environment_variable(task_identifier, name)
+            .await
+            .is_err()
+    );
 }
 
 #[test(task_path = crate)]

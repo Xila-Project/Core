@@ -2,12 +2,12 @@ use core::{
     cell::RefCell,
     ffi::c_void,
     mem::MaybeUninit,
-    ptr::{null_mut, NonNull},
+    ptr::{NonNull, null_mut},
 };
 
 use libc::{
-    mmap, mremap, munmap, sysconf, MAP_32BIT, MAP_ANONYMOUS, MAP_FAILED, MAP_PRIVATE, PROT_EXEC,
-    PROT_READ, PROT_WRITE, _SC_PAGE_SIZE,
+    _SC_PAGE_SIZE, MAP_32BIT, MAP_ANONYMOUS, MAP_FAILED, MAP_PRIVATE, PROT_EXEC, PROT_READ,
+    PROT_WRITE, mmap, mremap, munmap, sysconf,
 };
 use linked_list_allocator::Heap;
 use memory::{Capabilities, Layout, ManagerTrait};

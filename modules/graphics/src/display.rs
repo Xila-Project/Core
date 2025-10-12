@@ -4,7 +4,7 @@ use core::{ffi::c_void, ptr::null_mut, slice};
 
 use file_system::Device;
 
-use crate::{draw_buffer::Buffer, Area, Point, RenderingColor, Result, ScreenWriteData};
+use crate::{Area, Point, RenderingColor, Result, ScreenWriteData, draw_buffer::Buffer};
 
 use super::lvgl;
 

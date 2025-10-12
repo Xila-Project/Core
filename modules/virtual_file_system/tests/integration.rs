@@ -3,7 +3,7 @@ extern crate alloc;
 use task::TaskIdentifier;
 
 use file_system::{
-    create_device, create_file_system, Flags, MemoryDevice, Mode, Open, Path, Position, Status,
+    Flags, MemoryDevice, Mode, Open, Path, Position, Status, create_device, create_file_system,
 };
 #[cfg(target_os = "linux")]
 use task::test;

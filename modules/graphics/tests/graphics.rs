@@ -11,7 +11,7 @@ async fn main() {
 
     use drivers::native::window_screen;
     use file_system::create_device;
-    use graphics::{get_recommended_buffer_size, lvgl, InputKind, Point};
+    use graphics::{InputKind, Point, get_recommended_buffer_size, lvgl};
 
     let _ = users::initialize();
 

@@ -3,7 +3,7 @@ extern crate std;
 
 use drivers::native::TimeDriver;
 use executable::build_crate;
-use file_system::{create_device, create_file_system, MemoryDevice};
+use file_system::{MemoryDevice, create_device, create_file_system};
 use graphics::lvgl;
 use memory::instantiate_global_allocator;
 use std::fs;

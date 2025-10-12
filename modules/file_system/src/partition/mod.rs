@@ -12,5 +12,5 @@ mod r#type;
 
 pub use device::*;
 pub use entry::*;
-pub use r#type::*;
 pub use statistics::*;
+pub use r#type::*;

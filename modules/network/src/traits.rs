@@ -1,4 +1,4 @@
-use crate::{Port, Protocol, IP};
+use crate::{IP, Port, Protocol};
 use time::Duration;
 
 use file_system::{LocalFileIdentifier, LocalFileIdentifierIterator};

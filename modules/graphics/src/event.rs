@@ -1,4 +1,4 @@
-use crate::{lvgl, Key};
+use crate::{Key, lvgl};
 
 #[derive(Debug, Clone)]
 pub struct Event {

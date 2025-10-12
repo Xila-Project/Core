@@ -2,7 +2,7 @@ use alloc::ffi::CString;
 use log::Debug;
 
 use core::{
-    ffi::{c_char, CStr},
+    ffi::{CStr, c_char},
     ptr::null_mut,
 };
 
@@ -13,7 +13,7 @@ use virtual_file_system::get_instance as get_file_system_instance;
 use crate::context::get_instance as get_context_instance;
 
 use super::{
-    into_u32, XilaFileKind, XilaFileSystemInode, XilaFileSystemSize, XilaUniqueFileIdentifier,
+    XilaFileKind, XilaFileSystemInode, XilaFileSystemSize, XilaUniqueFileIdentifier, into_u32,
 };
 
 /// This function is used to open a directory.
@@ -139,8 +139,8 @@ mod tests {
     use super::*;
     use crate::context::get_instance as get_context_instance;
     use alloc::{ffi::CString, format, vec::Vec};
-    use file_system::{create_device, create_file_system, MemoryDevice, Mode, Open, PathOwned};
-    use task::{test, TaskIdentifier};
+    use file_system::{MemoryDevice, Mode, Open, PathOwned, create_device, create_file_system};
+    use task::{TaskIdentifier, test};
     use virtual_file_system::VirtualFileSystem;
 
     async fn initialize_test_environment() -> (TaskIdentifier, &'static VirtualFileSystem<'static>)
@@ -202,7 +202,7 @@ mod tests {
     #[test]
     async fn test_invalid_handle_operations() {
         initialize_test_environment().await; // Ensure the test environment is initialized
-                                             // Test operations on invalid directory handles
+        // Test operations on invalid directory handles
         let invalid_handle: XilaUniqueFileIdentifier = 999999;
         let context = get_context_instance();
 
@@ -258,7 +258,7 @@ mod tests {
     #[test]
     async fn test_set_position_boundary_values() {
         initialize_test_environment().await; // Ensure the test environment is initialized
-                                             // Test set position with boundary values
+        // Test set position with boundary values
         let invalid_handle: XilaUniqueFileIdentifier = 999999;
         let context = get_context_instance();
 

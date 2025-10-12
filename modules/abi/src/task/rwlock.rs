@@ -2,7 +2,7 @@ use core::{
     mem::{align_of, size_of},
     ptr::drop_in_place,
 };
-use synchronization::blocking_mutex::{raw::CriticalSectionRawMutex, Mutex};
+use synchronization::blocking_mutex::{Mutex, raw::CriticalSectionRawMutex};
 
 pub struct RawRwLock {
     /// Mutex to protect the lock state.

@@ -1,6 +1,6 @@
 use core::mem::transmute;
 
-use crate::{lvgl, Point};
+use crate::{Point, lvgl};
 
 use super::{Key, State};
 

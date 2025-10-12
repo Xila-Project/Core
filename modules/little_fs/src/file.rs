@@ -1,6 +1,6 @@
 use core::{
     ffi::c_void,
-    mem::{forget, MaybeUninit},
+    mem::{MaybeUninit, forget},
 };
 
 use alloc::{boxed::Box, ffi::CString, rc::Rc, vec, vec::Vec};

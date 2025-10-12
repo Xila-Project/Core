@@ -3,12 +3,12 @@
 use super::*;
 use alloc::boxed::Box;
 use core::{
-    future::{poll_fn, Future},
+    future::{Future, poll_fn},
     ptr::NonNull,
     task::Poll,
     time::Duration,
 };
-use embassy_executor::raw::{task_from_waker, TaskPool};
+use embassy_executor::raw::{TaskPool, task_from_waker};
 use embassy_futures::yield_now;
 use embassy_time::Timer;
 
