@@ -31,66 +31,6 @@ pub type Result<T> = core::result::Result<T, Error>;
 /// This enum covers errors that can occur at various levels of the file system stack,
 /// from low-level device operations to high-level file system operations. Each variant
 /// has a unique numeric discriminant for FFI compatibility.
-///
-/// # Error Categories
-///
-/// ## Initialization Errors
-/// - [`Failed_to_initialize_file_system`] - File system initialization failed
-/// - [`Already_initialized`] - Attempted to initialize already initialized system
-/// - [`Not_initialized`] - Operation attempted on uninitialized system
-///
-/// ## Permission and Access Errors
-/// - [`Permission_denied`] - Insufficient permissions for operation
-/// - [`Invalid_mode`] - Invalid access mode specified
-/// - [`Invalid_flags`] - Invalid flags provided
-///
-/// ## File and Directory Errors
-/// - [`Not_found`] - File or directory doesn't exist
-/// - [`Already_exists`] - File or directory already exists
-/// - [`Directory_already_exists`] - Directory already exists
-/// - [`Invalid_file`] - File is corrupted or invalid
-/// - [`Invalid_directory`] - Directory is corrupted or invalid
-/// - [`Invalid_symbolic_link`] - Symbolic link is invalid
-/// - [`Not_directory`] - Expected directory but found file
-/// - [`is_directory`] - Expected file but found directory
-/// - [`Directory_not_empty`] - Cannot remove non-empty directory
-///
-/// ## Resource and Capacity Errors
-/// - [`File_system_full`] - No space left on file system
-/// - [`No_space_left`] - No space left on device
-/// - [`Too_many_mounted_file_systems`] - Mount limit exceeded
-/// - [`Too_many_open_files`] - Open file limit exceeded
-/// - [`File_too_large`] - File exceeds maximum size
-/// - [`No_memory`] - Insufficient memory for operation
-///
-/// ## I/O and Device Errors
-/// - [`Input_output`] - I/O error during operation
-/// - [`Corrupted`] - Data corruption detected
-/// - [`Ressource_busy`] - Resource temporarily unavailable
-/// - [`UnsupportedOperation`] - Operation not supported by device/filesystem
-///
-/// ## System Integration Errors
-/// - [`Failed_to_get_task_informations`] - Task manager access failed
-/// - [`Failed_to_get_users_informations`] - User manager access failed
-/// - [`Failed_to_get_users_manager_instance`] - User manager instance unavailable
-/// - [`Failed_to_get_task_manager_instance`] - Task manager instance unavailable
-///
-/// ## Parameter and Validation Errors
-/// - [`InvalidParameter`] - Invalid parameter provided
-/// - [`Invalid_path`] - Path is malformed or invalid
-/// - [`Invalid_identifier`] - File or task identifier is invalid
-/// - [`Name_too_long`] - File or directory name exceeds limits
-/// - [`Invalid_inode`] - Inode reference is invalid
-///
-/// ## Metadata and Attribute Errors
-/// - [`No_attribute`] - Requested attribute doesn't exist
-/// - [`Time_error`] - Timestamp operation failed
-///
-/// ## Generic Errors
-/// - [`File_system_error`] - Generic file system error
-/// - [`Internal_error`] - Internal implementation error
-/// - [`Unknown`] - Unknown or unspecified error
-/// - [`Other`] - Other unclassified error
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 #[repr(C)]
 pub enum Error {

@@ -12,7 +12,7 @@ use super::{
 /// This type is used to identify an opened file in the virtual file system.
 /// It is used for the file identification between the virtual file system and the outside world.
 /// It is similar to a file descriptor in Unix-like systems.
-/// It is a wrapper around a tuple of [`File_system_identifier_type`] and [`File_identifier_type`].
+/// It is a wrapper around a tuple of [`FileSystemIdentifier`] and [`FileIdentifier`].
 /// It is unique from the virtual file system point of view.
 ///
 /// # Example

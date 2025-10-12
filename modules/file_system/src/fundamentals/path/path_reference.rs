@@ -5,7 +5,7 @@ use alloc::{borrow::ToOwned, format, string::ToString};
 use super::*;
 
 /// A borrowed path type.
-/// The implementation is very similar to the standard library's [`std::path::Path`].
+/// The implementation is very similar to the standard library's `std::path::Path`.
 /// However, this implementation is more lightweight and allows for std-less usage.
 #[derive(Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]

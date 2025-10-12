@@ -23,7 +23,7 @@ pub trait ManagerTrait: Send + Sync {
     /// * `Layout` - Size and alignment requirements for the allocation
     ///
     /// # Returns
-    /// A pointer to the allocated memory, where the protection is set to [`crate::Protection_type::Read_write`], or a null pointer if allocation failed.
+    /// A pointer to the allocated memory, where the protection is set to [`crate::Protection::READ`], or a null pointer if allocation failed.
     ///
     /// # Safety
     /// This function is unsafe because the caller must ensure that:
@@ -59,7 +59,7 @@ pub trait ManagerTrait: Send + Sync {
     ///
     /// # Returns
     /// A pointer to the reallocated memory with the new layout, or `None` if reallocation failed.
-    /// The protection is set to [`crate::Protection_type::Read_write`].
+    /// The protection is set to [`crate::Protection::READ`].
     ///
     /// # Safety
     /// This function is unsafe because the caller must ensure that:

@@ -33,7 +33,7 @@ use core::ops::{Add, AddAssign};
 /// # Note
 ///
 /// Inode 0 is typically reserved in most file systems. The minimum valid
-/// inode number is provided as [`Inode_type::Minimum`].
+/// inode number is provided as [`Inode::MINIMUM`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Inode(u64);
@@ -43,7 +43,7 @@ impl Inode {
     ///
     /// Most file systems reserve inode 0 for special purposes, so valid
     /// inode numbers typically start from 1.
-    pub const MAXIMUM: Self = Inode(1);
+    pub const MINIMUM: Self = Inode(1);
 
     /// Create a new inode identifier from a u64 value.
     ///
@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn test_inode_minimum() {
-        assert_eq!(Inode::MAXIMUM.as_u64(), 1);
+        assert_eq!(Inode::MINIMUM.as_u64(), 1);
     }
 
     #[test]
@@ -217,7 +217,7 @@ mod tests {
     fn test_inode_zero() {
         let zero = Inode::new(0);
         assert_eq!(zero.as_u64(), 0);
-        assert!(zero < Inode::MAXIMUM);
+        assert!(zero < Inode::MINIMUM);
     }
 
     #[test]
@@ -268,7 +268,7 @@ mod tests {
 
     #[test]
     fn test_inode_minimum_comparison() {
-        let minimum = Inode::MAXIMUM;
+        let minimum = Inode::MINIMUM;
         let zero = Inode::new(0);
         let two = Inode::new(2);
 

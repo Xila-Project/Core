@@ -14,7 +14,7 @@ pub type FileSystemIdentifierInner = u32;
 /// File system identifier type
 ///
 /// This type is used to identify a file system in the virtual file system.
-/// It is a wrapper around [`File_system_identifier_inner_type`].
+/// It is a wrapper around [`FileSystemIdentifierInner`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
 pub struct FileSystemIdentifier(FileSystemIdentifierInner);

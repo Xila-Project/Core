@@ -27,10 +27,10 @@ pub type FileIdentifierInner = u32;
 /// # Standard File Identifiers
 ///
 /// The following standard identifiers are predefined:
-/// - [`Standard_in`] (0) - Standard input
-/// - [`Standard_out`] (1) - Standard output  
-/// - [`Standard_error`] (2) - Standard error
-/// - [`Minimum`] (3) - First available identifier for regular files
+/// - [`FileIdentifier::STANDARD_IN`] (0) - Standard input
+/// - [`FileIdentifier::STANDARD_OUT`] (1) - Standard output  
+/// - [`FileIdentifier::STANDARD_ERROR`] (2) - Standard error
+/// - [`FileIdentifier::MINIMUM`] (3) - First available identifier for regular files
 ///
 /// # Examples
 ///

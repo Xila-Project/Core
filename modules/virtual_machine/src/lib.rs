@@ -19,10 +19,10 @@
 //! The crate is organized into several key components:
 //!
 //! - [`Manager`]: Global singleton that manages the WASM runtime and loaded modules
-//! - [`Runtime_type`]: Represents a WASM runtime instance with registered host functions
-//! - [`Module_type`]: Represents a loaded WASM module ready for instantiation
-//! - [`Instance_type`]: An instantiated WASM module that can execute functions
-//! - [`Environment_type`]: Execution environment providing context for function calls
+//! - [`Runtime`]: Represents a WASM runtime instance with registered host functions
+//! - [`Module`]: Represents a loaded WASM module ready for instantiation
+//! - [`Instance`]: An instantiated WASM module that can execute functions
+//! - [`Environment`]: Execution environment providing context for function calls
 //!
 //! ## Usage Example
 //!

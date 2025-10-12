@@ -11,7 +11,7 @@ use super::{FileIdentifier, FileIdentifierInner, FileSystemIdentifier, UniqueFil
 ///
 /// This type is used to identify an opened file in a file system.
 /// It is used for the file identification between the file system and the virtual file system.
-/// It is a wrapper around a tuple of [`TaskIdentifier`] and [`File_identifier_type`].
+/// It is a wrapper around a tuple of [`TaskIdentifier`] and [`FileIdentifier`].
 /// It is unique from the file system point of view.
 ///
 /// # Example
