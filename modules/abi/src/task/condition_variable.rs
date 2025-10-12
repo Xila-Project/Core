@@ -19,6 +19,10 @@ pub unsafe extern "C" fn xila_condition_variable_new(
     todo!()
 }
 
+/// This function is used to initialize a condition variable.
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_initialize(
     _condition_variable: *mut XilaConditionVariable,
@@ -90,6 +94,10 @@ pub unsafe extern "C" fn xila_condition_variable_broadcast(
     todo!()
 }
 
+/// This function is used to create a condition variable attribute.
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_attribute_initialize(
     _attribute: *mut XilaConditionVariableAttribute,
@@ -97,6 +105,10 @@ pub unsafe extern "C" fn xila_condition_variable_attribute_initialize(
     todo!()
 }
 
+/// This function is used to set the clock of a condition variable attribute.
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_attribute_set_clock(
     _attribute: *mut XilaConditionVariableAttribute,
@@ -105,6 +117,10 @@ pub unsafe extern "C" fn xila_condition_variable_attribute_set_clock(
     todo!()
 }
 
+/// This function is used to destroy a condition variable attribute.
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_condition_variable_attribute_destroy(
     _attribute: *mut XilaConditionVariableAttribute,
