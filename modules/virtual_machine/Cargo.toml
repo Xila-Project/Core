@@ -24,6 +24,7 @@ drivers = { path = "../drivers", version = "0.1.0" }
 futures = { path = "../futures" }
 log = { path = "../log" }
 executable = { path = "../executable", features = ["building"] }
+abi = { path = "../abi" }
 
 [[test]]
 name = "virtual_machine_test"
