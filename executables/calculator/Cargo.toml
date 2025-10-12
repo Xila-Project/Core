@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 
 [dev-dependencies]
-xila = { path = "../../", features = ["Host"] }
+xila = { path = "../../", features = ["Host", "executable_building"] }
 
 [[test]]
 name = "calculator_test"
