@@ -32,7 +32,7 @@ impl RawRwLock {
     }
 
     pub fn is_valid_pointer(pointer: *const RawRwLock) -> bool {
-        !pointer.is_null() && (pointer as usize % align_of::<Self>() == 0)
+        !pointer.is_null() && (pointer as usize).is_multiple_of(align_of::<Self>())
     }
 
     /// Transforms a pointer to a reference.
@@ -140,7 +140,7 @@ pub unsafe extern "C" fn xila_initialize_rwlock(rwlock: *mut RawRwLock) -> bool 
             return false;
         }
 
-        if rwlock as usize % align_of::<RawRwLock>() != 0 {
+        if !(rwlock as usize).is_multiple_of(align_of::<RawRwLock>()) {
             return false;
         }
 

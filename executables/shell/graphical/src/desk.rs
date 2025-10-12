@@ -356,11 +356,11 @@ impl Desk {
             let mut found = Option::None;
 
             for j in 1..window_count {
-                if let Ok(window_identifier) = graphics_manager.get_window_identifier(j).await {
-                    if window_identifier == dock_window_identifier {
-                        found = Some(window_identifier);
-                        break;
-                    }
+                if let Ok(window_identifier) = graphics_manager.get_window_identifier(j).await
+                    && window_identifier == dock_window_identifier
+                {
+                    found = Some(window_identifier);
+                    break;
                 }
             }
 
@@ -499,10 +499,10 @@ impl Desk {
                 }
                 WINDOWS_PARENT_CHILD_CHANGED => {
                     // Ignore consecutive windows parent child changed events
-                    if let Some(peeked_event) = self.window.peek_event() {
-                        if peeked_event.get_code() == WINDOWS_PARENT_CHILD_CHANGED {
-                            continue;
-                        }
+                    if let Some(peeked_event) = self.window.peek_event()
+                        && peeked_event.get_code() == WINDOWS_PARENT_CHILD_CHANGED
+                    {
+                        continue;
                     }
 
                     self.refresh_dock().await.unwrap();

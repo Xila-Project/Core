@@ -79,7 +79,7 @@ impl TryFrom<&mut [u8]> for &mut InputData {
         if value.len() != size_of::<InputData>() {
             return Err(());
         }
-        if value.as_ptr() as usize % core::mem::align_of::<InputData>() != 0 {
+        if !(value.as_ptr() as usize).is_multiple_of(core::mem::align_of::<InputData>()) {
             return Err(());
         }
 

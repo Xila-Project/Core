@@ -151,10 +151,10 @@ impl LvglContext {
 
 impl Visit<'_> for LvglContext {
     fn visit_foreign_item_fn(&mut self, foreign_item_function: &ForeignItemFn) {
-        if let Some(filter_function) = self.function_filtering {
-            if !filter_function(&foreign_item_function.sig) {
-                return;
-            }
+        if let Some(filter_function) = self.function_filtering
+            && !filter_function(&foreign_item_function.sig)
+        {
+            return;
         }
 
         self.signatures.push(foreign_item_function.sig.clone());
@@ -178,10 +178,10 @@ impl Visit<'_> for LvglContext {
     }
 
     fn visit_item_fn(&mut self, i: &'_ syn::ItemFn) {
-        if let Some(filter_function) = self.function_filtering {
-            if !filter_function(&i.sig) {
-                return;
-            }
+        if let Some(filter_function) = self.function_filtering
+            && !filter_function(&i.sig)
+        {
+            return;
         }
 
         self.signatures.push(i.sig.clone());

@@ -97,10 +97,10 @@ impl Shell {
                 }
             }
 
-            if let Some(desk) = &mut self.desk {
-                if !desk.is_hidden() {
-                    desk.event_handler().await;
-                }
+            if let Some(desk) = &mut self.desk
+                && !desk.is_hidden()
+            {
+                desk.event_handler().await;
             }
 
             task::Manager::sleep(Duration::from_millis(20)).await;

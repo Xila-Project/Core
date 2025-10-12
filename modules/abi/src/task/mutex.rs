@@ -26,7 +26,7 @@ impl RawMutex {
     }
 
     pub fn is_valid_pointer(pointer: *const RawMutex) -> bool {
-        !pointer.is_null() && (pointer as usize % align_of::<Self>() == 0)
+        !pointer.is_null() && (pointer as usize).is_multiple_of(align_of::<Self>())
     }
 
     /// Transforms a pointer to a reference.
@@ -92,18 +92,18 @@ impl RawMutex {
         unsafe {
             self.mutex.lock_mut(|state| {
                 // Check if current task owns the mutex
-                if let Some(owner) = state.task {
-                    if owner == current_task {
-                        if self.recursive && state.lock_count > 1 {
-                            // Decrement lock count for recursive mutex
-                            state.lock_count -= 1;
-                        } else {
-                            // Unlock the mutex
-                            state.task = None;
-                            state.lock_count = 0;
-                        }
-                        return true; // Successfully unlocked
+                if let Some(owner) = state.task
+                    && owner == current_task
+                {
+                    if self.recursive && state.lock_count > 1 {
+                        // Decrement lock count for recursive mutex
+                        state.lock_count -= 1;
+                    } else {
+                        // Unlock the mutex
+                        state.task = None;
+                        state.lock_count = 0;
                     }
+                    return true; // Successfully unlocked
                 }
                 false // Not owned by current task or not locked
             })
@@ -130,7 +130,7 @@ pub unsafe extern "C" fn xila_initialize_mutex(mutex: *mut RawMutex) -> bool {
             return false;
         }
 
-        if mutex as usize % align_of::<RawMutex>() != 0 {
+        if !(mutex as usize).is_multiple_of(align_of::<RawMutex>()) {
             return false;
         }
 
@@ -155,7 +155,7 @@ pub unsafe extern "C" fn xila_initialize_recursive_mutex(mutex: *mut RawMutex) -
             return false;
         }
 
-        if mutex as usize % align_of::<RawMutex>() != 0 {
+        if !(mutex as usize).is_multiple_of(align_of::<RawMutex>()) {
             return false;
         }
 

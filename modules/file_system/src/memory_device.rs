@@ -75,7 +75,7 @@ impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
     /// let device = Memory_device_type::<512>::new(4096);
     /// ```
     pub fn new(size: usize) -> Self {
-        assert!(size % BLOCK_SIZE == 0);
+        assert!(size.is_multiple_of(BLOCK_SIZE));
 
         let data: Vec<u8> = vec![0; size];
 
@@ -107,7 +107,7 @@ impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
     /// let device = Memory_device_type::<512>::From_vec(data);
     /// ```
     pub fn from_vec(data: Vec<u8>) -> Self {
-        assert!(data.len() % BLOCK_SIZE == 0);
+        assert!(data.len().is_multiple_of(BLOCK_SIZE));
 
         Self(RwLock::new((data, 0)))
     }

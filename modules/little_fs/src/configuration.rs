@@ -25,7 +25,7 @@ pub struct Configuration {
 
 impl Configuration {
     pub const DEFAULT_RAW: littlefs::lfs_config = littlefs::lfs_config {
-        context: 0 as *mut c_void,
+        context: core::ptr::null_mut::<c_void>(),
         read: None,
         prog: None,
         erase: None,
@@ -37,9 +37,9 @@ impl Configuration {
         block_cycles: 0,
         cache_size: 0,
         lookahead_size: 0,
-        read_buffer: 0 as *mut c_void,
-        prog_buffer: 0 as *mut c_void,
-        lookahead_buffer: 0 as *mut c_void,
+        read_buffer: core::ptr::null_mut::<c_void>(),
+        prog_buffer: core::ptr::null_mut::<c_void>(),
+        lookahead_buffer: core::ptr::null_mut::<c_void>(),
         name_max: 0,
         file_max: 0,
         attr_max: 0,
@@ -55,7 +55,7 @@ impl Configuration {
         cache_size: usize,
         look_ahead_size: usize,
     ) -> Option<Self> {
-        if (total_size % block_size) != 0 {
+        if !total_size.is_multiple_of(block_size) {
             return None;
         }
 
@@ -63,7 +63,7 @@ impl Configuration {
             return None;
         }
 
-        if (look_ahead_size % 8) != 0 {
+        if !look_ahead_size.is_multiple_of(8) {
             return None;
         }
 

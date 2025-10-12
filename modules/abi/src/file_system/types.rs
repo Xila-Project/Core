@@ -130,7 +130,7 @@ impl XilaFileSystemStatistics {
             return None;
         }
 
-        if pointer as usize % align_of::<XilaFileSystemStatistics>() != 0 {
+        if !(pointer as usize).is_multiple_of(align_of::<XilaFileSystemStatistics>()) {
             return None;
         }
 

@@ -167,7 +167,7 @@ impl TryFrom<&mut [u8]> for &mut Entry {
         if value.len() != core::mem::size_of::<Entry>() {
             return Err(());
         }
-        if value.as_ptr() as usize % core::mem::align_of::<Entry>() != 0 {
+        if !(value.as_ptr() as usize).is_multiple_of(core::mem::align_of::<Entry>()) {
             return Err(());
         }
 
