@@ -47,6 +47,9 @@ jobs:
       - name: Setup | Install necessary dependencies
         run: sudo apt update && sudo apt install -y gcc-multilib clang-format
 
+      - name: Build | ABI
+        run: cargo build -p abi
+
       - name: Check | Formatting
         run: cargo fmt --all -- --check
 

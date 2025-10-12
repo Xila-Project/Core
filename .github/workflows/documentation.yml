@@ -35,6 +35,9 @@ jobs:
         with:
           targets: wasm32-unknown-unknown, wasm32-wasip1
 
+      - name: Build | ABI
+        run: cargo build -p abi
+
       - name: Build | Documentation
         run: |
           cargo doc --all-features
