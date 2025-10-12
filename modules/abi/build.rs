@@ -1,4 +1,7 @@
 pub fn main() {
+    // Tell Cargo to rerun this build script if any Rust source files change
+    println!("cargo:rerun-if-changed=src");
+
     let out_dir = "./include";
     let out_file = format!("{out_dir}/xila.h");
 
