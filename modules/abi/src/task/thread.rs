@@ -1,3 +1,4 @@
+use core::ffi::c_int;
 use core::ptr::null_mut;
 use core::{ffi::c_void, time::Duration};
 
@@ -67,5 +68,10 @@ pub extern "C" fn xila_thread_end_blocking_operation() {
 
 #[no_mangle]
 pub extern "C" fn xila_thread_wake_up(_thread: XilaThreadIdentifier) -> u32 {
+    todo!()
+}
+
+#[no_mangle]
+pub extern "C" fn xila_thread_yield() -> c_int {
     todo!()
 }
