@@ -35,6 +35,8 @@ target = { path = "modules/target", optional = true }
 [features]
 default = []
 
+executable_building = ["executable/building"]
+
 Host = [
     "dep:abi",
     "dep:little_fs",
