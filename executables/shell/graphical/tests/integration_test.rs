@@ -1,7 +1,7 @@
 extern crate alloc;
 
 use executable::Standard;
-use file_system::{create_device, create_file_system, MemoryDevice, Mode};
+use file_system::{MemoryDevice, Mode, create_device, create_file_system};
 use graphical_shell::ShellExecutable;
 use task::test;
 
@@ -13,10 +13,10 @@ async fn main() {
     use drivers::native::window_screen;
     use executable::mount_static_executables;
     use file_system::{Flags, Open};
-    use graphics::{get_minimal_buffer_size, InputKind, Point};
+    use graphics::{InputKind, Point, get_minimal_buffer_size};
     use users::GroupIdentifier;
 
-    use virtual_file_system::{mount_static_devices, File};
+    use virtual_file_system::{File, mount_static_devices};
 
     // - Initialize the task manager.
     let task_manager = task::initialize();

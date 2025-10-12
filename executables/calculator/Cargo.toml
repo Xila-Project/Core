@@ -2,12 +2,11 @@
 name = "calculator"
 version = "0.1.0"
 edition = "2024"
-build = "build.rs"
 
 [dependencies]
 
 [dev-dependencies]
-xila = { path = "../../", features = ["Host"] }
+xila = { path = "../../", features = ["Host", "executable_building"] }
 
 [[test]]
 name = "calculator_test"

@@ -2,8 +2,8 @@ extern crate alloc;
 
 use command_line_shell::ShellExecutable;
 use drivers::standard_library::loader::Loader;
-use executable::{build_crate, mount_static_executables, Standard};
-use file_system::{create_device, create_file_system, MemoryDevice, Mode, Path};
+use executable::{Standard, build_crate, mount_static_executables};
+use file_system::{MemoryDevice, Mode, Path, create_device, create_file_system};
 use memory::instantiate_global_allocator;
 use task::test;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};

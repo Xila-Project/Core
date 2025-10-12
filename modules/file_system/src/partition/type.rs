@@ -15,25 +15,25 @@ use core::fmt;
 /// # Standard Partition Types
 ///
 /// ## FAT File Systems
-/// - [`Fat12`] - FAT12 file system (floppy disks, small partitions)
-/// - [`Fat16`] - FAT16 file system
-/// - [`Fat16_small`] - FAT16 for partitions < 32MB
-/// - [`Fat32`] - FAT32 file system
-/// - [`Fat32_lba`] - FAT32 with LBA addressing (recommended)
+/// - [`PartitionKind::Fat12`] - FAT12 file system (floppy disks, small partitions)
+/// - [`PartitionKind::Fat16`] - FAT16 file system
+/// - [`PartitionKind::Fat16Small`] - FAT16 for partitions < 32MB
+/// - [`PartitionKind::Fat32`] - FAT32 file system
+/// - [`PartitionKind::Fat32Lba`] - FAT32 with LBA addressing (recommended)
 ///
 /// ## Extended Partitions
-/// - [`Extended`] - Extended partition (CHS addressing)
-/// - [`Extended_lba`] - Extended partition (LBA addressing)
+/// - [`PartitionKind::Extended`] - Extended partition (CHS addressing)
+/// - [`PartitionKind::ExtendedLba`] - Extended partition (LBA addressing)
 ///
 /// ## Linux File Systems
-/// - [`Linux`] - Linux native partition (typically ext2/3/4)
-/// - [`Linux_swap`] - Linux swap partition
-/// - [`Linux_lvm`] - Linux LVM (Logical Volume Manager)
+/// - [`PartitionKind::Linux`] - Linux native partition (typically ext2/3/4)
+/// - [`PartitionKind::LinuxSwap`] - Linux swap partition
+/// - [`PartitionKind::LinuxLvm`] - Linux LVM (Logical Volume Manager)
 ///
 /// ## Other File Systems
-/// - [`Ntfs_exfat`] - NTFS or exFAT file system
-/// - [`Efi_system`] - EFI System Partition
-/// - [`Gpt_protective`] - GPT protective partition
+/// - [`PartitionKind::NtfsExfat`] - NTFS or exFAT file system
+/// - [`PartitionKind::EfiSystem`] - EFI System Partition
+/// - [`PartitionKind::GptProtective`] - GPT protective partition
 ///
 /// # Examples
 ///
@@ -104,7 +104,7 @@ impl PartitionKind {
     /// Create a partition type from a raw u8 value.
     ///
     /// This function maps standard partition type IDs to their corresponding
-    /// enum variants. Unknown types are wrapped in [`Partition_type_type::Unknown`].
+    /// enum variants. Unknown types are wrapped in [`PartitionKind::Unknown`].
     ///
     /// # Arguments
     ///

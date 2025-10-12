@@ -19,7 +19,7 @@ use alloc::{
 use file_system::Mode;
 use virtual_file_system::File;
 
-use crate::{Error, Result, RANDOM_DEVICE_PATH};
+use crate::{Error, RANDOM_DEVICE_PATH, Result};
 
 /// Generates a random salt for password hashing.
 ///

@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use graphics::{ColorRGBA8888, Input_data_type, Key, Point, ScreenWriteData, State};
+use graphics::{ColorRGBA8888, InputData, Key, Point, ScreenWriteData, State};
 use pixels::{Pixels, SurfaceTexture};
 use winit::{
     application::ApplicationHandler,
@@ -15,7 +15,7 @@ pub struct Window {
     resolution: Point,
     window: Option<window::Window>,
     pixels: Option<Pixels>,
-    pointer_data: Input_data_type,
+    pointer_data: InputData,
     keyboard_data: VecDeque<(State, Key)>,
 }
 
@@ -28,7 +28,7 @@ impl Window {
         }
     }
 
-    pub fn get_pointer_data(&self) -> &Input_data_type {
+    pub fn get_pointer_data(&self) -> &InputData {
         &self.pointer_data
     }
 

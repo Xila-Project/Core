@@ -41,7 +41,7 @@ impl TryFrom<&[u8]> for &ScreenWriteData<'_> {
             return Err(());
         }
 
-        if value.as_ptr() as usize % align_of::<ScreenWriteData>() != 0 {
+        if !(value.as_ptr() as usize).is_multiple_of(align_of::<ScreenWriteData>()) {
             return Err(());
         }
 
@@ -93,7 +93,7 @@ impl TryFrom<&mut [u8]> for &mut ScreenReadData {
         if value.len() != size_of::<ScreenReadData>() {
             return Err(());
         }
-        if value.as_ptr() as usize % align_of::<ScreenReadData>() != 0 {
+        if !(value.as_ptr() as usize).is_multiple_of(align_of::<ScreenReadData>()) {
             return Err(());
         }
 

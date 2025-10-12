@@ -7,7 +7,9 @@ pub fn get() -> TokenStream {
 
             let object = __pointer_table.remove(__task, object).unwrap();
 
-            lv_obj_delete(object);
+            unsafe {
+                lv_obj_delete(object);
+            }
         }
 
         pub unsafe fn window_create() -> *mut lv_obj_t {
@@ -23,22 +25,24 @@ pub fn get() -> TokenStream {
             code: *mut u32,
             target: *mut u16
         ) {
-            let mut window = graphics::Window::from_raw(window);
+            let mut window = unsafe { graphics::Window::from_raw(window) };
 
             if let Some(event) = window.pop_event() {
 
-                *code = event.get_code() as u32;
+                unsafe {
+                    *code = event.get_code() as u32 ;
 
-                *target = __pointer_table
+                    *target = __pointer_table
                     .get_wasm_pointer(event.get_target())
                     .unwrap();
+                }
             }
 
             core::mem::forget(window);
         }
 
         pub unsafe fn window_get_event_code(window: *mut lv_obj_t) -> u32 {
-            let window = graphics::Window::from_raw(window);
+            let window = unsafe { graphics::Window::from_raw(window) };
 
             let code = if let Some(event) = window.peek_event() {
                 event.get_code() as u32
@@ -52,7 +56,7 @@ pub fn get() -> TokenStream {
         }
 
         pub unsafe fn window_get_event_target(__pointer_table: &mut PointerTable, window: *mut lv_obj_t) -> u16 {
-            let window = graphics::Window::from_raw(window);
+            let window = unsafe { graphics::Window::from_raw(window) };
 
             let target = if let Some(event) = window.peek_event() {
                 event.get_target()
@@ -68,7 +72,7 @@ pub fn get() -> TokenStream {
         }
 
         pub unsafe fn window_next_event(window: *mut lv_obj_t) {
-            let mut window = graphics::Window::from_raw(window);
+            let mut window = unsafe { graphics::Window::from_raw(window) };
 
             window.pop_event();
 
@@ -85,12 +89,12 @@ pub fn get() -> TokenStream {
             loop {
                 let val = unsafe { *map_as_u32.add(i) };
 
-                let val : *const i8 = convert_to_native_pointer(&__environment, val).unwrap();
+                let val : *const i8 = unsafe { convert_to_native_pointer(&__environment, val).unwrap() };
 
                 v.push(val);
 
                 // Check if the converted pointer points to an empty string
-                if *val == 0 {
+                if unsafe { *val == 0 } {
                     break;
                 }
 
@@ -99,7 +103,9 @@ pub fn get() -> TokenStream {
             }
 
             let object = __pointer_table.get_native_pointer(__task, object).unwrap();
-            lv_buttonmatrix_set_map(object, v.as_ptr());
+            unsafe {
+                lv_buttonmatrix_set_map(object, v.as_ptr());
+            }
 
             core::mem::forget(v);   // ! : deallocate the vector to avoid memory leaks when the button matrix map is deleted
         }
@@ -107,7 +113,9 @@ pub fn get() -> TokenStream {
         pub unsafe fn percentage(
             value: i32,
         ) -> i32 {
-            lv_pct(value)
+            unsafe {
+                lv_pct(value)
+            }
         }
 
     }

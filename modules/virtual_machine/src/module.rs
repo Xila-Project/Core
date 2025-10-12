@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use file_system::UniqueFileIdentifier;
 use wamr_rust_sdk::{module, sys::wasm_runtime_set_wasi_args_ex};
 
-use crate::{runtime::Runtime, Error, Result};
+use crate::{Error, Result, runtime::Runtime};
 
 pub struct Module<'runtime> {
     module: module::Module<'runtime>,
@@ -72,7 +72,7 @@ impl<'runtime> Module<'runtime> {
         Ok(module)
     }
 
-    pub(crate) fn get_inner_reference(&self) -> &module::Module {
+    pub(crate) fn get_inner_reference(&'_ self) -> &'_ module::Module<'_> {
         &self.module
     }
 }

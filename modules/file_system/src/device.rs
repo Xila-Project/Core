@@ -12,7 +12,7 @@ use alloc::vec::Vec;
 
 use crate::{Error, Position, Result, Size};
 
-/// Convenience macro for creating a new [`DeviceType`] from any type implementing [`DeviceTrait`].
+/// Convenience macro for creating a new [`Device`] from any type implementing [`DeviceTrait`].
 ///
 /// This macro wraps the provided device implementation in an `Arc` and creates a `DeviceType`.
 ///
@@ -47,13 +47,13 @@ macro_rules! create_device {
 /// ## Non-Blocking Operations
 ///
 /// Devices should never block indefinitely. If an operation would block, implementations should
-/// return [`Error::Ressource_busy`] instead. This means implementations should prefer
+/// return [`Error::RessourceBusy`] instead. This means implementations should prefer
 /// `try_read()` and `try_write()` variants of synchronization primitives.
 ///
 /// ## Position Management
 ///
 /// Devices maintain an internal position cursor that affects read and write operations.
-/// The position can be manipulated using [`DeviceTrait::Set_position`].
+/// The position can be manipulated using [`DeviceTrait::set_position`].
 ///
 /// # Examples
 ///
@@ -93,8 +93,8 @@ pub trait DeviceTrait: Send + Sync {
     ///
     /// # Errors
     ///
-    /// * [`Error::Input_output`] - I/O error during read operation
-    /// * [`Error::Ressource_busy`] - Device is temporarily unavailable
+    /// * [`Error::InputOutput`] - I/O error during read operation
+    /// * [`Error::RessourceBusy`] - Device is temporarily unavailable
     /// * [`Error::InvalidParameter`] - Invalid buffer or device state
     fn read(&self, buffer: &mut [u8]) -> Result<Size>;
 
@@ -114,10 +114,10 @@ pub trait DeviceTrait: Send + Sync {
     ///
     /// # Errors
     ///
-    /// * [`Error::Input_output`] - I/O error during write operation
-    /// * [`Error::No_space_left`] - Device is full
-    /// * [`Error::Ressource_busy`] - Device is temporarily unavailable
-    /// * [`Error::Permission_denied`] - Device is read-only
+    /// * [`Error::InputOutput`] - I/O error during write operation
+    /// * [`Error::NoSpaceLeft`] - Device is full
+    /// * [`Error::RessourceBusy`] - Device is temporarily unavailable
+    /// * [`Error::PermissionDenied`] - Device is read-only
     fn write(&self, buffer: &[u8]) -> Result<Size>;
 
     /// Get the total size of the device in bytes.
@@ -293,14 +293,14 @@ impl Device {
 
     /// Read data from the device at the current position.
     ///
-    /// See [`DeviceTrait::Read`] for detailed documentation.
+    /// See [`DeviceTrait::read`] for detailed documentation.
     pub fn read(&self, buffer: &mut [u8]) -> Result<Size> {
         self.0.read(buffer)
     }
 
     /// Write data to the device at the current position.
     ///
-    /// See [`DeviceTrait::Write`] for detailed documentation.
+    /// See [`DeviceTrait::write`] for detailed documentation.
     pub fn write(&self, buffer: &[u8]) -> Result<Size> {
         self.0.write(buffer)
     }
@@ -314,21 +314,21 @@ impl Device {
 
     /// Set the current position cursor for read/write operations.
     ///
-    /// See [`DeviceTrait::Set_position`] for detailed documentation.
+    /// See [`DeviceTrait::set_position`] for detailed documentation.
     pub fn set_position(&self, position: &Position) -> Result<Size> {
         self.0.set_position(position)
     }
 
     /// Flush any buffered data to the underlying storage.
     ///
-    /// See [`DeviceTrait::Flush`] for detailed documentation.
+    /// See [`DeviceTrait::flush`] for detailed documentation.
     pub fn flush(&self) -> Result<()> {
         self.0.flush()
     }
 
     /// Erase the entire device.
     ///
-    /// See [`DeviceTrait::Erase`] for detailed documentation.
+    /// See [`DeviceTrait::erase`] for detailed documentation.
     pub fn erase(&self) -> Result<()> {
         self.0.erase()
     }
@@ -356,7 +356,7 @@ impl Device {
 
     /// Create a complete dump of the device contents.
     ///
-    /// See [`DeviceTrait::Dump_device`] for detailed documentation.
+    /// See [`DeviceTrait::dump_device`] for detailed documentation.
     pub fn dump_device(&self) -> Result<Vec<u8>> {
         self.0.dump_device()
     }

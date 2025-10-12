@@ -4,7 +4,7 @@ use core::{mem::forget, str};
 
 use alloc::collections::VecDeque;
 
-use crate::{event::Event, Color, Error, EventKind, Result};
+use crate::{Color, Error, EventKind, Result, event::Event};
 
 use super::lvgl;
 
@@ -31,25 +31,27 @@ impl Drop for Window {
 }
 
 unsafe extern "C" fn event_callback(event: *mut lvgl::lv_event_t) {
-    let code = lvgl::lv_event_get_code(event);
+    unsafe {
+        let code = lvgl::lv_event_get_code(event);
 
-    let queue = lvgl::lv_event_get_user_data(event) as *mut VecDeque<Event>;
+        let queue = lvgl::lv_event_get_user_data(event) as *mut VecDeque<Event>;
 
-    let target = lvgl::lv_event_get_target(event) as *mut lvgl::lv_obj_t;
+        let target = lvgl::lv_event_get_target(event) as *mut lvgl::lv_obj_t;
 
-    match code {
-        lvgl::lv_event_code_t_LV_EVENT_CHILD_CREATED => {
-            lvgl::lv_obj_add_flag(target, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_EVENT_BUBBLE);
+        match code {
+            lvgl::lv_event_code_t_LV_EVENT_CHILD_CREATED => {
+                lvgl::lv_obj_add_flag(target, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_EVENT_BUBBLE);
 
-            (*queue).push_back(Event::new(EventKind::ChildCreated, target, None));
-        }
-        lvgl::lv_event_code_t_LV_EVENT_KEY => {
-            let key = unsafe { lvgl::lv_indev_get_key(lvgl::lv_indev_active()) };
+                (*queue).push_back(Event::new(EventKind::ChildCreated, target, None));
+            }
+            lvgl::lv_event_code_t_LV_EVENT_KEY => {
+                let key = lvgl::lv_indev_get_key(lvgl::lv_indev_active());
 
-            (*queue).push_back(Event::new(EventKind::Key, target, Some(key.into())));
-        }
-        _ => {
-            (*queue).push_back(Event::new(EventKind::from_lvgl_code(code), target, None));
+                (*queue).push_back(Event::new(EventKind::Key, target, Some(key.into())));
+            }
+            _ => {
+                (*queue).push_back(Event::new(EventKind::from_lvgl_code(code), target, None));
+            }
         }
     }
 }

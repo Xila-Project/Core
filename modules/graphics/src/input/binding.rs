@@ -2,7 +2,7 @@ use file_system::Device;
 
 use crate::lvgl;
 
-use super::Input_data_type;
+use super::InputData;
 
 /// This function is called by LVGL when it needs to read input data.
 ///
@@ -15,9 +15,9 @@ pub unsafe extern "C" fn binding_callback_function(
 ) {
     let user_data = unsafe { lvgl::lv_indev_get_user_data(input_device) as *mut UserData };
 
-    let device = &(*user_data).device;
+    let device = unsafe { &(*user_data).device };
 
-    let mut pointer_data = Input_data_type::default();
+    let mut pointer_data = InputData::default();
 
     device
         .read(pointer_data.as_mut())

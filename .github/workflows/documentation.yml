@@ -28,12 +28,15 @@ jobs:
           key: "Documentation"
 
       - name: Setup | Install GCC multilib
-        run: sudo apt update && sudo apt install gcc-multilib
+        run: sudo apt update && sudo apt install -y gcc-multilib clang-format
 
       - name: Setup | Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown, wasm32-wasip1
+
+      - name: Build | ABI
+        run: cargo build -p abi
 
       - name: Build | Documentation
         run: |

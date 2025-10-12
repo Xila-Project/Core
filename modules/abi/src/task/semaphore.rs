@@ -9,7 +9,7 @@ pub struct XilaSemaphore;
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_semaphore_open(
     _name: *const c_char,
     _open: XilaFileSystemOpen,
@@ -20,26 +20,26 @@ pub unsafe extern "C" fn xila_semaphore_open(
 }
 
 /// This function is used to close a semaphore.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_semaphore_close(_semaphore: *mut XilaSemaphore) -> u32 {
     let _ = _semaphore;
     todo!()
 }
 
 /// This function is used to wait a semaphore.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_semaphore_wait(_semaphore: *mut XilaSemaphore) -> u32 {
     todo!()
 }
 
 /// This function is used to try wait a semaphore.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_semaphore_try_wait(_semaphore: *mut XilaSemaphore) -> u32 {
     todo!()
 }
 
 /// This function is used to post a semaphore.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_semaphore_post(_semaphore: *mut XilaSemaphore) -> u32 {
     todo!()
 }
@@ -49,7 +49,7 @@ pub extern "C" fn xila_semaphore_post(_semaphore: *mut XilaSemaphore) -> u32 {
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_semaphore_get_value(
     _semaphore: *mut XilaSemaphore,
     _value: *mut c_int,
@@ -62,7 +62,7 @@ pub unsafe extern "C" fn xila_semaphore_get_value(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_semaphore_remove(_name: *const c_char) -> u32 {
     todo!()
 }

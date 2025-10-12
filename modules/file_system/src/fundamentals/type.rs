@@ -12,16 +12,6 @@ use core::fmt::Display;
 /// Each variant corresponds to a specific type of file system entity with its own
 /// characteristics and behaviors.
 ///
-/// # Variants
-///
-/// * [`File`] - Regular file containing data
-/// * [`Directory`] - Directory containing other file system objects
-/// * [`Block_device`] - Block-oriented device (e.g., disk drives)
-/// * [`Character_device`] - Character-oriented device (e.g., terminals, serial ports)
-/// * [`Pipe`] - Named pipe (FIFO) for inter-process communication
-/// * [`Socket`] - Unix domain socket for inter-process communication
-/// * [`Symbolic_link`] - Symbolic link pointing to another file system object
-///
 /// # Examples
 ///
 /// ```rust

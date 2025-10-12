@@ -8,6 +8,7 @@
 
 #include "../../../abi/include/xila.h"
 
+#include "stubs.h"
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -18,7 +19,7 @@
 #include <errno.h>
 #include <math.h>
 #include <unistd.h>
-#include <pthread.h>
+//#include <pthread.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
@@ -51,8 +52,8 @@ extern "C"
 
     typedef struct RawMutex korp_mutex;
 
-    typedef pthread_cond_t korp_cond;
-    typedef pthread_t korp_thread;
+    typedef XilaConditionVariable korp_cond;
+    typedef XilaThreadIdentifier korp_thread;
 
     struct RawRwLock
     {
@@ -130,6 +131,7 @@ extern "C"
     uint64_t os_get_invalid_handle();
 
     int os_getpagesize();
+
 
 #ifdef __cplusplus
 }

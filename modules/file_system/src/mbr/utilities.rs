@@ -13,7 +13,7 @@ use crate::{Device, Error, PartitionDevice, PartitionEntry, Result};
 /// Create a partition device from an MBR partition entry.
 ///
 /// This function takes a base device and a partition entry from an MBR, and creates
-/// a [`Partition_device_type`] that represents just that partition. The resulting
+/// a [`PartitionDevice`] that represents just that partition. The resulting
 /// partition device can be used for all standard device operations, but will only
 /// access the sectors allocated to that specific partition.
 ///
@@ -150,7 +150,7 @@ pub fn validate_mbr(mbr: &crate::Mbr) -> Result<()> {
 /// Create partition devices for all valid partitions in an MBR.
 ///
 /// This function iterates through all partition entries in an MBR and creates
-/// [`Partition_device_type`] instances for each valid partition. This is useful
+/// [`PartitionDevice`] instances for each valid partition. This is useful
 /// when you need to access all partitions on a disk programmatically.
 ///
 /// # Arguments
@@ -160,7 +160,7 @@ pub fn validate_mbr(mbr: &crate::Mbr) -> Result<()> {
 ///
 /// # Returns
 ///
-/// * `Ok(Vec<Partition_device_type>)` - Vector of partition devices for all valid partitions
+/// * `Ok(Vec<PartitionDevice>)` - Vector of partition devices for all valid partitions
 /// * `Err(Error)` - Error if any partition device creation fails
 ///
 /// # Examples
@@ -388,7 +388,7 @@ pub fn clone_mbr(source_device: &Device, target_device: &Device) -> Result<()> {
 /// Create a backup of an MBR as a byte array.
 ///
 /// This function reads the MBR from a device and returns it as a 512-byte array.
-/// This backup can be stored and later restored using [`Restore_mbr`]. This is
+/// This backup can be stored and later restored using [`restore_mbr`]. This is
 /// essential for disaster recovery and partition table management.
 ///
 /// # Arguments
@@ -428,7 +428,7 @@ pub fn backup_mbr(device: &Device) -> Result<[u8; 512]> {
 ///
 /// This function takes a previously created MBR backup and writes it to a device.
 /// The backup is validated before writing to ensure data integrity. This is the
-/// counterpart to [`Backup_mbr`] for disaster recovery scenarios.
+/// counterpart to [`backup_mbr`] for disaster recovery scenarios.
 ///
 /// # Arguments
 ///
@@ -453,7 +453,7 @@ pub fn backup_mbr(device: &Device) -> Result<[u8; 512]> {
 /// mbr.Write_to_device(&device).unwrap();
 ///
 /// // Create a backup
-/// let backup = Backup_mbr(&device).unwrap();
+/// let backup = backup_mbr(&device).unwrap();
 ///
 /// // Simulate corruption or need to restore
 /// Restore_mbr(&device, &backup).unwrap();

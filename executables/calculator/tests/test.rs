@@ -1,7 +1,10 @@
 extern crate alloc;
 
+use std::fs;
+
 use xila::drivers;
 use xila::drivers::native::TimeDriver;
+use xila::executable::build_crate;
 use xila::file_system;
 use xila::file_system::{MemoryDevice, create_device, create_file_system};
 use xila::graphics;
@@ -35,7 +38,9 @@ async fn integration_test() {
     // - Initialize the system
     log::initialize(&drivers::standard_library::log::Logger).unwrap();
 
-    let binary_buffer = include_bytes!("../wasm/target/wasm32-wasip1/release/calculator.wasm");
+    let wasm_crate_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("./wasm");
+    let binary_path = build_crate(&wasm_crate_path).unwrap();
+    let binary_buffer = fs::read(&binary_path).unwrap();
 
     users::initialize();
 

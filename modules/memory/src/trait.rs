@@ -23,7 +23,7 @@ pub trait ManagerTrait: Send + Sync {
     /// * `Layout` - Size and alignment requirements for the allocation
     ///
     /// # Returns
-    /// A pointer to the allocated memory, where the protection is set to [`crate::Protection_type::Read_write`], or a null pointer if allocation failed.
+    /// A pointer to the allocated memory, where the protection is set to [`crate::Protection::READ`], or a null pointer if allocation failed.
     ///
     /// # Safety
     /// This function is unsafe because the caller must ensure that:
@@ -59,7 +59,7 @@ pub trait ManagerTrait: Send + Sync {
     ///
     /// # Returns
     /// A pointer to the reallocated memory with the new layout, or `None` if reallocation failed.
-    /// The protection is set to [`crate::Protection_type::Read_write`].
+    /// The protection is set to [`crate::Protection::READ`].
     ///
     /// # Safety
     /// This function is unsafe because the caller must ensure that:
@@ -74,7 +74,7 @@ pub trait ManagerTrait: Send + Sync {
         new_layout: Layout,
     ) -> Option<NonNull<u8>> {
         // Default implementation simply deallocates and allocates again
-        let memory = self.allocate(Capabilities::default(), new_layout)?;
+        let memory = unsafe { self.allocate(Capabilities::default(), new_layout) }?;
 
         // Copy the old data to the new memory
         let pointer = match pointer {
@@ -87,10 +87,12 @@ pub trait ManagerTrait: Send + Sync {
         if old_size > 0 && new_size > 0 {
             let old_ptr = pointer.as_ptr();
             let new_ptr = memory.as_ptr();
-            core::ptr::copy_nonoverlapping(old_ptr, new_ptr, core::cmp::min(old_size, new_size));
+            unsafe {
+                core::ptr::copy_nonoverlapping(old_ptr, new_ptr, core::cmp::min(old_size, new_size))
+            };
         }
         // Deallocate the old memory
-        self.deallocate(pointer, old_layout);
+        unsafe { self.deallocate(pointer, old_layout) };
 
         Some(memory)
     }

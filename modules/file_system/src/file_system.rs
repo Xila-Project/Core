@@ -60,7 +60,7 @@ macro_rules! create_file_system {
 ///
 /// ### Non-blocking Operations
 /// All operations should avoid blocking indefinitely. If an operation would block,
-/// implementations should return [`Error::Ressource_busy`].
+/// implementations should return [`Error::RessourceBusy`].
 ///
 /// ## File Operations
 ///
@@ -154,10 +154,10 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// # Errors
     ///
-    /// * [`Error::Not_found`] - File doesn't exist and create flag not set
-    /// * [`Error::Permission_denied`] - Insufficient permissions
-    /// * [`Error::Already_exists`] - File exists and exclusive create flag set
-    /// * [`Error::Too_many_open_files`] - File descriptor limit reached
+    /// * [`Error::NotFound`] - File doesn't exist and create flag not set
+    /// * [`Error::PermissionDenied`] - Insufficient permissions
+    /// * [`Error::AlreadyExists`] - File exists and exclusive create flag set
+    /// * [`Error::TooManyOpenFiles`] - File descriptor limit reached
     fn open(
         &self,
         task: TaskIdentifier,
@@ -185,8 +185,8 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// # Errors
     ///
-    /// * [`Error::Invalid_identifier`] - File identifier is invalid
-    /// * [`Error::Input_output`] - I/O error during close operation
+    /// * [`Error::InvalidIdentifier`] - File identifier is invalid
+    /// * [`Error::InputOutput`] - I/O error during close operation
     fn close(&self, file: LocalFileIdentifier) -> Result<()>;
 
     /// Close all files opened by a specific task.
@@ -221,8 +221,8 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// # Errors
     ///
-    /// * [`Error::Invalid_identifier`] - Original file identifier is invalid
-    /// * [`Error::Too_many_open_files`] - File descriptor limit reached
+    /// * [`Error::InvalidIdentifier`] - Original file identifier is invalid
+    /// * [`Error::TooManyOpenFiles`] - File descriptor limit reached
     fn duplicate(&self, file: LocalFileIdentifier) -> Result<LocalFileIdentifier>;
 
     /// Transfer a file identifier from one task to another.
@@ -243,8 +243,8 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// # Errors
     ///
-    /// * [`Error::Invalid_identifier`] - File identifier is invalid
-    /// * [`Error::Failed_to_get_task_informations`] - Target task is invalid
+    /// * [`Error::InvalidIdentifier`] - File identifier is invalid
+    /// * [`Error::FailedToGetTaskInformations`] - Target task is invalid
     fn transfert(
         &self,
         new_task: TaskIdentifier,
@@ -268,10 +268,10 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// # Errors
     ///
-    /// * [`Error::Not_found`] - File or directory doesn't exist
-    /// * [`Error::Permission_denied`] - Insufficient permissions
-    /// * [`Error::Directory_not_empty`] - Directory contains files
-    /// * [`Error::Ressource_busy`] - File is currently in use
+    /// * [`Error::NotFound`] - File or directory doesn't exist
+    /// * [`Error::PermissionDenied`] - Insufficient permissions
+    /// * [`Error::DirectoryNotEmpty`] - Directory contains files
+    /// * [`Error::RessourceBusy`] - File is currently in use
     fn remove(&self, path: &Path) -> Result<()>;
     // - - File operations
 
@@ -293,9 +293,9 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// # Errors
     ///
-    /// * [`Error::Invalid_identifier`] - File identifier is invalid
-    /// * [`Error::Permission_denied`] - File not opened for reading
-    /// * [`Error::Input_output`] - I/O error during read
+    /// * [`Error::InvalidIdentifier`] - File identifier is invalid
+    /// * [`Error::PermissionDenied`] - File not opened for reading
+    /// * [`Error::InputOutput`] - I/O error during read
     fn read(&self, file: LocalFileIdentifier, buffer: &mut [u8], time_type: Time) -> Result<Size>;
 
     /// Write data to an open file.
@@ -316,10 +316,10 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// # Errors
     ///
-    /// * [`Error::Invalid_identifier`] - File identifier is invalid
-    /// * [`Error::Permission_denied`] - File not opened for writing
-    /// * [`Error::No_space_left`] - Insufficient storage space
-    /// * [`Error::Input_output`] - I/O error during write
+    /// * [`Error::InvalidIdentifier`] - File identifier is invalid
+    /// * [`Error::PermissionDenied`] - File not opened for writing
+    /// * [`Error::NoSpaceLeft`] - Insufficient storage space
+    /// * [`Error::InputOutput`] - I/O error during write
     fn write(&self, file: LocalFileIdentifier, buffer: &[u8], time_type: Time) -> Result<Size>;
 
     /// Rename or move a file or directory.
@@ -339,9 +339,9 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// # Errors
     ///
-    /// * [`Error::Not_found`] - Source file doesn't exist
-    /// * [`Error::Already_exists`] - Destination already exists
-    /// * [`Error::Permission_denied`] - Insufficient permissions
+    /// * [`Error::NotFound`] - Source file doesn't exist
+    /// * [`Error::AlreadyExists`] - Destination already exists
+    /// * [`Error::PermissionDenied`] - Insufficient permissions
     fn rename(&self, source: &Path, destination: &Path) -> Result<()>;
 
     /// Set the position of the file.

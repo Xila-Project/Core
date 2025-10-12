@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use file_system::{DeviceTrait, Size};
-use graphics::Input_data_type;
+use graphics::InputData;
 
 use super::Inner;
 
@@ -16,14 +16,14 @@ impl PointerDevice {
 impl DeviceTrait for PointerDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
         // - Cast the pointer data to the buffer.
-        let data: &mut Input_data_type = buffer
+        let data: &mut InputData = buffer
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;
 
         // Copy the pointer data.
         *data = *self.0.lock().unwrap().get_pointer_data().unwrap();
 
-        Ok(size_of::<Input_data_type>().into())
+        Ok(size_of::<InputData>().into())
     }
 
     fn write(&self, _: &[u8]) -> file_system::Result<Size> {
@@ -31,7 +31,7 @@ impl DeviceTrait for PointerDevice {
     }
 
     fn get_size(&self) -> file_system::Result<Size> {
-        Ok(size_of::<Input_data_type>().into())
+        Ok(size_of::<InputData>().into())
     }
 
     fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {

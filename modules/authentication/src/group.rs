@@ -19,7 +19,7 @@ use miniserde::{Deserialize, Serialize};
 use users::{GroupIdentifier, GroupIdentifierInner, UserIdentifier, UserIdentifierInner};
 use virtual_file_system::{Directory, File, VirtualFileSystem};
 
-use crate::{Error, Result, GROUP_FOLDER_PATH};
+use crate::{Error, GROUP_FOLDER_PATH, Result};
 
 /// Represents a user group with associated metadata and member list.
 ///

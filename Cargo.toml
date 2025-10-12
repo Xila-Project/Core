@@ -2,9 +2,9 @@
 name = "xila"
 version = "0.1.0"
 authors = ["Alix ANNERAUD <alix@anneraud.fr>"]
-edition = "2021"
+edition = "2024"
 resolver = "2"
-rust-version = "1.82.0"
+rust-version = "1.90.0"
 
 [dependencies]
 # - WASM
@@ -34,6 +34,8 @@ target = { path = "modules/target", optional = true }
 
 [features]
 default = []
+
+executable_building = ["executable/building"]
 
 Host = [
     "dep:abi",

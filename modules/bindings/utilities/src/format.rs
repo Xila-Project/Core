@@ -45,16 +45,15 @@ pub fn format_identifier(prefix: &str, function_name: &str) -> String {
     };
 
     // - Replace names
-    let function_name = function_name
+
+    function_name
         .split("_")
         .map(|part| match NAMES.iter().find(|(old, _)| *old == part) {
             Some((_, new)) => new.to_string(),
             None => part.to_string(),
         })
         .collect::<Vec<String>>()
-        .join("_");
-
-    function_name
+        .join("_")
 }
 
 pub fn snake_to_upper_camel_case(input: &str) -> String {

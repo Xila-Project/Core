@@ -2,7 +2,7 @@ use alloc::string::String;
 
 use core::ffi::CStr;
 use file_system::Size;
-use graphics::{lvgl, Color, EventKind, Key, Window};
+use graphics::{Color, EventKind, Key, Window, lvgl};
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
 use crate::error::Result;

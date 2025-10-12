@@ -338,7 +338,7 @@ impl Mbr {
     /// Create partition devices for all valid partitions in this MBR.
     ///
     /// This method iterates through all partition entries in this MBR and creates
-    /// [`Partition_device_type`] instances for each valid partition. This is useful
+    /// [`PartitionDevice`] instances for each valid partition. This is useful
     /// when you need to access all partitions on a disk programmatically.
     ///
     /// # Arguments

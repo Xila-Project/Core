@@ -9,7 +9,7 @@ use synchronization::{
 
 use alloc::{boxed::Box, collections::BTreeMap};
 
-use network::{Port, Protocol, SocketDriver, IP};
+use network::{IP, Port, Protocol, SocketDriver};
 use task::TaskIdentifier;
 use time::Duration;
 use users::{GroupIdentifier, UserIdentifier};
@@ -25,7 +25,7 @@ use file_system::{
 };
 
 use crate::device::InternalPath;
-use crate::{device, pipe, SockerAddress};
+use crate::{SockerAddress, device, pipe};
 
 struct InternalFileSystem {
     pub mount_point: PathOwned,
@@ -425,7 +425,7 @@ impl<'a> VirtualFileSystem<'a> {
                     .get(&file_system)
                     .ok_or(Error::InvalidIdentifier)?
                     .inner
-                    .read(local_file_identifier, buffer, time)
+                    .read(local_file_identifier, buffer, time);
             }
         };
 
@@ -559,7 +559,7 @@ impl<'a> VirtualFileSystem<'a> {
                     .get(&file_system)
                     .ok_or(Error::InvalidIdentifier)?
                     .inner
-                    .write(local_file_identifier, buffer, time)
+                    .write(local_file_identifier, buffer, time);
             }
         };
 

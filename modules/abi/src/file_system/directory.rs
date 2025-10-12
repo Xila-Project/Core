@@ -2,7 +2,7 @@ use alloc::ffi::CString;
 use log::Debug;
 
 use core::{
-    ffi::{c_char, CStr},
+    ffi::{CStr, c_char},
     ptr::null_mut,
 };
 
@@ -13,7 +13,7 @@ use virtual_file_system::get_instance as get_file_system_instance;
 use crate::context::get_instance as get_context_instance;
 
 use super::{
-    into_u32, XilaFileKind, XilaFileSystemInode, XilaFileSystemSize, XilaUniqueFileIdentifier,
+    XilaFileKind, XilaFileSystemInode, XilaFileSystemSize, XilaUniqueFileIdentifier, into_u32,
 };
 
 /// This function is used to open a directory.
@@ -21,28 +21,31 @@ use super::{
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_open_directory(
     path: *const c_char,
     directory: *mut XilaUniqueFileIdentifier,
 ) -> u32 {
-    into_u32(move || {
-        if path.is_null() || directory.is_null() {
-            Err(Error::InvalidParameter)?;
-        }
+    unsafe {
+        into_u32(move || {
+            if path.is_null() || directory.is_null() {
+                Err(Error::InvalidParameter)?;
+            }
 
-        let path = CStr::from_ptr(path)
-            .to_str()
-            .map_err(|_| Error::InvalidParameter)?;
+            let path = CStr::from_ptr(path)
+                .to_str()
+                .map_err(|_| Error::InvalidParameter)?;
 
-        let task = get_context_instance().get_current_task_identifier();
+            let task = get_context_instance().get_current_task_identifier();
 
-        Debug!("Opening directory {path:?} for task {task:?}");
+            Debug!("Opening directory {path:?} for task {task:?}");
 
-        *directory = block_on(get_file_system_instance().open_directory(&path, task))?.into_inner();
+            *directory =
+                block_on(get_file_system_instance().open_directory(&path, task))?.into_inner();
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to read a directory.
@@ -50,7 +53,7 @@ pub unsafe extern "C" fn xila_file_system_open_directory(
 /// # Safety
 ///
 /// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_read_directory(
     file: XilaUniqueFileIdentifier,
     entry_name: *mut *const c_char,
@@ -58,29 +61,31 @@ pub unsafe extern "C" fn xila_file_system_read_directory(
     entry_size: *mut XilaFileSystemSize,
     entry_inode: *mut XilaFileSystemInode,
 ) -> u32 {
-    into_u32(move || {
-        let task = get_context_instance().get_current_task_identifier();
+    unsafe {
+        into_u32(move || {
+            let task = get_context_instance().get_current_task_identifier();
 
-        Debug!("Reading directory {file:?} for task {task:?}");
+            Debug!("Reading directory {file:?} for task {task:?}");
 
-        let file = file_system::UniqueFileIdentifier::from_raw(file);
+            let file = file_system::UniqueFileIdentifier::from_raw(file);
 
-        let entry = block_on(get_file_system_instance().read_directory(file, task))?;
+            let entry = block_on(get_file_system_instance().read_directory(file, task))?;
 
-        if let Some(entry) = entry {
-            *entry_name = CString::new(entry.get_name().as_str()).unwrap().into_raw();
-            *entry_type = entry.get_type().into();
-            *entry_size = entry.get_size().as_u64();
-            *entry_inode = entry.get_inode().into();
-        } else {
-            *entry_name = null_mut();
-        }
+            if let Some(entry) = entry {
+                *entry_name = CString::new(entry.get_name().as_str()).unwrap().into_raw();
+                *entry_type = entry.get_type().into();
+                *entry_size = entry.get_size().as_u64();
+                *entry_inode = entry.get_inode().into();
+            } else {
+                *entry_name = null_mut();
+            }
 
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_close_directory(directory: XilaUniqueFileIdentifier) -> u32 {
     into_u32(move || {
         let task = get_context_instance().get_current_task_identifier();
@@ -95,7 +100,7 @@ pub extern "C" fn xila_file_system_close_directory(directory: XilaUniqueFileIden
     })
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_rewind_directory(directory: XilaUniqueFileIdentifier) -> u32 {
     into_u32(move || {
         let task = get_context_instance().get_current_task_identifier();
@@ -110,7 +115,7 @@ pub extern "C" fn xila_file_system_rewind_directory(directory: XilaUniqueFileIde
     })
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_directory_set_position(
     directory: XilaUniqueFileIdentifier,
     offset: XilaFileSystemSize,
@@ -139,8 +144,8 @@ mod tests {
     use super::*;
     use crate::context::get_instance as get_context_instance;
     use alloc::{ffi::CString, format, vec::Vec};
-    use file_system::{create_device, create_file_system, MemoryDevice, Mode, Open, PathOwned};
-    use task::{test, TaskIdentifier};
+    use file_system::{MemoryDevice, Mode, Open, PathOwned, create_device, create_file_system};
+    use task::{TaskIdentifier, test};
     use virtual_file_system::VirtualFileSystem;
 
     async fn initialize_test_environment() -> (TaskIdentifier, &'static VirtualFileSystem<'static>)
@@ -202,7 +207,7 @@ mod tests {
     #[test]
     async fn test_invalid_handle_operations() {
         initialize_test_environment().await; // Ensure the test environment is initialized
-                                             // Test operations on invalid directory handles
+        // Test operations on invalid directory handles
         let invalid_handle: XilaUniqueFileIdentifier = 999999;
         let context = get_context_instance();
 
@@ -258,7 +263,7 @@ mod tests {
     #[test]
     async fn test_set_position_boundary_values() {
         initialize_test_environment().await; // Ensure the test environment is initialized
-                                             // Test set position with boundary values
+        // Test set position with boundary values
         let invalid_handle: XilaUniqueFileIdentifier = 999999;
         let context = get_context_instance();
 

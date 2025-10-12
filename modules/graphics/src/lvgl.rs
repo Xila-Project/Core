@@ -18,10 +18,12 @@ pub unsafe fn lv_obj_set_style_pad_all(
     padding: i32,
     selector: lv_style_selector_t,
 ) {
-    lv_obj_set_style_pad_top(object, padding, selector);
-    lv_obj_set_style_pad_bottom(object, padding, selector);
-    lv_obj_set_style_pad_left(object, padding, selector);
-    lv_obj_set_style_pad_right(object, padding, selector);
+    unsafe {
+        lv_obj_set_style_pad_top(object, padding, selector);
+        lv_obj_set_style_pad_bottom(object, padding, selector);
+        lv_obj_set_style_pad_left(object, padding, selector);
+        lv_obj_set_style_pad_right(object, padding, selector);
+    }
 }
 
 /// Set the padding of an object on the top side
@@ -37,5 +39,7 @@ pub unsafe fn lv_obj_set_style_pad_all(
 /// This function is unsafe because it may dereference raw pointers (e.g. `Object`).
 ///
 pub unsafe fn lv_obj_move_foreground(object: *mut lv_obj_t) {
-    lv_obj_move_to_index(object, -1);
+    unsafe {
+        lv_obj_move_to_index(object, -1);
+    }
 }

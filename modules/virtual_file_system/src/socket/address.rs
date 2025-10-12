@@ -1,6 +1,6 @@
 use file_system::PathOwned;
 
-use network::{IPv4, IPv6, Port, IP};
+use network::{IP, IPv4, IPv6, Port};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SockerAddress {

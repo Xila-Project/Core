@@ -1,5 +1,5 @@
 use alloc::ffi::CString;
-use graphics::{lvgl, Color, Point};
+use graphics::{Color, Point, lvgl};
 
 use crate::error::{Error, Result};
 
@@ -9,46 +9,48 @@ pub unsafe fn create_icon(
     icon_string: &str,
     size: Point,
 ) -> Result<*mut lvgl::lv_obj_t> {
-    let icon = lvgl::lv_button_create(parent);
+    unsafe {
+        let icon = lvgl::lv_button_create(parent);
 
-    if icon.is_null() {
-        return Err(Error::FailedToCreateObject);
+        if icon.is_null() {
+            return Err(Error::FailedToCreateObject);
+        }
+
+        lvgl::lv_obj_set_size(icon, size.get_x().into(), size.get_y().into());
+        lvgl::lv_obj_set_style_pad_all(icon, 0, lvgl::LV_STATE_DEFAULT);
+        lvgl::lv_obj_set_style_border_width(icon, 0, lvgl::LV_STATE_DEFAULT);
+
+        let radius: i32 = size.get_x() as i32 / 3;
+
+        lvgl::lv_obj_set_style_radius(icon, radius, lvgl::LV_STATE_DEFAULT);
+
+        lvgl::lv_obj_set_style_bg_color(icon, icon_color.into_lvgl_color(), lvgl::LV_STATE_DEFAULT);
+
+        let label = lvgl::lv_label_create(icon);
+
+        if label.is_null() {
+            return Err(Error::FailedToCreateObject);
+        }
+
+        if size.get_x() >= 48 {
+            lvgl::lv_obj_set_style_text_font(
+                label,
+                &lvgl::lv_font_montserrat_28,
+                lvgl::LV_STATE_DEFAULT,
+            );
+        } else {
+            lvgl::lv_obj_set_style_text_font(
+                label,
+                &lvgl::lv_font_montserrat_18,
+                lvgl::LV_STATE_DEFAULT,
+            );
+        }
+
+        let icon_string = CString::new(icon_string).map_err(Error::NullCharacterInString)?;
+
+        lvgl::lv_label_set_text(label, icon_string.as_ptr());
+        lvgl::lv_obj_set_align(label, lvgl::lv_align_t_LV_ALIGN_CENTER);
+
+        Ok(icon)
     }
-
-    lvgl::lv_obj_set_size(icon, size.get_x().into(), size.get_y().into());
-    lvgl::lv_obj_set_style_pad_all(icon, 0, lvgl::LV_STATE_DEFAULT);
-    lvgl::lv_obj_set_style_border_width(icon, 0, lvgl::LV_STATE_DEFAULT);
-
-    let radius: i32 = size.get_x() as i32 / 3;
-
-    lvgl::lv_obj_set_style_radius(icon, radius, lvgl::LV_STATE_DEFAULT);
-
-    lvgl::lv_obj_set_style_bg_color(icon, icon_color.into_lvgl_color(), lvgl::LV_STATE_DEFAULT);
-
-    let label = lvgl::lv_label_create(icon);
-
-    if label.is_null() {
-        return Err(Error::FailedToCreateObject);
-    }
-
-    if size.get_x() >= 48 {
-        lvgl::lv_obj_set_style_text_font(
-            label,
-            &lvgl::lv_font_montserrat_28,
-            lvgl::LV_STATE_DEFAULT,
-        );
-    } else {
-        lvgl::lv_obj_set_style_text_font(
-            label,
-            &lvgl::lv_font_montserrat_18,
-            lvgl::LV_STATE_DEFAULT,
-        );
-    }
-
-    let icon_string = CString::new(icon_string).map_err(Error::NullCharacterInString)?;
-
-    lvgl::lv_label_set_text(label, icon_string.as_ptr());
-    lvgl::lv_obj_set_align(label, lvgl::lv_align_t_LV_ALIGN_CENTER);
-
-    Ok(icon)
 }

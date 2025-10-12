@@ -183,7 +183,7 @@ int os_recursive_mutex_init(korp_mutex *mutex)
  *
  * @return 0 if success
  */
-int os_cond_init(korp_cond *cond)
+int os_cond_init(XilaConditionVariable *cond)
 {
     return xila_condition_variable_new(cond);
 }
@@ -195,7 +195,7 @@ int os_cond_init(korp_cond *cond)
  *
  * @return 0 if success
  */
-int os_cond_destroy(korp_cond *cond)
+int os_cond_destroy(XilaConditionVariable *cond)
 {
     return xila_condition_variable_remove(cond);
 }
@@ -1351,7 +1351,16 @@ os_fstatat(os_file_handle handle, const char *path,
 __wasi_errno_t
 os_file_get_fdflags(os_file_handle handle, __wasi_fdflags_t *flags)
 {
-    return xila_file_system_get_flags(handle, flags);
+    XilaFileSystemStatus status;
+
+    XilaFileSystemResult result = xila_file_system_get_flags(handle, &status);
+
+    if (result == 0)
+    {
+        *flags = into_wasi_status(status);
+    }
+
+    return into_wasi_error(result);
 }
 
 /**
@@ -1364,7 +1373,9 @@ os_file_get_fdflags(os_file_handle handle, __wasi_fdflags_t *flags)
 __wasi_errno_t
 os_file_set_fdflags(os_file_handle handle, __wasi_fdflags_t flags)
 {
-    return xila_file_system_set_flags(handle, flags);
+    XilaFileSystemStatus status = into_xila_status(flags);
+
+    return xila_file_system_set_flags(handle, status);
 }
 
 /**

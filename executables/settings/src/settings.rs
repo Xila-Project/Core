@@ -3,9 +3,8 @@ use core::time::Duration;
 
 use file_system::Kind;
 use graphics::{
-    lvgl,
+    EventKind, Window, lvgl,
     palette::{self, Hue},
-    EventKind, Window,
 };
 
 use crate::error::Result;

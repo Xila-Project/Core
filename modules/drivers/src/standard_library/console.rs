@@ -1,4 +1,4 @@
-use std::io::{stderr, stdin, stdout, Read, Write};
+use std::io::{Read, Write, stderr, stdin, stdout};
 
 use file_system::{DeviceTrait, Size};
 

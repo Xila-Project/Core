@@ -1,9 +1,6 @@
 name: Check rust code
 
 on:
-  push:
-    paths-ignore:
-      - "**/README.md"
   pull_request:
   workflow_dispatch:
 
@@ -48,19 +45,19 @@ jobs:
           ldproxy: true
         
       - name: Setup | Install necessary dependencies
-        run: sudo apt update && sudo apt install -y gcc-multilib
+        run: sudo apt update && sudo apt install -y gcc-multilib clang-format
 
-      - name: Setup | Build and source build tool
-        run: source Export.sh
+      - name: Build | ABI
+        run: cargo build -p abi
 
       - name: Check | Formatting
-        run: Build_tool/target/release/Build_tool format --all -- --check --color always
+        run: cargo fmt --all -- --check
 
       - name: Check | Clippy
-        run: Build_tool/target/release/Build_tool clippy ${{ matrix.target }} --all-features --workspace -- -D warnings
+        run: cargo clippy --all-features --workspace -- -D warnings
 
       - name: Check | Documentation
         run: RUSTDOCFLAGS="--deny warnings" cargo doc --all-features
 
       - name: Run | Tests
-        run: Build_tool/target/release/Build_tool test ${{ matrix.target }} --all
+        run: cargo test ${{ matrix.target }} --all

@@ -13,23 +13,23 @@ pub struct RegionStatistics {
 #[derive(Debug)]
 pub struct Statistics {
     /// Granular stats for all the configured memory regions.
-    region_stats: [Option<RegionStatistics>; 3],
+    pub region_stats: [Option<RegionStatistics>; 3],
 
     /// Total size of all combined heap regions in bytes.
-    size: usize,
+    pub size: usize,
 
     /// Current usage of the heap across all configured regions in bytes.
-    current_usage: usize,
+    pub current_usage: usize,
 
     /// Estimation of the max used heap in bytes.
     #[cfg(feature = "Debug")]
-    max_usage: usize,
+    pub max_usage: usize,
 
     /// Estimation of the total allocated bytes since initialization.
     #[cfg(feature = "Debug")]
-    total_allocated: usize,
+    pub total_allocated: usize,
 
     /// Estimation of the total freed bytes since initialization.
     #[cfg(feature = "Debug")]
-    total_freed: usize,
+    pub total_freed: usize,
 }

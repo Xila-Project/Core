@@ -16,30 +16,30 @@
 //! ## Key Components
 //!
 //! ### File System Traits
-//! - [`File_system_traits`] - Core trait for implementing file systems
+//! - [`FileSystemTraits`] - Core trait for implementing file systems
 //! - Support for POSIX-like operations with task and user isolation
 //!
 //! ### Device Management
 //! - [`DeviceTrait`] - Abstraction for storage devices
-//! - [`Memory_device_type`] - In-memory device implementation for testing
-//! - [`DeviceType`] - Thread-safe device wrapper
+//! - [`MemoryDevice`] - In-memory device implementation for testing
+//! - [`Device`] - Thread-safe device wrapper
 //!
 //! ### Partition Support
-//! - [`Partition_device_type`] - Device representing a partition on a larger device
-//! - [`Partition_entry_type`] - MBR partition table entry
-//! - [`Partition_type_type`] - Enumeration of partition types
+//! - [`PartitionDevice`] - Device representing a partition on a larger device
+//! - [`PartitionEntry`] - MBR partition table entry
+//! - [`PartitionKind`] - Enumeration of partition types
 //!
 //! ### MBR (Master Boot Record)
-//! - [`MBR_type`] - Complete MBR structure with partition table
+//! - [`Mbr`] - Complete MBR structure with partition table
 //! - Utilities for creating, reading, and validating MBRs
 //! - Support for creating partition devices from MBR entries
 //!
 //! ### Fundamental Types
-//! - [`Path_type`] - File system path representation
+//! - [`Path`] - File system path representation
 //! - [`Error`] - File system error enumeration
 //! - [`Size`] - Size and position types
-//! - [`Time_type`] - Timestamp handling
-//! - [`Flags_type`] - File operation flags
+//! - [`Time`] - Timestamp handling
+//! - [`Flags`] - File operation flags
 //!
 //! ## Features
 //!

@@ -9,7 +9,7 @@ use std::{
 use core::mem::forget;
 
 use file_system::{LocalFileIdentifier, LocalFileIdentifierIterator};
-use network::{Error, IPv4, IPv6, Port, Protocol, Result, SocketDriver, IP};
+use network::{Error, IP, IPv4, IPv6, Port, Protocol, Result, SocketDriver};
 use time::Duration;
 
 use super::error::into_socket_error;

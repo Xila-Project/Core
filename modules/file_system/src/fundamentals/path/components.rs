@@ -26,7 +26,7 @@ impl<'a> From<&'a str> for Component<'a> {
 pub struct Components<'a>(Split<'a, char>);
 
 impl<'a> Components<'a> {
-    pub fn new(path: &Path) -> Components {
+    pub fn new(path: &'_ Path) -> Components<'_> {
         Components(path.as_str().split(SEPARATOR))
     }
 

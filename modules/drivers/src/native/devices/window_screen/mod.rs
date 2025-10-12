@@ -6,7 +6,7 @@ mod wrapper;
 
 use std::sync::{Arc, Mutex};
 
-use file_system::{create_device, Device};
+use file_system::{Device, create_device};
 use graphics::Point;
 
 use keyboard::*;
