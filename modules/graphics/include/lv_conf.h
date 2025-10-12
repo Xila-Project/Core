@@ -1156,6 +1156,11 @@
 /** Vector graphic demo */
 #define LV_USE_DEMO_VECTOR_GRAPHIC  0
 
+#define LV_COLOR_GET_A(c) 0
+#define LV_COLOR_GET_R(c) c.red
+#define LV_COLOR_GET_G(c) c.green
+#define LV_COLOR_GET_B(c) c.blue
+
 /*--END OF LV_CONF_H--*/
 
 #endif /*LV_CONF_H*/
