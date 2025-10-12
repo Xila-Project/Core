@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use graphics::{Input_data_type, Key, Point, ScreenWriteData, State};
+use graphics::{InputData, Key, Point, ScreenWriteData, State};
 use winit::{
     event_loop::EventLoop,
     platform::{pump_events::EventLoopExtPumpEvents, wayland::EventLoopBuilderExtWayland},
@@ -37,7 +37,7 @@ impl Inner {
         self.0.draw(data)
     }
 
-    pub fn get_pointer_data(&mut self) -> Result<&Input_data_type, String> {
+    pub fn get_pointer_data(&mut self) -> Result<&InputData, String> {
         self.1.pump_app_events(Some(Duration::ZERO), &mut self.0);
 
         Ok(self.0.get_pointer_data())

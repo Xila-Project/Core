@@ -6,14 +6,14 @@ use super::{Key, State};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(C)]
-pub struct Input_data_type {
+pub struct InputData {
     pub r#continue: bool,
     pub point: Point,
     pub state: State,
     pub key: Key,
 }
 
-impl Default for Input_data_type {
+impl Default for InputData {
     fn default() -> Self {
         Self {
             point: Point::default(),
@@ -24,7 +24,7 @@ impl Default for Input_data_type {
     }
 }
 
-impl Input_data_type {
+impl InputData {
     pub const fn new(point: Point, state: State, key: Key, r#continue: bool) -> Self {
         Self {
             point,
@@ -72,14 +72,14 @@ impl Input_data_type {
     }
 }
 
-impl TryFrom<&mut [u8]> for &mut Input_data_type {
+impl TryFrom<&mut [u8]> for &mut InputData {
     type Error = ();
 
     fn try_from(value: &mut [u8]) -> Result<Self, Self::Error> {
-        if value.len() != size_of::<Input_data_type>() {
+        if value.len() != size_of::<InputData>() {
             return Err(());
         }
-        if value.as_ptr() as usize % core::mem::align_of::<Input_data_type>() != 0 {
+        if value.as_ptr() as usize % core::mem::align_of::<InputData>() != 0 {
             return Err(());
         }
 
@@ -88,14 +88,14 @@ impl TryFrom<&mut [u8]> for &mut Input_data_type {
     }
 }
 
-impl AsMut<[u8]> for Input_data_type {
+impl AsMut<[u8]> for InputData {
     fn as_mut(&mut self) -> &mut [u8] {
         unsafe { core::slice::from_raw_parts_mut(self as *mut _ as *mut u8, size_of::<Self>()) }
     }
 }
 
-impl From<Input_data_type> for lvgl::lv_indev_data_t {
-    fn from(value: Input_data_type) -> lvgl::lv_indev_data_t {
+impl From<InputData> for lvgl::lv_indev_data_t {
+    fn from(value: InputData) -> lvgl::lv_indev_data_t {
         let mut input_device_data = lvgl::lv_indev_data_t::default();
 
         let state = value.get_touch();

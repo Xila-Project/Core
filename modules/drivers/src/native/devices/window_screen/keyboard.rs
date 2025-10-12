@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use file_system::{DeviceTrait, Size};
-use graphics::Input_data_type;
+use graphics::InputData;
 
 use super::Inner;
 
@@ -16,7 +16,7 @@ impl KeyboardDevice {
 impl DeviceTrait for KeyboardDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
         // - Cast
-        let data: &mut Input_data_type = buffer
+        let data: &mut InputData = buffer
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;
 
@@ -26,7 +26,7 @@ impl DeviceTrait for KeyboardDevice {
             data.set_continue(r#continue);
         }
 
-        Ok(size_of::<Input_data_type>().into())
+        Ok(size_of::<InputData>().into())
     }
 
     fn write(&self, _: &[u8]) -> file_system::Result<Size> {
@@ -34,7 +34,7 @@ impl DeviceTrait for KeyboardDevice {
     }
 
     fn get_size(&self) -> file_system::Result<Size> {
-        Ok(size_of::<Input_data_type>().into())
+        Ok(size_of::<InputData>().into())
     }
 
     fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {
