@@ -14,7 +14,7 @@ time = { path = "../time" }
 shared = { path = "../shared" }
 synchronization = { version = "0.1.0", path = "../synchronization" }
 log = { version = "0.1.0", path = "../log" }
-
+abi = { path = "../abi" }
 
 [dev-dependencies]
 drivers = { path = "../drivers" }
