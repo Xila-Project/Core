@@ -58,7 +58,7 @@ pub fn create_partition_device(
         base_device,
         partition.get_start_lba(),
         partition.get_size_sectors(),
-    ))
+    )?)
 }
 
 /// Scan a device for MBR and return partition information.
