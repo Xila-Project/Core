@@ -83,8 +83,7 @@ impl Window {
                 .iter_mut()
                 .zip(data_row.iter())
                 .for_each(|(destination, &source)| {
-                    let source = ColorRGBA8888::from_rgb565(source);
-                    *destination = source;
+                    *destination = source.into();
                 });
         }
 
