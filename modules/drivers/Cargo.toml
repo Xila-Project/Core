@@ -38,6 +38,54 @@ pixels = "0.14"
 winit = { version = "0.30", features = ["rwh_05"] }
 rand = "0.9.0"
 libc = { version = "0.2" }
+getrandom = { version = "0.3.3" }
+embassy-executor = { version = "0.7.0", default-features = false, features = [
+    "arch-std",
+    "executor-thread",
+] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1"
+console_log = "1"
+wasm-bindgen-futures = "0.4"
+getrandom = { version = "0.3.3", features = ["wasm_js"] }
+embassy-executor = { version = "0.7.0", default-features = false, features = [
+    "arch-wasm",
+    "executor-thread",
+] }
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3.64", features = [
+    "Window",
+    "Document",
+    "HtmlCanvasElement",
+    "CanvasRenderingContext2d",
+    "MouseEvent",
+    "KeyboardEvent",
+    "EventTarget",
+    "ImageData",
+    "Element",
+    "HtmlElement",
+    "DomRect",
+    "console",
+    # OPFS features
+    "StorageManager",
+    "StorageEstimate",
+    "FileSystemDirectoryHandle",
+    "FileSystemFileHandle",
+    "FileSystemHandle",
+    "FileSystemWritableFileStream",
+    "WritableStream",
+    "ReadableStream",
+    "File",
+    "Blob",
+    "Navigator",
+    "FileSystemGetFileOptions",
+    "FileSystemCreateWritableOptions",
+    "FileSystemSyncAccessHandle",
+    "FileSystemReadWriteOptions",
+    "WebGl2RenderingContext",
+] }
+js-sys = "0.3"
 
 
 #[[te0.9.0.0]

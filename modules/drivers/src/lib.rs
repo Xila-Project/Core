@@ -11,8 +11,15 @@ pub mod native;
 
 pub mod core;
 
+pub mod shared;
+
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;
+
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 pub mod standard_library;
+
+pub use memory as memory_exported;
 
 //pub fn Mount_devices(
 //    Task: TaskIdentifier,
