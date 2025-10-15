@@ -66,6 +66,15 @@ impl Executor {
             self.signaler.wait();
         }
     }
+
+    pub fn start(&'static mut self, init: impl FnOnce(Spawner)) -> ! {
+        init(self.inner.spawner());
+
+        loop {
+            unsafe { self.inner.poll() };
+            self.signaler.wait()
+        }
+    }
 }
 
 struct Signaler {
