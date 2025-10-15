@@ -91,7 +91,7 @@ async fn main() {
                 drivers::standard_library::console::StandardErrorDevice
             ),
             (&"/devices/time", drivers::native::TimeDriver),
-            (&"/devices/random", drivers::native::RandomDevice),
+            (&"/devices/random", drivers::shared::devices::RandomDevice),
             (&"/devices/null", drivers::core::NullDevice)
         ]
     )
