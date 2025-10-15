@@ -14,7 +14,7 @@ use memory::{Capabilities, Layout, ManagerTrait};
 use synchronization::blocking_mutex::{CriticalSectionMutex, Mutex};
 
 // Initial heap size and growth constants
-const INITIAL_HEAP_SIZE: usize = 1024 * 1024; // 1MB
+const INITIAL_HEAP_SIZE: usize = 16 * 1024 * 1024; // 16MB
 
 struct Region {
     pub heap: Heap,
@@ -249,14 +249,24 @@ unsafe fn unmap(pointer: *mut MaybeUninit<u8>, size: usize) {
     }
 }
 
+#[macro_export]
+macro_rules! instantiate_global_allocator {
+    () => {
+        static __MEMORY_MANAGER: $crate::standard_library::memory::MemoryManager =
+            $crate::standard_library::memory::MemoryManager::new();
+
+        $crate::memory_exported::instantiate_global_allocator!(&__MEMORY_MANAGER);
+    };
+}
+pub use instantiate_global_allocator;
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     use core::ptr::NonNull;
-    use memory::instantiate_global_allocator;
 
-    instantiate_global_allocator!(MemoryManager);
+    instantiate_global_allocator!();
 
     #[test]
     fn test_global_allocator() {
