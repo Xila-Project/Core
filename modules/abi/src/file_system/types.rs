@@ -109,7 +109,7 @@ pub struct XilaFileSystemStatistics {
 impl XilaFileSystemStatistics {
     pub fn from_statistics(statistics: file_system::Statistics_type) -> Self {
         Self {
-            file_system: statistics.get_file_system().as_inner(),
+            file_system: statistics.get_file_system().as_inner() as XilaFileSystemIdentifier,
             inode: statistics.get_inode().as_u64(),
             links: statistics.get_links(),
             size: statistics.get_size().as_u64(),
