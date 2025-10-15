@@ -23,10 +23,9 @@ task = { path = "../task" }
 futures = { path = "../futures" }
 
 [features]
-default = ["RGB565"]
-RGB565 = []
-ARGB8888 = []
-RGBA8888 = []
+default = []
+rendering_rgb565 = []
+rendering_xrgb8888 = []
 
 [[test]]
 name = "graphics"
