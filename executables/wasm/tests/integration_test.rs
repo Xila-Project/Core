@@ -4,12 +4,12 @@ use command_line_shell::ShellExecutable;
 use drivers::standard_library::loader::Loader;
 use executable::{Standard, build_crate, mount_static_executables};
 use file_system::{MemoryDevice, Mode, Path, create_device, create_file_system};
-use memory::instantiate_global_allocator;
 use task::test;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 use wasm::WasmDevice;
 
-instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+drivers::standard_library::memory::instantiate_global_allocator!();
 
 #[ignore]
 #[test]

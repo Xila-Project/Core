@@ -7,17 +7,15 @@ use alloc::vec;
 use executable::build_crate;
 use wamr_rust_sdk::{RuntimeError, function::Function, value::WasmValue};
 
-use drivers::standard_library::memory::MemoryManager;
 use file_system::{MemoryDevice, create_device, create_file_system};
 use log::Information;
-use memory::instantiate_global_allocator;
 use task::test;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 use virtual_machine::{
     Environment, Function_descriptors, FunctionDescriptor, Instance, Module, Registrable, Runtime,
 };
 
-instantiate_global_allocator!(MemoryManager);
+drivers::standard_library::memory::instantiate_global_allocator!();
 
 pub struct WasmTest;
 
