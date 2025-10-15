@@ -1,3 +1,5 @@
+use core::fmt::Display;
+
 #[cfg(target_pointer_width = "32")]
 pub type TaskIdentifierInner = u16;
 #[cfg(target_pointer_width = "64")]
@@ -10,6 +12,12 @@ pub struct TaskIdentifier(TaskIdentifierInner);
 impl TaskIdentifier {
     pub const MAXIMUM: TaskIdentifierInner = TaskIdentifierInner::MAX;
     pub const MINIMUM: TaskIdentifierInner = TaskIdentifierInner::MIN;
+}
+
+impl Display for TaskIdentifier {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
 
 impl TaskIdentifier {
