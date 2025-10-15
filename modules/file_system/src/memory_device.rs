@@ -158,9 +158,11 @@ impl<const BLOCK_SIZE: usize> DeviceTrait for MemoryDevice<BLOCK_SIZE> {
         let mut inner = block_on(self.0.write());
         let (data, position) = &mut *inner;
 
-        data[*position..*position + buffer.len()].copy_from_slice(buffer);
-        *position += buffer.len();
-        Ok(buffer.len().into())
+        let write_size = buffer.len().min(data.len().saturating_sub(*position));
+        data[*position..*position + write_size].copy_from_slice(&buffer[..write_size]);
+        *position += write_size;
+
+        Ok(write_size.into())
     }
 
     fn get_size(&self) -> crate::Result<Size> {
