@@ -17,7 +17,7 @@ pub use file_system;
 pub use futures;
 #[cfg(feature = "Host")]
 pub use graphics;
-#[cfg(feature = "Host")]
+#[cfg(feature = "virtual_machine")]
 pub use host_bindings;
 #[cfg(feature = "Host")]
 pub use little_fs;
@@ -37,5 +37,5 @@ pub use time;
 pub use users;
 #[cfg(feature = "Host")]
 pub use virtual_file_system;
-#[cfg(feature = "Host")]
+#[cfg(feature = "virtual_machine")]
 pub use virtual_machine;

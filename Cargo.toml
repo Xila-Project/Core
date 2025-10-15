@@ -41,7 +41,6 @@ Host = [
     "dep:abi",
     "dep:little_fs",
     "dep:futures",
-    "dep:virtual_machine",
     "dep:virtual_file_system",
     "dep:graphics",
     "dep:task",
@@ -52,12 +51,14 @@ Host = [
     "dep:target",
     "dep:executable",
     "dep:file_system",
-    "dep:host_bindings",
     "dep:authentication",
     "dep:log",
     "dep:shared",
     "dep:synchronization",
 ]
+virtual_machine = ["dep:virtual_machine", "dep:host_bindings"]
+graphics_rendering_rgb565 = ["graphics/rendering_rgb565"]
+graphics_rendering_xrgb8888 = ["graphics/rendering_xrgb8888"]
 WASM = ["dep:wasm_bindings"]
 
 
@@ -94,4 +95,8 @@ members = [
     "modules/log",
     "examples/native",
     "executables/calculator",
+    "examples/wasm",
 ]
+
+[patch.crates-io]
+littlefs2-sys = { git = "https://github.com/AlixANNERAUD/littlefs2-sys.git", branch = "main" }

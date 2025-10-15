@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-xila = { path = "../../", features = ["Host"] }
+xila = { path = "../../", features = ["Host", "virtual_machine", "graphics_rendering_xrgb8888"] }
 file_manager = { path = "../../executables/file_manager" }
 command_line_shell = { path = "../../executables/shell/command_line" }
 graphical_shell = { path = "../../executables/shell/graphical" }
