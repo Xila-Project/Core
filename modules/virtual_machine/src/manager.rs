@@ -204,7 +204,7 @@ impl Manager {
         standard_out: UniqueFileIdentifier,
         standard_error: UniqueFileIdentifier,
     ) -> Result<Vec<WasmValue>> {
-        abi::get_instance()
+        abi_context::get_instance()
             .call_abi(async || {
                 let module = Module::from_buffer(
                     &self.runtime,
