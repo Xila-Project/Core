@@ -3,8 +3,12 @@
 extern crate alloc;
 
 use alloc::string::String;
+
+#[cfg(target_arch = "wasm32")]
 use xila::drivers::wasm::devices::graphics::GraphicsDevices;
+#[cfg(target_arch = "wasm32")]
 use xila::drivers::wasm::executor::instantiate_static_executor;
+
 use xila::executable::{self, mount_static_executables, Standard};
 use xila::file_system::{self, create_device, create_file_system, Mbr, PartitionKind};
 use xila::log;
@@ -13,8 +17,10 @@ use xila::time;
 use xila::virtual_file_system::mount_static_devices;
 use xila::{authentication, drivers, graphics, little_fs, users, virtual_file_system};
 
+#[cfg(target_arch = "wasm32")]
 drivers::wasm::memory::instantiate_global_allocator!();
 
+#[cfg(target_arch = "wasm32")]
 #[task::run(task_path = task, executor = instantiate_static_executor!())]
 async fn main() {
     console_error_panic_hook::set_once();
