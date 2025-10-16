@@ -1,6 +1,6 @@
 use core::ffi::{c_char, c_int, c_void};
 
-use abi::{
+use abi_declarations::{
     xila_memory_allocate_core, xila_memory_compare, xila_memory_copy, xila_memory_deallocate,
     xila_memory_move, xila_memory_reallocate, xila_memory_set, xila_string_compare,
     xila_string_compare_bounded, xila_string_concatenate, xila_string_copy,
@@ -34,7 +34,7 @@ pub unsafe extern "C" fn lv_malloc_core(size: usize) -> *mut c_void {
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn lv_free_core(pointer: *mut c_void) {
-    xila_memory_deallocate(pointer)
+    unsafe { xila_memory_deallocate(pointer) }
 }
 
 #[unsafe(no_mangle)]

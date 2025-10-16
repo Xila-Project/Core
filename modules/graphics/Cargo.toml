@@ -14,13 +14,14 @@ time = { path = "../time" }
 shared = { path = "../shared" }
 synchronization = { version = "0.1.0", path = "../synchronization" }
 log = { version = "0.1.0", path = "../log" }
-abi = { path = "../abi" }
+abi_declarations = { workspace = true }
 
 [dev-dependencies]
 drivers = { path = "../drivers" }
 users = { path = "../users" }
 task = { path = "../task" }
 futures = { path = "../futures" }
+abi_definitions = { workspace = true }
 
 [features]
 default = []
