@@ -17,7 +17,6 @@ use xila::host_bindings;
 use xila::little_fs;
 use xila::log;
 use xila::log::Information;
-use xila::memory;
 use xila::task;
 use xila::time;
 use xila::users;
