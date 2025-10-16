@@ -7,7 +7,7 @@ use std::{
     io::{Read, Write},
 };
 
-#[export_name = "gcd"]
+#[unsafe(export_name = "gcd")]
 pub fn gcd(mut a: i32, mut b: i32) -> i32 {
     while b != 0 {
         let t = b;
