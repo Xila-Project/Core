@@ -16,7 +16,7 @@ fn main() {
     } else if cfg!(feature = "rendering_xrgb8888") {
         32
     } else {
-        panic!("No color depth feature enabled. Please enable one of: RGB565, ARGB8888, RGBA8888");
+        return;
     };
 
     // Generate the header file content
