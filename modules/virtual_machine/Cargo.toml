@@ -15,10 +15,13 @@ virtual_file_system = { path = "../virtual_file_system" }
 little_fs = { path = "../little_fs" }
 task = { version = "0.1.0", path = "../task" }
 time = { version = "0.1.0", path = "../time" }
-abi = { version = "0.1.0", path = "../abi" }
+abi_declarations = { workspace = true }
+abi_context = { workspace = true }
 synchronization = { version = "0.1.0", path = "../synchronization" }
 
 [dev-dependencies]
+graphics = { workspace = true, features = ["rendering_xrgb8888"] }
+abi_definitions = { workspace = true }
 users = { path = "../users", version = "0.1.0" }
 drivers = { path = "../drivers", version = "0.1.0" }
 futures = { path = "../futures" }
