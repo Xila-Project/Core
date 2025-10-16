@@ -8,6 +8,10 @@ use task::test;
 use users::GroupIdentifier;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+drivers::standard_library::memory::instantiate_global_allocator!();
+
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[ignore]
 #[test]
 async fn integration_test() {

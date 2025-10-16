@@ -22,8 +22,10 @@ use xila::virtual_file_system;
 use xila::virtual_file_system::{create_default_hierarchy, mount_static_devices};
 use xila::virtual_machine;
 
-instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+drivers::standard_library::memory::instantiate_global_allocator!();
 
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[task::run(executor = drivers::standard_library::executor::instantiate_static_executor!())]
 async fn run_graphics() {
     graphics::get_instance()
