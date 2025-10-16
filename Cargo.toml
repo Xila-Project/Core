@@ -8,26 +8,30 @@ rust-version = "1.90.0"
 
 [dependencies]
 # - WASM
-wasm_bindings = { path = "modules/bindings/wasm", optional = true }
+wasm_bindings = { workspace = true, optional = true }
+
 # - Host
-abi = { path = "modules/abi", optional = true }
-little_fs = { path = "modules/little_fs", optional = true }
-virtual_machine = { path = "modules/virtual_machine", optional = true }
-virtual_file_system = { path = "modules/virtual_file_system", optional = true }
-graphics = { path = "modules/graphics", optional = true }
-time = { path = "modules/time", optional = true }
-task = { path = "modules/task", optional = true }
-users = { path = "modules/users", optional = true }
-drivers = { path = "modules/drivers", optional = true }
-memory = { path = "modules/memory", optional = true }
-executable = { path = "modules/executable", optional = true }
-file_system = { path = "modules/file_system", optional = true }
-host_bindings = { path = "modules/bindings/host", optional = true }
-authentication = { path = "modules/authentication", optional = true }
-log = { path = "modules/log", optional = true }
-futures = { path = "modules/futures", optional = true }
-shared = { path = "modules/shared", optional = true }
-synchronization = { path = "modules/synchronization", optional = true }
+abi_context = { workspace = true, optional = true }
+abi_declarations = { workspace = true, optional = true }
+abi_definitions = { workspace = true, optional = true }
+little_fs = { workspace = true, optional = true }
+virtual_machine = { workspace = true, optional = true }
+virtual_file_system = { workspace = true, optional = true }
+graphics = { workspace = true, optional = true }
+task = { workspace = true, optional = true }
+time = { workspace = true, optional = true }
+users = { workspace = true, optional = true }
+drivers = { workspace = true, optional = true }
+memory = { workspace = true, optional = true }
+target = { workspace = true, optional = true }
+executable = { workspace = true, optional = true }
+file_system = { workspace = true, optional = true }
+authentication = { workspace = true, optional = true }
+log = { workspace = true, optional = true }
+shared = { workspace = true, optional = true }
+synchronization = { workspace = true, optional = true }
+futures = { workspace = true, optional = true }
+host_bindings = { workspace = true, optional = true }
 
 [build-dependencies]
 target = { path = "modules/target", optional = true }
@@ -38,7 +42,9 @@ default = []
 executable_building = ["executable/building"]
 
 Host = [
-    "dep:abi",
+    "dep:abi_context",
+    "dep:abi_declarations",
+    "dep:abi_definitions",
     "dep:little_fs",
     "dep:futures",
     "dep:virtual_file_system",
@@ -55,12 +61,44 @@ Host = [
     "dep:log",
     "dep:shared",
     "dep:synchronization",
+    "abi_definitions",
 ]
+abi_definitions = ["dep:abi_definitions"]
 virtual_machine = ["dep:virtual_machine", "dep:host_bindings"]
 graphics_rendering_rgb565 = ["graphics/rendering_rgb565"]
 graphics_rendering_xrgb8888 = ["graphics/rendering_xrgb8888"]
 WASM = ["dep:wasm_bindings"]
 
+[workspace.dependencies]
+# - Internal crates
+wasm_bindings = { path = "modules/bindings/wasm" }
+
+abi_context = { path = "modules/abi/context" }
+abi_declarations = { path = "modules/abi/declarations" }
+abi_definitions = { path = "modules/abi/definitions" }
+little_fs = { path = "modules/little_fs" }
+virtual_machine = { path = "modules/virtual_machine" }
+virtual_file_system = { path = "modules/virtual_file_system" }
+graphics = { path = "modules/graphics" }
+time = { path = "modules/time" }
+task = { path = "modules/task" }
+users = { path = "modules/users" }
+drivers = { path = "modules/drivers" }
+memory = { path = "modules/memory" }
+executable = { path = "modules/executable" }
+file_system = { path = "modules/file_system" }
+host_bindings = { path = "modules/bindings/host" }
+authentication = { path = "modules/authentication" }
+log = { path = "modules/log" }
+futures = { path = "modules/futures" }
+shared = { path = "modules/shared" }
+synchronization = { path = "modules/synchronization" }
+target = { path = "modules/target" }
+network = { path = "modules/network" }
+
+# - External crates
+bindgen = { version = "0.72" }
+cbindgen = { version = "0.29" }
 
 [workspace]
 members = [
@@ -73,7 +111,9 @@ members = [
     "modules/peripherals",
     "modules/memory",
     "modules/time",
-    "modules/abi",
+    "modules/abi/definitions",
+    "modules/abi/declarations",
+    "modules/abi/context",
     "modules/virtual_file_system",
     "modules/little_fs",
     "modules/target",
