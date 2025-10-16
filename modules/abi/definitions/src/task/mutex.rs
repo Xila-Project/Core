@@ -4,7 +4,7 @@ use core::{
 };
 use synchronization::blocking_mutex::{Mutex, raw::CriticalSectionRawMutex};
 
-use crate::context;
+use abi_context as context;
 
 #[derive(Debug, Clone, Copy, Default)]
 struct MutexState {

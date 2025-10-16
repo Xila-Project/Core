@@ -7,7 +7,7 @@ use core::{
 
 use alloc::str;
 
-use crate::xila_memory_allocate_core;
+use crate::memory::xila_memory_allocate_core;
 
 /// Helper function to convert C string to Rust str for parsing
 unsafe fn c_str_to_str(ptr: *const c_char) -> Result<&'static str, ()> {

@@ -10,7 +10,7 @@ use file_system::Error;
 use futures::block_on;
 use virtual_file_system::get_instance as get_file_system_instance;
 
-use crate::context::get_instance as get_context_instance;
+use abi_context::get_instance as get_context_instance;
 
 use super::{
     XilaFileKind, XilaFileSystemInode, XilaFileSystemSize, XilaUniqueFileIdentifier, into_u32,

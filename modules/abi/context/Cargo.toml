@@ -1,0 +1,9 @@
+[package]
+name = "abi_context"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+task = { workspace = true }
+futures = { workspace = true }
+synchronization = { workspace = true }

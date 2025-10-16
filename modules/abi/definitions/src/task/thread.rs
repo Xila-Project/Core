@@ -5,7 +5,7 @@ use core::{ffi::c_void, time::Duration};
 use futures::block_on;
 use task::Manager;
 
-use crate::context;
+use abi_context as context;
 
 pub type XilaThreadIdentifier = usize;
 

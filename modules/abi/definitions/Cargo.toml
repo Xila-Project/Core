@@ -1,0 +1,25 @@
+[package]
+name = "abi_definitions"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+virtual_file_system = { workspace = true }
+file_system = { workspace = true }
+task = { workspace = true }
+time = { workspace = true }
+memory = { workspace = true }
+network = { workspace = true }
+synchronization = { workspace = true }
+futures = { workspace = true }
+log = { workspace = true }
+abi_context = { workspace = true }
+
+[features]
+default = []
+
+[dev-dependencies]
+drivers = { workspace = true }
+graphics = { workspace = true, features = ["rendering_xrgb8888"] }
+little_fs = { workspace = true }
+users = { workspace = true }

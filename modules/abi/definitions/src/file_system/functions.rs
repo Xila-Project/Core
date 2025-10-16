@@ -11,12 +11,14 @@ use futures::block_on;
 use file_system::{Error, FileIdentifier, Flags, Mode, Open, Status};
 use virtual_file_system::get_instance as get_file_system_instance;
 
-use crate::{XilaTime, context, into_position};
+use crate::{XilaTime, file_system::into_position};
 
 use super::{
     XilaFileSystemMode, XilaFileSystemOpen, XilaFileSystemResult, XilaFileSystemSize,
     XilaFileSystemStatistics, XilaFileSystemStatus, XilaFileSystemWhence, XilaUniqueFileIdentifier,
 };
+
+use abi_context as context;
 
 /// This function is used to convert a function returning a Result into a u32.
 pub fn into_u32<F>(function: F) -> XilaFileSystemResult
