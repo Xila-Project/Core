@@ -15,6 +15,8 @@ futures = { version = "0.1.0", path = "../../modules/futures" }
 
 [dev-dependencies]
 drivers = { path = "../../modules/drivers" }
+graphics = { path = "../../modules/graphics", features = ["rendering_xrgb8888"] }
+abi_definitions = { path = "../../modules/abi/definitions" }
 time = { path = "../../modules/time" }
 little_fs = { path = "../../modules/little_fs" }
 command_line_shell = { path = "../shell/command_line" }
