@@ -4,7 +4,11 @@
 pub use wasm_bindings as bindings;
 
 #[cfg(feature = "Host")]
-pub use abi;
+pub use abi_context;
+#[cfg(feature = "Host")]
+pub use abi_declarations;
+#[cfg(feature = "abi_definitions")]
+pub use abi_definitions;
 #[cfg(feature = "Host")]
 pub use authentication;
 #[cfg(feature = "Host")]
