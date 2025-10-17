@@ -1,20 +1,20 @@
 extern crate alloc;
-extern crate std;
 
 extern crate abi_definitions;
 
-use std::fs;
+use std::{fs, path::Path};
 
 use alloc::vec;
 
 use executable::build_crate;
-use wamr_rust_sdk::value::WasmValue;
+use wamr_rust_sdk::{RuntimeError, function::Function, value::WasmValue};
 
 use file_system::{MemoryDevice, create_device, create_file_system};
+use log::Information;
 use task::test;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 use virtual_machine::{
-    Environment, Function_descriptors, FunctionDescriptor, Instance, Module, Registrable, Runtime,
+    Function_descriptors, FunctionDescriptor, Instance, Module, Registrable, Runtime,
 };
 
 drivers::standard_library::memory::instantiate_global_allocator!();
@@ -90,7 +90,7 @@ async fn integration_test() {
         .await
         .unwrap();
 
-    let wasm_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("./tests/wasm_test");
+    let wasm_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("./tests/wasm_test");
 
     let binary_path = build_crate(&wasm_path).unwrap();
 
@@ -146,14 +146,43 @@ async fn integration_test() {
             let mut instance =
                 Instance::new(&runtime, &module, 1024 * 4).expect("Failed to instantiate module");
 
-            let _ =
-                Environment::from_instance(&instance).expect("Failed to get execution environment");
+            let function = Function::find_export_func(instance.get_inner_reference(), "_start")
+                .expect("Failed to find _start function");
 
-            assert_eq!(instance.call_main(&vec![]).unwrap(), [WasmValue::Void]);
+            loop {
+                // Reset instruction limit before each call
+                // environment.set_instruction_count_limit(Some(100));
+
+                let result = function.call(instance.get_inner_reference(), &vec![]);
+
+                println!("Result: {result:?}");
+
+                match result {
+                    Ok(values) => {
+                        if values == [WasmValue::Void] {
+                            Information!("Function returned without qnything successfully.");
+                        } else {
+                            assert_eq!(values.len(), 1);
+                            assert_eq!(values[0], WasmValue::Void);
+                            break;
+                        }
+                    }
+                    Err(RuntimeError::ExecutionError(e)) => {
+                        if e.message != "Exception: instruction limit exceeded" {
+                            panic!("Unexpected exception: {}", e.message);
+                        }
+
+                        Information!("Caught exception: {}", e.message);
+                    }
+                    Err(error) => {
+                        panic!("Unexpected error: {error:?}");
+                    }
+                }
+            }
 
             assert_eq!(
                 instance
-                    .call_export_function("gcd", &vec![WasmValue::I32(9), WasmValue::I32(27)])
+                    .call_export_function("GCD", &vec![WasmValue::I32(9), WasmValue::I32(27)])
                     .unwrap(),
                 [WasmValue::I32(9)]
             );

@@ -35,3 +35,7 @@ path = "tests/test.rs"
 [[test]]
 name = "virtual_machine_test_2"
 path = "tests/test_2.rs"
+
+[[test]]
+name = "virtual_machine_test_3"
+path = "tests/test_3.rs"

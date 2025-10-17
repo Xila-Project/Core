@@ -1,14 +1,16 @@
 extern crate alloc;
+extern crate std;
 
-use std::{fs, path::Path};
+extern crate abi_definitions;
+
+use std::fs;
 
 use alloc::vec;
 
 use executable::build_crate;
-use wamr_rust_sdk::{RuntimeError, function::Function, value::WasmValue};
+use wamr_rust_sdk::value::WasmValue;
 
 use file_system::{MemoryDevice, create_device, create_file_system};
-use log::Information;
 use task::test;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 use virtual_machine::{
@@ -33,7 +35,7 @@ const FUNCTIONS: [FunctionDescriptor; 0] = Function_descriptors! {};
 
 #[ignore]
 #[test]
-async fn integration_test() {
+async fn integration_test_2() {
     let task_instance = task::initialize();
 
     static LOGGER: drivers::standard_library::log::Logger = drivers::standard_library::log::Logger;
@@ -88,7 +90,7 @@ async fn integration_test() {
         .await
         .unwrap();
 
-    let wasm_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("./tests/wasm_test");
+    let wasm_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("./tests/wasm_test");
 
     let binary_path = build_crate(&wasm_path).unwrap();
 
@@ -124,81 +126,16 @@ async fn integration_test() {
         .await
         .unwrap();
 
-    abi::get_instance()
-        .call_abi(async || {
-            // Register the functions
+    let virtual_machine = virtual_machine::initialize(&[&WasmTest]);
 
-            let runtime = Runtime::builder().register(&WasmTest).build().unwrap();
-
-            let module = Module::from_buffer(
-                &runtime,
-                binary_buffer.to_vec(),
-                "main",
-                standard_in,
-                standard_out,
-                standard_error,
-            )
-            .await
-            .unwrap();
-
-            let mut instance =
-                Instance::new(&runtime, &module, 1024 * 4).expect("Failed to instantiate module");
-
-            let environment =
-                Environment::from_instance(&instance).expect("Failed to get execution environment");
-
-            let function = Function::find_export_func(instance.get_inner_reference(), "_start")
-                .expect("Failed to find _start function");
-
-            loop {
-                // Reset instruction limit before each call
-                // environment.set_instruction_count_limit(Some(100));
-
-                let result = function.call(instance.get_inner_reference(), &vec![]);
-
-                println!("Result: {result:?}");
-
-                match result {
-                    Ok(values) => {
-                        if values == [WasmValue::Void] {
-                            Information!("Function returned without qnything successfully.");
-                        } else {
-                            assert_eq!(values.len(), 1);
-                            assert_eq!(values[0], WasmValue::Void);
-                            break;
-                        }
-                    }
-                    Err(RuntimeError::ExecutionError(e)) => {
-                        if e.message != "Exception: instruction limit exceeded" {
-                            panic!("Unexpected exception: {}", e.message);
-                        }
-
-                        Information!("Caught exception: {}", e.message);
-                    }
-                    Err(error) => {
-                        panic!("Unexpected error: {error:?}");
-                    }
-                }
-            }
-
-            assert_eq!(
-                instance
-                    .call_export_function("GCD", &vec![WasmValue::I32(9), WasmValue::I32(27)])
-                    .unwrap(),
-                [WasmValue::I32(9)]
-            );
-
-            // Test allocation and deallocation
-
-            let pointer = instance.allocate::<u32>(4).unwrap();
-
-            unsafe {
-                pointer.write(1234);
-
-                assert_eq!(1234, pointer.read());
-            }
-
-            instance.deallocate(pointer);
-        })
-        .await;
+    virtual_machine
+        .execute(
+            binary_buffer.to_vec(),
+            4 * 1024,
+            standard_in,
+            standard_out,
+            standard_error,
+        )
+        .await
+        .unwrap();
 }
