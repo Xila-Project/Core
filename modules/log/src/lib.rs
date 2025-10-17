@@ -38,7 +38,7 @@ impl<'a> Record<'a> {
         Self {
             level: Level::from(record.level()),
             target: record.target(),
-            arguments: record.args().clone(),
+            arguments: *record.args(),
         }
     }
 }
