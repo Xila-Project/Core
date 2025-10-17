@@ -1,4 +1,4 @@
-#include "../../../abi/include/xila.h"
+#include "../../../abi/xila.h"
 #include "platform_api_vmcore.h"
 
 /****************************************************
