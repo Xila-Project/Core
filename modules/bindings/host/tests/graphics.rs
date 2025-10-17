@@ -1,3 +1,4 @@
+extern crate abi_definitions;
 extern crate alloc;
 extern crate std;
 

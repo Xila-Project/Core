@@ -1,5 +1,7 @@
 extern crate alloc;
 
+extern crate abi_definitions;
+
 use executable::Standard;
 use file_manager::FileManagerExecutable;
 use file_system::{MemoryDevice, Mode, create_device, create_file_system};

@@ -1,5 +1,7 @@
 extern crate alloc;
 
+extern crate abi_definitions;
+
 use command_line_shell::ShellExecutable;
 use drivers::standard_library::loader::Loader;
 use executable::{Standard, build_crate, mount_static_executables};

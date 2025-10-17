@@ -21,6 +21,7 @@ authentication = { path = "../../modules/authentication" }
 drivers = { path = "../../modules/drivers" }
 little_fs = { path = "../../modules/little_fs" }
 command_line_shell = { path = "../shell/command_line" }
+abi_definitions = { workspace = true }
 
 [[test]]
 name = "integration_test"

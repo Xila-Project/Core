@@ -1,5 +1,8 @@
 extern crate alloc;
 
+// Import abi_definitions to ensure ABI function definitions are linked
+extern crate abi_definitions;
+
 #[cfg(target_os = "linux")]
 use task::test;
 

@@ -21,6 +21,7 @@ log = { version = "0.1.0", path = "../../../modules/log" }
 drivers = { path = "../../../modules/drivers" }
 time = { path = "../../../modules/time" }
 little_fs = { path = "../../../modules/little_fs" }
+abi_definitions = { workspace = true }
 
 [[test]]
 name = "integration_test"
