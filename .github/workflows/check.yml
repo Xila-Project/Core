@@ -39,7 +39,7 @@ jobs:
         uses: cargo-bins/cargo-binstall@main
 
       - name: Setup | Install cargo-taplo
-        run: cargo binstall taplo --no-confirm
+        run: cargo binstall taplo-cli --no-confirm
 
       - name: Setup | Rust esp xtensa toolchain
         if: matrix.target == 'esp32' || matrix.target == 'esp32s3'
