@@ -19,7 +19,7 @@ pub extern "C" fn lfs_crc(mut crc: u32, data: *const c_void, size: usize) -> u32
 
     for &byte in data {
         let byte = byte as u32;
-        crc = (crc >> 4) ^ RTABLE[((crc ^ (byte >> 0)) & 0xf) as usize];
+        crc = (crc >> 4) ^ RTABLE[((crc ^ byte) & 0xf) as usize];
         crc = (crc >> 4) ^ RTABLE[((crc ^ (byte >> 4)) & 0xf) as usize];
     }
 
