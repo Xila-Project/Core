@@ -23,6 +23,9 @@ unsafe fn c_str_to_str(ptr: *const c_char) -> Result<&'static str, ()> {
 }
 
 /// Get the length of a null-terminated string
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_get_length(str: *const c_char) -> usize {
     unsafe {
@@ -41,6 +44,9 @@ pub unsafe extern "C" fn xila_string_get_length(str: *const c_char) -> usize {
 }
 
 /// Get the length of a null-terminated string with maximum length
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_get_length_bounded(
     str: *const c_char,
@@ -62,6 +68,9 @@ pub unsafe extern "C" fn xila_string_get_length_bounded(
 }
 
 /// Compare two null-terminated strings
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_compare(str1: *const c_char, str2: *const c_char) -> c_int {
     unsafe {
@@ -91,6 +100,9 @@ pub unsafe extern "C" fn xila_string_compare(str1: *const c_char, str2: *const c
 }
 
 /// Compare two strings up to n characters
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_compare_bounded(
     str1: *const c_char,
@@ -132,6 +144,10 @@ pub unsafe extern "C" fn xila_string_compare_bounded(
     }
 }
 
+/// Copy string from source to destination
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_copy(
     destination: *mut c_char,
@@ -160,6 +176,9 @@ pub unsafe extern "C" fn xila_string_copy(
 }
 
 /// Copy string from source to destination with maximum length
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_copy_bounded(
     destination: *mut c_char,
@@ -195,6 +214,9 @@ pub unsafe extern "C" fn xila_string_copy_bounded(
 }
 
 /// Tokenize a string using delimiters
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_tokenize(
     _string: *mut c_char,
@@ -212,6 +234,9 @@ pub unsafe extern "C" fn xila_string_tokenize(
 }
 
 /// Find substring in a string
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_find_substring(
     haystack: *const c_char,
@@ -248,6 +273,9 @@ pub unsafe extern "C" fn xila_string_find_substring(
 }
 
 /// Convert string to double
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_to_double(
     nptr: *const c_char,
@@ -283,6 +311,9 @@ pub unsafe extern "C" fn xila_string_to_double(
 }
 
 /// Case-insensitive string comparison up to n characters
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_compare_case_insensitive_bounded(
     str1: *const c_char,
@@ -321,6 +352,9 @@ pub unsafe extern "C" fn xila_string_compare_case_insensitive_bounded(
 }
 
 /// Convert string to unsigned long
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_to_unsigned_long(
     nptr: *const c_char,
@@ -386,6 +420,9 @@ pub unsafe extern "C" fn xila_string_to_unsigned_long(
 }
 
 /// Find character in string
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_find_character(s: *const c_char, c: c_int) -> *mut c_char {
     unsafe {
@@ -407,6 +444,9 @@ pub unsafe extern "C" fn xila_string_find_character(s: *const c_char, c: c_int) 
 }
 
 /// Convert string to float
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_to_float(
     nptr: *const c_char,
@@ -442,6 +482,9 @@ pub unsafe extern "C" fn xila_string_to_float(
 }
 
 /// Get length of initial segment of string that consists of reject characters
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_span_complement(
     s: *const c_char,
@@ -467,6 +510,9 @@ pub unsafe extern "C" fn xila_string_span_complement(
 }
 
 /// Get length of initial segment of string that consists of accept characters
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_span(s: *const c_char, accept: *const c_char) -> usize {
     unsafe {
@@ -489,6 +535,9 @@ pub unsafe extern "C" fn xila_string_span(s: *const c_char, accept: *const c_cha
 }
 
 /// Convert string to unsigned long long
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_to_unsigned_long_long(
     nptr: *const c_char,
@@ -501,6 +550,10 @@ pub unsafe extern "C" fn xila_string_to_unsigned_long_long(
     }
 }
 
+/// Duplicate a string
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_duplicate(string: *const c_char) -> *mut c_char {
     if string.is_null() {
@@ -524,6 +577,10 @@ pub unsafe extern "C" fn xila_string_duplicate(string: *const c_char) -> *mut c_
     new_string as *mut c_char
 }
 
+/// Duplicate a string up to a maximum length
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_duplicate_bounded(
     string: *const c_char,
@@ -548,6 +605,10 @@ pub unsafe extern "C" fn xila_string_duplicate_bounded(
     new_string as *mut c_char
 }
 
+/// Parse integer from string
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_parse_integer(string: *const c_char) -> c_int {
     unsafe {
@@ -567,6 +628,10 @@ pub unsafe extern "C" fn xila_string_parse_integer(string: *const c_char) -> c_i
     }
 }
 
+/// Concatenate source string to destination string
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_concatenate(
     destination: *mut c_char,

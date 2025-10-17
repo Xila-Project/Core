@@ -6,6 +6,9 @@ use core::{
 };
 
 /// Copy memory from source to destination
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_memory_copy(
     destination: *mut c_void,
@@ -24,6 +27,9 @@ pub unsafe extern "C" fn xila_memory_copy(
 }
 
 /// Compare memory blocks
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_memory_compare(
     ptr1: *const c_void,
@@ -47,6 +53,9 @@ pub unsafe extern "C" fn xila_memory_compare(
 }
 
 /// Move memory from source to destination (handles overlapping regions)
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_memory_move(
     destination: *mut c_void,
@@ -65,6 +74,9 @@ pub unsafe extern "C" fn xila_memory_move(
 }
 
 /// Set memory to a specific value
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_memory_set(
     ptr: *mut c_void,

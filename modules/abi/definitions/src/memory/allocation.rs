@@ -338,6 +338,10 @@ pub unsafe extern "C" fn xila_memory_allocate(
     })
 }
 
+/// Allocates a memory block with default properties.
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_memory_allocate_core(size: usize) -> *mut c_void {
     trace!("xila_memory_allocate_core called with Size: {size}");
