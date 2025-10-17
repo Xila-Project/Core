@@ -10,7 +10,7 @@ pub fn main() {
 
     println!("cargo:rerun-if-changed={}", definitions_path.display());
 
-    let header_file = format!("./xila.generated.h");
+    let header_file = "./xila.generated.h".to_string();
 
     let enumeration_configuration = cbindgen::EnumConfig {
         prefix_with_name: true,
@@ -43,10 +43,10 @@ pub fn main() {
         .use_core()
         .generate_comments(true); // preserve comments
 
-    if let Ok(target) = env::var("TARGET") {
-        if target == "wasm32-unknown-unknown" {
-            bindings = bindings.clang_arg("-fvisibility=default");
-        }
+    if let Ok(target) = env::var("TARGET")
+        && target == "wasm32-unknown-unknown"
+    {
+        bindings = bindings.clang_arg("-fvisibility=default");
     }
 
     bindings
