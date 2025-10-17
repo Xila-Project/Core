@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-synchronization = { version = "0.1.0", path = "../synchronization" }
+synchronization = { workspace = true }
 
 [dev-dependencies]
-drivers = { path = "../drivers" }
-futures = { path = "../futures" }
-task = { path = "../task" }
+drivers = { workspace = true }
+futures = { workspace = true }
+task = { workspace = true }

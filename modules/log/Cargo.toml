@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-synchronization = { version = "0.1.0", path = "../synchronization" }
+synchronization = { workspace = true }
 log_external = { package = "log", version = "0.4" }

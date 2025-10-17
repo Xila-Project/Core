@@ -5,33 +5,33 @@ edition = "2024"
 
 [dependencies]
 quote = "1.0.36"
-log = { path = "../log" }
-file_system = { path = "../file_system" }
-virtual_file_system = { path = "../virtual_file_system" }
-task = { path = "../task" }
-users = { path = "../users" }
-graphics = { path = "../graphics" }
-time = { path = "../time" }
-shared = { path = "../shared" }
-peripherals = { path = "../peripherals" }
-network = { path = "../network" }
-memory = { path = "../memory" }
-synchronization = { path = "../synchronization" }
+log = { workspace = true }
+file_system = { workspace = true }
+virtual_file_system = { workspace = true }
+task = { workspace = true }
+users = { workspace = true }
+graphics = { workspace = true }
+time = { workspace = true }
+shared = { workspace = true }
+peripherals = { workspace = true }
+network = { workspace = true }
+memory = { workspace = true }
+synchronization = { workspace = true }
 linked_list_allocator = { version = "0.10", default-features = false, features = [
-    "const_mut_refs",
+  "const_mut_refs",
 ] }
 
-embassy-sync = { version = "0.7" }
-futures = { version = "0.1.0", path = "../futures" }
-embassy-executor = { version = "0.7.0" }
+embassy-sync = { workspace = true }
+futures = { workspace = true }
+embassy-executor = { workspace = true }
 
 
 [dev-dependencies]
-little_fs = { path = "../little_fs" }
+little_fs = { workspace = true }
 
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
-#graphics = { path = "../graphics", features = ["RGB565"] }
+#graphics = { workspace = true, features = ["RGB565"] }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
 pixels = "0.14"
@@ -39,9 +39,9 @@ winit = { version = "0.30", features = ["rwh_05"] }
 rand = "0.9.0"
 libc = { version = "0.2" }
 getrandom = { version = "0.3.3" }
-embassy-executor = { version = "0.7.0", default-features = false, features = [
-    "arch-std",
-    "executor-thread",
+embassy-executor = { workspace = true, default-features = false, features = [
+  "arch-std",
+  "executor-thread",
 ] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -49,41 +49,41 @@ console_error_panic_hook = "0.1"
 console_log = "1"
 wasm-bindgen-futures = "0.4"
 getrandom = { version = "0.3.3", features = ["wasm_js"] }
-embassy-executor = { version = "0.7.0", default-features = false, features = [
-    "arch-wasm",
-    "executor-thread",
+embassy-executor = { workspace = true, default-features = false, features = [
+  "arch-wasm",
+  "executor-thread",
 ] }
 wasm-bindgen = "0.2"
 web-sys = { version = "0.3.64", features = [
-    "Window",
-    "Document",
-    "HtmlCanvasElement",
-    "CanvasRenderingContext2d",
-    "MouseEvent",
-    "KeyboardEvent",
-    "EventTarget",
-    "ImageData",
-    "Element",
-    "HtmlElement",
-    "DomRect",
-    "console",
-    # OPFS features
-    "StorageManager",
-    "StorageEstimate",
-    "FileSystemDirectoryHandle",
-    "FileSystemFileHandle",
-    "FileSystemHandle",
-    "FileSystemWritableFileStream",
-    "WritableStream",
-    "ReadableStream",
-    "File",
-    "Blob",
-    "Navigator",
-    "FileSystemGetFileOptions",
-    "FileSystemCreateWritableOptions",
-    "FileSystemSyncAccessHandle",
-    "FileSystemReadWriteOptions",
-    "WebGl2RenderingContext",
+  "Window",
+  "Document",
+  "HtmlCanvasElement",
+  "CanvasRenderingContext2d",
+  "MouseEvent",
+  "KeyboardEvent",
+  "EventTarget",
+  "ImageData",
+  "Element",
+  "HtmlElement",
+  "DomRect",
+  "console",
+  # OPFS features
+  "StorageManager",
+  "StorageEstimate",
+  "FileSystemDirectoryHandle",
+  "FileSystemFileHandle",
+  "FileSystemHandle",
+  "FileSystemWritableFileStream",
+  "WritableStream",
+  "ReadableStream",
+  "File",
+  "Blob",
+  "Navigator",
+  "FileSystemGetFileOptions",
+  "FileSystemCreateWritableOptions",
+  "FileSystemSyncAccessHandle",
+  "FileSystemReadWriteOptions",
+  "WebGl2RenderingContext",
 ] }
 js-sys = "0.3"
 

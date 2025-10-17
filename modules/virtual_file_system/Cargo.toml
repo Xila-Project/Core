@@ -4,18 +4,18 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-file_system = { path = "../file_system" }
-task = { path = "../task" }
-users = { path = "../users" }
-time = { path = "../time" }
-network = { path = "../network" }
-synchronization = { version = "0.1.0", path = "../synchronization" }
-futures = { version = "0.1.0", path = "../futures" }
-log = { version = "0.1.0", path = "../log" }
+file_system = { workspace = true }
+task = { workspace = true }
+users = { workspace = true }
+time = { workspace = true }
+network = { workspace = true }
+synchronization = { workspace = true }
+futures = { workspace = true }
+log = { workspace = true }
 
 [dev-dependencies]
-drivers = { path = "../drivers" }
-little_fs = { path = "../little_fs" }
+drivers = { workspace = true }
+little_fs = { workspace = true }
 
 [[test]]
 name = "integration"

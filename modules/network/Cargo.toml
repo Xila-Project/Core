@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-file_system = { path = "../file_system" }
-futures = { version = "0.1.0", path = "../futures" }
-synchronization = { version = "0.1.0", path = "../synchronization" }
-time = { path = "../time" }
+file_system = { workspace = true }
+futures = { workspace = true }
+synchronization = { workspace = true }
+time = { workspace = true }

@@ -11,4 +11,3 @@ edition = "2024"
 opt-level = 's'
 strip = true
 lto = true
-

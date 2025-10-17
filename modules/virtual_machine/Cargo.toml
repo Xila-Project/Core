@@ -5,28 +5,28 @@ edition = "2024"
 
 [dependencies]
 wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git", features = [
-    "multi-module",
+  "multi-module",
 ] }
 
-shared = { version = "0.1.0", path = "../shared" }
-memory = { version = "0.1.0", path = "../memory" }
-file_system = { path = "../file_system" }
-virtual_file_system = { path = "../virtual_file_system" }
-little_fs = { path = "../little_fs" }
-task = { version = "0.1.0", path = "../task" }
-time = { version = "0.1.0", path = "../time" }
+shared = { workspace = true }
+memory = { workspace = true }
+file_system = { workspace = true }
+virtual_file_system = { workspace = true }
+little_fs = { workspace = true }
+task = { workspace = true }
+time = { workspace = true }
 abi_declarations = { workspace = true }
 abi_context = { workspace = true }
-synchronization = { version = "0.1.0", path = "../synchronization" }
+synchronization = { workspace = true }
 
 [dev-dependencies]
 graphics = { workspace = true, features = ["rendering_xrgb8888"] }
 abi_definitions = { workspace = true }
-users = { path = "../users", version = "0.1.0" }
-drivers = { path = "../drivers", version = "0.1.0" }
-futures = { path = "../futures" }
-log = { path = "../log" }
-executable = { path = "../executable", features = ["building"] }
+users = { workspace = true }
+drivers = { workspace = true }
+futures = { workspace = true }
+log = { workspace = true }
+executable = { workspace = true, features = ["building"] }
 
 [[test]]
 name = "virtual_machine_test"

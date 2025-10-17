@@ -5,35 +5,34 @@ edition = "2024"
 build = "build/main.rs"
 
 [dependencies]
-file_system = { path = "../../file_system" }
-virtual_machine = { path = "../../virtual_machine" }
-shared = { path = "../../shared" }
-users = { path = "../../users" }
-task = { path = "../../task" }
-graphics = { path = "../../graphics" }
-time = { path = "../../time" }
+file_system = { workspace = true }
+virtual_machine = { workspace = true }
+shared = { workspace = true }
+users = { workspace = true }
+task = { workspace = true }
+graphics = { workspace = true }
+time = { workspace = true }
 include_bytes_aligned = "0.1"
-futures = { path = "../../futures" }
-log = { path = "../../log" }
+futures = { workspace = true }
+log = { workspace = true }
 #wit-bindgen = "0.34.0"
 
 [dev-dependencies]
-drivers = { path = "../../drivers" }
-executable = { path = "../../executable", features = ["building"] }
-little_fs = { path = "../../little_fs" }
-memory = { path = "../../memory" }
-virtual_file_system = { path = "../../virtual_file_system" }
+drivers = { workspace = true }
+executable = { workspace = true, features = ["building"] }
+little_fs = { workspace = true }
+memory = { workspace = true }
+virtual_file_system = { workspace = true }
 abi_definitions = { workspace = true }
 
 [build-dependencies]
-lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
-#lvgl_rust_sys = { path = "../../../lvgl_rust_sys", default-features = false}
-target = { path = "../../target" }
-cbindgen = "0.29.0"
-bindings_utilities = { path = "../utilities" }
-syn = { version = "2.0", features = ["full", "visit", "extra-traits"] }
-quote = "1.0"
-proc-macro2 = "1.0"
+lvgl_rust_sys = { workspace = true }
+target = { workspace = true }
+cbindgen = { workspace = true }
+bindings_utilities = { workspace = true }
+syn = { workspace = true, features = ["full", "visit", "extra-traits"] }
+quote = { workspace = true }
+proc-macro2 = { workspace = true }
 
 [[test]]
 name = "graphics_bindings_tests"
