@@ -33,9 +33,6 @@ synchronization = { workspace = true, optional = true }
 futures = { workspace = true, optional = true }
 host_bindings = { workspace = true, optional = true }
 
-[build-dependencies]
-target = { path = "modules/target", optional = true }
-
 [features]
 default = []
 
