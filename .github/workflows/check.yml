@@ -8,7 +8,6 @@ env:
   CARGO_TERM_COLOR: always
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-
 jobs:
   rust-checks:
     name: Rust checks
@@ -18,8 +17,8 @@ jobs:
       matrix:
         target:
           - linux
-#          - esp32
-#          - esp32s3
+    #          - esp32
+    #          - esp32s3
 
     steps:
       - name: Setup | Checkout repository
@@ -36,6 +35,12 @@ jobs:
           components: rustfmt, clippy
           target: wasm32-wasip1, wasm32-unknown-unknown
 
+      - name: Setup | Cargo binstall
+        uses: cargo-bins/cargo-binstall@main
+
+      - name: Setup | Install cargo-taplo
+        run: cargo binstall taplo --no-confirm
+
       - name: Setup | Rust esp xtensa toolchain
         if: matrix.target == 'esp32' || matrix.target == 'esp32s3'
         uses: esp-rs/xtensa-toolchain@v1.5
@@ -43,14 +48,17 @@ jobs:
           default: true
           buildtargets: esp32,esp32s3
           ldproxy: true
-        
+
       - name: Setup | Install necessary dependencies
         run: sudo apt update && sudo apt install -y gcc-multilib clang-format
 
       - name: Build | ABI
         run: cargo build -p abi
 
-      - name: Check | Formatting
+      - name: Check | Formatting (TOML)
+        run: taplo fmt --check .
+
+      - name: Check | Formatting (Rust)
         run: cargo fmt --all -- --check
 
       - name: Check | Clippy
