@@ -3,7 +3,7 @@
 pub static SHORTCUT: &str = r#"
 {
     "name": "Calculator",
-    "command": "wasm",
+    "command": "/binaries/wasm",
     "arguments": "/binaries/calculator",
     "terminal": false,
     "icon_string": "Ca",
