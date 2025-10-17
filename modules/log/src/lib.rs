@@ -5,13 +5,9 @@ extern crate alloc;
 use alloc::fmt;
 use log_external::Log;
 use log_external::Metadata;
-pub use log_external::debug as Debug;
-pub use log_external::error as Error;
-pub use log_external::info as Information;
 use log_external::set_logger;
 use log_external::set_max_level;
-pub use log_external::trace as Trace;
-pub use log_external::warn as Warning;
+pub use log_external::{debug, error, info as information, trace, warn as warning};
 use synchronization::once_lock::OnceLock;
 
 const BOLD: &str = "\x1b[0;1m";

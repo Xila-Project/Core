@@ -7,7 +7,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::*;
 
 fn map_error_to_file_system_error(value: JsValue) -> file_system::Error {
-    log::Error!("Drive error: {:?}", value);
+    log::error!("Drive error: {:?}", value);
 
     file_system::Error::InputOutput
 }

@@ -36,7 +36,7 @@ use alloc::collections::BTreeMap;
 use core::ptr::null_mut;
 use core::{ffi::c_void, ptr::NonNull};
 use futures::block_on;
-use log::{Debug, Trace, Warning};
+use log::{debug, trace, warning};
 use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 
 use synchronization::rwlock::RwLock;
@@ -154,7 +154,7 @@ macro_rules! Write_allocations_table {
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_memory_deallocate(pointer: *mut c_void) {
     if pointer.is_null() {
-        Warning! { "xila_memory_deallocate called with null pointer, ignoring"
+        warning! { "xila_memory_deallocate called with null pointer, ignoring"
         };
         return;
     }
@@ -162,7 +162,7 @@ pub extern "C" fn xila_memory_deallocate(pointer: *mut c_void) {
     let layout = match Write_allocations_table!().remove(&(pointer as usize)) {
         Some(size) => size,
         None => {
-            Warning! {
+            warning! {
                 "xila_memory_deallocate called with untracked pointer: {:#x}, ignoring",
                 pointer as usize
             };
@@ -175,7 +175,7 @@ pub extern "C" fn xila_memory_deallocate(pointer: *mut c_void) {
             NonNull::new(pointer as *mut u8).expect("Failed to deallocate memory, pointer is null"),
             layout,
         );
-        Debug! {
+        debug! {
             "xila_memory_deallocate called with pointer: {:#x}, deallocated successfully",
             pointer as usize
         };
@@ -243,7 +243,7 @@ pub unsafe extern "C" fn xila_memory_reallocate(pointer: *mut c_void, size: usiz
 
         let new_layout = Layout::from_size_align(size, old_layout.align()).ok()?;
 
-        Debug!(
+        debug!(
             "xila_memory_reallocate called with Pointer: {:#x}, Old_layout: {:?}, New_layout: {:?}",
             pointer.map_or(0, |p| p.as_ptr() as usize),
             old_layout,
@@ -312,7 +312,7 @@ pub unsafe extern "C" fn xila_memory_allocate(
     capabilities: XilaMemoryCapabilities,
 ) -> *mut c_void {
     into_pointer(|| {
-        Trace!(
+        trace!(
             "xila_memory_allocate called with Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
         );
         let layout = Layout::from_size_align(size, alignment)
@@ -324,12 +324,12 @@ pub unsafe extern "C" fn xila_memory_allocate(
 
         if result.is_some() {
             Write_allocations_table!().insert(result.unwrap().as_ptr() as usize, layout);
-            Debug! {
+            debug! {
                 "xila_memory_allocate called with Size: {}, Alignment: {}, Capabilities: {:?}, allocated memory at {:#x}",
                 size, alignment, capabilities, result.unwrap().as_ptr() as usize
             };
         } else {
-            Warning! {
+            warning! {
                 "xila_memory_allocate failed with Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
             };
         }
@@ -340,7 +340,7 @@ pub unsafe extern "C" fn xila_memory_allocate(
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_memory_allocate_core(size: usize) -> *mut c_void {
-    Trace!("xila_memory_allocate_core called with Size: {size}");
+    trace!("xila_memory_allocate_core called with Size: {size}");
     unsafe {
         xila_memory_allocate(
             null_mut(),

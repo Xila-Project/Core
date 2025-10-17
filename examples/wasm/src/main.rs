@@ -1,16 +1,15 @@
 #![no_std]
 
 #[cfg(target_arch = "wasm32")]
-drivers::wasm::memory::instantiate_global_allocator!();
+xila::drivers::wasm::memory::instantiate_global_allocator!();
 
 #[cfg(target_arch = "wasm32")]
-#[task::run(task_path = task, executor = instantiate_static_executor!())]
+#[xila::task::run(task_path = xila::task, executor = xila::drivers::wasm::executor::instantiate_static_executor!())]
 async fn main() {
     extern crate alloc;
 
     use alloc::string::String;
     use xila::drivers::wasm::devices::graphics::GraphicsDevices;
-    use xila::drivers::wasm::executor::instantiate_static_executor;
     use xila::executable::{self, mount_static_executables, Standard};
     use xila::file_system::{self, create_device, create_file_system, Mbr, PartitionKind};
     use xila::log;
@@ -84,7 +83,7 @@ async fn main() {
     // Print MBR information
     let mbr = Mbr::read_from_device(&drive).unwrap();
 
-    log::Information!("MBR Information: {mbr}");
+    log::information!("MBR Information: {mbr}");
 
     // Mount the file system
     let file_system = match little_fs::FileSystem::new(partition.clone(), 512) {

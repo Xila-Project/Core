@@ -36,7 +36,7 @@ pub fn new() -> Result<HtmlCanvasElement, String> {
             canvas_clone.set_width(width);
             canvas_clone.set_height(height);
         } else {
-            log::Error!("Failed to get window size");
+            log::error!("Failed to get window size");
         }
     }) as Box<dyn FnMut(_)>);
 

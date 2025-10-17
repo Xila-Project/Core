@@ -16,7 +16,7 @@ use xila::graphics;
 use xila::host_bindings;
 use xila::little_fs;
 use xila::log;
-use xila::log::Information;
+use xila::log::information;
 use xila::task;
 use xila::time;
 use xila::users;
@@ -85,7 +85,7 @@ async fn main() {
     // Print MBR information
     let mbr = Mbr::read_from_device(&drive).unwrap();
 
-    Information!("MBR information: {mbr}");
+    information!("MBR information: {mbr}");
 
     // Mount the file system
     let file_system = match little_fs::FileSystem::new(partition.clone(), 256) {

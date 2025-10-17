@@ -15,7 +15,7 @@ impl KeyboardDevice {
         let key = match map_key(key) {
             Some(k) => k,
             None => {
-                log::Warning!("Unsupported key: {}", key);
+                log::warning!("Unsupported key: {}", key);
                 return;
             }
         };

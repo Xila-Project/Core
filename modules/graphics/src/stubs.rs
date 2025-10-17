@@ -15,14 +15,14 @@ pub unsafe extern "C" fn lv_memset(destination: *mut c_void, value: u8, size: us
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn lv_mem_deinit() {
-    log::Information!("Deinitializing memory manager");
+    log::information!("Deinitializing memory manager");
     // This function is a no-op in this stub.
     // In a real implementation, you would clean up memory resources here.
 }
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn lv_mem_init() {
-    log::Information!("Initializing memory manager");
+    log::information!("Initializing memory manager");
     // This function is a no-op in this stub.
     // In a real implementation, you would set up memory resources here.
 }
@@ -68,7 +68,7 @@ pub unsafe extern "C" fn lv_snprintf(
     _: *const c_char,
     _: *mut c_void,
 ) -> c_int {
-    log::Information!("Formatting string (not implemented in this stub)");
+    log::information!("Formatting string (not implemented in this stub)");
     // This function is not implemented in this stub.
     // In a real implementation, you would handle formatted output here.
     0
@@ -81,7 +81,7 @@ pub unsafe extern "C" fn lv_vsnprintf(
     _: *const c_char,
     _: *mut c_void,
 ) -> c_int {
-    log::Information!("Formatting string with variable arguments (not implemented in this stub)");
+    log::information!("Formatting string with variable arguments (not implemented in this stub)");
     // This function is not implemented in this stub.
     // In a real implementation, you would handle formatted output here.
     0

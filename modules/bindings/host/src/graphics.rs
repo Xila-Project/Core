@@ -177,7 +177,7 @@ pub unsafe fn call(
             arguments_count,
             result,
         ) {
-            log::Error!(
+            log::error!(
                 "Error {error:?} durring graphics call: {function:?} with arguments: {argument_0:x}, {argument_1:x}, {argument_2:x}, {argument_3:x}, {argument_4:x}, {argument_5:x}, {argument_6:x}",
             );
         }

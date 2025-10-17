@@ -160,7 +160,7 @@ async fn integration_test() {
                 match result {
                     Ok(values) => {
                         if values == [WasmValue::Void] {
-                            Information!("Function returned without qnything successfully.");
+                            information!("Function returned without qnything successfully.");
                         } else {
                             assert_eq!(values.len(), 1);
                             assert_eq!(values[0], WasmValue::Void);
@@ -172,7 +172,7 @@ async fn integration_test() {
                             panic!("Unexpected exception: {}", e.message);
                         }
 
-                        Information!("Caught exception: {}", e.message);
+                        information!("Caught exception: {}", e.message);
                     }
                     Err(error) => {
                         panic!("Unexpected error: {error:?}");

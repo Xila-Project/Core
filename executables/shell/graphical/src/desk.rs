@@ -17,7 +17,7 @@ use executable::Standard;
 use file_system::{Kind, Mode};
 use futures::block_on;
 use graphics::{Color, EventKind, Point, Window, lvgl};
-use log::Error;
+use log::error;
 use virtual_file_system::Directory;
 
 pub const WINDOWS_PARENT_CHILD_CHANGED: graphics::EventKind = graphics::EventKind::Custom2;
@@ -283,7 +283,7 @@ impl Desk {
                         )?;
                     }
                     Err(e) => {
-                        Error!(
+                        error!(
                             "Failed to read shortcut {}: {e:?}",
                             shortcut_entry.get_name()
                         );
@@ -440,7 +440,7 @@ impl Desk {
                     // If the target is a shortcut, execute the shortcut
                     if let Some(shortcut_name) = self.shortcuts.get(&event.get_target()) {
                         if let Err(error) = self.execute_shortcut(shortcut_name).await {
-                            Error!("Failed to execute shortcut {shortcut_name}: {error:?}");
+                            error!("Failed to execute shortcut {shortcut_name}: {error:?}");
                         }
                     }
                     // If the target is a dock icon, move the window to the foreground

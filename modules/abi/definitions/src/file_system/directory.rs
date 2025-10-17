@@ -1,5 +1,5 @@
 use alloc::ffi::CString;
-use log::Debug;
+use log::debug;
 
 use core::{
     ffi::{CStr, c_char},
@@ -38,7 +38,7 @@ pub unsafe extern "C" fn xila_file_system_open_directory(
 
             let task = get_context_instance().get_current_task_identifier();
 
-            Debug!("Opening directory {path:?} for task {task:?}");
+            debug!("Opening directory {path:?} for task {task:?}");
 
             *directory =
                 block_on(get_file_system_instance().open_directory(&path, task))?.into_inner();
@@ -65,7 +65,7 @@ pub unsafe extern "C" fn xila_file_system_read_directory(
         into_u32(move || {
             let task = get_context_instance().get_current_task_identifier();
 
-            Debug!("Reading directory {file:?} for task {task:?}");
+            debug!("Reading directory {file:?} for task {task:?}");
 
             let file = file_system::UniqueFileIdentifier::from_raw(file);
 
@@ -92,7 +92,7 @@ pub extern "C" fn xila_file_system_close_directory(directory: XilaUniqueFileIden
 
         let directory = file_system::UniqueFileIdentifier::from_raw(directory);
 
-        Debug!("Closing directory {directory:?} for task {task:?}");
+        debug!("Closing directory {directory:?} for task {task:?}");
 
         block_on(get_file_system_instance().close_directory(directory, task))?;
 
@@ -107,7 +107,7 @@ pub extern "C" fn xila_file_system_rewind_directory(directory: XilaUniqueFileIde
 
         let directory = file_system::UniqueFileIdentifier::from_raw(directory);
 
-        Debug!("Rewinding directory {directory:?} for task {task:?}");
+        debug!("Rewinding directory {directory:?} for task {task:?}");
 
         block_on(get_file_system_instance().rewind_directory(directory, task))?;
 
@@ -125,7 +125,7 @@ pub extern "C" fn xila_file_system_directory_set_position(
 
         let directory = file_system::UniqueFileIdentifier::from_raw(directory);
 
-        Debug!("Setting position in directory {directory:?} to offset {offset} for task {task:?}");
+        debug!("Setting position in directory {directory:?} to offset {offset} for task {task:?}");
 
         block_on(get_file_system_instance().set_position_directory(
             directory,
