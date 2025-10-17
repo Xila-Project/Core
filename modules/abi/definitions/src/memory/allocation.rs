@@ -322,8 +322,8 @@ pub unsafe extern "C" fn xila_memory_allocate(
 
         let result = unsafe { memory::get_instance().allocate(capabilities, layout) };
 
-        if result.is_some() {
-            Write_allocations_table!().insert(result.unwrap().as_ptr() as usize, layout);
+        if let Some(pointer) = result {
+            Write_allocations_table!().insert(pointer.as_ptr() as usize, layout);
             debug! {
                 "xila_memory_allocate called with Size: {}, Alignment: {}, Capabilities: {:?}, allocated memory at {:#x}",
                 size, alignment, capabilities, result.unwrap().as_ptr() as usize
