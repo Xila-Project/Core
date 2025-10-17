@@ -54,11 +54,11 @@ pub fn create_partition_device(
         return Err(Error::InvalidParameter);
     }
 
-    Ok(PartitionDevice::new_from_lba(
+    PartitionDevice::new_from_lba(
         base_device,
         partition.get_start_lba(),
         partition.get_size_sectors(),
-    )?)
+    )
 }
 
 /// Scan a device for MBR and return partition information.
