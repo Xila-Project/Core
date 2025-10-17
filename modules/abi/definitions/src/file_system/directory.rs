@@ -142,7 +142,7 @@ mod tests {
     extern crate std;
 
     use super::*;
-    use crate::context::get_instance as get_context_instance;
+    use abi_context::get_instance as get_context_instance;
     use alloc::{ffi::CString, format, vec::Vec};
     use file_system::{MemoryDevice, Mode, Open, PathOwned, create_device, create_file_system};
     use task::{TaskIdentifier, test};
