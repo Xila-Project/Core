@@ -58,8 +58,11 @@ jobs:
       - name: Check | Formatting (Rust)
         run: cargo fmt --all -- --check
 
-      - name: Check | Clippy
-        run: cargo clippy --all-features --workspace -- -D warnings
+      - name: Check | Clippy (Host)
+        run: cargo clippy --features Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888 -- -D warnings
+
+      - name: Check | Clippy (WASM)
+        run: cargo clippy --features WASM --target wasm32-unknown-unknown -- -D warnings
 
       - name: Check | Documentation
         run: RUSTDOCFLAGS="--deny warnings" cargo doc --all-features

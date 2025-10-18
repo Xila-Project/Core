@@ -9,7 +9,11 @@ fn main() {
 
     // Create the output file path
     let dest_path = include_dir.join("lvgl_configuration.generated.h");
-
+    // Delete existing file if any
+    if dest_path.exists() {
+        std::fs::remove_file(&dest_path)
+            .expect("Failed to remove existing lvgl_configuration.generated.h");
+    }
     // Determine color depth based on features
     let color_depth = if cfg!(feature = "rendering_rgb565") {
         16
