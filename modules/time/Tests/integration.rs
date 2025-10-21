@@ -3,7 +3,7 @@
 extern crate alloc;
 use core::time::Duration;
 use file_system::create_device;
-use log::Information;
+use log::information;
 
 #[test]
 fn test_get_current_time() {

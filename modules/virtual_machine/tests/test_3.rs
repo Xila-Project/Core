@@ -10,7 +10,7 @@ use executable::build_crate;
 use wamr_rust_sdk::{RuntimeError, function::Function, value::WasmValue};
 
 use file_system::{MemoryDevice, create_device, create_file_system};
-use log::Information;
+use log::information;
 use task::test;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 use virtual_machine::{
