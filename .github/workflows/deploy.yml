@@ -1,4 +1,4 @@
-name: Build and deploy rust documentation to Github Pages
+name: Build and deploy documentation and demonstration to Github Pages
 
 on:
   push:
@@ -34,6 +34,11 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown, wasm32-wasip1
+
+      - name: Setup | Rust nightly toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: wasm32-unknown-unknown
 
       - name: Setup | Cargo binstall
         uses: cargo-bins/cargo-binstall@main
