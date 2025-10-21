@@ -25,8 +25,8 @@ abi_definitions = { workspace = true }
 
 [features]
 default = []
-rendering_rgb565 = []
-rendering_xrgb8888 = []
+rendering_rgb565 = ["lvgl_rust_sys/color_depth_16"]
+rendering_xrgb8888 = ["lvgl_rust_sys/color_depth_32"]
 
 [[test]]
 name = "graphics"
