@@ -49,10 +49,10 @@ pub fn convert_type(r#type: String) -> String {
         .join(" ");
 
     let r#type = r#type
-        .replace("Xila_graphics_object_t *", "Xila_graphics_object_t")
-        .replace("Xila_graphics_object_t const *", "Xila_graphics_object_t");
+        .replace("xila_graphics_object_t *", "xila_graphics_object_t")
+        .replace("xila_graphics_object_t const *", "xila_graphics_object_t");
 
-    r#type.replace("const Xila_graphics_object_t", "Xila_graphics_object_t")
+    r#type.replace("const xila_graphics_object_t", "xila_graphics_object_t")
 }
 
 fn generate_function_signature(signature: &Signature) -> String {
@@ -99,7 +99,7 @@ fn generate_opaque_types(structures: Vec<String>) -> String {
         .map(|type_value| {
             format!(
                 "typedef struct {{}} {};\n",
-                type_value.replace("lv_", "Xila_graphics_"),
+                type_value.replace("lv_", "xila_graphics_"),
             )
         })
         .collect::<Vec<_>>();
@@ -156,7 +156,7 @@ fn generate_graphics_call(signature: &Signature) -> String {
     };
 
     format!(
-        "Xila_graphics_call({},{}, {}, {});\n",
+        "xila_graphics_call({},{}, {}, {});\n",
         identifier,
         inputs.join(", "),
         real_arguments_length,
@@ -225,15 +225,15 @@ pub fn generate_header(output_file: &mut File, lvgl_functions: &LvglContext) {
 }
 
 pub fn get_type_name(r#type: &str) -> String {
-    format_identifier("Xila_graphics_", r#type)
+    format_identifier("xila_graphics_", r#type)
 }
 
 pub fn get_function_name(function_name: &str) -> String {
-    format_identifier("Xila_graphics_", function_name)
+    format_identifier("xila_graphics_", function_name)
 }
 
 pub fn get_enumerate_item(item: &str) -> String {
-    format_identifier("Xila_graphics_call_", item)
+    format_identifier("xila_graphics_call_", item)
 }
 
 pub fn generate_code_enumeration(signatures: Vec<Signature>) -> String {

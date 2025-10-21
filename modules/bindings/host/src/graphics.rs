@@ -55,7 +55,7 @@ impl Registrable for GraphicsBindings {
     }
 
     fn get_name(&self) -> &'static str {
-        "Xila_graphics\0"
+        "xila_graphics\0"
     }
 }
 
@@ -187,6 +187,6 @@ pub unsafe fn call(
 }
 
 const GRAPHICS_BINDINGS_FUNCTIONS: [FunctionDescriptor; 1] = [FunctionDescriptor {
-    name: "Xila_graphics_call",
+    name: "xila_graphics_call",
     pointer: call as *mut _,
 }];
