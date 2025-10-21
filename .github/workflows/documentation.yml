@@ -43,7 +43,7 @@ jobs:
 
       - name: Build | Documentation
         run: |
-          cargo doc --all-features
+          cargo doc --features Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888
           cp ./documentation/index.html ./target/doc
 
       - name: Build | WASM demonstration
