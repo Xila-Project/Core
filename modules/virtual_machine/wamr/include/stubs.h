@@ -1,12 +1,12 @@
 
-#include "../../../abi/include/xila.h"
+#include "../../../abi/xila.h"
 
 #define CLOCK_REALTIME XilaTimeClockIdentifier_Realtime
 #define CLOCK_MONOTONIC XilaTimeClockIdentifier_Monotonic
 
 #define TIMER_ABSTIME XilaTimerFlags_Absolute
 
-#define pthread_condattr_t XilaConditionVariableAttribute
+typedef XilaConditionVariableAttribute pthread_condattr_t;
 
 #define pthread_cond_init xila_condition_variable_initialize
 #define pthread_condattr_init xila_condition_variable_attribute_initialize

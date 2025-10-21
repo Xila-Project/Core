@@ -4,23 +4,25 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-file_system = { path = "../../modules/file_system" }
-virtual_file_system = { path = "../../modules/virtual_file_system" }
-executable = { path = "../../modules/executable" }
-task = { path = "../../modules/task" }
-users = { path = "../../modules/users" }
-virtual_machine = { path = "../../modules/virtual_machine" }
-authentication = { path = "../../modules/authentication" }
-futures = { version = "0.1.0", path = "../../modules/futures" }
+file_system = { workspace = true }
+virtual_file_system = { workspace = true }
+executable = { workspace = true }
+task = { workspace = true }
+users = { workspace = true }
+virtual_machine = { workspace = true }
+authentication = { workspace = true }
+futures = { workspace = true }
 
 [dev-dependencies]
-drivers = { path = "../../modules/drivers" }
-time = { path = "../../modules/time" }
-little_fs = { path = "../../modules/little_fs" }
-command_line_shell = { path = "../shell/command_line" }
-task = { path = "../../modules/task" }
-memory = { path = "../../modules/memory" }
-executable = { path = "../../modules/executable", features = ["building"] }
+drivers = { workspace = true }
+graphics = { workspace = true, features = ["rendering_xrgb8888"] }
+abi_definitions = { workspace = true }
+time = { workspace = true }
+little_fs = { workspace = true }
+command_line_shell = { workspace = true }
+task = { workspace = true }
+memory = { workspace = true }
+executable = { workspace = true, features = ["building"] }
 
 [[test]]
 name = "integration_test"

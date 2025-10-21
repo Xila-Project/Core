@@ -8,11 +8,9 @@ use xila::executable::build_crate;
 use xila::file_system;
 use xila::file_system::{MemoryDevice, create_device, create_file_system};
 use xila::graphics;
-use xila::graphics::lvgl;
 use xila::host_bindings;
 use xila::little_fs;
 use xila::log;
-use xila::memory::instantiate_global_allocator;
 use xila::task;
 use xila::task::test;
 use xila::time;
@@ -22,8 +20,10 @@ use xila::virtual_file_system;
 use xila::virtual_file_system::{create_default_hierarchy, mount_static_devices};
 use xila::virtual_machine;
 
-instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+drivers::standard_library::memory::instantiate_global_allocator!();
 
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[task::run(executor = drivers::standard_library::executor::instantiate_static_executor!())]
 async fn run_graphics() {
     graphics::get_instance()
@@ -80,21 +80,20 @@ async fn integration_test() {
                 drivers::standard_library::console::StandardErrorDevice
             ),
             (&"/devices/time", drivers::native::TimeDriver),
-            (&"/devices/random", drivers::native::RandomDevice),
+            (&"/devices/random", drivers::shared::devices::RandomDevice),
             (&"/devices/null", drivers::core::NullDevice)
         ]
     )
     .await
     .unwrap();
 
-    virtual_machine::initialize(&[&host_bindings::GraphicsBindings]);
+    let virtual_machine = virtual_machine::initialize(&[&host_bindings::GraphicsBindings]);
 
-    let virtual_machine = virtual_machine::get_instance();
     const RESOLUTION: graphics::Point = graphics::Point::new(800, 600);
     let (screen_device, pointer_device, keyboard_device) =
         drivers::native::window_screen::new(RESOLUTION).unwrap();
     // - - Initialize the graphics manager
-    graphics::initialize(
+    let graphics_manager = graphics::initialize(
         screen_device,
         pointer_device,
         graphics::InputKind::Pointer,
@@ -103,7 +102,7 @@ async fn integration_test() {
     )
     .await;
 
-    graphics::get_instance()
+    graphics_manager
         .add_input_device(keyboard_device, graphics::InputKind::Keypad)
         .await
         .unwrap();
@@ -111,12 +110,6 @@ async fn integration_test() {
     std::thread::spawn(run_graphics);
 
     let task = task_instance.get_current_task_identifier().await;
-
-    let graphics_manager = graphics::get_instance();
-
-    let window = graphics_manager.create_window().await.unwrap();
-
-    let _calendar = unsafe { lvgl::lv_calendar_create(window.into_raw()) };
 
     let standard_in = virtual_file_system
         .open(

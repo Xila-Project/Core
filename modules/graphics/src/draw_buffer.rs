@@ -1,6 +1,6 @@
 use alloc::{vec, vec::Vec};
 
-use crate::{Color, ColorRGB565, Point, RenderingColor};
+use crate::{Color, ColorRGB888, Point, RenderingColor};
 
 #[repr(transparent)]
 pub struct Buffer {
@@ -25,7 +25,7 @@ impl Buffer {
 
     pub fn new(buffer_size: usize) -> Self {
         Self {
-            buffer: vec![ColorRGB565::new(0, 0, 0); buffer_size],
+            buffer: vec![ColorRGB888::new(0, 0, 0).into(); buffer_size],
         }
     }
 }

@@ -58,7 +58,7 @@ impl Environment<'_> {
                 wasm_runtime_get_custom_data(self.get_instance_pointer()) as *const CustomData;
 
             let custom_data = if custom_data.is_null() {
-                let task = abi::get_instance().get_current_task_identifier();
+                let task = abi_context::get_instance().get_current_task_identifier();
 
                 let custom_data = Box::new(CustomData::new(task));
 

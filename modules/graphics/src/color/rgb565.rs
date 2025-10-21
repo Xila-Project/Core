@@ -1,5 +1,7 @@
 use core::fmt::Debug;
 
+use crate::ColorRGB888;
+
 use super::{ColorARGB8888, ColorRGBA8888};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -54,6 +56,16 @@ impl ColorRGB565 {
         let value = value & 0b11111; // 5 bits
         self.0 = (self.0 & !0b11111) | (value as u16);
         self
+    }
+}
+
+impl From<ColorRGB888> for ColorRGB565 {
+    fn from(value: ColorRGB888) -> Self {
+        Self::new(
+            value.get_red() >> 3,
+            value.get_green() >> 2,
+            value.get_blue() >> 3,
+        )
     }
 }
 

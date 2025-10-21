@@ -126,6 +126,12 @@ impl<'a> File<'a> {
             .get_statistics(self.get_file_identifier(), self.task)
             .await
     }
+
+    pub async fn flush(&self) -> Result<()> {
+        self.file_system
+            .flush(self.get_file_identifier(), self.task)
+            .await
+    }
 }
 
 impl Drop for File<'_> {

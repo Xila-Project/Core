@@ -9,6 +9,7 @@ mod manager;
 mod protection;
 mod statistics;
 mod r#trait;
+pub mod utilities;
 
 pub use cache::*;
 pub use capability::*;

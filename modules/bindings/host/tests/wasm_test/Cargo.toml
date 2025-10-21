@@ -10,4 +10,4 @@ opt-level = 's'
 strip = true
 
 [dependencies]
-wasm_bindings = { path = "../../../wasm" }
+wasm_bindings = { workspace = true }

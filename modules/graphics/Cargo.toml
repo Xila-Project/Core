@@ -5,28 +5,28 @@ edition = "2024"
 
 [dependencies]
 cstr_core = "0.2.6"
-file_system = { path = "../file_system" }
+file_system = { workspace = true }
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
-#lvgl_rust_sys = { path = "../../../lvgl_rust_sys", default-features = false }
+#lvgl_rust_sys = { workspace = true, default-features = false }
 syn = { version = "2.0", features = ["full"] }
 quote = "1.0"
-time = { path = "../time" }
-shared = { path = "../shared" }
-synchronization = { version = "0.1.0", path = "../synchronization" }
-log = { version = "0.1.0", path = "../log" }
-
+time = { workspace = true }
+shared = { workspace = true }
+synchronization = { workspace = true }
+log = { workspace = true }
+abi_declarations = { workspace = true }
 
 [dev-dependencies]
-drivers = { path = "../drivers" }
-users = { path = "../users" }
-task = { path = "../task" }
-futures = { path = "../futures" }
+drivers = { workspace = true }
+users = { workspace = true }
+task = { workspace = true }
+futures = { workspace = true }
+abi_definitions = { workspace = true }
 
 [features]
-default = ["RGB565"]
-RGB565 = []
-ARGB8888 = []
-RGBA8888 = []
+default = []
+rendering_rgb565 = ["lvgl_rust_sys/color_depth_16"]
+rendering_xrgb8888 = ["lvgl_rust_sys/color_depth_32"]
 
 [[test]]
 name = "graphics"

@@ -11,4 +11,7 @@ pub use rgba8888::*;
 
 pub type Color = ColorRGB888;
 
+#[cfg(feature = "rendering_rgb565")]
 pub type RenderingColor = ColorRGB565;
+#[cfg(feature = "rendering_xrgb8888")]
+pub type RenderingColor = ColorARGB8888;

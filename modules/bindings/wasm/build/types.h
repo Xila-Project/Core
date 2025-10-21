@@ -4,56 +4,56 @@
 typedef struct {
   int32_t x;
   int32_t y;
-} Xila_graphics_point_t;
+} xila_graphics_point_t;
 
 typedef struct {
   int32_t x1;
   int32_t y1;
   int32_t x2;
   int32_t y2;
-} Xila_graphics_area_t;
+} xila_graphics_area_t;
 
 typedef struct {
   uint8_t blue;
   uint8_t green;
   uint8_t red;
-} Xila_graphics_color_t;
+} xila_graphics_color_t;
 
 typedef struct {
   uint16_t blue : 5;
   uint16_t green : 6;
   uint16_t red : 5;
-} Xila_graphics_color16_t;
+} xila_graphics_color16_t;
 
 typedef struct {
   uint8_t blue;
   uint8_t green;
   uint8_t red;
   uint8_t alpha;
-} Xila_graphics_color32_t;
+} xila_graphics_color32_t;
 
 typedef struct {
   uint16_t h;
   uint8_t s;
   uint8_t v;
-} Xila_graphics_color_hsv_t;
+} xila_graphics_color_hsv_t;
 
 typedef struct {
   uint8_t lumi;
   uint8_t alpha;
-} Xila_graphics_color16a_t;
+} xila_graphics_color16a_t;
 
 #define XILA_GRAPHICS_COLOR_MAKE(r8, g8, b8) {b8, g8, r8}
 
 #define XILA_GRAPHICS_OPA_MIX2(a1, a2) (((int32_t)(a1) * (a2)) >> 8)
 #define XILA_GRAPHICS_OPA_MIX3(a1, a2, a3) (((int32_t)(a1) * (a2) * (a3)) >> 16)
 
-typedef int32_t Xila_graphics_value_precise_t;
+typedef int32_t xila_graphics_value_precise_t;
 
 typedef struct {
-  Xila_graphics_value_precise_t x;
-  Xila_graphics_value_precise_t y;
-} Xila_graphics_point_precise_t;
+  xila_graphics_value_precise_t x;
+  xila_graphics_value_precise_t y;
+} xila_graphics_point_precise_t;
 
 typedef enum {
   XILA_GRAPHICS_COLOR_FORMAT_UNKNOWN = 0,
@@ -106,7 +106,7 @@ typedef enum {
 
   XILA_GRAPHICS_COLOR_FORMAT_YUV_END = XILA_GRAPHICS_COLOR_FORMAT_UYVY,
 
-} Xila_graphics_color_format_t;
+} xila_graphics_color_format_t;
 
 typedef enum {
   XILA_GRAPHICS_FLEX_ALIGN_START,
@@ -115,15 +115,15 @@ typedef enum {
   XILA_GRAPHICS_FLEX_ALIGN_SPACE_EVENLY,
   XILA_GRAPHICS_FLEX_ALIGN_SPACE_AROUND,
   XILA_GRAPHICS_FLEX_ALIGN_SPACE_BETWEEN,
-} Xila_graphics_flex_align_t;
+} xila_graphics_flex_align_t;
 
 #define XILA_GRAPHICS_FLEX_COLUMN (1 << 0)
 #define XILA_GRAPHICS_FLEX_WRAP (1 << 2)
 #define XILA_GRAPHICS_FLEX_REVERSE (1 << 3)
 
-typedef uint8_t Xila_graphics_style_prop_t;
+typedef uint8_t xila_graphics_style_prop_t;
 
-typedef uint8_t Xila_graphics_opa_t;
+typedef uint8_t xila_graphics_opa_t;
 
 typedef enum {
   XILA_GRAPHICS_FLEX_FLOW_ROW = 0x00,
@@ -142,7 +142,7 @@ typedef enum {
   XILA_GRAPHICS_FLEX_FLOW_COLUMN_WRAP_REVERSE = XILA_GRAPHICS_FLEX_FLOW_COLUMN |
                                                 XILA_GRAPHICS_FLEX_WRAP |
                                                 XILA_GRAPHICS_FLEX_REVERSE,
-} Xila_graphics_flex_flow_t;
+} xila_graphics_flex_flow_t;
 
 typedef enum {
   XILA_GRAPHICS_GRAD_DIR_NONE, /**< No gradient (the `grad_color` property is
@@ -155,7 +155,7 @@ typedef enum {
                                      circles*/
   XILA_GRAPHICS_GRAD_DIR_CONICAL, /**< Conical gradient defined by center point,
                                      start and end angles*/
-} Xila_graphics_grad_dir_t;
+} xila_graphics_grad_dir_t;
 
 /**
  * Possible options for blending opaque drawings
@@ -168,7 +168,7 @@ typedef enum {
                                            background*/
   XILA_GRAPHICS_BLEND_MODE_MULTIPLY,    /**< Multiply the foreground and
                                            background*/
-} Xila_graphics_blend_mode_t;
+} xila_graphics_blend_mode_t;
 
 /**
  * Some options to apply decorations on texts.
@@ -178,7 +178,7 @@ typedef enum {
   XILA_GRAPHICS_TEXT_DECOR_NONE = 0x00,
   XILA_GRAPHICS_TEXT_DECOR_UNDERLINE = 0x01,
   XILA_GRAPHICS_TEXT_DECOR_STRIKETHROUGH = 0x02,
-} Xila_graphics_text_decor_t;
+} xila_graphics_text_decor_t;
 
 /**
  * Selects on which sides border should be drawn
@@ -193,9 +193,9 @@ typedef enum {
   XILA_GRAPHICS_BORDER_SIDE_FULL = 0x0F,
   XILA_GRAPHICS_BORDER_SIDE_INTERNAL =
       0x10, /**< FOR matrix-like objects (e.g. Button matrix)*/
-} Xila_graphics_border_side_t;
+} xila_graphics_border_side_t;
 
-typedef uint8_t Xila_graphics_anim_t;
+typedef uint8_t xila_graphics_anim_t;
 
 typedef enum {
   XILA_GRAPHICS_STYLE_STATE_CMP_SAME, /**< The style properties in the 2 states
@@ -206,27 +206,27 @@ typedef enum {
                                                   with a simple redraw */
   XILA_GRAPHICS_STYLE_STATE_CMP_DIFF_LAYOUT,   /**< The differences can be shown
                                                   with a simple redraw */
-} Xila_graphics_style_state_cmp_t;
+} xila_graphics_style_state_cmp_t;
 
-typedef uint32_t Xila_graphics_style_selector_t;
+typedef uint32_t xila_graphics_style_selector_t;
 
-typedef uint16_t Xila_graphics_object_t;
+typedef uint16_t xila_graphics_object_t;
 
-typedef uint16_t Xila_graphics__lv_object_t;
+typedef uint16_t xila_graphics__lv_object_t;
 
-typedef uint32_t Xila_graphics_part_t;
+typedef uint32_t xila_graphics_part_t;
 
 typedef struct {
   int32_t *x_points;
   int32_t *y_points;
-  Xila_graphics_color_t color;
+  xila_graphics_color_t color;
   uint32_t start_point;
   uint32_t hidden : 1;
   uint32_t x_ext_buf_assigned : 1;
   uint32_t y_ext_buf_assigned : 1;
   uint32_t x_axis_sec : 1;
   uint32_t y_axis_sec : 1;
-} Xila_graphics_chart_series_t;
+} xila_graphics_chart_series_t;
 
 typedef enum {
   XILA_GRAPHICS_CHART_TYPE_NONE,    /**< Don't draw the series*/
@@ -236,10 +236,10 @@ typedef enum {
                                        coordinates)*/
 } lv_chart_type_t;
 
-typedef void *Xila_graphics_style_t;
+typedef void *xila_graphics_style_t;
 
 typedef struct {
-} Xila_graphics_font_t;
+} xila_graphics_font_t;
 
 typedef enum {
   XILA_GRAPHICS_DIR_NONE = 0x00,
@@ -250,7 +250,7 @@ typedef enum {
   XILA_GRAPHICS_DIR_HOR = XILA_GRAPHICS_DIR_LEFT | XILA_GRAPHICS_DIR_RIGHT,
   XILA_GRAPHICS_DIR_VER = XILA_GRAPHICS_DIR_TOP | XILA_GRAPHICS_DIR_BOTTOM,
   XILA_GRAPHICS_DIR_ALL = XILA_GRAPHICS_DIR_HOR | XILA_GRAPHICS_DIR_VER,
-} Xila_graphics_dir_t;
+} xila_graphics_dir_t;
 
 /**
  * Represents a date on the calendar object (platform-agnostic).
@@ -259,7 +259,7 @@ typedef struct {
   uint16_t year;
   int8_t month; /**< 1..12 */
   int8_t day;   /**< 1..31 */
-} Xila_graphics_calendar_date_t;
+} xila_graphics_calendar_date_t;
 
 typedef enum {
   XILA_GRAPHICS_ALIGN_DEFAULT = 0,
@@ -285,7 +285,7 @@ typedef enum {
   XILA_GRAPHICS_ALIGN_OUT_RIGHT_TOP,
   XILA_GRAPHICS_ALIGN_OUT_RIGHT_MID,
   XILA_GRAPHICS_ALIGN_OUT_RIGHT_BOTTOM,
-} Xila_graphics_align_t;
+} xila_graphics_align_t;
 
 typedef enum {
   XILA_GRAPHICS_GRID_ALIGN_START,
@@ -295,9 +295,9 @@ typedef enum {
   XILA_GRAPHICS_GRID_ALIGN_SPACE_EVENLY,
   XILA_GRAPHICS_GRID_ALIGN_SPACE_AROUND,
   XILA_GRAPHICS_GRID_ALIGN_SPACE_BETWEEN,
-} Xila_graphics_grid_align_t;
+} xila_graphics_grid_align_t;
 
-typedef uint16_t Xila_graphics_object_class_t;
+typedef uint16_t xila_graphics_object_class_t;
 
 /** Type to store button control bits (disabled, hidden etc.)
  * The first 3 bits are used to store the width*/
@@ -325,13 +325,13 @@ typedef enum {
       0x4000, /**< Custom free to use flag*/
   XILA_GRAPHICS_BUTTONMATRIX_CTRL_CUSTOM_2 =
       0x8000, /**< Custom free to use flag*/
-} Xila_graphics_buttonmatrix_ctrl_t;
+} xila_graphics_buttonmatrix_ctrl_t;
 
 typedef enum {
   XILA_GRAPHICS_ARC_MODE_NORMAL,
   XILA_GRAPHICS_ARC_MODE_SYMMETRICAL,
   XILA_GRAPHICS_ARC_MODE_REVERSE
-} Xila_graphics_arc_mode_t;
+} xila_graphics_arc_mode_t;
 
 typedef enum {
   XILA_GRAPHICS_MENU_HEADER_TOP_FIXED,   /**< Header is positioned at the top */
@@ -339,12 +339,12 @@ typedef enum {
                                             and can be scrolled out of view*/
   XILA_GRAPHICS_MENU_HEADER_BOTTOM_FIXED /**< Header is positioned at the bottom
                                           */
-} Xila_graphics_menu_mode_header_t;
+} xila_graphics_menu_mode_header_t;
 
 typedef enum {
   XILA_GRAPHICS_MENU_ROOT_BACK_BUTTON_DISABLED,
   XILA_GRAPHICS_MENU_ROOT_BACK_BUTTON_ENABLED
-} Xila_graphics_menu_mode_root_back_button_t;
+} xila_graphics_menu_mode_root_back_button_t;
 
 /** Roller mode. */
 typedef enum {
@@ -352,7 +352,7 @@ typedef enum {
                                        the options). */
   XILA_GRAPHICS_ROLLER_MODE_INFINITE, /**< Infinite mode (roller can be scrolled
                                          forever). */
-} Xila_graphics_roller_mode_t;
+} xila_graphics_roller_mode_t;
 
 typedef enum {
   XILA_GRAPHICS_TABLE_CELL_CTRL_MERGE_RIGHT = 1 << 0,
@@ -361,7 +361,7 @@ typedef enum {
   XILA_GRAPHICS_TABLE_CELL_CTRL_CUSTOM_2 = 1 << 5,
   XILA_GRAPHICS_TABLE_CELL_CTRL_CUSTOM_3 = 1 << 6,
   XILA_GRAPHICS_TABLE_CELL_CTRL_CUSTOM_4 = 1 << 7,
-} Xila_graphics_table_cell_ctrl_t;
+} xila_graphics_table_cell_ctrl_t;
 
 /**
  * On/Off features controlling the object's behavior.
@@ -441,7 +441,7 @@ typedef enum {
       (1L << 29), /**< Custom flag, free to use by user*/
   XILA_GRAPHICS_OBJECT_FLAG_USER_4 =
       (1L << 30), /**< Custom flag, free to use by user*/
-} Xila_graphics_object_flag_t;
+} xila_graphics_object_flag_t;
 
 /**
  * LVGL error codes.
@@ -451,9 +451,9 @@ typedef enum {
       0, /*Typically indicates that the object is deleted (become invalid) in
 the action function or an operation was failed*/
   XILA_GRAPHICS_RESULT_OK, /*The object is valid (no deleted) after the action*/
-} Xila_graphics_result_t;
+} xila_graphics_result_t;
 
-typedef uint16_t Xila_graphics_state_t;
+typedef uint16_t xila_graphics_state_t;
 
 enum {
   XILA_GRAPHICS_STATE_DEFAULT = 0x0000,
@@ -514,7 +514,7 @@ typedef enum {
       XILA_GRAPHICS_TXT_LINE_BREAK_LONG_LEN,
       XILA_GRAPHICS_TXT_LINE_BREAK_LONG_PRE_MIN_LEN, and
       XILA_GRAPHICS_TXT_LINE_BREAK_LONG_POST_MIN_LEN.*/
-} Xila_graphics_text_flag_t;
+} xila_graphics_text_flag_t;
 
 /** Label align policy*/
 typedef enum {
@@ -522,7 +522,7 @@ typedef enum {
   XILA_GRAPHICS_TEXT_ALIGN_LEFT,   /**< Align text to left*/
   XILA_GRAPHICS_TEXT_ALIGN_CENTER, /**< Align text to center*/
   XILA_GRAPHICS_TEXT_ALIGN_RIGHT,  /**< Align text to right*/
-} Xila_graphics_text_align_t;
+} xila_graphics_text_align_t;
 
 typedef enum {
   /** No flags */
@@ -536,16 +536,16 @@ typedef enum {
 
   /** Both inverse and recursive*/
   XILA_GRAPHICS_OBJECT_POINT_TRANSFORM_FLAG_INVERSE_RECURSIVE = 0x03,
-} Xila_graphics_object_point_transform_flag_t;
+} xila_graphics_object_point_transform_flag_t;
 
 typedef struct {
-} Xila_graphics_group_t;
+} xila_graphics_group_t;
 
 /** Can be used to indicate if animations are enabled or disabled in a case*/
 typedef enum {
   XILA_GRAPHICS_ANIM_OFF,
   XILA_GRAPHICS_ANIM_ON,
-} Xila_graphics_anim_enable_t;
+} xila_graphics_anim_enable_t;
 
 typedef enum {
   XILA_GRAPHICS_BASE_DIR_LTR = 0x00,
@@ -554,10 +554,10 @@ typedef enum {
 
   XILA_GRAPHICS_BASE_DIR_NEUTRAL = 0x20,
   XILA_GRAPHICS_BASE_DIR_WEAK = 0x21,
-} Xila_graphics_base_dir_t;
+} xila_graphics_base_dir_t;
 
 typedef struct {
-} Xila_graphics_display_t;
+} xila_graphics_display_t;
 
 /** Scrollbar modes: shows when should the scrollbars be visible*/
 typedef enum {
@@ -567,7 +567,7 @@ typedef enum {
                                           being scrolled*/
   XILA_GRAPHICS_SCROLLBAR_MODE_AUTO,   /**< Show scroll bars when the content is
                                           large enough to be scrolled*/
-} Xila_graphics_scrollbar_mode_t;
+} xila_graphics_scrollbar_mode_t;
 
 /** Scroll span align options. Tells where to align the snappable children when
  * scroll stops.*/
@@ -576,7 +576,7 @@ typedef enum {
   XILA_GRAPHICS_SCROLL_SNAP_START, /**< Align to the left/top*/
   XILA_GRAPHICS_SCROLL_SNAP_END,   /**< Align to the right/bottom*/
   XILA_GRAPHICS_SCROLL_SNAP_CENTER /**< Align to the center*/
-} Xila_graphics_scroll_snap_t;
+} xila_graphics_scroll_snap_t;
 
 /**
  * Scale mode
@@ -589,34 +589,34 @@ typedef enum {
   XILA_GRAPHICS_SCALE_MODE_ROUND_INNER = 0x08U,
   XILA_GRAPHICS_SCALE_MODE_ROUND_OUTER = 0x10U,
   XILA_GRAPHICS_SCALE_MODE_LAST
-} Xila_graphics_scale_mode_t;
+} xila_graphics_scale_mode_t;
 
 typedef struct {
-} Xila_graphics_scale_section_t;
+} xila_graphics_scale_section_t;
 
 typedef enum {
   XILA_GRAPHICS_BAR_MODE_NORMAL,
   XILA_GRAPHICS_BAR_MODE_SYMMETRICAL,
   XILA_GRAPHICS_BAR_MODE_RANGE
-} Xila_graphics_bar_mode_t;
+} xila_graphics_bar_mode_t;
 
 typedef enum {
   XILA_GRAPHICS_SLIDER_MODE_NORMAL = XILA_GRAPHICS_BAR_MODE_NORMAL,
   XILA_GRAPHICS_SLIDER_MODE_SYMMETRICAL = XILA_GRAPHICS_BAR_MODE_SYMMETRICAL,
   XILA_GRAPHICS_SLIDER_MODE_RANGE = XILA_GRAPHICS_BAR_MODE_RANGE
-} Xila_graphics_slider_mode_t;
+} xila_graphics_slider_mode_t;
 
 typedef enum {
   XILA_GRAPHICS_BAR_ORIENTATION_AUTO,
   XILA_GRAPHICS_BAR_ORIENTATION_HORIZONTAL,
   XILA_GRAPHICS_BAR_ORIENTATION_VERTICAL
-} Xila_graphics_bar_orientation_t;
+} xila_graphics_bar_orientation_t;
 
 typedef enum {
   XILA_GRAPHICS_SPAN_OVERFLOW_CLIP,
   XILA_GRAPHICS_SPAN_OVERFLOW_ELLIPSIS,
   XILA_GRAPHICS_SPAN_OVERFLOW_LAST, /**< Fence member*/
-} Xila_graphics_span_overflow_t;
+} xila_graphics_span_overflow_t;
 
 typedef enum {
   XILA_GRAPHICS_SPAN_MODE_FIXED,  /**< fixed the obj size */
@@ -625,10 +625,10 @@ typedef enum {
   XILA_GRAPHICS_SPAN_MODE_BREAK,  /**< Keep width, break the too long lines and
                                      expand height */
   XILA_GRAPHICS_SPAN_MODE_LAST    /**< Fence member */
-} Xila_graphics_span_mode_t;
+} xila_graphics_span_mode_t;
 
 typedef struct {
-} Xila_graphics_chart_cursor_t;
+} xila_graphics_chart_cursor_t;
 
 /**
  * A common type to handle all the property types in the same way.
@@ -637,11 +637,11 @@ typedef union {
   int32_t num; /**< Number integer number (opacity, enums, booleans or "normal"
                   numbers)*/
   const void *ptr;             /**< Constant pointers  (font, cone text, etc)*/
-  Xila_graphics_color_t color; /**< Colors*/
-} Xila_graphics_style_value_t;
+  xila_graphics_color_t color; /**< Colors*/
+} xila_graphics_style_value_t;
 
 typedef struct {
-} Xila_graphics_layer_t;
+} xila_graphics_layer_t;
 
 /**
  * Chart types
@@ -651,7 +651,7 @@ typedef enum {
   LV_CHART_TYPE_LINE,    /**< Connect the points with lines*/
   LV_CHART_TYPE_BAR,     /**< Draw columns*/
   LV_CHART_TYPE_SCATTER, /**< Draw points and lines in 2D (x,y coordinates)*/
-} Xila_graphics_chart_type_t;
+} xila_graphics_chart_type_t;
 
 /**
  * Chart update mode for `lv_chart_set_next`
@@ -660,7 +660,7 @@ typedef enum {
   LV_CHART_UPDATE_MODE_SHIFT,    /**< Shift old data to the left and add the new
                                     one the right*/
   LV_CHART_UPDATE_MODE_CIRCULAR, /**< Add the new data in a circular way*/
-} Xila_graphics_chart_update_mode_t;
+} xila_graphics_chart_update_mode_t;
 
 /**
  * Enumeration of the axis'
@@ -671,12 +671,12 @@ typedef enum {
   LV_CHART_AXIS_PRIMARY_X = 0x02,
   LV_CHART_AXIS_SECONDARY_X = 0x04,
   LV_CHART_AXIS_LAST
-} Xila_graphics_chart_axis_t;
+} xila_graphics_chart_axis_t;
 
 typedef enum {
   LV_STYLE_RES_NOT_FOUND,
   LV_STYLE_RES_FOUND,
-} Xila_graphics_style_res_t;
+} xila_graphics_style_res_t;
 
 typedef enum {
   LV_EVENT_ALL = 0,
@@ -809,7 +809,7 @@ typedef enum {
       0x8000, /** This is a flag that can be set with an event so it's processed
                 before the class default event processing */
   LV_EVENT_MARKED_DELETING = 0x10000,
-} Xila_graphics_event_code_t;
+} xila_graphics_event_code_t;
 
 typedef enum {
   LV_LABEL_LONG_WRAP, /**< Keep the object width, wrap lines longer than object
@@ -820,7 +820,7 @@ typedef enum {
   LV_LABEL_LONG_SCROLL_CIRCULAR, /**< Keep the size and roll the text
                                     circularly*/
   LV_LABEL_LONG_CLIP, /**< Keep the size and clip the text out of it*/
-} Xila_graphics_label_long_mode_t;
+} xila_graphics_label_long_mode_t;
 
 typedef enum {
   LV_SCR_LOAD_ANIM_NONE,
@@ -840,17 +840,17 @@ typedef enum {
   LV_SCR_LOAD_ANIM_OUT_RIGHT,
   LV_SCR_LOAD_ANIM_OUT_TOP,
   LV_SCR_LOAD_ANIM_OUT_BOTTOM,
-} Xila_graphics_screen_load_anim_t;
+} xila_graphics_screen_load_anim_t;
 
 typedef enum {
   LV_SLIDER_ORIENTATION_AUTO,
   LV_SLIDER_ORIENTATION_HORIZONTAL,
   LV_SLIDER_ORIENTATION_VERTICAL
-} Xila_graphics_slider_orientation_t;
+} xila_graphics_slider_orientation_t;
 
 typedef struct {
   float m[3][3];
-} Xila_graphics_matrix_t;
+} xila_graphics_matrix_t;
 
 // Coordinate type constants
 #define XILA_GRAPHICS_COORD_TYPE_SHIFT (29U)
@@ -864,19 +864,19 @@ typedef struct {
 #define XILA_GRAPHICS_COORD_MIN (-XILA_GRAPHICS_COORD_MAX)
 
 #define XILA_GRAPHICS_SIZE_CONTENT                                             \
-  Xila_graphics_coord_set_spec(XILA_GRAPHICS_COORD_MAX)
+  xila_graphics_coord_set_spec(XILA_GRAPHICS_COORD_MAX)
 #define XILA_GRAPHICS_PCT_STORED_MAX (XILA_GRAPHICS_COORD_MAX - 1)
 #define XILA_GRAPHICS_PCT_POS_MAX (XILA_GRAPHICS_PCT_STORED_MAX / 2)
 
 // Function prototypes for coordinate utility functions
-int32_t Xila_graphics_coord_type(int32_t x);
-int32_t Xila_graphics_coord_plain(int32_t x);
-bool Xila_graphics_coord_is_px(int32_t x);
-bool Xila_graphics_coord_is_spec(int32_t x);
-int32_t Xila_graphics_coord_set_spec(int32_t x);
-int32_t Xila_graphics_max(int32_t a, int32_t b);
-int32_t Xila_graphics_min(int32_t a, int32_t b);
-int32_t Xila_graphics_pct(int32_t x);
-bool Xila_graphics_coord_is_pct(int32_t x);
-int32_t Xila_graphics_coord_get_pct(int32_t x);
-int32_t Xila_graphics_size_content(void);
+int32_t xila_graphics_coord_type(int32_t x);
+int32_t xila_graphics_coord_plain(int32_t x);
+bool xila_graphics_coord_is_px(int32_t x);
+bool xila_graphics_coord_is_spec(int32_t x);
+int32_t xila_graphics_coord_set_spec(int32_t x);
+int32_t xila_graphics_max(int32_t a, int32_t b);
+int32_t xila_graphics_min(int32_t a, int32_t b);
+int32_t xila_graphics_pct(int32_t x);
+bool xila_graphics_coord_is_pct(int32_t x);
+int32_t xila_graphics_coord_get_pct(int32_t x);
+int32_t xila_graphics_size_content(void);

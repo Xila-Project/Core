@@ -5,11 +5,9 @@
 /// to set up the global allocator in applications using Xila memory management.
 #[macro_export]
 macro_rules! instantiate_global_allocator {
-    ($Allocator:ty) => {
-        static A: $Allocator = <$Allocator>::new();
-
+    ($Allocator:expr) => {
         #[global_allocator]
         #[unsafe(no_mangle)]
-        pub static __XILA_MEMORY_ALLOCATOR: $crate::Manager = $crate::Manager::new(&A);
+        pub static __XILA_MEMORY_ALLOCATOR: $crate::Manager = $crate::Manager::new($Allocator);
     };
 }

@@ -4,15 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-file_system = { path = "../file_system" }
-virtual_file_system = { path = "../virtual_file_system" }
-task = { path = "../task" }
-users = { path = "../users" }
-futures = { version = "0.1.0", path = "../futures" }
-log = { version = "0.1.0", path = "../log" }
+file_system = { workspace = true }
+virtual_file_system = { workspace = true }
+task = { workspace = true }
+users = { workspace = true }
+futures = { workspace = true }
+log = { workspace = true }
 
 [dev-dependencies]
-drivers = { path = "../drivers" }
+drivers = { workspace = true }
 
 [features]
 default = []

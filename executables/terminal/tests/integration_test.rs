@@ -1,11 +1,16 @@
 extern crate alloc;
 
+extern crate abi_definitions;
+
 use executable::Standard;
 use file_system::{MemoryDevice, Mode, create_device, create_file_system};
 use task::test;
 use terminal::TerminalExecutable;
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+drivers::standard_library::memory::instantiate_global_allocator!();
+
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[ignore]
 #[test]
 async fn main() {
@@ -91,7 +96,7 @@ async fn main() {
                 drivers::standard_library::console::StandardErrorDevice
             ),
             (&"/devices/time", drivers::native::TimeDriver),
-            (&"/devices/random", drivers::native::RandomDevice),
+            (&"/devices/random", drivers::shared::devices::RandomDevice),
             (&"/devices/null", drivers::core::NullDevice)
         ]
     )

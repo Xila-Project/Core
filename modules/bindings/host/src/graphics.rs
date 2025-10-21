@@ -55,7 +55,7 @@ impl Registrable for GraphicsBindings {
     }
 
     fn get_name(&self) -> &'static str {
-        "Xila_graphics\0"
+        "xila_graphics\0"
     }
 }
 
@@ -177,7 +177,7 @@ pub unsafe fn call(
             arguments_count,
             result,
         ) {
-            log::Error!(
+            log::error!(
                 "Error {error:?} durring graphics call: {function:?} with arguments: {argument_0:x}, {argument_1:x}, {argument_2:x}, {argument_3:x}, {argument_4:x}, {argument_5:x}, {argument_6:x}",
             );
         }
@@ -187,6 +187,6 @@ pub unsafe fn call(
 }
 
 const GRAPHICS_BINDINGS_FUNCTIONS: [FunctionDescriptor; 1] = [FunctionDescriptor {
-    name: "Xila_graphics_call",
+    name: "xila_graphics_call",
     pointer: call as *mut _,
 }];

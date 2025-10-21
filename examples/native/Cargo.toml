@@ -4,10 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-xila = { path = "../../", features = ["Host"] }
-file_manager = { path = "../../executables/file_manager" }
-command_line_shell = { path = "../../executables/shell/command_line" }
-graphical_shell = { path = "../../executables/shell/graphical" }
-wasm = { path = "../../executables/wasm" }
-terminal = { path = "../../executables/terminal" }
-settings = { path = "../../executables/settings" }
+xila = { path = "../../", features = [
+  "Host",
+  "virtual_machine",
+  "graphics_rendering_xrgb8888",
+] }
+file_manager = { workspace = true }
+command_line_shell = { workspace = true }
+graphical_shell = { workspace = true }
+wasm = { workspace = true }
+terminal = { workspace = true }
+settings = { workspace = true }

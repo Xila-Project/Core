@@ -4,21 +4,23 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-users = { path = "../users" }
-embassy-executor = { version = "0.7", features = [
-    "arch-std",
-    "executor-thread",
-] }
-embassy-time = { version = "0.4.0", features = ["std"] }
-embassy-futures = { version = "0.1.1" }
+task_macros = { path = "./task_macros" }
+users = { workspace = true }
+embassy-executor = { workspace = true, default-features = false }
+embassy-futures = { workspace = true }
 smol_str = { version = "0.3" }
-synchronization = { path = "../synchronization" }
-task_macros = { path = "task_macros" }
-futures = { version = "0.1.0", path = "../futures" }
+synchronization = { workspace = true }
+futures = { workspace = true }
+
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
+embassy-time = { workspace = true, features = ["std"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+embassy-time = { workspace = true, features = ["wasm"] }
 
 [features]
 default = []
 std = []
 
 [dev-dependencies]
-drivers = { path = "../drivers" }
+drivers = { workspace = true }

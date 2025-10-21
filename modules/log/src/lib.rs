@@ -5,14 +5,9 @@ extern crate alloc;
 use alloc::fmt;
 use log_external::Log;
 use log_external::Metadata;
-pub use log_external::Record;
-pub use log_external::debug as Debug;
-pub use log_external::error as Error;
-pub use log_external::info as Information;
 use log_external::set_logger;
 use log_external::set_max_level;
-pub use log_external::trace as Trace;
-pub use log_external::warn as Warning;
+pub use log_external::{debug, error, info as information, trace, warn as warning};
 use synchronization::once_lock::OnceLock;
 
 const BOLD: &str = "\x1b[0;1m";
@@ -30,6 +25,22 @@ pub enum Level {
     Info,
     Debug,
     Trace,
+}
+
+pub struct Record<'a> {
+    pub level: Level,
+    pub target: &'a str,
+    pub arguments: fmt::Arguments<'a>,
+}
+
+impl<'a> Record<'a> {
+    fn from_log_external(record: &log_external::Record<'a>) -> Self {
+        Self {
+            level: Level::from(record.level()),
+            target: record.target(),
+            arguments: *record.args(),
+        }
+    }
 }
 
 impl From<log_external::Level> for Level {
@@ -50,31 +61,17 @@ pub trait LoggerTrait: Send + Sync {
     fn write(&self, arguments: fmt::Arguments);
 
     fn log(&self, record: &Record) {
-        let letter = match record.level() {
-            log_external::Level::Error => "E",
-            log_external::Level::Warn => "W",
-            log_external::Level::Info => "I",
-            log_external::Level::Debug => "D",
-            log_external::Level::Trace => "T",
-        };
-
-        let color = match record.level() {
-            log_external::Level::Error => RED,
-            log_external::Level::Warn => YELLOW,
-            log_external::Level::Info => BLUE,
-            log_external::Level::Debug => GREEN,
-            log_external::Level::Trace => GREY,
+        let (letter, color) = match record.level {
+            Level::Error => ("E", RED),
+            Level::Warn => ("W", YELLOW),
+            Level::Info => ("I", BLUE),
+            Level::Debug => ("D", GREEN),
+            Level::Trace => ("T", GREY),
         };
 
         self.write(format_args!(
             "{} {} {} | {}{}{} | {}",
-            color,
-            letter,
-            RESET,
-            BOLD,
-            record.target(),
-            RESET,
-            record.args()
+            color, letter, RESET, BOLD, record.target, RESET, record.arguments
         ))
     }
 
@@ -90,11 +87,11 @@ impl Log for Logger {
         self.0.enabled(Level::from(metadata.level()))
     }
 
-    fn log(&self, record: &Record) {
+    fn log(&self, record: &log_external::Record) {
         if !self.enabled(record.metadata()) {
             return;
         }
-        self.0.log(record)
+        self.0.log(&Record::from_log_external(record));
     }
 
     fn flush(&self) {
@@ -119,36 +116,31 @@ pub fn test_write(logger: &impl LoggerTrait) {
 }
 
 pub fn test_log(logger: &impl LoggerTrait) {
-    logger.log(
-        &Record::builder()
-            .level(log_external::Level::Info)
-            .args(format_args!("This is a test log message."))
-            .build(),
-    );
-    logger.log(
-        &Record::builder()
-            .level(log_external::Level::Warn)
-            .args(format_args!("This is a test warning message."))
-            .build(),
-    );
-    logger.log(
-        &Record::builder()
-            .level(log_external::Level::Error)
-            .args(format_args!("This is a test error message."))
-            .build(),
-    );
-    logger.log(
-        &Record::builder()
-            .level(log_external::Level::Debug)
-            .args(format_args!("This is a test debug message."))
-            .build(),
-    );
-    logger.log(
-        &Record::builder()
-            .level(log_external::Level::Trace)
-            .args(format_args!("This is a test trace message."))
-            .build(),
-    );
+    logger.log(&Record {
+        level: Level::Info,
+        target: "test_target",
+        arguments: format_args!("This is a test log message."),
+    });
+    logger.log(&Record {
+        level: Level::Warn,
+        target: "test_target",
+        arguments: format_args!("This is a test warning message."),
+    });
+    logger.log(&Record {
+        level: Level::Error,
+        target: "test_target",
+        arguments: format_args!("This is a test error message."),
+    });
+    logger.log(&Record {
+        level: Level::Debug,
+        target: "test_target",
+        arguments: format_args!("This is a test debug message."),
+    });
+    logger.log(&Record {
+        level: Level::Trace,
+        target: "test_target",
+        arguments: format_args!("This is a test trace message."),
+    });
 }
 
 pub fn test_flush(logger: &impl LoggerTrait) {

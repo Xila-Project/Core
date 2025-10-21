@@ -1,9 +1,15 @@
 extern crate alloc;
 
+// Import abi_definitions to ensure ABI function definitions are linked
+extern crate abi_definitions;
+
 #[cfg(target_os = "linux")]
 use task::test;
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+drivers::standard_library::memory::instantiate_global_allocator!();
+
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[test]
 #[ignore]
 async fn main() {

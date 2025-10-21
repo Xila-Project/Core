@@ -4,14 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-task = { path = "../task" }
-users = { path = "../users" }
-shared = { path = "../shared" }
-synchronization = { version = "0.1.0", path = "../synchronization" }
-futures = { version = "0.1.0", path = "../futures" }
+task = { workspace = true }
+users = { workspace = true }
+shared = { workspace = true }
+synchronization = { workspace = true }
+futures = { workspace = true }
 
 [dev-dependencies]
-drivers = { path = "../drivers" }
+drivers = { workspace = true }
 
 [features]
 std = []

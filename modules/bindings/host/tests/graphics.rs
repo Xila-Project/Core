@@ -1,3 +1,4 @@
+extern crate abi_definitions;
 extern crate alloc;
 extern crate std;
 
@@ -5,13 +6,13 @@ use drivers::native::TimeDriver;
 use executable::build_crate;
 use file_system::{MemoryDevice, create_device, create_file_system};
 use graphics::lvgl;
-use memory::instantiate_global_allocator;
 use std::fs;
 use task::test;
 use time::Duration;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 
-instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+drivers::standard_library::memory::instantiate_global_allocator!();
 
 #[task::run(executor = drivers::standard_library::executor::instantiate_static_executor!())]
 async fn run_graphics() {
@@ -70,7 +71,7 @@ async fn test() {
                 drivers::standard_library::console::StandardErrorDevice
             ),
             (&"/devices/time", drivers::native::TimeDriver),
-            (&"/devices/random", drivers::native::RandomDevice),
+            (&"/devices/random", drivers::shared::devices::RandomDevice),
             (&"/devices/null", drivers::core::NullDevice)
         ]
     )

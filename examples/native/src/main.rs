@@ -16,8 +16,7 @@ use xila::graphics;
 use xila::host_bindings;
 use xila::little_fs;
 use xila::log;
-use xila::log::Information;
-use xila::memory::instantiate_global_allocator;
+use xila::log::information;
 use xila::task;
 use xila::time;
 use xila::users;
@@ -27,7 +26,7 @@ use xila::virtual_machine;
 
 use alloc::string::String;
 
-instantiate_global_allocator!(drivers::standard_library::memory::MemoryManager);
+drivers::standard_library::memory::instantiate_global_allocator!();
 
 #[task::run(task_path = task, executor = instantiate_static_executor!())]
 async fn main() {
@@ -74,7 +73,7 @@ async fn main() {
     // - Initialize the file system
     // Create a memory device
     let drive = create_device!(drivers::standard_library::drive_file::FileDriveDevice::new(
-        &"./Drive.img"
+        &"./drive.img"
     ));
 
     // Create a partition type
@@ -86,7 +85,7 @@ async fn main() {
     // Print MBR information
     let mbr = Mbr::read_from_device(&drive).unwrap();
 
-    Information!("MBR information: {mbr}");
+    information!("MBR information: {mbr}");
 
     // Mount the file system
     let file_system = match little_fs::FileSystem::new(partition.clone(), 256) {
@@ -134,7 +133,7 @@ async fn main() {
                 drivers::standard_library::console::StandardErrorDevice
             ),
             (&"/devices/time", drivers::native::TimeDriver),
-            (&"/devices/random", drivers::native::RandomDevice),
+            (&"/devices/random", drivers::shared::devices::RandomDevice),
             (&"/devices/null", drivers::core::NullDevice)
         ]
     )
@@ -201,15 +200,15 @@ async fn main() {
 
     let _ = authentication::create_group(
         virtual_file_system::get_instance(),
-        "alix_anneraud",
+        "administrator",
         Some(group_identifier),
     )
     .await;
 
     let _ = authentication::create_user(
         virtual_file_system::get_instance(),
-        "alix_anneraud",
-        "password",
+        "administrator",
+        "",
         group_identifier,
         None,
     )

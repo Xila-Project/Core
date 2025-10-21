@@ -4,19 +4,19 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-file_system = { path = "../../../modules/file_system" }
-virtual_file_system = { path = "../../../modules/virtual_file_system" }
-executable = { path = "../../../modules/executable" }
-task = { path = "../../../modules/task" }
-users = { path = "../../../modules/users" }
-authentication = { path = "../../../modules/authentication" }
-futures = { version = "0.1.0", path = "../../../modules/futures" }
-log = { path = "../../../modules/log" }
+file_system = { workspace = true }
+virtual_file_system = { workspace = true }
+executable = { workspace = true }
+task = { workspace = true }
+users = { workspace = true }
+authentication = { workspace = true }
+futures = { workspace = true }
+log = { workspace = true }
 
 [dev-dependencies]
-drivers = { path = "../../../modules/drivers" }
-time = { path = "../../../modules/time" }
-little_fs = { path = "../../../modules/little_fs" }
+drivers = { workspace = true }
+time = { workspace = true }
+little_fs = { workspace = true }
 
 
 [[test]]

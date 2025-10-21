@@ -27,3 +27,4 @@ pub use manager::*;
 pub use point::*;
 pub use screen::*;
 pub use window::*;
+pub mod stubs;

@@ -72,10 +72,10 @@ impl ButtonId {
 }
 
 pub struct Interface {
-    window: Xila_graphics_object_t,
-    display: Xila_graphics_object_t,
-    display_label: Xila_graphics_object_t,
-    button_matrix: Xila_graphics_object_t,
+    window: xila_graphics_object_t,
+    display: xila_graphics_object_t,
+    display_label: xila_graphics_object_t,
+    button_matrix: xila_graphics_object_t,
     current_expression: String,
     show_result: bool,
     is_radian_mode: bool, // true for radians, false for degrees
@@ -84,10 +84,10 @@ pub struct Interface {
 impl Interface {
     pub fn new() -> Self {
         Self {
-            window: Xila_graphics_object_t::MAX,
-            display: Xila_graphics_object_t::MAX,
-            display_label: Xila_graphics_object_t::MAX,
-            button_matrix: Xila_graphics_object_t::MAX,
+            window: xila_graphics_object_t::MAX,
+            display: xila_graphics_object_t::MAX,
+            display_label: xila_graphics_object_t::MAX,
+            button_matrix: xila_graphics_object_t::MAX,
             current_expression: String::new(),
             show_result: false,
             is_radian_mode: true, // Default to radians
@@ -96,49 +96,49 @@ impl Interface {
 
     unsafe fn create_window(&mut self) {
         // Create main window
-        Xila_graphics_window_create(&mut self.window as *mut _);
+        xila_graphics_window_create(&mut self.window as *mut _);
 
-        Xila_graphics_object_set_flex_flow(
+        xila_graphics_object_set_flex_flow(
             self.window,
-            Xila_graphics_flex_flow_t_XILA_GRAPHICS_FLEX_FLOW_COLUMN,
+            xila_graphics_flex_flow_t_XILA_GRAPHICS_FLEX_FLOW_COLUMN,
         );
     }
 
     unsafe fn create_display(&mut self) {
         // Create display container using generic object create
-        Xila_graphics_object_create(self.window, &mut self.display as *mut _);
+        xila_graphics_object_create(self.window, &mut self.display as *mut _);
         // Note: Skip styling for now due to color type issues
 
         // Create display label
-        Xila_graphics_label_create(self.display, &mut self.display_label as *mut _);
-        Xila_graphics_object_set_height(self.display, Xila_graphics_size_content()); // Set height to content size
-        Xila_graphics_label_set_text(self.display_label, c"0".as_ptr() as *mut _);
+        xila_graphics_label_create(self.display, &mut self.display_label as *mut _);
+        xila_graphics_object_set_height(self.display, xila_graphics_size_content()); // Set height to content size
+        xila_graphics_label_set_text(self.display_label, c"0".as_ptr() as *mut _);
 
         // Note: Skip text styling for now
 
         let mut width: i32 = 0;
 
-        Xila_graphics_percentage(100, &mut width as *mut _);
+        xila_graphics_percentage(100, &mut width as *mut _);
 
-        Xila_graphics_object_set_width(self.display, width);
+        xila_graphics_object_set_width(self.display, width);
     }
 
     unsafe fn create_button_matrix(&mut self) {
         // Create button matrix for calculator
-        Xila_graphics_buttonmatrix_create(self.window, &mut self.button_matrix as *mut _);
+        xila_graphics_buttonmatrix_create(self.window, &mut self.button_matrix as *mut _);
 
-        Xila_graphics_object_set_height(self.button_matrix, Xila_graphics_size_content());
+        xila_graphics_object_set_height(self.button_matrix, xila_graphics_size_content());
 
-        Xila_graphics_object_set_flex_grow(self.button_matrix, 1); /*1 portion from the free space*/
+        xila_graphics_object_set_flex_grow(self.button_matrix, 1); /*1 portion from the free space*/
 
-        Xila_graphics_object_add_flag(
+        xila_graphics_object_add_flag(
             self.button_matrix,
-            Xila_graphics_object_flag_t_XILA_GRAPHICS_OBJECT_FLAG_EVENT_BUBBLE,
+            xila_graphics_object_flag_t_XILA_GRAPHICS_OBJECT_FLAG_EVENT_BUBBLE,
         );
 
         let mut width: i32 = 0;
-        Xila_graphics_percentage(100, &mut width as *mut _);
-        Xila_graphics_object_set_width(self.button_matrix, width);
+        xila_graphics_percentage(100, &mut width as *mut _);
+        xila_graphics_object_set_width(self.button_matrix, width);
 
         // Position the button matrix below the display
 
@@ -200,10 +200,10 @@ impl Interface {
         ];
 
         // Set the button map
-        Xila_graphics_buttonmatrix_set_map(self.button_matrix, button_map.as_ptr());
+        xila_graphics_buttonmatrix_set_map(self.button_matrix, button_map.as_ptr());
 
         // Optional: Make some buttons wider if needed
-        // Xila_graphics_buttonmatrix_set_button_width(self.button_matrix, 31, 2); // Make "0" wider
+        // xila_graphics_buttonmatrix_set_button_width(self.button_matrix, 31, 2); // Make "0" wider
     }
 
     fn update_display(&mut self) {
@@ -225,14 +225,14 @@ impl Interface {
             let full_text = format!("{}{}", display_text, mode_indicator);
 
             let text_with_null = format!("{}\0", full_text);
-            Xila_graphics_label_set_text(self.display_label, text_with_null.as_ptr() as *mut _);
+            xila_graphics_label_set_text(self.display_label, text_with_null.as_ptr() as *mut _);
         }
     }
 
     unsafe fn handle_button_matrix_event(&mut self) {
         // Get the selected button ID from the button matrix
         let mut selected_button_id: u32 = 0;
-        Xila_graphics_buttonmatrix_get_selected_button(
+        xila_graphics_buttonmatrix_get_selected_button(
             self.button_matrix,
             &mut selected_button_id as *mut _,
         );
@@ -402,13 +402,13 @@ impl Interface {
 
         // Main event loop
         loop {
-            let mut code = Xila_graphics_event_code_t_LV_EVENT_ALL;
-            let mut target = Xila_graphics_object_t::MAX;
-            Xila_graphics_window_pop_event(self.window, &mut code as *mut _, &mut target as *mut _);
+            let mut code = xila_graphics_event_code_t_LV_EVENT_ALL;
+            let mut target = xila_graphics_object_t::MAX;
+            xila_graphics_window_pop_event(self.window, &mut code as *mut _, &mut target as *mut _);
 
-            if code != Xila_graphics_event_code_t_LV_EVENT_ALL {
+            if code != xila_graphics_event_code_t_LV_EVENT_ALL {
                 match code {
-                    Xila_graphics_event_code_t_LV_EVENT_CLICKED => {
+                    xila_graphics_event_code_t_LV_EVENT_CLICKED => {
                         // Check if the event came from our button matrix
                         if target == self.button_matrix {
                             self.handle_button_matrix_event();

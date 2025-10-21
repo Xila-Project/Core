@@ -4,23 +4,24 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-graphics = { path = "../../../modules/graphics" }
-file_system = { path = "../../../modules/file_system" }
-virtual_file_system = { path = "../../../modules/virtual_file_system" }
-executable = { path = "../../../modules/executable" }
-task = { path = "../../../modules/task" }
-users = { path = "../../../modules/users" }
-shared = { path = "../../../modules/shared" }
-time = { path = "../../../modules/time" }
-authentication = { path = "../../../modules/authentication" }
+graphics = { workspace = true }
+file_system = { workspace = true }
+virtual_file_system = { workspace = true }
+executable = { workspace = true }
+task = { workspace = true }
+users = { workspace = true }
+shared = { workspace = true }
+time = { workspace = true }
+authentication = { workspace = true }
 miniserde = "0.1"
-futures = { version = "0.1.0", path = "../../../modules/futures" }
-log = { version = "0.1.0", path = "../../../modules/log" }
+futures = { workspace = true }
+log = { workspace = true }
 
 [dev-dependencies]
-drivers = { path = "../../../modules/drivers" }
-time = { path = "../../../modules/time" }
-little_fs = { path = "../../../modules/little_fs" }
+drivers = { workspace = true }
+time = { workspace = true }
+little_fs = { workspace = true }
+abi_definitions = { workspace = true }
 
 [[test]]
 name = "integration_test"

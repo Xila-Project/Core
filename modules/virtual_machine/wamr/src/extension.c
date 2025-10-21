@@ -1,4 +1,4 @@
-#include "../../../abi/include/xila.h"
+#include "../../../abi/xila.h"
 #include "../include/internal.h"
 #include "platform_internal.h"
 
@@ -183,9 +183,10 @@ int os_recursive_mutex_init(korp_mutex *mutex)
  *
  * @return 0 if success
  */
-int os_cond_init(XilaConditionVariable *cond)
+int os_cond_init(korp_cond *cond)
 {
-    return xila_condition_variable_new(cond);
+    //return xila_condition_variable_new(cond);
+    return 0;
 }
 
 /**
@@ -195,9 +196,11 @@ int os_cond_init(XilaConditionVariable *cond)
  *
  * @return 0 if success
  */
-int os_cond_destroy(XilaConditionVariable *cond)
+int os_cond_destroy(korp_cond *cond)
 {
-    return xila_condition_variable_remove(cond);
+    printf("os_cond_destroy called\n");
+    return 0;
+    //return xila_condition_variable_remove(cond);
 }
 
 /**
@@ -210,7 +213,9 @@ int os_cond_destroy(XilaConditionVariable *cond)
  */
 int os_cond_wait(korp_cond *cond, korp_mutex *mutex)
 {
-    return xila_condition_variable_wait(cond, mutex);
+    printf("os_cond_wait called\n");
+    return 0;
+    //return xila_condition_variable_wait(cond, mutex);
 }
 
 /**
@@ -224,7 +229,9 @@ int os_cond_wait(korp_cond *cond, korp_mutex *mutex)
  */
 int os_cond_reltimedwait(korp_cond *cond, korp_mutex *mutex, uint64 useconds)
 {
-    return xila_condition_variable_try_wait(cond, mutex, useconds);
+    printf("os_cond_reltimedwait called\n");
+    return 0;
+    //return xila_condition_variable_try_wait(cond, mutex, useconds);
 }
 
 /**
@@ -236,7 +243,9 @@ int os_cond_reltimedwait(korp_cond *cond, korp_mutex *mutex, uint64 useconds)
  */
 int os_cond_signal(korp_cond *cond)
 {
-    return xila_condition_variable_signal(cond);
+    printf("os_cond_signal called\n");
+    return 0;
+    //return xila_condition_variable_signal(cond);
 }
 
 /**
@@ -248,7 +257,9 @@ int os_cond_signal(korp_cond *cond)
  */
 int os_cond_broadcast(korp_cond *cond)
 {
-    return xila_condition_variable_broadcast(cond);
+    printf("os_cond_broadcast called\n");
+    return 0;
+    //return xila_condition_variable_broadcast(cond);
 }
 
 /**

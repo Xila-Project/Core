@@ -41,11 +41,29 @@ impl TaskArguments {
 #[proc_macro_attribute]
 #[allow(non_snake_case)]
 pub fn test(arguments: TokenStream, input: TokenStream) -> TokenStream {
+    let input_function = parse_macro_input!(input as ItemFn);
+    let function_name = &input_function.sig.ident;
+
+    // check if arch is not linux, windows or macos
+    if !cfg!(any(
+        target_os = "linux",
+        target_os = "windows",
+        target_os = "macos"
+    )) {
+        return quote! {
+            #[std::prelude::v1::test]
+            fn #function_name() {
+                println!("Test {} is ignored on this platform.", stringify!(#function_name));
+            }
+        }
+        .to_token_stream()
+        .into();
+    }
+
     let arguments = match TaskArguments::from_token_stream(arguments) {
         Ok(o) => o,
         Err(e) => return e.write_errors().into(),
     };
-    let input_function = parse_macro_input!(input as ItemFn);
 
     let executor = arguments.executor;
     let task_path = arguments.task_path;
@@ -246,7 +264,7 @@ pub fn run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
             unsafe {
                 let __EXECUTOR : &'static mut _ = #Executor_expression;
 
-                __EXECUTOR.run(|Spawner, __EXECUTOR| {
+                __EXECUTOR.start(|Spawner| {
                     let manager = #Task_path::initialize();
 
                     unsafe {
@@ -260,14 +278,10 @@ pub fn run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
                             Some(__SPAWNER),
                             async move |_task| {
                                 __inner().await;
-                                __EXECUTOR.stop();
                             }
                         ).await
                     }).expect("Failed to spawn task");
                 });
-            }
-            unsafe {
-                #Task_path::get_instance().unregister_spawner(__SPAWNER).expect("Failed to unregister spawner");
             }
         }
     }

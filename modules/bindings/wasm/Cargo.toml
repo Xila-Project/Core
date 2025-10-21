@@ -8,7 +8,7 @@ build = "build/main.rs"
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
 bindgen = "0.72"
 cc = "1.2"
-bindings_utilities = { path = "../utilities" }
-quote = "1.0"
-syn = { version = "2.0", features = ["full", "visit", "extra-traits"] }
-target = { path = "../../target" }
+bindings_utilities = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true, features = ["full", "visit", "extra-traits"] }
+target = { workspace = true }

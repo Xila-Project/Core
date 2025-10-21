@@ -157,7 +157,7 @@ impl FileSystem {
     #[cfg(target_pointer_width = "64")]
     const DIRECTORY_FLAG: FileIdentifierInner = 1 << 31;
     #[cfg(target_pointer_width = "32")]
-    const Directory_flag: FileIdentifierInner = 1 << 15;
+    const DIRECTORY_FLAG: FileIdentifierInner = 1 << 15;
 
     const DIRECTORY_MINIMUM: FileIdentifier = FileIdentifier::new(Self::DIRECTORY_FLAG);
 

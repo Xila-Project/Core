@@ -61,7 +61,7 @@ pub fn get() -> TokenStream {
             let target = if let Some(event) = window.peek_event() {
                 event.get_target()
             } else {
-                log::Warning!("No event available for the window");
+                log::warning!("No event available for the window");
                 core::ptr::null_mut()
             };
 
