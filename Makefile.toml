@@ -1,0 +1,91 @@
+
+[tasks.format-rust]
+workspace = false
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--all"]
+
+[tasks.format-toml]
+workspace = false
+install_crate = "taplo-cli"
+command = "taplo"
+args = ["format"]
+
+[tasks.format]
+workspace = false
+dependencies = ["format-rust", "format-toml"]
+
+[tasks.check-host]
+workspace = false
+command = "cargo"
+args = [
+  "check",
+  "--target",
+  "x86_64-unknown-linux-gnu",
+  "--features",
+  "Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+]
+
+[tasks.check-wasm]
+workspace = false
+command = "cargo"
+args = ["check", "--target", "wasm32-unknown-unknown", "--features", "WASM"]
+
+[tasks.check-doc]
+workspace = false
+command = "cargo"
+args = [
+  "doc",
+  "--features",
+  "Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+]
+
+[tasks.check]
+workspace = false
+dependencies = ["check-host", "check-wasm", "check-doc"]
+
+[tasks.clippy-wasm]
+workspace = false
+install_crate = "clippy"
+command = "cargo"
+args = [
+  "clippy",
+  "--target",
+  "wasm32-unknown-unknown",
+  "--features",
+  "WASM",
+  "--all-targets",
+  "--",
+  "-D",
+  "warnings",
+]
+
+[tasks.clippy-host]
+workspace = false
+install_crate = "clippy"
+command = "cargo"
+args = [
+  "clippy",
+  "--target",
+  "x86_64-unknown-linux-gnu",
+  "--features",
+  "Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+  "--all-targets",
+  "--",
+  "-D",
+  "warnings",
+]
+
+[tasks.clippy]
+workspace = false
+dependencies = ["clippy-host", "clippy-wasm"]
+
+[tasks.lint]
+workspace = false
+install_crate = "clippy"
+command = "cargo"
+args = ["clippy", "--all-targets", "--all-features", "--", "-D", "warnings"]
+
+[tasks.before-commit]
+workspace = false
+dependencies = ["format", "check", "clippy"]
