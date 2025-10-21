@@ -65,7 +65,7 @@ jobs:
 #        run: cargo clippy --features WASM --target wasm32-unknown-unknown -- -D warnings
 
       - name: Check | Documentation
-        run: RUSTDOCFLAGS="--deny warnings" cargo doc --all-features
+        run: RUSTDOCFLAGS="--deny warnings" cargo doc --features Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888
 
       - name: Run | Tests
         run: cargo test ${{ matrix.target }} --all
