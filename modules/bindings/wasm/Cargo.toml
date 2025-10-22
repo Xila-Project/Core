@@ -6,9 +6,10 @@ build = "build/main.rs"
 
 [build-dependencies]
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
-bindgen = "0.72"
-cc = "1.2"
+bindgen = { workspace = true }
 bindings_utilities = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true, features = ["full", "visit", "extra-traits"] }
 target = { workspace = true }
+proc-macro2 = { workspace = true }
+cbindgen = { workspace = true }
