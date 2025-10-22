@@ -148,8 +148,8 @@ pub unsafe fn call(
     argument_5: WasmUsize,
     argument_6: WasmUsize,
     arguments_count: u8,
-    result: WasmPointer,
-) {
+    result_pointer: WasmPointer,
+) -> i32 {
     unsafe {
         let environment = Environment::from_raw_pointer(environment).unwrap();
 
@@ -163,7 +163,7 @@ pub unsafe fn call(
 
         let pointer_table_reference = (*pointer_table_reference).get_mut().unwrap();
 
-        if let Err(error) = generated_bindings::call_function(
+        let result = generated_bindings::call_function(
             environment,
             pointer_table_reference,
             function,
@@ -175,11 +175,17 @@ pub unsafe fn call(
             argument_5,
             argument_6,
             arguments_count,
-            result,
-        ) {
+            result_pointer,
+        );
+
+        if let Err(error) = result {
             log::error!(
-                "Error {error:?} durring graphics call: {function:?} with arguments: {argument_0:x}, {argument_1:x}, {argument_2:x}, {argument_3:x}, {argument_4:x}, {argument_5:x}, {argument_6:x}",
+                "Error {error:?} durring graphics call: {function:?} with arguments: {argument_0:x}, {argument_1:x}, {argument_2:x}, {argument_3:x}, {argument_4:x}, {argument_5:x}, {argument_6:x}, count: {arguments_count}, result pointer: {result_pointer:x}"
             );
+
+            error as i32
+        } else {
+            0
         }
 
         // Lock is automatically released here.
