@@ -29,7 +29,13 @@ args = [
 [tasks.check-wasm]
 workspace = false
 command = "cargo"
-args = ["check", "--target", "wasm32-unknown-unknown", "--features", "wasm"]
+args = [
+  "check",
+  "--target",
+  "wasm32-unknown-unknown",
+  "--features",
+  "wasm,wasm_c_bindings",
+]
 
 [tasks.doc-host]
 workspace = false
@@ -62,7 +68,7 @@ args = [
   "--target",
   "wasm32-unknown-unknown",
   "--features",
-  "wasm",
+  "wasm,wasm_c_bindings",
   "--all-targets",
   "--",
   "-D",

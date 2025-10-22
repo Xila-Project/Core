@@ -65,6 +65,7 @@ virtual_machine = ["dep:virtual_machine", "dep:host_bindings"]
 graphics_rendering_rgb565 = ["graphics/rendering_rgb565"]
 graphics_rendering_xrgb8888 = ["graphics/rendering_xrgb8888"]
 wasm = ["dep:wasm_bindings"]
+wasm_c_bindings = ["wasm", "wasm_bindings/c_bindings"]
 
 [workspace.dependencies]
 # - Internal crates
