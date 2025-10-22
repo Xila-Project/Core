@@ -1,10 +1,11 @@
 use std::{path::Path, process::Command};
 use syn;
 
-pub fn format_rust(file_path: &Path) -> Result<(), String> {
+pub fn format_rust(file_path: impl AsRef<Path>) -> Result<(), String> {
     Command::new("rustfmt")
         .arg(
             file_path
+                .as_ref()
                 .to_str()
                 .ok_or("Error converting path to string")?,
         )
