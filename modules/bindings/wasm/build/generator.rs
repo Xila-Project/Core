@@ -198,6 +198,8 @@ fn generate_function(signature: &Signature) -> TokenStream {
     let generated_xila_graphics_call = generate_xila_graphics_call(signature);
 
     quote! {
+        /// # Safety
+        /// This function is unsafe because it may dereference raw pointers.
         pub unsafe fn #function_identifier(
             #( #inputs ),*
         ) -> Result<#result_data_type> {
