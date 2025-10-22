@@ -53,15 +53,15 @@ jobs:
         run: |
           cargo make doc-host
           mkdir -p ./pages/host/
-          cp ./documentation/index.html ./documentation/host/
-          cp -r ./target/doc/* ./documentation/host/
+          cp ./documentation/index.html ./pages/host/
+          cp -r ./target/doc/* ./pages/host/
 
       - name: Build | Documentation (WASM)
         run: |
           cargo make doc-wasm
           mkdir -p ./pages/wasm/
-          cp ./documentation/index.html ./documentation/wasm/
-          cp -r ./target/doc/* ./documentation/wasm/
+          cp ./documentation/index.html ./pages/wasm
+          cp -r ./target/doc/* ./pages/wasm/
 
       - name: Build | WASM demonstration
         working-directory: ./examples/wasm
