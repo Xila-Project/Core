@@ -1,6 +1,11 @@
 use crate::Calculator;
-use std::thread::sleep;
-use xila::bindings::*;
+use std::{ptr::null_mut, thread::sleep};
+use xila::bindings::{
+    self, EventCode, FlexFlow, Object, ObjectFlag, buttonmatrix_create,
+    buttonmatrix_get_selected_button, buttonmatrix_set_map, label_create, label_set_text,
+    object_add_flag, object_create, object_set_flex_flow, object_set_flex_grow, object_set_height,
+    object_set_width, percentage, size_content, window_create, window_pop_event,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
@@ -58,6 +63,62 @@ pub enum ButtonId {
     Random,   // "rand"
 }
 
+const BUTTON_MAP: [*const i8; 48] = [
+    // Row 1: Clear, Backspace, Angle mode, Parentheses, Division, Factorial, Abs
+    c"RAD".as_ptr(), // Angle mode toggle
+    c"(".as_ptr(),
+    c")".as_ptr(),
+    c"Clear".as_ptr(),
+    c"<".as_ptr(), // Backspace
+    c"x!".as_ptr(),
+    c"/".as_ptr(),
+    c"|x|".as_ptr(), // Absolute value
+    c"\n".as_ptr(),
+    // Row 2: Basic trig functions + 7,8,9,*, %
+    c"sin".as_ptr(),
+    c"cos".as_ptr(),
+    c"tan".as_ptr(),
+    c"7".as_ptr(),
+    c"8".as_ptr(),
+    c"9".as_ptr(),
+    c"*".as_ptr(),
+    c"%".as_ptr(), // Percent
+    c"\n".as_ptr(),
+    // Row 3: Hyperbolic functions + 4,5,6,-, mod
+    c"sinh".as_ptr(),
+    c"cosh".as_ptr(),
+    c"tanh".as_ptr(),
+    c"4".as_ptr(),
+    c"5".as_ptr(),
+    c"6".as_ptr(),
+    c"-".as_ptr(),
+    c"mod".as_ptr(), // Modulo
+    c"\n".as_ptr(),
+    // Row 4: Logarithmic functions + 1,2,3,+, rand
+    c"ln".as_ptr(),
+    c"log".as_ptr(),
+    c"sqrt".as_ptr(),
+    c"1".as_ptr(),
+    c"2".as_ptr(),
+    c"3".as_ptr(),
+    c"+".as_ptr(),
+    c"rand".as_ptr(), // Random
+    c"\n".as_ptr(),
+    // Row 5: Power functions + 0, decimal, equals, 10^x, inverse, constants
+    c"^".as_ptr(),
+    c"x^2".as_ptr(),
+    c"x^3".as_ptr(),
+    c"10^x".as_ptr(),
+    c"0".as_ptr(),
+    c".".as_ptr(),
+    c"=".as_ptr(),
+    c"1/x".as_ptr(),
+    c"pi".as_ptr(),
+    c"e".as_ptr(),
+    c"\n".as_ptr(),
+    c"".as_ptr(), // End marker
+];
+
 impl ButtonId {
     pub fn to_u8(self) -> u8 {
         self as u8
@@ -72,141 +133,95 @@ impl ButtonId {
 }
 
 pub struct Interface {
-    window: xila_graphics_object_t,
-    display: xila_graphics_object_t,
-    display_label: xila_graphics_object_t,
-    button_matrix: xila_graphics_object_t,
+    window: *mut Object,
+    _display: *mut Object,
+    display_label: *mut Object,
+    button_matrix: *mut Object,
     current_expression: String,
     show_result: bool,
     is_radian_mode: bool, // true for radians, false for degrees
 }
 
 impl Interface {
-    pub fn new() -> Self {
-        Self {
-            window: xila_graphics_object_t::MAX,
-            display: xila_graphics_object_t::MAX,
-            display_label: xila_graphics_object_t::MAX,
-            button_matrix: xila_graphics_object_t::MAX,
+    pub fn new() -> bindings::Result<Self> {
+        let window = unsafe { Self::create_window() }?;
+
+        let (display, display_label) = unsafe { Self::create_display(window) }?;
+
+        let button_matrix = unsafe { Self::create_button_matrix(window)? };
+
+        Ok(Self {
+            window,
+            _display: display,
+            display_label,
+            button_matrix,
             current_expression: String::new(),
             show_result: false,
             is_radian_mode: true, // Default to radians
+        })
+    }
+
+    unsafe fn create_window() -> bindings::Result<*mut Object> {
+        // Create main window
+        unsafe {
+            let window = window_create()?;
+
+            object_set_flex_flow(window, FlexFlow::Column)?;
+
+            Ok(window)
         }
     }
 
-    unsafe fn create_window(&mut self) {
-        // Create main window
-        xila_graphics_window_create(&mut self.window as *mut _);
+    unsafe fn create_display(window: *mut Object) -> bindings::Result<(*mut Object, *mut Object)> {
+        unsafe {
+            // Create display container using generic object create
+            let display = object_create(window)?;
+            // Note: Skip styling for now due to color type issues
 
-        xila_graphics_object_set_flex_flow(
-            self.window,
-            xila_graphics_flex_flow_t_XILA_GRAPHICS_FLEX_FLOW_COLUMN,
-        );
+            // Create display label
+            let display_label = label_create(display)?;
+            object_set_height(display, size_content())?; // Set height to content size
+            label_set_text(display_label, c"0".as_ptr() as *mut _)?;
+
+            // Note: Skip text styling for now
+
+            let width: i32 = percentage(100)?;
+
+            object_set_width(display, width)?;
+
+            Ok((display, display_label))
+        }
     }
 
-    unsafe fn create_display(&mut self) {
-        // Create display container using generic object create
-        xila_graphics_object_create(self.window, &mut self.display as *mut _);
-        // Note: Skip styling for now due to color type issues
-
-        // Create display label
-        xila_graphics_label_create(self.display, &mut self.display_label as *mut _);
-        xila_graphics_object_set_height(self.display, xila_graphics_size_content()); // Set height to content size
-        xila_graphics_label_set_text(self.display_label, c"0".as_ptr() as *mut _);
-
-        // Note: Skip text styling for now
-
-        let mut width: i32 = 0;
-
-        xila_graphics_percentage(100, &mut width as *mut _);
-
-        xila_graphics_object_set_width(self.display, width);
-    }
-
-    unsafe fn create_button_matrix(&mut self) {
+    unsafe fn create_button_matrix(window: *mut Object) -> bindings::Result<*mut Object> {
         // Create button matrix for calculator
-        xila_graphics_buttonmatrix_create(self.window, &mut self.button_matrix as *mut _);
+        unsafe {
+            let button_matrix = buttonmatrix_create(window)?;
 
-        xila_graphics_object_set_height(self.button_matrix, xila_graphics_size_content());
+            object_set_height(button_matrix, size_content())?;
 
-        xila_graphics_object_set_flex_grow(self.button_matrix, 1); /*1 portion from the free space*/
+            object_set_flex_grow(button_matrix, 1)?; /*1 portion from the free space*/
 
-        xila_graphics_object_add_flag(
-            self.button_matrix,
-            xila_graphics_object_flag_t_XILA_GRAPHICS_OBJECT_FLAG_EVENT_BUBBLE,
-        );
+            object_add_flag(button_matrix, ObjectFlag::EventBubble)?;
 
-        let mut width: i32 = 0;
-        xila_graphics_percentage(100, &mut width as *mut _);
-        xila_graphics_object_set_width(self.button_matrix, width);
+            let width: i32 = percentage(100)?;
+            object_set_width(button_matrix, width)?;
 
-        // Position the button matrix below the display
+            // Position the button matrix below the display
 
-        // Define button layout - Extended scientific calculator
-        let button_map = [
-            // Row 1: Clear, Backspace, Angle mode, Parentheses, Division, Factorial, Abs
-            c"RAD".as_ptr(), // Angle mode toggle
-            c"(".as_ptr(),
-            c")".as_ptr(),
-            c"Clear".as_ptr(),
-            c"<".as_ptr(), // Backspace
-            c"x!".as_ptr(),
-            c"/".as_ptr(),
-            c"|x|".as_ptr(), // Absolute value
-            c"\n".as_ptr(),
-            // Row 2: Basic trig functions + 7,8,9,*, %
-            c"sin".as_ptr(),
-            c"cos".as_ptr(),
-            c"tan".as_ptr(),
-            c"7".as_ptr(),
-            c"8".as_ptr(),
-            c"9".as_ptr(),
-            c"*".as_ptr(),
-            c"%".as_ptr(), // Percent
-            c"\n".as_ptr(),
-            // Row 3: Hyperbolic functions + 4,5,6,-, mod
-            c"sinh".as_ptr(),
-            c"cosh".as_ptr(),
-            c"tanh".as_ptr(),
-            c"4".as_ptr(),
-            c"5".as_ptr(),
-            c"6".as_ptr(),
-            c"-".as_ptr(),
-            c"mod".as_ptr(), // Modulo
-            c"\n".as_ptr(),
-            // Row 4: Logarithmic functions + 1,2,3,+, rand
-            c"ln".as_ptr(),
-            c"log".as_ptr(),
-            c"sqrt".as_ptr(),
-            c"1".as_ptr(),
-            c"2".as_ptr(),
-            c"3".as_ptr(),
-            c"+".as_ptr(),
-            c"rand".as_ptr(), // Random
-            c"\n".as_ptr(),
-            // Row 5: Power functions + 0, decimal, equals, 10^x, inverse, constants
-            c"^".as_ptr(),
-            c"x^2".as_ptr(),
-            c"x^3".as_ptr(),
-            c"10^x".as_ptr(),
-            c"0".as_ptr(),
-            c".".as_ptr(),
-            c"=".as_ptr(),
-            c"1/x".as_ptr(),
-            c"pi".as_ptr(),
-            c"e".as_ptr(),
-            c"\n".as_ptr(),
-            c"".as_ptr(), // End marker
-        ];
+            // Define button layout - Extended scientific calculator
 
-        // Set the button map
-        xila_graphics_buttonmatrix_set_map(self.button_matrix, button_map.as_ptr());
+            // Set the button map
+            buttonmatrix_set_map(button_matrix as u16, BUTTON_MAP.as_ptr())?;
 
-        // Optional: Make some buttons wider if needed
-        // xila_graphics_buttonmatrix_set_button_width(self.button_matrix, 31, 2); // Make "0" wider
+            // Optional: Make some buttons wider if needed
+            // buttonmatrix_set_button_width(self.button_matrix, 31, 2); // Make "0" wider
+
+            Ok(button_matrix)
+        }
     }
 
-    fn update_display(&mut self) {
+    fn update_display(&mut self) -> bindings::Result<()> {
         unsafe {
             let display_text = if self.show_result {
                 self.current_expression.clone()
@@ -225,25 +240,25 @@ impl Interface {
             let full_text = format!("{}{}", display_text, mode_indicator);
 
             let text_with_null = format!("{}\0", full_text);
-            xila_graphics_label_set_text(self.display_label, text_with_null.as_ptr() as *mut _);
+            label_set_text(self.display_label, text_with_null.as_ptr() as *mut _)?;
         }
+
+        Ok(())
     }
 
-    unsafe fn handle_button_matrix_event(&mut self) {
+    unsafe fn handle_button_matrix_event(&mut self) -> bindings::Result<()> {
         // Get the selected button ID from the button matrix
-        let mut selected_button_id: u32 = 0;
-        xila_graphics_buttonmatrix_get_selected_button(
-            self.button_matrix,
-            &mut selected_button_id as *mut _,
-        );
+        let selected_button_id: u32 =
+            unsafe { buttonmatrix_get_selected_button(self.button_matrix) }?;
 
         // Convert button ID to enum and handle
         if let Some(button) = ButtonId::from_u8(selected_button_id as u8) {
-            self.handle_button_press(button);
+            self.handle_button_press(button)?;
         }
+        Ok(())
     }
 
-    fn handle_button_press(&mut self, button: ButtonId) {
+    fn handle_button_press(&mut self, button: ButtonId) -> bindings::Result<()> {
         match button {
             ButtonId::Clear => {
                 self.current_expression.clear();
@@ -258,8 +273,8 @@ impl Interface {
             ButtonId::DegRad => {
                 self.is_radian_mode = !self.is_radian_mode;
                 // Update the display to show current mode
-                self.update_display();
-                return; // Don't call update_display again at the end
+                self.update_display()?;
+                return Ok(()); // Don't call update_display again at the end
             }
             ButtonId::Equals => {
                 if !self.current_expression.is_empty() {
@@ -326,7 +341,7 @@ impl Interface {
                 let hash = hasher.finish();
                 let random_value = (hash as f64) / (u64::MAX as f64);
                 self.push_str(&format!("{:.10}", random_value));
-                return; // Don't call update_display again at the end
+                return Ok(()); // Don't call update_display again at the end
             }
 
             // Constants
@@ -361,7 +376,9 @@ impl Interface {
         }
 
         // Update display after any button press except Clear, Backspace, DegRad, and Equals
-        self.update_display();
+        self.update_display()?;
+
+        Ok(())
     }
 
     fn push_str(&mut self, text: &str) {
@@ -370,7 +387,6 @@ impl Interface {
             self.show_result = false;
         }
         self.current_expression.push_str(text);
-        self.update_display();
     }
 
     fn push_char(&mut self, ch: char) {
@@ -379,7 +395,6 @@ impl Interface {
             self.show_result = false;
         }
         self.current_expression.push(ch);
-        self.update_display();
     }
 
     fn push_operator(&mut self, op: char) {
@@ -388,30 +403,34 @@ impl Interface {
             self.show_result = false;
         }
         self.current_expression.push(op);
-        self.update_display();
     }
 
     pub unsafe fn run(&mut self) {
         // Create GUI components
-        self.create_window();
-        self.create_display();
-        self.create_button_matrix();
-
         // Initial display update
-        self.update_display();
+        let _ = self.update_display();
 
         // Main event loop
         loop {
-            let mut code = xila_graphics_event_code_t_LV_EVENT_ALL;
-            let mut target = xila_graphics_object_t::MAX;
-            xila_graphics_window_pop_event(self.window, &mut code as *mut _, &mut target as *mut _);
+            let mut code = EventCode::All;
+            let mut target: *mut Object = null_mut();
 
-            if code != xila_graphics_event_code_t_LV_EVENT_ALL {
+            unsafe {
+                let _ = window_pop_event(
+                    self.window,
+                    &mut code as *mut _ as *mut _,
+                    &mut target as *mut _ as *mut _,
+                );
+            }
+
+            if code != EventCode::All {
                 match code {
-                    xila_graphics_event_code_t_LV_EVENT_CLICKED => {
+                    EventCode::Clicked => {
                         // Check if the event came from our button matrix
                         if target == self.button_matrix {
-                            self.handle_button_matrix_event();
+                            unsafe {
+                                let _ = self.handle_button_matrix_event();
+                            }
                         }
                     }
                     _ => {}

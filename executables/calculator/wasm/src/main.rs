@@ -1,7 +1,3 @@
-
-
-
-
 pub mod evaluator;
 pub mod interface;
 pub mod parser;
@@ -36,7 +32,7 @@ impl Calculator {
 }
 
 fn main() {
-    let mut calculator_gui = Interface::new();
+    let mut calculator_gui = Interface::new().unwrap();
     unsafe {
         calculator_gui.run();
     }
