@@ -38,6 +38,9 @@ jobs:
       - name: Setup | Cargo binstall
         uses: cargo-bins/cargo-binstall@main
 
+      - name: Setup | Install cargo-make
+        run: cargo binstall cargo-make --no-confirm
+
       - name: Setup | Install cargo-taplo
         run: cargo binstall taplo-cli --no-confirm
 
@@ -53,19 +56,22 @@ jobs:
         run: sudo apt update && sudo apt install -y gcc-multilib clang-format
 
       - name: Check | Formatting (TOML)
-        run: taplo fmt --check .
+        run: cargo make format-toml --check
 
       - name: Check | Formatting (Rust)
-        run: cargo fmt --all -- --check
+        run: cargo make format-rust -- --check
 
       - name: Check | Clippy (Host)
-        run: cargo clippy --features Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888 -- -D warnings
+        run: cargo make clippy-host
 
-#      - name: Check | Clippy (WASM)
-#        run: cargo clippy --features WASM --target wasm32-unknown-unknown -- -D warnings
+      - name: Check | Clippy (WASM)
+        run: cargo make clippy-wasm
 
-      - name: Check | Documentation
-        run: RUSTDOCFLAGS="--deny warnings" cargo doc --features Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888
+      - name: Check | Documentation (Host)
+        run: RUSTDOCFLAGS="--deny warnings" cargo make doc-host
+
+      - name: Check | Documentation (WASM)
+        run: RUSTDOCFLAGS="--deny warnings" cargo make doc-wasm
 
       - name: Run | Tests
         run: cargo test ${{ matrix.target }} --all
