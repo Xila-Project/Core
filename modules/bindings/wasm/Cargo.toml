@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2024"
 build = "build/main.rs"
 
+[features]
+default = []
+c_bindings = []
+
 [build-dependencies]
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
 bindgen = { workspace = true }
