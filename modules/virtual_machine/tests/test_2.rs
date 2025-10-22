@@ -5,17 +5,12 @@ extern crate abi_definitions;
 
 use std::fs;
 
-use alloc::vec;
-
 use executable::build_crate;
-use wamr_rust_sdk::value::WasmValue;
 
 use file_system::{MemoryDevice, create_device, create_file_system};
 use task::test;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};
-use virtual_machine::{
-    Environment, Function_descriptors, FunctionDescriptor, Instance, Module, Registrable, Runtime,
-};
+use virtual_machine::{Function_descriptors, FunctionDescriptor, Registrable};
 
 drivers::standard_library::memory::instantiate_global_allocator!();
 
