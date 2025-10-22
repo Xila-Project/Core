@@ -3,7 +3,7 @@
 name = "wasm_example"
 version = "0.1.0"
 authors = ["Alix ANNERAUD <alix@anneraud.fr>"]
-edition = "2018"
+edition = "2024"
 
 [features]
 
