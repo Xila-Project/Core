@@ -64,13 +64,18 @@ fn get_passed_input(input: &&syn::FnArg) -> TokenStream {
         FnArg::Typed(pattern_type) => match &*pattern_type.ty {
             Type::Path(path) => {
                 let pattern = &pattern_type.pat;
-                if path.to_token_stream().to_string() == "lv_color_t"
-                    || path.to_token_stream().to_string() == "lv_color32_t"
-                    || path.to_token_stream().to_string() == "lv_color16_t"
-                    || path.to_token_stream().to_string() == "lv_style_value_t"
+                let pattern_string = path.to_token_stream().to_string();
+                if pattern_string == "lv_color_t"
+                    || pattern_string == "lv_color32_t"
+                    || pattern_string == "lv_color16_t"
+                    || pattern_string == "lv_style_value_t"
                 {
                     quote! {
                         as_usize( #pattern )
+                    }
+                } else if pattern_string == "usize" {
+                    quote! {
+                        #pattern
                     }
                 } else {
                     quote! {
