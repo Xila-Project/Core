@@ -1,303 +1,273 @@
-use std::fs;
-use std::{fs::File, io::Write, path::Path};
+use std::ops::Deref;
+use std::path::Path;
 
-use bindings_utilities::format::format_identifier;
+use bindings_utilities::enumeration;
+use bindings_utilities::file::write_token_stream_to_file;
+use bindings_utilities::format::snake_to_upper_camel_case;
 
 use bindings_utilities::context::LvglContext;
-use bindings_utilities::format::format_c;
-use bindings_utilities::function::split_inputs;
-use quote::ToTokens;
-use syn::{FnArg, ReturnType, Signature, Type};
+use bindings_utilities::function::{get_function_identifier, is_public_input};
+use proc_macro2::TokenStream;
+use quote::{ToTokens, format_ident, quote};
+use syn::{FnArg, Ident, ReturnType, Signature, Type};
 
-pub fn convert_fundamental_type(r#type: &str) -> String {
-    match r#type {
-        "bool" => "bool".to_string(),
-        "u8" => "uint8_t".to_string(),
-        "u16" => "uint16_t".to_string(),
-        "u32" => "uint32_t".to_string(),
-        "u64" => "uint64_t".to_string(),
-        "i8" => "int8_t".to_string(),
-        "i16" => "int16_t".to_string(),
-        "i32" => "int32_t".to_string(),
-        "i64" => "int64_t".to_string(),
-        "f32" => "float".to_string(),
-        "f64" => "double".to_string(),
-        "usize" => "size_t".to_string(),
-        "isize" => "ssize_t".to_string(),
-        "char" | "c_char" => "char".to_string(),
-        "c_void" => "void".to_string(),
-        "str" => "char *".to_string(),
-        "*" => "*".to_string(),
-        "const" => "const".to_string(),
-        _ => get_type_name(r#type),
-    }
-}
+fn convert_type(mut ty: Type) -> Type {
+    match &mut ty {
+        Type::Path(path) => {
+            if let Some(last_segment) = path.path.segments.last_mut() {
+                let new_ident = match last_segment.ident.to_string().as_str() {
+                    "lv_obj_t" | "_lv_obj_t" => format_ident!("Object"),
+                    "lv_obj_class_t" => format_ident!("ObjectClass"),
+                    "lv_obj_flag_t" => format_ident!("ObjectFlag"),
+                    "lv_obj_point_transform_flag_t" => format_ident!("ObjectPointTransformFlag"),
+                    "lv_result_t" => format_ident!("LvglResult"),
+                    identifier => {
+                        let ident = if identifier.starts_with("lv_") {
+                            let ident = identifier.strip_prefix("lv_").unwrap_or(identifier);
+                            let ident = ident.strip_suffix("_t").unwrap_or(ident);
+                            snake_to_upper_camel_case(ident)
+                        } else {
+                            identifier.to_string()
+                        };
 
-pub fn convert_type(r#type: String) -> String {
-    let type_value = r#type.split_whitespace().collect::<Vec<_>>();
+                        Ident::new(&ident, last_segment.ident.span())
+                    }
+                };
 
-    let r#type = type_value
-        .into_iter()
-        .filter(|x| *x != "mut" && *x != "core" && *x != "ffi" && *x != "::" && !x.is_empty())
-        .rev()
-        .collect::<Vec<_>>();
-
-    let r#type = r#type
-        .iter()
-        .map(|x| convert_fundamental_type(x))
-        .collect::<Vec<_>>()
-        .join(" ");
-
-    let r#type = r#type
-        .replace("xila_graphics_object_t *", "xila_graphics_object_t")
-        .replace("xila_graphics_object_t const *", "xila_graphics_object_t");
-
-    r#type.replace("const xila_graphics_object_t", "xila_graphics_object_t")
-}
-
-fn generate_function_signature(signature: &Signature) -> String {
-    let identifier = get_function_name(&signature.ident.to_string());
-
-    let inputs = signature.inputs.iter().collect::<Vec<_>>();
-
-    let (_, inputs) = split_inputs(&inputs).unwrap();
-
-    let mut inputs = inputs
-        .iter()
-        .map(|argument| match argument {
-            syn::FnArg::Typed(pattern) => {
-                let identifier = pattern.pat.to_token_stream().to_string();
-                let type_value = convert_type(pattern.ty.to_token_stream().to_string());
-                format!("{type_value} {identifier}")
+                last_segment.ident = new_ident;
             }
-            _ => panic!("Unsupported argument type"),
-        })
-        .collect::<Vec<_>>();
-
-    if let ReturnType::Type(_, r#type) = &signature.output {
-        let type_value = convert_type(r#type.to_token_stream().to_string());
-        inputs.push(format!("{type_value}* __result"));
+        }
+        Type::Ptr(pointer_type) => {
+            *pointer_type.elem = convert_type(pointer_type.elem.deref().clone());
+        }
+        r#type => panic!("Unsupported argument type : {type:?}"),
     }
-
-    format!("void {}({})", identifier, inputs.join(", "))
+    ty
 }
 
-fn generate_function_declarations(signatures: Vec<Signature>) -> String {
-    let functions = signatures
-        .iter()
-        .map(generate_function_signature)
-        .collect::<Vec<_>>();
+fn convert_function_argument(input: &&syn::FnArg) -> TokenStream {
+    match input {
+        FnArg::Typed(pattern_type) => {
+            let pattern = &pattern_type.pat;
+            let ty = convert_type(pattern_type.ty.deref().clone());
 
-    let functions = functions.join(";\n");
-    functions + ";\n"
+            quote! {
+                #pattern : #ty
+            }
+        }
+        receiver => panic!("Unsupported argument type : {receiver:?}"),
+    }
 }
 
-fn generate_opaque_types(structures: Vec<String>) -> String {
-    let opaque_types = structures
-        .iter()
-        .filter(|r#type| r#type.ends_with("dsc_t"))
-        .map(|type_value| {
-            format!(
-                "typedef struct {{}} {};\n",
-                type_value.replace("lv_", "xila_graphics_"),
-            )
-        })
-        .collect::<Vec<_>>();
-
-    opaque_types.join("\n")
-}
-
-fn generate_graphics_call(signature: &Signature) -> String {
-    let identifier = get_enumerate_item(&signature.ident.to_string());
-
-    let inputs = signature.inputs.iter().collect::<Vec<_>>();
-
-    let (_, inputs) = split_inputs(&inputs).unwrap();
-
-    let mut inputs = inputs
-        .iter()
-        .map(|argument| match argument {
-            FnArg::Typed(pattern) => match &*pattern.ty {
-                Type::Path(path) => {
-                    if path.to_token_stream().to_string() == "lv_color_t"
-                        || path.to_token_stream().to_string() == "lv_color32_t"
-                        || path.to_token_stream().to_string() == "lv_color16_t"
-                        || path.to_token_stream().to_string() == "lv_style_value_t"
-                    {
-                        format!("*(size_t*)&{}", pattern.pat.to_token_stream())
-                    } else {
-                        pattern.pat.to_token_stream().to_string()
+fn get_passed_input(input: &&syn::FnArg) -> TokenStream {
+    match input {
+        FnArg::Typed(pattern_type) => match &*pattern_type.ty {
+            Type::Path(path) => {
+                let pattern = &pattern_type.pat;
+                if path.to_token_stream().to_string() == "lv_color_t"
+                    || path.to_token_stream().to_string() == "lv_color32_t"
+                    || path.to_token_stream().to_string() == "lv_color16_t"
+                    || path.to_token_stream().to_string() == "lv_style_value_t"
+                {
+                    quote! {
+                        as_usize( #pattern )
+                    }
+                } else {
+                    quote! {
+                        #pattern as usize
                     }
                 }
-                Type::Ptr(_) => {
-                    format!("(size_t){}", pattern.pat.to_token_stream())
+            }
+            Type::Ptr(_) => {
+                let pattern = &pattern_type.pat;
+                quote! {
+                    #pattern as usize
                 }
-                r#type => panic!("Unsupported argument type : {type:?}"),
-            },
-            receiver => panic!("Unsupported argument type : {receiver:?}"),
-        })
+            }
+            r#type => panic!("Unsupported argument type : {type:?}"),
+        },
+        receiver => panic!("Unsupported argument type : {receiver:?}"),
+    }
+}
+
+fn generate_xila_graphics_call(signature: &Signature) -> TokenStream {
+    let filtered_inputs = signature
+        .inputs
+        .iter()
+        .filter(is_public_input)
         .collect::<Vec<_>>();
 
-    let real_arguments_length = inputs.len();
+    let enumeration_variant = enumeration::get_variant_identifier(&signature.ident);
 
-    for _ in inputs.len()..7 {
-        inputs.push("0".to_string());
+    let mut passed_arguments = filtered_inputs
+        .iter()
+        .map(get_passed_input)
+        .collect::<Vec<_>>();
+
+    let remaining_arguments = 7 - passed_arguments.len();
+    for _ in 0..remaining_arguments {
+        passed_arguments.push(quote! { 0 });
     }
 
-    let declaration = match &signature.output {
-        ReturnType::Default => None,
-        ReturnType::Type(_, type_value) => {
-            let type_value = convert_type(type_value.to_token_stream().to_string());
+    let argument_count = filtered_inputs.len() as u8;
 
-            let declaration = format!("{type_value} __result;");
-
-            Some(declaration)
+    let passed_result = if let ReturnType::Type(..) = &signature.output {
+        quote! {
+            __result_pointer as *mut _ as *mut core::ffi::c_void
         }
+    } else {
+        quote! { core::ptr::null_mut() }
     };
 
-    format!(
-        "xila_graphics_call({},{}, {}, {});\n",
-        identifier,
-        inputs.join(", "),
-        real_arguments_length,
-        declaration
-            .as_ref()
-            .map(|_| "(void*)__result")
-            .unwrap_or("NULL"),
-    )
+    quote! {
+        xila_graphics_call(
+                    crate::FunctionCall::#enumeration_variant,
+                    #( #passed_arguments ),*,
+                    #argument_count,
+                    #passed_result
+                )
+    }
 }
 
-pub fn generate_types(lvgl_functions: &LvglContext) -> String {
-    //Read to string
-    let includes: String = fs::read_to_string("./build/includes.h").unwrap();
-
-    let structures_name = lvgl_functions
-        .get_structures()
+fn generate_c_function(signature: &Signature) -> TokenStream {
+    let filtered_inputs = signature
+        .inputs
         .iter()
-        .map(|x| x.ident.to_string())
+        .filter(is_public_input)
         .collect::<Vec<_>>();
 
-    let opaque_types = generate_opaque_types(structures_name);
-
-    let types = fs::read_to_string("./build/types.h").unwrap();
-
-    format!("{includes}\n{opaque_types}\n{types}")
-}
-
-pub fn generate_header(output_file: &mut File, lvgl_functions: &LvglContext) {
-    output_file
-        .write_all(
-            r#"
-    #ifndef XILA_GRAPHICS_H
-    #define XILA_GRAPHICS_H
-
-    #ifdef __cplusplus
-    extern "C" {
-    #endif
-
-    "#
-            .as_bytes(),
-        )
-        .unwrap();
-
-    output_file
-        .write_all(generate_types(lvgl_functions).as_bytes())
-        .expect("Error writing to bindings file");
-
-    let functions = generate_function_declarations(lvgl_functions.get_signatures());
-
-    output_file
-        .write_all(functions.as_bytes())
-        .expect("Error writing to bindings file");
-
-    output_file
-        .write_all(
-            r#"
-    #ifdef __cplusplus
-        }
-    #endif
-
-    #endif
-    "#
-            .as_bytes(),
-        )
-        .unwrap();
-}
-
-pub fn get_type_name(r#type: &str) -> String {
-    format_identifier("xila_graphics_", r#type)
-}
-
-pub fn get_function_name(function_name: &str) -> String {
-    format_identifier("xila_graphics_", function_name)
-}
-
-pub fn get_enumerate_item(item: &str) -> String {
-    format_identifier("xila_graphics_call_", item)
-}
-
-pub fn generate_code_enumeration(signatures: Vec<Signature>) -> String {
-    let mut signatures = signatures.clone();
-
-    signatures.sort_by_key(|x| x.ident.to_string().to_lowercase());
-
-    let function_calls = signatures
+    let mut inputs = filtered_inputs
         .iter()
-        .enumerate()
-        .map(|(i, x)| format!("{} = {}", get_enumerate_item(&x.ident.to_string()), i))
-        .collect::<Vec<_>>()
-        .join(",\n");
+        .map(convert_function_argument)
+        .collect::<Vec<_>>();
 
-    format!("enum {{\n{function_calls}\n}};\n")
+    let function_identifier = get_function_identifier("xila_graphics_", &signature.ident);
+
+    if let ReturnType::Type(_, type_value) = &signature.output {
+        let result_argument_type = convert_type(type_value.deref().clone());
+        let result_argument = quote! {
+            __result_pointer: *mut #result_argument_type
+        };
+
+        inputs.push(result_argument);
+    }
+
+    let generated_xila_graphics_call = generate_xila_graphics_call(signature);
+
+    quote! {
+        #[unsafe(no_mangle)]
+        pub extern "C" fn #function_identifier(
+            #( #inputs ),*
+        ) -> i32 {
+            unsafe {
+                #generated_xila_graphics_call
+            }
+        }
+    }
 }
 
-pub fn generate_c_function_definition(signature: &Signature) -> String {
-    let c_signature = generate_function_signature(signature);
+fn generate_function(signature: &Signature) -> TokenStream {
+    let function_identifier = get_function_identifier("", &signature.ident);
 
-    let graphics_call = generate_graphics_call(signature);
+    let filtered_inputs = signature
+        .inputs
+        .iter()
+        .filter(is_public_input)
+        .collect::<Vec<_>>();
 
-    format!("{c_signature}\n{{\n{graphics_call}\n}}\n")
+    let inputs = filtered_inputs
+        .iter()
+        .map(convert_function_argument)
+        .collect::<Vec<_>>();
+
+    let result_data_type = if let ReturnType::Type(_, type_value) = &signature.output {
+        let type_value = convert_type(type_value.deref().clone());
+
+        quote! {
+            #type_value
+        }
+    } else {
+        quote! { () }
+    };
+
+    let result_data_expression = quote! {
+        let mut __result_data: #result_data_type = unsafe { core::mem::zeroed() };
+        let __result_pointer = &mut __result_data as *mut _;
+    };
+
+    let generated_xila_graphics_call = generate_xila_graphics_call(signature);
+
+    quote! {
+        pub unsafe fn #function_identifier(
+            #( #inputs ),*
+        ) -> Result<#result_data_type> {
+
+            #result_data_expression
+
+            let __result_status =
+            unsafe {
+                #generated_xila_graphics_call
+            };
+
+            if __result_status == 0 {
+                Ok(__result_data)
+            } else {
+                Err(__result_status)
+            }
+
+        }
+    }
 }
 
-pub fn generate_source(output_file: &mut File, context: &LvglContext) {
-    output_file
-        .write_all("#include \"xila_graphics.h\"\n".as_bytes())
-        .unwrap();
+pub fn generate_enumeration(
+    path: impl AsRef<Path>,
+    lvgl_functions: &LvglContext,
+) -> Result<(), String> {
+    let token_stream = enumeration::generate_code(lvgl_functions.get_signatures().to_vec());
 
-    output_file
-        .write_all(generate_code_enumeration(context.get_signatures()).as_bytes())
-        .unwrap();
+    write_token_stream_to_file(path, token_stream)?;
 
-    let prelude = fs::read_to_string("./build/prelude.c").unwrap();
+    Ok(())
+}
 
-    output_file
-        .write_all(prelude.as_bytes())
-        .expect("Error writing to bindings file");
-
-    let graphics_calls = context
+pub fn generate_functions(
+    path: impl AsRef<Path>,
+    lvgl_functions: &LvglContext,
+) -> Result<(), String> {
+    let generated_functions = lvgl_functions
         .get_signatures()
         .iter()
-        .map(generate_c_function_definition)
-        .collect::<Vec<_>>()
-        .join("\n");
+        .map(generate_function)
+        .collect::<Vec<_>>();
 
-    output_file.write_all(graphics_calls.as_bytes()).unwrap();
+    let token_stream = quote! {
+       use crate::prelude::*;
+
+       #( #generated_functions )*
+    };
+
+    write_token_stream_to_file(path, token_stream)?;
+
+    Ok(())
 }
 
-pub fn generate(output_path: &Path, lvgl_functions: &LvglContext) -> Result<(), String> {
-    let header_file_path = output_path.join("xila_graphics.h");
-    let source_file_path = output_path.join("xila_graphics.c");
+pub fn generate_c_abi_functions(
+    path: impl AsRef<Path>,
+    lvgl_functions: &LvglContext,
+) -> Result<(), String> {
+    let generated_c_abi_functions = lvgl_functions
+        .get_signatures()
+        .iter()
+        .map(generate_c_function)
+        .collect::<Vec<_>>();
 
-    let mut header_file =
-        File::create(&header_file_path).map_err(|_| "Error creating header file")?;
-    let mut source_file =
-        File::create(&source_file_path).map_err(|_| "Error creating source file")?;
+    let token_stream = quote! {
+       use crate::prelude::*;
 
-    generate_header(&mut header_file, lvgl_functions);
-    generate_source(&mut source_file, lvgl_functions);
+        #( #generated_c_abi_functions )*
+    };
 
-    format_c(&header_file_path)?;
-    format_c(&source_file_path)?;
+    write_token_stream_to_file(path, token_stream)?;
 
     Ok(())
 }
