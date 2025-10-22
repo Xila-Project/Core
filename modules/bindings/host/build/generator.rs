@@ -1,10 +1,7 @@
 use bindings_utilities::{
-    context::LvglContext,
-    enumeration,
-    format::{format_rust, snake_ident_to_upper_camel},
-    function::split_inputs,
+    context::LvglContext, enumeration, file::write_token_stream_to_file, function::split_inputs,
 };
-use std::{fs::File, io::Write, path::Path};
+use std::path::Path;
 
 use proc_macro2::{Literal, TokenStream};
 use quote::{ToTokens, format_ident, quote};
@@ -214,7 +211,7 @@ fn generate_function_call(
 
     // - Get the function identifier
     let function_identifier = &function.ident;
-    let variant_identifier = snake_ident_to_upper_camel(&function.ident);
+    let variant_identifier = enumeration::get_variant_identifier(&function.ident);
 
     // - Generate the return conversion if needed (let __result = __current_result;)
     let r#return = generate_conversion_for_output(&function.output)?;
@@ -307,10 +304,7 @@ pub fn generate_code(
 }
 
 pub fn generate(output_path: &Path, context: &LvglContext) -> Result<(), String> {
-    // Open the output fileoutput_path
     let output_file_path = output_path.join("bindings.rs");
-    let mut output_file = File::create(&output_file_path)
-        .map_err(|error| format!("Error creating output file : {error}"))?;
 
     let enumerations = enumeration::generate_code(context.get_signatures());
 
@@ -320,20 +314,13 @@ pub fn generate(output_path: &Path, context: &LvglContext) -> Result<(), String>
         context.get_definitions(),
     )?;
 
-    output_file
-        .write_all(
-            quote! {
-                    #enumerations
+    let token_stream = quote! {
+        #enumerations
 
-                    #functions
+        #functions
+    };
 
-            }
-            .to_string()
-            .as_bytes(),
-        )
-        .map_err(|error| format!("Error writing to output file : {error}"))?;
-
-    format_rust(&output_file_path)?;
+    write_token_stream_to_file(output_file_path, token_stream)?;
 
     Ok(())
 }
