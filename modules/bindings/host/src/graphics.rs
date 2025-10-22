@@ -50,7 +50,7 @@ impl Registrable for GraphicsBindings {
     }
 
     #[cfg(not(target_arch = "x86_64"))]
-    fn is_XIP(&self) -> bool {
+    fn is_xip(&self) -> bool {
         true
     }
 
