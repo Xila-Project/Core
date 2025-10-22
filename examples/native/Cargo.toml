@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 xila = { path = "../../", features = [
-  "Host",
+  "host",
   "virtual_machine",
   "graphics_rendering_xrgb8888",
 ] }

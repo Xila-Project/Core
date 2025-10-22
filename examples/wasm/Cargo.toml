@@ -10,7 +10,7 @@ edition = "2018"
 
 [dependencies]
 wasm-bindgen = "0.2.84"
-xila = { path = "../../", features = ["Host", "graphics_rendering_xrgb8888"] }
+xila = { path = "../../", features = ["host", "graphics_rendering_xrgb8888"] }
 file_manager = { workspace = true }
 command_line_shell = { workspace = true }
 graphical_shell = { workspace = true }

@@ -23,13 +23,13 @@ args = [
   "--target",
   "x86_64-unknown-linux-gnu",
   "--features",
-  "Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+  "host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
 ]
 
 [tasks.check-wasm]
 workspace = false
 command = "cargo"
-args = ["check", "--target", "wasm32-unknown-unknown", "--features", "WASM"]
+args = ["check", "--target", "wasm32-unknown-unknown", "--features", "wasm"]
 
 [tasks.check-doc]
 workspace = false
@@ -37,7 +37,7 @@ command = "cargo"
 args = [
   "doc",
   "--features",
-  "Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+  "host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
 ]
 
 [tasks.check]
@@ -53,7 +53,7 @@ args = [
   "--target",
   "wasm32-unknown-unknown",
   "--features",
-  "WASM",
+  "wasm",
   "--all-targets",
   "--",
   "-D",
@@ -69,7 +69,7 @@ args = [
   "--target",
   "x86_64-unknown-linux-gnu",
   "--features",
-  "Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+  "host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
   "--all-targets",
   "--",
   "-D",
