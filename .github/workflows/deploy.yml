@@ -28,7 +28,7 @@ jobs:
           key: "Documentation"
 
       - name: Setup | Install GCC multilib
-        run: sudo apt update && sudo apt install -y gcc-multilib clang-format
+        run: sudo apt update && sudo apt install -y gcc-multilib
 
       - name: Setup | Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable

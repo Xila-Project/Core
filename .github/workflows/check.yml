@@ -55,7 +55,7 @@ jobs:
           ldproxy: true
 
       - name: Setup | Install necessary dependencies
-        run: sudo apt update && sudo apt install -y gcc-multilib clang-format
+        run: sudo apt update && sudo apt install -y gcc-multilib
 
       - name: Check | Formatting (TOML)
         run: cargo make format-toml --check
