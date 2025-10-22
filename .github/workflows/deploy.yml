@@ -43,11 +43,11 @@ jobs:
       - name: Setup | Cargo binstall
         uses: cargo-bins/cargo-binstall@main
 
-      - name: Setup | Install cargo-make
-        run: cargo binstall cargo-make --no-confirm
+      - name: Setup | Cargo make
+        run: cargo binstall cargo-make --no-confirm --force
 
       - name: Setup | Trunk
-        run: cargo binstall trunk --no-confirm
+        run: cargo binstall trunk --no-confirm --force
 
       - name: Build | Documentation (Host)
         run: |

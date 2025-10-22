@@ -39,7 +39,7 @@ jobs:
         uses: cargo-bins/cargo-binstall@main
 
       - name: Setup | Install cargo-make
-        run: cargo binstall cargo-make --no-confirm
+        run: cargo binstall cargo-make --no-confirm --force
 
       - name: Setup | Install cargo-taplo
         run: |
