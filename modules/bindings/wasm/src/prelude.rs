@@ -173,9 +173,9 @@ pub type Opa = u8;
 pub enum FlexFlow {
     Row = 0x00,
     Column = FLEX_COLUMN as isize,
-    RowWrap = 0x00 | FLEX_WRAP as isize,
-    RowReverse = 0x00 | FLEX_REVERSE as isize,
-    RowWrapReverse = 0x00 | FLEX_WRAP as isize | FLEX_REVERSE as isize,
+    RowWrap = FLEX_WRAP as isize,
+    RowReverse = FLEX_REVERSE as isize,
+    RowWrapReverse = FLEX_WRAP as isize | FLEX_REVERSE as isize,
     ColumnWrap = FLEX_COLUMN as isize | FLEX_WRAP as isize,
     ColumnReverse = FLEX_COLUMN as isize | FLEX_REVERSE as isize,
     ColumnWrapReverse = FLEX_COLUMN as isize | FLEX_WRAP as isize | FLEX_REVERSE as isize,
