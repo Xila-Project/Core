@@ -43,24 +43,37 @@ jobs:
       - name: Setup | Cargo binstall
         uses: cargo-bins/cargo-binstall@main
 
+      - name: Setup | Install cargo-make
+        run: cargo binstall cargo-make --no-confirm
+
       - name: Setup | Trunk
         run: cargo binstall trunk --no-confirm
 
-      - name: Build | Documentation
+      - name: Build | Documentation (Host)
         run: |
-          cargo doc --features Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888
-          cp ./documentation/index.html ./target/doc
+          cargo make doc-host
+          mkdir -p ./pages/host/
+          cp ./documentation/index.html ./documentation/host/
+          cp -r ./target/doc/* ./documentation/host/
+
+      - name: Build | Documentation (WASM)
+        run: |
+          cargo make doc-wasm
+          mkdir -p ./pages/wasm/
+          cp ./documentation/index.html ./documentation/wasm/
+          cp -r ./target/doc/* ./documentation/wasm/
 
       - name: Build | WASM demonstration
         working-directory: ./examples/wasm
         run: |
           trunk build --release
-          cp -r ./dist/* ../../target/doc/demonstrations/wasm/
+          mkdir -p ../../pages/demonstrations/wasm/
+          cp -r ./dist/* ../../pages/demonstrations/wasm/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./target/doc
+          path: ./pages
 
   deploy:
     environment:
