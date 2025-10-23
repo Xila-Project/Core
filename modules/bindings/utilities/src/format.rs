@@ -1,10 +1,11 @@
 use std::{path::Path, process::Command};
 use syn;
 
-pub fn format_rust(file_path: &Path) -> Result<(), String> {
+pub fn format_rust(file_path: impl AsRef<Path>) -> Result<(), String> {
     Command::new("rustfmt")
         .arg(
             file_path
+                .as_ref()
                 .to_str()
                 .ok_or("Error converting path to string")?,
         )
@@ -26,34 +27,6 @@ pub fn format_c(file_path: &Path) -> Result<(), String> {
         .map_err(|code| format!("Error running clang-format : {code}"))?;
 
     Ok(())
-}
-
-const NAMES: [(&str, &str); 1] = [("obj", "object")];
-
-pub fn format_identifier(prefix: &str, function_name: &str) -> String {
-    // - Remove prefix
-    let function_name = if function_name.starts_with("lv_") {
-        function_name.replacen("lv_", "", 1)
-    } else {
-        function_name.to_string()
-    };
-
-    let function_name = if !function_name.starts_with(prefix) {
-        format!("{prefix}{function_name}")
-    } else {
-        function_name
-    };
-
-    // - Replace names
-
-    function_name
-        .split("_")
-        .map(|part| match NAMES.iter().find(|(old, _)| *old == part) {
-            Some((_, new)) => new.to_string(),
-            None => part.to_string(),
-        })
-        .collect::<Vec<String>>()
-        .join("_")
 }
 
 pub fn snake_to_upper_camel_case(input: &str) -> String {

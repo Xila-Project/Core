@@ -5,5 +5,5 @@ edition = "2024"
 
 [dependencies]
 syn = { workspace = true, features = ["full", "visit", "extra-traits"] }
-quote = "1.0"
-proc-macro2 = "1.0"
+quote = { workspace = true }
+proc-macro2 = { workspace = true }

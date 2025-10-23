@@ -3,13 +3,13 @@
 workspace = false
 install_crate = "rustfmt"
 command = "cargo"
-args = ["fmt", "--all"]
+args = ["fmt", "--all", "${@}"]
 
 [tasks.format-toml]
 workspace = false
 install_crate = "taplo-cli"
 command = "taplo"
-args = ["format"]
+args = ["format", "${@}"]
 
 [tasks.format]
 workspace = false
@@ -23,26 +23,41 @@ args = [
   "--target",
   "x86_64-unknown-linux-gnu",
   "--features",
-  "Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+  "host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
 ]
 
 [tasks.check-wasm]
 workspace = false
 command = "cargo"
-args = ["check", "--target", "wasm32-unknown-unknown", "--features", "WASM"]
+args = [
+  "check",
+  "--target",
+  "wasm32-unknown-unknown",
+  "--features",
+  "wasm,wasm_c_bindings",
+]
 
-[tasks.check-doc]
+[tasks.doc-host]
 workspace = false
 command = "cargo"
 args = [
   "doc",
   "--features",
-  "Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+  "host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
 ]
+
+[tasks.doc-wasm]
+workspace = false
+command = "cargo"
+args = ["doc", "--features", "wasm", "--target", "wasm32-unknown-unknown"]
+
+[tasks.doc]
+workspace = false
+dependencies = ["doc-host", "doc-wasm"]
 
 [tasks.check]
 workspace = false
-dependencies = ["check-host", "check-wasm", "check-doc"]
+dependencies = ["check-host", "check-wasm"]
 
 [tasks.clippy-wasm]
 workspace = false
@@ -53,7 +68,7 @@ args = [
   "--target",
   "wasm32-unknown-unknown",
   "--features",
-  "WASM",
+  "wasm,wasm_c_bindings",
   "--all-targets",
   "--",
   "-D",
@@ -69,7 +84,7 @@ args = [
   "--target",
   "x86_64-unknown-linux-gnu",
   "--features",
-  "Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+  "host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
   "--all-targets",
   "--",
   "-D",
@@ -86,6 +101,11 @@ install_crate = "clippy"
 command = "cargo"
 args = ["clippy", "--all-targets", "--all-features", "--", "-D", "warnings"]
 
+[tasks.test]
+workspace = false
+command = "cargo"
+args = ["test", "--all"]
+
 [tasks.before-commit]
 workspace = false
-dependencies = ["format", "check", "clippy"]
+dependencies = ["format", "check", "doc", "clippy"]

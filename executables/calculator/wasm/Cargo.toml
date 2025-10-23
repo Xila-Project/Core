@@ -10,4 +10,4 @@ opt-level = 's'
 strip = true
 
 [dependencies]
-xila = { path = "../../../", features = ["WASM"] }
+xila = { path = "../../../", features = ["wasm"] }

@@ -38,7 +38,7 @@ default = []
 
 executable_building = ["executable/building"]
 
-Host = [
+host = [
   "dep:abi_context",
   "dep:abi_declarations",
   "dep:abi_definitions",
@@ -64,7 +64,8 @@ abi_definitions = ["dep:abi_definitions"]
 virtual_machine = ["dep:virtual_machine", "dep:host_bindings"]
 graphics_rendering_rgb565 = ["graphics/rendering_rgb565"]
 graphics_rendering_xrgb8888 = ["graphics/rendering_xrgb8888"]
-WASM = ["dep:wasm_bindings"]
+wasm = ["dep:wasm_bindings"]
+wasm_c_bindings = ["wasm", "wasm_bindings/c_bindings"]
 
 [workspace.dependencies]
 # - Internal crates

@@ -10,8 +10,8 @@ async fn main() {
 
     use alloc::string::String;
     use xila::drivers::wasm::devices::graphics::GraphicsDevices;
-    use xila::executable::{self, mount_static_executables, Standard};
-    use xila::file_system::{self, create_device, create_file_system, Mbr, PartitionKind};
+    use xila::executable::{self, Standard, mount_static_executables};
+    use xila::file_system::{self, Mbr, PartitionKind, create_device, create_file_system};
     use xila::log;
     use xila::task;
     use xila::time;
@@ -73,12 +73,10 @@ async fn main() {
     //let drive = create_device!(drivers::wasm::devices::DriveDevice::new(Path::new("xila_drive.img")));
 
     // Create a partition type
-    let partition = create_device!(Mbr::find_or_create_partition_with_signature(
-        &drive,
-        0xDEADBEEF,
-        PartitionKind::Xila
-    )
-    .unwrap());
+    let partition = create_device!(
+        Mbr::find_or_create_partition_with_signature(&drive, 0xDEADBEEF, PartitionKind::Xila)
+            .unwrap()
+    );
 
     // Print MBR information
     let mbr = Mbr::read_from_device(&drive).unwrap();

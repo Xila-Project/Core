@@ -1,8 +1,13 @@
 use proc_macro2::{Literal, TokenStream};
 use quote::{ToTokens, quote};
-use syn::Signature;
+use syn::{Ident, Signature};
 
-use crate::format::snake_ident_to_upper_camel;
+use crate::{format::snake_ident_to_upper_camel, function::get_function_identifier};
+
+pub fn get_variant_identifier(identifier: &Ident) -> Ident {
+    let identifier = get_function_identifier("", identifier);
+    snake_ident_to_upper_camel(&identifier)
+}
 
 pub fn generate_code(signatures: Vec<Signature>) -> TokenStream {
     let mut signatures = signatures.clone();
@@ -11,7 +16,7 @@ pub fn generate_code(signatures: Vec<Signature>) -> TokenStream {
 
     let variants = &signatures
         .into_iter()
-        .map(|x| snake_ident_to_upper_camel(&x.ident))
+        .map(|signature| get_variant_identifier(&signature.ident))
         .enumerate()
         .map(|(i, identifier)| {
             let i = Literal::usize_unsuffixed(i);

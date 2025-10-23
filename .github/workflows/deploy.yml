@@ -28,7 +28,7 @@ jobs:
           key: "Documentation"
 
       - name: Setup | Install GCC multilib
-        run: sudo apt update && sudo apt install -y gcc-multilib clang-format
+        run: sudo apt update && sudo apt install -y gcc-multilib
 
       - name: Setup | Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -43,24 +43,37 @@ jobs:
       - name: Setup | Cargo binstall
         uses: cargo-bins/cargo-binstall@main
 
-      - name: Setup | Trunk
-        run: cargo binstall trunk --no-confirm
+      - name: Setup | Cargo make
+        run: cargo binstall cargo-make --no-confirm --force
 
-      - name: Build | Documentation
+      - name: Setup | Trunk
+        run: cargo binstall trunk --no-confirm --force
+
+      - name: Build | Documentation (Host)
         run: |
-          cargo doc --features Host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888
-          cp ./documentation/index.html ./target/doc
+          cargo make doc-host
+          mkdir -p ./pages/host/
+          cp ./documentation/index.html ./pages/host/
+          cp -r ./target/doc/* ./pages/host/
+
+      - name: Build | Documentation (WASM)
+        run: |
+          cargo make doc-wasm
+          mkdir -p ./pages/wasm/
+          cp ./documentation/index.html ./pages/wasm
+          cp -r ./target/doc/* ./pages/wasm/
 
       - name: Build | WASM demonstration
         working-directory: ./examples/wasm
         run: |
           trunk build --release
-          cp -r ./dist/* ../../target/doc/demonstrations/wasm/
+          mkdir -p ../../pages/demonstrations/wasm/
+          cp -r ./dist/* ../../pages/demonstrations/wasm/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./target/doc
+          path: ./pages
 
   deploy:
     environment:
