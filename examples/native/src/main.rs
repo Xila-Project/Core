@@ -2,7 +2,10 @@
 
 extern crate alloc;
 
+use core::time::Duration;
+
 use xila::authentication;
+use xila::bootsplash::Bootsplash;
 use xila::drivers;
 use xila::drivers::standard_library::executor::instantiate_static_executor;
 use xila::executable;
@@ -62,6 +65,8 @@ async fn main() {
         .add_input_device(keyboard_device, graphics::InputKind::Keypad)
         .await
         .unwrap();
+
+    let bootsplash = Bootsplash::new(graphics_manager).await.unwrap();
 
     task_manager
         .spawn(task, "Graphics", None, |_| {
@@ -224,6 +229,12 @@ async fn main() {
         .set_environment_variable(task, "Host", "xila")
         .await
         .unwrap();
+
+    // wait some time to show the bootsplash
+    task::Manager::sleep(Duration::from_secs(5)).await;
+
+    bootsplash.stop(graphics_manager).await.unwrap();
+
     // - - Execute the shell
     let _ = executable::execute("/binaries/graphical_shell", String::from(""), standard)
         .await

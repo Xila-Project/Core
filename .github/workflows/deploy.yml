@@ -66,7 +66,7 @@ jobs:
       - name: Build | WASM demonstration
         working-directory: ./examples/wasm
         run: |
-          trunk build --release
+          trunk build --release --public-url ./
           mkdir -p ../../pages/demonstrations/wasm/
           cp -r ./dist/* ../../pages/demonstrations/wasm/
 

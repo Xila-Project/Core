@@ -32,6 +32,7 @@ shared = { workspace = true, optional = true }
 synchronization = { workspace = true, optional = true }
 futures = { workspace = true, optional = true }
 host_bindings = { workspace = true, optional = true }
+bootsplash = { workspace = true, optional = true }
 
 [features]
 default = []
@@ -58,6 +59,7 @@ host = [
   "dep:log",
   "dep:shared",
   "dep:synchronization",
+  "dep:bootsplash",
   "abi_definitions",
 ]
 abi_definitions = ["dep:abi_definitions"]
@@ -95,6 +97,7 @@ synchronization = { path = "modules/synchronization" }
 target = { path = "modules/target" }
 network = { path = "modules/network" }
 peripherals = { path = "modules/peripherals" }
+bootsplash = { path = "modules/bootsplash" }
 
 # - Executables
 file_manager = { path = "executables/file_manager" }
@@ -154,6 +157,7 @@ members = [
   "examples/native",
   "executables/calculator",
   "examples/wasm",
+  "modules/bootsplash",
 ]
 
 [patch.crates-io]

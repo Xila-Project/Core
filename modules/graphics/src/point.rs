@@ -2,8 +2,8 @@ use super::lvgl;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct Point {
-    x: i16,
-    y: i16,
+    pub x: i16,
+    pub y: i16,
 }
 
 impl Point {
@@ -43,6 +43,12 @@ impl Point {
         let x = (self.x - other.x) as f32;
         let y = (self.y - other.y) as f32;
         (x * x + y * y).sqrt()
+    }
+
+    pub const fn scale(mut self, factor: f64) -> Self {
+        self.x = (self.x as f64 * factor).round() as i16;
+        self.y = (self.y as f64 * factor).round() as i16;
+        self
     }
 }
 
