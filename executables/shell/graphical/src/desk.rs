@@ -1,4 +1,4 @@
-use core::ffi::c_void;
+use core::{ffi::c_void, mem::forget};
 
 use crate::{
     error::{Error, Result},
@@ -16,7 +16,7 @@ use alloc::{
 use executable::Standard;
 use file_system::{Kind, Mode};
 use futures::block_on;
-use graphics::{Color, EventKind, Point, Window, lvgl};
+use graphics::{Color, EventKind, Logo, Point, Window, lvgl};
 use log::error;
 use virtual_file_system::Directory;
 
@@ -108,14 +108,19 @@ impl Desk {
         // - Create the logo
         unsafe {
             // Create the logo in the background of the window
-            let logo = create_logo(window.get_object(), 4, Color::BLACK)?;
+            let logo = Logo::new(window.get_object(), 4, Color::BLACK)?;
+            let logo_inner_object = logo.get_inner_object();
+            forget(logo); // Prevent the logo from being dropped
 
-            lvgl::lv_obj_set_align(logo, lvgl::lv_align_t_LV_ALIGN_CENTER);
-            lvgl::lv_obj_add_flag(logo, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+            lvgl::lv_obj_set_align(logo_inner_object, lvgl::lv_align_t_LV_ALIGN_CENTER);
+            lvgl::lv_obj_add_flag(
+                logo_inner_object,
+                lvgl::lv_obj_flag_t_LV_OBJ_FLAG_OVERFLOW_VISIBLE,
+            );
 
             // Set shadow color according to BG color
             for i in 0..4 {
-                let part = lvgl::lv_obj_get_child(logo, i);
+                let part = lvgl::lv_obj_get_child(logo_inner_object, i);
 
                 lvgl::lv_obj_set_style_bg_opa(part, lvgl::LV_OPA_0 as u8, lvgl::LV_STATE_DEFAULT);
 
@@ -191,7 +196,12 @@ impl Desk {
         };
 
         // - Create the main button
-        let main_button = unsafe { create_logo(dock, 1, Color::WHITE)? };
+        let main_button = unsafe {
+            let logo = Logo::new(dock, 1, Color::WHITE)?;
+            let inner_object = logo.get_inner_object();
+            forget(logo); // Prevent the logo from being dropped
+            inner_object
+        };
 
         let shortcuts = BTreeMap::new();
 
@@ -510,71 +520,5 @@ impl Desk {
                 _ => {}
             }
         }
-    }
-}
-
-unsafe fn create_logo(
-    parent: *mut lvgl::lv_obj_t,
-    factor: u8,
-    color: Color,
-) -> Result<*mut lvgl::lv_obj_t> {
-    unsafe {
-        let logo = lvgl::lv_button_create(parent);
-
-        if logo.is_null() {
-            return Err(Error::FailedToCreateObject);
-        }
-
-        lvgl::lv_obj_set_size(logo, 32 * factor as i32, 32 * factor as i32);
-        lvgl::lv_obj_set_style_bg_opa(logo, lvgl::LV_OPA_0 as u8, lvgl::LV_STATE_DEFAULT);
-        lvgl::lv_obj_set_style_pad_all(logo, 0, lvgl::LV_STATE_DEFAULT);
-        lvgl::lv_obj_set_style_radius(logo, 0, lvgl::LV_STATE_DEFAULT);
-        lvgl::lv_obj_set_style_border_width(logo, 0, lvgl::LV_STATE_DEFAULT);
-
-        new_part(logo, lvgl::lv_align_t_LV_ALIGN_TOP_RIGHT, factor, color)?;
-        new_part(logo, lvgl::lv_align_t_LV_ALIGN_BOTTOM_RIGHT, factor, color)?;
-        new_part(logo, lvgl::lv_align_t_LV_ALIGN_BOTTOM_LEFT, factor, color)?;
-        new_part(logo, lvgl::lv_align_t_LV_ALIGN_TOP_LEFT, factor, color)?;
-
-        Ok(logo)
-    }
-}
-
-fn new_part(
-    parent: *mut lvgl::lv_obj_t,
-    alignment: lvgl::lv_align_t,
-    factor: u8,
-    color: Color,
-) -> Result<*mut lvgl::lv_obj_t> {
-    let size = (10_i32 * factor as i32, 21_i32 * factor as i32);
-
-    unsafe {
-        let part = lvgl::lv_button_create(parent);
-
-        if part.is_null() {
-            return Err(Error::FailedToCreateObject);
-        }
-
-        lvgl::lv_obj_set_style_bg_color(part, color.into_lvgl_color(), lvgl::LV_STATE_DEFAULT);
-        lvgl::lv_obj_set_style_bg_color(part, lvgl::lv_color_white(), lvgl::LV_STATE_PRESSED);
-
-        lvgl::lv_obj_set_align(part, alignment);
-
-        match alignment {
-            lvgl::lv_align_t_LV_ALIGN_TOP_LEFT | lvgl::lv_align_t_LV_ALIGN_BOTTOM_RIGHT => {
-                lvgl::lv_obj_set_size(part, size.0, size.1);
-            }
-            lvgl::lv_align_t_LV_ALIGN_BOTTOM_LEFT | lvgl::lv_align_t_LV_ALIGN_TOP_RIGHT => {
-                lvgl::lv_obj_set_size(part, size.1, size.0);
-            }
-            _ => {}
-        }
-
-        lvgl::lv_obj_set_style_pad_all(part, 0, lvgl::LV_STATE_DEFAULT);
-        lvgl::lv_obj_set_style_radius(part, 0, lvgl::LV_STATE_DEFAULT);
-        lvgl::lv_obj_set_style_border_width(part, 0, lvgl::LV_STATE_DEFAULT);
-        lvgl::lv_obj_add_flag(part, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_EVENT_BUBBLE);
-
-        Ok(part)
     }
 }
