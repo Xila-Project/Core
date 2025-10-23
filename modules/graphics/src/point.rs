@@ -44,6 +44,12 @@ impl Point {
         let y = (self.y - other.y) as f32;
         (x * x + y * y).sqrt()
     }
+
+    pub const fn scale(mut self, factor: f64) -> Self {
+        self.x = (self.x as f64 * factor).round() as i16;
+        self.y = (self.y as f64 * factor).round() as i16;
+        self
+    }
 }
 
 impl From<(i16, i16)> for Point {
