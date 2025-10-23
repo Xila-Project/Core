@@ -38,7 +38,7 @@ unsafe extern "C" fn load_animation_callback(object: *mut c_void, value: i32) {
 
         let next_part = lv_obj_get_child(object, (ANIMATED_PART - 1) as i32);
 
-        if (ANIMATED_PART % 2) == 0 {
+        if ANIMATED_PART.is_multiple_of(2) {
             // lv_obj_set_style_shadow_width(next_part, 255 + 64 - value, LV_STATE_DEFAULT);
 
             lv_obj_set_style_opa(next_part, (255 + 64 - value) as u8, LV_STATE_DEFAULT);
@@ -102,7 +102,7 @@ impl Bootsplash {
             lv_anim_set_repeat_count(&mut *s.animation, u32::MAX);
             lv_anim_set_path_cb(&mut *s.animation, Some(lv_anim_path_ease_in_out));
             lv_anim_set_exec_cb(&mut *s.animation, Some(load_animation_callback));
-            lv_anim_start(&mut *s.animation);
+            lv_anim_start(&*s.animation);
 
             Ok(s)
         }

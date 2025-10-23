@@ -46,6 +46,14 @@ pub unsafe fn lv_obj_move_foreground(object: *mut lv_obj_t) {
     }
 }
 
+/// Get the size of an object as a Point
+///
+/// # Arguments
+/// * `Object` - The object to get the size of.
+///
+///  # Safety
+/// This function is unsafe because it may dereference raw pointers (e.g. `Object`).
+///
 pub unsafe fn lv_obj_get_size(object: *mut lv_obj_t) -> Point {
     unsafe {
         let width = lv_obj_get_width(object) as i16;

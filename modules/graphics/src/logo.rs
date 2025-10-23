@@ -15,6 +15,15 @@ impl Logo {
         factor_x.min(factor_y) as u8
     }
 
+    /// Create a new Logo object
+    ///
+    /// # Arguments
+    /// * `Parent` - The parent object to create the logo on.
+    /// * `Factor` - The scaling factor for the logo size.
+    /// * `Color` - The color of the logo parts.
+    ///
+    /// # Safety
+    /// This function is unsafe because it may dereference raw pointers (e.g.
     pub unsafe fn new(parent: *mut lvgl::lv_obj_t, factor: u8, color: Color) -> Result<Self> {
         unsafe {
             let object = lvgl::lv_button_create(parent);
