@@ -1,7 +1,7 @@
 use file_system::{DeviceTrait, Size};
 use graphics::{ScreenReadData, ScreenWriteData};
 
-use crate::native::window_screen::inner_window::InnerWindow;
+use crate::window_screen::inner_window::InnerWindow;
 
 pub struct ScreenDevice<'a>(&'a InnerWindow);
 

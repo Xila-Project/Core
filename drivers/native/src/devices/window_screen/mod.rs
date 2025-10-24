@@ -5,9 +5,9 @@ mod pointer;
 mod screen;
 mod window;
 
-use embassy_sync::rwlock::RwLock;
 use file_system::{Device, create_device};
 use graphics::{InputData, Key, Point, State};
+use synchronization::rwlock::RwLock;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, channel::Channel};
 
 use inner_window::*;
@@ -16,7 +16,7 @@ use pointer::*;
 use screen::*;
 use window::*;
 
-use crate::native::window_screen::event_loop::Runner;
+use crate::window_screen::event_loop::Runner;
 
 static KEYBOARD_CHANNEL: Channel<CriticalSectionRawMutex, (Key, State), 64> = Channel::new();
 static POINTER_RWLOCK: RwLock<CriticalSectionRawMutex, InputData> =

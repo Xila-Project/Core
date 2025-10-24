@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use winit::platform::{pump_events::EventLoopExtPumpEvents, wayland::EventLoopBuilderExtWayland};
 
-use crate::native::window_screen::window::Window;
+use crate::window_screen::window::Window;
 
 pub struct Runner<'a>(Window<'a>, winit::event_loop::EventLoop<()>);
 

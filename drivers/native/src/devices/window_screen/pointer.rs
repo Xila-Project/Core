@@ -1,36 +1,27 @@
-use embassy_sync::{
-    blocking_mutex::raw::{CriticalSectionRawMutex, RawMutex},
-    channel::Receiver,
-};
 use file_system::{DeviceTrait, Size};
-use graphics::{InputData, Key, State};
+use graphics::InputData;
+use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
-pub struct KeyboardDevice<M, const N: usize>(Receiver<'static, M, (Key, State), N>)
-where
-    M: RawMutex + 'static;
+pub struct PointerDevice(&'static RwLock<CriticalSectionRawMutex, InputData>);
 
-impl<M, const N: usize> KeyboardDevice<M, N>
-where
-    M: RawMutex + 'static,
-{
-    pub fn new(receiver: Receiver<'static, M, (Key, State), N>) -> Self {
-        Self(receiver)
+impl PointerDevice {
+    pub fn new(signal: &'static RwLock<CriticalSectionRawMutex, InputData>) -> Self {
+        Self(signal)
     }
 }
 
-impl<const N: usize> DeviceTrait for KeyboardDevice<CriticalSectionRawMutex, N> {
+impl DeviceTrait for PointerDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
-        // - Cast
+        // - Cast the pointer data to the buffer.
         let data: &mut InputData = buffer
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;
 
-        if let Ok((key, state)) = self.0.try_receive() {
-            data.set_key(key);
-            data.set_state(state);
-        }
+        // Copy the pointer data.
 
-        data.set_continue(!self.0.is_empty());
+        if let Ok(guard) = self.0.try_read() {
+            *data = *guard;
+        }
 
         Ok(size_of::<InputData>().into())
     }
