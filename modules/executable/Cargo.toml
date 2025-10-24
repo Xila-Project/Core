@@ -12,7 +12,7 @@ futures = { workspace = true }
 log = { workspace = true }
 
 [dev-dependencies]
-drivers = { workspace = true }
+drivers_native = { workspace = true }
 
 [features]
 default = []

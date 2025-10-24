@@ -18,7 +18,7 @@ log = { workspace = true }
 #wit-bindgen = "0.34.0"
 
 [dev-dependencies]
-drivers = { workspace = true }
+drivers_native = { workspace = true }
 executable = { workspace = true, features = ["building"] }
 little_fs = { workspace = true }
 memory = { workspace = true }

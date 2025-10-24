@@ -22,7 +22,7 @@ synchronization = { workspace = true }
 [dev-dependencies]
 abi_definitions = { workspace = true }
 users = { workspace = true }
-drivers = { workspace = true }
+drivers_native = { workspace = true }
 futures = { workspace = true }
 log = { workspace = true }
 executable = { workspace = true, features = ["building"] }

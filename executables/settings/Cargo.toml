@@ -18,7 +18,7 @@ log = { workspace = true }
 authentication = { workspace = true }
 
 [dev-dependencies]
-drivers = { workspace = true }
+drivers_native = { workspace = true }
 little_fs = { workspace = true }
 command_line_shell = { workspace = true }
 abi_definitions = { workspace = true }

@@ -9,7 +9,7 @@ log = { workspace = true }
 shared = { workspace = true }
 
 [dev-dependencies]
-drivers = { workspace = true }
+drivers_native = { workspace = true }
 log = { workspace = true }
 
 [[test]]
