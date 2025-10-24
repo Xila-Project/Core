@@ -1,6 +1,7 @@
 use alloc::string::String;
 
 use crate::{Result, Shell, error::Error};
+use xila::{authentication, task, virtual_file_system};
 
 impl Shell {
     pub async fn authenticate(&mut self) -> Result<String> {

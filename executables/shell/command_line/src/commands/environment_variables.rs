@@ -1,6 +1,7 @@
 pub(crate) use alloc::format;
 
 use crate::Shell;
+use xila::task;
 
 impl Shell {
     pub async fn set_environment_variable(&mut self, arguments: &[&str]) {

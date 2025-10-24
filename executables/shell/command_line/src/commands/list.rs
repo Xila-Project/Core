@@ -1,5 +1,5 @@
 use alloc::format;
-use file_system::Path;
+use xila::{file_system::Path, virtual_file_system};
 
 use crate::Shell;
 
