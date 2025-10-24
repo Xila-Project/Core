@@ -17,6 +17,11 @@ pub use error::*;
 pub use read_data::*;
 pub use standard::*;
 
+pub use file_system as exported_file_system;
+pub use futures as exported_futures;
+pub use task as exported_task;
+pub use virtual_file_system as exported_virtual_file_system;
+
 use task::{JoinHandle, TaskIdentifier};
 use users::UserIdentifier;
 use virtual_file_system::File;
