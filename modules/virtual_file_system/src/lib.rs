@@ -18,3 +18,5 @@ pub use file::*;
 pub use file_system::*;
 pub use hierarchy::*;
 pub use socket::SockerAddress;
+
+pub extern crate file_system as exported_file_system;
