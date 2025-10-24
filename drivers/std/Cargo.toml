@@ -21,3 +21,6 @@ embassy-executor = { workspace = true, default-features = false, features = [
   "arch-std",
   "executor-thread",
 ] }
+
+[dev-dependencies]
+little_fs = { workspace = true }

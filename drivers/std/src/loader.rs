@@ -137,6 +137,7 @@ impl<'a> Loader<'a> {
 mod tests {
     use super::*;
     use file_system::FileSystemTraits;
+    extern crate alloc;
 
     #[test]
     fn test_loader() {
