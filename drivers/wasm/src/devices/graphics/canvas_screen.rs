@@ -1,10 +1,10 @@
 use core::slice;
 
-use alloc::sync::Arc;
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
+use alloc::{string::String, sync::Arc, vec::Vec};
 use file_system::DeviceTrait;
 use futures::block_on;
 use graphics::{Area, Point, RenderingColor, ScreenReadData, ScreenWriteData};
+use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use wasm_bindgen::{Clamped, JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 

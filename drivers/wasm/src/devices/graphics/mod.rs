@@ -3,6 +3,7 @@ mod full_screen_canvas;
 mod keyboard;
 mod mouse;
 
+use alloc::string::String;
 pub use canvas_screen::*;
 use file_system::{Device, create_device};
 use graphics::Point;

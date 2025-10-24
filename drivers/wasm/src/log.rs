@@ -1,3 +1,4 @@
+use alloc::format;
 use log::{Level, LoggerTrait, Record};
 use wasm_bindgen::prelude::*;
 
@@ -29,7 +30,7 @@ impl LoggerTrait for Logger {
         return true;
     }
 
-    fn write(&self, _: std::fmt::Arguments) {}
+    fn write(&self, _: core::fmt::Arguments) {}
 
     fn log(&self, record: &Record) {
         let message = format!("{} | {}", record.target, record.arguments);

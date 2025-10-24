@@ -1,8 +1,8 @@
-use alloc::sync::Arc;
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
+use alloc::{boxed::Box, string::String, sync::Arc};
 use file_system::{DeviceTrait, Size};
 use futures::block_on;
 use graphics::{InputData, Point, State};
+use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use wasm_bindgen::{JsCast, prelude::Closure};
 use web_sys::{HtmlCanvasElement, MouseEvent};
 

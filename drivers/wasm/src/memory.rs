@@ -39,9 +39,9 @@
 //! ```
 use core::{cell::RefCell, ptr::NonNull};
 
-use embassy_sync::blocking_mutex::CriticalSectionMutex;
 use linked_list_allocator::Heap;
 use memory::{Capabilities, Layout, ManagerTrait, utilities::round_to_page_size};
+use synchronization::blocking_mutex::CriticalSectionMutex;
 
 use core::arch::wasm32::memory_grow;
 
@@ -129,7 +129,7 @@ impl ManagerTrait for MemoryManager {
             .lock(|inner| unsafe { inner.borrow_mut().allocate_first_fit(layout) })
     }
 
-    unsafe fn deallocate(&self, pointer: std::ptr::NonNull<u8>, layout: memory::Layout) {
+    unsafe fn deallocate(&self, pointer: core::ptr::NonNull<u8>, layout: memory::Layout) {
         self.0
             .lock(|inner| unsafe { inner.borrow_mut().heap.deallocate(pointer, layout) });
     }
@@ -152,8 +152,8 @@ impl ManagerTrait for MemoryManager {
 #[macro_export]
 macro_rules! instantiate_global_allocator {
     () => {
-        static __MEMORY_MANAGER: $crate::wasm::memory::MemoryManager =
-            $crate::wasm::memory::MemoryManager::new();
+        static __MEMORY_MANAGER: $crate::memory::MemoryManager =
+            $crate::memory::MemoryManager::new();
 
         $crate::memory_exported::instantiate_global_allocator!(&__MEMORY_MANAGER);
     };

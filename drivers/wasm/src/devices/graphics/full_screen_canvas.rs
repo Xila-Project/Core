@@ -1,7 +1,8 @@
+use alloc::{boxed::Box, string::String};
 use wasm_bindgen::{JsCast, prelude::Closure};
 use web_sys::HtmlCanvasElement;
 
-use crate::wasm::devices::graphics::get_window_size;
+use crate::devices::graphics::get_window_size;
 
 pub fn new() -> Result<HtmlCanvasElement, String> {
     let window = web_sys::window().ok_or("Failed to get window")?;
