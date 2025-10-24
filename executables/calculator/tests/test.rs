@@ -1,30 +1,9 @@
-extern crate alloc;
-
-use std::fs;
-
-use drivers_native::TimeDriver;
-use xila::executable::build_crate;
-use xila::file_system;
-use xila::file_system::{MemoryDevice, create_device, create_file_system};
-use xila::graphics;
-use xila::host_bindings;
-use xila::little_fs;
-use xila::log;
-use xila::task;
-use xila::task::test;
-use xila::time;
-use xila::time::Duration;
-use xila::users;
-use xila::virtual_file_system;
-use xila::virtual_file_system::{create_default_hierarchy, mount_static_devices};
-use xila::virtual_machine;
-
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-drivers_std::memory::instantiate_global_allocator!();
-
-#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-#[task::run(executor = drivers_std::executor::instantiate_static_executor!())]
+#[xila::task::run(task_path = xila::task, executor = drivers_std::executor::instantiate_static_executor!())]
 async fn run_graphics() {
+    use xila::graphics;
+    use xila::task;
+
     let task_manager = task::get_instance();
 
     const RESOLUTION: graphics::Point = graphics::Point::new(800, 600);
@@ -70,9 +49,30 @@ async fn run_graphics() {
         .unwrap();
 }
 
-#[test]
+#[xila::task::test(task_path = xila::task)]
 #[ignore]
-async fn integration_test() {
+async fn main() {
+    drivers_std::memory::instantiate_global_allocator!();
+
+    extern crate alloc;
+
+    use drivers_native::TimeDriver;
+    use std::fs;
+    use xila::executable::build_crate;
+    use xila::file_system;
+    use xila::file_system::{MemoryDevice, create_device, create_file_system};
+    use xila::graphics;
+    use xila::host_bindings;
+    use xila::little_fs;
+    use xila::log;
+    use xila::task;
+    use xila::time;
+    use xila::time::Duration;
+    use xila::users;
+    use xila::virtual_file_system;
+    use xila::virtual_file_system::{create_default_hierarchy, mount_static_devices};
+    use xila::virtual_machine;
+
     // - Initialize the system
     log::initialize(&drivers_std::log::Logger).unwrap();
 
