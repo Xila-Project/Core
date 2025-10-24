@@ -3,7 +3,7 @@ name = "native_example"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
 xila = { path = "../../", features = [
   "host",
   "virtual_machine",
@@ -15,3 +15,7 @@ graphical_shell = { workspace = true }
 wasm = { workspace = true }
 terminal = { workspace = true }
 settings = { workspace = true }
+drivers_core = { workspace = true }
+drivers_std = { workspace = true }
+drivers_shared = { workspace = true }
+drivers_native = { workspace = true }
