@@ -20,7 +20,6 @@ abi_context = { workspace = true }
 synchronization = { workspace = true }
 
 [dev-dependencies]
-graphics = { workspace = true, features = ["rendering_xrgb8888"] }
 abi_definitions = { workspace = true }
 users = { workspace = true }
 drivers = { workspace = true }

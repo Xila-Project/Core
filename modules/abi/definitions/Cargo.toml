@@ -20,6 +20,5 @@ default = []
 
 [dev-dependencies]
 drivers = { workspace = true }
-graphics = { workspace = true, features = ["rendering_xrgb8888"] }
 little_fs = { workspace = true }
 users = { workspace = true }

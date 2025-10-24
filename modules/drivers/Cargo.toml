@@ -35,6 +35,7 @@ little_fs = { workspace = true }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
 critical-section = { workspace = true, features = ["std"] }
+graphics = { workspace = true, features = ["rendering_xrgb8888"] }
 pixels = "0.15.0"
 winit = { version = "0.30", features = ["rwh_05"] }
 rand = "0.9.0"
