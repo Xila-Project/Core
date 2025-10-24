@@ -2,6 +2,7 @@ use core::{
     fmt::Display,
     num::{NonZeroU8, NonZeroUsize},
 };
+use xila::{file_system, graphics, task, virtual_file_system};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
