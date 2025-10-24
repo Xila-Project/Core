@@ -5,7 +5,6 @@ use crate::{
     icon::create_icon,
     shortcut::{SHORTCUT_PATH, Shortcut},
 };
-
 use alloc::{
     collections::btree_map::BTreeMap,
     ffi::CString,
@@ -13,12 +12,14 @@ use alloc::{
     vec,
     vec::Vec,
 };
-use executable::Standard;
-use file_system::{Kind, Mode};
-use futures::block_on;
-use graphics::{Color, EventKind, Logo, Point, Window, lvgl};
-use log::error;
-use virtual_file_system::Directory;
+use xila::executable;
+use xila::executable::Standard;
+use xila::file_system::{Kind, Mode};
+use xila::futures::block_on;
+use xila::graphics::{self, Color, EventKind, Logo, Point, Window, lvgl};
+use xila::log::error;
+use xila::task;
+use xila::virtual_file_system::{self, Directory};
 
 pub const WINDOWS_PARENT_CHILD_CHANGED: graphics::EventKind = graphics::EventKind::Custom2;
 

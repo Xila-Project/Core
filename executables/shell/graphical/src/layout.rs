@@ -1,6 +1,7 @@
 use alloc::{format, string::String};
-use graphics::lvgl;
-use shared::unix_to_human_time;
+use xila::graphics::{self, lvgl};
+use xila::shared::unix_to_human_time;
+use xila::time;
 
 use crate::error::{Error, Result};
 
