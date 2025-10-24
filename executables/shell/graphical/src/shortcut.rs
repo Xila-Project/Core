@@ -1,8 +1,8 @@
 use alloc::{string::String, vec::Vec};
-use file_system::{Mode, Path};
-use graphics::Color;
 use miniserde::{Deserialize, Serialize};
-use virtual_file_system::File;
+use xila::file_system::{Mode, Path};
+use xila::graphics::Color;
+use xila::virtual_file_system::{self, File};
 
 use crate::error::{Error, Result};
 

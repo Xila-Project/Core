@@ -1,8 +1,11 @@
 pub(crate) use core::ffi::CStr;
 
 use alloc::string::ToString;
-use graphics::{EventKind, Window, lvgl};
-use users::UserIdentifier;
+use xila::authentication;
+use xila::graphics::{self, EventKind, Window, lvgl};
+use xila::task;
+use xila::users::UserIdentifier;
+use xila::virtual_file_system;
 
 use crate::error::{Error, Result};
 

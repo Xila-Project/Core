@@ -2,8 +2,6 @@
 
 extern crate alloc;
 
-use executable::Standard;
-
 use core::num::NonZeroUsize;
 
 use alloc::{
@@ -12,8 +10,9 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use executable::execute;
-use file_system::Path;
+use xila::executable::{Standard, execute};
+use xila::file_system::Path;
+use xila::task;
 
 use crate::{Error, Result, parser::parse, resolver::resolve, tokenizer::tokenize};
 
@@ -25,7 +24,7 @@ mod resolver;
 mod tokenizer;
 
 use error::*;
-use file_system::PathOwned;
+use xila::{executable, file_system::PathOwned};
 
 pub struct Shell {
     standard: Standard,

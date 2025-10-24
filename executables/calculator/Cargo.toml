@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 
-[dev-dependencies]
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
 xila = { path = "../../", features = [
   "host",
   "executable_building",

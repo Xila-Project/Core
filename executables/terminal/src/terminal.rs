@@ -1,15 +1,13 @@
+use crate::error::Result;
 use alloc::{collections::vec_deque::VecDeque, string::String};
-use log::information;
-
 use core::ffi::CStr;
-use file_system::Size;
-use graphics::{
-    Color, EventKind, Key, Window,
+use xila::file_system::Size;
+use xila::graphics::{
+    self, Color, EventKind, Key, Window,
     lvgl::{self, lv_obj_t},
 };
-use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
-
-use crate::error::Result;
+use xila::log::information;
+use xila::synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
 pub(crate) struct Inner {
     window: Window,
@@ -189,9 +187,7 @@ impl Terminal {
             match event.get_code() {
                 EventKind::Delete => return Ok(false),
                 EventKind::Key => {
-                    log::information!("Terminal: Key event received: {:?}", event);
                     if let Some(Key::Enter) = event.get_key() {
-                        log::information!("Terminal: Validating input");
                         let _lock = graphics::get_instance().lock().await;
 
                         let text = Self::get_input(inner.input);

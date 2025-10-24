@@ -1,6 +1,6 @@
 use core::ptr::null_mut;
 
-use graphics::lvgl;
+use xila::graphics::{self, lvgl};
 
 use crate::{desk::Desk, error::Result};
 

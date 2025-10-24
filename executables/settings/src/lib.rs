@@ -5,16 +5,16 @@ extern crate alloc;
 mod error;
 mod settings;
 mod tabs;
-use core::num::NonZeroUsize;
 
-use executable::Standard;
+pub use error::*;
+pub use settings::*;
 
 use alloc::string::{String, ToString};
-pub use error::*;
-use file_system::{Flags, Mode, Open};
-pub use settings::*;
-use task::TaskIdentifier;
-use virtual_file_system::{File, VirtualFileSystem};
+use core::num::NonZeroUsize;
+use xila::executable::{self, Standard};
+use xila::file_system::{self, Flags, Mode, Open};
+use xila::task::TaskIdentifier;
+use xila::virtual_file_system::{File, VirtualFileSystem};
 
 pub const SHORTCUT: &str = r#"
 {

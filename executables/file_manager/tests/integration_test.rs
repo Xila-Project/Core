@@ -1,25 +1,22 @@
-extern crate alloc;
-
-extern crate abi_definitions;
-
-use executable::Standard;
-use file_manager::FileManagerExecutable;
-use file_system::{MemoryDevice, Mode, create_device, create_file_system};
-use task::test;
-
-#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-drivers_std::memory::instantiate_global_allocator!();
-
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[ignore]
-#[test]
+#[xila::task::test(task_path = xila::task)]
 async fn main() {
+    drivers_std::memory::instantiate_global_allocator!();
+
+    extern crate alloc;
+    extern crate abi_definitions;
+
     use alloc::string::ToString;
     use command_line_shell::ShellExecutable;
     use drivers_native::window_screen;
-    use executable::mount_static_executables;
-    use graphics::{InputKind, Point, get_minimal_buffer_size};
-    use virtual_file_system::{create_default_hierarchy, mount_static_devices};
+    use file_manager::FileManagerExecutable;
+    use xila::executable::Standard;
+    use xila::executable::mount_static_executables;
+    use xila::file_system::{MemoryDevice, Mode, create_device, create_file_system};
+    use xila::graphics::{self, InputKind, Point, get_minimal_buffer_size};
+    use xila::virtual_file_system::{self, create_default_hierarchy, mount_static_devices};
+    use xila::{executable, task, time, users};
 
     // - Initialize the task manager.
     let task_manager = task::initialize();

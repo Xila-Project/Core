@@ -1,3 +1,4 @@
+use crate::error::{Error, Result};
 pub(crate) use alloc::{
     borrow::ToOwned,
     ffi::CString,
@@ -5,15 +6,14 @@ pub(crate) use alloc::{
     vec::Vec,
 };
 use core::{ptr::null_mut, time::Duration};
-
-use file_system::{Kind, Path, PathOwned};
-use graphics::{
-    EventKind, Window, lvgl,
+use xila::file_system::{Kind, Path, PathOwned};
+use xila::graphics::{
+    self, EventKind, Window, lvgl,
     palette::{self, Hue},
 };
-use virtual_file_system::{Directory, get_instance};
-
-use crate::error::{Error, Result};
+use xila::log;
+use xila::task;
+use xila::virtual_file_system::{Directory, get_instance};
 
 pub struct FileManager {
     window: Window,

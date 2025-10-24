@@ -9,11 +9,10 @@ use alloc::string::{String, ToString};
 use core::num::NonZeroUsize;
 pub use error::*;
 pub use file_manager::*;
-use file_system::{Flags, Mode, Open};
-use task::TaskIdentifier;
-use virtual_file_system::{File, VirtualFileSystem};
-
-use executable::Standard;
+use xila::executable::{self, Standard};
+use xila::file_system::{self, Flags, Mode, Open};
+use xila::task::TaskIdentifier;
+use xila::virtual_file_system::{File, VirtualFileSystem};
 
 pub const SHORTCUT: &str = r#"
 {

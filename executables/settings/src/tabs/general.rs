@@ -1,5 +1,5 @@
 use crate::error::Result;
-use graphics::{Event, lvgl};
+use xila::graphics::{Event, lvgl};
 
 pub struct GeneralTab {
     tab_container: *mut lvgl::lv_obj_t,

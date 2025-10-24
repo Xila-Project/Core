@@ -1,20 +1,19 @@
-extern crate alloc;
-
-use alloc::string::ToString;
-use command_line_shell::ShellExecutable;
-use executable::{Standard, mount_static_executables};
-use file_system::{MemoryDevice, Mode, create_device, create_file_system};
-use task::test;
-use users::GroupIdentifier;
-use virtual_file_system::{create_default_hierarchy, mount_static_devices};
-
-#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-drivers_std::memory::instantiate_global_allocator!();
-
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[ignore]
-#[test]
-async fn integration_test() {
+#[xila::task::test(task_path = xila::task)]
+async fn main() {
+    drivers_std::memory::instantiate_global_allocator!();
+
+    extern crate alloc;
+
+    use alloc::string::ToString;
+    use command_line_shell::ShellExecutable;
+    use xila::executable::{Standard, mount_static_executables};
+    use xila::file_system::{MemoryDevice, create_device, create_file_system};
+    use xila::users::GroupIdentifier;
+    use xila::virtual_file_system::{create_default_hierarchy, mount_static_devices};
+    use xila::{authentication, file_system::Mode, task, time, users, virtual_file_system};
+
     let task_instance = task::initialize();
 
     let _ = users::initialize();
@@ -117,11 +116,12 @@ async fn integration_test() {
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/command_line_shell", "".to_string(), standard)
-        .await
-        .unwrap()
-        .join()
-        .await;
+    let result =
+        xila::executable::execute("/binaries/command_line_shell", "".to_string(), standard)
+            .await
+            .unwrap()
+            .join()
+            .await;
 
     assert!(result == 0);
 }

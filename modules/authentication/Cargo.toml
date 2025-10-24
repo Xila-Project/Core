@@ -18,4 +18,4 @@ file_system = { workspace = true }
 
 # External dependencies
 sha2 = { version = "0.10", features = ["asm"] } # SHA-512 cryptographic hashing
-miniserde = "0.1"                               # Lightweight JSON serialization for no-std environments
+miniserde = { workspace = true }

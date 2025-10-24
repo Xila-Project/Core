@@ -7,20 +7,18 @@ extern crate alloc;
 use core::mem::forget;
 use core::num::NonZeroUsize;
 
+use crate::Error;
 use alloc::{
     borrow::ToOwned,
     string::{String, ToString},
     vec::Vec,
 };
-use executable::Standard;
-use file_system::{Mode, Path};
-
-use virtual_file_system::File;
-
-use crate::Error;
-
 pub use error::*;
-use executable::implement_executable_device;
+use xila::executable::{Standard, implement_executable_device};
+use xila::file_system::{Mode, Path};
+use xila::task;
+use xila::virtual_file_system::{self, File};
+use xila::virtual_machine;
 
 pub struct WasmDevice;
 

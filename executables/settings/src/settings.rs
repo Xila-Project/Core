@@ -1,11 +1,12 @@
 use alloc::string::String;
 use core::time::Duration;
 
-use file_system::Kind;
-use graphics::{
-    EventKind, Window, lvgl,
+use xila::file_system::Kind;
+use xila::graphics::{
+    self, EventKind, Window, lvgl,
     palette::{self, Hue},
 };
+use xila::task;
 
 use crate::error::Result;
 use crate::tabs::{GeneralTab, PasswordTab, Tab};

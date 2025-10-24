@@ -1,6 +1,9 @@
 use alloc::{borrow::ToOwned, format, string::ToString};
 
-use file_system::{Inode, Path};
+use xila::{
+    file_system::{Inode, Path},
+    users, virtual_file_system,
+};
 
 use crate::Shell;
 

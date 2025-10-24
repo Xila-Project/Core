@@ -1,21 +1,22 @@
-extern crate alloc;
-
-extern crate abi_definitions;
-
-use command_line_shell::ShellExecutable;
-use drivers_std::loader::Loader;
-use executable::{Standard, build_crate, mount_static_executables};
-use file_system::{MemoryDevice, Mode, Path, create_device, create_file_system};
-use task::test;
-use virtual_file_system::{create_default_hierarchy, mount_static_devices};
-use wasm::WasmDevice;
-
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-drivers_std::memory::instantiate_global_allocator!();
-
 #[ignore]
-#[test]
-async fn i() {
+#[xila::task::test(task_path = xila::task)]
+async fn main() {
+    drivers_std::memory::instantiate_global_allocator!();
+
+    extern crate alloc;
+    extern crate abi_definitions;
+
+    use command_line_shell::ShellExecutable;
+    use drivers_std::loader::Loader;
+    use wasm::WasmDevice;
+    use xila::executable::{Standard, build_crate, mount_static_executables};
+    use xila::file_system::{MemoryDevice, Mode, Path, create_device, create_file_system};
+    use xila::time;
+    use xila::users;
+    use xila::virtual_file_system::{self, create_default_hierarchy, mount_static_devices};
+    use xila::virtual_machine;
+
     let task_instance = task::initialize();
 
     let _ = users::initialize();
