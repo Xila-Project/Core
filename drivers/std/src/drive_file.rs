@@ -6,7 +6,7 @@ use std::{
 
 use file_system::{DeviceTrait, Error, Path, Size};
 
-use crate::standard_library::io::map_error;
+use crate::io::map_error;
 
 pub struct FileDriveDevice(RwLock<File>);
 

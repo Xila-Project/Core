@@ -252,8 +252,8 @@ unsafe fn unmap(pointer: *mut MaybeUninit<u8>, size: usize) {
 #[macro_export]
 macro_rules! instantiate_global_allocator {
     () => {
-        static __MEMORY_MANAGER: $crate::standard_library::memory::MemoryManager =
-            $crate::standard_library::memory::MemoryManager::new();
+        static __MEMORY_MANAGER: $crate::memory::MemoryManager =
+            $crate::memory::MemoryManager::new();
 
         $crate::memory_exported::instantiate_global_allocator!(&__MEMORY_MANAGER);
     };

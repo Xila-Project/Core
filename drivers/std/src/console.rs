@@ -2,7 +2,7 @@ use std::io::{Read, Write, stderr, stdin, stdout};
 
 use file_system::{DeviceTrait, Size};
 
-use crate::standard_library::io::map_error;
+use crate::io::map_error;
 
 pub struct StandardInDevice;
 
