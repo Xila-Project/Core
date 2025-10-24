@@ -34,6 +34,15 @@ impl InputData {
         }
     }
 
+    pub const fn default_constant() -> Self {
+        Self {
+            point: Point::new(0, 0),
+            state: State::Released,
+            key: Key::Character(0),
+            r#continue: false,
+        }
+    }
+
     pub const fn get_continue(&self) -> bool {
         self.r#continue
     }

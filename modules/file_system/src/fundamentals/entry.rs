@@ -1,7 +1,7 @@
 //! Directory entry representation for file system operations.
 
 //!
-//! This module provides the [`Entry_type`] structure which represents individual
+//! This module provides the [`Entry`] structure which represents individual
 //! entries within directories, such as files, subdirectories, and other file system objects.
 
 use alloc::string::String;
@@ -24,16 +24,16 @@ use super::{Inode, Size};
 /// use alloc::string::String;
 ///
 /// // Create a directory entry for a regular file
-/// let file_entry = Entry_type::new(
-///     Inode_type::new(42),
+/// let file_entry = Entry::new(
+///     Inode::new(42),
 ///     String::from("document.txt"),
-///     Type_type::File,
+///     Kind::File,
 ///     Size::new(1024)
 /// );
 ///
 /// assert_eq!(file_entry.get_name(), "document.txt");
-/// assert_eq!(file_entry.get_type(), Type_type::File);
-/// assert_eq!(file_entry.get_size().As_u64(), 1024);
+/// assert_eq!(file_entry.get_type(), Kind::File);
+/// assert_eq!(file_entry.get_size().as_u64(), 1024);
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Entry {
@@ -64,10 +64,10 @@ impl Entry {
     /// use file_system::*;
     /// use alloc::string::String;
     ///
-    /// let entry = Entry_type::new(
-    ///     Inode_type::new(123),
+    /// let entry = Entry::new(
+    ///     Inode::new(123),
     ///     String::from("example.txt"),
-    ///     Type_type::File,
+    ///     Kind::File,
     ///     Size::new(2048)
     /// );
     /// ```
@@ -265,7 +265,7 @@ mod tests {
         );
 
         let debug_str = alloc::format!("{entry:?}");
-        assert!(debug_str.contains("Entry_type"));
+        assert!(debug_str.contains("Entry"));
         assert!(debug_str.contains("789"));
         assert!(debug_str.contains("debug_test"));
     }

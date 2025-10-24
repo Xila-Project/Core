@@ -3,7 +3,7 @@ use core::{
     sync::{Arc, RwLock},
 };
 
-use file_system::{Inode_type, Local_file_identifier_type, Path_owned_type};
+use file_system::{Inode, LocalFileIdentifier, Path_owned_type};
 use virtual_file_system::VirtualFileSystem;
 
 use crate::Result;
@@ -15,14 +15,14 @@ struct Socket_type<'a> {
 
 pub struct Local_socket_manager_type<'a> {
     Virtual_file_system: &'a VirtualFileSystem<'a>,
-    Open_sockets: RwLock<BTreeMap<Local_file_identifier_type, Arc<Socket_type<'a>>>>,
-    Sockets: RwLock<BTreeMap<Inode_type, Arc<Socket_type<'a>>>>,
+    Open_sockets: RwLock<BTreeMap<LocalFileIdentifier, Arc<Socket_type<'a>>>>,
+    Sockets: RwLock<BTreeMap<Inode, Arc<Socket_type<'a>>>>,
 }
 
 impl<'a> Local_socket_manager_type<'a> {
     pub fn is_socket_identifier_used(
         &self,
-        Socket: Local_file_identifier_type,
+        Socket: LocalFileIdentifier,
     ) -> Result<bool> {
         Ok(self.Open_sockets.read().unwrap().contains_key(&Socket))
     }
@@ -35,7 +35,7 @@ impl<'a> Local_socket_manager_type<'a> {
         }
     }
 
-    pub fn Bind(Path: Path_owned_type, Socket: Local_file_identifier_type) -> Result<()> {
+    pub fn Bind(Path: Path_owned_type, Socket: LocalFileIdentifier) -> Result<()> {
         todo!()
     }
 }

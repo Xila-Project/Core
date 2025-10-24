@@ -33,16 +33,16 @@ use crate::{Device, Error, PartitionDevice, PartitionEntry, Result};
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+/// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
 /// // First create and write an MBR to the device
-/// let mut mbr = MBR_type::New_with_signature(0x12345678);
-/// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
-/// mbr.Write_to_device(&device).unwrap();
+/// let mut mbr = Mbr::new_with_signature(0x12345678);
+/// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
+/// mbr.write_to_device(&device).unwrap();
 ///
 /// // Now read it back and create partition device
-/// let mbr = MBR_type::Read_from_device(&device).unwrap();
+/// let mbr = Mbr::read_from_device(&device).unwrap();
 /// if let Some(partition) = mbr.get_valid_partitions().first() {
-///     let partition_device = Create_partition_device(device, partition).unwrap();
+///     let partition_device = create_partition_device(device, partition).unwrap();
 ///     // Now you can use partition_device for I/O operations
 /// }
 /// ```
@@ -73,7 +73,7 @@ pub fn create_partition_device(
 ///
 /// # Returns
 ///
-/// * `Ok(Vec<(usize, Partition_entry_type)>)` - List of valid partitions with their indices
+/// * `Ok(Vec<(usize, PartitionEntry)>)` - List of valid partitions with their indices
 /// * `Err(Error)` - Error reading MBR or device access failure
 ///
 /// # Examples
@@ -82,9 +82,9 @@ pub fn create_partition_device(
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+/// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
 ///
-/// match Scan_mbr_partitions(&device) {
+/// match scan_mbr_partitions(&device) {
 ///     Ok(partitions) => {
 ///         println!("Found {} valid partitions", partitions.len());
 ///         for (index, partition) in partitions {
@@ -129,15 +129,15 @@ pub fn scan_mbr_partitions(device: &Device) -> Result<Vec<(usize, PartitionEntry
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+/// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
 /// // First create and write a valid MBR
-/// let mut mbr = MBR_type::New_with_signature(0x12345678);
-/// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
-/// mbr.Write_to_device(&device).unwrap();
+/// let mut mbr = Mbr::new_with_signature(0x12345678);
+/// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
+/// mbr.write_to_device(&device).unwrap();
 ///
 /// // Read it back and validate
-/// let mbr = MBR_type::Read_from_device(&device).unwrap();
-/// match mbr.Validate() {
+/// let mbr = Mbr::read_from_device(&device).unwrap();
+/// match mbr.validate() {
 ///     Ok(()) => println!("MBR is valid"),
 ///     Err(Error::Corrupted) => println!("MBR is corrupted"),
 ///     Err(e) => println!("Validation error: {}", e),
@@ -169,16 +169,16 @@ pub fn validate_mbr(mbr: &crate::Mbr) -> Result<()> {
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+/// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
 /// // Create an MBR with multiple partitions
-/// let mut mbr = MBR_type::New_with_signature(0x12345678);
-/// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
-/// mbr.Add_partition(Partition_type_type::Linux, 4096, 2048, false).unwrap();
-/// mbr.Write_to_device(&device).unwrap();
+/// let mut mbr = Mbr::new_with_signature(0x12345678);
+/// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
+/// mbr.add_partition(PartitionKind::Linux, 4096, 2048, false).unwrap();
+/// mbr.write_to_device(&device).unwrap();
 ///
 /// // Read it back and create all partition devices
-/// let mbr = MBR_type::Read_from_device(&device).unwrap();
-/// let partition_devices = mbr.Create_all_partition_devices(device).unwrap();
+/// let mbr = Mbr::read_from_device(&device).unwrap();
+/// let partition_devices = mbr.create_all_partition_devices(device).unwrap();
 /// println!("Created {} partition devices", partition_devices.len());
 ///
 /// for (i, partition) in partition_devices.iter().enumerate() {
@@ -215,15 +215,15 @@ pub fn create_all_partition_devices(
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+/// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
 /// // Create an MBR with FAT32 partition
-/// let mut mbr = MBR_type::New_with_signature(0x12345678);
-/// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
-/// mbr.Write_to_device(&device).unwrap();
+/// let mut mbr = Mbr::new_with_signature(0x12345678);
+/// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
+/// mbr.write_to_device(&device).unwrap();
 ///
 /// // Read it back and find FAT32 partitions
-/// let mbr = MBR_type::Read_from_device(&device).unwrap();
-/// let fat32_partitions = mbr.Find_partitions_by_type(Partition_type_type::Fat32_lba);
+/// let mbr = Mbr::read_from_device(&device).unwrap();
+/// let fat32_partitions = mbr.find_partitions_by_type(PartitionKind::Fat32Lba);
 /// println!("Found {} FAT32 partitions", fat32_partitions.len());
 /// ```
 pub fn find_partitions_by_type(
@@ -253,9 +253,9 @@ pub fn find_partitions_by_type(
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+/// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
 ///
-/// if Has_valid_mbr(&device) {
+/// if has_valid_mbr(&device) {
 ///     println!("Device has a valid MBR");
 /// } else {
 ///     println!("Device needs to be partitioned");
@@ -289,7 +289,7 @@ pub fn has_valid_mbr(device: &Device) -> bool {
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+/// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
 ///
 /// if is_gpt_disk(&device) {
 ///     println!("Device uses GPT partitioning");
@@ -327,7 +327,7 @@ pub fn is_gpt_disk(device: &Device) -> bool {
 /// use file_system::*;
 ///
 /// // Create MBR for a 4MB device (8192 sectors)
-/// let mbr = MBR_type::Create_basic(0x12345678, Partition_type_type::Fat32_lba, 8192).unwrap();
+/// let mbr = Mbr::create_basic(0x12345678, PartitionKind::Fat32Lba, 8192).unwrap();
 ///
 /// // The MBR will have one FAT32 partition starting at sector 2048
 /// let partitions = mbr.get_valid_partitions();
@@ -364,19 +364,19 @@ pub fn create_basic_mbr(
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let source = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
-/// let target = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+/// let source = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
+/// let target = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
 ///
 /// // Create a valid MBR on source device first
-/// let mut mbr = MBR_type::New_with_signature(0x12345678);
-/// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
-/// mbr.Write_to_device(&source).unwrap();
+/// let mut mbr = Mbr::new_with_signature(0x12345678);
+/// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
+/// mbr.write_to_device(&source).unwrap();
 ///
 /// // Now clone the MBR to target
-/// Clone_mbr(&source, &target).unwrap();
+/// clone_mbr(&source, &target).unwrap();
 ///
 /// // Both devices now have valid MBRs
-/// assert_eq!(Has_valid_mbr(&source), Has_valid_mbr(&target));
+/// assert_eq!(has_valid_mbr(&source), has_valid_mbr(&target));
 /// ```
 pub fn clone_mbr(source_device: &Device, target_device: &Device) -> Result<()> {
     let mbr = Mbr::read_from_device(source_device)?;
@@ -406,18 +406,18 @@ pub fn clone_mbr(source_device: &Device, target_device: &Device) -> Result<()> {
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+/// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
 /// // Create a valid MBR first
-/// let mut mbr = MBR_type::New_with_signature(0x12345678);
-/// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
-/// mbr.Write_to_device(&device).unwrap();
+/// let mut mbr = Mbr::new_with_signature(0x12345678);
+/// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
+/// mbr.write_to_device(&device).unwrap();
 ///
 /// // Create backup
-/// let backup = Backup_mbr(&device).unwrap();
+/// let backup = backup_mbr(&device).unwrap();
 ///
 /// // Store backup somewhere safe...
 /// // Later, restore it if needed
-/// Restore_mbr(&device, &backup).unwrap();
+/// restore_mbr(&device, &backup).unwrap();
 /// ```
 pub fn backup_mbr(device: &Device) -> Result<[u8; 512]> {
     let mbr = Mbr::read_from_device(device)?;
@@ -446,19 +446,19 @@ pub fn backup_mbr(device: &Device) -> Result<[u8; 512]> {
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+/// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
 /// // Create a valid MBR first
-/// let mut mbr = MBR_type::New_with_signature(0x12345678);
-/// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
-/// mbr.Write_to_device(&device).unwrap();
+/// let mut mbr = Mbr::new_with_signature(0x12345678);
+/// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
+/// mbr.write_to_device(&device).unwrap();
 ///
 /// // Create a backup
 /// let backup = backup_mbr(&device).unwrap();
 ///
 /// // Simulate corruption or need to restore
-/// Restore_mbr(&device, &backup).unwrap();
+/// restore_mbr(&device, &backup).unwrap();
 ///
-/// assert!(Has_valid_mbr(&device));
+/// assert!(has_valid_mbr(&device));
 /// ```
 pub fn restore_mbr(device: &Device, backup: &[u8; 512]) -> Result<()> {
     let mbr = Mbr::from_bytes(backup)?;

@@ -117,12 +117,17 @@ pub fn test(arguments: TokenStream, input: TokenStream) -> TokenStream {
         }
     }
 
+    // Extract attributes to preserve them on the outer function
+    let attributes = &input_function.attrs;
+
     // Change ident to __inner to avoid name conflicts
     let mut Input_function = input_function.clone();
     Input_function.sig.ident = format_ident!("__inner");
+    Input_function.attrs.clear(); // Remove attributes from inner function
 
     // Generate the new function
     quote! {
+        #(#attributes)*
         #[std::prelude::v1::test]
         fn #function_name() {
             #Input_function
@@ -178,17 +183,11 @@ pub fn test(arguments: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// The macro accepts an executor expression as a parameter:
 ///
-/// ```rust
-/// #[Run_with_executor(drivers::standard_library::Executor::Executor_type::new())]
+/// ```rust,ignore
+/// #[task_macros::run(drivers::standard_library::executor::instantiate_static_executor!())]
 /// async fn my_function() {
 ///     println!("Running with custom executor!");
 /// }
-/// ```
-///
-/// You can also use any executor expression:
-/// ```rust
-/// #[Run_with_executor(my_custom_executor)]
-/// async fn my_function() { ... }
 /// ```
 #[proc_macro_attribute]
 #[allow(non_snake_case)]
@@ -250,12 +249,17 @@ pub fn run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
         }
     }
 
+    // Extract attributes to preserve them on the outer function
+    let attributes = &Input_function.attrs;
+
     // Change ident to __inner to avoid name conflicts
     let mut Input_function = Input_function.clone();
     Input_function.sig.ident = format_ident!("__inner");
+    Input_function.attrs.clear(); // Remove attributes from inner function
 
     // Generate the new function
     quote! {
+        #(#attributes)*
         fn #Function_name() {
             #Input_function
 

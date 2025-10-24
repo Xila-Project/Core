@@ -1,6 +1,6 @@
 //! File position types for seek operations.
 //!
-//! This module provides the [`Position_type`] enumeration for specifying
+//! This module provides the [`Position`] enumeration for specifying
 //! file positions during seek operations. It supports absolute positioning
 //! from the start or end of files, as well as relative positioning from
 //! the current file cursor location.
@@ -15,22 +15,22 @@
 /// # Examples
 ///
 /// ```rust
-/// use file_system::Position_type;
+/// use file_system::Position;
 ///
 /// // Seek to the beginning of the file
-/// let start = Position_type::Start(0);
+/// let start = Position::Start(0);
 ///
 /// // Seek 100 bytes from the beginning
-/// let absolute = Position_type::Start(100);
+/// let absolute = Position::Start(100);
 ///
 /// // Move 50 bytes forward from current position
-/// let forward = Position_type::Current(50);
+/// let forward = Position::Current(50);
 ///
 /// // Move 20 bytes backward from current position
-/// let backward = Position_type::Current(-20);
+/// let backward = Position::Current(-20);
 ///
 /// // Seek to 10 bytes before the end of the file
-/// let near_end = Position_type::End(-10);
+/// let near_end = Position::End(-10);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Position {

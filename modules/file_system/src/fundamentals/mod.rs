@@ -36,9 +36,9 @@ pub use r#type::*;
 ///
 /// ```rust
 /// # extern crate alloc;
-/// use file_system::Block_type;
+/// use file_system::Block;
 ///
-/// let block = Block_type::default();
+/// let block = Block::default();
 /// assert_eq!(block.0.len(), 512);
 /// ```
 #[repr(transparent)]

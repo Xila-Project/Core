@@ -15,7 +15,7 @@ macro_rules! Enumerate_pin_devices {
             [
                 $((
                     $Pin,
-                    Path_type::New_unchecked_constant(concat!("/devices/Pin", $Pin))
+                    Path::New_unchecked_constant(concat!("/devices/Pin", $Pin))
                 ),)*
             ] }
     };
@@ -23,7 +23,7 @@ macro_rules! Enumerate_pin_devices {
 
 pub fn Mount_pin_devices(
     Virtual_file_system: &file_system::VirtualFileSystem,
-    Pin_devices: &'static [(u8, &'static file_system::Path_type)],
+    Pin_devices: &'static [(u8, &'static file_system::Path)],
 ) -> Result<()> {
     for (i, Path) in Pin_devices.iter() {
         Virtual_file_system
@@ -133,7 +133,7 @@ impl DeviceTrait for Pin_device_type {
         Ok(size_of::<Pin_data_type>())
     }
 
-    fn Set_position(&self, _: &file_system::Position_type) -> file_system::Result<usize> {
+    fn Set_position(&self, _: &file_system::Position) -> file_system::Result<usize> {
         Ok(0)
     }
 

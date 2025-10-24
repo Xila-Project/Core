@@ -30,8 +30,8 @@ async fn main() {
 
     const BUFFER_SIZE: usize = get_recommended_buffer_size(&RESOLUTION);
 
-    let (screen_device, pointer_device, keyboard_device) =
-        window_screen::new(RESOLUTION).expect("Error creating touchscreen");
+    let (screen_device, pointer_device, keyboard_device, mut runner) =
+        window_screen::new(RESOLUTION).await.unwrap();
 
     let _task = task_instance.get_current_task_identifier().await;
 
@@ -46,6 +46,13 @@ async fn main() {
 
     graphics
         .add_input_device(keyboard_device, InputKind::Keypad)
+        .await
+        .unwrap();
+
+    task_instance
+        .spawn(_task, "Window screen runner", None, async move |_| {
+            runner.run().await;
+        })
         .await
         .unwrap();
 

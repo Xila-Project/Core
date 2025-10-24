@@ -48,7 +48,7 @@ mod tests {
 
         let error = Error::TooManyTasks;
         let display_string = format!("{error}");
-        assert_eq!(display_string, "Too_many_tasks");
+        assert_eq!(display_string, "TooManyTasks");
     }
 
     #[test]
@@ -59,7 +59,7 @@ mod tests {
 
         let error = Error::ThreadNotRegistered;
         let debug_string = format!("{error:?}");
-        assert_eq!(debug_string, "Thread_not_registered");
+        assert_eq!(debug_string, "ThreadNotRegistered");
     }
 
     #[test]
@@ -164,7 +164,7 @@ mod tests {
         assert!(failure_result.is_err());
 
         if let Err(error) = failure_result {
-            assert_eq!(format!("{error:?}"), "Too_many_tasks");
+            assert_eq!(format!("{error:?}"), "TooManyTasks");
         }
     }
 
@@ -183,7 +183,7 @@ mod tests {
         assert!(result.is_err());
 
         if let Err(error) = result {
-            assert_eq!(format!("{error:?}"), "Not_initialized");
+            assert_eq!(format!("{error:?}"), "NotInitialized");
         }
     }
 
@@ -213,7 +213,7 @@ mod tests {
         let display_str = format!("{env_error}");
         let non_zero: NonZeroU32 = env_error.into();
         assert_eq!(non_zero.get(), 8u32);
-        assert_eq!(display_str, "Invalid_environment_variable");
+        assert_eq!(display_str, "InvalidEnvironmentVariable");
 
         // Test task-related errors
         let task_error = Error::InvalidTaskIdentifier;

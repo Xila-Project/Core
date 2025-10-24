@@ -1,6 +1,6 @@
 use esp_idf_sys::{heap_caps_aligned_alloc, heap_caps_free, MALLOC_CAP_8BIT, MALLOC_CAP_EXEC};
 
-use crate::{Flags_type, Layout_type, Memory_allocator_trait, Protection_type};
+use crate::{Flags, Layout_type, Memory_allocator_trait, Protection_type};
 use core::ptr::NonNull;
 use std::os::raw::c_void;
 
@@ -18,7 +18,7 @@ impl Memory_allocator_trait for Memory_allocator_type {
         _: Option<NonNull<u8>>,
         Layout: Layout_type,
         Protection: Protection_type,
-        _: Flags_type,
+        _: Flags,
     ) -> Option<NonNull<u8>> {
         let _Caps = if Protection.get_execute() {
             MALLOC_CAP_EXEC

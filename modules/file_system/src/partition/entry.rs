@@ -1,6 +1,6 @@
 //! Partition entry structures for MBR partition tables.
 //!
-//! This module provides the [`Partition_entry_type`] structure which represents
+//! This module provides the [`PartitionEntry`] structure which represents
 //! individual partition entries in Master Boot Record (MBR) partition tables.
 //! Each entry contains information about a partition's location, size, type, and bootability.
 
@@ -29,9 +29,9 @@ use core::fmt;
 /// use file_system::*;
 ///
 /// // Create a new bootable FAT32 partition
-/// let partition = Partition_entry_type::New_with_params(
+/// let partition = PartitionEntry::new_with_params(
 ///     true,
-///     Partition_type_type::Fat32_lba,
+///     PartitionKind::Fat32Lba,
 ///     2048,
 ///     204800
 /// );
@@ -77,7 +77,7 @@ impl PartitionEntry {
     /// # extern crate alloc;
     /// use file_system::*;
     ///
-    /// let partition = Partition_entry_type::new();
+    /// let partition = PartitionEntry::new();
     /// assert!(!partition.is_valid());
     /// assert!(!partition.is_bootable());
     /// ```
@@ -116,9 +116,9 @@ impl PartitionEntry {
     /// use file_system::*;
     ///
     /// // Create a 100MB FAT32 partition starting at sector 2048
-    /// let partition = Partition_entry_type::New_with_params(
+    /// let partition = PartitionEntry::new_with_params(
     ///     true,
-    ///     Partition_type_type::Fat32_lba,
+    ///     PartitionKind::Fat32Lba,
     ///     2048,
     ///     204800
     /// );

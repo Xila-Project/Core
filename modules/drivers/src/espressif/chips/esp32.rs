@@ -1,4 +1,4 @@
-use file_system::{Path_type, VirtualFileSystem};
+use file_system::{Path, VirtualFileSystem};
 
 use crate::Enumerate_pin_devices;
 
@@ -9,7 +9,7 @@ use crate::Espressif::Shared::{self, Result};
 /// - GPIO21 ~ GPIO23
 /// - GPIO25 ~ GPIO27
 /// - GPIO32 ~ GPIO39
-const Pin_devices: [(u8, &Path_type); 34] = Enumerate_pin_devices!(
+const Pin_devices: [(u8, &Path); 34] = Enumerate_pin_devices!(
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27,
     32, 33, 34, 35, 36, 37, 38, 39
 );

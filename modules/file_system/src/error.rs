@@ -21,7 +21,7 @@ use core::{fmt::Display, num::NonZeroU32};
 /// }
 ///
 /// fn failing_operation() -> Result<()> {
-///     Err(Error::Permission_denied)
+///     Err(Error::PermissionDenied)
 /// }
 /// ```
 pub type Result<T> = core::result::Result<T, Error>;
@@ -132,7 +132,7 @@ impl Error {
     /// # extern crate alloc;
     /// use file_system::Error;
     ///
-    /// let error = Error::Permission_denied;
+    /// let error = Error::PermissionDenied;
     /// let code = error.get_discriminant();
     /// assert_eq!(code.get(), 2); // Permission_denied has discriminant 2
     /// ```
@@ -332,7 +332,7 @@ mod tests {
         // Test debug formatting
         let error = Error::PermissionDenied;
         let debug_str = format!("{error:?}");
-        assert_eq!(debug_str, "Permission_denied");
+        assert_eq!(debug_str, "PermissionDenied");
     }
 
     #[test]

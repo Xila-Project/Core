@@ -76,4 +76,4 @@ jobs:
         run: RUSTDOCFLAGS="--deny warnings" cargo make doc-wasm
 
       - name: Run | Tests
-        run: cargo test ${{ matrix.target }} --all
+        run: cargo make test

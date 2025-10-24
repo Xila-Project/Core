@@ -14,7 +14,7 @@ use crate::{Error, Position, Result, Size};
 
 /// Convenience macro for creating a new [`Device`] from any type implementing [`DeviceTrait`].
 ///
-/// This macro wraps the provided device implementation in an `Arc` and creates a `DeviceType`.
+/// This macro wraps the provided device implementation in an `Arc` and creates a `Device`.
 ///
 /// # Examples
 ///
@@ -22,7 +22,7 @@ use crate::{Error, Position, Result, Size};
 /// # extern crate alloc;
 /// # use file_system::*;
 ///
-/// let memory_device = Memory_device_type::<512>::new(1024);
+/// let memory_device = MemoryDevice::<512>::new(1024);
 /// let device = create_device!(memory_device);
 /// ```
 #[macro_export]
@@ -62,18 +62,18 @@ macro_rules! create_device {
 /// # use file_system::*;
 ///
 /// // Create a memory device for testing
-/// let device = create_device!(Memory_device_type::<512>::new(1024));
+/// let device = create_device!(MemoryDevice::<512>::new(1024));
 ///
 /// // Write data
 /// let data = b"Hello, World!";
-/// let bytes_written = device.Write(data).unwrap();
-/// assert_eq!(bytes_written.As_u64(), data.len() as u64);
+/// let bytes_written = device.write(data).unwrap();
+/// assert_eq!(bytes_written.as_u64(), data.len() as u64);
 ///
 /// // Reset position and read back
-/// device.Set_position(&Position_type::Start(0)).unwrap();
+/// device.set_position(&Position::Start(0)).unwrap();
 /// let mut buffer = alloc::vec![0u8; data.len()];
-/// let bytes_read = device.Read(&mut buffer).unwrap();
-/// assert_eq!(bytes_read.As_u64(), data.len() as u64);
+/// let bytes_read = device.read(&mut buffer).unwrap();
+/// assert_eq!(bytes_read.as_u64(), data.len() as u64);
 /// assert_eq!(&buffer, data);
 /// ```
 pub trait DeviceTrait: Send + Sync {
@@ -239,7 +239,7 @@ pub trait DeviceTrait: Send + Sync {
 
 /// Thread-safe wrapper for device implementations.
 ///
-/// `DeviceType` provides a unified interface for all device implementations by wrapping
+/// `Device` provides a unified interface for all device implementations by wrapping
 /// them in an `Arc<dyn DeviceTrait>`. This allows for efficient cloning and sharing of
 /// device references across threads while maintaining type erasure.
 ///
@@ -251,11 +251,11 @@ pub trait DeviceTrait: Send + Sync {
 /// # use alloc::sync::Arc;
 ///
 /// // Create a device using the convenience macro
-/// let device1 = create_device!(Memory_device_type::<512>::new(1024));
+/// let device1 = create_device!(MemoryDevice::<512>::new(1024));
 ///
 /// // Create a device manually
-/// let memory_device = Memory_device_type::<512>::new(1024);
-/// let device2 = DeviceType::new(Arc::new(memory_device));
+/// let memory_device = MemoryDevice::<512>::new(1024);
+/// let device2 = Device::new(Arc::new(memory_device));
 ///
 /// // Clone the device (cheap operation - only clones the Arc)
 /// let device_clone = device1.clone();
@@ -284,8 +284,8 @@ impl Device {
     /// # use file_system::*;
     /// # use alloc::sync::Arc;
     ///
-    /// let memory_device = Memory_device_type::<512>::new(1024);
-    /// let device = DeviceType::new(Arc::new(memory_device));
+    /// let memory_device = MemoryDevice::<512>::new(1024);
+    /// let device = Device::new(Arc::new(memory_device));
     /// ```
     pub fn new(device: Arc<dyn DeviceTrait>) -> Self {
         Device(device)

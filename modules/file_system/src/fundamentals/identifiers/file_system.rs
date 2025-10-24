@@ -2,7 +2,7 @@ use core::ops::{Add, AddAssign};
 
 /// File system identifier inner type
 ///
-/// This is the inner/raw type of [`File_system_identifier_type`].
+/// This is the inner/raw type of [`FileSystemIdentifier`].
 /// It size is the half of the `target_pointer_width` :
 /// - 16 bits on 32 bits systems
 /// - 32 bits on 64 bits systems

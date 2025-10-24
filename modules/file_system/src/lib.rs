@@ -55,11 +55,11 @@
 //! # use file_system::*;
 //!
 //! // Create an in-memory device for testing
-//! let device = create_device!(Memory_device_type::<512>::new(1024 * 1024));
+//! let device = create_device!(MemoryDevice::<512>::new(1024 * 1024));
 //!
 //! // Write some data
 //! let data = b"Hello, File System!";
-//! let result = device.Write(data);
+//! let result = device.write(data);
 //! assert!(result.is_ok());
 //! ```
 //!
@@ -70,17 +70,17 @@
 //! # use file_system::*;
 //!
 //! // Create a device and format it with MBR
-//! let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+//! let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
 //!
 //! // Create MBR and add a partition
-//! let mut mbr = MBR_type::New_with_signature(0x12345678);
-//! mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 8192, true).unwrap();
+//! let mut mbr = Mbr::new_with_signature(0x12345678);
+//! mbr.add_partition(PartitionKind::Fat32Lba, 2048, 8192, true).unwrap();
 //!
 //! // Write MBR to device
-//! mbr.Write_to_device(&device).unwrap();
+//! mbr.write_to_device(&device).unwrap();
 //!
 //! // Create a partition device
-//! let partition = Create_partition_device(device, &mbr.Partitions[0]).unwrap();
+//! let partition = create_partition_device(device, &mbr.partitions[0]).unwrap();
 //! ```
 //!
 //! ## Safety and Concurrency

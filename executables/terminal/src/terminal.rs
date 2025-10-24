@@ -1,8 +1,12 @@
-use alloc::string::String;
+use alloc::{collections::vec_deque::VecDeque, string::String};
+use log::information;
 
 use core::ffi::CStr;
 use file_system::Size;
-use graphics::{Color, EventKind, Key, Window, lvgl};
+use graphics::{
+    Color, EventKind, Key, Window,
+    lvgl::{self, lv_obj_t},
+};
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
 use crate::error::Result;
@@ -12,7 +16,7 @@ pub(crate) struct Inner {
     buffer: String,
     display: *mut lvgl::lv_obj_t,
     input: *mut lvgl::lv_obj_t,
-    validated: Option<(&'static str, usize)>,
+    validated_input: VecDeque<u8>,
 }
 
 pub struct Terminal(pub(crate) RwLock<CriticalSectionRawMutex, Inner>);
@@ -49,7 +53,8 @@ impl Terminal {
             container
         };
 
-        let buffer = String::with_capacity(80 * 24);
+        let mut buffer = String::with_capacity(80 * 24);
+        buffer.push('\0'); // Initialize with null terminator for LVGL
 
         let display = unsafe {
             let label = lvgl::lv_label_create(container);
@@ -88,7 +93,7 @@ impl Terminal {
             buffer,
             display,
             input,
-            validated: None,
+            validated_input: VecDeque::with_capacity(128),
         };
 
         Ok(Self(RwLock::new(inner)))
@@ -96,40 +101,40 @@ impl Terminal {
 
     pub async fn print(&self, text: &str) -> Result<()> {
         let mut inner = self.0.write().await;
+        let _lock = graphics::get_instance().lock().await;
 
         Self::print_internal(&mut inner, text).await?;
 
         Ok(())
     }
 
-    async fn print_internal(inner: &mut Inner, text: &str) -> Result<()> {
-        if !inner.buffer.is_empty() {
-            let last_index = inner.buffer.len() - 1;
-
-            inner.buffer.remove(last_index);
-        }
-
+    fn get_start_index(buffer: &mut String, text: &str) {
         let start_index = if let Some(last_clear) = text.rfind(Self::CLEAR) {
-            inner.buffer.clear();
+            buffer.clear();
             last_clear + Self::CLEAR.len()
         } else {
             0
         };
 
         let start_index = if let Some(last_home) = text.rfind(Self::HOME) {
-            inner.buffer.clear();
-            last_home + Self::HOME.len()
+            start_index.max(last_home + Self::HOME.len())
         } else {
             start_index
         };
 
-        inner.buffer += &text[start_index..];
-        inner.buffer += "\0";
+        let text = &text[start_index..];
 
-        let _lock = graphics::get_instance().lock().await;
+        buffer.push_str(text);
+    }
+
+    async fn print_internal(inner: &mut Inner, text: &str) -> Result<()> {
+        inner.buffer.pop(); // Remove the trailing null character
+
+        Self::get_start_index(&mut inner.buffer, text);
+        inner.buffer.push_str("\0");
 
         unsafe {
-            lvgl::lv_label_set_text(inner.display, inner.buffer.as_ptr() as *const i8);
+            lvgl::lv_label_set_text_static(inner.display, inner.buffer.as_ptr() as *const i8);
             lvgl::lv_obj_scroll_to_view(inner.display, true);
         }
 
@@ -137,26 +142,13 @@ impl Terminal {
     }
 
     async fn print_line_internal(inner: &mut Inner, text: &str) -> Result<()> {
-        if !inner.buffer.is_empty() {
-            let last_index = inner.buffer.len() - 1;
+        inner.buffer.pop(); // Remove the trailing null character
 
-            inner.buffer.remove(last_index);
-        }
-
-        let start_index = if let Some(last_clear) = text.rfind("\x1B[2J") {
-            inner.buffer.clear();
-            last_clear + 4
-        } else {
-            0
-        };
-
-        inner.buffer += text[start_index..].trim();
-        inner.buffer += "\n\0";
-
-        let _lock = graphics::get_instance().lock().await;
+        Self::get_start_index(&mut inner.buffer, text);
+        inner.buffer.push_str("\n\0");
 
         unsafe {
-            lvgl::lv_label_set_text(inner.display, inner.buffer.as_ptr() as *const i8);
+            lvgl::lv_label_set_text_static(inner.display, inner.buffer.as_ptr() as *const i8);
             lvgl::lv_obj_scroll_to_view(inner.display, true);
         }
 
@@ -166,40 +158,28 @@ impl Terminal {
     pub async fn read_input(&self, buffer: &mut [u8]) -> Result<Size> {
         let mut inner = self.0.write().await;
 
-        let (string, index) = match inner.validated.as_mut() {
-            Some(validated) => validated,
-            None => return Ok(Size::new(0)),
-        };
-
-        if *index >= string.len() {
-            let _lock = graphics::get_instance().lock().await;
-
-            unsafe {
-                lvgl::lv_textarea_set_text(inner.input, c"".as_ptr());
-                lvgl::lv_obj_remove_state(inner.input, lvgl::LV_STATE_DISABLED as _);
-            }
-
-            inner.validated.take();
-
-            if let Some(byte) = buffer.first_mut() {
-                *byte = b'\n';
-            }
-
-            return Ok(Size::new(1));
-        }
-
         let mut read = 0;
 
         buffer
             .iter_mut()
-            .zip(&string.as_bytes()[*index..])
+            .zip(inner.validated_input.iter())
             .for_each(|(byte, &char)| {
                 *byte = char;
-                *index += 1;
+                information!("Reading char: {}", char as char);
                 read += 1;
             });
 
-        Ok(Size::new(read))
+        inner.validated_input.drain(0..read);
+
+        Ok(Size::new(read as u64))
+    }
+
+    fn get_input(text_area: *mut lv_obj_t) -> &'static str {
+        unsafe {
+            let text = lvgl::lv_textarea_get_text(text_area);
+
+            CStr::from_ptr(text).to_str().unwrap_or("")
+        }
     }
 
     pub async fn event_handler(&self) -> Result<bool> {
@@ -209,29 +189,22 @@ impl Terminal {
             match event.get_code() {
                 EventKind::Delete => return Ok(false),
                 EventKind::Key => {
-                    if let Some(Key::Character(character)) = event.get_key() {
-                        if inner.validated.is_some() {
-                            continue;
-                        }
+                    log::information!("Terminal: Key event received: {:?}", event);
+                    if let Some(Key::Enter) = event.get_key() {
+                        log::information!("Terminal: Validating input");
+                        let _lock = graphics::get_instance().lock().await;
 
-                        if character == b'\n' || character == b'\r' {
-                            let _lock = graphics::get_instance().lock().await;
+                        let text = Self::get_input(inner.input);
 
-                            let text = unsafe {
-                                let text = lvgl::lv_textarea_get_text(inner.input);
+                        Self::print_line_internal(&mut inner, text).await?;
 
-                                CStr::from_ptr(text).to_str()?
-                            };
+                        let text = Self::get_input(inner.input);
 
-                            unsafe {
-                                lvgl::lv_obj_add_state(inner.input, lvgl::LV_STATE_DISABLED as _);
-                            }
+                        inner.validated_input.extend(text.as_bytes());
+                        inner.validated_input.push_back(b'\n');
 
-                            drop(_lock);
-
-                            Self::print_line_internal(&mut inner, text).await?;
-
-                            inner.validated.replace((text, 0));
+                        unsafe {
+                            lvgl::lv_textarea_set_text(inner.input, c"".as_ptr());
                         }
                     }
                 }

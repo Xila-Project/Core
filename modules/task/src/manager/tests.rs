@@ -5,6 +5,7 @@ use super::*;
 use crate::test;
 use alloc::{collections::BTreeMap, format, vec::Vec};
 use core::time::Duration;
+use futures::yield_now;
 use users::{GroupIdentifier, UserIdentifier};
 
 #[test(task_path = crate)]
@@ -216,7 +217,7 @@ async fn test_set_user() {
 
     let task = manager.get_current_task_identifier().await;
 
-    let user = UserIdentifier::new(123); // Assuming User_identifier_type is i32 for example
+    let user = UserIdentifier::new(123); // Assuming UserIdentifier is i32 for example
 
     manager.set_user(task, user).await.unwrap();
 
@@ -229,7 +230,7 @@ async fn test_set_group() {
 
     let task = manager.get_current_task_identifier().await;
 
-    let group = GroupIdentifier::new(456); // Assuming Group_identifier_type is i32 for example
+    let group = GroupIdentifier::new(456); // Assuming GroupIdentifier is i32 for example
 
     manager.set_group(task, group).await.unwrap();
 
@@ -519,6 +520,8 @@ async fn test_get_children_with_nested_tasks() {
                     )
                     .await
                     .unwrap();
+
+                yield_now().await; // Yield to allow child task to start
 
                 // Parent should now have one child
                 let children = get_instance().get_children(parent_task).await.unwrap();

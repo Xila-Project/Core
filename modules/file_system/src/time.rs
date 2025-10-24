@@ -10,7 +10,7 @@ use shared::unix_to_human_time;
 
 /// Represents a point in time for file system operations.
 ///
-/// `Time_type` stores time as seconds since the Unix epoch (January 1, 1970).
+/// `Time` stores time as seconds since the Unix epoch (January 1, 1970).
 /// It's used throughout the file system for tracking file creation, modification,
 /// and access times. The type is designed to be efficient for storage and comparison.
 ///
@@ -18,14 +18,14 @@ use shared::unix_to_human_time;
 ///
 /// ```rust
 /// # extern crate alloc;
-/// use file_system::Time_type;
+/// use file_system::Time;
 ///
 /// // Create a time representing the Unix epoch
-/// let epoch = Time_type::new(0);
-/// assert_eq!(epoch.As_u64(), 0);
+/// let epoch = Time::new(0);
+/// assert_eq!(epoch.as_u64(), 0);
 ///
 /// // Create a time for a specific moment
-/// let time = Time_type::new(1642684800); // January 20, 2022
+/// let time = Time::new(1642684800); // January 20, 2022
 /// ```
 ///
 /// # Storage
@@ -50,9 +50,9 @@ impl Time {
     ///
     /// ```rust
     /// # extern crate alloc;
-    /// use file_system::Time_type;
+    /// use file_system::Time;
     ///
-    /// let time = Time_type::new(1640995200); // January 1, 2022
+    /// let time = Time::new(1640995200); // January 1, 2022
     /// ```
     pub const fn new(seconds: u64) -> Self {
         Self { seconds }
@@ -68,10 +68,10 @@ impl Time {
     ///
     /// ```rust
     /// # extern crate alloc;
-    /// use file_system::Time_type;
+    /// use file_system::Time;
     ///
-    /// let time = Time_type::new(1640995200);
-    /// assert_eq!(time.As_u64(), 1640995200);
+    /// let time = Time::new(1640995200);
+    /// assert_eq!(time.as_u64(), 1640995200);
     /// ```
     pub const fn as_u64(self) -> u64 {
         self.seconds
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn test_time_const_operations() {
-        // Test that New and As_u64 are const functions
+        // Test that New and as_u64 are const functions
         const TIME: Time = Time::new(1234567890);
         const SECONDS: u64 = TIME.as_u64();
 
@@ -186,7 +186,7 @@ mod tests {
     fn test_time_debug() {
         let time = Time::new(1640995200);
         let debug_str = format!("{time:?}");
-        assert!(debug_str.contains("Time_type"));
+        assert!(debug_str.contains("Time"));
         assert!(debug_str.contains("1640995200"));
     }
 

@@ -250,7 +250,7 @@ mod tests {
         let metadata = create_test_metadata();
         let debug_str = alloc::format!("{metadata:?}");
 
-        assert!(debug_str.contains("Metadata_type"));
+        assert!(debug_str.contains("Metadata"));
         assert!(debug_str.contains("File"));
         assert!(debug_str.contains("1640995200"));
     }

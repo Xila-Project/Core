@@ -78,7 +78,7 @@ impl User {
     ///
     /// # Returns
     ///
-    /// A `User_identifier_type` containing the user's unique ID.
+    /// A `UserIdentifier` containing the user's unique ID.
     pub fn get_identifier(&self) -> UserIdentifier {
         UserIdentifier::new(self.identifier)
     }
@@ -87,7 +87,7 @@ impl User {
     ///
     /// # Returns
     ///
-    /// A `Group_identifier_type` containing the user's primary group ID.
+    /// A `GroupIdentifier` containing the user's primary group ID.
     pub fn get_primary_group(&self) -> GroupIdentifier {
         GroupIdentifier::new(self.primary_group)
     }
@@ -187,7 +187,7 @@ pub fn get_user_file_path(user_name: &str) -> Result<PathOwned> {
 ///
 /// # Returns
 ///
-/// Returns `Ok(User_identifier_type)` if authentication succeeds,
+/// Returns `Ok(UserIdentifier)` if authentication succeeds,
 /// or an appropriate error if authentication fails or file operations fail.
 ///
 /// # Errors
@@ -243,7 +243,7 @@ pub async fn authenticate_user<'a>(
 ///
 /// # Returns
 ///
-/// Returns `Ok(User_identifier_type)` with the new user's identifier,
+/// Returns `Ok(UserIdentifier)` with the new user's identifier,
 /// or an appropriate error if creation fails.
 ///
 /// # Errors

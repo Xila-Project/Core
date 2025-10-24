@@ -1,6 +1,6 @@
 //! File system object type definitions.
 //!
-//! This module provides the [`Type_type`] enumeration which categorizes different
+//! This module provides the [`Kind`] enumeration which categorizes different
 //! types of objects that can exist in a file system, such as regular files,
 //! directories, devices, and special file types.
 
@@ -15,10 +15,10 @@ use core::fmt::Display;
 /// # Examples
 ///
 /// ```rust
-/// use file_system::Type_type;
+/// use file_system::Kind;
 ///
-/// let file_type = Type_type::File;
-/// let dir_type = Type_type::Directory;
+/// let file_type = Kind::File;
+/// let dir_type = Kind::Directory;
 ///
 /// // Types can be compared
 /// assert_ne!(file_type, dir_type);
@@ -251,7 +251,7 @@ mod tests {
 
     #[test]
     fn test_type_default_behavior() {
-        // Test that we can use Type_type in various contexts
+        // Test that we can use Kind in various contexts
         let mut type_counts = alloc::collections::BTreeMap::new();
 
         let types = [

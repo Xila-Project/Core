@@ -1,15 +1,12 @@
-use std::sync::{Arc, Mutex};
-
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use file_system::{DeviceTrait, Size};
 use graphics::InputData;
 
-use super::Inner;
-
-pub struct PointerDevice(Arc<Mutex<Inner>>);
+pub struct PointerDevice(&'static RwLock<CriticalSectionRawMutex, InputData>);
 
 impl PointerDevice {
-    pub fn new(inner: Arc<Mutex<Inner>>) -> Self {
-        Self(inner)
+    pub fn new(signal: &'static RwLock<CriticalSectionRawMutex, InputData>) -> Self {
+        Self(signal)
     }
 }
 
@@ -21,7 +18,10 @@ impl DeviceTrait for PointerDevice {
             .map_err(|_| file_system::Error::InvalidParameter)?;
 
         // Copy the pointer data.
-        *data = *self.0.lock().unwrap().get_pointer_data().unwrap();
+
+        if let Ok(guard) = self.0.try_read() {
+            *data = *guard;
+        }
 
         Ok(size_of::<InputData>().into())
     }

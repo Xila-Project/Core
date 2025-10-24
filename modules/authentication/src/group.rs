@@ -64,7 +64,7 @@ impl Group {
     ///
     /// # Returns
     ///
-    /// A `Group_identifier_type` containing the group's unique ID.
+    /// A `GroupIdentifier` containing the group's unique ID.
     pub fn get_identifier(&self) -> GroupIdentifier {
         GroupIdentifier::new(self.identifier)
     }
@@ -81,13 +81,13 @@ impl Group {
     /// Returns the list of users that belong to this group.
     ///
     /// This function uses unsafe transmutation to avoid copying the vector,
-    /// since `User_identifier_type` is transparent to `User_identifier_inner_type`.
+    /// since `UserIdentifier` is transparent to `User_identifier_inner_type`.
     ///
     /// # Returns
     ///
-    /// A slice of `User_identifier_type` containing all group members.
+    /// A slice of `UserIdentifier` containing all group members.
     pub fn get_users(&self) -> &[UserIdentifier] {
-        // Avoid to copy the vector since User_identifier_type is transparent to User_identifier_inner_type.
+        // Avoid to copy the vector since UserIdentifier is transparent to User_identifier_inner_type.
         unsafe { core::mem::transmute(self.users.as_slice()) }
     }
 }
@@ -173,7 +173,7 @@ pub async fn read_group_file<'a>(
 ///
 /// # Returns
 ///
-/// Returns `Ok(Group_identifier_type)` with the new group's identifier,
+/// Returns `Ok(GroupIdentifier)` with the new group's identifier,
 /// or an appropriate error if creation fails.
 ///
 /// # Errors

@@ -10,14 +10,14 @@ use crate::Kind;
 /// # Examples
 ///
 /// ```rust
-/// use file_system::{Permissions_type, Permission_type, Special_type};
+/// use file_system::{Permissions, Permission, Special};
 ///
-/// let user = Permission_type::new(true, false, false); // Read only
-/// let group = Permission_type::new(false, true, false); // Write only
-/// let others = Permission_type::new(false, false, true); // Execute only
-/// let special = Special_type::new(true, false, true); // Sticky and set user identifier
+/// let user = Permission::new(true, false, false); // Read only
+/// let group = Permission::new(false, true, false); // Write only
+/// let others = Permission::new(false, false, true); // Execute only
+/// let special = Special::new(true, false, true); // Sticky and set user identifier
 ///
-/// let permissions = Permissions_type::new(user, group, others, special);
+/// let permissions = Permissions::new(user, group, others, special);
 ///
 /// assert_eq!(permissions.get_user(), user);
 /// assert_eq!(permissions.get_group(), group);
@@ -267,11 +267,11 @@ impl Special {
 /// # Examples
 ///
 /// ```rust
-/// use file_system::Permission_type;
+/// use file_system::Permission;
 ///
-/// let read = Permission_type::Read_only;
-/// let write = Permission_type::Write_only;
-/// let execute = Permission_type::Execute_only;
+/// let read = Permission::READ_ONLY;
+/// let write = Permission::WRITE_ONLY;
+/// let execute = Permission::EXECUTE_ONLY;
 ///
 /// assert!(read.get_read() && !read.get_write() && !read.get_execute());
 /// assert!(!write.get_read() && write.get_write() && !write.get_execute());

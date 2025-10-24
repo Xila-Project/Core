@@ -9,5 +9,8 @@ quote = { workspace = true }
 darling = "0.21"
 proc-macro2 = { workspace = true }
 
+[dev-dependencies]
+drivers = { workspace = true }
+
 [lib]
 proc-macro = true

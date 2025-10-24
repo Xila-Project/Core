@@ -1,6 +1,6 @@
 //! Inode identifier type for file system objects.
 //!
-//! This module provides the [`Inode_type`] which represents inode numbers
+//! This module provides the [`Inode`] which represents inode numbers
 //! used to uniquely identify file system objects within a specific file system.
 
 use core::ops::{Add, AddAssign};
@@ -15,19 +15,19 @@ use core::ops::{Add, AddAssign};
 /// # Examples
 ///
 /// ```rust
-/// use file_system::Inode_type;
+/// use file_system::Inode;
 ///
 /// // Create an inode number
-/// let inode = Inode_type::new(42);
-/// assert_eq!(inode.As_u64(), 42);
+/// let inode = Inode::new(42);
+/// assert_eq!(inode.as_u64(), 42);
 ///
 /// // Inode numbers can be compared
-/// let another_inode = Inode_type::new(43);
+/// let another_inode = Inode::new(43);
 /// assert!(inode < another_inode);
 ///
 /// // Arithmetic operations are supported
 /// let incremented = inode + 10;
-/// assert_eq!(incremented.As_u64(), 52);
+/// assert_eq!(incremented.as_u64(), 52);
 /// ```
 ///
 /// # Note
@@ -54,10 +54,10 @@ impl Inode {
     /// # Examples
     ///
     /// ```rust
-    /// use file_system::Inode_type;
+    /// use file_system::Inode;
     ///
-    /// let inode = Inode_type::new(123);
-    /// assert_eq!(inode.As_u64(), 123);
+    /// let inode = Inode::new(123);
+    /// assert_eq!(inode.as_u64(), 123);
     /// ```
     pub const fn new(item: u64) -> Self {
         Inode(item)
@@ -72,10 +72,10 @@ impl Inode {
     /// # Examples
     ///
     /// ```rust
-    /// use file_system::Inode_type;
+    /// use file_system::Inode;
     ///
-    /// let inode = Inode_type::new(456);
-    /// assert_eq!(inode.As_u64(), 456);
+    /// let inode = Inode::new(456);
+    /// assert_eq!(inode.as_u64(), 456);
     /// ```
     pub const fn as_u64(self) -> u64 {
         self.0
@@ -126,7 +126,7 @@ mod tests {
 
     #[test]
     fn test_inode_const_operations() {
-        // Test that New and As_u64 are const functions
+        // Test that New and as_u64 are const functions
         const INODE: Inode = Inode::new(123);
         const VALUE: u64 = INODE.as_u64();
 
@@ -195,7 +195,7 @@ mod tests {
     fn test_inode_debug() {
         let inode = Inode::new(789);
         let debug_str = format!("{inode:?}");
-        assert!(debug_str.contains("Inode_type"));
+        assert!(debug_str.contains("Inode"));
         assert!(debug_str.contains("789"));
     }
 
@@ -236,7 +236,7 @@ mod tests {
 
     #[test]
     fn test_inode_type_safety() {
-        // Verify that Inode_type is a zero-cost abstraction
+        // Verify that Inode is a zero-cost abstraction
         use core::mem::{align_of, size_of};
 
         assert_eq!(size_of::<Inode>(), size_of::<u64>());

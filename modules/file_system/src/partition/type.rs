@@ -1,6 +1,6 @@
 //! Partition type definitions for MBR partition tables.
 //!
-//! This module provides the [`Partition_type_type`] enumeration which defines
+//! This module provides the [`PartitionKind`] enumeration which defines
 //! all standard partition types used in MBR partition tables. Each partition
 //! type corresponds to a specific file system or partition purpose.
 
@@ -40,12 +40,12 @@ use core::fmt;
 /// ```rust
 /// use file_system::*;
 ///
-/// let partition_type = Partition_type_type::Fat32_lba;
+/// let partition_type = PartitionKind::Fat32Lba;
 /// assert!(partition_type.is_fat());
 /// assert!(!partition_type.is_extended());
 ///
-/// let linux_type = Partition_type_type::From_u8(0x83);
-/// assert_eq!(linux_type, Partition_type_type::Linux);
+/// let linux_type = PartitionKind::from_u8(0x83);
+/// assert_eq!(linux_type, PartitionKind::Linux);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -119,11 +119,11 @@ impl PartitionKind {
     /// ```rust
     /// use file_system::*;
     ///
-    /// assert_eq!(Partition_type_type::From_u8(0x0C), Partition_type_type::Fat32_lba);
-    /// assert_eq!(Partition_type_type::From_u8(0x83), Partition_type_type::Linux);
+    /// assert_eq!(PartitionKind::from_u8(0x0C), PartitionKind::Fat32Lba);
+    /// assert_eq!(PartitionKind::from_u8(0x83), PartitionKind::Linux);
     ///
     /// // Unknown types are preserved
-    /// if let Partition_type_type::Unknown(id) = Partition_type_type::From_u8(0xFF) {
+    /// if let PartitionKind::Unknown(id) = PartitionKind::from_u8(0xFF) {
     ///     assert_eq!(id, 0xFF);
     /// }
     /// ```

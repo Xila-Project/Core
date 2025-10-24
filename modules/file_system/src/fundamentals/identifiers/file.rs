@@ -35,16 +35,16 @@ pub type FileIdentifierInner = u32;
 /// # Examples
 ///
 /// ```rust
-/// use file_system::File_identifier_type;
+/// use file_system::FileIdentifier;
 ///
 /// // Standard file identifiers
-/// assert_eq!(File_identifier_type::Standard_in.Into_inner(), 0);
-/// assert_eq!(File_identifier_type::Standard_out.Into_inner(), 1);
-/// assert_eq!(File_identifier_type::Standard_error.Into_inner(), 2);
+/// assert_eq!(FileIdentifier::STANDARD_IN.into_inner(), 0);
+/// assert_eq!(FileIdentifier::STANDARD_OUT.into_inner(), 1);
+/// assert_eq!(FileIdentifier::STANDARD_ERROR.into_inner(), 2);
 ///
 /// // Create a custom file identifier
-/// let file_id = File_identifier_type::new(42);
-/// assert_eq!(file_id.Into_inner(), 42);
+/// let file_id = FileIdentifier::new(42);
+/// assert_eq!(file_id.into_inner(), 42);
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
@@ -81,10 +81,10 @@ impl FileIdentifier {
     /// # Examples
     ///
     /// ```rust
-    /// use file_system::File_identifier_type;
+    /// use file_system::FileIdentifier;
     ///
-    /// let file_id = File_identifier_type::new(5);
-    /// assert_eq!(file_id.Into_inner(), 5);
+    /// let file_id = FileIdentifier::new(5);
+    /// assert_eq!(file_id.into_inner(), 5);
     /// ```
     pub const fn new(identifier: FileIdentifierInner) -> Self {
         Self(identifier)
@@ -99,10 +99,10 @@ impl FileIdentifier {
     /// # Examples
     ///
     /// ```rust
-    /// use file_system::File_identifier_type;
+    /// use file_system::FileIdentifier;
     ///
-    /// let file_id = File_identifier_type::new(42);
-    /// assert_eq!(file_id.Into_inner(), 42);
+    /// let file_id = FileIdentifier::new(42);
+    /// assert_eq!(file_id.into_inner(), 42);
     /// ```
     pub const fn into_inner(self) -> FileIdentifierInner {
         self.0

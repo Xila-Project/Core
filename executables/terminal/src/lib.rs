@@ -9,7 +9,7 @@ mod terminal;
 
 pub use executable::*;
 
-use core::num::NonZeroUsize;
+use core::{num::NonZeroUsize, time::Duration};
 
 use ::executable::Standard;
 use alloc::{
@@ -17,7 +17,6 @@ use alloc::{
     sync::Arc,
 };
 use file_system::{Device, Flags, Mode, UniqueFileIdentifier};
-use futures::yield_now;
 use task::TaskIdentifier;
 
 use crate::{error::Result, terminal::Terminal};
@@ -82,7 +81,7 @@ async fn inner_main(task: TaskIdentifier) -> Result<()> {
     ::executable::execute("/binaries/command_line_shell", "".to_string(), standard).await?;
 
     while terminal.event_handler().await? {
-        yield_now().await;
+        task::Manager::sleep(Duration::from_millis(10)).await;
     }
 
     Ok(())

@@ -17,30 +17,30 @@ use super::{FileIdentifier, FileIdentifierInner, FileSystemIdentifier, UniqueFil
 /// # Example
 ///
 /// ```rust
-/// use file_system::{Local_file_identifier_type, File_identifier_type, File_system_identifier_type, Unique_file_identifier_type};
+/// use file_system::{LocalFileIdentifier, FileIdentifier, FileSystemIdentifier, UniqueFileIdentifier};
 ///
 /// use task::TaskIdentifier;
 ///
-/// let Identifier = Local_file_identifier_type::new(
+/// let Identifier = LocalFileIdentifier::new(
 ///     TaskIdentifier::from(0x1234),
-///     File_identifier_type::from(0x5678),
+///     FileIdentifier::from(0x5678),
 /// );
 ///
-/// let (Task, File) = Identifier.Split();
+/// let (Task, File) = Identifier.split();
 ///
 /// assert_eq!(Task, TaskIdentifier::from(0x1234));
-/// assert_eq!(File, File_identifier_type::from(0x5678));
+/// assert_eq!(File, FileIdentifier::from(0x5678));
 ///
-/// let Minimum = Local_file_identifier_type::get_minimum(Task);
-/// assert_eq!(Minimum, Local_file_identifier_type::new(Task, File_identifier_type::Minimum));
+/// let Minimum = LocalFileIdentifier::get_minimum(Task);
+/// assert_eq!(Minimum, LocalFileIdentifier::new(Task, FileIdentifier::MINIMUM));
 ///
-/// let Maximum = Local_file_identifier_type::get_maximum(Task);
-/// assert_eq!(Maximum, Local_file_identifier_type::new(Task, File_identifier_type::Maximum));
+/// let Maximum = LocalFileIdentifier::get_maximum(Task);
+/// assert_eq!(Maximum, LocalFileIdentifier::new(Task, FileIdentifier::MAXIMUM));
 ///
-/// let (Task, Unique_file_identifier) = Identifier.Into_unique_file_identifier(File_system_identifier_type::from(0x9ABC));
+/// let (Task, Unique_file_identifier) = Identifier.into_unique_file_identifier(FileSystemIdentifier::from(0x9ABC));
 ///
 /// assert_eq!(Task, TaskIdentifier::from(0x1234));
-/// assert_eq!(Unique_file_identifier, Unique_file_identifier_type::new(File_system_identifier_type::from(0x9ABC), File_identifier_type::from(0x5678)));
+/// assert_eq!(Unique_file_identifier, UniqueFileIdentifier::new(FileSystemIdentifier::from(0x9ABC), FileIdentifier::from(0x5678)));
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
@@ -95,7 +95,7 @@ impl Debug for LocalFileIdentifier {
         let (task, file) = self.split();
 
         formatter
-            .debug_struct("Local_file_identifier_type")
+            .debug_struct("LocalFileIdentifier")
             .field("Task", &task)
             .field("File", &file)
             .finish()

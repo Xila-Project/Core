@@ -1,6 +1,5 @@
 use alloc::{collections::BTreeMap, string::String, vec::Vec};
 
-use futures::yield_now;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
 use task::TaskIdentifier;
@@ -292,7 +291,8 @@ impl<'a> FileSystem<'a> {
             let size = device.read(byte)?;
 
             if size == 0 {
-                yield_now().await;
+                task::Manager::sleep(core::time::Duration::from_millis(10)).await;
+                //yield_now().await;
                 continue;
             }
 
