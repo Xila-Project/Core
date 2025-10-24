@@ -15,6 +15,7 @@ log = { workspace = true }
 
 [dev-dependencies]
 drivers = { workspace = true }
+graphics = { workspace = true, features = ["rendering_xrgb8888"] }
 time = { workspace = true }
 little_fs = { workspace = true }
 
