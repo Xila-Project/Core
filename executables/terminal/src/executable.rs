@@ -1,9 +1,9 @@
 use crate::main;
 use alloc::string::{String, ToString};
-use executable::implement_executable_device;
-use file_system::{Flags, Mode, Open};
-use task::TaskIdentifier;
-use virtual_file_system::{File, VirtualFileSystem};
+use xila::executable::implement_executable_device;
+use xila::file_system::{self, Flags, Mode, Open};
+use xila::task::TaskIdentifier;
+use xila::virtual_file_system::{File, VirtualFileSystem};
 
 pub struct TerminalExecutable;
 

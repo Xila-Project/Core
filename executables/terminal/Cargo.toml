@@ -4,19 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-graphics = { workspace = true }
-file_system = { workspace = true }
-virtual_file_system = { workspace = true }
-executable = { workspace = true }
-task = { workspace = true }
-users = { workspace = true }
-shared = { workspace = true }
-time = { workspace = true }
-synchronization = { workspace = true }
-futures = { workspace = true }
-log = { workspace = true }
+xila = { path = "../../", features = ["host"] }
 
-[dev-dependencies]
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
 drivers_native = { workspace = true }
 drivers_core = { workspace = true }
 drivers_shared = { workspace = true }

@@ -1,7 +1,7 @@
 use alloc::string::String;
 
-use file_system::DeviceTrait;
-use futures::block_on;
+use xila::file_system::{self, DeviceTrait};
+use xila::futures::block_on;
 
 use crate::terminal::Terminal;
 

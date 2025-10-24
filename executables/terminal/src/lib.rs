@@ -11,13 +11,14 @@ pub use executable::*;
 
 use core::{num::NonZeroUsize, time::Duration};
 
-use ::executable::Standard;
 use alloc::{
     string::{String, ToString},
     sync::Arc,
 };
-use file_system::{Device, Flags, Mode, UniqueFileIdentifier};
-use task::TaskIdentifier;
+use xila::executable::Standard;
+use xila::file_system::{Device, Flags, Mode, UniqueFileIdentifier};
+use xila::task::{self, TaskIdentifier};
+use xila::virtual_file_system;
 
 use crate::{error::Result, terminal::Terminal};
 
@@ -78,7 +79,7 @@ async fn inner_main(task: TaskIdentifier) -> Result<()> {
         virtual_file_system::get_instance(),
     );
 
-    ::executable::execute("/binaries/command_line_shell", "".to_string(), standard).await?;
+    xila::executable::execute("/binaries/command_line_shell", "".to_string(), standard).await?;
 
     while terminal.event_handler().await? {
         task::Manager::sleep(Duration::from_millis(10)).await;
