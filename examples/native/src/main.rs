@@ -49,8 +49,10 @@ async fn main() {
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
     const RESOLUTION: graphics::Point = graphics::Point::new(800, 600);
-    let (screen_device, pointer_device, keyboard_device) =
-        drivers::native::window_screen::new(RESOLUTION).unwrap();
+    let (screen_device, pointer_device, keyboard_device, mut event_loop) =
+        drivers::native::window_screen::new(RESOLUTION)
+            .await
+            .unwrap();
     // - - Initialize the graphics manager
     let graphics_manager = graphics::initialize(
         screen_device,
@@ -71,6 +73,13 @@ async fn main() {
     task_manager
         .spawn(task, "Graphics", None, |_| {
             graphics_manager.r#loop(task::Manager::sleep)
+        })
+        .await
+        .unwrap();
+
+    task_manager
+        .spawn(task, "Event Loop", None, async move |_| {
+            event_loop.run().await
         })
         .await
         .unwrap();
@@ -231,7 +240,7 @@ async fn main() {
         .unwrap();
 
     // wait some time to show the bootsplash
-    task::Manager::sleep(Duration::from_secs(5)).await;
+    task::Manager::sleep(Duration::from_secs(2)).await;
 
     bootsplash.stop(graphics_manager).await.unwrap();
 
