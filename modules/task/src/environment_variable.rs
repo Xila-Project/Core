@@ -7,7 +7,7 @@ pub struct EnvironmentVariable(Arc<CString>, usize);
 impl Debug for EnvironmentVariable {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
-            .debug_struct("Environment_variable_type")
+            .debug_struct("EnvironmentVariable")
             .field("Name", &self.get_name())
             .field("Value", &self.get_value())
             .finish()
@@ -26,9 +26,9 @@ impl EnvironmentVariable {
     /// # Example
     ///
     /// ```
-    /// use task::Environment_variable_type;
+    /// use task::EnvironmentVariable;
     ///
-    /// let Environment_variable = Environment_variable_type::new("Name", "Value");
+    /// let Environment_variable = EnvironmentVariable::new("Name", "Value");
     ///
     /// assert_eq!(Environment_variable.get_name(), "Name");
     /// ```
@@ -41,9 +41,9 @@ impl EnvironmentVariable {
     /// # Example
     ///
     /// ```
-    /// use task::Environment_variable_type;
+    /// use task::EnvironmentVariable;
     ///
-    /// let Environment_variable = Environment_variable_type::new("Name", "Value");
+    /// let Environment_variable = EnvironmentVariable::new("Name", "Value");
     ///
     /// assert_eq!(Environment_variable.get_value(), "Value");
     /// ```
@@ -171,7 +171,7 @@ mod tests {
         let env_var = EnvironmentVariable::new("DEBUG_VAR", "debug_value");
         let debug_string = format!("{env_var:?}");
 
-        assert!(debug_string.contains("Environment_variable_type"));
+        assert!(debug_string.contains("EnvironmentVariable"));
         assert!(debug_string.contains("DEBUG_VAR"));
         assert!(debug_string.contains("debug_value"));
     }

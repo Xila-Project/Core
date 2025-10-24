@@ -18,24 +18,24 @@ use super::{
 /// # Example
 ///
 /// ```rust
-/// use file_system::{Unique_file_identifier_type, File_identifier_type, File_system_identifier_type, Local_file_identifier_type};
+/// use file_system::{UniqueFileIdentifier, FileIdentifier, FileSystemIdentifier, LocalFileIdentifier};
 ///
 /// use task::TaskIdentifier;
 ///
-/// let Identifier = Unique_file_identifier_type::new(
-///     File_system_identifier_type::from(0x1234),
-///     File_identifier_type::from(0x5678),
+/// let Identifier = UniqueFileIdentifier::new(
+///     FileSystemIdentifier::from(0x1234),
+///     FileIdentifier::from(0x5678),
 /// );
 ///
-/// let (File_system, File) = Identifier.Split();
+/// let (File_system, File) = Identifier.split();
 ///
-/// assert_eq!(File_system, File_system_identifier_type::from(0x1234));
-/// assert_eq!(File, File_identifier_type::from(0x5678));
+/// assert_eq!(File_system, FileSystemIdentifier::from(0x1234));
+/// assert_eq!(File, FileIdentifier::from(0x5678));
 ///
-/// let (File_system, Local_file) = Identifier.Into_local_file_identifier(TaskIdentifier::from(0x9ABC));
+/// let (File_system, Local_file) = Identifier.into_local_file_identifier(TaskIdentifier::from(0x9ABC));
 ///
-/// assert_eq!(File_system, File_system_identifier_type::from(0x1234));
-/// assert_eq!(Local_file, Local_file_identifier_type::new(TaskIdentifier::from(0x9ABC), File_identifier_type::from(0x5678)));
+/// assert_eq!(File_system, FileSystemIdentifier::from(0x1234));
+/// assert_eq!(Local_file, LocalFileIdentifier::new(TaskIdentifier::from(0x9ABC), FileIdentifier::from(0x5678)));
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
@@ -46,7 +46,7 @@ impl Debug for UniqueFileIdentifier {
         let (file_system_identifier, file_identifier) = self.split();
 
         formatter
-            .debug_struct("Unique_file_identifier_type")
+            .debug_struct("UniqueFileIdentifier")
             .field("File_system_identifier", &file_system_identifier)
             .field("File_identifier", &file_identifier)
             .finish()

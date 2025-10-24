@@ -38,7 +38,8 @@ async fn main() {
 
     const RESOLUTION: Point = Point::new(800, 480);
 
-    let (screen_device, pointer_device, keyboard_device) = window_screen::new(RESOLUTION).unwrap();
+    let (screen_device, pointer_device, keyboard_device, mut runner) =
+        window_screen::new(RESOLUTION).await.unwrap();
 
     const BUFFER_SIZE: usize = get_minimal_buffer_size(&RESOLUTION);
 
@@ -59,6 +60,13 @@ async fn main() {
     task_manager
         .spawn(task, "Graphics", None, |_| {
             graphics_manager.r#loop(task::Manager::sleep)
+        })
+        .await
+        .unwrap();
+
+    task_manager
+        .spawn(task, "Window screen runner", None, async move |_| {
+            runner.run().await;
         })
         .await
         .unwrap();

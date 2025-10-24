@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn test_const_into_inner() {
-        // Test that Into_inner can be used in const context
+        // Test that into_inner can be used in const context
         const ID: TaskIdentifier = TaskIdentifier::new(200);
         const INNER: TaskIdentifierInner = ID.into_inner();
         assert_eq!(INNER, 200);

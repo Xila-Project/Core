@@ -1,6 +1,6 @@
 //! Core file system trait and abstractions.
 //!
-//! This module defines the primary [`File_system_traits`] trait that all file system
+//! This module defines the primary [`FileSystemTraits`] trait that all file system
 //! implementations must implement. It provides a comprehensive POSIX-like interface
 //! for file and directory operations with support for multi-user environments,
 //! task isolation, and concurrent access.
@@ -27,7 +27,7 @@ use users::{GroupIdentifier, UserIdentifier};
 /// # extern crate alloc;
 /// # use file_system::*;
 ///
-/// // Create a file system instance (assuming MyFileSystem implements File_system_traits)
+/// // Create a file system instance (assuming MyFileSystem implements FileSystemTraits)
 /// // let fs = Create_file_system!(MyFileSystem::new());
 /// ```
 #[macro_export]
@@ -86,45 +86,45 @@ macro_rules! create_file_system {
 /// # use file_system::*;
 /// # use alloc::collections::BTreeMap;
 /// # use task::TaskIdentifier;
-/// # use users::{User_identifier_type, Group_identifier_type};
+/// # use users::{UserIdentifier, GroupIdentifier};
 /// # use synchronization::rwlock::RwLock;
 /// # use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 ///
 /// struct MyFileSystem {
 ///     // Use RwLock for thread safety
-///     files: RwLock<CriticalSectionRawMutex, BTreeMap<Local_file_identifier_type, u32>>,
+///     files: RwLock<CriticalSectionRawMutex, BTreeMap<LocalFileIdentifier, u32>>,
 ///     // ... other fields
 /// }
 ///
-/// impl File_system_traits for MyFileSystem {
-///     fn Open(&self, task: TaskIdentifier, path: &Path_type, flags: Flags_type,
-///             time: Time_type, user: User_identifier_type, group: Group_identifier_type)
-///             -> Result<Local_file_identifier_type> {
+/// impl FileSystemTraits for MyFileSystem {
+///     fn open(&self, task: TaskIdentifier, path: &Path, flags: Flags,
+///             time: Time, user: UserIdentifier, group: GroupIdentifier)
+///             -> Result<LocalFileIdentifier> {
 ///         todo!()
 ///     }
 ///     // ... other methods would be implemented here
-/// #    fn Close(&self, _: Local_file_identifier_type) -> Result<()> { todo!() }
-/// #    fn Close_all(&self, _: TaskIdentifier) -> Result<()> { todo!() }
-/// #    fn Duplicate(&self, _: Local_file_identifier_type) -> Result<Local_file_identifier_type> { todo!() }
-/// #    fn Transfert(&self, _: TaskIdentifier, _: Local_file_identifier_type, _: Option<File_identifier_type>) -> Result<Local_file_identifier_type> { todo!() }
-/// #    fn Remove(&self, _: &Path_type) -> Result<()> { todo!() }
-/// #    fn Read(&self, _: Local_file_identifier_type, _: &mut [u8], _: Time_type) -> Result<Size> { todo!() }
-/// #    fn Write(&self, _: Local_file_identifier_type, _: &[u8], _: Time_type) -> Result<Size> { todo!() }
-/// #    fn Rename(&self, _: &Path_type, _: &Path_type) -> Result<()> { todo!() }
-/// #    fn Set_position(&self, _: Local_file_identifier_type, _: &Position_type) -> Result<Size> { todo!() }
-/// #    fn Flush(&self, _: Local_file_identifier_type) -> Result<()> { todo!() }
-/// #    fn Create_directory(&self, _: &Path_type, _: Time_type, _: User_identifier_type, _: Group_identifier_type) -> Result<()> { todo!() }
-/// #    fn Open_directory(&self, _: &Path_type, _: TaskIdentifier) -> Result<Local_file_identifier_type> { todo!() }
-/// #    fn Read_directory(&self, _: Local_file_identifier_type) -> Result<Option<Entry_type>> { todo!() }
-/// #    fn Set_position_directory(&self, _: Local_file_identifier_type, _: Size) -> Result<()> { todo!() }
-/// #    fn get_position_directory(&self, _: Local_file_identifier_type) -> Result<Size> { todo!() }
-/// #    fn Rewind_directory(&self, _: Local_file_identifier_type) -> Result<()> { todo!() }
-/// #    fn Close_directory(&self, _: Local_file_identifier_type) -> Result<()> { todo!() }
-/// #    fn get_metadata(&self, _: Local_file_identifier_type) -> Result<Metadata_type> { todo!() }
-/// #    fn Set_metadata_from_path(&self, _: &Path_type, _: &Metadata_type) -> Result<()> { todo!() }
-/// #    fn get_metadata_from_path(&self, _: &Path_type) -> Result<Metadata_type> { todo!() }
-/// #    fn get_statistics(&self, _: Local_file_identifier_type) -> Result<Statistics_type> { todo!() }
-/// #    fn get_mode(&self, _: Local_file_identifier_type) -> Result<Mode_type> { todo!() }
+/// #    fn close(&self, _: LocalFileIdentifier) -> Result<()> { todo!() }
+/// #    fn close_all(&self, _: TaskIdentifier) -> Result<()> { todo!() }
+/// #    fn duplicate(&self, _: LocalFileIdentifier) -> Result<LocalFileIdentifier> { todo!() }
+/// #    fn transfert(&self, _: TaskIdentifier, _: LocalFileIdentifier, _: Option<FileIdentifier>) -> Result<LocalFileIdentifier> { todo!() }
+/// #    fn remove(&self, _: &Path) -> Result<()> { todo!() }
+/// #    fn read(&self, _: LocalFileIdentifier, _: &mut [u8], _: Time) -> Result<Size> { todo!() }
+/// #    fn write(&self, _: LocalFileIdentifier, _: &[u8], _: Time) -> Result<Size> { todo!() }
+/// #    fn rename(&self, _: &Path, _: &Path) -> Result<()> { todo!() }
+/// #    fn set_position(&self, _: LocalFileIdentifier, _: &Position) -> Result<Size> { todo!() }
+/// #    fn flush(&self, _: LocalFileIdentifier) -> Result<()> { todo!() }
+/// #    fn create_directory(&self, _: &Path, _: Time, _: UserIdentifier, _: GroupIdentifier) -> Result<()> { todo!() }
+/// #    fn open_directory(&self, _: &Path, _: TaskIdentifier) -> Result<LocalFileIdentifier> { todo!() }
+/// #    fn read_directory(&self, _: LocalFileIdentifier) -> Result<Option<Entry>> { todo!() }
+/// #    fn set_position_directory(&self, _: LocalFileIdentifier, _: Size) -> Result<()> { todo!() }
+/// #    fn get_position_directory(&self, _: LocalFileIdentifier) -> Result<Size> { todo!() }
+/// #    fn rewind_directory(&self, _: LocalFileIdentifier) -> Result<()> { todo!() }
+/// #    fn close_directory(&self, _: LocalFileIdentifier) -> Result<()> { todo!() }
+/// #    fn get_metadata(&self, _: LocalFileIdentifier) -> Result<Metadata> { todo!() }
+/// #    fn set_metadata_from_path(&self, _: &Path, _: &Metadata) -> Result<()> { todo!() }
+/// #    fn get_metadata_from_path(&self, _: &Path) -> Result<Metadata> { todo!() }
+/// #    fn get_statistics(&self, _: LocalFileIdentifier) -> Result<Statistics_type> { todo!() }
+/// #    fn get_mode(&self, _: LocalFileIdentifier) -> Result<Mode> { todo!() }
 /// }
 /// ```
 pub trait FileSystemTraits: Send + Sync {
@@ -149,7 +149,7 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// # Returns
     ///
-    /// * `Ok(Local_file_identifier_type)` - File descriptor for the opened file
+    /// * `Ok(LocalFileIdentifier)` - File descriptor for the opened file
     /// * `Err(Error)` - Error if file cannot be opened
     ///
     /// # Errors
@@ -216,7 +216,7 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// # Returns
     ///
-    /// * `Ok(Local_file_identifier_type)` - New file identifier for the same file
+    /// * `Ok(LocalFileIdentifier)` - New file identifier for the same file
     /// * `Err(Error)` - Error creating duplicate
     ///
     /// # Errors
@@ -238,7 +238,7 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// # Returns
     ///
-    /// * `Ok(Local_file_identifier_type)` - File identifier in the new task
+    /// * `Ok(LocalFileIdentifier)` - File identifier in the new task
     /// * `Err(Error)` - Error during transfer
     ///
     /// # Errors
@@ -284,7 +284,7 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// * `File` - File identifier to read from
     /// * `Buffer` - Buffer to read data into
-    /// * `Time_type` - Current time for access time updates
+    /// * `Time` - Current time for access time updates
     ///
     /// # Returns
     ///
@@ -307,7 +307,7 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// * `File` - File identifier to write to
     /// * `Buffer` - Buffer containing data to write
-    /// * `Time_type` - Current time for modification time updates
+    /// * `Time` - Current time for modification time updates
     ///
     /// # Returns
     ///

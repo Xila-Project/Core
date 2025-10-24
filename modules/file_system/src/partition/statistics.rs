@@ -9,7 +9,7 @@ use crate::Mbr;
 /// # Fields
 ///
 /// ## Partition Counts
-/// * `Total_partitions` - Total number of valid partitions
+/// * `total_partitions` - Total number of valid partitions
 /// * `Bootable_partitions` - Number of partitions marked as bootable
 /// * `Fat_partitions` - Number of FAT file system partitions (FAT16, FAT32, etc.)
 /// * `Linux_partitions` - Number of Linux-type partitions
@@ -28,19 +28,19 @@ use crate::Mbr;
 /// extern crate alloc;
 /// use file_system::*;
 ///
-/// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+/// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
 /// // Create an MBR with some partitions
-/// let mut mbr = MBR_type::New_with_signature(0x12345678);
-/// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
-/// mbr.Add_partition(Partition_type_type::Linux, 4096, 2048, false).unwrap();
-/// mbr.Write_to_device(&device).unwrap();
+/// let mut mbr = Mbr::new_with_signature(0x12345678);
+/// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
+/// mbr.add_partition(PartitionKind::Linux, 4096, 2048, false).unwrap();
+/// mbr.write_to_device(&device).unwrap();
 ///
 /// // Read it back and get statistics
-/// let mbr = MBR_type::Read_from_device(&device).unwrap();
-/// let stats = Partition_statistics_type::From_mbr(&mbr);
-/// println!("Total partitions: {}", stats.Total_partitions);
-/// println!("Bootable partitions: {}", stats.Bootable_partitions);
-/// println!("Total used sectors: {}", stats.Total_used_sectors);
+/// let mbr = Mbr::read_from_device(&device).unwrap();
+/// let stats = PartitionStatistics::from_mbr(&mbr);
+/// println!("Total partitions: {}", stats.total_partitions);
+/// println!("Bootable partitions: {}", stats.bootable_partitions);
+/// println!("Total used sectors: {}", stats.total_used_sectors);
 /// ```
 #[derive(Debug, Clone)]
 pub struct PartitionStatistics {
@@ -78,7 +78,7 @@ impl PartitionStatistics {
     ///
     /// # Returns
     ///
-    /// A new `Partition_statistics_type` containing the computed statistics.
+    /// A new `PartitionStatistics` containing the computed statistics.
     ///
     /// # Examples
     ///
@@ -86,19 +86,19 @@ impl PartitionStatistics {
     /// extern crate alloc;
     /// use file_system::*;
     ///
-    /// let device = create_device!(Memory_device_type::<512>::new(4 * 1024 * 1024));
+    /// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
     /// // Create an MBR with some partitions
-    /// let mut mbr = MBR_type::New_with_signature(0x12345678);
-    /// mbr.Add_partition(Partition_type_type::Fat32_lba, 2048, 1024, true).unwrap();
-    /// mbr.Add_partition(Partition_type_type::Linux, 4096, 2048, false).unwrap();
-    /// mbr.Write_to_device(&device).unwrap();
+    /// let mut mbr = Mbr::new_with_signature(0x12345678);
+    /// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
+    /// mbr.add_partition(PartitionKind::Linux, 4096, 2048, false).unwrap();
+    /// mbr.write_to_device(&device).unwrap();
     ///
     /// // Read it back and analyze
-    /// let mbr = MBR_type::Read_from_device(&device).unwrap();
-    /// let stats = Partition_statistics_type::From_mbr(&mbr);
-    /// if stats.Total_partitions > 0 {
+    /// let mbr = Mbr::read_from_device(&device).unwrap();
+    /// let stats = PartitionStatistics::from_mbr(&mbr);
+    /// if stats.total_partitions > 0 {
     ///     println!("Average partition size: {} sectors",
-    ///              stats.Total_used_sectors / stats.Total_partitions as u64);
+    ///              stats.total_used_sectors / stats.total_partitions as u64);
     /// }
     /// ```
     pub fn from_mbr(mbr: &Mbr) -> Self {

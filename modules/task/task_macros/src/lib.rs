@@ -183,17 +183,11 @@ pub fn test(arguments: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// The macro accepts an executor expression as a parameter:
 ///
-/// ```rust
-/// #[Run_with_executor(drivers::standard_library::Executor::Executor_type::new())]
+/// ```rust,ignore
+/// #[task_macros::run(drivers::standard_library::executor::instantiate_static_executor!())]
 /// async fn my_function() {
 ///     println!("Running with custom executor!");
 /// }
-/// ```
-///
-/// You can also use any executor expression:
-/// ```rust
-/// #[Run_with_executor(my_custom_executor)]
-/// async fn my_function() { ... }
 /// ```
 #[proc_macro_attribute]
 #[allow(non_snake_case)]

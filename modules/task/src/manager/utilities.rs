@@ -6,7 +6,7 @@ use alloc::collections::BTreeMap;
 use core::fmt::Debug;
 
 impl Manager {
-    /// Find the first available identifier for any identifier type with Into_inner() method
+    /// Find the first available identifier for any identifier type with into_inner() method
     pub(crate) fn find_first_available_identifier<RawIdentifier, Identifier, V>(
         map: &BTreeMap<Identifier, V>,
         mut range: impl Iterator<Item = RawIdentifier>,

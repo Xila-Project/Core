@@ -13,19 +13,19 @@ use super::Permission;
 /// # Example
 ///
 /// ```rust
-/// use file_system::Mode_type;
+/// use file_system::Mode;
 ///
-/// let mode = Mode_type::new(true, false);
+/// let mode = Mode::new(true, false);
 ///
 /// assert_eq!(mode.get_read(), true);
 /// assert_eq!(mode.get_write(), false);
 ///
-/// let mode = Mode_type::new(false, true);
+/// let mode = Mode::new(false, true);
 ///
 /// assert_eq!(mode.get_read(), false);
 /// assert_eq!(mode.get_write(), true);
 ///
-/// let mode = Mode_type::new(true, true);
+/// let mode = Mode::new(true, true);
 ///
 /// assert_eq!(mode.get_read(), true);
 /// assert_eq!(mode.get_write(), true);
@@ -89,7 +89,7 @@ impl Mode {
 impl Debug for Mode {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
-            .debug_struct("Mode_type")
+            .debug_struct("Mode")
             .field("Read", &self.get_read())
             .field("Write", &self.get_write())
             .finish()
@@ -107,9 +107,9 @@ impl Debug for Mode {
 /// # Example
 ///
 /// ```rust
-/// use file_system::Open_type;
+/// use file_system::Open;
 ///
-/// let open = Open_type::new(true, true, false);
+/// let open = Open::new(true, true, false);
 ///
 /// assert_eq!(open.get_create(), true);
 /// assert_eq!(open.get_exclusive(), true);
@@ -190,7 +190,7 @@ impl Default for Open {
 impl Debug for Open {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
-            .debug_struct("Open_type")
+            .debug_struct("Open")
             .field("Create", &self.get_create())
             .field("Create_only", &self.get_exclusive())
             .field("Truncate", &self.get_truncate())
@@ -209,9 +209,9 @@ impl Debug for Open {
 /// # Example
 ///
 /// ```rust
-/// use file_system::Status_type;
+/// use file_system::Status;
 ///
-/// let status = Status_type::new(true, false, true, false);
+/// let status = Status::new(true, false, true, false);
 ///
 /// assert_eq!(status.get_append(), true);
 /// assert_eq!(status.get_non_blocking(), false);
@@ -300,7 +300,7 @@ impl Status {
 impl Debug for Status {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
-            .debug_struct("Status_type")
+            .debug_struct("Status")
             .field("Append", &self.get_append())
             .field("Non_blocking", &self.get_non_blocking())
             .field("Synchronous", &self.get_bit(Self::SYNCHRONOUS_BIT))
@@ -329,13 +329,13 @@ impl Default for Status {
 /// # Example
 ///
 /// ```rust
-/// use file_system::{Flags_type, Mode_type, Open_type, Status_type};
+/// use file_system::{Flags, Mode, Open, Status};
 ///     
-/// let flags = Flags_type::new(Mode_type::Read_write, Some(Open_type::Create_only), Some(Status_type::Non_blocking));
+/// let flags = Flags::new(Mode::READ_WRITE, Some(Open::CREATE_ONLY), Some(Status::NON_BLOCKING));
 ///
-/// assert_eq!(flags.get_mode(), Mode_type::Read_write);
-/// assert_eq!(flags.get_open(), Open_type::Create_only);
-/// assert_eq!(flags.get_status(), Status_type::Non_blocking);
+/// assert_eq!(flags.get_mode(), Mode::READ_WRITE);
+/// assert_eq!(flags.get_open(), Open::CREATE_ONLY);
+/// assert_eq!(flags.get_status(), Status::NON_BLOCKING);
 /// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
@@ -344,7 +344,7 @@ pub struct Flags(u16);
 impl Debug for Flags {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
-            .debug_struct("Flags_type")
+            .debug_struct("Flags")
             .field("Mode", &self.get_mode())
             .field("Open", &self.get_open())
             .field("Status", &self.get_status())

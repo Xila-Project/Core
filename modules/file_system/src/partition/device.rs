@@ -31,7 +31,7 @@ use crate::{Device, DeviceTrait, Result, Size};
 /// let base_device = create_device!(MemoryDevice::<512>::new(1024 * 1024));
 ///
 /// // Create a partition device for sectors 100-199 (50KB partition)
-/// let partition = PartitionDevice::new_from_lba(base_device, 100, 100);
+/// let partition = PartitionDevice::new_from_lba(base_device, 100, 100).unwrap();
 /// let partition_device = create_device!(partition);
 ///
 /// // Now you can use partition_device like any other device
@@ -100,7 +100,7 @@ impl PartitionDevice {
     ///
     /// let base_device = create_device!(MemoryDevice::<512>::new(1024 * 1024));
     /// // Create a partition starting at block 2048 with 1024 blocks (512KB if block size is 512)
-    /// let partition = PartitionDevice::new_from_lba(base_device, 2048, 1024);
+    /// let partition = PartitionDevice::new_from_lba(base_device, 2048, 1024).unwrap();
     /// ```
     pub fn new_from_lba(base_device: Device, start_lba: u32, sector_count: u32) -> Result<Self> {
         let device_block_size = base_device.get_block_size()?;
@@ -163,7 +163,7 @@ impl PartitionDevice {
     /// # use file_system::*;
     ///
     /// let base_device = create_device!(MemoryDevice::<512>::new(1024 * 1024));
-    /// let partition = PartitionDevice::new_from_lba(base_device, 100, 50);
+    /// let partition = PartitionDevice::new_from_lba(base_device, 100, 50).unwrap();
     /// assert_eq!(partition.get_start_lba(), 100);
     /// ```
     pub fn get_start_lba(&self) -> u32 {

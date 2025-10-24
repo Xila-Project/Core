@@ -23,15 +23,15 @@ use core::{
 ///
 /// // Create a size representing 1024 bytes
 /// let size = Size::new(1024);
-/// assert_eq!(size.As_u64(), 1024);
+/// assert_eq!(size.as_u64(), 1024);
 ///
 /// // Convert from usize
 /// let size_from_usize: Size = 512usize.into();
-/// assert_eq!(size_from_usize.As_u64(), 512);
+/// assert_eq!(size_from_usize.as_u64(), 512);
 ///
 /// // Arithmetic operations
 /// let total = size + size_from_usize;
-/// assert_eq!(total.As_u64(), 1536);
+/// assert_eq!(total.as_u64(), 1536);
 /// ```
 ///
 /// # Type Safety
@@ -61,7 +61,7 @@ impl Size {
     /// use file_system::Size;
     ///
     /// let size = Size::new(2048);
-    /// assert_eq!(size.As_u64(), 2048);
+    /// assert_eq!(size.as_u64(), 2048);
     /// ```
     pub const fn new(item: u64) -> Self {
         Size(item)
@@ -79,7 +79,7 @@ impl Size {
     /// use file_system::Size;
     ///
     /// let size = Size::new(4096);
-    /// assert_eq!(size.As_u64(), 4096);
+    /// assert_eq!(size.as_u64(), 4096);
     /// ```
     pub const fn as_u64(&self) -> u64 {
         self.0
@@ -364,7 +364,7 @@ mod tests {
 
     #[test]
     fn test_size_const_operations() {
-        // Test that New and As_u64 are const functions
+        // Test that New and as_u64 are const functions
         const SIZE: Size = Size::new(42);
         const VALUE: u64 = SIZE.as_u64();
 

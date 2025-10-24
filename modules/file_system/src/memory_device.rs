@@ -31,17 +31,17 @@ use crate::{DeviceTrait, Position, Size};
 /// # use file_system::*;
 ///
 /// // Create a 1MB memory device with 512-byte blocks
-/// let device = Memory_device_type::<512>::new(1024 * 1024);
+/// let device = MemoryDevice::<512>::new(1024 * 1024);
 /// let device = create_device!(device);
 ///
 /// // Write some data
 /// let data = b"Hello, Memory Device!";
-/// device.Write(data).unwrap();
+/// device.write(data).unwrap();
 ///
 /// // Reset position and read back
-/// device.Set_position(&Position_type::Start(0)).unwrap();
+/// device.set_position(&Position::Start(0)).unwrap();
 /// let mut buffer = alloc::vec![0u8; data.len()];
-/// device.Read(&mut buffer).unwrap();
+/// device.read(&mut buffer).unwrap();
 /// assert_eq!(&buffer, data);
 /// ```
 ///
@@ -69,10 +69,10 @@ impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
     ///
     /// ```rust
     /// # extern crate alloc;
-    /// # use file_system::Memory_device_type;
+    /// # use file_system::MemoryDevice;
     ///
     /// // Create a 4KB device with 512-byte blocks
-    /// let device = Memory_device_type::<512>::new(4096);
+    /// let device = MemoryDevice::<512>::new(4096);
     /// ```
     pub fn new(size: usize) -> Self {
         assert!(size.is_multiple_of(BLOCK_SIZE));
@@ -99,12 +99,12 @@ impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
     ///
     /// ```rust
     /// # extern crate alloc;
-    /// # use file_system::Memory_device_type;
+    /// # use file_system::MemoryDevice;
     /// # use alloc::vec;
     ///
     /// // Create device with specific data
     /// let data = vec![0x42; 1024]; // 1KB of 0x42 bytes
-    /// let device = Memory_device_type::<512>::From_vec(data);
+    /// let device = MemoryDevice::<512>::from_vec(data);
     /// ```
     pub fn from_vec(data: Vec<u8>) -> Self {
         assert!(data.len().is_multiple_of(BLOCK_SIZE));
@@ -124,9 +124,9 @@ impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
     ///
     /// ```rust
     /// # extern crate alloc;
-    /// # use file_system::Memory_device_type;
+    /// # use file_system::MemoryDevice;
     ///
-    /// let device = Memory_device_type::<512>::new(2048);
+    /// let device = MemoryDevice::<512>::new(2048);
     /// assert_eq!(device.get_block_count(), 4); // 2048 / 512 = 4
     /// ```
     pub fn get_block_count(&self) -> usize {
