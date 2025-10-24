@@ -51,6 +51,10 @@ pub fn get_instance() -> &'static Manager {
         .expect("Graphics manager not initialized")
 }
 
+pub fn try_get_instance() -> Option<&'static Manager> {
+    MANAGER_INSTANCE.try_get()
+}
+
 struct Inner {
     _inputs: Vec<Input>,
     _displays: Vec<Display>,
