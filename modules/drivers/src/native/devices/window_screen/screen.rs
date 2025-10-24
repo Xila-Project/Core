@@ -1,29 +1,27 @@
-use std::sync::{Arc, Mutex};
-
 use file_system::{DeviceTrait, Size};
 use graphics::{ScreenReadData, ScreenWriteData};
 
-use super::Inner;
+use crate::native::window_screen::inner_window::InnerWindow;
 
-pub struct ScreenDevice(Arc<Mutex<Inner>>);
+pub struct ScreenDevice<'a>(&'a InnerWindow);
 
-unsafe impl Sync for ScreenDevice {}
+unsafe impl<'a> Sync for ScreenDevice<'a> {}
 
-unsafe impl Send for ScreenDevice {}
+unsafe impl<'a> Send for ScreenDevice<'a> {}
 
-impl ScreenDevice {
-    pub fn new(inner: Arc<Mutex<Inner>>) -> Self {
+impl<'a> ScreenDevice<'a> {
+    pub fn new(inner: &'a InnerWindow) -> Self {
         Self(inner)
     }
 }
 
-impl DeviceTrait for ScreenDevice {
+impl<'a> DeviceTrait for ScreenDevice<'a> {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
         let data: &mut ScreenReadData = buffer
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;
 
-        let resolution = self.0.lock().unwrap().get_resolution().unwrap();
+        let resolution = futures::block_on(self.0.get_resolution()).unwrap();
 
         data.set_resolution(resolution);
 
@@ -35,7 +33,7 @@ impl DeviceTrait for ScreenDevice {
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;
 
-        self.0.lock().unwrap().draw(data).unwrap();
+        futures::block_on(self.0.draw(data)).unwrap();
 
         Ok(Size::new(size_of::<Self>() as u64))
     }
