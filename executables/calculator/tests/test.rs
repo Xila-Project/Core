@@ -26,6 +26,45 @@ drivers::standard_library::memory::instantiate_global_allocator!();
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[task::run(executor = drivers::standard_library::executor::instantiate_static_executor!())]
 async fn run_graphics() {
+    let task_manager = task::get_instance();
+
+    const RESOLUTION: graphics::Point = graphics::Point::new(800, 600);
+    let (screen_device, pointer_device, keyboard_device, mut runner) =
+        drivers::native::window_screen::new(RESOLUTION)
+            .await
+            .unwrap();
+
+    let task_identifier = task_manager.get_current_task_identifier().await;
+
+    let spawner = task_manager.get_spawner(task_identifier).await.unwrap();
+
+    task_manager
+        .spawn(
+            task_identifier,
+            "Event Loop",
+            Some(spawner),
+            async move |_| {
+                runner.run().await;
+            },
+        )
+        .await
+        .unwrap();
+
+    // - - Initialize the graphics manager
+    let graphics_manager = graphics::initialize(
+        screen_device,
+        pointer_device,
+        graphics::InputKind::Pointer,
+        graphics::get_minimal_buffer_size(&RESOLUTION),
+        true,
+    )
+    .await;
+
+    graphics_manager
+        .add_input_device(keyboard_device, graphics::InputKind::Keypad)
+        .await
+        .unwrap();
+
     graphics::get_instance()
         .r#loop(task::Manager::sleep)
         .await
@@ -49,6 +88,13 @@ async fn integration_test() {
     let task = task_instance.get_current_task_identifier().await;
 
     time::initialize(create_device!(TimeDriver::new())).expect("Error initializing time manager");
+
+    std::thread::spawn(run_graphics);
+
+    // Wait for graphics manager to be initialized
+    while graphics::try_get_instance().is_none() {
+        task::Manager::sleep(Duration::from_millis(10)).await;
+    }
 
     let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
     little_fs::FileSystem::format(memory_device.clone(), 512).unwrap();
@@ -88,26 +134,6 @@ async fn integration_test() {
     .unwrap();
 
     let virtual_machine = virtual_machine::initialize(&[&host_bindings::GraphicsBindings]);
-
-    const RESOLUTION: graphics::Point = graphics::Point::new(800, 600);
-    let (screen_device, pointer_device, keyboard_device) =
-        drivers::native::window_screen::new(RESOLUTION).unwrap();
-    // - - Initialize the graphics manager
-    let graphics_manager = graphics::initialize(
-        screen_device,
-        pointer_device,
-        graphics::InputKind::Pointer,
-        graphics::get_minimal_buffer_size(&RESOLUTION),
-        true,
-    )
-    .await;
-
-    graphics_manager
-        .add_input_device(keyboard_device, graphics::InputKind::Keypad)
-        .await
-        .unwrap();
-
-    std::thread::spawn(run_graphics);
 
     let task = task_instance.get_current_task_identifier().await;
 
