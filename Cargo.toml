@@ -21,7 +21,6 @@ graphics = { workspace = true, optional = true }
 task = { workspace = true, optional = true }
 time = { workspace = true, optional = true }
 users = { workspace = true, optional = true }
-drivers = { workspace = true, optional = true }
 memory = { workspace = true, optional = true }
 target = { workspace = true, optional = true }
 executable = { workspace = true, optional = true }
@@ -50,7 +49,6 @@ host = [
   "dep:task",
   "dep:time",
   "dep:users",
-  "dep:drivers",
   "dep:memory",
   "dep:target",
   "dep:executable",
@@ -83,7 +81,6 @@ graphics = { path = "modules/graphics" }
 time = { path = "modules/time" }
 task = { path = "modules/task" }
 users = { path = "modules/users" }
-drivers = { path = "modules/drivers" }
 memory = { path = "modules/memory" }
 executable = { path = "modules/executable" }
 file_system = { path = "modules/file_system" }
@@ -98,6 +95,14 @@ target = { path = "modules/target" }
 network = { path = "modules/network" }
 peripherals = { path = "modules/peripherals" }
 bootsplash = { path = "modules/bootsplash" }
+
+# - Drivers
+drivers_core = { path = "drivers/core" }
+drivers_espressif = { path = "drivers/espressif" }
+drivers_native = { path = "drivers/native" }
+drivers_shared = { path = "drivers/shared" }
+drivers_std = { path = "drivers/std" }
+drivers_wasm = { path = "drivers/wasm" }
 
 # - Executables
 file_manager = { path = "executables/file_manager" }
@@ -120,6 +125,10 @@ embassy-futures = { version = "0.1" }
 embassy-sync = { version = "0.7" }
 embassy-time = { version = "0.5" }
 critical-section = { version = "1.2" }
+embassy-net = { version = "0.7", default-features = false }
+linked_list_allocator = { version = "0.10", default-features = false, features = [
+  "const_mut_refs",
+] }
 
 [workspace]
 members = [
@@ -128,7 +137,6 @@ members = [
   "modules/graphics",
   "modules/task",
   "modules/users",
-  "modules/drivers",
   "modules/peripherals",
   "modules/memory",
   "modules/time",
@@ -158,6 +166,12 @@ members = [
   "executables/calculator",
   "examples/wasm",
   "modules/bootsplash",
+  "drivers/core",
+  "drivers/espressif",
+  "drivers/native",
+  "drivers/shared",
+  "drivers/std",
+  "drivers/wasm",
 ]
 
 [patch.crates-io]

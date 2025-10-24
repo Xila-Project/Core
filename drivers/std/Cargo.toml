@@ -1,0 +1,26 @@
+[package]
+name = "drivers_std"
+version = "0.1.0"
+edition = "2024"
+
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
+file_system = { workspace = true }
+log = { workspace = true }
+memory = { workspace = true }
+time = { workspace = true }
+network = { workspace = true }
+task = { workspace = true }
+users = { workspace = true }
+synchronization = { workspace = true }
+
+libc = { version = "0.2" }
+linked_list_allocator = { version = "0.10", default-features = false, features = [
+  "const_mut_refs",
+] }
+embassy-executor = { workspace = true, default-features = false, features = [
+  "arch-std",
+  "executor-thread",
+] }
+
+[dev-dependencies]
+little_fs = { workspace = true }

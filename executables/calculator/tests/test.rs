@@ -2,8 +2,7 @@ extern crate alloc;
 
 use std::fs;
 
-use xila::drivers;
-use xila::drivers::native::TimeDriver;
+use drivers_native::TimeDriver;
 use xila::executable::build_crate;
 use xila::file_system;
 use xila::file_system::{MemoryDevice, create_device, create_file_system};
@@ -21,16 +20,16 @@ use xila::virtual_file_system::{create_default_hierarchy, mount_static_devices};
 use xila::virtual_machine;
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-drivers::standard_library::memory::instantiate_global_allocator!();
+drivers_std::memory::instantiate_global_allocator!();
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-#[task::run(executor = drivers::standard_library::executor::instantiate_static_executor!())]
+#[task::run(executor = drivers_std::executor::instantiate_static_executor!())]
 async fn run_graphics() {
     let task_manager = task::get_instance();
 
     const RESOLUTION: graphics::Point = graphics::Point::new(800, 600);
     let (screen_device, pointer_device, keyboard_device, mut runner) =
-        drivers::native::window_screen::new(RESOLUTION)
+        drivers_native::window_screen::new(RESOLUTION)
             .await
             .unwrap();
 
@@ -75,7 +74,7 @@ async fn run_graphics() {
 #[ignore]
 async fn integration_test() {
     // - Initialize the system
-    log::initialize(&drivers::standard_library::log::Logger).unwrap();
+    log::initialize(&drivers_std::log::Logger).unwrap();
 
     let wasm_crate_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("./wasm");
     let binary_path = build_crate(&wasm_crate_path).unwrap();
@@ -115,19 +114,19 @@ async fn integration_test() {
         &[
             (
                 &"/devices/standard_in",
-                drivers::standard_library::console::StandardInDevice
+                drivers_std::console::StandardInDevice
             ),
             (
                 &"/devices/standard_out",
-                drivers::standard_library::console::StandardOutDevice
+                drivers_std::console::StandardOutDevice
             ),
             (
                 &"/devices/standard_error",
-                drivers::standard_library::console::StandardErrorDevice
+                drivers_std::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers::native::TimeDriver),
-            (&"/devices/random", drivers::shared::devices::RandomDevice),
-            (&"/devices/null", drivers::core::NullDevice)
+            (&"/devices/time", drivers_native::TimeDriver),
+            (&"/devices/random", drivers_shared::devices::RandomDevice),
+            (&"/devices/null", drivers_core::NullDevice)
         ]
     )
     .await

@@ -7,7 +7,7 @@ extern crate abi_definitions;
 use task::test;
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-drivers::standard_library::memory::instantiate_global_allocator!();
+drivers_std::memory::instantiate_global_allocator!();
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[test]
@@ -15,7 +15,7 @@ drivers::standard_library::memory::instantiate_global_allocator!();
 async fn main() {
     use std::{process::exit, ptr::null_mut};
 
-    use drivers::native::window_screen;
+    use drivers_native::window_screen;
     use file_system::create_device;
     use graphics::{InputKind, Point, get_recommended_buffer_size, lvgl};
 
@@ -23,7 +23,7 @@ async fn main() {
 
     let task_instance = task::initialize();
 
-    time::initialize(create_device!(drivers::native::TimeDriver::new()))
+    time::initialize(create_device!(drivers_native::TimeDriver::new()))
         .expect("Error initializing time manager");
 
     const RESOLUTION: Point = Point::new(800, 480);

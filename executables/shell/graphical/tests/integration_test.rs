@@ -8,14 +8,14 @@ use graphical_shell::ShellExecutable;
 use task::test;
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-drivers::standard_library::memory::instantiate_global_allocator!();
+drivers_std::memory::instantiate_global_allocator!();
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[ignore]
 #[test]
 async fn main() {
     use alloc::string::ToString;
-    use drivers::native::window_screen;
+    use drivers_native::window_screen;
     use executable::mount_static_executables;
     use file_system::{Flags, Open};
     use graphics::{InputKind, Point, get_minimal_buffer_size};
@@ -32,7 +32,7 @@ async fn main() {
     let _ = users::initialize();
 
     // - Initialize the time manager.
-    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
+    let _ = time::initialize(create_device!(drivers_native::TimeDriver::new()));
 
     // - Initialize the graphics manager.
 
@@ -101,19 +101,19 @@ async fn main() {
         &[
             (
                 &"/devices/standard_in",
-                drivers::standard_library::console::StandardInDevice
+                drivers_std::console::StandardInDevice
             ),
             (
                 &"/devices/standard_out",
-                drivers::standard_library::console::StandardOutDevice
+                drivers_std::console::StandardOutDevice
             ),
             (
                 &"/devices/standard_error",
-                drivers::standard_library::console::StandardErrorDevice
+                drivers_std::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers::native::TimeDriver),
-            (&"/devices/random", drivers::shared::devices::RandomDevice),
-            (&"/devices/null", drivers::core::NullDevice)
+            (&"/devices/time", drivers_native::TimeDriver),
+            (&"/devices/random", drivers_shared::devices::RandomDevice),
+            (&"/devices/null", drivers_core::NullDevice)
         ]
     )
     .await

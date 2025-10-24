@@ -14,8 +14,6 @@ pub use authentication;
 #[cfg(feature = "host")]
 pub use bootsplash;
 #[cfg(feature = "host")]
-pub use drivers;
-#[cfg(feature = "host")]
 pub use executable;
 #[cfg(feature = "host")]
 pub use file_system;

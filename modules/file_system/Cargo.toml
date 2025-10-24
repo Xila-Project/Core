@@ -11,7 +11,10 @@ synchronization = { workspace = true }
 futures = { workspace = true }
 
 [dev-dependencies]
-drivers = { workspace = true }
+drivers_native = { workspace = true }
+drivers_core = { workspace = true }
+drivers_shared = { workspace = true }
+drivers_std = { workspace = true }
 
 [features]
 std = []

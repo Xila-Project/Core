@@ -1,40 +1,37 @@
 #![no_std]
 
-extern crate alloc;
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+drivers_std::memory::instantiate_global_allocator!();
 
-use core::time::Duration;
-
-use xila::authentication;
-use xila::bootsplash::Bootsplash;
-use xila::drivers;
-use xila::drivers::standard_library::executor::instantiate_static_executor;
-use xila::executable;
-use xila::executable::Standard;
-use xila::executable::mount_static_executables;
-use xila::file_system;
-use xila::file_system::Mbr;
-use xila::file_system::PartitionKind;
-use xila::file_system::{create_device, create_file_system};
-use xila::graphics;
-use xila::host_bindings;
-use xila::little_fs;
-use xila::log;
-use xila::log::information;
-use xila::task;
-use xila::time;
-use xila::users;
-use xila::virtual_file_system;
-use xila::virtual_file_system::mount_static_devices;
-use xila::virtual_machine;
-
-use alloc::string::String;
-
-drivers::standard_library::memory::instantiate_global_allocator!();
-
-#[task::run(task_path = task, executor = instantiate_static_executor!())]
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+#[xila::task::run(task_path = xila::task, executor = drivers_std::executor::instantiate_static_executor!())]
 async fn main() {
+    extern crate alloc;
+    use alloc::string::String;
+    use core::time::Duration;
+    use xila::authentication;
+    use xila::bootsplash::Bootsplash;
+    use xila::executable;
+    use xila::executable::Standard;
+    use xila::executable::mount_static_executables;
+    use xila::file_system;
+    use xila::file_system::Mbr;
+    use xila::file_system::PartitionKind;
+    use xila::file_system::{create_device, create_file_system};
+    use xila::graphics;
+    use xila::host_bindings;
+    use xila::little_fs;
+    use xila::log;
+    use xila::log::information;
+    use xila::task;
+    use xila::time;
+    use xila::users;
+    use xila::virtual_file_system;
+    use xila::virtual_file_system::mount_static_devices;
+    use xila::virtual_machine;
+
     // - Initialize the system
-    log::initialize(&drivers::standard_library::log::Logger).unwrap();
+    log::initialize(&drivers_std::log::Logger).unwrap();
 
     // Initialize the task manager
     let task_manager = task::initialize();
@@ -44,13 +41,13 @@ async fn main() {
     // Initialize the users manager
     users::initialize();
     // Initialize the time manager
-    time::initialize(create_device!(drivers::native::TimeDriver::new())).unwrap();
+    time::initialize(create_device!(drivers_native::TimeDriver::new())).unwrap();
 
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
     const RESOLUTION: graphics::Point = graphics::Point::new(800, 600);
     let (screen_device, pointer_device, keyboard_device, mut event_loop) =
-        drivers::native::window_screen::new(RESOLUTION)
+        drivers_native::window_screen::new(RESOLUTION)
             .await
             .unwrap();
     // - - Initialize the graphics manager
@@ -86,7 +83,7 @@ async fn main() {
 
     // - Initialize the file system
     // Create a memory device
-    let drive = create_device!(drivers::standard_library::drive_file::FileDriveDevice::new(
+    let drive = create_device!(drivers_std::drive_file::FileDriveDevice::new(
         &"./drive.img"
     ));
 
@@ -136,19 +133,19 @@ async fn main() {
         &[
             (
                 &"/devices/standard_in",
-                drivers::standard_library::console::StandardInDevice
+                drivers_std::console::StandardInDevice
             ),
             (
                 &"/devices/standard_out",
-                drivers::standard_library::console::StandardOutDevice
+                drivers_std::console::StandardOutDevice
             ),
             (
                 &"/devices/standard_error",
-                drivers::standard_library::console::StandardErrorDevice
+                drivers_std::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers::native::TimeDriver),
-            (&"/devices/random", drivers::shared::devices::RandomDevice),
-            (&"/devices/null", drivers::core::NullDevice)
+            (&"/devices/time", drivers_native::TimeDriver),
+            (&"/devices/random", drivers_shared::devices::RandomDevice),
+            (&"/devices/null", drivers_core::NullDevice)
         ]
     )
     .await
@@ -252,4 +249,9 @@ async fn main() {
         .await;
 
     virtual_file_system::get_instance().uninitialize().await;
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+fn main() {
+    panic!("This example is only for native platforms.");
 }
