@@ -20,5 +20,8 @@ default = []
 
 [dev-dependencies]
 drivers_native = { workspace = true }
+drivers_core = { workspace = true }
+drivers_shared = { workspace = true }
+drivers_std = { workspace = true }
 little_fs = { workspace = true }
 users = { workspace = true }

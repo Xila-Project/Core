@@ -8,7 +8,7 @@ fn default_task_path() -> syn::Expr {
 }
 
 fn default_executor() -> syn::Expr {
-    parse_str("drivers::standard_library::executor::instantiate_static_executor!()").unwrap()
+    parse_str("drivers_std::executor::instantiate_static_executor!()").unwrap()
 }
 
 #[derive(Debug, FromMeta, Clone)]
@@ -184,7 +184,7 @@ pub fn test(arguments: TokenStream, input: TokenStream) -> TokenStream {
 /// The macro accepts an executor expression as a parameter:
 ///
 /// ```rust,ignore
-/// #[task_macros::run(drivers::standard_library::executor::instantiate_static_executor!())]
+/// #[task_macros::run(drivers_std::executor::instantiate_static_executor!())]
 /// async fn my_function() {
 ///     println!("Running with custom executor!");
 /// }

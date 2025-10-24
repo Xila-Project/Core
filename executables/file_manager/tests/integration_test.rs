@@ -8,7 +8,7 @@ use file_system::{MemoryDevice, Mode, create_device, create_file_system};
 use task::test;
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-drivers::standard_library::memory::instantiate_global_allocator!();
+drivers_std::memory::instantiate_global_allocator!();
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[ignore]
@@ -16,7 +16,7 @@ drivers::standard_library::memory::instantiate_global_allocator!();
 async fn main() {
     use alloc::string::ToString;
     use command_line_shell::ShellExecutable;
-    use drivers::native::window_screen;
+    use drivers_native::window_screen;
     use executable::mount_static_executables;
     use graphics::{InputKind, Point, get_minimal_buffer_size};
     use virtual_file_system::{create_default_hierarchy, mount_static_devices};
@@ -30,7 +30,7 @@ async fn main() {
     let _ = users::initialize();
 
     // - Initialize the time manager.
-    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
+    let _ = time::initialize(create_device!(drivers_native::TimeDriver::new()));
 
     // - Initialize the virtual file system.
     let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
@@ -89,19 +89,19 @@ async fn main() {
         &[
             (
                 &"/devices/standard_in",
-                drivers::standard_library::console::StandardInDevice
+                drivers_std::console::StandardInDevice
             ),
             (
                 &"/devices/standard_out",
-                drivers::standard_library::console::StandardOutDevice
+                drivers_std::console::StandardOutDevice
             ),
             (
                 &"/devices/standard_error",
-                drivers::standard_library::console::StandardErrorDevice
+                drivers_std::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers::native::TimeDriver),
-            (&"/devices/random", drivers::shared::devices::RandomDevice),
-            (&"/devices/null", drivers::core::NullDevice)
+            (&"/devices/time", drivers_native::TimeDriver),
+            (&"/devices/random", drivers_shared::devices::RandomDevice),
+            (&"/devices/null", drivers_core::NullDevice)
         ]
     )
     .await

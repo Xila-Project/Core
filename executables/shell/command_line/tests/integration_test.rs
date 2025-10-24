@@ -9,7 +9,7 @@ use users::GroupIdentifier;
 use virtual_file_system::{create_default_hierarchy, mount_static_devices};
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-drivers::standard_library::memory::instantiate_global_allocator!();
+drivers_std::memory::instantiate_global_allocator!();
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[ignore]
@@ -19,7 +19,7 @@ async fn integration_test() {
 
     let _ = users::initialize();
 
-    let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
+    let _ = time::initialize(create_device!(drivers_native::TimeDriver::new()));
 
     let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
 
@@ -42,19 +42,19 @@ async fn integration_test() {
         &[
             (
                 &"/devices/standard_in",
-                drivers::standard_library::console::StandardInDevice
+                drivers_std::console::StandardInDevice
             ),
             (
                 &"/devices/standard_out",
-                drivers::standard_library::console::StandardOutDevice
+                drivers_std::console::StandardOutDevice
             ),
             (
                 &"/devices/standard_error",
-                drivers::standard_library::console::StandardErrorDevice
+                drivers_std::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers::native::TimeDriver),
-            (&"/devices/random", drivers::shared::devices::RandomDevice),
-            (&"/devices/null", drivers::core::NullDevice)
+            (&"/devices/time", drivers_native::TimeDriver),
+            (&"/devices/random", drivers_shared::devices::RandomDevice),
+            (&"/devices/null", drivers_core::NullDevice)
         ]
     )
     .await

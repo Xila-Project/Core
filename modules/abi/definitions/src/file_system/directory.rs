@@ -152,7 +152,7 @@ mod tests {
     {
         let _ = users::initialize();
 
-        let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
+        let _ = time::initialize(create_device!(drivers_native::TimeDriver::new()));
 
         let task = task::get_instance().get_current_task_identifier().await;
 

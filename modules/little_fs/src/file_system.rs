@@ -597,7 +597,7 @@ mod tests {
 
         task::initialize();
 
-        let _ = time::initialize(create_device!(drivers::native::TimeDriver::new()));
+        let _ = time::initialize(create_device!(drivers_native::TimeDriver::new()));
 
         let mock_device = MemoryDevice::<512>::new(2048 * 512);
 
