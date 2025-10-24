@@ -3,6 +3,8 @@ use core::{
     num::{NonZeroU8, NonZeroUsize},
 };
 
+use xila::{authentication, file_system, graphics, task, virtual_file_system};
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Clone)]

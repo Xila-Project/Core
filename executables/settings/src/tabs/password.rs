@@ -1,11 +1,11 @@
 use crate::error::Result;
 
 use alloc::ffi::CString;
-use authentication;
-use graphics::{Event, EventKind, lvgl};
-use task;
-use users;
-use virtual_file_system;
+use xila::authentication;
+use xila::graphics::{Event, EventKind, lvgl};
+use xila::task;
+use xila::users;
+use xila::virtual_file_system;
 
 pub struct PasswordTab {
     tab_container: *mut lvgl::lv_obj_t,
