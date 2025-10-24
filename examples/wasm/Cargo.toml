@@ -5,10 +5,7 @@ version = "0.1.0"
 authors = ["Alix ANNERAUD <alix@anneraud.fr>"]
 edition = "2024"
 
-[features]
-
-
-[dependencies]
+[target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.84"
 xila = { path = "../../", features = ["host", "graphics_rendering_xrgb8888"] }
 file_manager = { workspace = true }
@@ -17,6 +14,9 @@ graphical_shell = { workspace = true }
 terminal = { workspace = true }
 settings = { workspace = true }
 console_error_panic_hook = "0.1"
+drivers_wasm = { workspace = true }
+drivers_core = { workspace = true }
+drivers_shared = { workspace = true }
 
 
 [dev-dependencies]

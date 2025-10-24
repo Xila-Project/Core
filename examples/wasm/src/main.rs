@@ -1,28 +1,28 @@
 #![no_std]
 
 #[cfg(target_arch = "wasm32")]
-xila::drivers::wasm::memory::instantiate_global_allocator!();
+drivers_wasm::memory::instantiate_global_allocator!();
 
 #[cfg(target_arch = "wasm32")]
-#[xila::task::run(task_path = xila::task, executor = xila::drivers::wasm::executor::instantiate_static_executor!())]
+#[xila::task::run(task_path = xila::task, executor = drivers_wasm::executor::instantiate_static_executor!())]
 async fn main() {
     extern crate alloc;
 
     use alloc::string::String;
+    use drivers_wasm::devices::graphics::GraphicsDevices;
     use xila::bootsplash::Bootsplash;
-    use xila::drivers::wasm::devices::graphics::GraphicsDevices;
     use xila::executable::{self, Standard, mount_static_executables};
     use xila::file_system::{self, Mbr, PartitionKind, create_device, create_file_system};
     use xila::log;
     use xila::task;
     use xila::time::{self, Duration};
     use xila::virtual_file_system::mount_static_devices;
-    use xila::{authentication, drivers, graphics, little_fs, users, virtual_file_system};
+    use xila::{authentication, graphics, little_fs, users, virtual_file_system};
 
     console_error_panic_hook::set_once();
 
     // - Initialize the system
-    log::initialize(&drivers::wasm::log::Logger).unwrap();
+    log::initialize(&drivers_wasm::log::Logger).unwrap();
 
     // Initialize the task manager
     let task_manager = task::initialize();
@@ -32,7 +32,7 @@ async fn main() {
     // Initialize the users manager
     users::initialize();
     // Initialize the time manager
-    let _ = time::initialize(create_device!(drivers::wasm::devices::TimeDevice::new())).unwrap();
+    let _ = time::initialize(create_device!(drivers_wasm::devices::TimeDevice::new())).unwrap();
 
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
@@ -41,9 +41,9 @@ async fn main() {
         mouse_device,
         keyboard_device,
         canvas: _canvas,
-    } = drivers::wasm::devices::graphics::new().await.unwrap();
+    } = drivers_wasm::devices::graphics::new().await.unwrap();
 
-    let resolution = drivers::wasm::devices::graphics::get_resolution().unwrap();
+    let resolution = drivers_wasm::devices::graphics::get_resolution().unwrap();
 
     // - - Initialize the graphics manager
     let graphics_manager = graphics::initialize(
@@ -73,7 +73,7 @@ async fn main() {
     // - Initialize the file system
     // Create a memory device
     let drive = create_device!(file_system::MemoryDevice::<512>::new(16 * 1024 * 1024));
-    //let drive = create_device!(drivers::wasm::devices::DriveDevice::new(Path::new("xila_drive.img")));
+    //let drive = create_device!(drivers_wasm::devices::DriveDevice::new(Path::new("xila_drive.img")));
 
     // Create a partition type
     let partition = create_device!(
@@ -118,12 +118,12 @@ async fn main() {
         virtual_file_system,
         task,
         &[
-            (&"/devices/standard_in", drivers::core::NullDevice),
-            (&"/devices/standard_out", drivers::core::NullDevice),
-            (&"/devices/standard_error", drivers::core::NullDevice),
-            (&"/devices/time", drivers::wasm::devices::TimeDevice),
-            (&"/devices/random", drivers::shared::devices::RandomDevice),
-            (&"/devices/null", drivers::core::NullDevice)
+            (&"/devices/standard_in", drivers_core::NullDevice),
+            (&"/devices/standard_out", drivers_core::NullDevice),
+            (&"/devices/standard_error", drivers_core::NullDevice),
+            (&"/devices/time", drivers_wasm::devices::TimeDevice),
+            (&"/devices/random", drivers_shared::devices::RandomDevice),
+            (&"/devices/null", drivers_core::NullDevice)
         ]
     )
     .await
@@ -227,6 +227,5 @@ async fn main() {
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
     extern crate std;
-
     panic!("This executable is only for the WebAssembly target.");
 }
