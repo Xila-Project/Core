@@ -44,6 +44,8 @@ args = [
   "doc",
   "--features",
   "host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+  "--target",
+  "x86_64-unknown-linux-gnu",
 ]
 
 [tasks.doc-wasm]
