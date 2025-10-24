@@ -1,17 +1,21 @@
-use alloc::{collections::VecDeque, sync::Arc};
-
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use file_system::DeviceTrait;
-use futures::block_on;
+
 use graphics::{InputData, Key, State};
+use synchronization::{
+    blocking_mutex::raw::CriticalSectionRawMutex, channel::Channel, channel::Sender,
+};
 use wasm_bindgen::{JsCast, prelude::Closure};
 use web_sys::KeyboardEvent;
 
-#[derive(Clone, Debug)]
-pub struct KeyboardDevice(Arc<RwLock<CriticalSectionRawMutex, VecDeque<(Key, State)>>>);
+#[derive(Debug)]
+pub struct KeyboardDevice(Box<Channel<CriticalSectionRawMutex, (Key, State), 64>>);
 
 impl KeyboardDevice {
-    fn handle_key_press(&self, key: &str, pressed: bool) {
+    fn handle_key_press<const N: usize>(
+        sender: Sender<'_, CriticalSectionRawMutex, (Key, State), N>,
+        key: &str,
+        pressed: bool,
+    ) {
         let key = match map_key(key) {
             Some(k) => k,
             None => {
@@ -26,8 +30,10 @@ impl KeyboardDevice {
             State::Released
         };
 
-        let mut inner = block_on(self.0.write());
-        inner.push_back((key, state));
+        if let Err(e) = sender.try_send((key, state)) {
+            log::error!("Failed to send key event: {:?}", e);
+            return;
+        }
     }
 
     pub fn new() -> Result<Self, String> {
@@ -36,25 +42,18 @@ impl KeyboardDevice {
             .document()
             .ok_or("Failed to get document")?;
 
-        let inner = Self(Arc::new(RwLock::new(VecDeque::new())));
+        let inner = Self(Box::new(Channel::new()));
 
-        let inner_clone = inner.clone();
+        let sender = inner.0.sender();
+
         let key_down_closure = Closure::wrap(Box::new(move |event: KeyboardEvent| {
-            inner_clone.handle_key_press(&event.key(), true);
-        }) as Box<dyn FnMut(KeyboardEvent)>);
-
-        let inner_clone = inner.clone();
-        let key_up_closure = Closure::wrap(Box::new(move |event: KeyboardEvent| {
-            inner_clone.handle_key_press(&event.key(), false);
+            Self::handle_key_press(sender, &event.key(), true);
+            Self::handle_key_press(sender, &event.key(), false);
         }) as Box<dyn FnMut(KeyboardEvent)>);
 
         document
             .add_event_listener_with_callback("keydown", key_down_closure.as_ref().unchecked_ref())
             .map_err(|_| "Failed to add keydown event listener")?;
-        document
-            .add_event_listener_with_callback("keyup", key_up_closure.as_ref().unchecked_ref())
-            .map_err(|_| "Failed to add keyup event listener")?;
-        key_up_closure.forget(); // Prevent memory leak by keeping the closure alive
         key_down_closure.forget(); // Prevent memory leak by keeping the closure alive
 
         Ok(inner)
@@ -69,16 +68,12 @@ impl DeviceTrait for KeyboardDevice {
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;
 
-        let mut inner = block_on(self.0.write());
-
-        if let Some(key) = inner.pop_front() {
-            data.set_key(key.0);
-            data.set_state(key.1);
+        if let Ok((key, state)) = self.0.receiver().try_receive() {
+            data.set_key(key);
+            data.set_state(state);
         }
 
-        data.set_continue(inner.is_empty());
-
-        //log::information!("Keyboard read: {:?}", data);
+        data.set_continue(!self.0.is_empty());
 
         Ok(file_system::Size::new(buffer.len() as u64))
     }
