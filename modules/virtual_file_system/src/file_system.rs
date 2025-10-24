@@ -2,7 +2,6 @@ use alloc::borrow::ToOwned;
 use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
-use futures::yield_now;
 use synchronization::{
     blocking_mutex::raw::CriticalSectionRawMutex, once_lock::OnceLock, rwlock::RwLock,
 };
@@ -1682,7 +1681,8 @@ async fn read_line(
         let size = file_system.read(file, current_buffer, time)?;
 
         if size == 0 {
-            yield_now().await; // Yield to allow other tasks to run, especially in a blocking operation
+            task::Manager::sleep(core::time::Duration::from_millis(10)).await;
+            // yield_now().await; // Yield to allow other tasks to run, especially in a blocking operation
             continue; // Retry reading if no data was read
         }
 
