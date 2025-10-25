@@ -9,7 +9,7 @@ mod error;
 mod read_data;
 mod standard;
 
-use alloc::string::String;
+use alloc::{string::String, vec::Vec};
 #[cfg(feature = "building")]
 pub use building::*;
 pub use device_trait::*;
@@ -80,7 +80,7 @@ async fn get_overridden_user(
 
 pub async fn execute(
     path: impl AsRef<Path>,
-    inputs: String,
+    inputs: Vec<String>,
     standard: Standard,
 ) -> Result<JoinHandle<isize>> {
     let task_instance = task::get_instance();

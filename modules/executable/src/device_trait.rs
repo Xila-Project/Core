@@ -25,17 +25,19 @@ pub trait DeviceExecutableTrait: DeviceTrait {
 ///
 /// async fn my_main_function(
 ///     standard: executable::Standard,
-///     arguments: String
+///     arguments: Vec<String>
 /// ) -> Result<(), core::num::NonZeroUsize> {
-///    standard.print_line(&arguments);
+///     for argument in arguments {
+///         standard.print_line(&argument);
+///     }
 ///
-///    Ok(())
+///     Ok(())
 /// }
 ///
 /// executable::implement_executable_device!(
-///     Structure: MyExecutableType,
-///     Mount_path: "/binaries/MyExecutable",
-///     Main_function: my_main_function,
+///     structure: MyExecutableType,
+///     mount_path: "/binaries/MyExecutable",
+///     main_function: my_main_function,
 /// );
 /// ```
 #[macro_export]
