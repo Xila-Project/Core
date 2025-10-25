@@ -6,7 +6,6 @@ async fn main() {
 
     extern crate alloc;
 
-    use alloc::string::ToString;
     use command_line_shell::ShellExecutable;
     use xila::executable::{Standard, mount_static_executables};
     use xila::file_system::{MemoryDevice, create_device, create_file_system};
@@ -116,12 +115,11 @@ async fn main() {
         .await
         .unwrap();
 
-    let result =
-        xila::executable::execute("/binaries/command_line_shell", "".to_string(), standard)
-            .await
-            .unwrap()
-            .join()
-            .await;
+    let result = xila::executable::execute("/binaries/command_line_shell", vec![], standard)
+        .await
+        .unwrap()
+        .join()
+        .await;
 
     assert!(result == 0);
 }

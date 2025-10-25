@@ -18,7 +18,7 @@ pub const SHORTCUT: &str = r#"
 {
     "name": "File manager",
     "command": "/binaries/file_manager",
-    "arguments": "",
+    "arguments": [],
     "terminal": false,
     "icon_string": "Fm",
     "icon_color": [0, 188, 212]
@@ -58,12 +58,12 @@ impl FileManagerExecutable {
 }
 
 executable::implement_executable_device!(
-    Structure: FileManagerExecutable,
-    Mount_path: "/binaries/file_manager",
-    Main_function: main,
+    structure: FileManagerExecutable,
+    mount_path: "/binaries/file_manager",
+    main_function: main,
 );
 
-pub async fn main(_: Standard, _: String) -> core::result::Result<(), NonZeroUsize> {
+pub async fn main(_: Standard, _: Vec<String>) -> core::result::Result<(), NonZeroUsize> {
     let mut file_manager = FileManager::new()
         .await
         .map_err(|_| NonZeroUsize::new(1).unwrap())?;

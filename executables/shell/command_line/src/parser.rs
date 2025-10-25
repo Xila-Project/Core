@@ -7,18 +7,8 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct Command<'a> {
-    command: &'a str,
-    arguments: Vec<&'a str>,
-}
-
-impl Command<'_> {
-    pub fn get_command(&self) -> &str {
-        self.command
-    }
-
-    pub fn get_arguments(&self) -> &[&str] {
-        &self.arguments
-    }
+    pub command: &'a str,
+    pub arguments: Vec<&'a str>,
 }
 
 impl<'a> TryFrom<&[Token<'a>]> for Command<'a> {

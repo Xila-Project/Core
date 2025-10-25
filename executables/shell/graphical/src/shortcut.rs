@@ -10,12 +10,12 @@ pub const SHORTCUT_PATH: &Path = Path::from_str("/configuration/shared/shortcuts
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Shortcut {
-    name: String,
-    command: String,
+    pub name: String,
+    pub command: String,
     #[serde(rename = "terminal")]
-    _terminal: bool,
-    arguments: String,
-    icon_string: String,
+    pub _terminal: bool,
+    pub arguments: Vec<String>,
+    pub icon_string: String,
     icon_color: [u8; 3],
 }
 
@@ -24,7 +24,7 @@ impl Shortcut {
         let shortcut = Shortcut::read_from_path(path, &mut Vec::new()).await?;
 
         let new_shortcut_path = SHORTCUT_PATH
-            .append(shortcut.get_name())
+            .append(&shortcut.name)
             .ok_or(Error::FailedToGetShortcutFilePath)?
             .append(".json")
             .ok_or(Error::FailedToGetShortcutFilePath)?;
@@ -70,22 +70,6 @@ impl Shortcut {
 
     pub fn from_str(string: &str) -> Result<Self> {
         miniserde::json::from_str(string).map_err(Error::FailedToDeserializeShortcut)
-    }
-
-    pub fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn get_icon_string(&self) -> &str {
-        &self.icon_string
-    }
-
-    pub fn get_command(&self) -> &str {
-        &self.command
-    }
-
-    pub fn get_arguments(&self) -> &str {
-        &self.arguments
     }
 
     pub fn get_icon_color(&self) -> Color {

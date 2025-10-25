@@ -5,6 +5,7 @@ mod concatenate;
 mod directory;
 mod echo;
 mod environment_variables;
+mod execute;
 mod exit;
 mod list;
 mod statistics;

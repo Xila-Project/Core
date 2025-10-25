@@ -10,6 +10,7 @@ pub use error::*;
 pub use settings::*;
 
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 use core::num::NonZeroUsize;
 use xila::executable::{self, Standard};
 use xila::file_system::{self, Flags, Mode, Open};
@@ -20,7 +21,7 @@ pub const SHORTCUT: &str = r#"
 {
     "name": "Settings",
     "command": "/binaries/settings",
-    "arguments": "",
+    "arguments": [],
     "terminal": false,
     "icon_string": "Se",
     "icon_color": [158, 158, 158]
@@ -60,12 +61,12 @@ impl SettingsExecutable {
 }
 
 executable::implement_executable_device!(
-    Structure: SettingsExecutable,
-    Mount_path: "/binaries/settings",
-    Main_function: main,
+    structure: SettingsExecutable,
+    mount_path: "/binaries/settings",
+    main_function: main,
 );
 
-pub async fn main(_: Standard, _: String) -> core::result::Result<(), NonZeroUsize> {
+pub async fn main(_: Standard, _: Vec<String>) -> core::result::Result<(), NonZeroUsize> {
     let mut settings = Settings::new()
         .await
         .map_err(|_| NonZeroUsize::new(1).unwrap())?;

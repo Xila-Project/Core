@@ -7,7 +7,6 @@ async fn main() {
     extern crate alloc;
     extern crate abi_definitions;
 
-    use alloc::string::ToString;
     use command_line_shell::ShellExecutable;
     use drivers_native::window_screen;
     use terminal::TerminalExecutable;
@@ -158,7 +157,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/terminal", "".to_string(), standard)
+    let result = executable::execute("/binaries/terminal", vec![], standard)
         .await
         .unwrap()
         .join()

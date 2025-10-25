@@ -23,19 +23,17 @@ use xila::virtual_machine;
 pub struct WasmDevice;
 
 implement_executable_device!(
-    Structure: WasmDevice,
-    Mount_path: "/binaries/wasm",
-    Main_function: main,
+    structure: WasmDevice,
+    mount_path: "/binaries/wasm",
+    main_function: main,
 );
 
-pub async fn inner_main(standard: &Standard, arguments: String) -> Result<(), Error> {
-    let arguments = arguments.split_whitespace().collect::<Vec<&str>>();
-
+pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(), Error> {
     if arguments.len() != 1 {
         return Err(Error::InvalidNumberOfArguments);
     }
 
-    let path = Path::new(arguments[0]);
+    let path = Path::new(&arguments[0]);
 
     match path.get_extension() {
         Some("wasm") | Some("WASM") => Ok(()),
@@ -88,7 +86,7 @@ pub async fn inner_main(standard: &Standard, arguments: String) -> Result<(), Er
     Ok(())
 }
 
-pub async fn main(standard: Standard, arguments: String) -> Result<(), NonZeroUsize> {
+pub async fn main(standard: Standard, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
     match inner_main(&standard, arguments).await {
         Ok(()) => {
             forget(standard);

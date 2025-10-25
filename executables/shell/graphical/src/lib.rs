@@ -23,7 +23,7 @@ use xila::users;
 
 use crate::{desk::Desk, error::Error, shortcut::Shortcut};
 
-pub async fn main(standard: Standard, arguments: String) -> Result<(), NonZeroUsize> {
+pub async fn main(standard: Standard, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
     Shell::new(standard).await.main(arguments).await
 }
 
@@ -39,9 +39,9 @@ pub struct Shell {
 pub struct ShellExecutable;
 
 executable::implement_executable_device!(
-    Structure: ShellExecutable,
-    Mount_path: "/binaries/graphical_shell",
-    Main_function: main,
+    structure: ShellExecutable,
+    mount_path: "/binaries/graphical_shell",
+    main_function: main,
 );
 
 impl Shell {
@@ -60,15 +60,13 @@ impl Shell {
         }
     }
 
-    pub async fn main(&mut self, arguments: String) -> Result<(), NonZeroUsize> {
-        let arguments: Vec<&str> = arguments.split_whitespace().collect();
-
-        if arguments.first() == Some(&"add_shortcut") {
+    pub async fn main(&mut self, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
+        if arguments.first().map(|s| s.as_str()) == Some("add_shortcut") {
             if arguments.len() != 2 {
                 return Err(Error::MissingArguments.into());
             }
 
-            Shortcut::add(Path::from_str(arguments[1])).await?;
+            Shortcut::add(Path::from_str(&arguments[1])).await?;
         }
 
         while self.running {

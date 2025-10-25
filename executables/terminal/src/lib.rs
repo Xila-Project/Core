@@ -14,6 +14,8 @@ use core::{num::NonZeroUsize, time::Duration};
 use alloc::{
     string::{String, ToString},
     sync::Arc,
+    vec,
+    vec::Vec,
 };
 use xila::executable::Standard;
 use xila::file_system::{Device, Flags, Mode, UniqueFileIdentifier};
@@ -26,7 +28,7 @@ pub const SHORTCUT: &str = r#"
 {
     "name": "Terminal",
     "command": "/binaries/terminal",
-    "arguments": "",
+    "arguments": [],
     "terminal": false,
     "icon_string": ">_",
     "icon_color": [0, 0, 0]
@@ -41,19 +43,19 @@ async fn mount_and_open(
     UniqueFileIdentifier,
 )> {
     virtual_file_system::get_instance()
-        .mount_device(task, &"/devices/Terminal", Device::new(terminal))
+        .mount_device(task, &"/devices/terminal", Device::new(terminal))
         .await?;
 
     let standard_in = virtual_file_system::get_instance()
         .open(
-            &"/devices/Terminal",
+            &"/devices/terminal",
             Flags::new(Mode::READ_ONLY, None, None),
             task,
         )
         .await?;
 
     let standard_out = virtual_file_system::get_instance()
-        .open(&"/devices/Terminal", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/terminal", Mode::WRITE_ONLY.into(), task)
         .await?;
 
     let standard_error = virtual_file_system::get_instance()
@@ -79,7 +81,7 @@ async fn inner_main(task: TaskIdentifier) -> Result<()> {
         virtual_file_system::get_instance(),
     );
 
-    xila::executable::execute("/binaries/command_line_shell", "".to_string(), standard).await?;
+    xila::executable::execute("/binaries/command_line_shell", vec![], standard).await?;
 
     while terminal.event_handler().await? {
         task::Manager::sleep(Duration::from_millis(10)).await;
@@ -88,7 +90,7 @@ async fn inner_main(task: TaskIdentifier) -> Result<()> {
     Ok(())
 }
 
-pub async fn main(standard: Standard, _: String) -> core::result::Result<(), NonZeroUsize> {
+pub async fn main(standard: Standard, _: Vec<String>) -> core::result::Result<(), NonZeroUsize> {
     if let Err(error) = inner_main(standard.get_task()).await {
         standard.print_error(&error.to_string()).await;
         return Err(error.into());

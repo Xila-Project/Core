@@ -7,8 +7,6 @@ async fn main() {
     extern crate alloc;
     extern crate abi_definitions;
 
-    use alloc::string::ToString;
-    use command_line_shell::ShellExecutable;
     use drivers_native::window_screen;
     use settings::SettingsExecutable;
     use xila::executable::Standard;
@@ -107,10 +105,7 @@ async fn main() {
     mount_static_executables!(
         virtual_file_system,
         task,
-        &[
-            (&"/binaries/command_line_shell", ShellExecutable),
-            (&"/binaries/settings", SettingsExecutable)
-        ]
+        &[(&"/binaries/settings", SettingsExecutable)]
     )
     .await
     .unwrap();
@@ -143,7 +138,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/settings", "".to_string(), standard)
+    let result = executable::execute("/binaries/settings", vec![], standard)
         .await
         .unwrap()
         .join()
