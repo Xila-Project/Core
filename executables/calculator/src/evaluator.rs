@@ -113,7 +113,6 @@ impl Evaluator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::Parser;
 
     fn evaluate_expression(input: &str) -> Result<f64, String> {
         let mut parser = crate::parser::Parser::new(input)?;

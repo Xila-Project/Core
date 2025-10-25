@@ -49,6 +49,7 @@ async fn run_graphics() {
         .unwrap();
 }
 
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[xila::task::test(task_path = xila::task)]
 #[ignore]
 async fn main() {

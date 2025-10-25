@@ -1,4 +1,4 @@
-#![no_std]
+use std::fs;
 
 pub static SHORTCUT: &str = r#"
 {
@@ -9,3 +9,8 @@ pub static SHORTCUT: &str = r#"
     "icon_string": "Ca",
     "icon_color": [158, 158, 158]
 }"#;
+
+#[unsafe(no_mangle)]
+pub extern "C" fn __install() {
+    fs::write("/configuration/shared/shortcuts/calculator.json", SHORTCUT).unwrap();
+}

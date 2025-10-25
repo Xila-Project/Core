@@ -1,4 +1,3 @@
-use crate::Calculator;
 use std::{ptr::null_mut, thread::sleep};
 use xila::bindings::{
     self, EventCode, FlexFlow, Object, ObjectFlag, buttonmatrix_create,
@@ -6,6 +5,8 @@ use xila::bindings::{
     object_add_flag, object_create, object_set_flex_flow, object_set_flex_grow, object_set_height,
     object_set_width, percentage, size_content, window_create, window_pop_event,
 };
+
+use crate::{evaluator::Evaluator, parser::Parser};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
@@ -291,9 +292,9 @@ impl Interface {
                         expression = expression.replace("tan(", "tand(");
                     }
 
-                    match Calculator::evaluate_expression(&expression) {
+                    match evaluate_expression(&expression) {
                         Ok(result) => {
-                            self.current_expression = Calculator::format_result(result);
+                            self.current_expression = format_result(result);
                             self.show_result = true;
                         }
                         Err(e) => {
@@ -439,5 +440,25 @@ impl Interface {
                 sleep(std::time::Duration::from_millis(10));
             }
         }
+    }
+}
+
+pub fn evaluate_expression(input: &str) -> Result<f64, String> {
+    // Parse the expression
+    let mut parser = Parser::new(input)?;
+    let expression = parser.parse()?;
+
+    // Evaluate the parsed expression
+    Evaluator::evaluate(&expression)
+}
+
+pub fn format_result(result: f64) -> String {
+    if result.fract() == 0.0 && result.abs() < 1e15 {
+        format!("{:.0}", result)
+    } else {
+        format!("{:.10}", result)
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string()
     }
 }
