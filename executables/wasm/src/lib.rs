@@ -11,9 +11,11 @@ use crate::Error;
 use alloc::{
     borrow::ToOwned,
     string::{String, ToString},
+    vec,
     vec::Vec,
 };
 pub use error::*;
+use xila::executable::ArgumentsParser;
 use xila::executable::{Standard, implement_executable_device};
 use xila::file_system::{Mode, Path};
 use xila::task;
@@ -33,12 +35,18 @@ pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(
         return Err(Error::InvalidNumberOfArguments);
     }
 
-    let path = Path::new(&arguments[0]);
+    let options = arguments.iter().filter(|arg| arg.starts_with('-')).count();
 
-    match path.get_extension() {
-        Some("wasm") | Some("WASM") => Ok(()),
-        _ => return Err(Error::NotAWasmFile),
-    }?;
+    let parsed_arguments = ArgumentsParser::new(&arguments);
+
+    let install = parsed_arguments
+        .clone()
+        .find(|a| a.options.get_option("install").is_some())
+        .is_some();
+    let path = parsed_arguments
+        .last()
+        .and_then(|arg| arg.value.map(Path::new))
+        .ok_or(Error::InvalidNumberOfArguments)?;
 
     let path = if path.is_absolute() {
         path.to_owned()
@@ -78,8 +86,18 @@ pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(
 
     let (standard_in, standard_out, standard_error) = standard.split();
 
+    let function_name = if install { Some("__install") } else { None };
+
     virtual_machine::get_instance()
-        .execute(buffer, 4096, standard_in, standard_out, standard_error)
+        .execute(
+            buffer,
+            4096,
+            standard_in,
+            standard_out,
+            standard_error,
+            function_name,
+            vec![],
+        )
         .await
         .map_err(|_| Error::FailedToExecute)?;
 
