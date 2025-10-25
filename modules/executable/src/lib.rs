@@ -2,6 +2,7 @@
 
 extern crate alloc;
 
+mod arguments_parser;
 #[cfg(feature = "building")]
 mod building;
 mod device_trait;
@@ -10,6 +11,7 @@ mod read_data;
 mod standard;
 
 use alloc::{string::String, vec::Vec};
+pub use arguments_parser::*;
 #[cfg(feature = "building")]
 pub use building::*;
 pub use device_trait::*;
