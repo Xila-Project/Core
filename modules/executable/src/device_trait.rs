@@ -42,9 +42,9 @@ pub trait DeviceExecutableTrait: DeviceTrait {
 macro_rules! implement_executable_device {
     // Simple executable without constructor
     (
-        Structure: $struct_name:ident,
-        Mount_path: $mount_path:expr,
-        Main_function: $main_function:path,
+        structure: $struct_name:ident,
+        mount_path: $mount_path:expr,
+        main_function: $main_function:path,
     ) => {
         impl $crate::DeviceExecutableTrait for $struct_name {
             fn mount<'a>(
