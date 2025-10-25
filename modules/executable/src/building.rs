@@ -7,13 +7,15 @@ use std::process::Command;
 use alloc::format;
 use alloc::string::{String, ToString};
 
-pub fn build_crate(path: &Path) -> Result<PathBuf, String> {
+pub fn build_crate(path: impl AsRef<Path>) -> Result<PathBuf, String> {
+    log::information!("Building executable crate at {}", path.as_ref().display());
+
     let output = Command::new("cargo")
         .arg("build")
         .arg("--release")
         .arg("--target=wasm32-wasip1")
         .arg("--manifest-path")
-        .arg(path.join("Cargo.toml"))
+        .arg(path.as_ref().join("Cargo.toml"))
         .arg("--message-format=json")
         .output()
         .map_err(|e| format!("Failed to start cargo build: {}", e))?;
@@ -62,6 +64,8 @@ pub fn build_crate(path: &Path) -> Result<PathBuf, String> {
             stdout
         )
     })?;
+
+    log::information!("WASM executable built at {}", wasm_path);
 
     Ok(PathBuf::from(wasm_path))
 }
