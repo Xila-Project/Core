@@ -10,10 +10,12 @@ async fn main() {
 
     use alloc::vec;
     use core::time::Duration;
+    use drivers_std::loader::load_to_virtual_file_system;
     use xila::authentication;
     use xila::bootsplash::Bootsplash;
     use xila::executable;
     use xila::executable::Standard;
+    use xila::executable::build_crate;
     use xila::executable::mount_static_executables;
     use xila::file_system;
     use xila::file_system::Mbr;
@@ -114,22 +116,31 @@ async fn main() {
         }
     };
     // Initialize the virtual file system
-    virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
+    let virtual_file_system =
+        virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
 
     // - - Mount the devices
 
     // - - Create the default system hierarchy
-    let _ =
-        virtual_file_system::create_default_hierarchy(virtual_file_system::get_instance(), task)
-            .await;
+    let _ = virtual_file_system::create_default_hierarchy(virtual_file_system, task).await;
 
     // - - Mount the devices
-    virtual_file_system::clean_devices(virtual_file_system::get_instance())
+    virtual_file_system::clean_devices(virtual_file_system)
         .await
         .unwrap();
 
+    let calculator_binary_path = build_crate("../../../executables/calculator").unwrap();
+
+    load_to_virtual_file_system(
+        virtual_file_system,
+        &calculator_binary_path,
+        "/binaries/calculator",
+    )
+    .await
+    .unwrap();
+
     mount_static_devices!(
-        virtual_file_system::get_instance(),
+        virtual_file_system,
         task,
         &[
             (
