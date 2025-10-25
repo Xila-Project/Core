@@ -12,6 +12,8 @@ async fn main() {
     use wasm::WasmDevice;
     use xila::executable::{Standard, build_crate, mount_static_executables};
     use xila::file_system::{MemoryDevice, Mode, Path, create_device, create_file_system};
+    use xila::little_fs;
+    use xila::task;
     use xila::time;
     use xila::users;
     use xila::virtual_file_system::{self, create_default_hierarchy, mount_static_devices};
@@ -115,7 +117,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/command_line_shell", "".to_string(), standard)
+    let result = executable::execute("/binaries/command_line_shell", vec![], standard)
         .await
         .unwrap()
         .join()

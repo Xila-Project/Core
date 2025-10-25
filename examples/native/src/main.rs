@@ -7,7 +7,8 @@ drivers_std::memory::instantiate_global_allocator!();
 #[xila::task::run(task_path = xila::task, executor = drivers_std::executor::instantiate_static_executor!())]
 async fn main() {
     extern crate alloc;
-    use alloc::string::String;
+
+    use alloc::vec;
     use core::time::Duration;
     use xila::authentication;
     use xila::bootsplash::Bootsplash;
@@ -242,7 +243,7 @@ async fn main() {
     bootsplash.stop(graphics_manager).await.unwrap();
 
     // - - Execute the shell
-    let _ = executable::execute("/binaries/graphical_shell", String::from(""), standard)
+    let _ = executable::execute("/binaries/graphical_shell", vec![], standard)
         .await
         .unwrap()
         .join()

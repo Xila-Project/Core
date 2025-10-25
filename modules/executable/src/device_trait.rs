@@ -25,26 +25,28 @@ pub trait DeviceExecutableTrait: DeviceTrait {
 ///
 /// async fn my_main_function(
 ///     standard: executable::Standard,
-///     arguments: String
+///     arguments: Vec<String>
 /// ) -> Result<(), core::num::NonZeroUsize> {
-///    standard.print_line(&arguments);
+///     for argument in arguments {
+///         standard.print_line(&argument);
+///     }
 ///
-///    Ok(())
+///     Ok(())
 /// }
 ///
 /// executable::implement_executable_device!(
-///     Structure: MyExecutableType,
-///     Mount_path: "/binaries/MyExecutable",
-///     Main_function: my_main_function,
+///     structure: MyExecutableType,
+///     mount_path: "/binaries/MyExecutable",
+///     main_function: my_main_function,
 /// );
 /// ```
 #[macro_export]
 macro_rules! implement_executable_device {
     // Simple executable without constructor
     (
-        Structure: $struct_name:ident,
-        Mount_path: $mount_path:expr,
-        Main_function: $main_function:path,
+        structure: $struct_name:ident,
+        mount_path: $mount_path:expr,
+        main_function: $main_function:path,
     ) => {
         impl $crate::DeviceExecutableTrait for $struct_name {
             fn mount<'a>(

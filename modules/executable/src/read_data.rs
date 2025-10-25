@@ -1,24 +1,24 @@
 use core::{future::Future, mem::transmute, num::NonZeroUsize, pin::Pin};
 
-use alloc::{boxed::Box, string::String};
+use alloc::{boxed::Box, string::String, vec::Vec};
 
 use crate::Standard;
 
-pub type MainFunction = Box<
+pub type MainFunctionInternal = Box<
     dyn Fn(
             Standard,
-            String,
+            Vec<String>,
         )
             -> Pin<Box<dyn Future<Output = core::result::Result<(), NonZeroUsize>> + 'static>>
         + 'static,
 >;
 
 pub struct ReadData {
-    main: Option<MainFunction>,
+    main: Option<MainFunctionInternal>,
 }
 
 impl ReadData {
-    pub fn new<F>(main: impl Fn(Standard, String) -> F + 'static) -> Self
+    pub fn new<F>(main: impl Fn(Standard, Vec<String>) -> F + 'static) -> Self
     where
         F: Future<Output = core::result::Result<(), NonZeroUsize>> + 'static,
     {
@@ -37,7 +37,7 @@ impl ReadData {
         size_of::<Self>()
     }
 
-    pub fn get_main(self) -> Option<MainFunction> {
+    pub fn get_main(self) -> Option<MainFunctionInternal> {
         self.main
     }
 }

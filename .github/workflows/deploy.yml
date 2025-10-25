@@ -3,7 +3,6 @@ name: Build and deploy documentation and demonstration to Github Pages
 on:
   push:
     branches: ["main"]
-
   workflow_dispatch:
 
 permissions:

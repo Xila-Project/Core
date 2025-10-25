@@ -12,7 +12,6 @@ drivers_core = { workspace = true }
 drivers_shared = { workspace = true }
 drivers_std = { workspace = true }
 little_fs = { workspace = true }
-command_line_shell = { workspace = true }
 abi_definitions = { workspace = true }
 
 [[test]]

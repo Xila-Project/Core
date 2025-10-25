@@ -287,9 +287,9 @@ impl Desk {
                     Ok(shortcut) => {
                         self.create_drawer_shortcut(
                             shortcut_entry.get_name(),
-                            shortcut.get_name(),
+                            &shortcut.name,
                             shortcut.get_icon_color(),
-                            shortcut.get_icon_string(),
+                            &shortcut.icon_string,
                             drawer,
                         )?;
                     }
@@ -330,8 +330,8 @@ impl Desk {
             .map_err(Error::FailedToOpenStandardFile)?;
 
         executable::execute(
-            shortcut.get_command(),
-            shortcut.get_arguments().to_string(),
+            &*shortcut.command,
+            shortcut.arguments,
             Standard::new(
                 standard_in,
                 standard_out,

@@ -7,7 +7,6 @@ async fn main() {
     extern crate alloc;
     extern crate abi_definitions;
 
-    use alloc::string::ToString;
     use drivers_native::window_screen;
     use graphical_shell::ShellExecutable;
     use xila::executable::Standard;
@@ -136,7 +135,7 @@ async fn main() {
     {{
         "name": "Test{i}",
         "command": "/binaries/?",
-        "arguments": "",
+        "arguments": ["test"],
         "terminal": false,
         "icon_string": "T!",
         "icon_color": [255, 0, 0]
@@ -185,7 +184,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/graphical_shell", "".to_string(), standard)
+    let result = executable::execute("/binaries/graphical_shell", vec![], standard)
         .await
         .unwrap()
         .join()

@@ -215,7 +215,7 @@ async fn main() {
     bootsplash.stop(graphics_manager).await.unwrap();
 
     // - - Execute the shell
-    let _ = executable::execute("/binaries/graphical_shell", String::from(""), standard)
+    let _ = executable::execute("/binaries/graphical_shell", vec![], standard)
         .await
         .unwrap()
         .join()

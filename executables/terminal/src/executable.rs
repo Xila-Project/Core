@@ -39,7 +39,7 @@ impl TerminalExecutable {
 }
 
 implement_executable_device!(
-    Structure: TerminalExecutable,
-    Mount_path: "/binaries/terminal",
-    Main_function: main,
+    structure: TerminalExecutable,
+    mount_path: "/binaries/terminal",
+    main_function: main,
 );

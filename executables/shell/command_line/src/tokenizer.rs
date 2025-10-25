@@ -71,8 +71,11 @@ impl<'a> From<&'a str> for Token<'a> {
     }
 }
 
-pub fn tokenize<'a>(input: &'a [&'a str]) -> Vec<Token<'a>> {
-    input.iter().map(|value| Token::from(*value)).collect()
+pub fn tokenize<'a, I>(input: I) -> Vec<Token<'a>>
+where
+    I: IntoIterator<Item = &'a str>,
+{
+    input.into_iter().map(|value| Token::from(value)).collect()
 }
 
 #[cfg(test)]
@@ -87,7 +90,7 @@ mod tests {
 
         let expected: Vec<Token> = Vec::new();
 
-        assert_eq!(tokenize(&input), expected);
+        assert_eq!(tokenize(input), expected);
     }
 
     #[test]
@@ -114,7 +117,7 @@ mod tests {
             }),
             Token::String("output.txt"),
         ];
-        assert_eq!(tokenize(&input), expected);
+        assert_eq!(tokenize(input), expected);
     }
 
     #[test]
@@ -129,7 +132,7 @@ mod tests {
             Token::String(".rs"),
         ];
 
-        assert_eq!(tokenize(&input), &expected);
+        assert_eq!(tokenize(input), &expected);
     }
 
     #[test]
@@ -149,7 +152,7 @@ mod tests {
             Token::String("output.txt"),
         ];
 
-        assert_eq!(tokenize(&input), &expected);
+        assert_eq!(tokenize(input), &expected);
 
         let input = "ls -l < input.txt"
             .split_whitespace()
@@ -166,7 +169,7 @@ mod tests {
             Token::String("input.txt"),
         ];
 
-        assert_eq!(tokenize(&input), &expected);
+        assert_eq!(tokenize(input), &expected);
 
         let input = "ls -l >> output.txt"
             .split_whitespace()
@@ -183,7 +186,7 @@ mod tests {
             Token::String("output.txt"),
         ];
 
-        assert_eq!(tokenize(&input), &expected);
+        assert_eq!(tokenize(input), &expected);
 
         let input = "ls -l << EOF".split_whitespace().collect::<Vec<&str>>();
 
@@ -198,7 +201,7 @@ mod tests {
             Token::String("EOF"),
         ];
 
-        assert_eq!(tokenize(&input), &expected);
+        assert_eq!(tokenize(input), &expected);
 
         let input = "ls -l 2>&1".split_whitespace().collect::<Vec<&str>>();
 
@@ -212,7 +215,7 @@ mod tests {
             }),
         ];
 
-        assert_eq!(tokenize(&input), &expected);
+        assert_eq!(tokenize(input), &expected);
 
         let input = "ls -l 2> output.txt"
             .split_whitespace()
@@ -229,6 +232,6 @@ mod tests {
             Token::String("output.txt"),
         ];
 
-        assert_eq!(tokenize(&input), &expected);
+        assert_eq!(tokenize(input), &expected);
     }
 }

@@ -10,11 +10,11 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use xila::executable::{Standard, execute};
+use xila::executable::Standard;
 use xila::file_system::Path;
 use xila::task;
 
-use crate::{Error, Result, parser::parse, resolver::resolve, tokenizer::tokenize};
+use crate::{Error, Result, parser::parse, tokenizer::tokenize};
 
 mod commands;
 mod error;
@@ -37,12 +37,15 @@ pub struct Shell {
 pub struct ShellExecutable;
 
 executable::implement_executable_device!(
-    Structure: ShellExecutable,
-    Mount_path: "/binaries/command_line_shell",
-    Main_function: main,
+    structure: ShellExecutable,
+    mount_path: "/binaries/command_line_shell",
+    main_function: main,
 );
 
-pub async fn main(standard: Standard, arguments: String) -> core::result::Result<(), NonZeroUsize> {
+pub async fn main(
+    standard: Standard,
+    arguments: Vec<String>,
+) -> core::result::Result<(), NonZeroUsize> {
     Shell::new(standard).main(arguments).await
 }
 
@@ -57,74 +60,27 @@ impl Shell {
         }
     }
 
-    async fn run(&mut self, path: &Path, arguments: &[&str]) -> Result<()> {
-        let standard = self.standard.duplicate().await.unwrap();
-
-        let input = arguments.join(" ");
-
-        let _ = execute(path, input, standard)
-            .await
-            .map_err(|_| Error::FailedToExecuteCommand)?
-            .join()
-            .await;
-
-        Ok(())
-    }
-
-    async fn parse_input(&mut self, input: &str, paths: &[&Path]) -> Result<()> {
-        let tokens = input.split_whitespace().collect::<Vec<&str>>();
-
-        let tokens = tokenize(&tokens);
+    async fn parse_input<'a, I>(&mut self, input: I, paths: &[&Path]) -> Result<()>
+    where
+        I: IntoIterator<Item = &'a str>,
+    {
+        let tokens = tokenize(input);
         let commands = parse(tokens)?;
 
         for command in commands {
-            match command.get_command() {
-                "exit" => self.exit(command.get_arguments()).await,
-                "cd" => self.change_directory(command.get_arguments()).await,
-                "echo" => self.echo(command.get_arguments()).await,
-                "ls" => self.list(command.get_arguments()).await,
-                "clear" => self.clear(command.get_arguments()).await,
-                "cat" => self.concatenate(command.get_arguments()).await,
-                "stat" => self.statistics(command.get_arguments()).await,
-                "mkdir" => self.create_directory(command.get_arguments()).await,
-                "export" => self.set_environment_variable(command.get_arguments()).await,
-                "unset" => {
-                    self.remove_environment_variable(command.get_arguments())
-                        .await
-                }
-                "rm" => self.remove(command.get_arguments()).await,
-                _ => {
-                    // - Set the current directory for the following commands.
-                    if let Err(error) = task::get_instance()
-                        .set_environment_variable(
-                            self.standard.get_task(),
-                            "Current_directory",
-                            self.current_directory.as_str(),
-                        )
-                        .await
-                    {
-                        self.standard
-                            .print_error_line(&format!("Failed to set current directory: {error}"))
-                            .await;
-                    }
-
-                    let path = Path::from_str(command.get_command());
-
-                    if path.is_valid() {
-                        if path.is_absolute() {
-                            self.run(path, command.get_arguments()).await?;
-                        } else {
-                            match self.current_directory.clone().join(path) {
-                                Some(path) => self.run(&path, command.get_arguments()).await?,
-                                None => self.standard.print_error_line("Invalid command").await,
-                            }
-                        }
-                    } else {
-                        let path = resolve(command.get_command(), paths).await?;
-
-                        self.run(&path, command.get_arguments()).await?;
-                    }
-                }
+            match command.command {
+                "exit" => self.exit(&command.arguments).await,
+                "cd" => self.change_directory(&command.arguments).await,
+                "echo" => self.echo(&command.arguments).await,
+                "ls" => self.list(&command.arguments).await,
+                "clear" => self.clear(&command.arguments).await,
+                "cat" => self.concatenate(&command.arguments).await,
+                "stat" => self.statistics(&command.arguments).await,
+                "mkdir" => self.create_directory(&command.arguments).await,
+                "export" => self.set_environment_variable(&command.arguments).await,
+                "unset" => self.remove_environment_variable(&command.arguments).await,
+                "rm" => self.remove(&command.arguments).await,
+                _ => self.execute(command, paths).await?,
             }
         }
 
@@ -132,7 +88,7 @@ impl Shell {
     }
 
     async fn main_interactive(&mut self, paths: &[&Path]) -> Result<()> {
-        let mut input = String::new();
+        let mut input_string = String::new();
 
         while self.running {
             self.standard
@@ -144,15 +100,17 @@ impl Shell {
 
             self.standard.out_flush().await;
 
-            input.clear();
+            input_string.clear();
 
-            self.standard.read_line(&mut input).await;
+            self.standard.read_line(&mut input_string).await;
 
-            if input.is_empty() {
+            if input_string.is_empty() {
                 continue;
             }
 
-            let result = self.parse_input(&input, paths).await;
+            let input = input_string.split(" ");
+
+            let result = self.parse_input(input, paths).await;
 
             if let Err(error) = result {
                 self.standard.print_error_line(&error.to_string()).await;
@@ -162,7 +120,7 @@ impl Shell {
         Ok(())
     }
 
-    pub async fn main(&mut self, arguments: String) -> core::result::Result<(), NonZeroUsize> {
+    pub async fn main(&mut self, arguments: Vec<String>) -> core::result::Result<(), NonZeroUsize> {
         let user = match task::get_instance()
             .get_environment_variable(self.standard.get_task(), "User")
             .await
@@ -198,7 +156,8 @@ impl Shell {
         if arguments.is_empty() {
             self.main_interactive(&paths).await?;
         } else {
-            self.parse_input(&arguments, &paths).await?;
+            let arguments = arguments.iter().map(|s| s.as_str());
+            self.parse_input(arguments, &paths).await?;
         }
 
         Ok(())
