@@ -339,6 +339,7 @@ impl Desk {
                 task,
                 virtual_file_system::get_instance(),
             ),
+            None,
         )
         .await
         .map_err(Error::FailedToExecuteShortcut)?;
@@ -357,6 +358,10 @@ impl Desk {
         // Remove the icons of windows that do not exist anymore
         for i in 0..dock_child_count {
             let icon = unsafe { lvgl::lv_obj_get_child(self.dock, i as i32) };
+
+            if icon.is_null() {
+                continue;
+            }
 
             if icon == self.main_button {
                 continue;
