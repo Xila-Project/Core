@@ -200,9 +200,13 @@ impl Manager {
         &'static self,
         buffer: Vec<u8>,
         stack_size: usize,
-        standard_in: UniqueFileIdentifier,
-        standard_out: UniqueFileIdentifier,
-        standard_error: UniqueFileIdentifier,
+        (standard_in, standard_out, standard_error): (
+            UniqueFileIdentifier,
+            UniqueFileIdentifier,
+            UniqueFileIdentifier,
+        ),
+        function_name: Option<&str>,
+        function_arguments: Vec<WasmValue>,
     ) -> Result<Vec<WasmValue>> {
         abi_context::get_instance()
             .call_abi(async || {
@@ -218,7 +222,11 @@ impl Manager {
 
                 let instance = Instance::new(&self.runtime, &module, stack_size).unwrap();
 
-                let result = instance.call_main(&vec![])?;
+                let result = if let Some(function_name) = function_name {
+                    instance.call_export_function(function_name, &function_arguments)?
+                } else {
+                    instance.call_main(function_arguments.as_ref())?
+                };
 
                 Ok(result)
             })

@@ -3,6 +3,9 @@ use std::boxed::Box;
 use std::marker::PhantomData;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Condvar, Mutex};
+use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
+use synchronization::signal::Signal;
+use task::SpawnerIdentifier;
 
 /// Single-threaded std-based executor.
 pub struct Executor {
@@ -120,3 +123,33 @@ macro_rules! instantiate_static_executor {
 }
 
 pub use instantiate_static_executor;
+
+pub async fn new_thread_executor() -> SpawnerIdentifier {
+    let task_manager = task::get_instance();
+
+    // Create a new OnceLock for each call to allow multiple thread executors
+    let signal: &'static Signal<CriticalSectionRawMutex, SpawnerIdentifier> =
+        Box::leak(Box::new(Signal::new()));
+
+    std::thread::spawn(move || {
+        // Use Box::leak to create a 'static reference for this thread's executor
+        let executor = Box::leak(Box::new(Executor::new()));
+
+        executor.start(move |spawner: Spawner| {
+            let spawner_id = task_manager.register_spawner(spawner).unwrap();
+
+            signal.signal(spawner_id);
+        });
+    });
+
+    let spawner_id = signal.wait().await;
+
+    unsafe {
+        let _ = Box::from_raw(
+            signal as *const _ as *mut Signal<CriticalSectionRawMutex, SpawnerIdentifier>,
+        );
+        // Clean up the leaked Box to avoid memory leak
+    }
+
+    spawner_id
+}

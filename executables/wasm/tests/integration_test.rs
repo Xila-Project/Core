@@ -8,10 +8,10 @@ async fn main() {
     extern crate abi_definitions;
 
     use command_line_shell::ShellExecutable;
-    use drivers_std::loader::Loader;
+    use drivers_std::loader::load_to_virtual_file_system;
     use wasm::WasmDevice;
     use xila::executable::{Standard, build_crate, mount_static_executables};
-    use xila::file_system::{MemoryDevice, Mode, Path, create_device, create_file_system};
+    use xila::file_system::{MemoryDevice, Mode, create_device, create_file_system};
     use xila::little_fs;
     use xila::task;
     use xila::time;
@@ -31,20 +31,17 @@ async fn main() {
 
     little_fs::FileSystem::format(memory_device.clone(), 256).unwrap();
 
-    let mut file_system = little_fs::FileSystem::new(memory_device, 256).unwrap();
+    let file_system = little_fs::FileSystem::new(memory_device, 256).unwrap();
 
     let crate_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("./tests/wasm_test");
     let binary_path = build_crate(&crate_path).unwrap();
 
-    let destination = Path::new("/test_wasm.wasm");
-
-    Loader::new()
-        .add_file(binary_path, destination)
-        .load(&mut file_system)
-        .unwrap();
-
     let virtual_file_system =
         virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
+
+    load_to_virtual_file_system(virtual_file_system, binary_path, "/test_wasm.wasm")
+        .await
+        .unwrap();
 
     let task = task_instance.get_current_task_identifier().await;
 
@@ -117,7 +114,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/command_line_shell", vec![], standard)
+    let result = executable::execute("/binaries/command_line_shell", vec![], standard, None)
         .await
         .unwrap()
         .join()

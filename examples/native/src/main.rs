@@ -1,19 +1,19 @@
-#![no_std]
-
-#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-drivers_std::memory::instantiate_global_allocator!();
-
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[xila::task::run(task_path = xila::task, executor = drivers_std::executor::instantiate_static_executor!())]
 async fn main() {
+    drivers_std::memory::instantiate_global_allocator!();
+
     extern crate alloc;
 
     use alloc::vec;
     use core::time::Duration;
+    use drivers_std::executor::new_thread_executor;
+    use drivers_std::loader::load_to_virtual_file_system;
     use xila::authentication;
     use xila::bootsplash::Bootsplash;
     use xila::executable;
     use xila::executable::Standard;
+    use xila::executable::build_crate;
     use xila::executable::mount_static_executables;
     use xila::file_system;
     use xila::file_system::Mbr;
@@ -47,10 +47,11 @@ async fn main() {
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
     const RESOLUTION: graphics::Point = graphics::Point::new(800, 600);
-    let (screen_device, pointer_device, keyboard_device, mut event_loop) =
+    let (screen_device, pointer_device, keyboard_device, mut runner) =
         drivers_native::window_screen::new(RESOLUTION)
             .await
             .unwrap();
+
     // - - Initialize the graphics manager
     let graphics_manager = graphics::initialize(
         screen_device,
@@ -66,8 +67,6 @@ async fn main() {
         .await
         .unwrap();
 
-    let bootsplash = Bootsplash::new(graphics_manager).await.unwrap();
-
     task_manager
         .spawn(task, "Graphics", None, |_| {
             graphics_manager.r#loop(task::Manager::sleep)
@@ -77,10 +76,12 @@ async fn main() {
 
     task_manager
         .spawn(task, "Event Loop", None, async move |_| {
-            event_loop.run().await
+            runner.run().await;
         })
         .await
         .unwrap();
+
+    let bootsplash = Bootsplash::new(graphics_manager).await.unwrap();
 
     // - Initialize the file system
     // Create a memory device
@@ -114,22 +115,21 @@ async fn main() {
         }
     };
     // Initialize the virtual file system
-    virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
+    let virtual_file_system =
+        virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
 
     // - - Mount the devices
 
     // - - Create the default system hierarchy
-    let _ =
-        virtual_file_system::create_default_hierarchy(virtual_file_system::get_instance(), task)
-            .await;
+    let _ = virtual_file_system::create_default_hierarchy(virtual_file_system, task).await;
 
     // - - Mount the devices
-    virtual_file_system::clean_devices(virtual_file_system::get_instance())
+    virtual_file_system::clean_devices(virtual_file_system)
         .await
         .unwrap();
 
     mount_static_devices!(
-        virtual_file_system::get_instance(),
+        virtual_file_system,
         task,
         &[
             (
@@ -158,6 +158,11 @@ async fn main() {
     // Mount static executables
 
     let virtual_file_system = virtual_file_system::get_instance();
+
+    fn new_thread_executor_wrapper()
+    -> core::pin::Pin<Box<dyn Future<Output = task::SpawnerIdentifier> + Send>> {
+        Box::pin(new_thread_executor())
+    }
 
     mount_static_executables!(
         virtual_file_system,
@@ -189,7 +194,10 @@ async fn main() {
                     .await
                     .unwrap()
             ),
-            (&"/binaries/wasm", wasm::WasmDevice)
+            (
+                &"/binaries/wasm",
+                wasm::WasmDevice::new(Some(new_thread_executor_wrapper))
+            )
         ]
     )
     .await
@@ -206,6 +214,27 @@ async fn main() {
     )
     .await
     .unwrap();
+
+    let calculator_binary_path = build_crate("../../executables/calculator").unwrap();
+
+    load_to_virtual_file_system(
+        virtual_file_system,
+        &calculator_binary_path,
+        "/binaries/calculator",
+    )
+    .await
+    .unwrap();
+
+    let _ = executable::execute(
+        "/binaries/wasm",
+        vec!["--install".to_string(), "/binaries/calculator".to_string()],
+        standard,
+        None,
+    )
+    .await
+    .unwrap()
+    .join()
+    .await;
 
     // - - Create the default user
     let group_identifier = users::GroupIdentifier::new(1000);
@@ -242,8 +271,18 @@ async fn main() {
 
     bootsplash.stop(graphics_manager).await.unwrap();
 
+    let standard = Standard::open(
+        &"/devices/standard_in",
+        &"/devices/standard_out",
+        &"/devices/standard_error",
+        task,
+        virtual_file_system::get_instance(),
+    )
+    .await
+    .unwrap();
+
     // - - Execute the shell
-    let _ = executable::execute("/binaries/graphical_shell", vec![], standard)
+    let _ = executable::execute("/binaries/graphical_shell", vec![], standard, None)
         .await
         .unwrap()
         .join()

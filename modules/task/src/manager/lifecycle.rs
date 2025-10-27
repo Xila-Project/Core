@@ -90,7 +90,6 @@ impl Manager {
     /// Spawn task
     pub async fn spawn<FunctionType, FutureType, ReturnType>(
         &'static self,
-
         parent_task: TaskIdentifier,
         name: &str,
         spawner: Option<usize>,

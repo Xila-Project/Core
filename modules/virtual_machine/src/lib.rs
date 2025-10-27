@@ -53,6 +53,7 @@
 
 #![no_std]
 #![allow(unused_imports)]
+#![cfg(not(target_arch = "wasm32"))]
 extern crate alloc;
 
 mod custom_data;

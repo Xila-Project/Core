@@ -7,3 +7,12 @@ edition = "2024"
 task = { workspace = true }
 futures = { workspace = true }
 synchronization = { workspace = true }
+file_system = { workspace = true }
+log = { workspace = true }
+smol_str = { workspace = true }
+
+[dev-dependencies]
+drivers_core = { workspace = true }
+drivers_std = { workspace = true }
+drivers_shared = { workspace = true }
+drivers_native = { workspace = true }

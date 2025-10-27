@@ -1,26 +1,48 @@
 #![no_std]
+#![cfg(not(target_arch = "wasm32"))]
 
 mod error;
 
 extern crate alloc;
 
-use core::mem::forget;
-use core::num::NonZeroUsize;
-
 use crate::Error;
+use alloc::boxed::Box;
 use alloc::{
     borrow::ToOwned,
     string::{String, ToString},
+    vec,
     vec::Vec,
 };
-pub use error::*;
+use core::num::NonZeroUsize;
+use core::pin::Pin;
+use xila::executable::ArgumentsParser;
 use xila::executable::{Standard, implement_executable_device};
 use xila::file_system::{Mode, Path};
-use xila::task;
+use xila::synchronization::once_lock::OnceLock;
+use xila::task::{self, SpawnerIdentifier};
 use xila::virtual_file_system::{self, File};
 use xila::virtual_machine;
 
+pub use error::*;
+
 pub struct WasmDevice;
+
+type NewThreadExecutor =
+    fn() -> Pin<Box<dyn core::future::Future<Output = SpawnerIdentifier> + Send>>;
+
+static NEW_THREAD_EXECUTOR: OnceLock<NewThreadExecutor> = OnceLock::new();
+
+const DEFAULT_STACK_SIZE: usize = 4096;
+
+impl WasmDevice {
+    pub fn new(new_thread_executor: Option<NewThreadExecutor>) -> Self {
+        if let Some(new_thread_executor) = new_thread_executor {
+            let _ = NEW_THREAD_EXECUTOR.init(new_thread_executor);
+        }
+
+        Self
+    }
+}
 
 implement_executable_device!(
     structure: WasmDevice,
@@ -29,16 +51,23 @@ implement_executable_device!(
 );
 
 pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(), Error> {
-    if arguments.len() != 1 {
-        return Err(Error::InvalidNumberOfArguments);
-    }
+    let parsed_arguments = ArgumentsParser::new(&arguments);
 
-    let path = Path::new(&arguments[0]);
-
-    match path.get_extension() {
-        Some("wasm") | Some("WASM") => Ok(()),
-        _ => return Err(Error::NotAWasmFile),
-    }?;
+    let install = parsed_arguments
+        .clone()
+        .any(|a| a.options.get_option("install").is_some());
+    let stack_size = parsed_arguments
+        .clone()
+        .find_map(|a| {
+            a.options
+                .get_option("stack-size")
+                .and_then(|s| s.parse::<usize>().ok())
+        })
+        .unwrap_or(DEFAULT_STACK_SIZE);
+    let path = parsed_arguments
+        .last()
+        .and_then(|arg| arg.value.map(Path::new))
+        .ok_or(Error::MissingArgument("path"))?;
 
     let path = if path.is_absolute() {
         path.to_owned()
@@ -76,22 +105,75 @@ pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(
         .await
         .map_err(|_| Error::FailedToReadFile)?;
 
-    let (standard_in, standard_out, standard_error) = standard.split();
+    let function_name = if install { Some("__install") } else { None };
 
-    virtual_machine::get_instance()
-        .execute(buffer, 4096, standard_in, standard_out, standard_error)
+    let standard = standard
+        .duplicate()
         .await
-        .map_err(|_| Error::FailedToExecute)?;
+        .map_err(Error::FailedToDuplicateStandard)?;
+
+    if let Some(new_thread_executor) = NEW_THREAD_EXECUTOR.try_get() {
+        let spawner_identifier = new_thread_executor().await;
+
+        task::get_instance()
+            .spawn(
+                standard.get_task(),
+                "WASM Execution",
+                Some(spawner_identifier),
+                move |task_identifier| async move {
+                    //log::information!("WASM task identifier: {task_identifier:?}");
+
+                    let standard = standard
+                        .transfer(task_identifier)
+                        .await
+                        .map_err(Error::FailedToTransferStandard)?;
+
+                    let (standard_in, standard_out, standard_error) = standard.split();
+
+                    let result = virtual_machine::get_instance()
+                        .execute(
+                            buffer,
+                            stack_size,
+                            (standard_in, standard_out, standard_error),
+                            function_name,
+                            vec![],
+                        )
+                        .await
+                        .map_err(Error::FailedToExecute)?;
+
+                    core::mem::forget(standard); // Streams are closed by WAMR
+
+                    Ok(result)
+                },
+            )
+            .await
+            .map_err(Error::FailedToSpawnTask)?
+            .0
+            .join()
+            .await?;
+    } else {
+        let (standard_in, standard_out, standard_error) = standard.split();
+
+        virtual_machine::get_instance()
+            .execute(
+                buffer,
+                stack_size,
+                (standard_in, standard_out, standard_error),
+                function_name,
+                vec![],
+            )
+            .await
+            .map_err(Error::FailedToExecute)?;
+
+        core::mem::forget(standard); // Streams are closed by WAMR
+    }
 
     Ok(())
 }
 
 pub async fn main(standard: Standard, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
     match inner_main(&standard, arguments).await {
-        Ok(()) => {
-            forget(standard);
-            Ok(())
-        }
+        Ok(()) => Ok(()),
         Err(error) => {
             standard.print_error_line(&error.to_string()).await;
             Err(error.into())

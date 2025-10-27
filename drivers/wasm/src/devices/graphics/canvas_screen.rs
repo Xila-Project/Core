@@ -1,6 +1,6 @@
 use core::slice;
 
-use alloc::{string::String, sync::Arc, vec::Vec};
+use alloc::{rc::Rc, string::String, vec::Vec};
 use file_system::DeviceTrait;
 use futures::block_on;
 use graphics::{Area, Point, RenderingColor, ScreenReadData, ScreenWriteData};
@@ -58,9 +58,7 @@ impl Inner {
         }
 
         // handle remainder
-        for j in i..len {
-            bgra[j] = rgba[j];
-        }
+        bgra[i..len].copy_from_slice(&rgba[i..len]);
     }
 
     fn draw_buffer(&mut self, area: Area, buffer: &[RenderingColor]) -> Result<(), String> {
@@ -75,9 +73,8 @@ impl Inner {
             self.conversion_buffer.set_len(bytes_needed);
         }
 
-        let destination = unsafe {
-            slice::from_raw_parts_mut(self.conversion_buffer.as_mut_ptr() as *mut u8, bytes_needed)
-        };
+        let destination =
+            unsafe { slice::from_raw_parts_mut(self.conversion_buffer.as_mut_ptr(), bytes_needed) };
 
         let source = unsafe { slice::from_raw_parts(buffer.as_ptr() as *const u8, bytes_needed) };
 
@@ -102,14 +99,14 @@ impl Inner {
     }
 }
 
-pub struct CanvasScreenDevice(Arc<RwLock<CriticalSectionRawMutex, Inner>>);
+pub struct CanvasScreenDevice(Rc<RwLock<CriticalSectionRawMutex, Inner>>);
 
 unsafe impl Sync for CanvasScreenDevice {}
 unsafe impl Send for CanvasScreenDevice {}
 
 impl CanvasScreenDevice {
     pub async fn new(canvas: HtmlCanvasElement) -> Result<Self, String> {
-        Ok(Self(Arc::new(RwLock::new(Inner::new(canvas)?))))
+        Ok(Self(Rc::new(RwLock::new(Inner::new(canvas)?))))
     }
 }
 

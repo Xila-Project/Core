@@ -1,20 +1,82 @@
+use crate::{XilaFileSystemMode, XilaFileSystemOpen, XilaFileSystemStatus};
+use abi_context::get_instance as get_context_instance;
 use alloc::ffi::CString;
-use log::debug;
-
 use core::{
     ffi::{CStr, c_char},
     ptr::null_mut,
 };
-
-use file_system::Error;
+use file_system::{Error, Flags, Mode, Open, Status, UniqueFileIdentifier};
 use futures::block_on;
+use log::debug;
 use virtual_file_system::get_instance as get_file_system_instance;
-
-use abi_context::get_instance as get_context_instance;
 
 use super::{
     XilaFileKind, XilaFileSystemInode, XilaFileSystemSize, XilaUniqueFileIdentifier, into_u32,
 };
+
+/// This function is used to open a file or directory at a given directory.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xila_file_system_open_at(
+    directory: XilaUniqueFileIdentifier,
+    relative_path: *const c_char,
+    is_directory: bool,
+    mode: XilaFileSystemMode,
+    open: XilaFileSystemOpen,
+    status: XilaFileSystemStatus,
+    out: *mut XilaUniqueFileIdentifier,
+) -> u32 {
+    into_u32(move || unsafe {
+        if relative_path.is_null() || out.is_null() {
+            Err(Error::InvalidParameter)?;
+        }
+
+        let relative_path = CStr::from_ptr(relative_path)
+            .to_str()
+            .map_err(|_| Error::InvalidParameter)?;
+
+        let context = get_context_instance();
+
+        let task = context.get_current_task_identifier();
+
+        if relative_path == "/" {
+            *out = block_on(get_file_system_instance().open_directory(&relative_path, task))?
+                .into_inner();
+            return Ok(());
+        }
+
+        let directory = UniqueFileIdentifier::from_raw(directory);
+
+        let full_path = context
+            .get_full_path(task, directory, relative_path)
+            .ok_or(Error::InvalidParameter)?;
+
+        if is_directory {
+            *out =
+                block_on(get_file_system_instance().open_directory(&full_path, task))?.into_inner();
+
+            context.insert_opened_file_identifier_path(
+                task,
+                UniqueFileIdentifier::from_raw(*out),
+                Some(directory),
+                relative_path,
+            );
+        } else {
+            let mode = Mode::from_u8(mode);
+            let open = Open::from_u8(open);
+            let status = Status::from_u8(status);
+
+            let flags = Flags::new(mode, Some(open), Some(status));
+
+            *out = block_on(get_file_system_instance().open(&full_path, flags, task))?.into_inner();
+        }
+
+        Ok(())
+    })
+}
 
 /// This function is used to open a directory.
 ///
@@ -36,12 +98,21 @@ pub unsafe extern "C" fn xila_file_system_open_directory(
                 .to_str()
                 .map_err(|_| Error::InvalidParameter)?;
 
-            let task = get_context_instance().get_current_task_identifier();
+            let context = get_context_instance();
+
+            let task = context.get_current_task_identifier();
 
             debug!("Opening directory {path:?} for task {task:?}");
 
             *directory =
                 block_on(get_file_system_instance().open_directory(&path, task))?.into_inner();
+
+            context.insert_opened_file_identifier_path(
+                task,
+                file_system::UniqueFileIdentifier::from_raw(*directory),
+                None,
+                path,
+            );
 
             Ok(())
         })
@@ -88,13 +159,17 @@ pub unsafe extern "C" fn xila_file_system_read_directory(
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_close_directory(directory: XilaUniqueFileIdentifier) -> u32 {
     into_u32(move || {
-        let task = get_context_instance().get_current_task_identifier();
+        let context = get_context_instance();
+
+        let task = context.get_current_task_identifier();
 
         let directory = file_system::UniqueFileIdentifier::from_raw(directory);
 
-        debug!("Closing directory {directory:?} for task {task:?}");
+        log::information!("Closing directory {directory:?} for task {task:?}");
 
         block_on(get_file_system_instance().close_directory(directory, task))?;
+
+        context.remove_opened_file_identifier_path(task, directory);
 
         Ok(())
     })

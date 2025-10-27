@@ -1,5 +1,7 @@
 [build]
 target = "wasm32-wasip1"
+
+[target.wasm32-wasip1]
 rustflags = [
   "-C",
   "link-arg=--export=__heap_base",

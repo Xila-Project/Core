@@ -190,7 +190,7 @@ impl<'a> FileSystem<'a> {
         Ok(new_file)
     }
 
-    pub async fn transfert(
+    pub async fn transfer(
         &self,
         new_task: TaskIdentifier,
         file: LocalFileIdentifier,
@@ -546,7 +546,7 @@ mod tests {
         let new_task = TaskIdentifier::new(1);
 
         let new_file_identifier = file_system
-            .transfert(new_task, file_identifier, 0_usize.into(), None)
+            .transfer(new_task, file_identifier, 0_usize.into(), None)
             .await
             .unwrap();
 

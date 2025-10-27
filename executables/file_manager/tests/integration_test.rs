@@ -143,7 +143,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/file_manager", vec![], standard)
+    let result = executable::execute("/binaries/file_manager", vec![], standard, None)
         .await
         .unwrap()
         .join()

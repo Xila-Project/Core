@@ -138,7 +138,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/settings", vec![], standard)
+    let result = executable::execute("/binaries/settings", vec![], standard, None)
         .await
         .unwrap()
         .join()

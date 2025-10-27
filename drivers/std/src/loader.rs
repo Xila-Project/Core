@@ -1,11 +1,10 @@
-use file_system::{FileSystemTraits, Flags, Mode, Open, Path, PathOwned, Time};
+use file_system::{FileSystemTraits, Flags, Mode, Open, Path, Time};
 use std::io;
 use std::prelude::rust_2024::*;
 use std::{fs::File, io::Read, path};
 use task::TaskIdentifier;
 use users::{GroupIdentifier, UserIdentifier};
-
-pub type Result<T> = core::result::Result<T, Error>;
+use virtual_file_system::VirtualFileSystem;
 
 #[derive(Debug)]
 pub enum Error {
@@ -15,122 +14,81 @@ pub enum Error {
 
 impl From<file_system::Error> for Error {
     fn from(error: file_system::Error) -> Self {
-        Self::FileSystemError(error)
+        Error::FileSystemError(error)
     }
 }
 
 impl From<io::Error> for Error {
     fn from(error: io::Error) -> Self {
-        Self::IoError(error)
+        Error::IoError(error)
     }
 }
 
-pub struct Loader<'a> {
-    paths: Vec<(path::PathBuf, PathOwned)>,
-    buffers: Vec<(&'a [u8], PathOwned)>,
+pub type Result<T> = core::result::Result<T, Error>;
+
+pub fn load_to_file_system(
+    file_system: &mut dyn FileSystemTraits,
+    source_path: impl AsRef<path::Path>,
+    destination_path: impl AsRef<Path>,
+) -> Result<()> {
+    // Open file for reading on host
+    let mut source_file = File::open(source_path.as_ref())?;
+
+    // Create file on target
+    let destination_file = file_system.open(
+        TaskIdentifier::new(0),
+        destination_path.as_ref(),
+        Flags::new(Mode::READ_ONLY, Some(Open::CREATE), None),
+        Time::new(0),
+        UserIdentifier::ROOT,
+        GroupIdentifier::ROOT,
+    )?;
+
+    // Read and write file content block by block
+    let mut buffer = [0; 1024];
+    loop {
+        let read = source_file.read(&mut buffer)?;
+
+        if read == 0 {
+            break;
+        }
+
+        file_system.write(destination_file, &buffer[..read], Time::new(0))?;
+    }
+
+    file_system.close(destination_file)?;
+
+    Ok(())
 }
 
-impl Default for Loader<'_> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+pub async fn load_to_virtual_file_system<'a>(
+    virtual_file_system: &'a VirtualFileSystem<'a>,
+    source_path: impl AsRef<path::Path>,
+    destination_path: impl AsRef<Path>,
+) -> Result<()> {
+    // Open file for reading on host
+    let mut source_file = File::open(source_path.as_ref())?;
 
-impl<'a> Loader<'a> {
-    pub fn new() -> Self {
-        Self {
-            paths: vec![],
-            buffers: vec![],
-        }
-    }
+    let file = virtual_file_system::File::open(
+        virtual_file_system,
+        &destination_path.as_ref(),
+        Flags::new(Mode::READ_ONLY, Some(Open::new(true, false, true)), None),
+    )
+    .await?;
 
-    pub fn add_file_from_buffer(mut self, buffer: &'a [u8], destination: impl AsRef<Path>) -> Self {
-        self.buffers.push((buffer, destination.as_ref().to_owned()));
+    // Read and write file content block by block
+    let mut buffer = [0; 1024];
+    loop {
+        let read = source_file.read(&mut buffer)?;
 
-        self
-    }
-
-    pub fn add_files_from_buffers(
-        mut self,
-        buffers: impl IntoIterator<Item = (&'a [u8], PathOwned)>,
-    ) -> Self {
-        for (buffer, destination) in buffers {
-            self = self.add_file_from_buffer(buffer, destination);
+        if read == 0 {
+            break;
         }
 
-        self
+        file.write(&buffer[..read]).await?;
     }
 
-    pub fn add_file(
-        mut self,
-        source: impl AsRef<path::Path>,
-        destination: impl AsRef<Path>,
-    ) -> Self {
-        self.paths
-            .push((source.as_ref().to_owned(), destination.as_ref().to_owned()));
-
-        self
-    }
-
-    pub fn add_files(
-        mut self,
-        files: impl IntoIterator<Item = (path::PathBuf, PathOwned)>,
-    ) -> Self {
-        for file in files {
-            self = self.add_file(file.0, file.1);
-        }
-
-        self
-    }
-
-    pub fn load(&self, file_system: &mut dyn FileSystemTraits) -> Result<()> {
-        // Open file for reading on host
-        for (source_path, destination_path) in &self.paths {
-            // Open file for reading on host
-            let mut source_file = File::open(source_path)?;
-
-            // Create file on target
-            let destination_file = file_system.open(
-                TaskIdentifier::new(0),
-                destination_path,
-                Flags::new(Mode::READ_ONLY, Some(Open::CREATE), None),
-                Time::new(0),
-                UserIdentifier::ROOT,
-                GroupIdentifier::ROOT,
-            )?;
-
-            // Read and write file content block by block
-            let mut buffer = [0; 1024];
-            loop {
-                let read = source_file.read(&mut buffer)?;
-
-                if read == 0 {
-                    break;
-                }
-
-                file_system.write(destination_file, &buffer[..read], Time::new(0))?;
-            }
-
-            file_system.close(destination_file)?;
-        }
-
-        // Write buffers to file system
-        for (buffer, destination_path) in &self.buffers {
-            let destination_file = file_system.open(
-                TaskIdentifier::new(0),
-                destination_path,
-                Flags::new(Mode::READ_ONLY, Some(Open::CREATE), None),
-                Time::new(0),
-                UserIdentifier::ROOT,
-                GroupIdentifier::ROOT,
-            )?;
-
-            file_system.write(destination_file, buffer, Time::new(0))?;
-            file_system.close(destination_file)?;
-        }
-
-        Ok(())
-    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -151,9 +109,7 @@ mod tests {
         little_fs::FileSystem::format(device.clone(), 256).unwrap();
         let mut file_system = little_fs::FileSystem::new(device, 256).unwrap();
 
-        let loader = Loader::new().add_file(source_path, destination_path);
-
-        loader.load(&mut file_system).unwrap();
+        load_to_file_system(&mut file_system, source_path, destination_path).unwrap();
 
         // - Read the file and compare it with the original
         let test_file = std::fs::read_to_string(source_path).unwrap();

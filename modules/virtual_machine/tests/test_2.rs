@@ -127,9 +127,9 @@ async fn integration_test_2() {
         .execute(
             binary_buffer.to_vec(),
             4 * 1024,
-            standard_in,
-            standard_out,
-            standard_error,
+            (standard_in, standard_out, standard_error),
+            None,
+            vec![],
         )
         .await
         .unwrap();

@@ -5,8 +5,10 @@ use super::*;
 use alloc::collections::BTreeMap;
 use embassy_executor::Spawner;
 
+pub type SpawnerIdentifier = usize;
+
 impl Manager {
-    pub fn register_spawner(&'static self, spawner: Spawner) -> Result<usize> {
+    pub fn register_spawner(&'static self, spawner: Spawner) -> Result<SpawnerIdentifier> {
         let mut inner = embassy_futures::block_on(self.0.write());
 
         let identifier = Self::find_first_available_identifier(
@@ -22,7 +24,7 @@ impl Manager {
         Ok(identifier)
     }
 
-    pub fn unregister_spawner(&'static self, identifier: usize) -> Result<()> {
+    pub fn unregister_spawner(&'static self, identifier: SpawnerIdentifier) -> Result<()> {
         let mut inner = embassy_futures::block_on(self.0.write());
 
         inner
@@ -34,7 +36,7 @@ impl Manager {
     }
 
     /// Select the best spawner for a new task using load balancing algorithm
-    pub(crate) fn select_best_spawner(inner: &Inner) -> Result<usize> {
+    pub(crate) fn select_best_spawner(inner: &Inner) -> Result<SpawnerIdentifier> {
         if inner.spawners.is_empty() {
             return Err(Error::NoSpawnerAvailable);
         }
@@ -65,7 +67,7 @@ impl Manager {
         Ok(best_index)
     }
 
-    pub async fn get_spawner(&self, task: TaskIdentifier) -> Result<usize> {
+    pub async fn get_spawner(&self, task: TaskIdentifier) -> Result<SpawnerIdentifier> {
         Self::get_task(&*self.0.read().await, task)
             .map(|task| task.spawner_identifier)
             .map_err(|_| Error::InvalidTaskIdentifier)

@@ -75,7 +75,7 @@ pub fn tokenize<'a, I>(input: I) -> Vec<Token<'a>>
 where
     I: IntoIterator<Item = &'a str>,
 {
-    input.into_iter().map(|value| Token::from(value)).collect()
+    input.into_iter().map(Token::from).collect()
 }
 
 #[cfg(test)]

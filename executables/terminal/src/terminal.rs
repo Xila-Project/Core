@@ -6,7 +6,6 @@ use xila::graphics::{
     self, Color, EventKind, Key, Window,
     lvgl::{self, lv_obj_t},
 };
-use xila::log::information;
 use xila::synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
 pub(crate) struct Inner {
@@ -129,7 +128,7 @@ impl Terminal {
         inner.buffer.pop(); // Remove the trailing null character
 
         Self::get_start_index(&mut inner.buffer, text);
-        inner.buffer.push_str("\0");
+        inner.buffer.push('\0');
 
         unsafe {
             lvgl::lv_label_set_text_static(inner.display, inner.buffer.as_ptr() as *const i8);
@@ -163,7 +162,6 @@ impl Terminal {
             .zip(inner.validated_input.iter())
             .for_each(|(byte, &char)| {
                 *byte = char;
-                information!("Reading char: {}", char as char);
                 read += 1;
             });
 

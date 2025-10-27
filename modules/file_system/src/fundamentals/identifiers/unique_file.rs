@@ -47,14 +47,15 @@ impl Debug for UniqueFileIdentifier {
 
         formatter
             .debug_struct("UniqueFileIdentifier")
-            .field("File_system_identifier", &file_system_identifier)
-            .field("File_identifier", &file_identifier)
+            .field("file_system_identifier", &file_system_identifier)
+            .field("file_identifier", &file_identifier)
             .finish()
     }
 }
 
 impl UniqueFileIdentifier {
     const FILE_SYSTEM_IDENTIFIER_POSITION: u8 = FileIdentifier::SIZE_BITS;
+    pub const INVALID_FILE_IDENTIFIER: Self = Self(usize::MAX);
 
     pub const fn new(file_system: FileSystemIdentifier, file: FileIdentifier) -> Self {
         let file_system_identifier = file_system.as_inner();

@@ -1,5 +1,5 @@
-use alloc::string::String;
-
+use alloc::{fmt, string::String};
+use core::fmt::Debug;
 use file_system::{FileIdentifier, Mode, Path, Size, UniqueFileIdentifier};
 use futures::block_on;
 use task::TaskIdentifier;
@@ -15,16 +15,28 @@ pub struct Standard {
     virtual_file_system: &'static VirtualFileSystem<'static>,
 }
 
+impl Debug for Standard {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Standard")
+            .field("standard_in", &self.standard_in)
+            .field("standard_out", &self.standard_out)
+            .field("standard_error", &self.standard_error)
+            .field("task", &self.task)
+            .finish()
+    }
+}
+
 impl Drop for Standard {
     fn drop(&mut self) {
-        let _ = block_on(self.virtual_file_system.close(self.standard_in, self.task));
+        block_on(self.virtual_file_system.close(self.standard_in, self.task)).unwrap();
 
-        let _ = block_on(self.virtual_file_system.close(self.standard_out, self.task));
+        block_on(self.virtual_file_system.close(self.standard_out, self.task)).unwrap();
 
-        let _ = block_on(
+        block_on(
             self.virtual_file_system
                 .close(self.standard_error, self.task),
-        );
+        )
+        .unwrap();
     }
 }
 
@@ -128,7 +140,7 @@ impl Standard {
         self.task
     }
 
-    pub async fn duplicate(&self) -> Result<Self> {
+    pub async fn duplicate(&self) -> file_system::Result<Self> {
         let standard_in = self
             .virtual_file_system
             .duplicate_file_identifier(self.standard_in, self.task)
@@ -163,10 +175,10 @@ impl Standard {
         (self.standard_in, self.standard_out, self.standard_error)
     }
 
-    pub(crate) async fn transfert(mut self, task: TaskIdentifier) -> Result<Self> {
+    pub async fn transfer(mut self, task: TaskIdentifier) -> file_system::Result<Self> {
         self.standard_in = self
             .virtual_file_system
-            .transfert(
+            .transfer(
                 self.standard_in,
                 self.task,
                 task,
@@ -176,7 +188,7 @@ impl Standard {
 
         self.standard_out = self
             .virtual_file_system
-            .transfert(
+            .transfer(
                 self.standard_out,
                 self.task,
                 task,
@@ -186,7 +198,7 @@ impl Standard {
 
         self.standard_error = self
             .virtual_file_system
-            .transfert(
+            .transfer(
                 self.standard_error,
                 self.task,
                 task,

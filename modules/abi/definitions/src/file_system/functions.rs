@@ -27,7 +27,11 @@ where
 {
     match function() {
         Ok(()) => 0,
-        Err(error) => error.get(),
+        Err(error) => {
+            log::error!("File system error: {:?}", error); // Debug: Logging error
+
+            error.get()
+        }
     }
 }
 

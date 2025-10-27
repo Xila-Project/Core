@@ -166,9 +166,9 @@ async fn test() {
         .execute(
             binary_buffer.to_vec(),
             8 * 1024,
-            standard_in,
-            standard_out,
-            standard_error,
+            (standard_in, standard_out, standard_error),
+            None,
+            vec![],
         )
         .await
         .unwrap();

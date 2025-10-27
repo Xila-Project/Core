@@ -79,6 +79,25 @@ pub fn get() -> TokenStream {
             core::mem::forget(window);
         }
 
+        pub unsafe fn window_set_icon(
+            __environment : Environment,
+            __pointer_table : &mut PointerTable,
+            __task: TaskIdentifier,
+            window: *mut lv_obj_t,
+            icon_string: *const core::ffi::c_char,
+            icon_color: lv_color_t
+        ) {
+            let mut window = unsafe { graphics::Window::from_raw(window) };
+
+            let icon_string = unsafe { core::ffi::CStr::from_ptr(icon_string).to_str().unwrap() };
+
+            let icon_color = graphics::Color::from_lvgl_color(icon_color);
+
+            window.set_icon(icon_string, icon_color);
+
+            core::mem::forget(window);
+        }
+
         pub unsafe fn buttonmatrix_set_map(__environment : Environment, __pointer_table : &mut PointerTable, __task: TaskIdentifier, object: u16, map: *const *const i8) {
 
             let mut v : Vec<*const i8> = vec![];

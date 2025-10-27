@@ -106,7 +106,7 @@ args = ["clippy", "--all-targets", "--all-features", "--", "-D", "warnings"]
 [tasks.test]
 workspace = false
 command = "cargo"
-args = ["test", "--all"]
+args = ["test", "--workspace"]
 
 [tasks.before-commit]
 workspace = false

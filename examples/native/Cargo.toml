@@ -8,6 +8,7 @@ xila = { path = "../../", features = [
   "host",
   "virtual_machine",
   "graphics_rendering_xrgb8888",
+  "executable_building",
 ] }
 file_manager = { workspace = true }
 command_line_shell = { workspace = true }

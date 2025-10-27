@@ -1,23 +1,25 @@
-use crate::Calculator;
+use crate::{evaluator::Evaluator, parser::Parser};
 use std::{ptr::null_mut, thread::sleep};
 use xila::bindings::{
-    self, EventCode, FlexFlow, Object, ObjectFlag, buttonmatrix_create,
+    self, Color, EventCode, FlexFlow, Object, ObjectFlag, buttonmatrix_create,
     buttonmatrix_get_selected_button, buttonmatrix_set_map, label_create, label_set_text,
     object_add_flag, object_create, object_set_flex_flow, object_set_flex_grow, object_set_height,
-    object_set_width, percentage, size_content, window_create, window_pop_event,
+    object_set_width, percentage, size_content, window_create, window_pop_event, window_set_icon,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(dead_code)] // Indirectly constructed with from_u8
 #[repr(u8)]
-pub enum ButtonId {
+pub enum ButtonIdentifier {
     // Row 1 (indices 0-6)
-    DegRad,     // "DEG/RAD"
-    LeftParen,  // "("
-    RightParen, // ")"
-    Clear,      // "C"
-    Backspace,  // "<"
-    Factorial,  // "x!"
-    Divide,     // "/"
+    DegRad,           // "DEG/RAD"
+    LeftParenthesis,  // "("
+    RightParenthesis, // ")"
+    Clear,            // "C"
+    Backspace,        // "<"
+    Factorial,        // "x!"
+    Divide,           // "/"
+    Abs,              // "|x|"
 
     // Row 2 (indices 7-13)
     Sin,      // "sin"
@@ -27,6 +29,7 @@ pub enum ButtonId {
     Eight,    // "8"
     Nine,     // "9"
     Multiply, // "*"
+    Percent,  // "%"
 
     // Row 3 (indices 14-20)
     Sinh,     // "sinh"
@@ -36,15 +39,17 @@ pub enum ButtonId {
     Five,     // "5"
     Six,      // "6"
     Subtract, // "-"
+    Mod,      // "mod"
 
     // Row 4 (indices 21-27)
-    Ln,    // "ln"
-    Log10, // "log"
-    Sqrt,  // "sqrt"
-    One,   // "1"
-    Two,   // "2"
-    Three, // "3"
-    Add,   // "+"
+    Ln,     // "ln"
+    Log10,  // "log"
+    Sqrt,   // "sqrt"
+    One,    // "1"
+    Two,    // "2"
+    Three,  // "3"
+    Add,    // "+"
+    Random, // "rand"
 
     // Row 5 (indices 28-41)
     Power,    // "^"
@@ -57,10 +62,6 @@ pub enum ButtonId {
     Inverse,  // "1/x"
     Pi,       // "pi"
     E,        // "e"
-    Abs,      // "|x|"
-    Percent,  // "%"
-    Mod,      // "mod"
-    Random,   // "rand"
 }
 
 const BUTTON_MAP: [*const i8; 48] = [
@@ -119,16 +120,16 @@ const BUTTON_MAP: [*const i8; 48] = [
     c"".as_ptr(), // End marker
 ];
 
-impl ButtonId {
-    pub fn to_u8(self) -> u8 {
+impl ButtonIdentifier {
+    pub const fn to_u8(self) -> u8 {
         self as u8
     }
 
-    pub fn from_u8(identifier: u8) -> Option<Self> {
-        if identifier > ButtonId::Random.to_u8() {
+    pub const fn from_u8(identifier: u8) -> Option<Self> {
+        if identifier >= ButtonIdentifier::E.to_u8() {
             return None; // Invalid button ID
         }
-        unsafe { Some(std::mem::transmute(identifier)) }
+        unsafe { Some(std::mem::transmute::<u8, ButtonIdentifier>(identifier)) }
     }
 }
 
@@ -165,6 +166,16 @@ impl Interface {
         // Create main window
         unsafe {
             let window = window_create()?;
+
+            window_set_icon(
+                window,
+                c"Ca".as_ptr(),
+                Color {
+                    red: 0,
+                    green: 0,
+                    blue: 0,
+                },
+            )?;
 
             object_set_flex_flow(window, FlexFlow::Column)?;
 
@@ -252,31 +263,31 @@ impl Interface {
             unsafe { buttonmatrix_get_selected_button(self.button_matrix) }?;
 
         // Convert button ID to enum and handle
-        if let Some(button) = ButtonId::from_u8(selected_button_id as u8) {
+        if let Some(button) = ButtonIdentifier::from_u8(selected_button_id as u8) {
             self.handle_button_press(button)?;
         }
         Ok(())
     }
 
-    fn handle_button_press(&mut self, button: ButtonId) -> bindings::Result<()> {
+    fn handle_button_press(&mut self, button: ButtonIdentifier) -> bindings::Result<()> {
         match button {
-            ButtonId::Clear => {
+            ButtonIdentifier::Clear => {
                 self.current_expression.clear();
                 self.show_result = false;
             }
-            ButtonId::Backspace => {
+            ButtonIdentifier::Backspace => {
                 if !self.current_expression.is_empty() {
                     self.current_expression.pop();
                 }
                 self.show_result = false;
             }
-            ButtonId::DegRad => {
+            ButtonIdentifier::DegRad => {
                 self.is_radian_mode = !self.is_radian_mode;
                 // Update the display to show current mode
                 self.update_display()?;
                 return Ok(()); // Don't call update_display again at the end
             }
-            ButtonId::Equals => {
+            ButtonIdentifier::Equals => {
                 if !self.current_expression.is_empty() {
                     // Convert display operators to parser-friendly format
                     let mut expression = self
@@ -291,9 +302,9 @@ impl Interface {
                         expression = expression.replace("tan(", "tand(");
                     }
 
-                    match Calculator::evaluate_expression(&expression) {
+                    match evaluate_expression(&expression) {
                         Ok(result) => {
-                            self.current_expression = Calculator::format_result(result);
+                            self.current_expression = format_result(result);
                             self.show_result = true;
                         }
                         Err(e) => {
@@ -304,30 +315,30 @@ impl Interface {
                 }
             }
             // Basic trigonometric functions
-            ButtonId::Sin => self.push_str("sin("),
-            ButtonId::Cos => self.push_str("cos("),
-            ButtonId::Tan => self.push_str("tan("),
+            ButtonIdentifier::Sin => self.push_str("sin("),
+            ButtonIdentifier::Cos => self.push_str("cos("),
+            ButtonIdentifier::Tan => self.push_str("tan("),
 
             // Hyperbolic functions
-            ButtonId::Sinh => self.push_str("sinh("),
-            ButtonId::Cosh => self.push_str("cosh("),
-            ButtonId::Tanh => self.push_str("tanh("),
+            ButtonIdentifier::Sinh => self.push_str("sinh("),
+            ButtonIdentifier::Cosh => self.push_str("cosh("),
+            ButtonIdentifier::Tanh => self.push_str("tanh("),
 
             // Logarithmic functions
-            ButtonId::Ln => self.push_str("ln("),
-            ButtonId::Log10 => self.push_str("log("),
+            ButtonIdentifier::Ln => self.push_str("ln("),
+            ButtonIdentifier::Log10 => self.push_str("log("),
 
             // Root and power functions
-            ButtonId::Sqrt => self.push_str("sqrt("),
-            ButtonId::Square => self.push_str("sqr("),
-            ButtonId::Cube => self.push_str("cube("),
-            ButtonId::TenPower => self.push_str("pow10("),
+            ButtonIdentifier::Sqrt => self.push_str("sqrt("),
+            ButtonIdentifier::Square => self.push_str("sqr("),
+            ButtonIdentifier::Cube => self.push_str("cube("),
+            ButtonIdentifier::TenPower => self.push_str("pow10("),
 
             // Other functions
-            ButtonId::Factorial => self.push_str("fact("),
-            ButtonId::Inverse => self.push_str("inv("),
-            ButtonId::Abs => self.push_str("abs("),
-            ButtonId::Random => {
+            ButtonIdentifier::Factorial => self.push_str("fact("),
+            ButtonIdentifier::Inverse => self.push_str("inv("),
+            ButtonIdentifier::Abs => self.push_str("abs("),
+            ButtonIdentifier::Random => {
                 // Generate random number immediately and insert it
                 use std::collections::hash_map::DefaultHasher;
                 use std::hash::{Hash, Hasher};
@@ -345,34 +356,34 @@ impl Interface {
             }
 
             // Constants
-            ButtonId::Pi => self.push_str("pi"),
-            ButtonId::E => self.push_str("e"),
+            ButtonIdentifier::Pi => self.push_str("pi"),
+            ButtonIdentifier::E => self.push_str("e"),
 
             // Parentheses and operators
-            ButtonId::LeftParen => self.push_str("("),
-            ButtonId::RightParen => self.push_char(')'),
-            ButtonId::Decimal => self.push_str("."),
+            ButtonIdentifier::LeftParenthesis => self.push_str("("),
+            ButtonIdentifier::RightParenthesis => self.push_char(')'),
+            ButtonIdentifier::Decimal => self.push_str("."),
 
             // Operator buttons that continue the expression
-            ButtonId::Power => self.push_operator('^'),
-            ButtonId::Divide => self.push_operator('/'),
-            ButtonId::Multiply => self.push_operator('*'),
-            ButtonId::Subtract => self.push_operator('-'),
-            ButtonId::Add => self.push_operator('+'),
-            ButtonId::Percent => self.push_operator('%'),
-            ButtonId::Mod => self.push_str(" mod "),
+            ButtonIdentifier::Power => self.push_operator('^'),
+            ButtonIdentifier::Divide => self.push_operator('/'),
+            ButtonIdentifier::Multiply => self.push_operator('*'),
+            ButtonIdentifier::Subtract => self.push_operator('-'),
+            ButtonIdentifier::Add => self.push_operator('+'),
+            ButtonIdentifier::Percent => self.push_operator('%'),
+            ButtonIdentifier::Mod => self.push_str(" mod "),
 
             // Number buttons
-            ButtonId::Zero => self.push_char('0'),
-            ButtonId::One => self.push_char('1'),
-            ButtonId::Two => self.push_char('2'),
-            ButtonId::Three => self.push_char('3'),
-            ButtonId::Four => self.push_char('4'),
-            ButtonId::Five => self.push_char('5'),
-            ButtonId::Six => self.push_char('6'),
-            ButtonId::Seven => self.push_char('7'),
-            ButtonId::Eight => self.push_char('8'),
-            ButtonId::Nine => self.push_char('9'),
+            ButtonIdentifier::Zero => self.push_char('0'),
+            ButtonIdentifier::One => self.push_char('1'),
+            ButtonIdentifier::Two => self.push_char('2'),
+            ButtonIdentifier::Three => self.push_char('3'),
+            ButtonIdentifier::Four => self.push_char('4'),
+            ButtonIdentifier::Five => self.push_char('5'),
+            ButtonIdentifier::Six => self.push_char('6'),
+            ButtonIdentifier::Seven => self.push_char('7'),
+            ButtonIdentifier::Eight => self.push_char('8'),
+            ButtonIdentifier::Nine => self.push_char('9'),
         }
 
         // Update display after any button press except Clear, Backspace, DegRad, and Equals
@@ -423,21 +434,36 @@ impl Interface {
                 );
             }
 
-            if code != EventCode::All {
-                match code {
-                    EventCode::Clicked => {
-                        // Check if the event came from our button matrix
-                        if target == self.button_matrix {
-                            unsafe {
-                                let _ = self.handle_button_matrix_event();
-                            }
-                        }
+            if code == EventCode::Clicked {
+                // Check if the event came from our button matrix
+                if target == self.button_matrix {
+                    unsafe {
+                        let _ = self.handle_button_matrix_event();
                     }
-                    _ => {}
                 }
-            } else {
+            } else if code == EventCode::All {
                 sleep(std::time::Duration::from_millis(10));
             }
         }
+    }
+}
+
+pub fn evaluate_expression(input: &str) -> Result<f64, String> {
+    // Parse the expression
+    let mut parser = Parser::new(input)?;
+    let expression = parser.parse()?;
+
+    // Evaluate the parsed expression
+    Evaluator::evaluate(&expression)
+}
+
+pub fn format_result(result: f64) -> String {
+    if result.fract() == 0.0 && result.abs() < 1e15 {
+        format!("{:.0}", result)
+    } else {
+        format!("{:.10}", result)
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string()
     }
 }
