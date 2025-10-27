@@ -24,7 +24,7 @@ pub use futures as exported_futures;
 pub use task as exported_task;
 pub use virtual_file_system as exported_virtual_file_system;
 
-use task::{JoinHandle, TaskIdentifier};
+use task::{JoinHandle, SpawnerIdentifier, TaskIdentifier};
 use users::UserIdentifier;
 use virtual_file_system::File;
 
@@ -84,6 +84,7 @@ pub async fn execute(
     path: impl AsRef<Path>,
     inputs: Vec<String>,
     standard: Standard,
+    spawner: Option<SpawnerIdentifier>,
 ) -> Result<JoinHandle<isize>> {
     let task_instance = task::get_instance();
 
@@ -121,12 +122,12 @@ pub async fn execute(
     let main = read_data.get_main().ok_or(Error::FailedToGetMainFunction)?;
 
     let (join_handle, _) = task_instance
-        .spawn(task, file_name, None, async move |task| {
+        .spawn(task, file_name, spawner, async move |task| {
             if let Some(new_user) = new_user {
                 task::get_instance().set_user(task, new_user).await.unwrap();
             }
 
-            let standard = standard.transfert(task).await.unwrap();
+            // let standard = standard.transfer(task).await.unwrap();
 
             match main(standard, inputs).await {
                 Ok(_) => 0_isize,
