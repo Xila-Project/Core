@@ -1,5 +1,5 @@
-use alloc::string::String;
-
+use alloc::{fmt, string::String};
+use core::fmt::Debug;
 use file_system::{FileIdentifier, Mode, Path, Size, UniqueFileIdentifier};
 use futures::block_on;
 use task::TaskIdentifier;
@@ -13,6 +13,17 @@ pub struct Standard {
     standard_error: UniqueFileIdentifier,
     task: TaskIdentifier,
     virtual_file_system: &'static VirtualFileSystem<'static>,
+}
+
+impl Debug for Standard {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Standard")
+            .field("standard_in", &self.standard_in)
+            .field("standard_out", &self.standard_out)
+            .field("standard_error", &self.standard_error)
+            .field("task", &self.task)
+            .finish()
+    }
 }
 
 impl Drop for Standard {
