@@ -20,23 +20,6 @@ pub struct Shortcut {
 }
 
 impl Shortcut {
-    pub async fn add(path: &Path) -> Result<()> {
-        let shortcut = Shortcut::read_from_path(path, &mut Vec::new()).await?;
-
-        let new_shortcut_path = SHORTCUT_PATH
-            .append(&shortcut.name)
-            .ok_or(Error::FailedToGetShortcutFilePath)?
-            .append(".json")
-            .ok_or(Error::FailedToGetShortcutFilePath)?;
-
-        virtual_file_system::get_instance()
-            .rename(&path, &new_shortcut_path)
-            .await
-            .map_err(Error::FailedToAddShortcut)?;
-
-        Ok(())
-    }
-
     pub async fn read_from_path(path: &Path, buffer: &mut Vec<u8>) -> Result<Shortcut> {
         let virtual_file_system = virtual_file_system::get_instance();
 

@@ -17,11 +17,12 @@ use home::Home;
 use layout::Layout;
 use login::Login;
 use xila::executable::{self, Standard};
-use xila::file_system::Path;
+use xila::file_system::Permissions;
 use xila::task;
 use xila::users;
 
-use crate::{desk::Desk, error::Error, shortcut::Shortcut};
+use crate::shortcut::SHORTCUT_PATH;
+use crate::{desk::Desk, error::Error};
 
 pub async fn main(standard: Standard, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
     Shell::new(standard).await.main(arguments).await
@@ -60,14 +61,12 @@ impl Shell {
         }
     }
 
-    pub async fn main(&mut self, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
-        if arguments.first().map(|s| s.as_str()) == Some("add_shortcut") {
-            if arguments.len() != 2 {
-                return Err(Error::MissingArguments.into());
-            }
-
-            Shortcut::add(Path::from_str(&arguments[1])).await?;
-        }
+    pub async fn main(&mut self, _: Vec<String>) -> Result<(), NonZeroUsize> {
+        let virtual_file_system = xila::virtual_file_system::get_instance();
+        virtual_file_system
+            .set_permissions(SHORTCUT_PATH, Permissions::ALL_FULL)
+            .await
+            .unwrap();
 
         while self.running {
             self.layout.r#loop().await;
