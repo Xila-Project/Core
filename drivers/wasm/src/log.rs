@@ -27,7 +27,7 @@ pub struct Logger;
 
 impl LoggerTrait for Logger {
     fn enabled(&self, _: Level) -> bool {
-        return true;
+        true
     }
 
     fn write(&self, _: core::fmt::Arguments) {}
