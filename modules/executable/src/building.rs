@@ -12,7 +12,7 @@ pub fn build_crate(path: impl AsRef<Path>) -> Result<PathBuf, String> {
 
     let output = Command::new("cargo")
         .arg("build")
-        .arg("--release")
+        .arg("--profile=release-wasm")
         .arg("--target=wasm32-wasip1")
         .arg("--manifest-path")
         .arg(path.as_ref().join("Cargo.toml"))
