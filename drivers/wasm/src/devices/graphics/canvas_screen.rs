@@ -58,9 +58,7 @@ impl Inner {
         }
 
         // handle remainder
-        for j in i..len {
-            bgra[j] = rgba[j];
-        }
+        bgra[i..len].copy_from_slice(&rgba[i..len]);
     }
 
     fn draw_buffer(&mut self, area: Area, buffer: &[RenderingColor]) -> Result<(), String> {
