@@ -33,7 +33,6 @@ impl KeyboardDevice {
 
         if let Err(e) = sender.try_send((key, state)) {
             log::error!("Failed to send key event: {:?}", e);
-            return;
         }
     }
 
