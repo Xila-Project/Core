@@ -55,6 +55,7 @@ impl Debug for UniqueFileIdentifier {
 
 impl UniqueFileIdentifier {
     const FILE_SYSTEM_IDENTIFIER_POSITION: u8 = FileIdentifier::SIZE_BITS;
+    pub const INVALID_FILE_IDENTIFIER: Self = Self(usize::MAX);
 
     pub const fn new(file_system: FileSystemIdentifier, file: FileIdentifier) -> Self {
         let file_system_identifier = file_system.as_inner();
