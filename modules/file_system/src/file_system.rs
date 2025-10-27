@@ -106,7 +106,7 @@ macro_rules! create_file_system {
 /// #    fn close(&self, _: LocalFileIdentifier) -> Result<()> { todo!() }
 /// #    fn close_all(&self, _: TaskIdentifier) -> Result<()> { todo!() }
 /// #    fn duplicate(&self, _: LocalFileIdentifier) -> Result<LocalFileIdentifier> { todo!() }
-/// #    fn transfert(&self, _: TaskIdentifier, _: LocalFileIdentifier, _: Option<FileIdentifier>) -> Result<LocalFileIdentifier> { todo!() }
+/// #    fn transfer(&self, _: TaskIdentifier, _: LocalFileIdentifier, _: Option<FileIdentifier>) -> Result<LocalFileIdentifier> { todo!() }
 /// #    fn remove(&self, _: &Path) -> Result<()> { todo!() }
 /// #    fn read(&self, _: LocalFileIdentifier, _: &mut [u8], _: Time) -> Result<Size> { todo!() }
 /// #    fn write(&self, _: LocalFileIdentifier, _: &[u8], _: Time) -> Result<Size> { todo!() }
