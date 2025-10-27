@@ -1444,40 +1444,11 @@ os_openat(os_file_handle handle, const char *path, __wasi_oflags_t oflags,
           __wasi_fdflags_t fd_flags, __wasi_lookupflags_t lookup_flags,
           wasi_libc_file_access_mode access_mode, os_file_handle *out)
 {
-    if (oflags & __WASI_O_DIRECTORY)
-    {
-        if (path[0] == '.')
-        {
-            size_t path_size = strlen(path) + 1;
-            char new_path[path_size];
-            strncpy(new_path, path, path_size);
-            new_path[0] = '/';
+    XilaFileSystemMode mode = into_xila_mode(access_mode);
+    XilaFileSystemOpen open = into_xila_open(oflags);
+    XilaFileSystemStatus status = into_xila_status(fd_flags);
 
-            return into_wasi_error(xila_file_system_open_directory(new_path, out));
-        }
-        else
-        {
-            return into_wasi_error(xila_file_system_open_directory(path, out));
-        }
-    }
-    else
-    {
-        XilaFileSystemMode mode = into_xila_mode(access_mode);
-        XilaFileSystemOpen open = into_xila_open(oflags);
-        XilaFileSystemStatus status = into_xila_status(fd_flags);
-
-        if (path[0] != '/')
-        {
-            size_t path_size = strlen(path) + 1;
-            char new_path[path_size];
-            strncpy(new_path + 1, path, path_size);
-            new_path[0] = '/';
-
-            return into_wasi_error(xila_file_system_open(new_path, mode, open, status, out));
-        }
-
-        return into_wasi_error(xila_file_system_open(path, mode, open, status, out));
-    }
+    return into_wasi_error(xila_file_system_open_at(handle, path, oflags & __WASI_O_DIRECTORY, mode, open, status, out));
 }
 
 /**
