@@ -50,7 +50,7 @@ unsafe extern "C" {
 }
 
 const fn get_heap_start() -> *mut u8 {
-    &raw mut __heap_base as *mut u8
+    &raw mut __heap_base
 }
 
 const PAGE_SIZE: usize = 65536;
@@ -104,6 +104,12 @@ pub struct MemoryManager(CriticalSectionMutex<RefCell<Inner>>);
 // Safety: We ensure thread safety through CriticalSectionMutex
 unsafe impl Send for MemoryManager {}
 unsafe impl Sync for MemoryManager {}
+
+impl Default for MemoryManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl MemoryManager {
     /// Create a new MemoryManager using the provided memory
