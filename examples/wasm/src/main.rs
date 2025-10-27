@@ -210,7 +210,7 @@ async fn main() {
         .unwrap();
 
     // wait some time to show the bootsplash
-    task::Manager::sleep(Duration::from_secs(5)).await;
+    task::Manager::sleep(Duration::from_secs(2)).await;
 
     bootsplash.stop(graphics_manager).await.unwrap();
 
