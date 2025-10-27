@@ -278,7 +278,7 @@ impl FileSystemTraits for FileSystem {
         Ok(file_identifier)
     }
 
-    fn transfert(
+    fn transfer(
         &self,
         new_task: task::TaskIdentifier,
         file_identifier: LocalFileIdentifier,

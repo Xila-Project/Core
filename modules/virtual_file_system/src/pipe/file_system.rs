@@ -183,7 +183,7 @@ impl FileSystem {
         Ok(new_file)
     }
 
-    pub async fn transfert(
+    pub async fn transfer(
         &self,
         new_task: TaskIdentifier,
         file: LocalFileIdentifier,
@@ -410,7 +410,7 @@ mod tests {
             .create_unnamed_pipe(task_id, status, buffer_size)
             .await
             .unwrap();
-        let new_file = fs.transfert(new_task_id, read_file, None).await.unwrap();
+        let new_file = fs.transfer(new_task_id, read_file, None).await.unwrap();
 
         assert!(fs.0.read().await.open_pipes.contains_key(&new_file));
         assert!(!fs.0.read().await.open_pipes.contains_key(&read_file));

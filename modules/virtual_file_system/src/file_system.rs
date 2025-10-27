@@ -935,7 +935,7 @@ impl<'a> VirtualFileSystem<'a> {
                     .get(&file_system)
                     .ok_or(Error::InvalidIdentifier)?
                     .inner
-                    .transfert(new_task, local_file, new_file)?
+                    .transfer(new_task, local_file, new_file)?
                     .into_unique_file_identifier(file_system)
                     .1,
             )
@@ -946,19 +946,19 @@ impl<'a> VirtualFileSystem<'a> {
         let new_file = match file_system {
             FileSystemIdentifier::PIPE_FILE_SYSTEM => {
                 self.pipe_file_system
-                    .transfert(new_task, file, new_file)
+                    .transfer(new_task, file, new_file)
                     .await?
             }
             FileSystemIdentifier::DEVICE_FILE_SYSTEM => {
                 let underlying_file = underlying_file.ok_or(Error::InternalError)?;
 
                 self.device_file_system
-                    .transfert(new_task, file, underlying_file, new_file)
+                    .transfer(new_task, file, underlying_file, new_file)
                     .await?
             }
             _ => Self::get_file_system_from_identifier(&file_systems, file_system)?
                 .inner
-                .transfert(new_task, file, new_file)?,
+                .transfer(new_task, file, new_file)?,
         };
 
         let (_, new_file) = new_file.into_unique_file_identifier(file_system);
@@ -1731,7 +1731,7 @@ mod tests {
             todo!()
         }
 
-        fn transfert(
+        fn transfer(
             &self,
             _: TaskIdentifier,
             _: LocalFileIdentifier,

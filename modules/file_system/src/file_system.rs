@@ -245,7 +245,7 @@ pub trait FileSystemTraits: Send + Sync {
     ///
     /// * [`Error::InvalidIdentifier`] - File identifier is invalid
     /// * [`Error::FailedToGetTaskInformations`] - Target task is invalid
-    fn transfert(
+    fn transfer(
         &self,
         new_task: TaskIdentifier,
         file: LocalFileIdentifier,
