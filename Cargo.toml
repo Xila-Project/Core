@@ -10,7 +10,7 @@ rust-version = "1.90.0"
 inherits = "release"
 opt-level = 's'
 strip = true
-
+lto = true
 
 [dependencies]
 # - WASM
