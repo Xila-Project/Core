@@ -137,3 +137,167 @@ impl Context {
         result
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_context_new() {
+        let context = Context::new();
+        assert!(block_on(context.0.read()).task.is_none());
+        assert!(
+            block_on(context.0.read())
+                .opened_file_identifiers_paths
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn test_get_instance() {
+        let _ = get_instance();
+    }
+
+    #[test]
+    fn test_insert_and_remove_opened_file_identifier_path() {
+        let context = Context::new();
+        let task = TaskIdentifier::new(1);
+        let file_id = UniqueFileIdentifier::from_raw(42);
+        let parent_id = Some(UniqueFileIdentifier::from_raw(10));
+        let path = Path::from_str("test.txt");
+
+        context.insert_opened_file_identifier_path(task, file_id, parent_id, path);
+
+        let inner = block_on(context.0.read());
+        assert!(
+            inner
+                .opened_file_identifiers_paths
+                .contains_key(&(task, file_id))
+        );
+        drop(inner);
+
+        context.remove_opened_file_identifier_path(task, file_id);
+
+        let inner = block_on(context.0.read());
+        assert!(
+            !inner
+                .opened_file_identifiers_paths
+                .contains_key(&(task, file_id))
+        );
+    }
+
+    #[test]
+    fn test_insert_with_none_parent() {
+        let context = Context::new();
+        let task = TaskIdentifier::new(1);
+        let file_id = UniqueFileIdentifier::from_raw(42);
+        let path = Path::from_str("test.txt");
+
+        context.insert_opened_file_identifier_path(task, file_id, None, path);
+
+        let inner = block_on(context.0.read());
+        let (_, parent) = inner
+            .opened_file_identifiers_paths
+            .get(&(task, file_id))
+            .unwrap();
+        assert_eq!(*parent, UniqueFileIdentifier::INVALID_FILE_IDENTIFIER);
+    }
+
+    #[test]
+    fn test_get_full_path_single_level() {
+        let context = Context::new();
+        let task = TaskIdentifier::new(1);
+        let file_id = UniqueFileIdentifier::from_raw(42);
+        let path = Path::from_str("base");
+
+        context.insert_opened_file_identifier_path(task, file_id, None, path);
+
+        let result = context.get_full_path(task, file_id, Path::from_str("file.txt"));
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_get_full_path_nested() {
+        let context = Context::new();
+        let task = TaskIdentifier::new(1);
+        let root_id = UniqueFileIdentifier::from_raw(1);
+        let dir_id = UniqueFileIdentifier::from_raw(2);
+        let file_id = UniqueFileIdentifier::from_raw(3);
+
+        context.insert_opened_file_identifier_path(task, root_id, None, Path::from_str("root"));
+        context.insert_opened_file_identifier_path(
+            task,
+            dir_id,
+            Some(root_id),
+            Path::from_str("dir"),
+        );
+        context.insert_opened_file_identifier_path(
+            task,
+            file_id,
+            Some(dir_id),
+            Path::from_str("subdir"),
+        );
+
+        let result = context.get_full_path(task, file_id, Path::from_str("file.txt"));
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_get_full_path_nonexistent() {
+        let context = Context::new();
+        let task = TaskIdentifier::new(1);
+        let file_id = UniqueFileIdentifier::from_raw(999);
+
+        let result = context.get_full_path(task, file_id, Path::from_str("file.txt"));
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_remove_nonexistent_file() {
+        let context = Context::new();
+        let task = TaskIdentifier::new(1);
+        let file_id = UniqueFileIdentifier::from_raw(999);
+
+        context.remove_opened_file_identifier_path(task, file_id);
+
+        let inner = block_on(context.0.read());
+        assert!(
+            !inner
+                .opened_file_identifiers_paths
+                .contains_key(&(task, file_id))
+        );
+    }
+
+    #[test]
+    fn test_multiple_tasks() {
+        let context = Context::new();
+        let task1 = TaskIdentifier::new(1);
+        let task2 = TaskIdentifier::new(2);
+        let file_id = UniqueFileIdentifier::from_raw(42);
+
+        context.insert_opened_file_identifier_path(
+            task1,
+            file_id,
+            None,
+            Path::from_str("task1.txt"),
+        );
+        context.insert_opened_file_identifier_path(
+            task2,
+            file_id,
+            None,
+            Path::from_str("task2.txt"),
+        );
+
+        let inner = block_on(context.0.read());
+        assert!(
+            inner
+                .opened_file_identifiers_paths
+                .contains_key(&(task1, file_id))
+        );
+        assert!(
+            inner
+                .opened_file_identifiers_paths
+                .contains_key(&(task2, file_id))
+        );
+    }
+}
