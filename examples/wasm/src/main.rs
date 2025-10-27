@@ -8,7 +8,7 @@ drivers_wasm::memory::instantiate_global_allocator!();
 async fn main() {
     extern crate alloc;
 
-    use alloc::string::String;
+    use alloc::vec;
     use drivers_wasm::devices::graphics::GraphicsDevices;
     use xila::bootsplash::Bootsplash;
     use xila::executable::{self, Standard, mount_static_executables};
@@ -131,8 +131,6 @@ async fn main() {
 
     // Mount static executables
 
-    let virtual_file_system = virtual_file_system;
-
     mount_static_executables!(
         virtual_file_system,
         task,
@@ -215,7 +213,7 @@ async fn main() {
     bootsplash.stop(graphics_manager).await.unwrap();
 
     // - - Execute the shell
-    let _ = executable::execute("/binaries/graphical_shell", vec![], standard)
+    let _ = executable::execute("/binaries/graphical_shell", vec![], standard, None)
         .await
         .unwrap()
         .join()
