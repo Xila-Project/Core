@@ -35,6 +35,10 @@ impl PathOwned {
         }
     }
 
+    pub fn new_with_capacity(capacity: usize) -> Self {
+        PathOwned(String::with_capacity(capacity))
+    }
+
     pub fn root() -> PathOwned {
         PathOwned("/".to_string())
     }
