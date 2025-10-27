@@ -120,7 +120,7 @@ macro_rules! mount_static_executables {
 
         $(
             $Virtual_file_system.mount_static_device($Task_identifier, $Path, create_device!($Device)).await?;
-            $Virtual_file_system.set_permissions($Path, Permissions::EXECUTABLE ).await?;
+            $Virtual_file_system.set_permissions($Path, Permissions::EXECUTABLE).await?;
         )*
 
         Ok(())
