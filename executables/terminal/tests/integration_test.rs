@@ -157,7 +157,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/terminal", vec![], standard)
+    let result = executable::execute("/binaries/terminal", vec![], standard, None)
         .await
         .unwrap()
         .join()

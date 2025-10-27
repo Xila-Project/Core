@@ -115,7 +115,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = xila::executable::execute("/binaries/command_line_shell", vec![], standard)
+    let result = xila::executable::execute("/binaries/command_line_shell", vec![], standard, None)
         .await
         .unwrap()
         .join()

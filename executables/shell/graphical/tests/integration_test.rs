@@ -184,7 +184,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let result = executable::execute("/binaries/graphical_shell", vec![], standard)
+    let result = executable::execute("/binaries/graphical_shell", vec![], standard, None)
         .await
         .unwrap()
         .join()

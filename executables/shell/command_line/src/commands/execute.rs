@@ -55,7 +55,7 @@ impl Shell {
 
         let arguments: Vec<String> = arguments.into_iter().map(|s| s.to_string()).collect();
 
-        let _ = execute(path, arguments, standard)
+        let _ = execute(path, arguments, standard, None)
             .await
             .map_err(|_| Error::FailedToExecuteCommand)?
             .join()

@@ -81,7 +81,7 @@ async fn inner_main(task: TaskIdentifier) -> Result<()> {
         virtual_file_system::get_instance(),
     );
 
-    xila::executable::execute("/binaries/command_line_shell", vec![], standard).await?;
+    xila::executable::execute("/binaries/command_line_shell", vec![], standard, None).await?;
 
     while terminal.event_handler().await? {
         task::Manager::sleep(Duration::from_millis(10)).await;
