@@ -1,4 +1,5 @@
 use crate::parser::{BinaryOperator, Expression, UnaryOperator};
+use crate::token::FunctionToken;
 
 pub struct Evaluator;
 
@@ -43,46 +44,46 @@ impl Evaluator {
                     UnaryOperator::Minus => Ok(-val),
                 }
             }
-            Expression::FunctionCall { name, arg } => {
+            Expression::FunctionCall { function, arg } => {
                 let arg_val = Self::evaluate(arg)?;
 
-                match name.as_str() {
-                    "sqrt" => {
+                match function {
+                    FunctionToken::SquareRoot => {
                         if arg_val < 0.0 {
                             Err("Square root of negative number".to_string())
                         } else {
                             Ok(arg_val.sqrt())
                         }
                     }
-                    "sin" => Ok(arg_val.sin()),
-                    "cos" => Ok(arg_val.cos()),
-                    "tan" => Ok(arg_val.tan()),
-                    "sind" => Ok((arg_val * std::f64::consts::PI / 180.0).sin()), // degrees
-                    "cosd" => Ok((arg_val * std::f64::consts::PI / 180.0).cos()), // degrees
-                    "tand" => Ok((arg_val * std::f64::consts::PI / 180.0).tan()), // degrees
-                    "sinh" => Ok(arg_val.sinh()),
-                    "cosh" => Ok(arg_val.cosh()),
-                    "tanh" => Ok(arg_val.tanh()),
-                    "log" => {
+                    FunctionToken::Sine => Ok(arg_val.sin()),
+                    FunctionToken::Cosine => Ok(arg_val.cos()),
+                    FunctionToken::Tangent => Ok(arg_val.tan()),
+                    FunctionToken::Sind => Ok((arg_val * std::f64::consts::PI / 180.0).sin()), // degrees
+                    FunctionToken::Cosd => Ok((arg_val * std::f64::consts::PI / 180.0).cos()), // degrees
+                    FunctionToken::Tand => Ok((arg_val * std::f64::consts::PI / 180.0).tan()), // degrees
+                    FunctionToken::HyperbolicSine => Ok(arg_val.sinh()),
+                    FunctionToken::HyperbolicCosine => Ok(arg_val.cosh()),
+                    FunctionToken::HyperbolicTangent => Ok(arg_val.tanh()),
+                    FunctionToken::Logarithm => {
                         if arg_val <= 0.0 {
                             Err("Logarithm of non-positive number".to_string())
                         } else {
                             Ok(arg_val.log10())
                         }
                     }
-                    "ln" => {
+                    FunctionToken::NaturalLogarithm => {
                         if arg_val <= 0.0 {
                             Err("Natural logarithm of non-positive number".to_string())
                         } else {
                             Ok(arg_val.ln())
                         }
                     }
-                    "exp" => Ok(arg_val.exp()),
-                    "abs" => Ok(arg_val.abs()),
-                    "sqr" => Ok(arg_val * arg_val),
-                    "cube" => Ok(arg_val * arg_val * arg_val),
-                    "pow10" => Ok(10.0_f64.powf(arg_val)),
-                    "fact" => {
+                    FunctionToken::Exponential => Ok(arg_val.exp()),
+                    FunctionToken::AbsoluteValue => Ok(arg_val.abs()),
+                    FunctionToken::Sqr => Ok(arg_val * arg_val),
+                    FunctionToken::Cube => Ok(arg_val * arg_val * arg_val),
+                    FunctionToken::Power10 => Ok(10.0_f64.powf(arg_val)),
+                    FunctionToken::Factorial => {
                         if arg_val < 0.0 || arg_val.fract() != 0.0 {
                             Err("Factorial requires non-negative integer".to_string())
                         } else if arg_val > 170.0 {
@@ -96,14 +97,13 @@ impl Evaluator {
                             Ok(result)
                         }
                     }
-                    "inv" => {
+                    FunctionToken::Inverse => {
                         if arg_val == 0.0 {
                             Err("Division by zero".to_string())
                         } else {
                             Ok(1.0 / arg_val)
                         }
                     }
-                    _ => Err(format!("Unknown function: {}", name)),
                 }
             }
         }
