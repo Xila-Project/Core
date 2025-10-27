@@ -47,8 +47,8 @@ impl Debug for UniqueFileIdentifier {
 
         formatter
             .debug_struct("UniqueFileIdentifier")
-            .field("File_system_identifier", &file_system_identifier)
-            .field("File_identifier", &file_identifier)
+            .field("file_system_identifier", &file_system_identifier)
+            .field("file_identifier", &file_identifier)
             .finish()
     }
 }
