@@ -163,7 +163,7 @@ impl Standard {
         (self.standard_in, self.standard_out, self.standard_error)
     }
 
-    pub(crate) async fn transfert(mut self, task: TaskIdentifier) -> Result<Self> {
+    pub async fn transfer(mut self, task: TaskIdentifier) -> file_system::Result<Self> {
         self.standard_in = self
             .virtual_file_system
             .transfert(
