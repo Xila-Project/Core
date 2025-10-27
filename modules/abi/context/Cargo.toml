@@ -7,3 +7,6 @@ edition = "2024"
 task = { workspace = true }
 futures = { workspace = true }
 synchronization = { workspace = true }
+file_system = { workspace = true }
+log = { workspace = true }
+smol_str = { workspace = true }
