@@ -1,9 +1,5 @@
-
-
-
-
 use std::{
-    fs::{create_dir, read_dir, rename, OpenOptions},
+    fs::{OpenOptions, create_dir, read_dir, rename},
     io::{Read, Write},
 };
 
@@ -98,27 +94,27 @@ fn test_directory() {
 }
 
 /// Allocate memory
-/// 
+///
 /// # Safety
-/// 
+///
 /// This function is unsafe because it may return an invalid pointer.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn Allocate(size: usize) -> *mut u8 {
     let layout = std::alloc::Layout::from_size_align(size, std::mem::size_of::<usize>()).unwrap();
 
-    std::alloc::alloc(layout)
+    unsafe { std::alloc::alloc(layout) }
 }
 
 /// Deallocate memory
-/// 
+///
 /// # Safety
-/// 
+///
 /// This function is unsafe because it may cause undefined behavior if the pointer is invalid.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn Deallocate(pointer: *mut u8, size: usize) {
     let layout = std::alloc::Layout::from_size_align(size, std::mem::size_of::<usize>()).unwrap();
 
-    std::alloc::dealloc(pointer, layout)
+    unsafe { std::alloc::dealloc(pointer, layout) }
 }
 
 fn main() -> Result<(), ()> {
