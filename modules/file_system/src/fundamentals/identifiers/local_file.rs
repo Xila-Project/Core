@@ -46,6 +46,18 @@ use super::{FileIdentifier, FileIdentifierInner, FileSystemIdentifier, UniqueFil
 #[repr(transparent)]
 pub struct LocalFileIdentifier(usize);
 
+impl Debug for LocalFileIdentifier {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let (task, file) = self.split();
+
+        formatter
+            .debug_struct("LocalFileIdentifier")
+            .field("task", &task)
+            .field("file", &file)
+            .finish()
+    }
+}
+
 impl LocalFileIdentifier {
     const TASK_POSITION: u8 = FileIdentifier::SIZE_BITS;
 
@@ -87,18 +99,6 @@ impl LocalFileIdentifier {
 
     pub const fn into_inner(self) -> usize {
         self.0
-    }
-}
-
-impl Debug for LocalFileIdentifier {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let (task, file) = self.split();
-
-        formatter
-            .debug_struct("LocalFileIdentifier")
-            .field("Task", &task)
-            .field("File", &file)
-            .finish()
     }
 }
 

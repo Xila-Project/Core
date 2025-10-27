@@ -225,12 +225,10 @@ async fn main() {
     .await
     .unwrap();
 
-    let duplicated_standard = standard.duplicate().await.unwrap();
-
     let _ = executable::execute(
         "/binaries/wasm",
         vec!["--install".to_string(), "/binaries/calculator".to_string()],
-        duplicated_standard,
+        standard,
         None,
     )
     .await
@@ -272,6 +270,16 @@ async fn main() {
     task::Manager::sleep(Duration::from_secs(2)).await;
 
     bootsplash.stop(graphics_manager).await.unwrap();
+
+    let standard = Standard::open(
+        &"/devices/standard_in",
+        &"/devices/standard_out",
+        &"/devices/standard_error",
+        task,
+        virtual_file_system::get_instance(),
+    )
+    .await
+    .unwrap();
 
     // - - Execute the shell
     let _ = executable::execute("/binaries/graphical_shell", vec![], standard, None)

@@ -28,14 +28,15 @@ impl Debug for Standard {
 
 impl Drop for Standard {
     fn drop(&mut self) {
-        let _ = block_on(self.virtual_file_system.close(self.standard_in, self.task));
+        block_on(self.virtual_file_system.close(self.standard_in, self.task)).unwrap();
 
-        let _ = block_on(self.virtual_file_system.close(self.standard_out, self.task));
+        block_on(self.virtual_file_system.close(self.standard_out, self.task)).unwrap();
 
-        let _ = block_on(
+        block_on(
             self.virtual_file_system
                 .close(self.standard_error, self.task),
-        );
+        )
+        .unwrap();
     }
 }
 

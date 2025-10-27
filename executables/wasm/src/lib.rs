@@ -14,7 +14,7 @@ use alloc::{
     vec::Vec,
 };
 use core::num::NonZeroUsize;
-use core::{mem::forget, pin::Pin};
+use core::pin::Pin;
 use xila::executable::ArgumentsParser;
 use xila::executable::{Standard, implement_executable_device};
 use xila::file_system::{Mode, Path};
@@ -107,13 +107,13 @@ pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(
 
     let function_name = if install { Some("__install") } else { None };
 
+    let standard = standard
+        .duplicate()
+        .await
+        .map_err(Error::FailedToDuplicateStandard)?;
+
     if let Some(new_thread_executor) = NEW_THREAD_EXECUTOR.try_get() {
         let spawner_identifier = new_thread_executor().await;
-
-        let standard = standard
-            .duplicate()
-            .await
-            .map_err(Error::FailedToDuplicateStandard)?;
 
         task::get_instance()
             .spawn(
@@ -130,7 +130,7 @@ pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(
 
                     let (standard_in, standard_out, standard_error) = standard.split();
 
-                    virtual_machine::get_instance()
+                    let result = virtual_machine::get_instance()
                         .execute(
                             buffer,
                             stack_size,
@@ -139,11 +139,18 @@ pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(
                             vec![],
                         )
                         .await
-                        .map_err(Error::FailedToExecute)
+                        .map_err(Error::FailedToExecute)?;
+
+                    core::mem::forget(standard); // Streams are closed by WAMR
+
+                    Ok(result)
                 },
             )
             .await
-            .map_err(Error::FailedToSpawnTask)?;
+            .map_err(Error::FailedToSpawnTask)?
+            .0
+            .join()
+            .await?;
     } else {
         let (standard_in, standard_out, standard_error) = standard.split();
 
@@ -157,6 +164,8 @@ pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(
             )
             .await
             .map_err(Error::FailedToExecute)?;
+
+        core::mem::forget(standard); // Streams are closed by WAMR
     }
 
     Ok(())
@@ -164,10 +173,7 @@ pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(
 
 pub async fn main(standard: Standard, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
     match inner_main(&standard, arguments).await {
-        Ok(()) => {
-            forget(standard);
-            Ok(())
-        }
+        Ok(()) => Ok(()),
         Err(error) => {
             standard.print_error_line(&error.to_string()).await;
             Err(error.into())

@@ -127,7 +127,7 @@ pub async fn execute(
                 task::get_instance().set_user(task, new_user).await.unwrap();
             }
 
-            // let standard = standard.transfer(task).await.unwrap();
+            let standard = standard.transfer(task).await.unwrap();
 
             match main(standard, inputs).await {
                 Ok(_) => 0_isize,
