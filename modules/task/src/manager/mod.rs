@@ -17,6 +17,7 @@ mod tests;
 // - Re-exports
 
 pub(crate) use metadata::*;
+pub use spawner::*;
 
 // Manager module - core Manager structure and initialization
 
