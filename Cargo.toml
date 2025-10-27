@@ -179,6 +179,7 @@ members = [
   "drivers/shared",
   "drivers/std",
   "drivers/wasm",
+  "modules/virtual_machine/tests/wasm_test",
 ]
 
 [patch.crates-io]
