@@ -4,18 +4,35 @@ use alloc::string::String;
 pub struct OptionArgument<'a>(&'a [String]);
 
 impl<'a> OptionArgument<'a> {
-    pub fn get_option(&self, name: &str) -> Option<&'a str> {
+    pub fn get_option_long(&self, name: &str) -> Option<&'a str> {
         self.0
             .iter()
-            .map(|s| s.trim_start_matches('-'))
-            .find(|s| s.starts_with(name))
-            .map(|s| {
-                if let Some((_, value)) = s.split_once('=') {
-                    value
+            .filter_map(|s| s.strip_prefix("--"))
+            .map(|s| s.split_once('=').unwrap_or((s, "")))
+            .find_map(|(key, value)| if key == name { Some(value) } else { None })
+    }
+
+    pub fn get_option_short(&self, name: char) -> Option<&'a str> {
+        self.0
+            .iter()
+            .filter_map(|s| s.strip_prefix('-'))
+            .map(|s| s.split_once('=').unwrap_or((s, "")))
+            .find_map(|(key, value)| {
+                if key.chars().next()? == name {
+                    Some(value)
                 } else {
-                    ""
+                    None
                 }
             })
+    }
+
+    pub fn get_option(&self, name: &str) -> Option<&'a str> {
+        if let Some(first_char) = name.chars().next() {
+            self.get_option_long(name)
+                .or_else(|| self.get_option_short(first_char))
+        } else {
+            None
+        }
     }
 }
 
@@ -72,6 +89,7 @@ impl<'a> Iterator for ArgumentsParser<'a> {
 #[cfg(test)]
 mod tests {
     use alloc::{string::ToString, vec, vec::Vec};
+    extern crate std;
 
     use super::*;
 
@@ -159,6 +177,8 @@ mod tests {
             "pos3".to_string(),
         ];
         let mut parser = ArgumentsParser::new(&args);
+
+        std::println!("{:?}", parser.clone().collect::<Vec<_>>());
 
         let first = parser.next().unwrap();
         assert_eq!(first.value, Some("pos1"));
