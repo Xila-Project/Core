@@ -139,7 +139,7 @@ impl Standard {
         self.task
     }
 
-    pub async fn duplicate(&self) -> Result<Self> {
+    pub async fn duplicate(&self) -> file_system::Result<Self> {
         let standard_in = self
             .virtual_file_system
             .duplicate_file_identifier(self.standard_in, self.task)
