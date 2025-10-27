@@ -905,7 +905,7 @@ impl<'a> VirtualFileSystem<'a> {
         Ok(())
     }
 
-    pub async fn transfert(
+    pub async fn transfer(
         &self,
         file: UniqueFileIdentifier,
         current_task: TaskIdentifier,
@@ -1282,7 +1282,7 @@ impl<'a> VirtualFileSystem<'a> {
         };
 
         let standard_in = self
-            .transfert(
+            .transfer(
                 standard_in,
                 current_task,
                 new_task,
@@ -1290,7 +1290,7 @@ impl<'a> VirtualFileSystem<'a> {
             )
             .await?;
         let standard_error = self
-            .transfert(
+            .transfer(
                 standard_error,
                 current_task,
                 new_task,
@@ -1298,7 +1298,7 @@ impl<'a> VirtualFileSystem<'a> {
             )
             .await?;
         let standard_out = self
-            .transfert(
+            .transfer(
                 standard_out,
                 current_task,
                 new_task,

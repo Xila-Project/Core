@@ -177,7 +177,7 @@ impl Standard {
     pub async fn transfer(mut self, task: TaskIdentifier) -> file_system::Result<Self> {
         self.standard_in = self
             .virtual_file_system
-            .transfert(
+            .transfer(
                 self.standard_in,
                 self.task,
                 task,
@@ -187,7 +187,7 @@ impl Standard {
 
         self.standard_out = self
             .virtual_file_system
-            .transfert(
+            .transfer(
                 self.standard_out,
                 self.task,
                 task,
@@ -197,7 +197,7 @@ impl Standard {
 
         self.standard_error = self
             .virtual_file_system
-            .transfert(
+            .transfer(
                 self.standard_error,
                 self.task,
                 task,
