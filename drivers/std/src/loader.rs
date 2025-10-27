@@ -72,7 +72,7 @@ pub async fn load_to_virtual_file_system<'a>(
     let file = virtual_file_system::File::open(
         virtual_file_system,
         &destination_path.as_ref(),
-        Flags::new(Mode::READ_ONLY, Some(Open::CREATE), None),
+        Flags::new(Mode::READ_ONLY, Some(Open::new(true, false, true)), None),
     )
     .await?;
 
