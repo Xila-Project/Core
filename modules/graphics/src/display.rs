@@ -104,6 +104,10 @@ impl Display {
         })
     }
 
+    pub fn get_lvgl_display(&self) -> *mut lvgl::lv_display_t {
+        self.display
+    }
+
     pub fn get_object(&self) -> *mut lvgl::lv_obj_t {
         unsafe { lvgl::lv_display_get_screen_active(self.display) }
     }
