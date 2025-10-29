@@ -31,3 +31,4 @@ pub use window::*;
 pub mod stubs;
 pub use logo::*;
 pub mod fonts;
+pub mod theme;
