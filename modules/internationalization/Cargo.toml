@@ -1,0 +1,20 @@
+[package]
+name = "internationalization"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+syn = { workspace = true }
+quote = { workspace = true }
+proc-macro2 = { workspace = true }
+toml = { version = "0.9.8" }
+
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
+tempfile = { version = "3.3" }
+
+[features]
+std = []
+
+[[test]]
+name = "tests"
+path = "tests/tests.rs"
