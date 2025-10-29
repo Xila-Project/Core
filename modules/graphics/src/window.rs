@@ -1,12 +1,8 @@
-use alloc::boxed::Box;
-
-use core::{mem::forget, str};
-
-use alloc::collections::VecDeque;
-
-use crate::{Color, Error, EventKind, Result, event::Event};
-
 use super::lvgl;
+use crate::{Color, Error, EventKind, Result, event::Event};
+use alloc::boxed::Box;
+use alloc::collections::VecDeque;
+use core::{mem::forget, str};
 
 struct UserData {
     pub queue: VecDeque<Event>,
@@ -94,6 +90,7 @@ impl Window {
                 lvgl::lv_event_code_t_LV_EVENT_ALL,
                 &mut user_data.queue as *mut _ as *mut core::ffi::c_void,
             );
+            lvgl::lv_obj_add_flag(window, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_EVENT_BUBBLE);
             lvgl::lv_obj_set_user_data(window, Box::into_raw(user_data) as *mut core::ffi::c_void);
             // Set the size of the window to 100% of the parent object.
             lvgl::lv_obj_set_size(window, lvgl::lv_pct(100), lvgl::lv_pct(100));

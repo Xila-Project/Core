@@ -1,9 +1,9 @@
-use alloc::{format, string::String};
-use xila::graphics::{self, lvgl, theme};
-use xila::shared::unix_to_human_time;
-use xila::time;
-
 use crate::error::{Error, Result};
+use alloc::{format, string::String};
+use core::ptr::null_mut;
+use xila::graphics::{self, EventKind, lvgl, theme};
+use xila::shared::unix_to_human_time;
+use xila::{log, time};
 
 pub struct Layout {
     window: *mut lvgl::lv_obj_t,
@@ -18,6 +18,85 @@ pub struct Layout {
 impl Drop for Layout {
     fn drop(&mut self) {
         unsafe { lvgl::lv_obj_delete(self.window) }
+    }
+}
+
+/// Keyboard event handler.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+pub unsafe extern "C" fn keyboard_event_handler(event: *mut lvgl::lv_event_t) {
+    unsafe {
+        let code = lvgl::lv_event_get_code(event);
+        let code = EventKind::from_lvgl_code(code);
+        let keyboard = lvgl::lv_event_get_user_data(event) as *mut lvgl::lv_obj_t;
+
+        if keyboard.is_null() {
+            return;
+        }
+
+        match code {
+            EventKind::Ready => {
+                let focused_input = lvgl::lv_keyboard_get_textarea(keyboard);
+
+                if focused_input.is_null() {
+                    return;
+                }
+
+                lvgl::lv_obj_send_event(
+                    focused_input,
+                    EventKind::Ready.into_lvgl_code(),
+                    null_mut(),
+                );
+
+                lvgl::lv_keyboard_set_textarea(keyboard, null_mut());
+                lvgl::lv_obj_add_flag(keyboard, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
+            }
+            EventKind::Cancel => {
+                lvgl::lv_keyboard_set_textarea(keyboard, null_mut());
+                lvgl::lv_obj_add_flag(keyboard, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
+            }
+
+            _ => {}
+        }
+    }
+}
+
+/// Screen event handler.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+pub unsafe extern "C" fn screen_event_handler(event: *mut lvgl::lv_event_t) {
+    unsafe {
+        let code = lvgl::lv_event_get_code(event);
+        let code = EventKind::from_lvgl_code(code);
+        let target = lvgl::lv_event_get_target_obj(event);
+        let keyboard = lvgl::lv_event_get_user_data(event) as *mut lvgl::lv_obj_t;
+
+        if target.is_null() || keyboard.is_null() {
+            return;
+        }
+
+        log::information!("event screen : {code:?}");
+
+        match code {
+            EventKind::Focused => {
+                if lvgl::lv_obj_has_class(target, &lvgl::lv_textarea_class) {
+                    lvgl::lv_keyboard_set_textarea(keyboard, target);
+                    lvgl::lv_obj_remove_flag(keyboard, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
+                    lvgl::lv_obj_move_foreground(keyboard);
+                }
+            }
+            EventKind::Defocused => {
+                if lvgl::lv_obj_has_class(target, &lvgl::lv_textarea_class) {
+                    lvgl::lv_keyboard_set_textarea(keyboard, null_mut());
+                    lvgl::lv_obj_add_flag(keyboard, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
+                }
+            }
+            _ => {}
+        }
     }
 }
 
@@ -47,7 +126,7 @@ impl Layout {
         self.window
     }
 
-    pub async fn new() -> Result<Self> {
+    pub async fn new(show_keyboard: bool) -> Result<Self> {
         let _lock = graphics::get_instance().lock().await; // Lock the graphics
 
         // - Create a window
@@ -147,13 +226,51 @@ impl Layout {
             if body.is_null() {
                 return Err(Error::FailedToCreateObject);
             }
-
+            lvgl::lv_obj_add_flag(body, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_EVENT_BUBBLE);
             lvgl::lv_obj_set_width(body, lvgl::lv_pct(100));
             lvgl::lv_obj_set_flex_grow(body, 1);
             lvgl::lv_obj_set_style_pad_all(body, 0, lvgl::LV_STATE_DEFAULT);
             lvgl::lv_obj_set_style_border_width(body, 0, lvgl::LV_STATE_DEFAULT);
 
             body
+        };
+
+        // - Create a keyboard
+        unsafe {
+            let keyboard = lvgl::lv_keyboard_create(window);
+
+            if keyboard.is_null() {
+                return Err(Error::FailedToCreateObject);
+            }
+
+            lvgl::lv_obj_add_flag(keyboard, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
+
+            if show_keyboard {
+                lvgl::lv_obj_add_event_cb(
+                    window,
+                    Some(screen_event_handler),
+                    EventKind::Focused.into_lvgl_code(),
+                    keyboard as *mut _,
+                );
+                lvgl::lv_obj_add_event_cb(
+                    window,
+                    Some(screen_event_handler),
+                    EventKind::Defocused.into_lvgl_code(),
+                    keyboard as *mut _,
+                );
+                lvgl::lv_obj_add_event_cb(
+                    keyboard,
+                    Some(keyboard_event_handler),
+                    EventKind::Ready.into_lvgl_code(),
+                    keyboard as *mut _,
+                );
+                lvgl::lv_obj_add_event_cb(
+                    window,
+                    Some(keyboard_event_handler),
+                    EventKind::Cancel.into_lvgl_code(),
+                    keyboard as *mut _,
+                );
+            }
         };
 
         drop(_lock); // Unlock the graphics

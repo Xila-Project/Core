@@ -1,13 +1,13 @@
 #![no_std]
 
 #[cfg(target_arch = "wasm32")]
-drivers_wasm::memory::instantiate_global_allocator!();
-
-#[cfg(target_arch = "wasm32")]
 #[xila::task::run(task_path = xila::task, executor = drivers_wasm::executor::instantiate_static_executor!())]
 async fn main() {
+    drivers_wasm::memory::instantiate_global_allocator!();
+
     extern crate alloc;
 
+    use alloc::string::ToString;
     use alloc::vec;
     use drivers_wasm::devices::graphics::GraphicsDevices;
     use xila::bootsplash::Bootsplash;
@@ -212,8 +212,15 @@ async fn main() {
 
     bootsplash.stop(graphics_manager).await.unwrap();
 
+    let arguments = if drivers_wasm::devices::graphics::has_touch_screen().unwrap() {
+        log::information!("Touch screen detected.");
+        vec!["--show-keyboard".to_string()]
+    } else {
+        vec![]
+    };
+
     // - - Execute the shell
-    let _ = executable::execute("/binaries/graphical_shell", vec![], standard, None)
+    let _ = executable::execute("/binaries/graphical_shell", arguments, standard, None)
         .await
         .unwrap()
         .join()

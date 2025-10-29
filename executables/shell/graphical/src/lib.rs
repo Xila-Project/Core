@@ -18,7 +18,7 @@ use core::time::Duration;
 use home::Home;
 use layout::Layout;
 use login::Login;
-use xila::executable::{self, Standard};
+use xila::executable::{self, ArgumentsParser, Standard};
 use xila::file_system::Permissions;
 use xila::task;
 use xila::users;
@@ -27,7 +27,13 @@ use crate::shortcut::SHORTCUT_PATH;
 use crate::{desk::Desk, error::Error};
 
 pub async fn main(standard: Standard, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
-    Shell::new(standard).await.main(arguments).await
+    let mut parsed_arguments = ArgumentsParser::new(&arguments);
+
+    let show_keyboard = parsed_arguments
+        .find_map(|argument| Some(argument.options.get_option("show-keyboard").is_some()))
+        .unwrap_or(false);
+
+    Shell::new(standard, show_keyboard).await.main().await
 }
 
 pub struct Shell {
@@ -48,8 +54,8 @@ executable::implement_executable_device!(
 );
 
 impl Shell {
-    pub async fn new(standard: Standard) -> Self {
-        let layout = Layout::new().await.unwrap();
+    pub async fn new(standard: Standard, show_keyboard: bool) -> Self {
+        let layout = Layout::new(show_keyboard).await.unwrap();
 
         let login = Box::new(Login::new().await.unwrap());
 
@@ -63,7 +69,7 @@ impl Shell {
         }
     }
 
-    pub async fn main(&mut self, _: Vec<String>) -> Result<(), NonZeroUsize> {
+    pub async fn main(&mut self) -> Result<(), NonZeroUsize> {
         let virtual_file_system = xila::virtual_file_system::get_instance();
         virtual_file_system
             .set_permissions(SHORTCUT_PATH, Permissions::ALL_FULL)
