@@ -19,6 +19,7 @@ rustflags = [
 [env]
 
 DEP_LV_CONFIG_PATH = { value = "modules/graphics/include", relative = true }
+LVGL_FONTS_DIR = { value = "modules/graphics/src/fonts", relative = true }
 
 WAMR_BUILD_PLATFORM = "XILA"
 
