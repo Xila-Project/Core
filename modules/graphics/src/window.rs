@@ -1,12 +1,8 @@
-use alloc::boxed::Box;
-
-use core::{mem::forget, str};
-
-use alloc::collections::VecDeque;
-
-use crate::{Color, Error, EventKind, Result, event::Event};
-
 use super::lvgl;
+use crate::{Color, Error, EventKind, Result, event::Event};
+use alloc::boxed::Box;
+use alloc::collections::VecDeque;
+use core::{mem::forget, str};
 
 struct UserData {
     pub queue: VecDeque<Event>,
