@@ -21,7 +21,12 @@ impl Drop for Layout {
     }
 }
 
-pub extern "C" fn keyboard_event_handler(event: *mut lvgl::lv_event_t) {
+/// Keyboard event handler.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+pub unsafe extern "C" fn keyboard_event_handler(event: *mut lvgl::lv_event_t) {
     unsafe {
         let code = lvgl::lv_event_get_code(event);
         let code = EventKind::from_lvgl_code(code);
@@ -58,7 +63,12 @@ pub extern "C" fn keyboard_event_handler(event: *mut lvgl::lv_event_t) {
     }
 }
 
-pub extern "C" fn screen_event_handler(event: *mut lvgl::lv_event_t) {
+/// Screen event handler.
+///
+/// # Safety
+///
+/// This function is unsafe because it dereferences raw pointers.
+pub unsafe extern "C" fn screen_event_handler(event: *mut lvgl::lv_event_t) {
     unsafe {
         let code = lvgl::lv_event_get_code(event);
         let code = EventKind::from_lvgl_code(code);
