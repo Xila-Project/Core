@@ -3,6 +3,8 @@ use core::num::{NonZeroU16, NonZeroUsize};
 
 use xila::{authentication, task};
 
+use crate::translations;
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
@@ -34,38 +36,67 @@ impl Display for Error {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             Error::AuthenticationFailed(error) => {
-                write!(formatter, "Authentication failed: {error}")
+                write!(
+                    formatter,
+                    translations::error__authentication_failed!(),
+                    error
+                )
             }
             Error::FailedToSetTaskUser(error) => {
-                write!(formatter, "Failed to set task user: {error}")
+                write!(
+                    formatter,
+                    translations::error__failed_to_set_task_user!(),
+                    error
+                )
             }
             Error::FailedToSetEnvironmentVariable(error) => {
-                write!(formatter, "Failed to set environment variable: {error}")
+                write!(
+                    formatter,
+                    translations::error__failed_to_set_environment_variable!(),
+                    error
+                )
             }
             Error::FailedToTokenizeCommandLine => {
-                write!(formatter, "Failed to tokenize command line")
+                write!(
+                    formatter,
+                    translations::error__failed_to_tokenize_command_line!()
+                )
             }
             Error::MissingFileNameAfterRedirectOut => {
-                write!(formatter, "Missing file name after redirect out")
+                write!(
+                    formatter,
+                    translations::error__missing_file_name_after_redirect_out!()
+                )
             }
             Error::MissingFileNameAfterRedirectIn => {
-                write!(formatter, "Missing file name after redirect in")
+                write!(
+                    formatter,
+                    translations::error__missing_file_name_after_redirect_in!()
+                )
             }
-            Error::MissingCommand => write!(formatter, "Missing command"),
-            Error::CommandNotFound => write!(formatter, "Command not found"),
+            Error::MissingCommand => write!(formatter, translations::error__missing_command!()),
+            Error::CommandNotFound => write!(formatter, translations::error__command_not_found!()),
             Error::FailedToGetTaskIdentifier => {
-                write!(formatter, "Failed to get task identifier")
+                write!(
+                    formatter,
+                    translations::error__failed_to_get_task_identifier!()
+                )
             }
-            Error::InvalidPath => write!(formatter, "Invalid path"),
+            Error::InvalidPath => write!(formatter, translations::error__invalid_path!()),
             Error::FailedToGetPath => {
-                write!(formatter, "Failed to get environment variable")
+                write!(formatter, translations::error__failed_to_get_path!())
             }
             Error::FailedToExecuteCommand => {
-                write!(formatter, "Failed to execute command")
+                write!(formatter, translations::error__failed_to_execute_command!())
             }
-            Error::FailedToJoinTask => write!(formatter, "Failed to join task"),
+            Error::FailedToJoinTask => {
+                write!(formatter, translations::error__failed_to_join_task!())
+            }
             Error::InvalidNumberOfArguments => {
-                write!(formatter, "Invalid number of arguments")
+                write!(
+                    formatter,
+                    translations::error__invalid_number_of_arguments!()
+                )
             }
         }
     }
