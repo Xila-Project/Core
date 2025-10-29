@@ -1,5 +1,7 @@
 #![no_std]
 
+pub use internationalization;
+
 #[cfg(all(target_arch = "wasm32", feature = "wasm"))]
 pub use wasm_bindings as bindings;
 
