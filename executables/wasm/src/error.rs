@@ -5,6 +5,8 @@ use core::{
 
 use xila::{file_system, task, virtual_machine};
 
+use crate::translations;
+
 #[repr(u8)]
 pub enum Error {
     MissingArgument(&'static str) = 1,
@@ -29,17 +31,29 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::MissingArgument(argument) => write!(f, "Missing argument: {}", argument),
-            Error::FailedToGetCurrentDirectory => write!(f, "Failed to get current directory"),
-            Error::InvalidPath => write!(f, "Invalid path"),
-            Error::NotAWasmFile => write!(f, "Not a WASM file"),
-            Error::FailedToOpenFile => write!(f, "Failed to open file"),
-            Error::FailedToReadFile => write!(f, "Failed to read file"),
-            Error::FailedToDuplicateStandard(e) => write!(f, "Failed to duplicate standard: {e:?}"),
-            Error::FailedToTransferStandard(e) => write!(f, "Failed to transfer standard: {e:?}"),
-            Error::FailedToExecute(e) => write!(f, "Failed to execute: {e:?}"),
-            Error::FailedToOpenStandardFile(e) => write!(f, "Failed to open standard file: {e:?}"),
-            Error::FailedToSpawnTask(e) => write!(f, "Failed to spawn task: {e:?}"),
+            Error::MissingArgument(argument) => {
+                write!(f, translations::error__missing_argument!(), argument)
+            }
+            Error::FailedToGetCurrentDirectory => {
+                write!(f, translations::error__failed_to_get_current_directory!())
+            }
+            Error::InvalidPath => write!(f, translations::error__invalid_path!()),
+            Error::NotAWasmFile => write!(f, translations::error__not_a_wasm_file!()),
+            Error::FailedToOpenFile => write!(f, translations::error__failed_to_open_file!()),
+            Error::FailedToReadFile => write!(f, translations::error__failed_to_read_file!()),
+            Error::FailedToDuplicateStandard(e) => {
+                write!(f, translations::error__failed_to_duplicate_standard!(), e)
+            }
+            Error::FailedToTransferStandard(e) => {
+                write!(f, translations::error__failed_to_transfer_standard!(), e)
+            }
+            Error::FailedToExecute(e) => write!(f, translations::error__failed_to_execute!(), e),
+            Error::FailedToOpenStandardFile(e) => {
+                write!(f, translations::error__failed_to_open_standard_file!(), e)
+            }
+            Error::FailedToSpawnTask(e) => {
+                write!(f, translations::error__failed_to_spawn_task!(), e)
+            }
         }
     }
 }

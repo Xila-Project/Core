@@ -6,6 +6,9 @@ edition = "2024"
 [dependencies]
 xila = { path = "../../", features = ["host", "virtual_machine"] }
 
+[build-dependencies]
+xila = { path = "../../", features = ["build"] }
+
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
 drivers_native = { workspace = true }
 drivers_core = { workspace = true }
