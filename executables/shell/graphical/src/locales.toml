@@ -1,0 +1,62 @@
+
+[error.graphics]
+fr = "Erreur graphique: {}"
+en = "Graphics error : {}"
+[error.failed_to_create_object]
+fr = "Échec de la création de l'objet"
+en = "Failed to create object"
+[error.failed_to_get_child]
+fr = "Échec de la récupération de l'enfant"
+en = "Failed to get child"
+[error.failed_to_set_environment_variable]
+fr = "Échec de la définition de la variable d'environnement: {}"
+en = "Failed to set environment variable: {}"
+[error.invalid_utf8]
+fr = "UTF-8 invalide: {}"
+en = "Invalid UTF-8: {}"
+[error.authentication_failed]
+fr = "Échec de l'authentification: {}"
+en = "Authentication failed: {}"
+[error.failed_to_set_task_user]
+fr = "Échec de la définition de l'utilisateur de la tâche: {}"
+en = "Failed to set task user: {}"
+[error.failed_to_deserialize_shortcut]
+fr = "Échec de la désérialisation du raccourci: {}"
+en = "Failed to deserialize shortcut: {}"
+[error.failed_to_get_current_task_identifier]
+fr = "Échec de la récupération de l'identifiant de la tâche actuelle: {}"
+en = "Failed to get current task identifier: {}"
+[error.failed_to_read_shortcut_directory]
+fr = "Échec de la lecture du répertoire de raccourcis: {}"
+en = "Failed to read shortcut directory: {}"
+[error.failed_to_get_shortcut_file_path]
+fr = "Échec de la récupération du chemin du fichier de raccourci"
+en = "Failed to get shortcut file path"
+[error.failed_to_read_shortcut_file]
+fr = "Échec de la lecture du fichier de raccourci: {}"
+en = "Failed to read shortcut file: {}"
+[error.failed_to_open_standard_file]
+fr = "Échec de l'ouverture du fichier standard: {}"
+en = "Failed to open standard file: {}"
+[error.failed_to_execute_shortcut]
+fr = "Échec de l'exécution du raccourci: {}"
+en = "Failed to execute shortcut: {}"
+[error.null_character_in_string]
+fr = "Caractère nul dans la chaîne: {}"
+en = "Null character in string: {}"
+[error.missing_arguments]
+fr = "Arguments manquants"
+en = "Missing arguments"
+[error.failed_to_add_shortcut]
+fr = "Échec de l'ajout du raccourci: {}"
+en = "Failed to add shortcut: {}"
+
+[login.user_name]
+fr = "Nom d'utilisateur"
+en = "User name"
+[login.password]
+fr = "Mot de passe"
+en = "Password"
+[login.login]
+fr = "Se connecter"
+en = "Login"
