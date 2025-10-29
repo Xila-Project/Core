@@ -1,7 +1,7 @@
 use std::os::raw::c_void;
 
 use graphics::{
-    Color, Logo,
+    Logo,
     lvgl::{
         _lv_obj_t, LV_STATE_DEFAULT, lv_align_t_LV_ALIGN_CENTER, lv_anim_delete, lv_anim_init,
         lv_anim_path_ease_in_out, lv_anim_set_duration, lv_anim_set_exec_cb, lv_anim_set_path_cb,
@@ -10,6 +10,7 @@ use graphics::{
         lv_obj_get_child, lv_obj_get_child_count, lv_obj_get_size, lv_obj_set_align,
         lv_obj_set_style_opa, lv_obj_set_style_shadow_color,
     },
+    theme,
 };
 
 mod error;
@@ -74,7 +75,7 @@ impl Bootsplash {
             let screen_size = lv_obj_get_size(current_screen);
             let factor = Logo::get_factor(screen_size.scale(0.3));
 
-            let logo = Logo::new(current_screen, factor, Color::WHITE)?;
+            let logo = Logo::new(current_screen, factor, theme::get_primary_color())?;
 
             let logo_inner_object = logo.get_inner_object();
 
@@ -84,7 +85,11 @@ impl Bootsplash {
                 let part = lv_obj_get_child(logo_inner_object, i as i32);
 
                 lv_obj_set_style_opa(part, 0, LV_STATE_DEFAULT);
-                lv_obj_set_style_shadow_color(part, Color::WHITE.into(), LV_STATE_DEFAULT);
+                lv_obj_set_style_shadow_color(
+                    part,
+                    theme::get_primary_color().into_lvgl_color(),
+                    LV_STATE_DEFAULT,
+                );
             }
 
             let mut s = Self {
