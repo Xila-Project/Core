@@ -2,6 +2,8 @@
 
 extern crate alloc;
 
+xila::internationalization::include_translations!();
+
 mod device;
 mod error;
 mod executable;
