@@ -13,8 +13,11 @@ async fn main() {
     use xila::executable::mount_static_executables;
     use xila::file_system::{MemoryDevice, Mode, create_device, create_file_system};
     use xila::graphics::{self, InputKind, Point, get_minimal_buffer_size};
+    use xila::log;
     use xila::virtual_file_system::{self, create_default_hierarchy, mount_static_devices};
     use xila::{executable, task, time, users};
+
+    log::initialize(&drivers_std::log::Logger).unwrap();
 
     // - Initialize the task manager.
     let task_manager = task::initialize();
