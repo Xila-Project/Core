@@ -3,6 +3,8 @@ use core::str::Utf8Error;
 use core::{fmt::Display, num::NonZeroU8};
 use xila::{executable, file_system, graphics, task};
 
+use crate::translations;
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
@@ -55,16 +57,28 @@ impl From<graphics::Error> for Error {
 impl Display for Error {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
-            Self::Graphics(error) => write!(formatter, "Graphics: {error}"),
-            Self::FailedToCreateObject => write!(formatter, "Failed to create object"),
-            Self::Utf8(error) => write!(formatter, "UTF-8: {error}"),
+            Self::Graphics(error) => write!(formatter, translations::error__graphics!(), error),
+            Self::FailedToCreateObject => {
+                write!(formatter, translations::error__failed_to_create_object!())
+            }
+            Self::Utf8(error) => write!(formatter, translations::error__utf8!(), error),
             Self::FailedToMountDevice(error) => {
-                write!(formatter, "Failed to mount device: {error}")
+                write!(
+                    formatter,
+                    translations::error__failed_to_mount_device!(),
+                    error
+                )
             }
             Self::FailedToGetTaskIdentifier(error) => {
-                write!(formatter, "Failed to get task identifier: {error}")
+                write!(
+                    formatter,
+                    translations::error__failed_to_get_task_identifier!(),
+                    error
+                )
             }
-            Self::FailedToExecute(error) => write!(formatter, "Failed to execute: {error}"),
+            Self::FailedToExecute(error) => {
+                write!(formatter, translations::error__failed_to_execute!(), error)
+            }
         }
     }
 }

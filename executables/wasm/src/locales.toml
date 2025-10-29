@@ -1,0 +1,43 @@
+[error.missing_argument]
+fr = "Argument manquant: {}"
+en = "Missing argument: {}"
+
+[error.failed_to_get_current_directory]
+fr = "Échec de la récupération du répertoire actuel"
+en = "Failed to get current directory"
+
+[error.invalid_path]
+fr = "Chemin invalide"
+en = "Invalid path"
+
+[error.not_a_wasm_file]
+fr = "Pas un fichier WASM"
+en = "Not a WASM file"
+
+[error.failed_to_open_file]
+fr = "Échec de l'ouverture du fichier"
+en = "Failed to open file"
+
+[error.failed_to_read_file]
+fr = "Échec de la lecture du fichier"
+en = "Failed to read file"
+
+[error.failed_to_duplicate_standard]
+fr = "Échec de la duplication du standard: {:?}"
+en = "Failed to duplicate standard: {:?}"
+
+[error.failed_to_transfer_standard]
+fr = "Échec du transfert du standard: {:?}"
+en = "Failed to transfer standard: {:?}"
+
+[error.failed_to_execute]
+fr = "Échec de l'exécution: {:?}"
+en = "Failed to execute: {:?}"
+
+[error.failed_to_open_standard_file]
+fr = "Échec de l'ouverture du fichier standard: {:?}"
+en = "Failed to open standard file: {:?}"
+
+[error.failed_to_spawn_task]
+fr = "Échec de la création de la tâche: {:?}"
+en = "Failed to spawn task: {:?}"

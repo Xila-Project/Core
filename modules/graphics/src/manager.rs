@@ -16,11 +16,11 @@ use super::lvgl;
 
 use super::Point;
 
-use crate::Color;
 use crate::Display;
 use crate::Input;
 use crate::InputKind;
 use crate::window::Window;
+use crate::{Color, theme};
 use crate::{Error, Result, ScreenReadData};
 
 static MANAGER_INSTANCE: OnceLock<Manager> = OnceLock::new();
@@ -57,7 +57,7 @@ pub fn try_get_instance() -> Option<&'static Manager> {
 
 struct Inner {
     _inputs: Vec<Input>,
-    _displays: Vec<Display>,
+    displays: Vec<Display>,
     window_parent: *mut lvgl::lv_obj_t,
 }
 
@@ -117,13 +117,13 @@ impl Manager {
         unsafe {
             let group = lvgl::lv_group_create();
             lvgl::lv_group_set_default(group);
+            theme::initialize(&display);
         }
 
         Ok(Self {
             inner: RwLock::new(Inner {
                 _inputs: vec![input],
-                _displays: vec![display],
-
+                displays: vec![display],
                 window_parent: screen,
             }),
             global_lock: Mutex::new(()),
@@ -258,5 +258,20 @@ impl Manager {
 
     pub fn get_current_screen(&self) -> Result<*mut lvgl::lv_obj_t> {
         Ok(unsafe { lvgl::lv_screen_active() })
+    }
+
+    pub async fn update_theme(
+        &self,
+        primary_color: Color,
+        secondary_color: Color,
+        is_dark: bool,
+    ) -> Result<()> {
+        let displays = &self.inner.read().await.displays;
+
+        for display in displays {
+            theme::update(display, primary_color, secondary_color, is_dark);
+        }
+
+        Ok(())
     }
 }

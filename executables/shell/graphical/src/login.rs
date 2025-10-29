@@ -8,6 +8,7 @@ use xila::users::UserIdentifier;
 use xila::virtual_file_system;
 
 use crate::error::{Error, Result};
+use crate::translations;
 
 pub struct Login {
     window: Window,
@@ -40,7 +41,10 @@ impl Login {
             // - Create a text area for the user name
             let user_name_text_area = lvgl::lv_textarea_create(window.get_object());
 
-            lvgl::lv_textarea_set_placeholder_text(user_name_text_area, c"User name".as_ptr());
+            lvgl::lv_textarea_set_placeholder_text(
+                user_name_text_area,
+                translations::login__user_name!(c).as_ptr(),
+            );
             lvgl::lv_textarea_set_one_line(user_name_text_area, true);
 
             user_name_text_area
@@ -50,7 +54,10 @@ impl Login {
             // - Create a text area for the password
             let password_text_area = lvgl::lv_textarea_create(window.get_object());
 
-            lvgl::lv_textarea_set_placeholder_text(password_text_area, c"Password".as_ptr());
+            lvgl::lv_textarea_set_placeholder_text(
+                password_text_area,
+                translations::login__password!(c).as_ptr(),
+            );
             lvgl::lv_textarea_set_one_line(password_text_area, true);
             lvgl::lv_textarea_set_password_mode(password_text_area, true);
 
@@ -72,7 +79,7 @@ impl Login {
 
             let label = lvgl::lv_label_create(button);
 
-            lvgl::lv_label_set_text(label, c"Login".as_ptr());
+            lvgl::lv_label_set_text(label, translations::login__login!(c).as_ptr());
 
             button
         };

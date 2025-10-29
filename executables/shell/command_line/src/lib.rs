@@ -2,6 +2,8 @@
 
 extern crate alloc;
 
+xila::internationalization::include_translations!();
+
 use core::num::NonZeroUsize;
 
 use alloc::{

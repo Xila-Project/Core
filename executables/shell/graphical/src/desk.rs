@@ -12,7 +12,6 @@ use alloc::{
     vec,
     vec::Vec,
 };
-use xila::executable;
 use xila::executable::Standard;
 use xila::file_system::{Kind, Mode};
 use xila::futures::block_on;
@@ -20,6 +19,10 @@ use xila::graphics::{self, Color, EventKind, Logo, Point, Window, lvgl};
 use xila::log::error;
 use xila::task;
 use xila::virtual_file_system::{self, Directory};
+use xila::{
+    executable,
+    graphics::theme::{self, get_border_color_primary},
+};
 
 pub const WINDOWS_PARENT_CHILD_CHANGED: graphics::EventKind = graphics::EventKind::Custom2;
 
@@ -126,6 +129,11 @@ impl Desk {
                 lvgl::lv_obj_set_style_bg_opa(part, lvgl::LV_OPA_0 as u8, lvgl::LV_STATE_DEFAULT);
 
                 lvgl::lv_obj_set_style_border_width(part, 2, lvgl::LV_STATE_DEFAULT);
+                lvgl::lv_obj_set_style_border_color(
+                    part,
+                    get_border_color_primary().into_lvgl_color(),
+                    lvgl::LV_STATE_DEFAULT,
+                );
             }
         }
 
@@ -183,13 +191,16 @@ impl Desk {
                 return Err(Error::FailedToCreateObject);
             }
 
-            lvgl::lv_obj_set_style_bg_color(dock, Color::BLACK.into(), lvgl::LV_STATE_DEFAULT);
+            lvgl::lv_obj_set_style_bg_color(
+                dock,
+                theme::get_background_color_primary_muted().into_lvgl_color(),
+                lvgl::LV_STATE_DEFAULT,
+            );
 
             lvgl::lv_obj_set_align(dock, lvgl::lv_align_t_LV_ALIGN_BOTTOM_MID);
             lvgl::lv_obj_set_size(dock, lvgl::LV_SIZE_CONTENT, lvgl::LV_SIZE_CONTENT);
             lvgl::lv_obj_set_style_border_width(dock, 0, lvgl::LV_STATE_DEFAULT);
             lvgl::lv_obj_set_flex_flow(dock, lvgl::lv_flex_flow_t_LV_FLEX_FLOW_ROW);
-            lvgl::lv_obj_set_style_bg_opa(dock, lvgl::LV_OPA_50 as u8, lvgl::LV_STATE_DEFAULT);
 
             lvgl::lv_obj_set_style_pad_all(dock, 12, lvgl::LV_STATE_DEFAULT);
 

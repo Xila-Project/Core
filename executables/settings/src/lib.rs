@@ -2,6 +2,8 @@
 
 extern crate alloc;
 
+include_translations!();
+
 mod error;
 mod settings;
 mod tabs;
@@ -14,6 +16,7 @@ use alloc::vec::Vec;
 use core::num::NonZeroUsize;
 use xila::executable::{self, Standard};
 use xila::file_system::{self, Flags, Mode, Open};
+use xila::internationalization::include_translations;
 use xila::task::TaskIdentifier;
 use xila::virtual_file_system::{File, VirtualFileSystem};
 

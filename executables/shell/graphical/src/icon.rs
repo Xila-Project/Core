@@ -1,5 +1,5 @@
 use alloc::ffi::CString;
-use xila::graphics::{Color, Point, lvgl};
+use xila::graphics::{Color, Point, lvgl, theme};
 
 use crate::error::{Error, Result};
 
@@ -18,13 +18,23 @@ pub unsafe fn create_icon(
 
         lvgl::lv_obj_set_size(icon, size.get_x().into(), size.get_y().into());
         lvgl::lv_obj_set_style_pad_all(icon, 0, lvgl::LV_STATE_DEFAULT);
-        lvgl::lv_obj_set_style_border_width(icon, 0, lvgl::LV_STATE_DEFAULT);
+        lvgl::lv_obj_set_style_border_width(icon, 2, lvgl::LV_STATE_DEFAULT);
+        lvgl::lv_obj_set_style_border_color(
+            icon,
+            theme::get_border_color_primary().into_lvgl_color(),
+            lvgl::LV_STATE_DEFAULT,
+        );
 
         let radius: i32 = size.get_x() as i32 / 3;
 
         lvgl::lv_obj_set_style_radius(icon, radius, lvgl::LV_STATE_DEFAULT);
 
         lvgl::lv_obj_set_style_bg_color(icon, icon_color.into_lvgl_color(), lvgl::LV_STATE_DEFAULT);
+        lvgl::lv_obj_set_style_text_color(
+            icon,
+            theme::get_primary_color().into_lvgl_color(),
+            lvgl::LV_STATE_DEFAULT,
+        );
 
         let label = lvgl::lv_label_create(icon);
 
