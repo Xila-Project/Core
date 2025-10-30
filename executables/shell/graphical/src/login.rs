@@ -3,12 +3,12 @@ pub(crate) use core::ffi::CStr;
 use alloc::string::ToString;
 use xila::authentication;
 use xila::graphics::{self, EventKind, Window, lvgl};
+use xila::internationalization::translate;
 use xila::task;
 use xila::users::UserIdentifier;
 use xila::virtual_file_system;
 
 use crate::error::{Error, Result};
-use crate::translations;
 
 pub struct Login {
     window: Window,
@@ -43,7 +43,7 @@ impl Login {
 
             lvgl::lv_textarea_set_placeholder_text(
                 user_name_text_area,
-                translations::login__user_name!(c).as_ptr(),
+                translate!(c"User name").as_ptr(),
             );
             lvgl::lv_textarea_set_one_line(user_name_text_area, true);
 
@@ -56,7 +56,7 @@ impl Login {
 
             lvgl::lv_textarea_set_placeholder_text(
                 password_text_area,
-                translations::login__password!(c).as_ptr(),
+                translate!(c"Password").as_ptr(),
             );
             lvgl::lv_textarea_set_one_line(password_text_area, true);
             lvgl::lv_textarea_set_password_mode(password_text_area, true);
@@ -79,7 +79,7 @@ impl Login {
 
             let label = lvgl::lv_label_create(button);
 
-            lvgl::lv_label_set_text(label, translations::login__login!(c).as_ptr());
+            lvgl::lv_label_set_text(label, translate!(c"Login").as_ptr());
 
             button
         };

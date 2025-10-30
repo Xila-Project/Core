@@ -2,16 +2,14 @@
 
 extern crate alloc;
 
-xila::internationalization::include_translations!();
-
-use core::num::NonZeroUsize;
-
 use alloc::{
     borrow::ToOwned,
     format,
     string::{String, ToString},
     vec::Vec,
 };
+use core::fmt::Write;
+use core::num::NonZeroUsize;
 use xila::executable::Standard;
 use xila::file_system::Path;
 use xila::task;
@@ -70,7 +68,7 @@ impl Shell {
         let commands = parse(tokens)?;
 
         for command in commands {
-            match command.command {
+            let result = match command.command {
                 "exit" => self.exit(&command.arguments).await,
                 "cd" => self.change_directory(&command.arguments).await,
                 "echo" => self.echo(&command.arguments).await,
@@ -82,7 +80,11 @@ impl Shell {
                 "export" => self.set_environment_variable(&command.arguments).await,
                 "unset" => self.remove_environment_variable(&command.arguments).await,
                 "rm" => self.remove(&command.arguments).await,
-                _ => self.execute(command, paths).await?,
+                _ => self.execute(command, paths).await,
+            };
+
+            if let Err(error) = result {
+                let _ = write!(self.standard.standard_in, "{}", error);
             }
         }
 

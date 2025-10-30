@@ -1,19 +1,16 @@
-use alloc::{borrow::ToOwned, format, string::ToString};
+use alloc::{borrow::ToOwned, format};
 
 use xila::{
     file_system::{Inode, Path},
     users, virtual_file_system,
 };
 
-use crate::Shell;
+use crate::{Error, Result, Shell};
 
 impl Shell {
-    pub async fn statistics(&mut self, arguments: &[&str]) {
+    pub async fn statistics(&mut self, arguments: &[&str]) -> Result<()> {
         if arguments.len() != 1 {
-            self.standard
-                .print_error_line("Invalid number of arguments")
-                .await;
-            return;
+            return Err(Error::InvalidNumberOfArguments);
         }
 
         let path = Path::from_str(arguments[0]);
@@ -21,25 +18,16 @@ impl Shell {
         let path = if path.is_absolute() {
             path.to_owned()
         } else {
-            match self.current_directory.clone().join(path) {
-                Some(path) => path,
-                None => {
-                    self.standard.print_error_line("Invalid path").await;
-                    return;
-                }
-            }
+            self.current_directory
+                .clone()
+                .join(path)
+                .ok_or(Error::FailedToJoinPath)?
         };
 
-        let metadata = match virtual_file_system::get_instance()
+        let metadata = virtual_file_system::get_instance()
             .get_metadata_from_path(&path)
             .await
-        {
-            Ok(metadata) => metadata,
-            Err(error) => {
-                self.standard.print_error_line(&error.to_string()).await;
-                return;
-            }
-        };
+            .map_err(Error::FailedToGetMetadata)?;
 
         let user = match users::get_instance()
             .get_user_name(metadata.get_user())
@@ -80,5 +68,7 @@ Changed: {}"#,
                 metadata.get_creation_time()
             ))
             .await;
+
+        Ok(())
     }
 }

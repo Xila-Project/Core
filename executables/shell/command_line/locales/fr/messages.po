@@ -1,0 +1,97 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: error.authentication_failed
+msgid "Authentication failed: {}"
+msgstr "Échec de l'authentification: {}"
+
+#: error.failed_to_set_task_user
+msgid "Failed to set task user: {}"
+msgstr "Échec de la définition de l'utilisateur de la tâche: {}"
+
+#: error.failed_to_set_environment_variable
+msgid "Failed to set environment variable: {}"
+msgstr "Échec de la définition de la variable d'environnement: {}"
+
+#: error.failed_to_tokenize_command_line
+msgid "Failed to tokenize command line"
+msgstr "Échec de la tokenisation de la ligne de commande"
+
+#: error.missing_file_name_after_redirect_out
+msgid "Missing file name after redirect out"
+msgstr "Nom de fichier manquant après la redirection de sortie"
+
+#: error.missing_file_name_after_redirect_in
+msgid "Missing file name after redirect in"
+msgstr "Nom de fichier manquant après la redirection d'entrée"
+
+#: error.missing_command
+msgid "Missing command"
+msgstr "Commande manquante"
+
+#: error.command_not_found
+msgid "Command not found"
+msgstr "Commande introuvable"
+
+#: error.failed_to_get_task_identifier
+msgid "Failed to get task identifier"
+msgstr "Échec de la récupération de l'identifiant de la tâche"
+
+#: error.invalid_path
+msgid "Invalid path"
+msgstr "Chemin invalide"
+
+#: error.failed_to_get_path
+msgid "Failed to get environment variable"
+msgstr "Échec de la récupération de la variable d'environnement"
+
+#: error.failed_to_execute_command
+msgid "Failed to execute command"
+msgstr "Échec de l'exécution de la commande"
+
+#: error.failed_to_join_task
+msgid "Failed to join task"
+msgstr "Échec de la jonction de la tâche"
+
+#: error.invalid_number_of_arguments
+msgid "Invalid number of arguments"
+msgstr "Nombre d'arguments invalide"
+
+#: error.failed_to_remove_environment_variable
+msgid "Failed to remove environment variable: {}"
+msgstr "Échec de la suppression de la variable d'environnement: {}"
+
+#: error.failed_to_join_path
+msgid "Failed to join path"
+msgstr "Échec de la jonction du chemin"
+
+#: error.failed_to_create_directory
+msgid "Failed to create directory: {}"
+msgstr "Échec de la création du répertoire: {}"
+
+#: error.failed_to_remove_directory
+msgid "Failed to remove directory: {}"
+msgstr "Échec de la suppression du répertoire: {}"
+
+#: error.failed_to_open_directory
+msgid "Failed to open directory: {}"
+msgstr "Échec de l'ouverture du répertoire: {}"
+
+#: error.failed_to_open_file
+msgid "Failed to open file: {}"
+msgstr "Échec de l'ouverture du fichier: {}"
+
+#: error.invalid_argument
+msgid "Invalid argument"
+msgstr "Argument invalide"
+
+#: error.failed_to_get_metadata
+msgid "Failed to get metadata: {}"
+msgstr "Échec de la récupération des métadonnées: {}"
+
+msgid "User name: "
+msgstr "Nom d'utilisateur: "
+
+msgid "Password: "
+msgstr "Mot de passe: "

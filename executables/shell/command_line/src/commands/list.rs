@@ -1,29 +1,19 @@
-use alloc::format;
 use xila::{file_system::Path, virtual_file_system};
 
-use crate::Shell;
+use crate::{Error, Result, Shell};
 
 impl Shell {
-    pub async fn list(&mut self, arguments: &[&str]) {
+    pub async fn list(&mut self, arguments: &[&str]) -> Result<()> {
         let path = if arguments.is_empty() {
             self.current_directory.as_ref()
         } else {
             Path::from_str(arguments[0])
         };
 
-        let directory = match virtual_file_system::get_instance()
+        let directory = virtual_file_system::get_instance()
             .open_directory(&path, self.standard.get_task())
             .await
-        {
-            Ok(directory) => directory,
-            Err(error) => {
-                self.standard
-                    .print_error_line(&format!("Failed to open directory: {error:?}"))
-                    .await;
-
-                return;
-            }
-        };
+            .map_err(Error::FailedToOpenDirectory)?;
 
         while let Ok(Some(entry)) = virtual_file_system::get_instance()
             .read_directory(directory, self.standard.get_task())
@@ -32,5 +22,7 @@ impl Shell {
             self.standard.print(entry.get_name()).await;
             self.standard.print("\n").await;
         }
+
+        Ok(())
     }
 }

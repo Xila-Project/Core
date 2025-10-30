@@ -5,9 +5,9 @@ use core::{
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-use xila::{authentication, executable, file_system, graphics, task};
-
-use crate::translations;
+use xila::{
+    authentication, executable, file_system, graphics, internationalization::translate, task,
+};
 
 #[derive(Debug, Clone)]
 #[repr(u8)]
@@ -51,104 +51,86 @@ impl From<graphics::Error> for Error {
 
 impl Display for Error {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+        translate!("Failed to create object");
         match self {
             Self::Graphics(error) => {
-                write!(formatter, translations::error__graphics!(), error)
+                write!(formatter, translate!("Graphics error: {}"), error)
             }
             Self::FailedToCreateObject => {
-                write!(formatter, translations::error__failed_to_create_object!())
+                write!(formatter, translate!("Failed to create object"))
             }
             Self::FailedToGetChild => {
-                write!(formatter, translations::error__failed_to_get_child!())
+                write!(formatter, translate!("Failed to get child"))
             }
             Self::FailedToSetEnvironmentVariable(error) => {
                 write!(
                     formatter,
-                    translations::error__failed_to_set_environment_variable!(),
+                    translate!("Failed to set environment variable: {}"),
                     error
                 )
             }
             Self::InvalidUtf8(error) => {
-                write!(formatter, translations::error__invalid_utf8!(), error)
+                write!(formatter, translate!("Invalid UTF-8: {}"), error)
             }
             Self::AuthenticationFailed(error) => {
-                write!(
-                    formatter,
-                    translations::error__authentication_failed!(),
-                    error
-                )
+                write!(formatter, translate!("Authentication failed: {}"), error)
             }
             Self::FailedToSetTaskUser(error) => {
-                write!(
-                    formatter,
-                    translations::error__failed_to_set_task_user!(),
-                    error
-                )
+                write!(formatter, translate!("Failed to set task user: {}"), error)
             }
             Self::FailedToDeserializeShortcut(error) => {
                 write!(
                     formatter,
-                    translations::error__failed_to_deserialize_shortcut!(),
+                    translate!("Failed to deserialize shortcut: {}"),
                     error
                 )
             }
             Self::FailedToGetCurrentTaskIdentifier(error) => {
                 write!(
                     formatter,
-                    translations::error__failed_to_get_current_task_identifier!(),
+                    translate!("Failed to get current task identifier: {}"),
                     error
                 )
             }
             Self::FailedToReadShortcutDirectory(error) => {
                 write!(
                     formatter,
-                    translations::error__failed_to_read_shortcut_directory!(),
+                    translate!("Failed to read shortcut directory: {}"),
                     error
                 )
             }
             Self::FailedToGetShortcutFilePath => {
-                write!(
-                    formatter,
-                    translations::error__failed_to_get_shortcut_file_path!()
-                )
+                write!(formatter, translate!("Failed to get shortcut file path"))
             }
             Self::FailedToReadShortcutFile(error) => {
                 write!(
                     formatter,
-                    translations::error__failed_to_read_shortcut_file!(),
+                    translate!("Failed to read shortcut file: {}"),
                     error
                 )
             }
             Self::FailedToOpenStandardFile(error) => {
                 write!(
                     formatter,
-                    translations::error__failed_to_open_standard_file!(),
+                    translate!("Failed to open standard file: {}"),
                     error
                 )
             }
             Self::FailedToExecuteShortcut(error) => {
                 write!(
                     formatter,
-                    translations::error__failed_to_execute_shortcut!(),
+                    translate!("Failed to execute shortcut: {}"),
                     error
                 )
             }
             Self::NullCharacterInString(error) => {
-                write!(
-                    formatter,
-                    translations::error__null_character_in_string!(),
-                    error
-                )
+                write!(formatter, translate!("Null character in string: {}"), error)
             }
             Self::MissingArguments => {
-                write!(formatter, translations::error__missing_arguments!())
+                write!(formatter, translate!("Missing arguments"))
             }
             Self::FailedToAddShortcut(error) => {
-                write!(
-                    formatter,
-                    translations::error__failed_to_add_shortcut!(),
-                    error
-                )
+                write!(formatter, translate!("Failed to add shortcut: {}"), error)
             }
         }
     }

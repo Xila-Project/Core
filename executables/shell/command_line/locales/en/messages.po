@@ -1,0 +1,97 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: error.authentication_failed
+msgid "Authentication failed: {}"
+msgstr "Authentication failed: {}"
+
+#: error.failed_to_set_task_user
+msgid "Failed to set task user: {}"
+msgstr "Failed to set task user: {}"
+
+#: error.failed_to_set_environment_variable
+msgid "Failed to set environment variable: {}"
+msgstr "Failed to set environment variable: {}"
+
+#: error.failed_to_tokenize_command_line
+msgid "Failed to tokenize command line"
+msgstr "Failed to tokenize command line"
+
+#: error.missing_file_name_after_redirect_out
+msgid "Missing file name after redirect out"
+msgstr "Missing file name after redirect out"
+
+#: error.missing_file_name_after_redirect_in
+msgid "Missing file name after redirect in"
+msgstr "Missing file name after redirect in"
+
+#: error.missing_command
+msgid "Missing command"
+msgstr "Missing command"
+
+#: error.command_not_found
+msgid "Command not found"
+msgstr "Command not found"
+
+#: error.failed_to_get_task_identifier
+msgid "Failed to get task identifier"
+msgstr "Failed to get task identifier"
+
+#: error.invalid_path
+msgid "Invalid path"
+msgstr "Invalid path"
+
+#: error.failed_to_get_path
+msgid "Failed to get environment variable"
+msgstr "Failed to get environment variable"
+
+#: error.failed_to_execute_command
+msgid "Failed to execute command"
+msgstr "Failed to execute command"
+
+#: error.failed_to_join_task
+msgid "Failed to join task"
+msgstr "Failed to join task"
+
+#: error.invalid_number_of_arguments
+msgid "Invalid number of arguments"
+msgstr "Invalid number of arguments"
+
+#: error.failed_to_remove_environment_variable
+msgid "Failed to remove environment variable: {}"
+msgstr "Failed to remove environment variable: {}"
+
+#: error.failed_to_join_path
+msgid "Failed to join path"
+msgstr "Failed to join path"
+
+#: error.failed_to_create_directory
+msgid "Failed to create directory: {}"
+msgstr "Failed to create directory: {}"
+
+#: error.failed_to_remove_directory
+msgid "Failed to remove directory: {}"
+msgstr "Failed to remove directory: {}"
+
+#: error.failed_to_open_directory
+msgid "Failed to open directory: {}"
+msgstr "Failed to open directory: {}"
+
+#: error.failed_to_open_file
+msgid "Failed to open file: {}"
+msgstr "Failed to open file: {}"
+
+#: error.invalid_argument
+msgid "Invalid argument"
+msgstr "Invalid argument"
+
+#: error.failed_to_get_metadata
+msgid "Failed to get metadata: {}"
+msgstr "Failed to get metadata: {}"
+
+msgid "User name: "
+msgstr "User name: "
+
+msgid "Password: "
+msgstr "Password: "
