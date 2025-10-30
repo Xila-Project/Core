@@ -1,9 +1,7 @@
 use core::num::NonZeroUsize;
 use core::str::Utf8Error;
 use core::{fmt::Display, num::NonZeroU8};
-use xila::{executable, file_system, graphics, task};
-
-use crate::translations;
+use xila::{executable, file_system, graphics, internationalization::translate, task};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -57,27 +55,27 @@ impl From<graphics::Error> for Error {
 impl Display for Error {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
-            Self::Graphics(error) => write!(formatter, translations::error__graphics!(), error),
-            Self::FailedToCreateObject => {
-                write!(formatter, translations::error__failed_to_create_object!())
+            Self::Graphics(error) => {
+                write!(formatter, translate!("Graphics: {}"), error)
             }
-            Self::Utf8(error) => write!(formatter, translations::error__utf8!(), error),
+            Self::FailedToCreateObject => {
+                write!(formatter, translate!("Failed to create object"))
+            }
+            Self::Utf8(error) => {
+                write!(formatter, translate!("UTF-8: {}"), error)
+            }
             Self::FailedToMountDevice(error) => {
-                write!(
-                    formatter,
-                    translations::error__failed_to_mount_device!(),
-                    error
-                )
+                write!(formatter, translate!("Failed to mount device: {}"), error)
             }
             Self::FailedToGetTaskIdentifier(error) => {
                 write!(
                     formatter,
-                    translations::error__failed_to_get_task_identifier!(),
+                    translate!("Failed to get task identifier: {}"),
                     error
                 )
             }
             Self::FailedToExecute(error) => {
-                write!(formatter, translations::error__failed_to_execute!(), error)
+                write!(formatter, translate!("Failed to execute: {}"), error)
             }
         }
     }
