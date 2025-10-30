@@ -9,6 +9,7 @@ users = { workspace = true }
 shared = { workspace = true }
 synchronization = { workspace = true }
 futures = { workspace = true }
+embedded-io-async = { workspace = true }
 
 [dev-dependencies]
 drivers_native = { workspace = true }

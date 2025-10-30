@@ -116,6 +116,8 @@ pub enum Error {
     Other,
 }
 
+impl core::error::Error for Error {}
+
 impl Error {
     /// Get the numeric discriminant of the error as a non-zero u32.
     ///
@@ -217,6 +219,21 @@ impl Display for Error {
         };
 
         write!(formatter, "{string}")
+    }
+}
+
+impl embedded_io_async::Error for Error {
+    fn kind(&self) -> embedded_io_async::ErrorKind {
+        match self {
+            Error::PermissionDenied => embedded_io_async::ErrorKind::PermissionDenied,
+            Error::NotFound => embedded_io_async::ErrorKind::NotFound,
+            Error::AlreadyExists | Error::DirectoryAlreadyExists => {
+                embedded_io_async::ErrorKind::AlreadyExists
+            }
+            Error::FileSystemFull | Error::NoSpaceLeft => embedded_io_async::ErrorKind::OutOfMemory,
+            Error::InputOutput => embedded_io_async::ErrorKind::Interrupted,
+            _ => embedded_io_async::ErrorKind::Other,
+        }
     }
 }
 
