@@ -5,8 +5,6 @@ mod error;
 
 extern crate alloc;
 
-xila::internationalization::include_translations!();
-
 use crate::Error;
 use alloc::boxed::Box;
 use alloc::{

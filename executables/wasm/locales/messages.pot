@@ -1,0 +1,47 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: error.missing_argument
+msgid "Missing argument: {}"
+msgstr ""
+
+#: error.failed_to_get_current_directory
+msgid "Failed to get current directory"
+msgstr ""
+
+#: error.invalid_path
+msgid "Invalid path"
+msgstr ""
+
+#: error.not_a_wasm_file
+msgid "Not a WASM file"
+msgstr ""
+
+#: error.failed_to_open_file
+msgid "Failed to open file"
+msgstr ""
+
+#: error.failed_to_read_file
+msgid "Failed to read file"
+msgstr ""
+
+#: error.failed_to_duplicate_standard
+msgid "Failed to duplicate standard: {:?}"
+msgstr ""
+
+#: error.failed_to_transfer_standard
+msgid "Failed to transfer standard: {:?}"
+msgstr ""
+
+#: error.failed_to_execute
+msgid "Failed to execute: {:?}"
+msgstr ""
+
+#: error.failed_to_open_standard_file
+msgid "Failed to open standard file: {:?}"
+msgstr ""
+
+#: error.failed_to_spawn_task
+msgid "Failed to spawn task: {:?}"
+msgstr ""
