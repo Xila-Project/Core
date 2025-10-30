@@ -39,7 +39,6 @@ impl TaskArguments {
 /// - Have no arguments
 /// - Have no return type (or return unit type `()`)
 #[proc_macro_attribute]
-#[allow(non_snake_case)]
 pub fn test(arguments: TokenStream, input: TokenStream) -> TokenStream {
     let input_function = parse_macro_input!(input as ItemFn);
     let function_name = &input_function.sig.ident;
@@ -121,16 +120,16 @@ pub fn test(arguments: TokenStream, input: TokenStream) -> TokenStream {
     let attributes = &input_function.attrs;
 
     // Change ident to __inner to avoid name conflicts
-    let mut Input_function = input_function.clone();
-    Input_function.sig.ident = format_ident!("__inner");
-    Input_function.attrs.clear(); // Remove attributes from inner function
+    let mut input_function = input_function.clone();
+    input_function.sig.ident = format_ident!("__inner");
+    input_function.attrs.clear(); // Remove attributes from inner function
 
     // Generate the new function
     quote! {
         #(#attributes)*
         #[std::prelude::v1::test]
         fn #function_name() {
-            #Input_function
+            #input_function
 
             static mut __SPAWNER : usize = 0;
 
@@ -190,27 +189,26 @@ pub fn test(arguments: TokenStream, input: TokenStream) -> TokenStream {
 /// }
 /// ```
 #[proc_macro_attribute]
-#[allow(non_snake_case)]
-pub fn run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
-    let Arguments = match TaskArguments::from_token_stream(Arguments) {
+pub fn run(arguments: TokenStream, input: TokenStream) -> TokenStream {
+    let arguments = match TaskArguments::from_token_stream(arguments) {
         Ok(o) => o,
         Err(e) => return e.write_errors().into(),
     };
-    let Input_function = parse_macro_input!(Input as ItemFn);
+    let input_function = parse_macro_input!(input as ItemFn);
 
-    let Task_path = Arguments.task_path;
-    let Executor_expression = Arguments.executor;
+    let task_path = arguments.task_path;
+    let executor_expression = arguments.executor;
 
     // Extract function details
-    let Function_name = &Input_function.sig.ident;
-    let Function_name_string = Function_name.to_string();
+    let function_name = &input_function.sig.ident;
+    let function_name_string = function_name.to_string();
 
     // Check if function is async
-    let is_asynchronous = Input_function.sig.asyncness.is_some();
+    let is_asynchronous = input_function.sig.asyncness.is_some();
 
     if !is_asynchronous {
         return syn::Error::new_spanned(
-            Input_function.sig.fn_token,
+            input_function.sig.fn_token,
             "Functions with Run_with_executor must be async",
         )
         .to_compile_error()
@@ -218,9 +216,9 @@ pub fn run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
     }
 
     // Check if function has no arguments
-    if !Input_function.sig.inputs.is_empty() {
+    if !input_function.sig.inputs.is_empty() {
         return syn::Error::new_spanned(
-            &Input_function.sig.inputs,
+            &input_function.sig.inputs,
             "Functions with Run_with_executor must not have any arguments",
         )
         .to_compile_error()
@@ -228,12 +226,12 @@ pub fn run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
     }
 
     // Check if function has no return type (or returns unit type)
-    if let syn::ReturnType::Type(_, Return_type) = &Input_function.sig.output {
+    if let syn::ReturnType::Type(_, return_type) = &input_function.sig.output {
         // Allow unit type () but reject any other return type
-        if let syn::Type::Tuple(tuple) = Return_type.as_ref() {
+        if let syn::Type::Tuple(tuple) = return_type.as_ref() {
             if !tuple.elems.is_empty() {
                 return syn::Error::new_spanned(
-                    Return_type,
+                    return_type,
                     "Functions with Run_with_executor must not have a return type",
                 )
                 .to_compile_error()
@@ -241,7 +239,7 @@ pub fn run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
             }
         } else {
             return syn::Error::new_spanned(
-                Return_type,
+                return_type,
                 "Functions with Run_with_executor must not have a return type",
             )
             .to_compile_error()
@@ -250,35 +248,35 @@ pub fn run(Arguments: TokenStream, Input: TokenStream) -> TokenStream {
     }
 
     // Extract attributes to preserve them on the outer function
-    let attributes = &Input_function.attrs;
+    let attributes = &input_function.attrs;
 
     // Change ident to __inner to avoid name conflicts
-    let mut Input_function = Input_function.clone();
-    Input_function.sig.ident = format_ident!("__inner");
-    Input_function.attrs.clear(); // Remove attributes from inner function
+    let mut input_function = input_function.clone();
+    input_function.sig.ident = format_ident!("__inner");
+    input_function.attrs.clear(); // Remove attributes from inner function
 
     // Generate the new function
     quote! {
         #(#attributes)*
-        fn #Function_name() {
-            #Input_function
+        fn #function_name() {
+            #input_function
 
             static mut __SPAWNER : usize = 0;
 
             unsafe {
-                let __EXECUTOR : &'static mut _ = #Executor_expression;
+                let __EXECUTOR : &'static mut _ = #executor_expression;
 
                 __EXECUTOR.start(|Spawner| {
-                    let manager = #Task_path::initialize();
+                    let manager = #task_path::initialize();
 
                     unsafe {
                         __SPAWNER = manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
-                    #Task_path::futures::block_on(async move {
+                    #task_path::futures::block_on(async move {
                         manager.spawn(
-                            #Task_path::Manager::ROOT_TASK_IDENTIFIER,
-                            #Function_name_string,
+                            #task_path::Manager::ROOT_TASK_IDENTIFIER,
+                            #function_name_string,
                             Some(__SPAWNER),
                             async move |_task| {
                                 __inner().await;
