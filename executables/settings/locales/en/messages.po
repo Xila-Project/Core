@@ -1,0 +1,105 @@
+# English translations for settings package.
+# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the settings package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: settings\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-10-30 00:00+0000\n"
+"PO-Revision-Date: 2025-10-30 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: settings.name
+msgid "Settings"
+msgstr "Settings"
+
+#: error.graphics
+msgid "Graphics error : {}"
+msgstr "Graphics error : {}"
+
+#: error.file_system
+msgid "File system error: {}"
+msgstr "File system error: {}"
+
+#: error.virtual_file_system
+msgid "Virtual file system error: {}"
+msgstr "Virtual file system error: {}"
+
+#: error.failed_to_create_object
+msgid "Failed to create object"
+msgstr "Failed to create object"
+
+#: error.failed_to_get_child_object
+msgid "Failed to get child object"
+msgstr "Failed to get child object"
+
+#: error.failed_to_set_environment_variable
+msgid "Failed to set environment variable: {}"
+msgstr "Failed to set environment variable: {}"
+
+#: error.invalid_utf8_string
+msgid "Invalid UTF-8 string: {}"
+msgstr "Invalid UTF-8 string: {}"
+
+#: error.failed_to_set_task_user
+msgid "Failed to set task user: {}"
+msgstr "Failed to set task user: {}"
+
+#: error.failed_to_get_current_task_identifier
+msgid "Failed to get current task identifier: {}"
+msgstr "Failed to get current task identifier: {}"
+
+#: error.failed_to_read_directory
+msgid "Failed to read directory: {}"
+msgstr "Failed to read directory: {}"
+
+#: error.failed_to_open_standard_file
+msgid "Failed to open standard file: {}"
+msgstr "Failed to open standard file: {}"
+
+#: error.null_character_in_string
+msgid "Null character in string: {}"
+msgstr "Null character in string: {}"
+
+#: error.failed_to_create_ui_element
+msgid "Failed to create UI element"
+msgstr "Failed to create UI element"
+
+#: error.authentication_failed
+msgid "Authentication failed: {}"
+msgstr "Authentication failed: {}"
+
+#: tabs.general.title
+msgid "General"
+msgstr "General"
+
+#: tabs.general.message
+msgid "General settings will be implemented here."
+msgstr "General settings will be implemented here."
+
+#: tabs.password.title
+msgid "Password"
+msgstr "Password"
+
+#: tabs.password.content.current_password
+msgid "Current Password"
+msgstr "Current Password"
+
+#: tabs.password.content.new_password
+msgid "New Password"
+msgstr "New Password"
+
+#: tabs.password.content.confirm_password
+msgid "Confirm Password"
+msgstr "Confirm Password"
+
+#: tabs.password.content.change_password
+msgid "Change Password"
+msgstr "Change Password"

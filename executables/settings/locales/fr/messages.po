@@ -1,0 +1,105 @@
+# French translations for settings package.
+# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the settings package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: settings\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-10-30 00:00+0000\n"
+"PO-Revision-Date: 2025-10-30 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: settings.name
+msgid "Settings"
+msgstr "Réglages"
+
+#: error.graphics
+msgid "Graphics error : {}"
+msgstr "Erreur graphique: {}"
+
+#: error.file_system
+msgid "File system error: {}"
+msgstr "Erreur du système de fichiers: {}"
+
+#: error.virtual_file_system
+msgid "Virtual file system error: {}"
+msgstr "Erreur du système de fichiers virtuel: {}"
+
+#: error.failed_to_create_object
+msgid "Failed to create object"
+msgstr "Échec de la création de l'objet"
+
+#: error.failed_to_get_child_object
+msgid "Failed to get child object"
+msgstr "Échec de l'obtention de l'objet enfant"
+
+#: error.failed_to_set_environment_variable
+msgid "Failed to set environment variable: {}"
+msgstr "Échec de la définition de la variable d'environnement: {}"
+
+#: error.invalid_utf8_string
+msgid "Invalid UTF-8 string: {}"
+msgstr "Chaîne UTF-8 invalide : {}"
+
+#: error.failed_to_set_task_user
+msgid "Failed to set task user: {}"
+msgstr "Échec de la définition de l'utilisateur de la tâche: {}"
+
+#: error.failed_to_get_current_task_identifier
+msgid "Failed to get current task identifier: {}"
+msgstr "Échec de l'obtention de l'identifiant de la tâche en cours: {}"
+
+#: error.failed_to_read_directory
+msgid "Failed to read directory: {}"
+msgstr "Échec de la lecture du répertoire: {}"
+
+#: error.failed_to_open_standard_file
+msgid "Failed to open standard file: {}"
+msgstr "Échec de l'ouverture du fichier standard: {}"
+
+#: error.null_character_in_string
+msgid "Null character in string: {}"
+msgstr "Caractère nul dans la chaîne: {}"
+
+#: error.failed_to_create_ui_element
+msgid "Failed to create UI element"
+msgstr "Échec de la création de l'élément d'interface utilisateur"
+
+#: error.authentication_failed
+msgid "Authentication failed: {}"
+msgstr "Échec de l'authentification: {}"
+
+#: tabs.general.title
+msgid "General"
+msgstr "Général"
+
+#: tabs.general.message
+msgid "General settings will be implemented here."
+msgstr "Les réglages généraux seront implémentés ici."
+
+#: tabs.password.title
+msgid "Password"
+msgstr "Mot de passe"
+
+#: tabs.password.content.current_password
+msgid "Current Password"
+msgstr "Mot de passe actuel"
+
+#: tabs.password.content.new_password
+msgid "New Password"
+msgstr "Nouveau mot de passe"
+
+#: tabs.password.content.confirm_password
+msgid "Confirm Password"
+msgstr "Confirmer le mot de passe"
+
+#: tabs.password.content.change_password
+msgid "Change Password"
+msgstr "Changer le mot de passe"
