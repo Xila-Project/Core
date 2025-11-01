@@ -1,21 +1,19 @@
 extern crate std;
 
-use std::path::Path;
+use alloc::format;
+use alloc::string::{String, ToString};
 use std::path::PathBuf;
 use std::process::Command;
 
-use alloc::format;
-use alloc::string::{String, ToString};
-
-pub fn build_crate(path: impl AsRef<Path>) -> Result<PathBuf, String> {
-    log::information!("Building executable crate at {}", path.as_ref().display());
+pub fn build_crate(name: &str) -> Result<PathBuf, String> {
+    log::information!("Building executable crate {}", name);
 
     let output = Command::new("cargo")
         .arg("build")
         .arg("--profile=release-wasm")
         .arg("--target=wasm32-wasip1")
-        .arg("--manifest-path")
-        .arg(path.as_ref().join("Cargo.toml"))
+        .arg("-p")
+        .arg(name)
         .arg("--message-format=json")
         .output()
         .map_err(|e| format!("Failed to start cargo build: {}", e))?;
