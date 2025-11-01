@@ -1,7 +1,7 @@
 [workspace]
 
 [package]
-name = "wasm_test"
+name = "wasm_wasm_test"
 version = "0.1.0"
 edition = "2024"
 
