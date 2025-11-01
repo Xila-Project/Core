@@ -1,7 +1,5 @@
 #![no_std]
 
-xila::internationalization::include_translations!();
-
 mod desk;
 mod error;
 mod home;

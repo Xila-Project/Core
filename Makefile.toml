@@ -1,22 +1,32 @@
+[config]
+default_to_workspace = false
+init_task = "generate-fonts"
+
+[tasks.install-tools]
+command = "npm"
+args = ["install"]
+
+[tasks.generate-fonts]
+toolchain = "stable"
+command = "cargo"
+args = ["run", "--package", "fonts_generator"]
 
 [tasks.format-rust]
-workspace = false
 install_crate = "rustfmt"
+toolchain = "stable"
 command = "cargo"
 args = ["fmt", "--all", "${@}"]
 
 [tasks.format-toml]
-workspace = false
 install_crate = "taplo-cli"
 command = "taplo"
 args = ["format", "${@}"]
 
 [tasks.format]
-workspace = false
 dependencies = ["format-rust", "format-toml"]
 
 [tasks.check-host]
-workspace = false
+toolchain = "stable"
 command = "cargo"
 args = [
   "check",
@@ -27,7 +37,7 @@ args = [
 ]
 
 [tasks.check-wasm]
-workspace = false
+toolchain = "stable"
 command = "cargo"
 args = [
   "check",
@@ -38,7 +48,7 @@ args = [
 ]
 
 [tasks.doc-host]
-workspace = false
+toolchain = "stable"
 command = "cargo"
 args = [
   "doc",
@@ -49,21 +59,19 @@ args = [
 ]
 
 [tasks.doc-wasm]
-workspace = false
+toolchain = "stable"
 command = "cargo"
 args = ["doc", "--features", "wasm", "--target", "wasm32-unknown-unknown"]
 
 [tasks.doc]
-workspace = false
 dependencies = ["doc-host", "doc-wasm"]
 
 [tasks.check]
-workspace = false
 dependencies = ["check-host", "check-wasm"]
 
 [tasks.clippy-wasm]
-workspace = false
 install_crate = "clippy"
+toolchain = "stable"
 command = "cargo"
 args = [
   "clippy",
@@ -78,8 +86,8 @@ args = [
 ]
 
 [tasks.clippy-host]
-workspace = false
 install_crate = "clippy"
+toolchain = "stable"
 command = "cargo"
 args = [
   "clippy",
@@ -94,20 +102,28 @@ args = [
 ]
 
 [tasks.clippy]
-workspace = false
 dependencies = ["clippy-host", "clippy-wasm"]
 
 [tasks.lint]
-workspace = false
 install_crate = "clippy"
+toolchain = "stable"
 command = "cargo"
 args = ["clippy", "--all-targets", "--all-features", "--", "-D", "warnings"]
 
 [tasks.test]
-workspace = false
+toolchain = "stable"
 command = "cargo"
 args = ["test", "--workspace"]
 
+[tasks.run]
+toolchain = "stable"
+command = "cargo"
+args = ["run", "${@}"]
+
+[tasks.build]
+toolchain = "stable"
+command = "cargo"
+args = ["build", "${@}"]
+
 [tasks.before-commit]
-workspace = false
 dependencies = ["format", "check", "doc", "clippy"]

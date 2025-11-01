@@ -9,12 +9,12 @@ use xila::graphics::{
 use xila::task;
 
 use crate::error::Result;
-use crate::tabs::{GeneralTab, PasswordTab, Tab};
+use crate::tabs::{AboutTab, GeneralTab, PasswordTab, Tab};
 
 pub struct Settings {
     window: Window,
     running: bool,
-    tabs: [Tab; 2],
+    tabs: [Tab; 3],
 }
 
 #[derive(Clone)]
@@ -46,6 +46,7 @@ impl Settings {
         let mut tabs = [
             Tab::GeneralTab(GeneralTab::new()),
             Tab::PasswordTab(PasswordTab::new()),
+            Tab::AboutTab(AboutTab::new()),
         ];
 
         tabs.iter_mut().for_each(|tab| {

@@ -5,16 +5,10 @@ mod error;
 
 extern crate alloc;
 
-xila::internationalization::include_translations!();
-
 use crate::Error;
 use alloc::boxed::Box;
-use alloc::{
-    borrow::ToOwned,
-    string::{String, ToString},
-    vec,
-    vec::Vec,
-};
+use alloc::{borrow::ToOwned, string::String, vec, vec::Vec};
+use core::fmt::Write;
 use core::num::NonZeroUsize;
 use core::pin::Pin;
 use xila::executable::ArgumentsParser;
@@ -52,7 +46,7 @@ implement_executable_device!(
     main_function: main,
 );
 
-pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(), Error> {
+pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<(), Error> {
     let parsed_arguments = ArgumentsParser::new(&arguments);
 
     let install = parsed_arguments
@@ -109,11 +103,6 @@ pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(
 
     let function_name = if install { Some("__install") } else { None };
 
-    let standard = standard
-        .duplicate()
-        .await
-        .map_err(Error::FailedToDuplicateStandard)?;
-
     if let Some(new_thread_executor) = NEW_THREAD_EXECUTOR.try_get() {
         let spawner_identifier = new_thread_executor().await;
 
@@ -123,27 +112,19 @@ pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(
                 "WASM Execution",
                 Some(spawner_identifier),
                 move |task_identifier| async move {
-                    //log::information!("WASM task identifier: {task_identifier:?}");
-
-                    let standard = standard
-                        .transfer(task_identifier)
-                        .await
-                        .map_err(Error::FailedToTransferStandard)?;
-
-                    let (standard_in, standard_out, standard_error) = standard.split();
+                    let standards = standard.split();
 
                     let result = virtual_machine::get_instance()
                         .execute(
                             buffer,
                             stack_size,
-                            (standard_in, standard_out, standard_error),
+                            standards,
                             function_name,
                             vec![],
+                            task_identifier,
                         )
                         .await
                         .map_err(Error::FailedToExecute)?;
-
-                    core::mem::forget(standard); // Streams are closed by WAMR
 
                     Ok(result)
                 },
@@ -154,30 +135,41 @@ pub async fn inner_main(standard: &Standard, arguments: Vec<String>) -> Result<(
             .join()
             .await?;
     } else {
-        let (standard_in, standard_out, standard_error) = standard.split();
+        let standards = standard.split();
+
+        let task_identifier = task::get_instance().get_current_task_identifier().await;
 
         virtual_machine::get_instance()
             .execute(
                 buffer,
                 stack_size,
-                (standard_in, standard_out, standard_error),
+                standards,
                 function_name,
                 vec![],
+                task_identifier,
             )
             .await
             .map_err(Error::FailedToExecute)?;
-
-        core::mem::forget(standard); // Streams are closed by WAMR
     }
 
     Ok(())
 }
 
 pub async fn main(standard: Standard, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
-    match inner_main(&standard, arguments).await {
+    let mut duplicated_standard = standard
+        .duplicate()
+        .await
+        .map_err(Error::FailedToDuplicateStandard)?;
+
+    match inner_main(standard, arguments).await {
         Ok(()) => Ok(()),
         Err(error) => {
-            standard.print_error_line(&error.to_string()).await;
+            let _ = write!(
+                duplicated_standard.standard_error,
+                "WASM Executable Error: {}\n",
+                error
+            )
+            .unwrap();
             Err(error.into())
         }
     }

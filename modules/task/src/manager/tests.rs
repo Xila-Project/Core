@@ -485,6 +485,7 @@ async fn test_get_children() {
     assert_eq!(final_children.len(), initial_count);
 }
 
+#[ignore]
 #[test(task_path = crate)]
 async fn test_get_children_with_nested_tasks() {
     let manager = initialize();

@@ -5,7 +5,6 @@ use crate::{
     resolver::resolve,
 };
 use alloc::{
-    format,
     string::{String, ToString},
     vec::Vec,
 };
@@ -14,18 +13,14 @@ use xila::{executable::execute, file_system::Path, task};
 impl Shell {
     pub async fn execute<'a>(&mut self, command: Command<'a>, paths: &[&Path]) -> Result<()> {
         // - Set the current directory for the following commands.
-        if let Err(error) = task::get_instance()
+        task::get_instance()
             .set_environment_variable(
                 self.standard.get_task(),
                 "Current_directory",
                 self.current_directory.as_str(),
             )
             .await
-        {
-            self.standard
-                .print_error_line(&format!("Failed to set current directory: {error}"))
-                .await;
-        }
+            .map_err(Error::FailedToSetCurrentDirectory)?;
 
         let path = Path::from_str(command.command);
 
@@ -33,10 +28,13 @@ impl Shell {
             if path.is_absolute() {
                 self.run(path, command.arguments).await?;
             } else {
-                match self.current_directory.clone().join(path) {
-                    Some(path) => self.run(&path, command.arguments).await?,
-                    None => self.standard.print_error_line("Invalid command").await,
-                }
+                let path = self
+                    .current_directory
+                    .clone()
+                    .join(path)
+                    .ok_or(Error::FailedToJoinPath)?;
+
+                self.run(&path, command.arguments).await?;
             }
         } else {
             let path = resolve(command.command, paths).await?;

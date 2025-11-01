@@ -1,0 +1,83 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: error.graphics
+msgid "Graphics error: {}"
+msgstr ""
+
+#: error.failed_to_create_object
+msgid "Failed to create object"
+msgstr ""
+
+#: error.failed_to_get_child
+msgid "Failed to get child"
+msgstr ""
+
+#: error.failed_to_set_environment_variable
+msgid "Failed to set environment variable: {}"
+msgstr ""
+
+#: error.invalid_utf8
+msgid "Invalid UTF-8: {}"
+msgstr ""
+
+#: error.authentication_failed
+msgid "Authentication failed: {}"
+msgstr ""
+
+#: error.failed_to_set_task_user
+msgid "Failed to set task user: {}"
+msgstr ""
+
+#: error.failed_to_deserialize_shortcut
+msgid "Failed to deserialize shortcut: {}"
+msgstr ""
+
+#: error.failed_to_get_current_task_identifier
+msgid "Failed to get current task identifier: {}"
+msgstr ""
+
+#: error.failed_to_read_shortcut_directory
+msgid "Failed to read shortcut directory: {}"
+msgstr ""
+
+#: error.failed_to_get_shortcut_file_path
+msgid "Failed to get shortcut file path"
+msgstr ""
+
+#: error.failed_to_read_shortcut_file
+msgid "Failed to read shortcut file: {}"
+msgstr ""
+
+#: error.failed_to_open_standard_file
+msgid "Failed to open standard file: {}"
+msgstr ""
+
+#: error.failed_to_execute_shortcut
+msgid "Failed to execute shortcut: {}"
+msgstr ""
+
+#: error.null_character_in_string
+msgid "Null character in string: {}"
+msgstr ""
+
+#: error.missing_arguments
+msgid "Missing arguments"
+msgstr ""
+
+#: error.failed_to_add_shortcut
+msgid "Failed to add shortcut: {}"
+msgstr ""
+
+#: login.user_name
+msgid "User name"
+msgstr ""
+
+#: login.password
+msgid "Password"
+msgstr ""
+
+#: login.login
+msgid "Login"
+msgstr ""

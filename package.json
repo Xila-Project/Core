@@ -1,0 +1,13 @@
+{
+  "name": "xila",
+  "version": "1.0.0",
+  "description": "<h1 align=\"center\">Xila core</h1>",
+  "main": "index.js",
+  "directories": {},
+  "scripts": {},
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "lv_font_conv": "github:lvgl/lv_font_conv"
+  }
+}

@@ -13,7 +13,7 @@ use alloc::{
     vec::Vec,
 };
 use xila::executable::Standard;
-use xila::file_system::{Kind, Mode};
+use xila::file_system::Kind;
 use xila::futures::block_on;
 use xila::graphics::{self, Color, EventKind, Logo, Point, Window, lvgl};
 use xila::log::error;
@@ -325,35 +325,19 @@ impl Desk {
 
         let shortcut = Shortcut::read(shortcut_name, &mut buffer).await?;
 
-        let standard_in = virtual_file_system::get_instance()
-            .open(&"/devices/null", Mode::READ_ONLY.into(), task)
-            .await
-            .map_err(Error::FailedToOpenStandardFile)?;
-
-        let standard_out = virtual_file_system::get_instance()
-            .open(&"/devices/null", Mode::WRITE_ONLY.into(), task)
-            .await
-            .map_err(Error::FailedToOpenStandardFile)?;
-
-        let standard_err = virtual_file_system::get_instance()
-            .open(&"/devices/null", Mode::WRITE_ONLY.into(), task)
-            .await
-            .map_err(Error::FailedToOpenStandardFile)?;
-
-        executable::execute(
-            &*shortcut.command,
-            shortcut.arguments,
-            Standard::new(
-                standard_in,
-                standard_out,
-                standard_err,
-                task,
-                virtual_file_system::get_instance(),
-            ),
-            None,
+        let standard = Standard::open(
+            &"/devices/null",
+            &"/devices/null",
+            &"/devices/null",
+            task,
+            &virtual_file_system::get_instance(),
         )
         .await
-        .map_err(Error::FailedToExecuteShortcut)?;
+        .map_err(Error::FailedToOpenStandardFile)?;
+
+        executable::execute(&*shortcut.command, shortcut.arguments, standard, None)
+            .await
+            .map_err(Error::FailedToExecuteShortcut)?;
 
         Ok(())
     }

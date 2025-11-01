@@ -1,9 +1,8 @@
 use crate::error::Result;
-use crate::translations;
-
 use alloc::ffi::CString;
 use xila::authentication;
 use xila::graphics::{Event, EventKind, lvgl};
+use xila::internationalization::translate;
 use xila::task;
 use xila::users;
 use xila::virtual_file_system;
@@ -191,12 +190,8 @@ impl PasswordTab {
         &mut self,
         parent_tabview: *mut lvgl::lv_obj_t,
     ) -> Result<*mut lvgl::lv_obj_t> {
-        let tab_container = unsafe {
-            lvgl::lv_tabview_add_tab(
-                parent_tabview,
-                translations::tabs__password__title!(c).as_ptr(),
-            )
-        };
+        let tab_container =
+            unsafe { lvgl::lv_tabview_add_tab(parent_tabview, translate!(c"Password").as_ptr()) };
 
         if tab_container.is_null() {
             return Err(crate::error::Error::FailedToCreateUiElement);
@@ -216,7 +211,7 @@ impl PasswordTab {
             let current_password_label = lvgl::lv_label_create(tab_container);
             lvgl::lv_label_set_text(
                 current_password_label,
-                translations::tabs__password__content__current_password!(c).as_ptr(),
+                translate!(c"Current Password").as_ptr(),
             );
             lvgl::lv_obj_align(
                 current_password_label,
@@ -238,10 +233,7 @@ impl PasswordTab {
 
             // New password
             let new_password_label = lvgl::lv_label_create(tab_container);
-            lvgl::lv_label_set_text(
-                new_password_label,
-                translations::tabs__password__content__current_password!(c).as_ptr(),
-            );
+            lvgl::lv_label_set_text(new_password_label, translate!(c"New Password").as_ptr());
             lvgl::lv_obj_align_to(
                 new_password_label,
                 current_password_text_area,
@@ -265,7 +257,7 @@ impl PasswordTab {
             let confirm_password_label = lvgl::lv_label_create(tab_container);
             lvgl::lv_label_set_text(
                 confirm_password_label,
-                translations::tabs__password__content__confirm_password!(c).as_ptr(),
+                translate!(c"Confirm Password").as_ptr(),
             );
             lvgl::lv_obj_align_to(
                 confirm_password_label,
@@ -297,10 +289,7 @@ impl PasswordTab {
             );
 
             let button_label = lvgl::lv_label_create(change_password_button);
-            lvgl::lv_label_set_text(
-                button_label,
-                translations::tabs__password__content__change_password!(c).as_ptr(),
-            );
+            lvgl::lv_label_set_text(button_label, translate!(c"Change Password").as_ptr());
             lvgl::lv_obj_center(button_label);
 
             // Status label

@@ -1,0 +1,27 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: error.graphics
+msgid "Graphics: {}"
+msgstr "Graphics: {}"
+
+#: error.failed_to_create_object
+msgid "Failed to create object"
+msgstr "Failed to create object"
+
+#: error.utf8
+msgid "UTF-8: {}"
+msgstr "UTF-8: {}"
+
+#: error.failed_to_mount_device
+msgid "Failed to mount device: {}"
+msgstr "Failed to mount device: {}"
+
+#: error.failed_to_get_task_identifier
+msgid "Failed to get task identifier: {}"
+msgstr "Failed to get task identifier: {}"
+
+#: error.failed_to_execute
+msgid "Failed to execute: {}"
+msgstr "Failed to execute: {}"

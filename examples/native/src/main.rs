@@ -215,7 +215,7 @@ async fn main() {
     .await
     .unwrap();
 
-    let calculator_binary_path = build_crate("../../executables/calculator").unwrap();
+    let calculator_binary_path = build_crate(&"calculator").unwrap();
 
     load_to_virtual_file_system(
         virtual_file_system,

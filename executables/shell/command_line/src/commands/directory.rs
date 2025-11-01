@@ -1,22 +1,17 @@
-use alloc::{borrow::ToOwned, format};
+use crate::{Error, Result, Shell};
+use alloc::borrow::ToOwned;
 use xila::{file_system::Path, virtual_file_system};
 
-use crate::Shell;
-
 impl Shell {
-    pub async fn create_directory(&mut self, arguments: &[&str]) {
+    pub async fn create_directory(&mut self, arguments: &[&str]) -> Result<()> {
         if arguments.len() != 1 {
-            self.standard
-                .print_error_line("Invalid number of arguments")
-                .await;
-            return;
+            return Err(Error::InvalidNumberOfArguments);
         }
 
         let path = Path::from_str(arguments[0]);
 
         if !path.is_valid() {
-            self.standard.print_error_line("Invalid path").await;
-            return;
+            return Err(Error::InvalidPath);
         }
 
         let path = if path.is_absolute() {
@@ -25,35 +20,26 @@ impl Shell {
             match self.current_directory.clone().join(path) {
                 Some(path) => path.canonicalize(),
                 None => {
-                    self.standard.print_error_line("Failed to join paths").await;
-                    return;
+                    return Err(Error::FailedToJoinPath);
                 }
             }
         };
 
-        if let Err(error) = virtual_file_system::get_instance()
+        virtual_file_system::get_instance()
             .create_directory(&path, self.standard.get_task())
             .await
-        {
-            self.standard
-                .print_error_line(&format!("Failed to create directory: {error}"))
-                .await;
-        }
+            .map_err(Error::FailedToCreateDirectory)
     }
 
-    pub async fn remove(&mut self, arguments: &[&str]) {
+    pub async fn remove(&mut self, arguments: &[&str]) -> Result<()> {
         if arguments.len() != 1 {
-            self.standard
-                .print_error_line("Invalid number of arguments")
-                .await;
-            return;
+            return Err(Error::InvalidNumberOfArguments);
         }
 
         let path = Path::from_str(arguments[0]);
 
         if !path.is_valid() {
-            self.standard.print_error_line("Invalid path").await;
-            return;
+            return Err(Error::InvalidPath);
         }
 
         let path = if path.is_absolute() {
@@ -62,16 +48,14 @@ impl Shell {
             match self.current_directory.clone().join(path) {
                 Some(path) => path.canonicalize(),
                 None => {
-                    self.standard.print_error_line("Failed to join paths").await;
-                    return;
+                    return Err(Error::FailedToJoinPath);
                 }
             }
         };
 
-        if let Err(error) = virtual_file_system::get_instance().remove(&path).await {
-            self.standard
-                .print_error_line(&format!("Failed to remove directory: {error}"))
-                .await;
-        }
+        virtual_file_system::get_instance()
+            .remove(&path)
+            .await
+            .map_err(Error::FailedToRemoveDirectory)
     }
 }

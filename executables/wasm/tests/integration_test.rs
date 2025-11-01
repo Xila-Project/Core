@@ -33,8 +33,7 @@ async fn main() {
 
     let file_system = little_fs::FileSystem::new(memory_device, 256).unwrap();
 
-    let crate_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("./tests/wasm_test");
-    let binary_path = build_crate(&crate_path).unwrap();
+    let binary_path = build_crate(&"wasm_wasm_test").unwrap();
 
     let virtual_file_system =
         virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();

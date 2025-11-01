@@ -2,16 +2,13 @@
 
 extern crate alloc;
 
-xila::internationalization::include_translations!();
-
-use core::num::NonZeroUsize;
-
 use alloc::{
     borrow::ToOwned,
-    format,
     string::{String, ToString},
     vec::Vec,
 };
+use core::fmt::Write;
+use core::num::NonZeroUsize;
 use xila::executable::Standard;
 use xila::file_system::Path;
 use xila::task;
@@ -70,7 +67,7 @@ impl Shell {
         let commands = parse(tokens)?;
 
         for command in commands {
-            match command.command {
+            let result = match command.command {
                 "exit" => self.exit(&command.arguments).await,
                 "cd" => self.change_directory(&command.arguments).await,
                 "echo" => self.echo(&command.arguments).await,
@@ -82,7 +79,11 @@ impl Shell {
                 "export" => self.set_environment_variable(&command.arguments).await,
                 "unset" => self.remove_environment_variable(&command.arguments).await,
                 "rm" => self.remove(&command.arguments).await,
-                _ => self.execute(command, paths).await?,
+                _ => self.execute(command, paths).await,
+            };
+
+            if let Err(error) = result {
+                writeln!(self.standard.standard_error, "{}", error)?;
             }
         }
 
@@ -93,14 +94,15 @@ impl Shell {
         let mut input_string = String::new();
 
         while self.running {
-            self.standard
-                .print(&format!(
-                    "{}@{}:{}$ ",
-                    self.user, self.host, self.current_directory
-                ))
-                .await;
+            let _ = write!(
+                self.standard.out(),
+                "{}@{}:{}$ ",
+                self.user,
+                self.host,
+                self.current_directory
+            );
 
-            self.standard.out_flush().await;
+            let _ = self.standard.out().flush().await;
 
             input_string.clear();
 
@@ -115,7 +117,7 @@ impl Shell {
             let result = self.parse_input(input, paths).await;
 
             if let Err(error) = result {
-                self.standard.print_error_line(&error.to_string()).await;
+                let _ = writeln!(self.standard.standard_error, "{}", error);
             }
         }
 
@@ -131,7 +133,9 @@ impl Shell {
             Err(_) => loop {
                 match self.authenticate().await {
                     Ok(user) => break user,
-                    Err(error) => self.standard.print_error_line(&error.to_string()).await,
+                    Err(error) => {
+                        let _ = writeln!(self.standard.standard_error, "{}", error);
+                    }
                 }
             },
         };

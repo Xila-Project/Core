@@ -3,7 +3,7 @@ extern crate alloc;
 extern crate std;
 
 use drivers_native::TimeDriver;
-use executable::build_crate;
+use executable::{Standard, build_crate};
 use file_system::{MemoryDevice, create_device, create_file_system};
 use graphics::lvgl;
 use std::fs;
@@ -67,9 +67,7 @@ async fn test() {
     // - Initialize the system
     log::initialize(&drivers_std::log::Logger).unwrap();
 
-    let wasm_crate_path =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("./tests/wasm_test");
-    let binary_path = build_crate(&wasm_crate_path).unwrap();
+    let binary_path = build_crate(&"host_bindings_wasm_test").unwrap();
     let binary_buffer = fs::read(&binary_path).unwrap();
 
     users::initialize();
@@ -135,40 +133,25 @@ async fn test() {
 
     let _calendar = unsafe { lvgl::lv_calendar_create(window.into_raw()) };
 
-    let standard_in = virtual_file_system
-        .open(
-            &"/devices/standard_in",
-            file_system::Mode::READ_ONLY.into(),
-            task,
-        )
-        .await
-        .unwrap();
-
-    let standard_out = virtual_file_system
-        .open(
-            &"/devices/standard_out",
-            file_system::Mode::WRITE_ONLY.into(),
-            task,
-        )
-        .await
-        .unwrap();
-
-    let standard_error = virtual_file_system
-        .open(
-            &"/devices/standard_out",
-            file_system::Mode::WRITE_ONLY.into(),
-            task,
-        )
-        .await
-        .unwrap();
+    let standard = Standard::open(
+        &"/devices/standard_in",
+        &"/devices/standard_out",
+        &"/devices/standard_error",
+        task,
+        virtual_file_system,
+    )
+    .await
+    .unwrap()
+    .split();
 
     virtual_machine
         .execute(
             binary_buffer.to_vec(),
             8 * 1024,
-            (standard_in, standard_out, standard_error),
+            standard,
             None,
             vec![],
+            task,
         )
         .await
         .unwrap();

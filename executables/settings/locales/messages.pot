@@ -1,0 +1,112 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: settings.name
+msgid "Settings"
+msgstr ""
+
+#: error.graphics
+msgid "Graphics error : {}"
+msgstr ""
+
+#: error.file_system
+msgid "File system error: {}"
+msgstr ""
+
+#: error.virtual_file_system
+msgid "Virtual file system error: {}"
+msgstr ""
+
+#: error.failed_to_create_object
+msgid "Failed to create object"
+msgstr ""
+
+#: error.failed_to_get_child_object
+msgid "Failed to get child object"
+msgstr ""
+
+#: error.failed_to_set_environment_variable
+msgid "Failed to set environment variable: {}"
+msgstr ""
+
+#: error.invalid_utf8_string
+msgid "Invalid UTF-8 string: {}"
+msgstr ""
+
+#: error.failed_to_set_task_user
+msgid "Failed to set task user: {}"
+msgstr ""
+
+#: error.failed_to_get_current_task_identifier
+msgid "Failed to get current task identifier: {}"
+msgstr ""
+
+#: error.failed_to_read_directory
+msgid "Failed to read directory: {}"
+msgstr ""
+
+#: error.failed_to_open_standard_file
+msgid "Failed to open standard file: {}"
+msgstr ""
+
+#: error.null_character_in_string
+msgid "Null character in string: {}"
+msgstr ""
+
+#: error.failed_to_create_ui_element
+msgid "Failed to create UI element"
+msgstr ""
+
+#: error.authentication_failed
+msgid "Authentication failed: {}"
+msgstr ""
+
+msgid "Formatting error"
+msgstr ""
+
+#: tabs.general.title
+msgid "General"
+msgstr ""
+
+#: tabs.general.message
+msgid "General settings will be implemented here."
+msgstr ""
+
+#: tabs.password.title
+msgid "Password"
+msgstr ""
+
+#: tabs.password.content.current_password
+msgid "Current Password"
+msgstr ""
+
+#: tabs.password.content.new_password
+msgid "New Password"
+msgstr ""
+
+#: tabs.password.content.confirm_password
+msgid "Confirm Password"
+msgstr ""
+
+#: tabs.password.content.change_password
+msgid "Change Password"
+msgstr ""
+
+msgid "About"
+msgstr ""
+
+msgid "Developed by:"
+msgstr ""
+
+msgid "License:"
+msgstr ""
+
+msgid "Version:"
+msgstr ""
+
+msgid "Locale:"
+msgstr ""
+
+msgid "Fallback:"
+msgstr ""

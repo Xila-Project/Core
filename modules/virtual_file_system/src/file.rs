@@ -1,12 +1,13 @@
-use core::fmt::Debug;
+use core::{fmt::Debug, mem::forget};
 
-use alloc::vec::Vec;
-use futures::block_on;
-use task::TaskIdentifier;
-
+use alloc::{string::String, vec::Vec};
+use embedded_io_async::ErrorType;
+use exported_file_system::FileIdentifier;
 use file_system::{
     Flags, Path, Position, Result, Size, Statistics_type, Status, UniqueFileIdentifier,
 };
+use futures::block_on;
+use task::TaskIdentifier;
 
 use super::VirtualFileSystem;
 
@@ -24,13 +25,51 @@ impl Debug for File<'_> {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("File")
-            .field("File_identifier", &self.file_identifier)
-            .field("File_system", &(self.file_system as *const _))
+            .field("file_identifier", &self.file_identifier)
+            .field("file_system", &(self.file_system as *const _))
+            .field("task", &self.task)
             .finish()
     }
 }
 
+impl ErrorType for File<'_> {
+    type Error = file_system::Error;
+}
+
+impl embedded_io_async::Write for File<'_> {
+    async fn write(&mut self, buf: &[u8]) -> core::result::Result<usize, Self::Error> {
+        File::write(self, buf)
+            .await
+            .map(|size| size.as_u64() as usize)
+    }
+
+    async fn flush(&mut self) -> core::result::Result<(), Self::Error> {
+        File::flush(self).await
+    }
+}
+
+impl core::fmt::Write for File<'_> {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        block_on(self.write(s.as_bytes())).map(|_| ()).map_err(|e| {
+            log::error!("Error writing string to file: {}", e);
+            core::fmt::Error
+        })
+    }
+}
+
 impl<'a> File<'a> {
+    pub fn from(
+        file_identifier: UniqueFileIdentifier,
+        file_system: &'a VirtualFileSystem<'a>,
+        task: TaskIdentifier,
+    ) -> Self {
+        Self {
+            file_identifier,
+            file_system,
+            task,
+        }
+    }
+
     pub async fn open(
         file_system: &'a VirtualFileSystem<'a>,
         path: impl AsRef<Path>,
@@ -82,6 +121,10 @@ impl<'a> File<'a> {
         self.file_identifier
     }
 
+    pub const fn get_task(&self) -> TaskIdentifier {
+        self.task
+    }
+
     // - Operations
 
     pub async fn write(&self, buffer: &[u8]) -> Result<Size> {
@@ -100,19 +143,10 @@ impl<'a> File<'a> {
             .read(self.get_file_identifier(), buffer, self.task)
             .await
     }
-    pub async fn read_line(&self, buffer: &mut [u8]) -> Result<()> {
-        let mut index = 0;
-        loop {
-            let size: usize = self.read(&mut buffer[index..index + 1]).await?.into();
-            if size == 0 {
-                break;
-            }
-            if buffer[index] == b'\n' {
-                break;
-            }
-            index += 1;
-        }
-        Ok(())
+    pub async fn read_line(&self, buffer: &mut String) -> Result<Size> {
+        self.file_system
+            .read_line(self.get_file_identifier(), self.task, buffer)
+            .await
     }
 
     pub async fn read_to_end(&self, buffer: &mut Vec<u8>) -> Result<Size> {
@@ -132,13 +166,66 @@ impl<'a> File<'a> {
             .flush(self.get_file_identifier(), self.task)
             .await
     }
+
+    pub async fn close(self) -> crate::Result<()> {
+        self.file_system
+            .close(self.get_file_identifier(), self.task)
+            .await?;
+
+        forget(self); // Prevent Drop from being called
+
+        Ok(())
+    }
+
+    pub async fn duplicate(&self) -> Result<Self> {
+        let file_identifier = self
+            .file_system
+            .duplicate_file_identifier(self.get_file_identifier(), self.task)
+            .await?;
+
+        Ok(File {
+            file_identifier,
+            file_system: self.file_system,
+            task: self.task,
+        })
+    }
+
+    pub async fn transfer(
+        mut self,
+        new_task: TaskIdentifier,
+        new_file: Option<FileIdentifier>,
+    ) -> Result<Self> {
+        self.file_identifier = self
+            .file_system
+            .transfer(self.get_file_identifier(), self.task, new_task, new_file)
+            .await?;
+
+        self.task = new_task;
+
+        Ok(self)
+    }
+
+    pub fn into_file_identifier(self) -> UniqueFileIdentifier {
+        let file_identifier = self.get_file_identifier();
+
+        forget(self); // Prevent Drop from being called
+
+        file_identifier
+    }
+}
+
+impl From<&File<'_>> for UniqueFileIdentifier {
+    fn from(val: &File<'_>) -> Self {
+        val.get_file_identifier()
+    }
 }
 
 impl Drop for File<'_> {
     fn drop(&mut self) {
-        let _ = block_on(
+        block_on(
             self.file_system
                 .close(self.get_file_identifier(), self.task),
-        );
+        )
+        .unwrap();
     }
 }

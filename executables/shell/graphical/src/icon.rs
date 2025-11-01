@@ -1,5 +1,9 @@
 use alloc::ffi::CString;
-use xila::graphics::{Color, Point, lvgl, theme};
+use xila::graphics::{
+    Color, Point,
+    fonts::{get_font_extra_large, get_font_large},
+    lvgl, theme,
+};
 
 use crate::error::{Error, Result};
 
@@ -43,17 +47,9 @@ pub unsafe fn create_icon(
         }
 
         if size.get_x() >= 48 {
-            lvgl::lv_obj_set_style_text_font(
-                label,
-                &lvgl::lv_font_montserrat_28,
-                lvgl::LV_STATE_DEFAULT,
-            );
+            lvgl::lv_obj_set_style_text_font(label, get_font_extra_large(), lvgl::LV_STATE_DEFAULT);
         } else {
-            lvgl::lv_obj_set_style_text_font(
-                label,
-                &lvgl::lv_font_montserrat_18,
-                lvgl::LV_STATE_DEFAULT,
-            );
+            lvgl::lv_obj_set_style_text_font(label, get_font_large(), lvgl::LV_STATE_DEFAULT);
         }
 
         let icon_string = CString::new(icon_string).map_err(Error::NullCharacterInString)?;

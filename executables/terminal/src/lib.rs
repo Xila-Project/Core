@@ -2,8 +2,6 @@
 
 extern crate alloc;
 
-xila::internationalization::include_translations!();
-
 mod device;
 mod error;
 mod executable;
@@ -11,16 +9,11 @@ mod terminal;
 
 pub use executable::*;
 
+use alloc::{string::String, sync::Arc, vec, vec::Vec};
+use core::fmt::Write;
 use core::{num::NonZeroUsize, time::Duration};
-
-use alloc::{
-    string::{String, ToString},
-    sync::Arc,
-    vec,
-    vec::Vec,
-};
 use xila::executable::Standard;
-use xila::file_system::{Device, Flags, Mode, UniqueFileIdentifier};
+use xila::file_system::Device;
 use xila::task::{self, TaskIdentifier};
 use xila::virtual_file_system;
 
@@ -36,35 +29,21 @@ pub const SHORTCUT: &str = r#"
     "icon_color": [0, 0, 0]
 }"#;
 
-async fn mount_and_open(
-    task: TaskIdentifier,
-    terminal: Arc<Terminal>,
-) -> Result<(
-    UniqueFileIdentifier,
-    UniqueFileIdentifier,
-    UniqueFileIdentifier,
-)> {
+async fn mount_and_open(task: TaskIdentifier, terminal: Arc<Terminal>) -> Result<Standard> {
     virtual_file_system::get_instance()
         .mount_device(task, &"/devices/terminal", Device::new(terminal))
         .await?;
 
-    let standard_in = virtual_file_system::get_instance()
-        .open(
-            &"/devices/terminal",
-            Flags::new(Mode::READ_ONLY, None, None),
-            task,
-        )
-        .await?;
+    let standard = Standard::open(
+        &"/devices/terminal",
+        &"/devices/terminal",
+        &"/devices/terminal",
+        task,
+        virtual_file_system::get_instance(),
+    )
+    .await?;
 
-    let standard_out = virtual_file_system::get_instance()
-        .open(&"/devices/terminal", Mode::WRITE_ONLY.into(), task)
-        .await?;
-
-    let standard_error = virtual_file_system::get_instance()
-        .duplicate_file_identifier(standard_out, task)
-        .await?;
-
-    Ok((standard_in, standard_out, standard_error))
+    Ok(standard)
 }
 
 async fn inner_main(task: TaskIdentifier) -> Result<()> {
@@ -72,16 +51,7 @@ async fn inner_main(task: TaskIdentifier) -> Result<()> {
 
     let terminal: Arc<Terminal> = Arc::new(terminal);
 
-    let (standard_in, standard_out, standard_error) =
-        mount_and_open(task, terminal.clone()).await?;
-
-    let standard = Standard::new(
-        standard_in,
-        standard_out,
-        standard_error,
-        task::get_instance().get_current_task_identifier().await,
-        virtual_file_system::get_instance(),
-    );
+    let standard = mount_and_open(task, terminal.clone()).await?;
 
     xila::executable::execute("/binaries/command_line_shell", vec![], standard, None).await?;
 
@@ -92,9 +62,12 @@ async fn inner_main(task: TaskIdentifier) -> Result<()> {
     Ok(())
 }
 
-pub async fn main(standard: Standard, _: Vec<String>) -> core::result::Result<(), NonZeroUsize> {
+pub async fn main(
+    mut standard: Standard,
+    _: Vec<String>,
+) -> core::result::Result<(), NonZeroUsize> {
     if let Err(error) = inner_main(standard.get_task()).await {
-        standard.print_error(&error.to_string()).await;
+        let _ = writeln!(standard.error(), "{}", error);
         return Err(error.into());
     }
 

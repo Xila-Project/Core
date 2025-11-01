@@ -1,10 +1,13 @@
 use core::{
+    convert::Infallible,
     fmt::Display,
     num::{NonZeroU8, NonZeroUsize},
 };
-
-use crate::translations;
-use xila::{authentication, file_system, graphics, task, virtual_file_system};
+use embedded_io::WriteFmtError;
+use xila::{
+    authentication, file_system, graphics, internationalization::translate, task,
+    virtual_file_system,
+};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -25,6 +28,7 @@ pub enum Error {
     NullCharacterInString(alloc::ffi::NulError),
     FailedToCreateUiElement,
     Authentication(authentication::Error),
+    FormattingError,
 }
 
 impl Error {
@@ -75,92 +79,81 @@ impl From<alloc::ffi::NulError> for Error {
     }
 }
 
+impl From<core::fmt::Error> for Error {
+    fn from(_: core::fmt::Error) -> Self {
+        Error::FormattingError
+    }
+}
+
+impl From<WriteFmtError<Infallible>> for Error {
+    fn from(_: WriteFmtError<Infallible>) -> Self {
+        Error::FormattingError
+    }
+}
+
 impl Display for Error {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             Error::Graphics(error) => {
-                write!(formatter, translations::error__graphics!(), error)
+                write!(formatter, translate!("Graphics error : {}"), error)
             }
             Error::FileSystem(error) => {
-                write!(formatter, translations::error__file_system!(), error)
+                write!(formatter, translate!("File system error: {}"), error)
             }
             Error::VirtualFileSystem(error) => {
                 write!(
                     formatter,
-                    translations::error__virtual_file_system!(),
+                    translate!("Virtual file system error: {}"),
                     error
                 )
             }
             Error::FailedToCreateObject => {
-                write!(formatter, translations::error__failed_to_create_object!())
+                write!(formatter, translate!("Failed to create object"))
             }
             Error::FailedToGetChild => {
-                write!(
-                    formatter,
-                    translations::error__failed_to_get_child_object!()
-                )
+                write!(formatter, translate!("Failed to get child object"))
             }
             Error::FailedToSetEnvironmentVariable(error) => {
                 write!(
                     formatter,
-                    translations::error__failed_to_set_environment_variable!(),
+                    translate!("Failed to set environment variable: {}"),
                     error
                 )
             }
             Error::InvalidUtf8(error) => {
-                write!(
-                    formatter,
-                    translations::error__invalid_utf8_string!(),
-                    error
-                )
+                write!(formatter, translate!("Invalid UTF-8 string: {}"), error)
             }
             Error::FailedToSetTaskUser(error) => {
-                write!(
-                    formatter,
-                    translations::error__failed_to_set_task_user!(),
-                    error
-                )
+                write!(formatter, translate!("Failed to set task user: {}"), error)
             }
             Error::FailedToGetCurrentTaskIdentifier(error) => {
                 write!(
                     formatter,
-                    translations::error__failed_to_get_current_task_identifier!(),
+                    translate!("Failed to get current task identifier: {}"),
                     error
                 )
             }
             Error::FailedToReadDirectory(error) => {
-                write!(
-                    formatter,
-                    translations::error__failed_to_read_directory!(),
-                    error
-                )
+                write!(formatter, translate!("Failed to read directory: {}"), error)
             }
             Error::FailedToOpenStandardFile(error) => {
                 write!(
                     formatter,
-                    translations::error__failed_to_open_standard_file!(),
+                    translate!("Failed to open standard file: {}"),
                     error
                 )
             }
             Error::NullCharacterInString(error) => {
-                write!(
-                    formatter,
-                    translations::error__null_character_in_string!(),
-                    error
-                )
+                write!(formatter, translate!("Null character in string: {}"), error)
             }
             Error::FailedToCreateUiElement => {
-                write!(
-                    formatter,
-                    translations::error__failed_to_create_ui_element!()
-                )
+                write!(formatter, translate!("Failed to create UI element"))
             }
             Error::Authentication(error) => {
-                write!(
-                    formatter,
-                    translations::error__authentication_failed!(),
-                    error
-                )
+                write!(formatter, translate!("Authentication failed: {}"), error)
+            }
+            Error::FormattingError => {
+                write!(formatter, translate!("Formatting error"))
             }
         }
     }

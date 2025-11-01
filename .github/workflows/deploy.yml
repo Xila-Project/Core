@@ -1,4 +1,5 @@
-name: Build and deploy documentation and demonstration to Github Pages
+name: Deploy
+description: Build and deploy documentation and demonstration to Github Pages
 
 on:
   push:
@@ -21,32 +22,8 @@ jobs:
       - name: Setup | Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup | Enable cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: "Documentation"
-
-      - name: Setup | Install GCC multilib
-        run: sudo apt update && sudo apt install -y gcc-multilib
-
-      - name: Setup | Rust stable toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown, wasm32-wasip1
-
-      - name: Setup | Rust nightly toolchain
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          targets: wasm32-unknown-unknown
-
-      - name: Setup | Cargo binstall
-        uses: cargo-bins/cargo-binstall@main
-
-      - name: Setup | Cargo make
-        run: cargo binstall cargo-make --no-confirm --force
-
-      - name: Setup | Trunk
-        run: cargo binstall trunk --no-confirm --force
+      - name: Setup
+        uses: ./.github/actions/setup
 
       - name: Build | Documentation (Host)
         run: |
@@ -62,12 +39,25 @@ jobs:
           cp ./documentation/index.html ./pages/wasm
           cp -r ./target/wasm32-unknown-unknown/doc/* ./pages/wasm/
 
-      - name: Build | WASM demonstration
+      - name: Build | WASM demonstration (en)
         working-directory: ./examples/wasm
+        env:
+          INTERNATIONALIZATION_LOCALE: en
         run: |
+          (cd ../../ && cargo make generate-fonts)
           trunk build --release --public-url ./
-          mkdir -p ../../pages/demonstrations/wasm/
-          cp -r ./dist/* ../../pages/demonstrations/wasm/
+          mkdir -p ../../pages/demonstrations/wasm/en/
+          cp -r ./dist/* ../../pages/demonstrations/wasm/en/
+
+      - name: Build | WASM demonstration (fr)
+        working-directory: ./examples/wasm
+        env:
+          INTERNATIONALIZATION_LOCALE: fr
+        run: |
+          (cd ../../ && cargo make generate-fonts)
+          trunk build --release --public-url ./
+          mkdir -p ../../pages/demonstrations/wasm/fr/
+          cp -r ./dist/* ../../pages/demonstrations/wasm/fr/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

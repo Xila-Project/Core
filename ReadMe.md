@@ -10,9 +10,15 @@ This repository contains the core of Xila. It contains the code for xila's core 
 
 Please install the following dependencies to build core:
 
-- `gcc-multilib` : to compile 32-bit applications on 64-bit systems with `gcc`.
-- (Optional) Rust [xtensa-esp32*-espidf](https://docs.esp-rs.org/book/installation/riscv-and-xtensa.html) toolchain : to compile for ESP32 / ESP32-S series.
-- (Optional) Rust [riscv*-esp-espidf](https://docs.esp-rs.org/book/installation/riscv.html) : to compile for ESP32-H / ESP32-C series.
+- `gcc-multilib`: for cross-compilation purposes.
+- [`cargo-make`](https://github.com/sagiegurari/cargo-make): to build the project with `cargo`.
+- `nodejs`: to generate fonts for LVGL ([lv_font_conv](https://github.com/lvgl/lv_font_conv)).
+- `wasm32-wasip1` Rust target: to compile xila virtual machine executables.
+- (Optional) `wasm32-unknown-unknown` Rust target: to compile `wasm_example`.
+- (Optional) `nightly` Rust toolchain: to compile the `wasm_example`.
+- (Optional) [`trunk`](https://trunkrs.dev/): to build the `wasm_example`.
+- (Optional) Rust [xtensa-esp32\*-espidf](https://docs.esp-rs.org/book/installation/riscv-and-xtensa.html) toolchain: to compile for ESP32 / ESP32-S series.
+- (Optional) Rust [riscv\*-esp-espidf](https://docs.esp-rs.org/book/installation/riscv.html): to compile for ESP32-H / ESP32-C series.
 
 ### 🛠️ Instructions
 
@@ -22,31 +28,24 @@ Please install the following dependencies to build core:
 git clone https://github.com/Xila-Project/Core.git
 ```
 
-2. Change directory:
+2. Navigate to the project directory:
 
 ```bash
 cd Core
 ```
 
-3. Source `Export.sh`:
+3. Run one of the examples:
 
 ```bash
-source Export.sh
+cargo make run -p native_example
 ```
 
-4. Build for the corresponding target:
+or
 
 ```bash
-xila build <target>
+cargo make generate-fonts
+cd examples/wasm && trunk serve
 ```
-
-Currently supported targets are:
-- `linux`
-- `windows`
-- `esp32`
-- `esp32s3`
-
-There are also other commands available, you can see them by running `xila help`.
 
 ## ℹ️ About
 

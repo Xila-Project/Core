@@ -1,13 +1,13 @@
-use crate::Shell;
+use crate::{Error, Result, Shell};
 
 impl Shell {
-    pub async fn exit(&mut self, arguments: &[&str]) {
+    pub async fn exit(&mut self, arguments: &[&str]) -> Result<()> {
         if !arguments.is_empty() {
-            self.standard
-                .print_error_line("Invalid number of arguments")
-                .await;
+            return Err(Error::InvalidNumberOfArguments);
         }
 
         self.running = false;
+
+        Ok(())
     }
 }

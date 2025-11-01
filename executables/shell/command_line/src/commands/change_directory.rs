@@ -1,14 +1,12 @@
-use alloc::{borrow::ToOwned, format};
+use alloc::borrow::ToOwned;
 use xila::{file_system::Path, virtual_file_system};
 
-use crate::Shell;
+use crate::{Error, Result, Shell};
 
 impl Shell {
-    pub async fn change_directory(&mut self, arguments: &[&str]) {
+    pub async fn change_directory(&mut self, arguments: &[&str]) -> Result<()> {
         if arguments.len() != 1 {
-            self.standard
-                .print_error_line("Invalid number of arguments")
-                .await;
+            return Err(Error::InvalidNumberOfArguments);
         }
 
         let current_directory = Path::from_str(arguments[0]).to_owned();
@@ -19,22 +17,17 @@ impl Shell {
             match self.current_directory.clone().join(&current_directory) {
                 Some(path) => path.canonicalize(),
                 None => {
-                    self.standard.print_error_line("Failed to join paths").await;
-                    return;
+                    return Err(Error::FailedToJoinPath);
                 }
             }
         };
-
-        if let Err(error) = virtual_file_system::get_instance()
+        virtual_file_system::get_instance()
             .open_directory(&current_directory, self.standard.get_task())
             .await
-        {
-            self.standard
-                .print_error_line(&format!("Failed to change directory: {error}"))
-                .await;
-            return;
-        }
+            .map_err(Error::FailedToOpenDirectory)?;
 
         self.current_directory = current_directory.to_owned();
+
+        Ok(())
     }
 }

@@ -1,52 +1,30 @@
-pub(crate) use alloc::format;
-
-use crate::Shell;
+use crate::{Error, Result, Shell};
 use xila::task;
 
 impl Shell {
-    pub async fn set_environment_variable(&mut self, arguments: &[&str]) {
+    pub async fn set_environment_variable(&mut self, arguments: &[&str]) -> Result<()> {
         if arguments.len() != 1 {
-            self.standard
-                .print_error_line("Invalid number of arguments")
-                .await;
-            return;
+            return Err(Error::InvalidNumberOfArguments);
         }
 
-        let (name, value) = match arguments[0].split_once('=') {
-            Some((name, value)) => (name, value),
-            None => {
-                self.standard.print_error_line("Invalid argument").await;
-                return;
-            }
-        };
+        let (name, value) = arguments[0].split_once('=').ok_or(Error::InvalidArgument)?;
 
-        if let Err(error) = task::get_instance()
+        task::get_instance()
             .set_environment_variable(self.standard.get_task(), name, value)
             .await
-        {
-            self.standard
-                .print_error_line(&format!("Failed to set environment variable: {error}"))
-                .await;
-        }
+            .map_err(Error::FailedToSetEnvironmentVariable)
     }
 
-    pub async fn remove_environment_variable(&mut self, arguments: &[&str]) {
+    pub async fn remove_environment_variable(&mut self, arguments: &[&str]) -> Result<()> {
         if arguments.len() != 1 {
-            self.standard
-                .print_error_line("Invalid number of arguments")
-                .await;
-            return;
+            return Err(Error::InvalidNumberOfArguments);
         }
 
         let name = arguments[0];
 
-        if let Err(error) = task::get_instance()
+        task::get_instance()
             .remove_environment_variable(self.standard.get_task(), name)
             .await
-        {
-            self.standard
-                .print_error_line(&format!("Failed to unset environment variable: {error}"))
-                .await;
-        }
+            .map_err(Error::FailedToRemoveEnvironmentVariable)
     }
 }

@@ -1,9 +1,9 @@
 use core::fmt::Display;
 use core::num::{NonZeroU16, NonZeroUsize};
 
-use xila::{authentication, task};
-
-use crate::translations;
+use alloc::fmt;
+use xila::file_system;
+use xila::{authentication, internationalization::translate, task};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -13,6 +13,9 @@ pub enum Error {
     AuthenticationFailed(authentication::Error) = 1,
     FailedToSetTaskUser(task::Error),
     FailedToSetEnvironmentVariable(task::Error),
+    FailedToSetCurrentDirectory(task::Error),
+    FailedToRemoveEnvironmentVariable(task::Error),
+    FailedToReadEnvironmentVariable(task::Error),
     FailedToTokenizeCommandLine,
     MissingFileNameAfterRedirectOut,
     MissingFileNameAfterRedirectIn,
@@ -24,6 +27,15 @@ pub enum Error {
     FailedToExecuteCommand,
     FailedToJoinTask,
     InvalidNumberOfArguments,
+    FailedToJoinPath,
+    FailedToCreateDirectory(file_system::Error),
+    FailedToRemoveDirectory(file_system::Error),
+    FailedToOpenDirectory(file_system::Error),
+    FailedToOpenFile(file_system::Error),
+    InvalidArgument,
+    FailedToGetMetadata(file_system::Error),
+    FailedToReadDirectoryEntry(file_system::Error),
+    FormatError,
 }
 
 impl Error {
@@ -32,70 +44,116 @@ impl Error {
     }
 }
 
+impl From<fmt::Error> for Error {
+    fn from(_: fmt::Error) -> Self {
+        Error::FormatError
+    }
+}
+
 impl Display for Error {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             Error::AuthenticationFailed(error) => {
-                write!(
-                    formatter,
-                    translations::error__authentication_failed!(),
-                    error
-                )
+                write!(formatter, translate!("Authentication failed: {}"), error)
             }
             Error::FailedToSetTaskUser(error) => {
-                write!(
-                    formatter,
-                    translations::error__failed_to_set_task_user!(),
-                    error
-                )
+                write!(formatter, translate!("Failed to set task user: {}"), error)
             }
             Error::FailedToSetEnvironmentVariable(error) => {
                 write!(
                     formatter,
-                    translations::error__failed_to_set_environment_variable!(),
+                    translate!("Failed to set environment variable: {}"),
                     error
                 )
             }
             Error::FailedToTokenizeCommandLine => {
-                write!(
-                    formatter,
-                    translations::error__failed_to_tokenize_command_line!()
-                )
+                write!(formatter, translate!("Failed to tokenize command line"))
             }
             Error::MissingFileNameAfterRedirectOut => {
                 write!(
                     formatter,
-                    translations::error__missing_file_name_after_redirect_out!()
+                    translate!("Missing file name after redirect out")
                 )
             }
             Error::MissingFileNameAfterRedirectIn => {
-                write!(
-                    formatter,
-                    translations::error__missing_file_name_after_redirect_in!()
-                )
+                write!(formatter, translate!("Missing file name after redirect in"))
             }
-            Error::MissingCommand => write!(formatter, translations::error__missing_command!()),
-            Error::CommandNotFound => write!(formatter, translations::error__command_not_found!()),
+            Error::MissingCommand => write!(formatter, translate!("Missing command")),
+            Error::CommandNotFound => write!(formatter, translate!("Command not found")),
             Error::FailedToGetTaskIdentifier => {
-                write!(
-                    formatter,
-                    translations::error__failed_to_get_task_identifier!()
-                )
+                write!(formatter, translate!("Failed to get task identifier"))
             }
-            Error::InvalidPath => write!(formatter, translations::error__invalid_path!()),
+            Error::InvalidPath => write!(formatter, translate!("Invalid path")),
             Error::FailedToGetPath => {
-                write!(formatter, translations::error__failed_to_get_path!())
+                write!(formatter, translate!("Failed to get environment variable"))
             }
             Error::FailedToExecuteCommand => {
-                write!(formatter, translations::error__failed_to_execute_command!())
+                write!(formatter, translate!("Failed to execute command"))
             }
             Error::FailedToJoinTask => {
-                write!(formatter, translations::error__failed_to_join_task!())
+                write!(formatter, translate!("Failed to join task"))
             }
             Error::InvalidNumberOfArguments => {
+                write!(formatter, translate!("Invalid number of arguments"))
+            }
+            Error::FailedToRemoveEnvironmentVariable(error) => {
                 write!(
                     formatter,
-                    translations::error__invalid_number_of_arguments!()
+                    translate!("Failed to remove environment variable: {}"),
+                    error
+                )
+            }
+            Error::FailedToJoinPath => {
+                write!(formatter, translate!("Failed to join path"))
+            }
+            Error::FailedToCreateDirectory(error) => {
+                write!(
+                    formatter,
+                    translate!("Failed to create directory: {}"),
+                    error
+                )
+            }
+            Error::FailedToRemoveDirectory(error) => {
+                write!(
+                    formatter,
+                    translate!("Failed to remove directory: {}"),
+                    error
+                )
+            }
+            Error::FailedToOpenDirectory(error) => {
+                write!(formatter, translate!("Failed to open directory: {}"), error)
+            }
+            Error::FailedToOpenFile(error) => {
+                write!(formatter, translate!("Failed to open file: {}"), error)
+            }
+            Error::InvalidArgument => {
+                write!(formatter, translate!("Invalid argument"))
+            }
+            Error::FailedToGetMetadata(error) => {
+                write!(formatter, translate!("Failed to get metadata: {}"), error)
+            }
+            Error::FailedToSetCurrentDirectory(error) => {
+                write!(
+                    formatter,
+                    translate!("Failed to set current directory: {}"),
+                    error
+                )
+            }
+            Error::FailedToReadDirectoryEntry(error) => {
+                write!(
+                    formatter,
+                    translate!("Failed to read directory entry: {}"),
+                    error
+                )
+            }
+            Error::FormatError => {
+                write!(formatter, translate!("Format error"))
+            }
+            Error::FailedToReadEnvironmentVariable(error) => {
+                write!(
+                    formatter,
+                    translate!("Failed to read environment variable: {}"),
+                    error
                 )
             }
         }

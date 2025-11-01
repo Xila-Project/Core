@@ -2,8 +2,6 @@
 
 extern crate alloc;
 
-include_translations!();
-
 mod error;
 mod settings;
 mod tabs;
@@ -16,19 +14,23 @@ use alloc::vec::Vec;
 use core::num::NonZeroUsize;
 use xila::executable::{self, Standard};
 use xila::file_system::{self, Flags, Mode, Open};
-use xila::internationalization::include_translations;
 use xila::task::TaskIdentifier;
 use xila::virtual_file_system::{File, VirtualFileSystem};
 
-pub const SHORTCUT: &str = r#"
-{
-    "name": "Settings",
+pub fn get_shortcut() -> alloc::string::String {
+    use xila::internationalization::translate;
+    alloc::format!(
+        r#"{{
+    "name": "{}",
     "command": "/binaries/settings",
     "arguments": [],
     "terminal": false,
     "icon_string": "Se",
     "icon_color": [158, 158, 158]
-}"#;
+}}"#,
+        translate!("Settings")
+    )
+}
 
 pub struct SettingsExecutable;
 
@@ -55,7 +57,8 @@ impl SettingsExecutable {
             Err(error) => Err(error.to_string())?,
         };
 
-        file.write(crate::SHORTCUT.as_bytes())
+        let shortcut = get_shortcut();
+        file.write(shortcut.as_bytes())
             .await
             .map_err(|error| error.to_string())?;
 

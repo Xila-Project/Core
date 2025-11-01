@@ -21,14 +21,16 @@ pub trait DeviceExecutableTrait: DeviceTrait {
 /// ```rust
 /// extern crate alloc;
 ///
+/// use alloc::fmt::Write;
+///
 /// pub struct MyExecutableType;
 ///
 /// async fn my_main_function(
-///     standard: executable::Standard,
+///     mut standard: executable::Standard,
 ///     arguments: Vec<String>
 /// ) -> Result<(), core::num::NonZeroUsize> {
 ///     for argument in arguments {
-///         standard.print_line(&argument);
+///         write!(standard.out(), "Argument: {}\n", argument).unwrap();
 ///     }
 ///
 ///     Ok(())
