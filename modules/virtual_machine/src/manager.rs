@@ -8,8 +8,10 @@
 use core::{ffi::CStr, mem::forget};
 
 use alloc::{string::ToString, vec, vec::Vec};
-use file_system::UniqueFileIdentifier;
+use file_system::{FileIdentifier, UniqueFileIdentifier};
 use synchronization::once_lock::OnceLock;
+use task::TaskIdentifier;
+use virtual_file_system::File;
 use wamr_rust_sdk::{
     sys::{wasm_runtime_is_xip_file, wasm_runtime_load, wasm_runtime_register_module},
     value::WasmValue,
@@ -200,16 +202,29 @@ impl Manager {
         &'static self,
         buffer: Vec<u8>,
         stack_size: usize,
-        (standard_in, standard_out, standard_error): (
-            UniqueFileIdentifier,
-            UniqueFileIdentifier,
-            UniqueFileIdentifier,
-        ),
+        (standard_in, standard_out, standard_error): (File<'_>, File<'_>, File<'_>),
         function_name: Option<&str>,
         function_arguments: Vec<WasmValue>,
+        task: TaskIdentifier,
     ) -> Result<Vec<WasmValue>> {
         abi_context::get_instance()
             .call_abi(async || {
+                let standard_in = standard_in
+                    .transfer(task, Some(FileIdentifier::STANDARD_IN))
+                    .await
+                    .map_err(Error::FailedToTransferFileIdentifiers)?
+                    .into_file_identifier();
+                let standard_out = standard_out
+                    .transfer(task, Some(FileIdentifier::STANDARD_OUT))
+                    .await
+                    .map_err(Error::FailedToTransferFileIdentifiers)?
+                    .into_file_identifier();
+                let standard_error = standard_error
+                    .transfer(task, Some(FileIdentifier::STANDARD_ERROR))
+                    .await
+                    .map_err(Error::FailedToTransferFileIdentifiers)?
+                    .into_file_identifier();
+
                 let module = Module::from_buffer(
                     &self.runtime,
                     buffer,

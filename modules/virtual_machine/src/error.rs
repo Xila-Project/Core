@@ -63,6 +63,9 @@ pub enum Error {
 
     /// Time-related operation failed
     Time(time::Error),
+
+    /// Failed to transfert file identifiers
+    FailedToTransferFileIdentifiers(file_system::Error),
 }
 
 impl From<RuntimeError> for Error {
