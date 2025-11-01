@@ -146,7 +146,8 @@ linked_list_allocator = { version = "0.10", default-features = false, features =
 smol_str = { version = "0.3" }
 darling = { version = "0.21" }
 regex = { version = "1" }
-embedded-io-async = { version = "0.7.0", features = ["alloc"] }
+embedded-io-async = { version = "0.7", features = ["alloc"] }
+embedded-io = { version = "0.7", features = ["alloc"] }
 
 [workspace]
 members = [
