@@ -4,7 +4,6 @@ extern crate alloc;
 
 use alloc::{
     borrow::ToOwned,
-    format,
     string::{String, ToString},
     vec::Vec,
 };
@@ -84,7 +83,7 @@ impl Shell {
             };
 
             if let Err(error) = result {
-                let _ = write!(self.standard.standard_in, "{}", error);
+                writeln!(self.standard.standard_error, "{}", error)?;
             }
         }
 
@@ -95,14 +94,15 @@ impl Shell {
         let mut input_string = String::new();
 
         while self.running {
-            self.standard
-                .print(&format!(
-                    "{}@{}:{}$ ",
-                    self.user, self.host, self.current_directory
-                ))
-                .await;
+            let _ = write!(
+                self.standard.out(),
+                "{}@{}:{}$ ",
+                self.user,
+                self.host,
+                self.current_directory
+            );
 
-            self.standard.out_flush().await;
+            let _ = self.standard.out().flush().await;
 
             input_string.clear();
 
@@ -117,7 +117,7 @@ impl Shell {
             let result = self.parse_input(input, paths).await;
 
             if let Err(error) = result {
-                self.standard.print_error_line(&error.to_string()).await;
+                let _ = writeln!(self.standard.standard_error, "{}", error);
             }
         }
 
@@ -133,7 +133,9 @@ impl Shell {
             Err(_) => loop {
                 match self.authenticate().await {
                     Ok(user) => break user,
-                    Err(error) => self.standard.print_error_line(&error.to_string()).await,
+                    Err(error) => {
+                        let _ = writeln!(self.standard.standard_error, "{}", error);
+                    }
                 }
             },
         };

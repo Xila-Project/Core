@@ -1,3 +1,5 @@
+use core::fmt::Write;
+use core::str::from_utf8_unchecked;
 use xila::{
     file_system::{Mode, Path},
     virtual_file_system,
@@ -23,7 +25,9 @@ impl Shell {
 
             let size: usize = size.into();
 
-            self.standard.write(&buffer[..size]).await;
+            let output = unsafe { from_utf8_unchecked(&buffer[..size]) };
+
+            write!(self.standard.out(), "{}", output)?;
         }
 
         Ok(())
@@ -44,6 +48,8 @@ impl Shell {
                 }
             }
         }
+
+        writeln!(self.standard.out())?;
 
         Ok(())
     }

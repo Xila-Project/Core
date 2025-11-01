@@ -24,7 +24,7 @@ pub enum Error {
     FailedToReadShortcutDirectory(file_system::Error),
     FailedToGetShortcutFilePath,
     FailedToReadShortcutFile(file_system::Error),
-    FailedToOpenStandardFile(file_system::Error),
+    FailedToOpenStandardFile(executable::Error),
     FailedToExecuteShortcut(executable::Error),
     NullCharacterInString(alloc::ffi::NulError),
     MissingArguments,

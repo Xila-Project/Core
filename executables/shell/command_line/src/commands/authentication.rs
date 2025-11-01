@@ -1,18 +1,18 @@
-use alloc::string::String;
-
 use crate::{Result, Shell, error::Error};
+use alloc::string::String;
+use core::fmt::Write;
 use xila::{authentication, internationalization::translate, task, virtual_file_system};
 
 impl Shell {
     pub async fn authenticate(&mut self) -> Result<String> {
-        self.standard.print(translate!("User name: ")).await;
-        self.standard.out_flush().await;
+        write!(self.standard.out(), translate!("User name: "))?;
+        let _ = self.standard.out().flush().await;
 
         let mut user_name = String::new();
         self.standard.read_line(&mut user_name).await;
 
-        self.standard.print(translate!("Password: ")).await;
-        self.standard.out_flush().await;
+        write!(self.standard.out(), translate!("Password: "))?;
+        let _ = self.standard.out().flush().await;
 
         let mut password = String::new();
         self.standard.read_line(&mut password).await;

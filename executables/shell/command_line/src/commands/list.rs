@@ -1,6 +1,6 @@
-use xila::{file_system::Path, virtual_file_system};
-
 use crate::{Error, Result, Shell};
+use core::fmt::Write;
+use xila::{file_system::Path, virtual_file_system};
 
 impl Shell {
     pub async fn list(&mut self, arguments: &[&str]) -> Result<()> {
@@ -15,12 +15,12 @@ impl Shell {
             .await
             .map_err(Error::FailedToOpenDirectory)?;
 
-        while let Ok(Some(entry)) = virtual_file_system::get_instance()
+        while let Some(entry) = virtual_file_system::get_instance()
             .read_directory(directory, self.standard.get_task())
             .await
+            .map_err(Error::FailedToReadDirectoryEntry)?
         {
-            self.standard.print(entry.get_name()).await;
-            self.standard.print("\n").await;
+            writeln!(self.standard.out(), "{}", entry.get_name())?;
         }
 
         Ok(())

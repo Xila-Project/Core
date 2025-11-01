@@ -1,6 +1,7 @@
 use core::fmt::Display;
 use core::num::{NonZeroU16, NonZeroUsize};
 
+use alloc::fmt;
 use xila::file_system;
 use xila::{authentication, internationalization::translate, task};
 
@@ -12,7 +13,9 @@ pub enum Error {
     AuthenticationFailed(authentication::Error) = 1,
     FailedToSetTaskUser(task::Error),
     FailedToSetEnvironmentVariable(task::Error),
+    FailedToSetCurrentDirectory(task::Error),
     FailedToRemoveEnvironmentVariable(task::Error),
+    FailedToReadEnvironmentVariable(task::Error),
     FailedToTokenizeCommandLine,
     MissingFileNameAfterRedirectOut,
     MissingFileNameAfterRedirectIn,
@@ -31,11 +34,19 @@ pub enum Error {
     FailedToOpenFile(file_system::Error),
     InvalidArgument,
     FailedToGetMetadata(file_system::Error),
+    FailedToReadDirectoryEntry(file_system::Error),
+    FormatError,
 }
 
 impl Error {
     pub fn get_discriminant(&self) -> NonZeroU16 {
         unsafe { *<*const _>::from(self).cast::<NonZeroU16>() }
+    }
+}
+
+impl From<fmt::Error> for Error {
+    fn from(_: fmt::Error) -> Self {
+        Error::FormatError
     }
 }
 
@@ -120,6 +131,30 @@ impl Display for Error {
             }
             Error::FailedToGetMetadata(error) => {
                 write!(formatter, translate!("Failed to get metadata: {}"), error)
+            }
+            Error::FailedToSetCurrentDirectory(error) => {
+                write!(
+                    formatter,
+                    translate!("Failed to set current directory: {}"),
+                    error
+                )
+            }
+            Error::FailedToReadDirectoryEntry(error) => {
+                write!(
+                    formatter,
+                    translate!("Failed to read directory entry: {}"),
+                    error
+                )
+            }
+            Error::FormatError => {
+                write!(formatter, translate!("Format error"))
+            }
+            Error::FailedToReadEnvironmentVariable(error) => {
+                write!(
+                    formatter,
+                    translate!("Failed to read environment variable: {}"),
+                    error
+                )
             }
         }
     }

@@ -90,8 +90,44 @@ msgstr ""
 msgid "Failed to get metadata: {}"
 msgstr ""
 
+msgid "Failed to set current directory: {}"
+msgstr ""
+
+msgid "Failed to read directory entry: {}"
+msgstr ""
+
+msgid "Format error"
+msgstr ""
+
+msgid "Failed to read environment variable: {}"
+msgstr ""
+
 msgid "User name: "
 msgstr ""
 
 msgid "Password: "
+msgstr ""
+
+msgid "Type"
+msgstr ""
+
+msgid "Inode"
+msgstr ""
+
+msgid "User"
+msgstr ""
+
+msgid "Group"
+msgstr ""
+
+msgid "Permissions"
+msgstr ""
+
+msgid "Accessed"
+msgstr ""
+
+msgid "Modified"
+msgstr ""
+
+msgid "Created"
 msgstr ""

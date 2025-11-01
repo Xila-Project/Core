@@ -90,8 +90,44 @@ msgstr "Argument invalide"
 msgid "Failed to get metadata: {}"
 msgstr "Échec de la récupération des métadonnées: {}"
 
+msgid "Failed to set current directory: {}"
+msgstr "Échec de la définition du répertoire courant: {}"
+
+msgid "Failed to read directory entry: {}"
+msgstr "Échec de la lecture de l'entrée du répertoire: {}"
+
+msgid "Format error"
+msgstr "Erreur de formatage"
+
+msgid "Failed to read environment variable: {}"
+msgstr "Échec de la lecture de la variable d'environnement: {}"
+
 msgid "User name: "
 msgstr "Nom d'utilisateur: "
 
 msgid "Password: "
 msgstr "Mot de passe: "
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Inode"
+msgstr "Nœud d'index"
+
+msgid "User"
+msgstr "Utilisateur"
+
+msgid "Group"
+msgstr "Groupe"
+
+msgid "Permissions"
+msgstr "Permissions"
+
+msgid "Accessed"
+msgstr "Accédé"
+
+msgid "Modified"
+msgstr "Modifié"
+
+msgid "Created"
+msgstr "Créé"

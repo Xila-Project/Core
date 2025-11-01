@@ -1,11 +1,11 @@
+use crate::{Error, Result, Shell};
 use alloc::{borrow::ToOwned, format};
-
+use core::fmt::Write;
 use xila::{
     file_system::{Inode, Path},
+    internationalization::translate,
     users, virtual_file_system,
 };
-
-use crate::{Error, Result, Shell};
 
 impl Shell {
     pub async fn statistics(&mut self, arguments: &[&str]) -> Result<()> {
@@ -51,23 +51,30 @@ impl Shell {
 
         let inode = metadata.get_inode().unwrap_or(Inode::new(0)).as_u64();
 
-        self.standard
-            .print_line(&format!(
-                r#"Type: {} - Inode : {}
-User: {} - Group: {} - Permissions: {}
-Accessed: {}
-Modified: {}
-Changed: {}"#,
-                metadata.get_type(),
-                inode,
-                user,
-                group,
-                metadata.get_permissions(),
-                metadata.get_access_time(),
-                metadata.get_modification_time(),
-                metadata.get_creation_time()
-            ))
-            .await;
+        let _ = writeln!(
+            self.standard.out(),
+            r#"{}: {} - {} : {}
+{}: {} - {}: {} - {}: {}
+{}: {}
+{}: {}
+{}: {}"#,
+            translate!("Type"),
+            metadata.get_type(),
+            translate!("Inode"),
+            inode,
+            translate!("User"),
+            user,
+            translate!("Group"),
+            group,
+            translate!("Permissions"),
+            metadata.get_permissions(),
+            translate!("Accessed"),
+            metadata.get_access_time(),
+            translate!("Modified"),
+            metadata.get_modification_time(),
+            translate!("Created"),
+            metadata.get_creation_time()
+        );
 
         Ok(())
     }

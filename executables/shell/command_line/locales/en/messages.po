@@ -90,8 +90,44 @@ msgstr "Invalid argument"
 msgid "Failed to get metadata: {}"
 msgstr "Failed to get metadata: {}"
 
+msgid "Failed to set current directory: {}"
+msgstr "Failed to set current directory: {}"
+
+msgid "Failed to read directory entry: {}"
+msgstr "Failed to read directory entry: {}"
+
+msgid "Format error"
+msgstr "Format error"
+
+msgid "Failed to read environment variable: {}"
+msgstr "Failed to read environment variable: {}"
+
 msgid "User name: "
 msgstr "User name: "
 
 msgid "Password: "
 msgstr "Password: "
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Inode"
+msgstr "Inode"
+
+msgid "User"
+msgstr "User"
+
+msgid "Group"
+msgstr "Group"
+
+msgid "Permissions"
+msgstr "Permissions"
+
+msgid "Accessed"
+msgstr "Accessed"
+
+msgid "Modified"
+msgstr "Modified"
+
+msgid "Created"
+msgstr "Created"
