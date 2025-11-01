@@ -6,3 +6,6 @@ Cargo.lock
 
 *.img
 *.generated.h
+*.generated.c
+
+node_modules
