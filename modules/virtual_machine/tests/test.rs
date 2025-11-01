@@ -90,9 +90,7 @@ async fn integration_test() {
         .await
         .unwrap();
 
-    let wasm_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("./tests/wasm_test");
-
-    let binary_path = build_crate(&wasm_path).unwrap();
+    let binary_path = build_crate(&"virtual_machine_wasm_test").unwrap();
 
     let binary_buffer = fs::read(&binary_path).expect("Failed to read the binary file");
 

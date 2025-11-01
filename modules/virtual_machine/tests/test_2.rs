@@ -5,7 +5,7 @@ extern crate abi_definitions;
 
 use std::fs;
 
-use executable::build_crate;
+use executable::{Standard, build_crate};
 
 use file_system::{MemoryDevice, create_device, create_file_system};
 use task::test;
@@ -85,41 +85,20 @@ async fn integration_test_2() {
         .await
         .unwrap();
 
-    let wasm_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("./tests/wasm_test");
-
-    let binary_path = build_crate(&wasm_path).unwrap();
+    let binary_path = build_crate(&"virtual_machine_wasm_test").unwrap();
 
     let binary_buffer = fs::read(&binary_path).expect("Failed to read the binary file");
 
-    let standard_in = virtual_file_system
-        .open(
-            &"/devices/standard_in",
-            file_system::Mode::READ_ONLY.into(),
-            task,
-        )
-        .await
-        .expect("Failed to open stdin");
-    let standard_out = virtual_file_system
-        .open(
-            &"/devices/standard_out",
-            file_system::Mode::WRITE_ONLY.into(),
-            task,
-        )
-        .await
-        .expect("Failed to open stdout");
-    let standard_error = virtual_file_system
-        .open(
-            &"/devices/standard_error",
-            file_system::Mode::WRITE_ONLY.into(),
-            task,
-        )
-        .await
-        .expect("Failed to open stderr");
-
-    let (standard_in, standard_out, standard_error) = virtual_file_system
-        .create_new_task_standard_io(standard_in, standard_error, standard_out, task, task, false)
-        .await
-        .unwrap();
+    let standard = Standard::open(
+        &"/devices/standard_in",
+        &"/devices/standard_out",
+        &"/devices/standard_error",
+        task,
+        virtual_file_system,
+    )
+    .await
+    .unwrap()
+    .split();
 
     let virtual_machine = virtual_machine::initialize(&[&WasmTest]);
 
@@ -127,9 +106,10 @@ async fn integration_test_2() {
         .execute(
             binary_buffer.to_vec(),
             4 * 1024,
-            (standard_in, standard_out, standard_error),
+            standard,
             None,
             vec![],
+            task,
         )
         .await
         .unwrap();
