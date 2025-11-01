@@ -167,6 +167,7 @@ members = [
   "modules/target",
   "modules/bindings/utilities",
   "modules/bindings/host",
+  "modules/bindings/host/tests/wasm_test",
   "modules/bindings/wasm",
   "executables/file_manager",
   "executables/shell/command_line",
@@ -194,6 +195,7 @@ members = [
   "modules/virtual_machine/tests/wasm_test",
   "modules/internationalization",
   "modules/internationalization/macros",
+  "modules/graphics/fonts_generator",
 ]
 
 [patch.crates-io]
