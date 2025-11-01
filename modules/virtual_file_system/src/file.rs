@@ -1,4 +1,4 @@
-use core::fmt::Debug;
+use core::{fmt::Debug, mem::forget};
 
 use alloc::{string::String, vec::Vec};
 use embedded_io_async::ErrorType;
@@ -50,9 +50,10 @@ impl embedded_io_async::Write for File<'_> {
 
 impl core::fmt::Write for File<'_> {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        block_on(self.write(s.as_bytes()))
-            .map(|_| ())
-            .map_err(|_| core::fmt::Error)
+        block_on(self.write(s.as_bytes())).map(|_| ()).map_err(|e| {
+            log::error!("Error writing string to file: {}", e);
+            core::fmt::Error
+        })
     }
 }
 
@@ -120,6 +121,10 @@ impl<'a> File<'a> {
         self.file_identifier
     }
 
+    pub const fn get_task(&self) -> TaskIdentifier {
+        self.task
+    }
+
     // - Operations
 
     pub async fn write(&self, buffer: &[u8]) -> Result<Size> {
@@ -162,6 +167,16 @@ impl<'a> File<'a> {
             .await
     }
 
+    pub async fn close(self) -> crate::Result<()> {
+        self.file_system
+            .close(self.get_file_identifier(), self.task)
+            .await?;
+
+        forget(self); // Prevent Drop from being called
+
+        Ok(())
+    }
+
     pub async fn duplicate(&self) -> Result<Self> {
         let file_identifier = self
             .file_system
@@ -180,22 +195,37 @@ impl<'a> File<'a> {
         new_task: TaskIdentifier,
         new_file: Option<FileIdentifier>,
     ) -> Result<Self> {
-        let new_identifier = self
+        self.file_identifier = self
             .file_system
             .transfer(self.get_file_identifier(), self.task, new_task, new_file)
             .await?;
 
-        self.file_identifier = new_identifier;
+        self.task = new_task;
 
         Ok(self)
+    }
+
+    pub fn into_file_identifier(self) -> UniqueFileIdentifier {
+        let file_identifier = self.get_file_identifier();
+
+        forget(self); // Prevent Drop from being called
+
+        file_identifier
+    }
+}
+
+impl From<&File<'_>> for UniqueFileIdentifier {
+    fn from(val: &File<'_>) -> Self {
+        val.get_file_identifier()
     }
 }
 
 impl Drop for File<'_> {
     fn drop(&mut self) {
-        let _ = block_on(
+        block_on(
             self.file_system
                 .close(self.get_file_identifier(), self.task),
-        );
+        )
+        .unwrap();
     }
 }
