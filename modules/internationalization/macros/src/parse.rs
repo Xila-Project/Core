@@ -21,22 +21,17 @@ impl<'a> PoParser<'a> {
         }
 
         // Continue reading continuation lines
-        loop {
-            match self.lines.peek() {
-                Some(line) => {
-                    let trimmed = line.trim();
-                    if trimmed.starts_with('"') {
-                        // It's a continuation line, consume it
-                        self.lines.next();
-                        if let Some(quoted) = extract_quoted_string(trimmed) {
-                            result.push_str(&quoted);
-                        }
-                    } else {
-                        // Not a continuation line, stop
-                        break;
-                    }
+        while let Some(line) = self.lines.peek() {
+            let trimmed = line.trim();
+            if trimmed.starts_with('"') {
+                // It's a continuation line, consume it
+                self.lines.next();
+                if let Some(quoted) = extract_quoted_string(trimmed) {
+                    result.push_str(&quoted);
                 }
-                None => break,
+            } else {
+                // Not a continuation line, stop
+                break;
             }
         }
 
@@ -61,8 +56,8 @@ impl<'a> Iterator for PoParser<'a> {
             }
 
             // Look for msgid
-            if line.starts_with("msgid ") {
-                let msgid = match self.parse_string_value(&line[6..]) {
+            if let Some(identifier) = line.strip_prefix("msgid ") {
+                let msgid = match self.parse_string_value(identifier) {
                     Ok(s) => s,
                     Err(e) => return Some(Err(e)),
                 };
@@ -81,8 +76,8 @@ impl<'a> Iterator for PoParser<'a> {
                         continue;
                     }
 
-                    if line.starts_with("msgstr ") {
-                        let msgstr = match self.parse_string_value(&line[7..]) {
+                    if let Some(value) = line.strip_prefix("msgstr ") {
+                        let msgstr = match self.parse_string_value(value) {
                             Ok(s) => s,
                             Err(e) => return Some(Err(e)),
                         };
@@ -111,12 +106,12 @@ fn extract_quoted_string(line: &str) -> Option<String> {
     }
 
     let mut result = String::new();
-    let mut chars = line[1..].chars();
+    let chars = line[1..].chars();
     let mut escaped = false;
 
-    while let Some(ch) = chars.next() {
+    for char in chars {
         if escaped {
-            match ch {
+            match char {
                 'n' => result.push('\n'),
                 't' => result.push('\t'),
                 'r' => result.push('\r'),
@@ -124,17 +119,17 @@ fn extract_quoted_string(line: &str) -> Option<String> {
                 '"' => result.push('"'),
                 _ => {
                     result.push('\\');
-                    result.push(ch);
+                    result.push(char);
                 }
             }
             escaped = false;
-        } else if ch == '\\' {
+        } else if char == '\\' {
             escaped = true;
-        } else if ch == '"' {
+        } else if char == '"' {
             // End of string
             return Some(result);
         } else {
-            result.push(ch);
+            result.push(char);
         }
     }
 

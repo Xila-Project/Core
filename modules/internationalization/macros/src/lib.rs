@@ -22,7 +22,6 @@ static TRANSLATION_MAP: Lazy<HashMap<String, String>> = Lazy::new(|| {
 
     let locale_directory_path = path.join(locale.to_lowercase());
 
-    // open file
     let po_files = fs::read_dir(&locale_directory_path)
         .expect("Failed to read locale directory")
         .filter_map(filter_files);
@@ -81,22 +80,11 @@ pub fn translate(input: TokenStream) -> TokenStream {
     };
 
     let identifier = identifier.strip_suffix("\"").unwrap_or(identifier);
-    // let c = if c {
-    //     let c_ident = format_ident!("c");
-    //     quote! { #c_ident  }
-    // } else {
-    //     quote! {}
-    // };
-
-    // let re = regex::Regex::new(r"[^a-zA-Z0-9_]").unwrap();
-    // let ident_name = identifier.replace(' ', "_").to_lowercase();
-    // let ident_name = re.replace_all(&ident_name, "");
-    // let ident = Ident::new(&ident_name, proc_macro2::Span::call_site());
 
     let value = TRANSLATION_MAP
         .get(identifier)
         .cloned()
-        .expect(&format!("Translation for '{}' not found", identifier));
+        .unwrap_or_else(|| panic!("Translation for '{}' not found", identifier));
 
     let value = if c {
         let c_string_value = syn::LitCStr::new(
