@@ -66,7 +66,7 @@ impl FileIdentifier {
     /// Minimum file identifier available for regular files.
     ///
     /// Regular files should use identifiers starting from this value to avoid
-    /// conflicts with standard file identifiers.
+    /// conflicts with internal or reserved identifiers.
     pub const MINIMUM: FileIdentifier = FileIdentifier::new(3);
 
     /// Maximum possible file identifier value.
