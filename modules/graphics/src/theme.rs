@@ -62,7 +62,7 @@ pub(crate) fn update(
             primary_color.into_lvgl_color(),
             secondary_color.into_lvgl_color(),
             is_dark,
-            &fonts::lv_font_montserrat_14_latin_1,
+            fonts::get_font_medium(),
         );
     }
 }
