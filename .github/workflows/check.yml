@@ -26,38 +26,13 @@ jobs:
       - name: Setup | Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup | Enable cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: "${{ matrix.target }}"
-
-      - name: Setup | Rust stable toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-          target: wasm32-wasip1, wasm32-unknown-unknown
-
-      - name: Setup | Cargo binstall
-        uses: cargo-bins/cargo-binstall@main
-
-      - name: Setup | Install cargo-make
-        run: cargo binstall cargo-make --no-confirm --force
+      - name: Setup
+        uses: ./.github/workflows/setup/yml
 
       - name: Setup | Install cargo-taplo
         run: |
           curl -fsSL https://github.com/tamasfe/taplo/releases/latest/download/taplo-linux-x86_64.gz \
           | gzip -d - | install -m 755 /dev/stdin /usr/local/bin/taplo
-
-      - name: Setup | Rust esp xtensa toolchain
-        if: matrix.target == 'esp32' || matrix.target == 'esp32s3'
-        uses: esp-rs/xtensa-toolchain@v1.5
-        with:
-          default: true
-          buildtargets: esp32,esp32s3
-          ldproxy: true
-
-      - name: Setup | Install necessary dependencies
-        run: sudo apt update && sudo apt install -y gcc-multilib
 
       - name: Check | Formatting (TOML)
         run: cargo make format-toml --check
@@ -76,6 +51,13 @@ jobs:
 
       - name: Check | Documentation (WASM)
         run: RUSTDOCFLAGS="--deny warnings" cargo make doc-wasm
+
+      - name: Build | Example (Native)
+        run: cargo make build -p native_example
+
+      - name: Build | Example (WASM)
+        working-directory: ./examples/wasm
+        run: trunk build
 
       - name: Run | Tests
         run: cargo make test

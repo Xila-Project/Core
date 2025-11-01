@@ -1,0 +1,42 @@
+name: Setup
+
+on:
+  workflow_call:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup | Enable cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: "Documentation"
+
+      - name: Setup | Install GCC multilib
+        run: sudo apt update && sudo apt install -y gcc-multilib
+
+      - name: Setup | Rust stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown, wasm32-wasip1
+
+      - name: Setup | Rust nightly toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Setup | Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: "npm"
+          cache-dependency-path: "./package-lock.json"
+
+      - name: Setup | Cargo binstall
+        uses: cargo-bins/cargo-binstall@main
+
+      - name: Setup | Cargo make
+        run: cargo binstall cargo-make --no-confirm --force
+
+      - name: Setup | Trunk
+        run: cargo binstall trunk --no-confirm --force
