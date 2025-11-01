@@ -1,7 +1,9 @@
 use core::{
+    convert::Infallible,
     fmt::Display,
     num::{NonZeroU8, NonZeroUsize},
 };
+use embedded_io::WriteFmtError;
 use xila::{
     authentication, file_system, graphics, internationalization::translate, task,
     virtual_file_system,
@@ -26,6 +28,7 @@ pub enum Error {
     NullCharacterInString(alloc::ffi::NulError),
     FailedToCreateUiElement,
     Authentication(authentication::Error),
+    FormattingError,
 }
 
 impl Error {
@@ -73,6 +76,18 @@ impl From<core::str::Utf8Error> for Error {
 impl From<alloc::ffi::NulError> for Error {
     fn from(error: alloc::ffi::NulError) -> Self {
         Error::NullCharacterInString(error)
+    }
+}
+
+impl From<core::fmt::Error> for Error {
+    fn from(_: core::fmt::Error) -> Self {
+        Error::FormattingError
+    }
+}
+
+impl From<WriteFmtError<Infallible>> for Error {
+    fn from(_: WriteFmtError<Infallible>) -> Self {
+        Error::FormattingError
     }
 }
 
@@ -136,6 +151,9 @@ impl Display for Error {
             }
             Error::Authentication(error) => {
                 write!(formatter, translate!("Authentication failed: {}"), error)
+            }
+            Error::FormattingError => {
+                write!(formatter, translate!("Formatting error"))
             }
         }
     }

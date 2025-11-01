@@ -1,20 +1,6 @@
-# English translations for settings package.
-# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the settings package.
-#
 msgid ""
 msgstr ""
-"Project-Id-Version: settings\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-30 00:00+0000\n"
-"PO-Revision-Date: 2025-10-30 00:00+0000\n"
-"Last-Translator: \n"
-"Language-Team: English\n"
-"Language: en\n"
-"MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: settings.name
 msgid "Settings"
@@ -76,6 +62,9 @@ msgstr "Failed to create UI element"
 msgid "Authentication failed: {}"
 msgstr "Authentication failed: {}"
 
+msgid "Formatting error"
+msgstr "Formatting error"
+
 #: tabs.general.title
 msgid "General"
 msgstr "General"
@@ -103,3 +92,21 @@ msgstr "Confirm Password"
 #: tabs.password.content.change_password
 msgid "Change Password"
 msgstr "Change Password"
+
+msgid "About"
+msgstr "About"
+
+msgid "Developed by:"
+msgstr "Developed by:"
+
+msgid "License:"
+msgstr "License:"
+
+msgid "Version:"
+msgstr "Version:"
+
+msgid "Locale:"
+msgstr "Locale:"
+
+msgid "Fallback:"
+msgstr "Fallback:"
