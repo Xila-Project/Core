@@ -2,6 +2,7 @@ use crate::error::Result;
 use alloc::{collections::vec_deque::VecDeque, string::String};
 use core::ffi::CStr;
 use xila::file_system::Size;
+use xila::graphics::fonts::get_font_monospace_medium;
 use xila::graphics::{
     self, Color, EventKind, Key, Window,
     lvgl::{self, lv_obj_t},
@@ -64,7 +65,7 @@ impl Terminal {
             lvgl::lv_label_set_text_static(label, buffer.as_ptr() as *const i8);
             lvgl::lv_obj_set_style_text_font(
                 label,
-                &raw const lvgl::lv_font_unscii_8,
+                get_font_monospace_medium(),
                 lvgl::LV_STATE_DEFAULT,
             );
 
