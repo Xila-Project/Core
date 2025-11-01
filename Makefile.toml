@@ -7,11 +7,13 @@ command = "npm"
 args = ["install"]
 
 [tasks.generate-fonts]
+toolchain = "stable"
 command = "cargo"
 args = ["run", "--package", "fonts_generator"]
 
 [tasks.format-rust]
 install_crate = "rustfmt"
+toolchain = "stable"
 command = "cargo"
 args = ["fmt", "--all", "${@}"]
 
@@ -24,6 +26,7 @@ args = ["format", "${@}"]
 dependencies = ["format-rust", "format-toml"]
 
 [tasks.check-host]
+toolchain = "stable"
 command = "cargo"
 args = [
   "check",
@@ -34,6 +37,7 @@ args = [
 ]
 
 [tasks.check-wasm]
+toolchain = "stable"
 command = "cargo"
 args = [
   "check",
@@ -44,6 +48,7 @@ args = [
 ]
 
 [tasks.doc-host]
+toolchain = "stable"
 command = "cargo"
 args = [
   "doc",
@@ -54,6 +59,7 @@ args = [
 ]
 
 [tasks.doc-wasm]
+toolchain = "stable"
 command = "cargo"
 args = ["doc", "--features", "wasm", "--target", "wasm32-unknown-unknown"]
 
@@ -65,6 +71,7 @@ dependencies = ["check-host", "check-wasm"]
 
 [tasks.clippy-wasm]
 install_crate = "clippy"
+toolchain = "stable"
 command = "cargo"
 args = [
   "clippy",
@@ -80,6 +87,7 @@ args = [
 
 [tasks.clippy-host]
 install_crate = "clippy"
+toolchain = "stable"
 command = "cargo"
 args = [
   "clippy",
@@ -98,18 +106,22 @@ dependencies = ["clippy-host", "clippy-wasm"]
 
 [tasks.lint]
 install_crate = "clippy"
+toolchain = "stable"
 command = "cargo"
 args = ["clippy", "--all-targets", "--all-features", "--", "-D", "warnings"]
 
 [tasks.test]
+toolchain = "stable"
 command = "cargo"
 args = ["test", "--workspace"]
 
 [tasks.run]
+toolchain = "stable"
 command = "cargo"
 args = ["run", "${@}"]
 
 [tasks.build]
+toolchain = "stable"
 command = "cargo"
 args = ["build", "${@}"]
 
