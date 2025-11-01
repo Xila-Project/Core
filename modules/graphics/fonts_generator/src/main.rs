@@ -42,7 +42,7 @@ pub fn generate_font<'a>(
 
     let mut arguments = vec![
         "--yes",
-        "lv_font_conv",
+        "github:lvgl/lv_font_conv",
         "--bpp",
         &bits_per_pixel,
         "--size",
