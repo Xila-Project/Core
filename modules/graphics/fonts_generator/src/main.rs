@@ -130,10 +130,16 @@ fn main() {
         .join(FONTS_DIRECTORY)
         .canonicalize()
         .expect("Failed to canonicalize fonts directory path");
-    let generated_fonts_directory = manifest_directory
-        .join(GENERATED_FONTS_DIRECTORY)
+
+    let generated_fonts_directory = manifest_directory.join(GENERATED_FONTS_DIRECTORY);
+
+    // Create the generated_fonts directory if it doesn't exist
+    fs::create_dir_all(&generated_fonts_directory)
+        .expect("Failed to create generated fonts directory");
+
+    let generated_fonts_directory = generated_fonts_directory
         .canonicalize()
-        .expect("Failed to canonicalize fonts directory path");
+        .expect("Failed to canonicalize generated fonts directory path");
 
     let ranges_string = format_ranges(ranges.iter());
     let ranges_file_path = generated_fonts_directory.join(RANGES_FILE);
