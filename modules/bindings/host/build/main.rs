@@ -20,8 +20,5 @@ fn main() -> Result<(), ()> {
 
     generator::generate(out_directory, &context).expect("Error generating native bindings");
 
-    println!("cargo:rerun-if-changed=Tests/WASM_test/src/main.rs");
-    println!("cargo:rerun-if-changed=Tests/WASM_test/Cargo.toml");
-
     Ok(())
 }
