@@ -1,4 +1,5 @@
-name: Check rust code
+name: Check
+description: Run Rust checks including formatting, linting, documentation, examples build, and tests
 
 on:
   push:
@@ -14,14 +15,6 @@ jobs:
   rust-checks:
     name: Rust checks
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - linux
-    #          - esp32
-    #          - esp32s3
-
     steps:
       - name: Setup | Checkout repository
         uses: actions/checkout@v4
