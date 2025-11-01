@@ -1,6 +1,6 @@
 use alloc::{fmt, string::String};
-use core::fmt::Debug;
-use file_system::{FileIdentifier, Mode, Path, Size, UniqueFileIdentifier};
+use core::{fmt::Debug, mem::forget};
+use file_system::{Mode, Path, UniqueFileIdentifier};
 use task::TaskIdentifier;
 use virtual_file_system::{File, VirtualFileSystem};
 
@@ -10,7 +10,6 @@ pub struct Standard {
     pub standard_in: File<'static>,
     pub standard_out: File<'static>,
     pub standard_error: File<'static>,
-    pub task: TaskIdentifier,
 }
 
 impl Debug for Standard {
@@ -19,7 +18,6 @@ impl Debug for Standard {
             .field("standard_in", &self.standard_in)
             .field("standard_out", &self.standard_out)
             .field("standard_error", &self.standard_error)
-            .field("task", &self.task)
             .finish()
     }
 }
@@ -64,37 +62,15 @@ impl Standard {
             standard_in: File::from(standard_in, virtual_file_system, task),
             standard_out: File::from(standard_out, virtual_file_system, task),
             standard_error: File::from(standard_error, virtual_file_system, task),
-            task,
         }
     }
 
-    pub async fn print(&self, arguments: &str) {
-        let _ = self.standard_out.write(arguments.as_bytes()).await;
+    pub fn out(&mut self) -> &mut File<'static> {
+        &mut self.standard_out
     }
 
-    pub async fn out_flush(&self) {
-        self.standard_out.flush().await.unwrap();
-    }
-
-    pub async fn write(&self, data: &[u8]) -> Size {
-        match self.standard_out.write(data).await {
-            Ok(size) => size,
-            Err(_) => 0_usize.into(),
-        }
-    }
-
-    pub async fn print_line(&self, arguments: &str) {
-        self.print(arguments).await;
-        self.print("\n").await;
-    }
-
-    pub async fn print_error(&self, arguments: &str) {
-        let _ = self.standard_error.write(arguments.as_bytes()).await;
-    }
-
-    pub async fn print_error_line(&self, arguments: &str) {
-        self.print_error(arguments).await;
-        self.print_error("\n").await;
+    pub fn error(&mut self) -> &mut File<'static> {
+        &mut self.standard_error
     }
 
     pub async fn read_line(&self, buffer: &mut String) {
@@ -104,7 +80,7 @@ impl Standard {
     }
 
     pub fn get_task(&self) -> TaskIdentifier {
-        self.task
+        self.standard_in.get_task()
     }
 
     pub async fn duplicate(&self) -> file_system::Result<Self> {
@@ -112,30 +88,40 @@ impl Standard {
             standard_in: self.standard_in.duplicate().await?,
             standard_out: self.standard_out.duplicate().await?,
             standard_error: self.standard_error.duplicate().await?,
-            task: self.task,
         })
     }
 
-    pub fn split(&self) -> (&File<'static>, &File<'static>, &File<'static>) {
-        (&self.standard_in, &self.standard_out, &self.standard_error)
+    pub fn split(self) -> (File<'static>, File<'static>, File<'static>) {
+        (self.standard_in, self.standard_out, self.standard_error)
     }
 
-    pub async fn transfer(mut self, task: TaskIdentifier) -> file_system::Result<Self> {
-        self.standard_in = self
-            .standard_in
-            .transfer(task, Some(FileIdentifier::STANDARD_IN))
-            .await?;
-        self.standard_out = self
-            .standard_out
-            .transfer(task, Some(FileIdentifier::STANDARD_OUT))
-            .await?;
-        self.standard_error = self
-            .standard_error
-            .transfer(task, Some(FileIdentifier::STANDARD_ERROR))
-            .await?;
+    pub fn into_file_identifiers(
+        self,
+    ) -> (
+        UniqueFileIdentifier,
+        UniqueFileIdentifier,
+        UniqueFileIdentifier,
+    ) {
+        let result = (
+            self.standard_in.get_file_identifier(),
+            self.standard_out.get_file_identifier(),
+            self.standard_error.get_file_identifier(),
+        );
 
-        self.task = task;
+        forget(self); // Prevent Drop from being called
 
-        Ok(self)
+        result
+    }
+
+    pub async fn transfer(self, task: TaskIdentifier) -> file_system::Result<Self> {
+        let standard_in = self.standard_in.transfer(task, None).await?;
+        let standard_out = self.standard_out.transfer(task, None).await?;
+        let standard_error = self.standard_error.transfer(task, None).await?;
+
+        Ok(Self {
+            standard_in,
+            standard_out,
+            standard_error,
+        })
     }
 }
