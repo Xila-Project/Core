@@ -2,11 +2,11 @@ use core::mem::forget;
 
 use alloc::{string::String, sync::Arc, vec, vec::Vec};
 use embedded_io_async::ErrorType;
-use exported_file_system::{
-    AttributeOperations, BaseOperations, BlockDevice, CharacterDevice, DirectoryOperations,
-    FileIdentifier, FileSystemOperations,
+use file_system::{
+    AttributeOperations, Attributes, BaseOperations, BlockDevice, CharacterDevice, Context,
+    DirectoryOperations, FileIdentifier, FileSystemOperations, Flags, Path, Position, Size,
+    Statistics, Status, UniqueFileIdentifier,
 };
-use file_system::{Context, Flags, Path, Position, Size, Statistics, Status, UniqueFileIdentifier};
 use futures::block_on;
 use task::TaskIdentifier;
 
@@ -146,7 +146,7 @@ impl File {
         Ok(size)
     }
 
-    pub async fn write_line(&self, buffer: &[u8]) -> Result<usize> {
+    pub async fn write_line(&mut self, buffer: &[u8]) -> Result<usize> {
         let size = self.write(buffer).await? + self.write(b"\n").await?;
 
         Ok(size)
@@ -199,6 +199,8 @@ impl File {
     }
 
     pub async fn get_statistics(&mut self) -> Result<Statistics> {
+        let mut attributes = Attributes::default();
+
         self.item
             .as_attributes_operations()
             .ok_or(Error::UnsupportedOperation)?
