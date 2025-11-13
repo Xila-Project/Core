@@ -124,7 +124,7 @@ impl DeviceTrait for CanvasScreenDevice {
 
         data.set_resolution(resolution);
 
-        Ok(file_system::Size::new(buffer.len() as u64))
+        Ok(file_system::buffer.len() as _)
     }
 
     fn write(&self, buffer: &[u8]) -> file_system::Result<file_system::Size> {
@@ -138,7 +138,7 @@ impl DeviceTrait for CanvasScreenDevice {
             .draw_buffer(screen_data.get_area(), screen_data.get_buffer())
             .map_err(|_| file_system::Error::InputOutput)?;
 
-        Ok(file_system::Size::new(buffer.len() as u64))
+        Ok(file_system::buffer.len() as _)
     }
 
     fn get_size(&self) -> file_system::Result<file_system::Size> {
@@ -147,9 +147,7 @@ impl DeviceTrait for CanvasScreenDevice {
             .get_resolution()
             .map_err(|_| file_system::Error::InputOutput)?
             .into();
-        Ok(file_system::Size::new(
-            (width as usize * height as usize * size_of::<RenderingColor>()) as u64,
-        ))
+        Ok((width as usize * height as usize * size_of::<RenderingColor>()) as _)
     }
 
     fn set_position(&self, _: &file_system::Position) -> file_system::Result<file_system::Size> {

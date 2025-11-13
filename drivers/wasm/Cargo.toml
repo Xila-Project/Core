@@ -57,3 +57,4 @@ web-sys = { version = "0.3.64", features = [
   "WebGl2RenderingContext",
 ] }
 js-sys = "0.3"
+reqwest = { version = "0.12", default-features = false, features = ["json"] }

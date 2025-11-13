@@ -28,7 +28,7 @@ use super::{Inode, Size};
 ///     Inode::new(42),
 ///     String::from("document.txt"),
 ///     Kind::File,
-///     Size::new(1024)
+///     1024)
 /// );
 ///
 /// assert_eq!(file_entry.get_name(), "document.txt");
@@ -68,7 +68,7 @@ impl Entry {
     ///     Inode::new(123),
     ///     String::from("example.txt"),
     ///     Kind::File,
-    ///     Size::new(2048)
+    ///     2048)
     /// );
     /// ```
     pub fn new(inode: Inode, name: String, r#type: Kind, size: Size) -> Self {
@@ -183,17 +183,12 @@ mod tests {
 
     #[test]
     fn test_entry_creation() {
-        let entry = Entry::new(
-            Inode::new(42),
-            String::from("test.txt"),
-            Kind::File,
-            Size::new(1024),
-        );
+        let entry = Entry::new(Inode::new(42), String::from("test.txt"), Kind::File, 1024);
 
         assert_eq!(entry.get_inode(), Inode::new(42));
         assert_eq!(entry.get_name(), "test.txt");
         assert_eq!(entry.get_type(), Kind::File);
-        assert_eq!(entry.get_size(), Size::new(1024));
+        assert_eq!(entry.get_size(), 1024);
     }
 
     #[test]
@@ -202,7 +197,7 @@ mod tests {
             Inode::new(123),
             String::from("directory"),
             Kind::Directory,
-            Size::new(0),
+            0,
         );
 
         // Test individual getters
@@ -214,18 +209,13 @@ mod tests {
 
     #[test]
     fn test_entry_setters() {
-        let mut entry = Entry::new(
-            Inode::new(1),
-            String::from("old_name"),
-            Kind::File,
-            Size::new(100),
-        );
+        let mut entry = Entry::new(Inode::new(1), String::from("old_name"), Kind::File, 100);
 
         // Test setters
         entry.set_inode(Inode::new(999));
         entry.set_name(String::from("new_name.txt"));
         entry.set_type(Kind::Directory);
-        entry.set_size(Size::new(2048));
+        entry.set_size(2048);
 
         // Verify changes
         assert_eq!(entry.get_inode().as_u64(), 999);
@@ -240,7 +230,7 @@ mod tests {
             Inode::new(456),
             String::from("clone_test.dat"),
             Kind::File,
-            Size::new(512),
+            512,
         );
 
         let cloned = original.clone();
@@ -261,7 +251,7 @@ mod tests {
             Inode::new(789),
             String::from("debug_test"),
             Kind::SymbolicLink,
-            Size::new(64),
+            64,
         );
 
         let debug_str = alloc::format!("{entry:?}");
@@ -272,25 +262,15 @@ mod tests {
 
     #[test]
     fn test_entry_equality() {
-        let entry1 = Entry::new(
-            Inode::new(100),
-            String::from("same.txt"),
-            Kind::File,
-            Size::new(200),
-        );
+        let entry1 = Entry::new(Inode::new(100), String::from("same.txt"), Kind::File, 200);
 
-        let entry2 = Entry::new(
-            Inode::new(100),
-            String::from("same.txt"),
-            Kind::File,
-            Size::new(200),
-        );
+        let entry2 = Entry::new(Inode::new(100), String::from("same.txt"), Kind::File, 200);
 
         let entry3 = Entry::new(
             Inode::new(101),
             String::from("different.txt"),
             Kind::File,
-            Size::new(200),
+            200,
         );
 
         assert_eq!(entry1, entry2);
@@ -300,26 +280,11 @@ mod tests {
     #[test]
     fn test_entry_different_types() {
         // Test entries with different file types
-        let file_entry = Entry::new(
-            Inode::new(1),
-            String::from("file.txt"),
-            Kind::File,
-            Size::new(1024),
-        );
+        let file_entry = Entry::new(Inode::new(1), String::from("file.txt"), Kind::File, 1024);
 
-        let dir_entry = Entry::new(
-            Inode::new(2),
-            String::from("directory"),
-            Kind::Directory,
-            Size::new(0),
-        );
+        let dir_entry = Entry::new(Inode::new(2), String::from("directory"), Kind::Directory, 0);
 
-        let symlink_entry = Entry::new(
-            Inode::new(3),
-            String::from("link"),
-            Kind::SymbolicLink,
-            Size::new(32),
-        );
+        let symlink_entry = Entry::new(Inode::new(3), String::from("link"), Kind::SymbolicLink, 32);
 
         assert_eq!(file_entry.get_type(), Kind::File);
         assert_eq!(dir_entry.get_type(), Kind::Directory);
@@ -332,7 +297,7 @@ mod tests {
 
     #[test]
     fn test_entry_empty_name() {
-        let entry = Entry::new(Inode::new(0), String::new(), Kind::File, Size::new(0));
+        let entry = Entry::new(Inode::new(0), String::new(), Kind::File, 0);
 
         assert_eq!(entry.get_name(), "");
         assert_eq!(entry.get_name().len(), 0);
@@ -344,7 +309,7 @@ mod tests {
             Inode::new(u64::MAX),
             String::from("large_file.bin"),
             Kind::File,
-            Size::new(u64::MAX),
+            u64::MAX,
         );
 
         assert_eq!(entry.get_inode().as_u64(), u64::MAX);
@@ -353,12 +318,7 @@ mod tests {
 
     #[test]
     fn test_entry_as_mut_slice() {
-        let mut entry = Entry::new(
-            Inode::new(42),
-            String::from("test"),
-            Kind::File,
-            Size::new(100),
-        );
+        let mut entry = Entry::new(Inode::new(42), String::from("test"), Kind::File, 100);
 
         let slice = entry.as_mut();
         assert_eq!(slice.len(), core::mem::size_of::<Entry>());
@@ -386,18 +346,13 @@ mod tests {
 
     #[test]
     fn test_entry_modification_after_creation() {
-        let mut entry = Entry::new(
-            Inode::new(1),
-            String::from("initial"),
-            Kind::File,
-            Size::new(0),
-        );
+        let mut entry = Entry::new(Inode::new(1), String::from("initial"), Kind::File, 0);
 
         // Modify multiple times
         for i in 1..=5 {
             entry.set_inode(Inode::new(i));
             entry.set_name(alloc::format!("name_{i}"));
-            entry.set_size(Size::new(i * 100));
+            entry.set_size(i * 100);
 
             assert_eq!(entry.get_inode().as_u64(), i);
             assert_eq!(entry.get_name(), &alloc::format!("name_{i}"));
@@ -411,7 +366,7 @@ mod tests {
             Inode::new(1),
             String::from("файл.txt"), // Cyrillic
             Kind::File,
-            Size::new(256),
+            256,
         );
 
         assert_eq!(entry.get_name(), "файл.txt");
@@ -420,7 +375,7 @@ mod tests {
             Inode::new(2),
             String::from("文件.dat"), // Chinese
             Kind::File,
-            Size::new(512),
+            512,
         );
 
         assert_eq!(entry2.get_name(), "文件.dat");

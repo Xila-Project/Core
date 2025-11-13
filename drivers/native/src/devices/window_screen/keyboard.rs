@@ -1,4 +1,4 @@
-use file_system::{DeviceTrait, Size};
+use file_system::{BaseOperations, Size};
 use graphics::{InputData, Key, State};
 use synchronization::{
     blocking_mutex::raw::{CriticalSectionRawMutex, RawMutex},
@@ -18,7 +18,7 @@ where
     }
 }
 
-impl<const N: usize> DeviceTrait for KeyboardDevice<CriticalSectionRawMutex, N> {
+impl<const N: usize> BaseOperations for KeyboardDevice<CriticalSectionRawMutex, N> {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
         // - Cast
         let data: &mut InputData = buffer

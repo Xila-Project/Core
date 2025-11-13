@@ -1,9 +1,9 @@
 use alloc::string::String;
-use file_system::DeviceTrait;
+use file_system::BaseOperations;
 use task::TaskIdentifier;
 use virtual_file_system::VirtualFileSystem;
 
-pub trait DeviceExecutableTrait: DeviceTrait {
+pub trait DeviceExecutableTrait: BaseOperations {
     fn mount<'a>(
         virtual_file_system: &'a VirtualFileSystem<'a>,
         task: TaskIdentifier,

@@ -1,15 +1,14 @@
 use alloc::boxed::Box;
+use file_system::DirectCharacterDevice;
 
 use core::{ffi::c_void, ptr::null_mut, slice};
-
-use file_system::Device;
 
 use crate::{Area, Point, RenderingColor, Result, ScreenWriteData, draw_buffer::Buffer};
 
 use super::lvgl;
 
 struct UserData {
-    device: Device,
+    device: &'static dyn DirectCharacterDevice,
 }
 
 pub struct Display {
@@ -40,7 +39,7 @@ unsafe extern "C" fn binding_callback_function(
     let device = &user_data.device;
 
     device
-        .write(screen_write_data.as_ref())
+        .write(screen_write_data.as_ref(), 0)
         .expect("Error writing to display");
 
     unsafe { lvgl::lv_display_flush_ready(display) };
@@ -56,7 +55,7 @@ impl Drop for Display {
 
 impl Display {
     pub fn new(
-        file: Device,
+        device: &'static dyn DirectCharacterDevice,
         resolution: Point,
         buffer_size: usize,
         double_buffered: bool,
@@ -88,7 +87,7 @@ impl Display {
         }
 
         // Set the user data.
-        let user_data = Box::new(UserData { device: file });
+        let user_data = Box::new(UserData { device });
 
         unsafe {
             lvgl::lv_display_set_user_data(lvgl_display, Box::into_raw(user_data) as *mut c_void)

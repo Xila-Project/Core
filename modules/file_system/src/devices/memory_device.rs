@@ -8,10 +8,9 @@
 
 use alloc::vec;
 use alloc::vec::Vec;
-use futures::block_on;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
-use crate::{DeviceTrait, Position, Size};
+use crate::{DirectBlockDevice, DirectFileOperations, Result, Size};
 
 /// In-memory device implementation with configurable block size.
 ///
@@ -49,7 +48,7 @@ use crate::{DeviceTrait, Position, Size};
 ///
 /// The device uses an `RwLock` to ensure thread-safe access to the underlying data.
 /// Multiple readers can access the device simultaneously, but writes are exclusive.
-pub struct MemoryDevice<const BLOCK_SIZE: usize>(RwLock<CriticalSectionRawMutex, (Vec<u8>, usize)>);
+pub struct MemoryDevice<const BLOCK_SIZE: usize>(RwLock<CriticalSectionRawMutex, Vec<u8>>);
 
 impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
     /// Create a new memory device with the specified size.
@@ -79,7 +78,7 @@ impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
 
         let data: Vec<u8> = vec![0; size];
 
-        Self(RwLock::new((data, 0)))
+        Self(RwLock::new(data))
     }
 
     /// Create a memory device from existing data.
@@ -109,114 +108,74 @@ impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
     pub fn from_vec(data: Vec<u8>) -> Self {
         assert!(data.len().is_multiple_of(BLOCK_SIZE));
 
-        Self(RwLock::new((data, 0)))
-    }
-
-    /// Get the number of blocks in this device.
-    ///
-    /// Returns the total number of blocks of size `Block_size` that fit in the device.
-    ///
-    /// # Returns
-    ///
-    /// The number of blocks in the device.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # extern crate alloc;
-    /// # use file_system::MemoryDevice;
-    ///
-    /// let device = MemoryDevice::<512>::new(2048);
-    /// assert_eq!(device.get_block_count(), 4); // 2048 / 512 = 4
-    /// ```
-    pub fn get_block_count(&self) -> usize {
-        let inner = block_on(self.0.read());
-
-        inner.0.len() / BLOCK_SIZE
+        Self(RwLock::new(data))
     }
 }
 
-impl<const BLOCK_SIZE: usize> DeviceTrait for MemoryDevice<BLOCK_SIZE> {
+impl<const BLOCK_SIZE: usize> DirectFileOperations for MemoryDevice<BLOCK_SIZE> {
     /// Read data from the memory device.
     ///
     /// Reads data from the current position into the provided buffer.
     /// The position is automatically advanced by the number of bytes read.
-    fn read(&self, buffer: &mut [u8]) -> crate::Result<Size> {
+    fn read(&self, buffer: &mut [u8], absolute_position: Size) -> Result<usize> {
+        let inner = self
+            .0
+            .try_write()
+            .map_err(|_| crate::Error::RessourceBusy)?;
+
+        let absolute_position = absolute_position as usize;
+
+        let read_size = buffer
+            .len()
+            .min(inner.len().saturating_sub(absolute_position as usize));
+        buffer[..read_size]
+            .copy_from_slice(&inner[absolute_position..absolute_position + read_size]);
+        Ok(read_size as _)
+    }
+
+    fn write(&self, buffer: &[u8], absolute_position: Size) -> Result<usize> {
         let mut inner = self
             .0
             .try_write()
             .map_err(|_| crate::Error::RessourceBusy)?;
-        let (data, position) = &mut *inner;
 
-        let read_size = buffer.len().min(data.len().saturating_sub(*position));
-        buffer[..read_size].copy_from_slice(&data[*position..*position + read_size]);
-        *position += read_size;
-        Ok(read_size.into())
+        let absolute_position = absolute_position as usize;
+
+        let write_size = buffer
+            .len()
+            .min(inner.len().saturating_sub(absolute_position));
+        inner[absolute_position..absolute_position + write_size]
+            .copy_from_slice(&buffer[..write_size]);
+
+        Ok(write_size as _)
+    }
+}
+
+impl<const BLOCK_SIZE: usize> DirectBlockDevice for MemoryDevice<BLOCK_SIZE> {
+    fn get_size(&self) -> Result<Size> {
+        let inner = self.0.try_read().map_err(|_| crate::Error::RessourceBusy)?;
+
+        Ok(inner.len() as Size)
     }
 
-    fn write(&self, buffer: &[u8]) -> crate::Result<Size> {
-        let mut inner = block_on(self.0.write());
-        let (data, position) = &mut *inner;
+    fn erase(&self, absolute_position: Size) -> Result<()> {
+        let mut inner = self
+            .0
+            .try_write()
+            .map_err(|_| crate::Error::RessourceBusy)?;
 
-        let write_size = buffer.len().min(data.len().saturating_sub(*position));
-        data[*position..*position + write_size].copy_from_slice(&buffer[..write_size]);
-        *position += write_size;
+        let absolute_position = absolute_position as usize;
 
-        Ok(write_size.into())
-    }
-
-    fn get_size(&self) -> crate::Result<Size> {
-        let inner = block_on(self.0.read());
-
-        Ok(Size::new(inner.0.len() as u64))
-    }
-
-    fn set_position(&self, position: &Position) -> crate::Result<Size> {
-        let mut inner = block_on(self.0.write());
-        let (data, device_position) = &mut *inner;
-
-        match position {
-            Position::Start(position) => *device_position = *position as usize,
-            Position::Current(position) => {
-                *device_position = (*device_position as isize + *position as isize) as usize
-            }
-            Position::End(position) => {
-                *device_position = (data.len() as isize - *position as isize) as usize
-            }
-        }
-
-        Ok(Size::new(*device_position as u64))
-    }
-
-    fn erase(&self) -> crate::Result<()> {
-        let mut inner = block_on(self.0.write());
-
-        let (data, position) = &mut *inner;
-
-        data[*position..*position + BLOCK_SIZE].fill(0);
+        inner[absolute_position..absolute_position + BLOCK_SIZE].fill(0);
 
         Ok(())
     }
 
-    fn flush(&self) -> crate::Result<()> {
-        Ok(())
+    fn get_block_count(&self) -> Result<Size> {
+        Ok(DirectBlockDevice::get_size(self)? / BLOCK_SIZE as Size)
     }
 
-    fn get_block_size(&self) -> crate::Result<usize> {
+    fn get_block_size(&self) -> Result<usize> {
         Ok(BLOCK_SIZE)
-    }
-
-    fn dump_device(&self) -> crate::Result<Vec<u8>> {
-        let inner = block_on(self.0.read());
-
-        Ok(inner.0.clone())
-    }
-
-    fn is_a_terminal(&self) -> bool {
-        false
-    }
-
-    fn is_a_block_device(&self) -> bool {
-        false
     }
 }

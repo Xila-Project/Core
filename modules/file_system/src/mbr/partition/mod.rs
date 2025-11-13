@@ -5,12 +5,10 @@
 //! definitions. It enables treating individual partitions as separate devices while
 //! maintaining the underlying device relationships.
 
-mod device;
 mod entry;
+mod kind;
 mod statistics;
-mod r#type;
 
-pub use device::*;
 pub use entry::*;
+pub use kind::*;
 pub use statistics::*;
-pub use r#type::*;

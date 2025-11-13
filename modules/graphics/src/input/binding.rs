@@ -1,4 +1,4 @@
-use file_system::Device;
+use file_system::DirectCharacterDevice;
 
 use crate::lvgl;
 
@@ -20,7 +20,7 @@ pub unsafe extern "C" fn binding_callback_function(
     let mut pointer_data = InputData::default();
 
     device
-        .read(pointer_data.as_mut())
+        .read(pointer_data.as_mut(), 0)
         .expect("Error reading from input device");
 
     unsafe {
@@ -29,5 +29,5 @@ pub unsafe extern "C" fn binding_callback_function(
 }
 
 pub struct UserData {
-    pub device: Device,
+    pub device: &'static dyn DirectCharacterDevice,
 }

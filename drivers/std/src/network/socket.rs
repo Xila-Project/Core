@@ -8,7 +8,7 @@ use std::{
 
 use core::mem::forget;
 
-use file_system::{LocalFileIdentifier, LocalFileIdentifierIterator};
+use file_system::{LocalFileIdentifierIterator, UniqueFileIdentifier};
 use network::{Error, IP, IPv4, IPv6, Port, Protocol, Result, SocketDriver};
 use time::Duration;
 
@@ -16,7 +16,7 @@ use super::error::into_socket_error;
 
 struct Inner {
     #[cfg(target_family = "unix")]
-    pub sockets: BTreeMap<LocalFileIdentifier, RawFd>,
+    pub sockets: BTreeMap<UniqueFileIdentifier, RawFd>,
 }
 
 pub struct NetworkSocketDriver(RwLock<Inner>);
@@ -67,7 +67,7 @@ impl NetworkSocketDriver {
         }))
     }
 
-    fn new_socket(&self, socket: LocalFileIdentifier, raw_socket: RawFd) -> Result<()> {
+    fn new_socket(&self, socket: UniqueFileIdentifier, raw_socket: RawFd) -> Result<()> {
         let mut inner = self.0.write().unwrap();
 
         if inner.sockets.contains_key(&socket) {
@@ -81,7 +81,7 @@ impl NetworkSocketDriver {
         Ok(())
     }
 
-    fn get_socket(&self, socket: LocalFileIdentifier) -> Result<RawFd> {
+    fn get_socket(&self, socket: UniqueFileIdentifier) -> Result<RawFd> {
         Ok(*self
             .0
             .read()
@@ -91,7 +91,7 @@ impl NetworkSocketDriver {
             .ok_or(Error::InvalidIdentifier)?)
     }
 
-    fn get_socket_mutable(&self, socket: LocalFileIdentifier) -> Result<RawFd> {
+    fn get_socket_mutable(&self, socket: UniqueFileIdentifier) -> Result<RawFd> {
         Ok(*self
             .0
             .write()
@@ -101,7 +101,7 @@ impl NetworkSocketDriver {
             .ok_or(Error::InvalidIdentifier)?)
     }
 
-    fn remove_socket(&self, socket: LocalFileIdentifier) -> Result<RawFd> {
+    fn remove_socket(&self, socket: UniqueFileIdentifier) -> Result<RawFd> {
         self.0
             .write()
             .unwrap()
@@ -115,13 +115,13 @@ impl SocketDriver for NetworkSocketDriver {
     fn get_new_socket_identifier(
         &self,
         mut iterator: LocalFileIdentifierIterator,
-    ) -> Result<Option<LocalFileIdentifier>> {
+    ) -> Result<Option<UniqueFileIdentifier>> {
         let inner = self.0.read().unwrap();
 
         Ok(iterator.find(|identifier| !inner.sockets.contains_key(identifier)))
     }
 
-    fn close(&self, socket: LocalFileIdentifier) -> Result<()> {
+    fn close(&self, socket: UniqueFileIdentifier) -> Result<()> {
         let socket = self.remove_socket(socket)?;
 
         unsafe {
@@ -136,7 +136,7 @@ impl SocketDriver for NetworkSocketDriver {
         ip: IP,
         port: Port,
         protocol: Protocol,
-        socket: LocalFileIdentifier,
+        socket: UniqueFileIdentifier,
     ) -> Result<()> {
         match protocol {
             Protocol::TCP => {
@@ -162,7 +162,7 @@ impl SocketDriver for NetworkSocketDriver {
         Ok(())
     }
 
-    fn connect(&self, ip: IP, port: Port, socket: LocalFileIdentifier) -> Result<()> {
+    fn connect(&self, ip: IP, port: Port, socket: UniqueFileIdentifier) -> Result<()> {
         let address = into_socketaddr(ip, port);
 
         let tcp_stream = TcpStream::connect(address).map_err(into_socket_error)?;
@@ -176,8 +176,8 @@ impl SocketDriver for NetworkSocketDriver {
 
     fn accept(
         &self,
-        socket: LocalFileIdentifier,
-        new_socket: LocalFileIdentifier,
+        socket: UniqueFileIdentifier,
+        new_socket: UniqueFileIdentifier,
     ) -> Result<(IP, Port)> {
         let socket = self.get_socket_mutable(socket)?;
 
@@ -193,7 +193,7 @@ impl SocketDriver for NetworkSocketDriver {
         Ok(into_ip_and_port(address))
     }
 
-    fn send(&self, socket: LocalFileIdentifier, data: &[u8]) -> Result<()> {
+    fn send(&self, socket: UniqueFileIdentifier, data: &[u8]) -> Result<()> {
         let socket = self.get_socket(socket)?;
 
         let mut socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -205,7 +205,7 @@ impl SocketDriver for NetworkSocketDriver {
         Ok(())
     }
 
-    fn receive(&self, socket: LocalFileIdentifier, data: &mut [u8]) -> Result<usize> {
+    fn receive(&self, socket: UniqueFileIdentifier, data: &mut [u8]) -> Result<usize> {
         let socket = self.get_socket(socket)?;
 
         let mut socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -219,7 +219,7 @@ impl SocketDriver for NetworkSocketDriver {
 
     fn receive_from(
         &self,
-        socket: LocalFileIdentifier,
+        socket: UniqueFileIdentifier,
         data: &mut [u8],
     ) -> Result<(usize, IP, Port)> {
         let socket = self.get_socket(socket)?;
@@ -235,7 +235,7 @@ impl SocketDriver for NetworkSocketDriver {
         Ok((bytes, ip, port))
     }
 
-    fn send_to(&self, socket: LocalFileIdentifier, data: &[u8], ip: IP, port: Port) -> Result<()> {
+    fn send_to(&self, socket: UniqueFileIdentifier, data: &[u8], ip: IP, port: Port) -> Result<()> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { UdpSocket::from_raw_fd(socket) };
@@ -249,7 +249,7 @@ impl SocketDriver for NetworkSocketDriver {
         Ok(())
     }
 
-    fn get_local_address(&self, socket: LocalFileIdentifier) -> Result<(IP, Port)> {
+    fn get_local_address(&self, socket: UniqueFileIdentifier) -> Result<(IP, Port)> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -261,7 +261,7 @@ impl SocketDriver for NetworkSocketDriver {
         Ok(into_ip_and_port(address))
     }
 
-    fn get_remote_address(&self, socket: LocalFileIdentifier) -> Result<(IP, Port)> {
+    fn get_remote_address(&self, socket: UniqueFileIdentifier) -> Result<(IP, Port)> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -273,7 +273,7 @@ impl SocketDriver for NetworkSocketDriver {
         Ok(into_ip_and_port(address))
     }
 
-    fn set_send_timeout(&self, socket: LocalFileIdentifier, timeout: Duration) -> Result<()> {
+    fn set_send_timeout(&self, socket: UniqueFileIdentifier, timeout: Duration) -> Result<()> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -287,7 +287,7 @@ impl SocketDriver for NetworkSocketDriver {
         Ok(())
     }
 
-    fn set_receive_timeout(&self, socket: LocalFileIdentifier, timeout: Duration) -> Result<()> {
+    fn set_receive_timeout(&self, socket: UniqueFileIdentifier, timeout: Duration) -> Result<()> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -301,7 +301,7 @@ impl SocketDriver for NetworkSocketDriver {
         Ok(())
     }
 
-    fn get_send_timeout(&self, socket: LocalFileIdentifier) -> Result<Option<Duration>> {
+    fn get_send_timeout(&self, socket: UniqueFileIdentifier) -> Result<Option<Duration>> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -313,7 +313,7 @@ impl SocketDriver for NetworkSocketDriver {
         Ok(timeout)
     }
 
-    fn get_receive_timeout(&self, socket: LocalFileIdentifier) -> Result<Option<Duration>> {
+    fn get_receive_timeout(&self, socket: UniqueFileIdentifier) -> Result<Option<Duration>> {
         let socket = self.get_socket(socket)?;
 
         let socket = unsafe { TcpStream::from_raw_fd(socket) };
@@ -335,8 +335,8 @@ mod tests {
     use std::net::{TcpListener, UdpSocket};
     use std::os::fd::AsRawFd;
 
-    pub const fn new_socket_identifier(identifier: FileIdentifier) -> LocalFileIdentifier {
-        LocalFileIdentifier::new(TaskIdentifier::new(1), identifier)
+    pub const fn new_socket_identifier(identifier: FileIdentifier) -> UniqueFileIdentifier {
+        UniqueFileIdentifier::new(TaskIdentifier::new(1), identifier)
     }
 
     #[test]

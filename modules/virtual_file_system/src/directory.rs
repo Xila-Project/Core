@@ -9,7 +9,6 @@ use crate::VirtualFileSystem;
 pub struct Directory<'a> {
     directory_identifier: UniqueFileIdentifier,
     virtual_file_system: &'a VirtualFileSystem<'a>,
-    task: TaskIdentifier,
 }
 
 impl Debug for Directory<'_> {
@@ -46,13 +45,30 @@ impl Directory<'_> {
         Ok(Directory {
             directory_identifier,
             virtual_file_system,
-            task,
         })
     }
 
     pub async fn read(&self) -> Result<Option<Entry>> {
         self.virtual_file_system
-            .read_directory(self.directory_identifier, self.task)
+            .read_directory(self.directory_identifier)
+            .await
+    }
+
+    pub async fn get_position(&self) -> Result<usize> {
+        self.virtual_file_system
+            .get_position_directory(self.directory_identifier)
+            .await
+    }
+
+    pub async fn rewind(&self) -> Result<()> {
+        self.virtual_file_system
+            .rewind_directory(self.directory_identifier)
+            .await
+    }
+
+    pub async fn close(self) -> Result<()> {
+        self.virtual_file_system
+            .close(self.directory_identifier)
             .await
     }
 }
@@ -61,7 +77,7 @@ impl Drop for Directory<'_> {
     fn drop(&mut self) {
         block_on(
             self.virtual_file_system
-                .close_directory(self.directory_identifier, self.task),
+                .close_directory(self.directory_identifier),
         )
         .unwrap();
     }

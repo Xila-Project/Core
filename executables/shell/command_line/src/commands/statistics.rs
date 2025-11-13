@@ -69,11 +69,11 @@ impl Shell {
             translate!("Permissions"),
             metadata.get_permissions(),
             translate!("Accessed"),
-            metadata.get_access_time(),
+            metadata.get_access(),
             translate!("Modified"),
-            metadata.get_modification_time(),
+            metadata.get_modification(),
             translate!("Created"),
-            metadata.get_creation_time()
+            metadata.get_creation()
         );
 
         Ok(())

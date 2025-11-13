@@ -1,17 +1,19 @@
 use alloc::{collections::VecDeque, string::String, sync::Arc};
 
+use exported_file_system::DirectFileOperations;
+use futures::block_on;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
 use file_system::{Error, Result, Size};
 
 /// A pipe is a FIFO (ring) buffer that can be used to communicate between tasks.
-#[derive(Debug, Clone)]
-pub struct Pipe(Arc<RwLock<CriticalSectionRawMutex, VecDeque<u8>>>);
+#[derive(Debug)]
+pub struct Pipe(RwLock<CriticalSectionRawMutex, VecDeque<u8>>);
 
 impl Pipe {
     /// Create a new pipe with a buffer of the specified size.
     pub fn new(buffer_size: usize) -> Self {
-        Pipe(Arc::new(RwLock::new(VecDeque::with_capacity(buffer_size))))
+        Pipe(RwLock::new(VecDeque::with_capacity(buffer_size)))
     }
 
     pub async fn write(&self, data: &[u8]) -> Result<Size> {
@@ -27,7 +29,7 @@ impl Pipe {
             buffer.push_back(*byte);
         }
 
-        Ok(Size::new(length as u64))
+        Ok(length as _)
     }
 
     pub async fn read(&self, data: &mut [u8]) -> Result<Size> {
@@ -43,7 +45,7 @@ impl Pipe {
             *byte = buffer.pop_front().unwrap();
         }
 
-        Ok(Size::new(length as u64))
+        Ok(length as _)
     }
 
     pub async fn read_line(&self, data: &mut String) -> Result<Size> {
@@ -65,6 +67,16 @@ impl Pipe {
             data.push(byte as char);
         }
 
-        Ok(Size::new(length as u64))
+        Ok(length as _)
+    }
+}
+
+impl DirectFileOperations for Pipe {
+    fn read(&self, buffer: &mut [u8], _absolute_position: Size) -> Result<Size> {
+        block_on(self.read(buffer))
+    }
+
+    fn write(&self, buffer: &[u8], _absolute_position: Size) -> Result<Size> {
+        block_on(self.write(buffer))
     }
 }

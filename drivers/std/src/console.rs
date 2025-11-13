@@ -1,17 +1,17 @@
 use std::io::{Read, Write, stderr, stdin, stdout};
 
-use file_system::{DeviceTrait, Size};
+use file_system::{BaseOperations, Size};
 
 use crate::io::map_error;
 
 pub struct StandardInDevice;
 
-impl DeviceTrait for StandardInDevice {
+impl BaseOperations for StandardInDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
         #[allow(clippy::unused_io_amount)]
         stdin().read(buffer).unwrap();
 
-        Ok(Size::new(buffer.len() as u64))
+        Ok(buffer.len() as _)
     }
 
     fn write(&self, _: &[u8]) -> file_system::Result<Size> {
@@ -19,7 +19,7 @@ impl DeviceTrait for StandardInDevice {
     }
 
     fn get_size(&self) -> file_system::Result<Size> {
-        Ok(Size::new(0))
+        Ok(0 as _)
     }
 
     fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {
@@ -37,17 +37,17 @@ impl DeviceTrait for StandardInDevice {
 
 pub struct StandardOutDevice;
 
-impl DeviceTrait for StandardOutDevice {
+impl BaseOperations for StandardOutDevice {
     fn read(&self, _: &mut [u8]) -> file_system::Result<Size> {
         Err(file_system::Error::UnsupportedOperation)
     }
 
     fn write(&self, buffer: &[u8]) -> file_system::Result<Size> {
-        Ok(Size::new(stdout().write(buffer).map_err(map_error)? as u64))
+        Ok(stdout().write(buffer).map_err(map_error)? as _)
     }
 
     fn get_size(&self) -> file_system::Result<Size> {
-        Ok(Size::new(0))
+        Ok(0 as _)
     }
 
     fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {
@@ -65,17 +65,17 @@ impl DeviceTrait for StandardOutDevice {
 
 pub struct StandardErrorDevice;
 
-impl DeviceTrait for StandardErrorDevice {
+impl BaseOperations for StandardErrorDevice {
     fn read(&self, _: &mut [u8]) -> file_system::Result<Size> {
         Err(file_system::Error::UnsupportedOperation)
     }
 
     fn write(&self, buffer: &[u8]) -> file_system::Result<Size> {
-        Ok(Size::new(stderr().write(buffer).map_err(map_error)? as u64))
+        Ok(stderr().write(buffer).map_err(map_error)? as _)
     }
 
     fn get_size(&self) -> file_system::Result<Size> {
-        Ok(Size::new(0))
+        Ok(0 as _)
     }
 
     fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {

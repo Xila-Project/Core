@@ -1,4 +1,4 @@
-use file_system::{DeviceTrait, Size};
+use file_system::{BaseOperations, Size};
 use graphics::{ScreenReadData, ScreenWriteData};
 
 use crate::window_screen::inner_window::InnerWindow;
@@ -15,7 +15,7 @@ impl<'a> ScreenDevice<'a> {
     }
 }
 
-impl<'a> DeviceTrait for ScreenDevice<'a> {
+impl<'a> BaseOperations for ScreenDevice<'a> {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
         let data: &mut ScreenReadData = buffer
             .try_into()
@@ -25,7 +25,7 @@ impl<'a> DeviceTrait for ScreenDevice<'a> {
 
         data.set_resolution(resolution);
 
-        Ok(Size::new(size_of::<Self>() as u64))
+        Ok(size_of::<Self>() as _)
     }
 
     fn write(&self, buffer: &[u8]) -> file_system::Result<file_system::Size> {
@@ -35,11 +35,11 @@ impl<'a> DeviceTrait for ScreenDevice<'a> {
 
         futures::block_on(self.0.draw(data)).unwrap();
 
-        Ok(Size::new(size_of::<Self>() as u64))
+        Ok(size_of::<Self>() as _)
     }
 
     fn get_size(&self) -> file_system::Result<file_system::Size> {
-        Ok(Size::new(size_of::<Self>() as u64))
+        Ok(size_of::<Self>() as _)
     }
 
     fn set_position(&self, _: &file_system::Position) -> file_system::Result<file_system::Size> {

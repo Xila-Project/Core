@@ -1,4 +1,4 @@
-use file_system::{DeviceTrait, Size};
+use file_system::{BaseOperations, Size};
 
 pub struct RandomDevice;
 
@@ -14,7 +14,7 @@ impl RandomDevice {
     }
 }
 
-impl DeviceTrait for RandomDevice {
+impl BaseOperations for RandomDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
         getrandom::fill(buffer).map_err(|_| file_system::Error::Other)?;
 
@@ -26,7 +26,7 @@ impl DeviceTrait for RandomDevice {
     }
 
     fn get_size(&self) -> file_system::Result<file_system::Size> {
-        Ok(Size::new(0))
+        Ok(0 as _)
     }
 
     fn set_position(

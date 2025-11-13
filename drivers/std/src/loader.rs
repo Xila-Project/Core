@@ -1,4 +1,4 @@
-use file_system::{FileSystemTraits, Flags, Mode, Open, Path, Time};
+use file_system::{FileSystemOperations, Flags, Mode, Open, Path, Time};
 use std::io;
 use std::prelude::rust_2024::*;
 use std::{fs::File, io::Read, path};
@@ -27,7 +27,7 @@ impl From<io::Error> for Error {
 pub type Result<T> = core::result::Result<T, Error>;
 
 pub fn load_to_file_system(
-    file_system: &mut dyn FileSystemTraits,
+    file_system: &mut dyn FileSystemOperations,
     source_path: impl AsRef<path::Path>,
     destination_path: impl AsRef<Path>,
 ) -> Result<()> {
@@ -94,7 +94,7 @@ pub async fn load_to_virtual_file_system<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use file_system::FileSystemTraits;
+    use file_system::FileSystemOperations;
     extern crate alloc;
 
     #[test]
@@ -116,7 +116,7 @@ mod tests {
 
         let mut buffer = vec![0; test_file.len()];
 
-        let file: file_system::LocalFileIdentifier = file_system
+        let file: file_system::UniqueFileIdentifier = file_system
             .open(
                 TaskIdentifier::new(0),
                 Path::new(destination_path),

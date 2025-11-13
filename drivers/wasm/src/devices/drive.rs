@@ -82,7 +82,7 @@ impl Inner {
             .handle
             .write_with_u8_array_and_options(data, &self.options)
             .map_err(map_error_to_file_system_error)?;
-        let size = Size::new(size as u64);
+        let size = size as u64;
         self.increment_position(size.as_u64());
         Ok(size)
     }
@@ -92,7 +92,7 @@ impl Inner {
             .handle
             .read_with_u8_array_and_options(data, &self.options)
             .map_err(|_| file_system::Error::InputOutput)?;
-        let size = Size::new(size as u64);
+        let size = size as u64;
         self.increment_position(size.as_u64());
         Ok(size)
     }
@@ -138,9 +138,7 @@ impl DeviceTrait for DriveDevice {
     fn get_size(&self) -> file_system::Result<file_system::Size> {
         let inner = block_on(self.0.read());
         let estimate = inner.get_estimate();
-        Ok(file_system::Size::new(
-            estimate.get_quota().unwrap_or(0.0) as u64
-        ))
+        Ok(estimate.get_quota().unwrap_or(0.0) as _)
     }
 
     fn set_position(
@@ -161,7 +159,7 @@ impl DeviceTrait for DriveDevice {
                 inner.set_absolute_position(current_pos.saturating_add(*pos as u64));
             }
         }
-        Ok(file_system::Size::new(inner.get_absolute_position()))
+        Ok(inner.get_absolute_position() as _)
     }
 
     fn flush(&self) -> file_system::Result<()> {

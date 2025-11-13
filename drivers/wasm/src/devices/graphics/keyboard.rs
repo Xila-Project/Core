@@ -75,7 +75,7 @@ impl DeviceTrait for KeyboardDevice {
 
         data.set_continue(!self.0.is_empty());
 
-        Ok(file_system::Size::new(buffer.len() as u64))
+        Ok(file_system::buffer.len() as u64)
     }
 
     fn write(&self, _: &[u8]) -> file_system::Result<file_system::Size> {

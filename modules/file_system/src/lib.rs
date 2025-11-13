@@ -101,24 +101,19 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-mod device;
+mod context;
+mod devices;
 mod error;
-mod file_system;
 mod fundamentals;
-mod mbr;
-mod partition;
-
-mod memory_device;
+pub mod mbr;
+mod operations;
 mod time;
 
-pub use device::{Device, DeviceTrait};
 pub use error::*;
 
-pub use file_system::*;
-pub use fundamentals::*;
-pub use memory_device::*;
-pub use partition::*;
-pub use time::*;
+pub use context::*;
 
-// Export MBR module and its contents
-pub use mbr::*;
+pub use devices::*;
+pub use fundamentals::*;
+pub use operations::*;
+pub use time::*;

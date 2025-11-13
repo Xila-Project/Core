@@ -6,6 +6,8 @@
 
 use core::fmt;
 
+use crate::mbr::PartitionKind;
+
 /// MBR partition table entry structure (16 bytes).
 ///
 /// This structure represents a single partition entry in an MBR partition table.
@@ -66,6 +68,27 @@ pub struct PartitionEntry {
 }
 
 impl PartitionEntry {
+    pub const SIZE: usize = 16;
+
+    pub fn parse(data: &[u8]) -> Option<Self> {
+        if data.len() < Self::SIZE {
+            return None;
+        }
+
+        Some(Self {
+            bootable: data[0],
+            start_head: data[1],
+            start_sector: data[2],
+            start_cylinder: data[3],
+            partition_type: data[4],
+            end_head: data[5],
+            end_sector: data[6],
+            end_cylinder: data[7],
+            start_lba: u32::from_le_bytes([data[8], data[9], data[10], data[11]]),
+            size_sectors: u32::from_le_bytes([data[12], data[13], data[14], data[15]]),
+        })
+    }
+
     /// Create a new empty (invalid) partition entry.
     ///
     /// All fields are initialized to zero, making this an invalid partition entry
@@ -128,16 +151,33 @@ impl PartitionEntry {
     /// ```
     pub fn new_with_params(
         bootable: bool,
-        partition_type: crate::PartitionKind,
+        kind: PartitionKind,
         start_lba: u32,
         size_sectors: u32,
     ) -> Self {
         let mut entry = Self::new();
         entry.bootable = if bootable { 0x80 } else { 0x00 };
-        entry.set_partition_type(partition_type);
+        entry.set_partition_kind(kind);
         entry.start_lba = start_lba.to_le();
         entry.size_sectors = size_sectors.to_le();
         entry
+    }
+
+    pub fn to_bytes(&self) -> [u8; Self::SIZE] {
+        let mut data = [0u8; Self::SIZE];
+
+        data[0] = self.bootable;
+        data[1] = self.start_head;
+        data[2] = self.start_sector;
+        data[3] = self.start_cylinder;
+        data[4] = self.partition_type;
+        data[5] = self.end_head;
+        data[6] = self.end_sector;
+        data[7] = self.end_cylinder;
+        data[8..12].copy_from_slice(&self.start_lba.to_le_bytes());
+        data[12..16].copy_from_slice(&self.size_sectors.to_le_bytes());
+
+        data
     }
 
     /// Check if this partition entry is valid (non-zero)
@@ -166,7 +206,7 @@ impl PartitionEntry {
     }
 
     /// Get the size in sectors of this partition
-    pub fn get_size_sectors(&self) -> u32 {
+    pub fn get_block_count(&self) -> u32 {
         u32::from_le(self.size_sectors)
     }
 
@@ -176,12 +216,12 @@ impl PartitionEntry {
     }
 
     /// Get the partition type as an enum
-    pub fn get_partition_type(&self) -> crate::PartitionKind {
-        crate::PartitionKind::from_u8(self.partition_type)
+    pub fn get_partition_type(&self) -> PartitionKind {
+        PartitionKind::from_u8(self.partition_type)
     }
 
     /// Set the partition type from an enum
-    pub fn set_partition_type(&mut self, partition_type: crate::PartitionKind) {
+    pub fn set_partition_kind(&mut self, partition_type: PartitionKind) {
         self.partition_type = partition_type.to_u8();
     }
 
@@ -192,12 +232,12 @@ impl PartitionEntry {
 
     /// Get the end LBA of this partition (start + size - 1)
     pub fn get_end_lba(&self) -> u32 {
-        self.get_start_lba() + self.get_size_sectors() - 1
+        self.get_start_lba() + self.get_block_count() - 1
     }
 
     /// Get the size in bytes of this partition
     pub fn get_size_bytes(&self) -> u64 {
-        self.get_size_sectors() as u64 * 512
+        self.get_block_count() as u64 * 512
     }
 
     /// Check if this partition overlaps with another partition
@@ -248,7 +288,7 @@ impl fmt::Display for PartitionEntry {
                 self.partition_type,
                 self.get_partition_type_name(),
                 self.get_start_lba(),
-                self.get_size_sectors(),
+                self.get_block_count(),
                 self.get_size_bytes() / (1024 * 1024),
                 self.is_bootable()
             )
@@ -277,7 +317,7 @@ mod tests {
         assert!(!entry.is_valid());
         assert!(!entry.is_bootable());
         assert_eq!(entry.get_start_lba(), 0);
-        assert_eq!(entry.get_size_sectors(), 0);
+        assert_eq!(entry.get_block_count(), 0);
         assert_eq!(entry.get_partition_type(), PartitionKind::Empty);
     }
 
@@ -287,7 +327,7 @@ mod tests {
         assert!(entry.is_valid());
         assert!(entry.is_bootable());
         assert_eq!(entry.get_start_lba(), 2048);
-        assert_eq!(entry.get_size_sectors(), 204800);
+        assert_eq!(entry.get_block_count(), 204800);
         assert_eq!(entry.get_partition_type(), PartitionKind::Fat32Lba);
     }
 
@@ -317,10 +357,10 @@ mod tests {
     #[test]
     fn test_partition_entry_size() {
         let mut entry = PartitionEntry::new();
-        assert_eq!(entry.get_size_sectors(), 0);
+        assert_eq!(entry.get_block_count(), 0);
 
         entry.set_size_sectors(67890);
-        assert_eq!(entry.get_size_sectors(), 67890);
+        assert_eq!(entry.get_block_count(), 67890);
         assert_eq!(entry.get_size_bytes(), 67890 * 512);
     }
 
@@ -329,7 +369,7 @@ mod tests {
         let mut entry = PartitionEntry::new();
         assert_eq!(entry.get_partition_type(), PartitionKind::Empty);
 
-        entry.set_partition_type(PartitionKind::Linux);
+        entry.set_partition_kind(PartitionKind::Linux);
         assert_eq!(entry.get_partition_type(), PartitionKind::Linux);
         assert_eq!(entry.partition_type, 0x83);
     }
@@ -383,7 +423,7 @@ mod tests {
         assert!(!entry.is_valid());
         assert!(!entry.is_bootable());
         assert_eq!(entry.get_start_lba(), 0);
-        assert_eq!(entry.get_size_sectors(), 0);
+        assert_eq!(entry.get_block_count(), 0);
     }
 
     #[test]

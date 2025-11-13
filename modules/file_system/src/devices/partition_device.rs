@@ -7,7 +7,7 @@
 
 use core::fmt;
 
-use crate::{Device, DeviceTrait, Result, Size};
+use crate::{BaseOperations, DirectBlockDevice, DirectFileOperations, Position, Result, Size};
 
 /// A device implementation that represents a partition within a larger storage device.
 ///
@@ -38,20 +38,18 @@ use crate::{Device, DeviceTrait, Result, Size};
 /// let data = b"Hello, Partition!";
 /// partition_device.write(data).unwrap();
 /// ```
-pub struct PartitionDevice {
+pub struct PartitionDevice<'a, D> {
     /// Base device containing this partition
-    base_device: Device,
+    base_device: &'a D,
     /// Block size
     block_size: usize,
     /// Byte offset from the beginning of the base device
-    offset: u64,
+    block_offset: Size,
     /// Size of this partition in bytes
-    size: u64,
-    /// Current position within this partition (atomic for thread safety)
-    position: core::sync::atomic::AtomicU64,
+    block_count: Size,
 }
 
-impl PartitionDevice {
+impl<'a, D: BaseOperations> PartitionDevice<'a, D> {
     /// Create a new partition device with explicit byte offset and size.
     ///
     /// # Arguments
@@ -70,44 +68,18 @@ impl PartitionDevice {
     /// // Create a partition starting at 64KB with 128KB size
     /// let partition = PartitionDevice::new(base_device, 64 * 1024, 128 * 1024, 512);
     /// ```
-    pub fn new(base_device: Device, offset: u64, size: u64, block_size: usize) -> Self {
+    pub fn new(
+        base_device: &'a D,
+        block_offset: Size,
+        block_count: Size,
+        block_size: usize,
+    ) -> Self {
         Self {
             base_device,
             block_size,
-            offset,
-            size,
-            position: core::sync::atomic::AtomicU64::new(0),
+            block_offset,
+            block_count,
         }
-    }
-
-    /// Create a partition device from LBA (Logical Block Address) parameters.
-    ///
-    /// This is a convenience method for creating partition devices using standard
-    /// disk partitioning terminology. The LBA and sector count are interpreted using
-    /// the base device's block size, not a fixed 512-byte sector size.
-    ///
-    /// # Arguments
-    ///
-    /// * `base_device` - The underlying storage device
-    /// * `start_lba` - Starting logical block address (block number, using the base device's block size)
-    /// * `sector_count` - Number of blocks in this partition (using the base device's block size)
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # extern crate alloc;
-    /// # use file_system::*;
-    ///
-    /// let base_device = create_device!(MemoryDevice::<512>::new(1024 * 1024));
-    /// // Create a partition starting at block 2048 with 1024 blocks (512KB if block size is 512)
-    /// let partition = PartitionDevice::new_from_lba(base_device, 2048, 1024).unwrap();
-    /// ```
-    pub fn new_from_lba(base_device: Device, start_lba: u32, sector_count: u32) -> Result<Self> {
-        let device_block_size = base_device.get_block_size()?;
-
-        let offset = start_lba as u64 * device_block_size as u64;
-        let size = sector_count as u64 * device_block_size as u64;
-        Ok(Self::new(base_device, offset, size, device_block_size))
     }
 
     /// Get the byte offset of this partition within the base device.
@@ -127,7 +99,7 @@ impl PartitionDevice {
     /// assert_eq!(partition.get_offset(), 100 * 512);
     /// ```
     pub fn get_offset(&self) -> u64 {
-        self.offset
+        self.block_offset
     }
 
     /// Get the size of this partition in bytes.
@@ -147,7 +119,7 @@ impl PartitionDevice {
     /// assert_eq!(partition.get_partition_size(), 50 * 512);
     /// ```
     pub fn get_partition_size(&self) -> u64 {
-        self.size
+        self.block_count
     }
 
     /// Get the starting LBA (Logical Block Address) of this partition.
@@ -167,7 +139,7 @@ impl PartitionDevice {
     /// assert_eq!(partition.get_start_lba(), 100);
     /// ```
     pub fn get_start_lba(&self) -> u32 {
-        (self.offset / self.block_size as u64) as u32
+        (self.block_offset / self.block_size as u64) as u32
     }
 
     /// Get the size in sectors of this partition.
@@ -187,198 +159,121 @@ impl PartitionDevice {
     /// assert_eq!(partition.get_sector_count(), 50);
     /// ```
     pub fn get_sector_count(&self) -> u32 {
-        (self.size / self.block_size as u64) as u32
-    }
-
-    /// Get the current position within the partition
-    pub fn get_position(&self) -> u64 {
-        self.position.load(core::sync::atomic::Ordering::Relaxed)
+        (self.block_count / self.block_size as u64) as u32
     }
 
     /// Get the base device
-    pub fn get_base_device(&self) -> &Device {
+    pub fn get_base_device(&self) -> &D {
         &self.base_device
     }
 
     /// Check if the partition device is valid (non-zero size)
     pub fn is_valid(&self) -> bool {
-        self.size > 0
+        self.block_count > 0
     }
 
-    /// Get remaining bytes that can be read/written from current position
-    pub fn get_remaining_bytes(&self) -> u64 {
-        let current_pos = self.get_position();
-        self.size.saturating_sub(current_pos)
-    }
-
-    /// Check if we're at the end of the partition
-    pub fn is_at_end(&self) -> bool {
-        self.get_position() >= self.size
-    }
-
-    /// Update base device position to match partition position
-    pub fn update_base_device_position(&self) -> Result<()> {
-        let absolute_pos = self.offset + self.get_position();
-        self.base_device
-            .set_position(&crate::Position::Start(absolute_pos))?;
-        Ok(())
+    pub const fn get_size(&self) -> Size {
+        self.block_count * self.block_size as u64
     }
 }
 
-impl Clone for PartitionDevice {
-    fn clone(&self) -> Self {
-        Self {
-            base_device: self.base_device.clone(),
-            block_size: self.block_size,
-            offset: self.offset,
-            size: self.size,
-            position: self.get_position().into(),
-        }
-    }
-}
-
-impl DeviceTrait for PartitionDevice {
-    fn read(&self, buffer: &mut [u8]) -> Result<Size> {
-        let current_pos = self.position.load(core::sync::atomic::Ordering::Relaxed);
-
-        if current_pos >= self.size {
-            return Ok(Size::new(0));
+impl<'a, D: DirectFileOperations> DirectFileOperations for PartitionDevice<'a, D> {
+    fn read(&self, buffer: &mut [u8], absolute_position: Size) -> Result<usize> {
+        if absolute_position >= self.block_count {
+            return Ok(0 as _);
         }
 
-        let available = (self.size - current_pos).min(buffer.len() as u64);
-        let read_size = available as usize;
-
-        // Set position in base device
-        self.update_base_device_position()?;
+        let read_size = self
+            .block_count
+            .saturating_sub(absolute_position)
+            .min(buffer.len() as u64) as usize;
+        let device_position = self.block_offset + absolute_position;
 
         // Read from base device
-        let bytes_read = self.base_device.read(&mut buffer[..read_size])?;
-
-        // Update position
-        self.position.store(
-            current_pos + bytes_read.as_u64(),
-            core::sync::atomic::Ordering::Relaxed,
-        );
+        let bytes_read = self
+            .base_device
+            .read(&mut buffer[..read_size], device_position)?;
 
         Ok(bytes_read)
     }
 
-    fn write(&self, buffer: &[u8]) -> Result<Size> {
-        let current_pos = self.position.load(core::sync::atomic::Ordering::Relaxed);
-
-        if current_pos >= self.size {
-            return Ok(Size::new(0));
+    fn write(&self, buffer: &[u8], absolute_position: Size) -> Result<usize> {
+        if absolute_position >= self.get_size() {
+            return Ok(0);
         }
 
-        let available = (self.size - current_pos).min(buffer.len() as u64);
-        let write_size = available as usize;
+        let write_size = self
+            .get_size()
+            .saturating_sub(absolute_position)
+            .min(buffer.len() as u64) as usize;
 
-        // Set position in base device
-        self.update_base_device_position()?;
+        let device_position = self.block_offset + absolute_position;
 
         // Write to base device
-        let bytes_written = self.base_device.write(&buffer[..write_size])?;
-
-        // Update position
-        self.position.store(
-            current_pos + bytes_written.as_u64(),
-            core::sync::atomic::Ordering::Relaxed,
-        );
+        let bytes_written = self
+            .base_device
+            .write(&buffer[..write_size], device_position)?;
 
         Ok(bytes_written)
     }
 
-    fn get_size(&self) -> Result<Size> {
-        Ok(Size::new(self.size))
-    }
-
     fn set_position(&self, position: &crate::Position) -> Result<Size> {
-        use crate::Position;
+        let mut position = position.clone();
+        if let Position::Start(offset) = &mut position {
+            *offset += self.block_offset;
+        }
 
-        let new_pos = match position {
-            Position::Start(offset) => *offset,
-            Position::Current(offset) => {
-                let current = self.position.load(core::sync::atomic::Ordering::Relaxed);
-                if *offset >= 0 {
-                    current.saturating_add(*offset as u64)
-                } else {
-                    current.saturating_sub((-*offset) as u64)
-                }
-            }
-            Position::End(offset) => {
-                if *offset >= 0 {
-                    self.size.saturating_add(*offset as u64)
-                } else {
-                    self.size.saturating_sub((-*offset) as u64)
-                }
-            }
-        };
+        let new_device_position = self.base_device.set_position(&position)?;
 
-        let clamped_pos = new_pos.min(self.size);
-        self.position
-            .store(clamped_pos, core::sync::atomic::Ordering::Relaxed);
+        let new_partition_position = new_device_position
+            .saturating_sub(self.block_offset)
+            .min(self.get_size());
 
-        Ok(Size::new(clamped_pos))
+        Ok(new_partition_position)
     }
 
     fn flush(&self) -> Result<()> {
         self.base_device.flush()
     }
+}
 
-    fn is_a_block_device(&self) -> bool {
-        self.base_device.is_a_block_device()
+impl<'a, D: DirectBlockDevice> DirectBlockDevice for PartitionDevice<'a, D> {
+    fn get_size(&self) -> Result<Size> {
+        Ok(self.block_count * self.block_size as u64)
     }
 
     fn get_block_size(&self) -> Result<usize> {
         Ok(self.block_size)
     }
 
-    fn is_a_terminal(&self) -> bool {
-        false // Partition devices are never terminals
+    fn erase(&self, mut absolute_position: Size) -> Result<()> {
+        absolute_position += self.block_offset;
+
+        self.base_device.erase(absolute_position)
     }
 
-    fn erase(&self) -> Result<()> {
-        // For partition devices, we delegate erase to the base device
-        // But we need to be careful about the range
-        self.update_base_device_position()?;
-
-        self.base_device.erase()
+    fn get_block_count(&self) -> Result<Size> {
+        Ok(self.block_count)
     }
 }
 
-impl fmt::Debug for PartitionDevice {
+impl<'a, D> fmt::Debug for PartitionDevice<'a, D>
+where
+    D: fmt::Debug,
+{
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PartitionDevice")
-            .field("offset", &self.offset)
-            .field("size", &self.size)
-            .field("start_lba", &self.get_start_lba())
-            .field("sector_count", &self.get_sector_count())
-            .field("position", &self.get_position())
-            .field("remaining_bytes", &self.get_remaining_bytes())
-            .field("is_valid", &self.is_valid())
+            .field("offset", &self.block_offset)
+            .field("size", &self.block_count)
             .finish()
-    }
-}
-
-impl fmt::Display for PartitionDevice {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            formatter,
-            "Partition Device: Start LBA={}, Sectors={}, Size={} bytes, Position={}/{}",
-            self.get_start_lba(),
-            self.get_sector_count(),
-            self.size,
-            self.get_position(),
-            self.size
-        )
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::PartitionDevice;
-    use crate::{Device, DeviceTrait, MemoryDevice, Position};
+    use crate::{BaseOperations, Device, MemoryDevice, Position};
 
     const BLOCK_SIZE: usize = 512;
 

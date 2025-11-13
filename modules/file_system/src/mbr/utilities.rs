@@ -7,8 +7,12 @@
 
 use alloc::vec::Vec;
 
-use super::Mbr;
-use crate::{Device, Error, PartitionDevice, PartitionEntry, Result};
+use super::{Error, Mbr, Result};
+use crate::{
+    DirectBlockDevice, PartitionDevice,
+    mbr::{PartitionEntry, PartitionKind},
+    open_close_operation,
+};
 
 /// Create a partition device from an MBR partition entry.
 ///
@@ -46,19 +50,25 @@ use crate::{Device, Error, PartitionDevice, PartitionEntry, Result};
 ///     // Now you can use partition_device for I/O operations
 /// }
 /// ```
-pub fn create_partition_device(
-    base_device: Device,
+pub fn create_partition_device<'a, D: DirectBlockDevice>(
+    device: &'a D,
     partition: &PartitionEntry,
-) -> Result<PartitionDevice> {
+) -> Result<PartitionDevice<'a, D>> {
     if !partition.is_valid() {
-        return Err(Error::InvalidParameter);
+        return Err(Error::InvalidSignature);
     }
 
-    PartitionDevice::new_from_lba(
-        base_device,
-        partition.get_start_lba(),
-        partition.get_size_sectors(),
-    )
+    let block_size = open_close_operation(device, |device| {
+        let block_size = device.get_block_size()?;
+        Ok(block_size)
+    })?;
+
+    Ok(PartitionDevice::new(
+        device,
+        partition.get_start_lba() as _,
+        partition.get_block_count() as _,
+        block_size,
+    ))
 }
 
 /// Scan a device for MBR and return partition information.
@@ -94,7 +104,9 @@ pub fn create_partition_device(
 ///     Err(e) => println!("Failed to scan partitions: {}", e),
 /// }
 /// ```
-pub fn scan_mbr_partitions(device: &Device) -> Result<Vec<(usize, PartitionEntry)>> {
+pub fn scan_mbr_partitions(
+    device: &impl DirectBlockDevice,
+) -> Result<Vec<(usize, PartitionEntry)>> {
     let mbr = Mbr::read_from_device(device)?;
 
     let mut partitions = Vec::new();
@@ -143,7 +155,7 @@ pub fn scan_mbr_partitions(device: &Device) -> Result<Vec<(usize, PartitionEntry
 ///     Err(e) => println!("Validation error: {}", e),
 /// }
 /// ```
-pub fn validate_mbr(mbr: &crate::Mbr) -> Result<()> {
+pub fn validate_mbr(mbr: &Mbr) -> Result<()> {
     mbr.validate()
 }
 
@@ -185,10 +197,10 @@ pub fn validate_mbr(mbr: &crate::Mbr) -> Result<()> {
 ///     println!("Partition {}: {} sectors", i, partition.get_sector_count());
 /// }
 /// ```
-pub fn create_all_partition_devices(
-    base_device: Device,
+pub fn create_all_partition_devices<'a, D: DirectBlockDevice>(
+    base_device: &'a D,
     mbr: &super::Mbr,
-) -> Result<Vec<PartitionDevice>> {
+) -> Result<Vec<PartitionDevice<'a, D>>> {
     mbr.create_all_partition_devices(base_device)
 }
 
@@ -228,7 +240,7 @@ pub fn create_all_partition_devices(
 /// ```
 pub fn find_partitions_by_type(
     mbr: &super::Mbr,
-    partition_type: crate::PartitionKind,
+    partition_type: PartitionKind,
 ) -> Vec<(usize, &PartitionEntry)> {
     mbr.find_partitions_by_type(partition_type)
 }
@@ -261,7 +273,7 @@ pub fn find_partitions_by_type(
 ///     println!("Device needs to be partitioned");
 /// }
 /// ```
-pub fn has_valid_mbr(device: &Device) -> bool {
+pub fn has_valid_mbr(device: &impl DirectBlockDevice) -> bool {
     match Mbr::read_from_device(device) {
         Ok(mbr) => mbr.is_valid(),
         Err(_) => false,
@@ -297,7 +309,7 @@ pub fn has_valid_mbr(device: &Device) -> bool {
 ///     println!("Device uses MBR partitioning");
 /// }
 /// ```
-pub fn is_gpt_disk(device: &Device) -> bool {
+pub fn is_gpt_disk(device: &impl DirectBlockDevice) -> bool {
     match Mbr::read_from_device(device) {
         Ok(mbr) => mbr.has_gpt_protective_partition(),
         Err(_) => false,
@@ -336,7 +348,7 @@ pub fn is_gpt_disk(device: &Device) -> bool {
 /// ```
 pub fn create_basic_mbr(
     disk_signature: u32,
-    partition_type: crate::PartitionKind,
+    partition_type: PartitionKind,
     total_sectors: u32,
 ) -> Result<super::Mbr> {
     Mbr::create_basic(disk_signature, partition_type, total_sectors)
@@ -378,7 +390,10 @@ pub fn create_basic_mbr(
 /// // Both devices now have valid MBRs
 /// assert_eq!(has_valid_mbr(&source), has_valid_mbr(&target));
 /// ```
-pub fn clone_mbr(source_device: &Device, target_device: &Device) -> Result<()> {
+pub fn clone_mbr(
+    source_device: &impl DirectBlockDevice,
+    target_device: &impl DirectBlockDevice,
+) -> Result<()> {
     let mbr = Mbr::read_from_device(source_device)?;
     mbr.validate()?;
     mbr.write_to_device(target_device)?;
@@ -419,7 +434,7 @@ pub fn clone_mbr(source_device: &Device, target_device: &Device) -> Result<()> {
 /// // Later, restore it if needed
 /// restore_mbr(&device, &backup).unwrap();
 /// ```
-pub fn backup_mbr(device: &Device) -> Result<[u8; 512]> {
+pub fn backup_mbr(device: &impl DirectBlockDevice) -> Result<[u8; 512]> {
     let mbr = Mbr::read_from_device(device)?;
     Ok(mbr.to_bytes())
 }
@@ -460,7 +475,7 @@ pub fn backup_mbr(device: &Device) -> Result<[u8; 512]> {
 ///
 /// assert!(has_valid_mbr(&device));
 /// ```
-pub fn restore_mbr(device: &Device, backup: &[u8; 512]) -> Result<()> {
+pub fn restore_mbr(device: &impl DirectBlockDevice, backup: &[u8; 512]) -> Result<()> {
     let mbr = Mbr::from_bytes(backup)?;
     mbr.validate()?;
     mbr.write_to_device(device)?;
@@ -480,23 +495,24 @@ pub fn restore_mbr(device: &Device, backup: &[u8; 512]) -> Result<()> {
 ///
 /// # Returns
 /// * `Result<Partition_device_type>` - The first partition device
-pub fn format_disk_and_get_first_partition(
-    device: &Device,
-    partition_type: crate::PartitionKind,
+pub fn format_disk_and_get_first_partition<'a, D: DirectBlockDevice>(
+    device: &'a D,
+    partition_type: PartitionKind,
     disk_signature: Option<u32>,
-) -> Result<PartitionDevice> {
+) -> Result<PartitionDevice<'a, D>> {
     // Check if device already has valid MBR
     let mbr = if has_valid_mbr(device) {
         // Read existing MBR
         Mbr::read_from_device(device)?
     } else {
         // Get device size in sectors
-        let device_size = device.get_size()?;
-        let block_size = device.get_block_size()?;
-        let total_sectors = (device_size.as_u64() / block_size as u64) as u32;
+        let block_count = open_close_operation(device, |device| {
+            let block_count = device.get_block_count()?;
+            Ok(block_count)
+        })?;
 
-        if total_sectors < 2048 {
-            return Err(Error::InvalidParameter);
+        if block_count < 2048 {
+            return Err(Error::DeviceTooSmall);
         }
 
         // Create new MBR with signature
@@ -506,7 +522,7 @@ pub fn format_disk_and_get_first_partition(
             0x12345678
         });
 
-        let new_mbr = Mbr::create_basic(signature, partition_type, total_sectors)?;
+        let new_mbr = Mbr::create_basic(signature, partition_type, block_count as _)?;
 
         // Write the new MBR to device
         new_mbr.write_to_device(device)?;
@@ -517,17 +533,17 @@ pub fn format_disk_and_get_first_partition(
     // Get the first valid partition
     let valid_partitions = mbr.get_valid_partitions();
     if valid_partitions.is_empty() {
-        return Err(Error::NotFound);
+        return Err(Error::NoValidPartitions);
     }
 
     // Create partition device for the first partition
-    create_partition_device(device.clone(), valid_partitions[0])
+    create_partition_device(device, valid_partitions[0])
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Device, DeviceTrait, Error, MemoryDevice, PartitionKind, PartitionStatistics};
+    use crate::{BaseOperations, Device, Error, MemoryDevice, PartitionKind, PartitionStatistics};
     use alloc::vec;
 
     /// Create a test device with MBR data
@@ -572,7 +588,7 @@ mod tests {
 
         let device = device_result.unwrap();
         assert_eq!(device.get_start_lba(), partition.get_start_lba());
-        assert_eq!(device.get_sector_count(), partition.get_size_sectors());
+        assert_eq!(device.get_sector_count(), partition.get_block_count());
         assert!(device.is_valid());
     }
 
@@ -785,7 +801,7 @@ mod tests {
         let partition = &valid_partitions[0];
         assert_eq!(partition.get_partition_type(), PartitionKind::Fat32Lba);
         assert_eq!(partition.get_start_lba(), 2048);
-        assert_eq!(partition.get_size_sectors(), 100000 - 2048);
+        assert_eq!(partition.get_block_count(), 100000 - 2048);
         assert!(partition.is_bootable());
     }
 

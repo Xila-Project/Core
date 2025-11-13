@@ -168,7 +168,7 @@ impl Terminal {
 
         inner.validated_input.drain(0..read);
 
-        Ok(Size::new(read as u64))
+        Ok(read as _)
     }
 
     fn get_input(text_area: *mut lv_obj_t) -> &'static str {

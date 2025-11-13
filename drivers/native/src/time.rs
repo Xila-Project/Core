@@ -1,7 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use core::time::Duration;
-use file_system::{DeviceTrait, Error, Result, Size};
+use file_system::{BaseOperations, Error, Result, Size};
 
 pub struct TimeDriver;
 
@@ -17,7 +17,7 @@ impl TimeDriver {
     }
 }
 
-impl DeviceTrait for TimeDriver {
+impl BaseOperations for TimeDriver {
     fn read(&self, buffer: &mut [u8]) -> Result<Size> {
         let duration = SystemTime::now()
             .duration_since(UNIX_EPOCH)

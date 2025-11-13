@@ -96,7 +96,7 @@ impl DeviceTrait for MouseDevice {
 
         data.set(inner.position, inner.state);
 
-        Ok(Size::new(0))
+        Ok(0)
     }
 
     fn write(&self, _: &[u8]) -> file_system::Result<Size> {

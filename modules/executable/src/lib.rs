@@ -28,9 +28,9 @@ use task::{JoinHandle, SpawnerIdentifier, TaskIdentifier};
 use users::UserIdentifier;
 use virtual_file_system::File;
 
-use file_system::{Path, Statistics_type};
+use file_system::{Path, Statistics};
 
-async fn is_execute_allowed(statistics: &Statistics_type, user: UserIdentifier) -> bool {
+async fn is_execute_allowed(statistics: &Statistics, user: UserIdentifier) -> bool {
     // - Check if the file can executed by anyone
     if statistics.get_permissions().get_others().get_execute() {
         return true;
@@ -58,7 +58,7 @@ async fn is_execute_allowed(statistics: &Statistics_type, user: UserIdentifier) 
 }
 
 async fn get_overridden_user(
-    statistics: &Statistics_type,
+    statistics: &Statistics,
     task: TaskIdentifier,
 ) -> Result<Option<UserIdentifier>> {
     if !statistics
@@ -151,7 +151,7 @@ mod tests {
 
     #[test]
     async fn is_user_allowed_test() {
-        let statistics = Statistics_type::new(
+        let statistics = Statistics::new(
             file_system::FileSystemIdentifier::new(0),
             file_system::Inode::new(0),
             1,

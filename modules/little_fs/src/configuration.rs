@@ -1,13 +1,13 @@
 use core::{ffi::c_void, mem::forget};
 
 use alloc::{boxed::Box, vec};
-use file_system::Device;
+use file_system::DirectBlockDevice;
 
 use super::{callbacks, littlefs};
 
-#[derive(Debug, Clone)]
-pub struct Configuration {
-    context: Device,
+#[derive(Clone)]
+pub struct Configuration<'a> {
+    context: &'a dyn DirectBlockDevice,
     read_size: usize,
     program_size: usize,
     block_size: usize,
@@ -24,7 +24,7 @@ pub struct Configuration {
     flags: u32,
 }
 
-impl Configuration {
+impl<'a> Configuration<'a> {
     pub const DEFAULT_RAW: littlefs::lfs_config = littlefs::lfs_config {
         context: core::ptr::null_mut::<c_void>(),
         read: None,
@@ -51,7 +51,7 @@ impl Configuration {
     };
 
     pub fn new(
-        device: Device,
+        device: &'a dyn DirectBlockDevice,
         block_size: usize,
         total_size: usize,
         cache_size: usize,
@@ -147,7 +147,7 @@ impl Configuration {
     }
 }
 
-impl TryFrom<Configuration> for littlefs::lfs_config {
+impl<'a> TryFrom<Configuration<'a>> for littlefs::lfs_config {
     type Error = ();
 
     fn try_from(configuration: Configuration) -> Result<Self, Self::Error> {
@@ -155,8 +155,10 @@ impl TryFrom<Configuration> for littlefs::lfs_config {
         let mut write_buffer = read_buffer.clone();
         let mut look_ahead_buffer = vec![0_u8; configuration.look_ahead_size];
 
+        let device = Box::new(Box::new(configuration.context));
+
         let lfs_configuration = littlefs::lfs_config {
-            context: Box::into_raw(Box::new(configuration.context)) as *mut c_void,
+            context: Box::into_raw(device) as *mut c_void,
             read: Some(callbacks::read_callback),
             prog: Some(callbacks::programm_callback),
             erase: Some(callbacks::erase_callback),
@@ -189,4 +191,20 @@ impl TryFrom<Configuration> for littlefs::lfs_config {
 
         Ok(lfs_configuration)
     }
+}
+
+pub unsafe fn take_device_from_configuration(
+    configuration: *const littlefs::lfs_config,
+) -> Box<Box<dyn DirectBlockDevice>> {
+    unsafe { Box::from_raw(configuration.read().context as *mut Box<dyn DirectBlockDevice>) }
+}
+
+pub unsafe fn get_device_from_configuration(
+    configuration: *const littlefs::lfs_config,
+) -> &'static dyn DirectBlockDevice {
+    let device = unsafe { take_device_from_configuration(configuration) };
+
+    let device_ref = Box::leak(device);
+
+    &**device_ref
 }

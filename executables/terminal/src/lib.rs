@@ -31,7 +31,7 @@ pub const SHORTCUT: &str = r#"
 
 async fn mount_and_open(task: TaskIdentifier, terminal: Arc<Terminal>) -> Result<Standard> {
     virtual_file_system::get_instance()
-        .mount_device(task, &"/devices/terminal", Device::new(terminal))
+        .mount_block_device(task, &"/devices/terminal", Device::new(terminal))
         .await?;
 
     let standard = Standard::open(

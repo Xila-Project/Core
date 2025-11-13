@@ -4,7 +4,7 @@ use std::{
     sync::RwLock,
 };
 
-use file_system::{DeviceTrait, Error, Path, Size};
+use file_system::{BaseOperations, Error, Path, Size};
 
 use crate::io::map_error;
 
@@ -26,13 +26,13 @@ impl FileDriveDevice {
     }
 }
 
-impl DeviceTrait for FileDriveDevice {
+impl BaseOperations for FileDriveDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
         self.0
             .try_write()
             .map_err(|_| Error::RessourceBusy)?
             .read(buffer)
-            .map(|size| file_system::Size::new(size as u64))
+            .map(|size| size as _)
             .map_err(map_error)
     }
 
@@ -41,7 +41,7 @@ impl DeviceTrait for FileDriveDevice {
             .try_write()
             .map_err(|_| Error::RessourceBusy)?
             .write(buffer)
-            .map(|size| file_system::Size::new(size as u64))
+            .map(|size| size as _)
             .map_err(map_error)
     }
 
@@ -83,7 +83,7 @@ impl DeviceTrait for FileDriveDevice {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use file_system::DeviceTrait;
+    use file_system::BaseOperations;
 
     #[test]
     fn test_read_write() {
@@ -91,13 +91,13 @@ mod tests {
 
         let data = [1, 2, 3, 4, 5];
 
-        assert_eq!(file.write(&data).unwrap(), Size::new(5));
+        assert_eq!(file.write(&data).unwrap(), 5 as _);
 
         file.set_position(&file_system::Position::Start(0)).unwrap();
 
         let mut buffer = [0; 5];
 
-        assert_eq!(file.read(&mut buffer).unwrap(), Size::new(5));
+        assert_eq!(file.read(&mut buffer).unwrap(), 5 as _);
         assert_eq!(buffer, data);
     }
 
@@ -110,14 +110,14 @@ mod tests {
 
         let data = [1, 2, 3, 4, 5];
 
-        assert_eq!(file.write(&data).unwrap(), Size::new(5));
+        assert_eq!(file.write(&data).unwrap(), 5 as _);
 
         file.set_position(&file_system::Position::Start(10))
             .unwrap();
 
         let mut buffer = [0; 5];
 
-        assert_eq!(file.read(&mut buffer).unwrap(), Size::new(5));
+        assert_eq!(file.read(&mut buffer).unwrap(), 5 as _);
         assert_eq!(buffer, data);
     }
 }

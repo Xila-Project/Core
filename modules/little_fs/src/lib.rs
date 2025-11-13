@@ -4,6 +4,7 @@ extern crate alloc;
 
 use littlefs2_sys as littlefs;
 
+mod attributes;
 mod callbacks;
 mod configuration;
 mod directory;

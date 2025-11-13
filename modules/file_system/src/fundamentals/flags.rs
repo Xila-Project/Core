@@ -40,6 +40,7 @@ impl Mode {
 
     pub const SIZE: u8 = 2;
 
+    pub const NONE: Self = Self::new(false, false);
     pub const READ_ONLY: Self = Self::new(true, false);
     pub const WRITE_ONLY: Self = Self::new(false, true);
     pub const READ_WRITE: Self = Self::new(true, true);
@@ -83,6 +84,23 @@ impl Mode {
 
     pub const fn as_u8(&self) -> u8 {
         self.0
+    }
+
+    pub fn allows(&self, mode: Mode) -> bool {
+        (!mode.get_read() || self.get_read()) && (!mode.get_write() || self.get_write())
+    }
+
+    pub fn into_permission(&self) -> Permission {
+        let mut permission = Permission::NONE;
+        if self.get_read() {
+            permission = permission | Permission::READ_ONLY;
+        }
+
+        if self.get_write() {
+            permission = permission | Permission::WRITE_ONLY;
+        }
+
+        permission
     }
 }
 
@@ -416,6 +434,10 @@ impl Flags {
         (permission.get_read() && mode.get_read()) // Read permission
             || (permission.get_write() && (mode.get_write() || self.get_status().get_append()))
         // Write permission
+    }
+
+    pub fn split(&self) -> (Mode, Open, Status) {
+        (self.get_mode(), self.get_open(), self.get_status())
     }
 }
 

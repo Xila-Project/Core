@@ -1,95 +1,34 @@
 use core::mem::MaybeUninit;
 
-use alloc::{boxed::Box, collections::btree_map::BTreeMap, ffi::CString, vec::Vec};
+use alloc::{boxed::Box, ffi::CString, vec::Vec};
 use file_system::{
-    Device, Entry, FileIdentifier, FileIdentifierInner, FileSystemIdentifier, FileSystemTraits,
-    Flags, Inode, Kind, LocalFileIdentifier, Metadata, Mode, Path, Permissions, Position, Size,
-    Statistics_type, Time, get_new_file_identifier,
+    AttributeOperations, Attributes, BaseOperations, Context, DirectBlockDevice,
+    DirectoryOperations, FileOperations, FileSystemOperations, Flags, Path, Size,
 };
 use futures::block_on;
-use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
-use users::{GroupIdentifier, UserIdentifier};
+use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 
-use super::{Configuration, Directory, File, convert_result, littlefs};
+use crate::{File, attributes::InternalAttributes, configuration::take_device_from_configuration};
+
+use super::{Configuration, Directory, convert_result, littlefs};
 
 use file_system::{Error, Result};
 
-struct Inner {
-    file_system: littlefs::lfs_t,
-    open_files: BTreeMap<LocalFileIdentifier, File>,
-    open_directories: BTreeMap<LocalFileIdentifier, Directory>,
-}
-
 pub struct FileSystem {
-    inner: RwLock<CriticalSectionRawMutex, Inner>,
+    file_system: Mutex<CriticalSectionRawMutex, littlefs::lfs_t>,
     cache_size: usize,
 }
 
-impl Drop for FileSystem {
-    fn drop(&mut self) {
-        // - Close all the open files
-        let mut inner = self.write_inner();
-
-        let keys = inner.open_files.keys().cloned().collect::<Vec<_>>();
-
-        for key in keys {
-            if let Some(file) = inner.open_files.remove(&key) {
-                let _ = file.close(&mut inner.file_system);
-            }
-        }
-
-        let configuration =
-            unsafe { Box::from_raw(inner.file_system.cfg as *mut littlefs::lfs_config) };
-
-        let _read_buffer = unsafe {
-            Vec::from_raw_parts(
-                configuration.read_buffer as *mut u8,
-                0,
-                configuration.cache_size as usize,
-            )
-        };
-        let _write_buffer = unsafe {
-            Vec::from_raw_parts(
-                configuration.prog_buffer as *mut u8,
-                0,
-                configuration.cache_size as usize,
-            )
-        };
-        let _look_ahead_buffer = unsafe {
-            Vec::from_raw_parts(
-                configuration.lookahead_buffer as *mut u8,
-                0,
-                configuration.lookahead_size as usize,
-            )
-        };
-
-        // Get the device
-        let _device = unsafe { Box::from_raw(inner.file_system.cfg.read().context as *mut Device) };
-
-        // - Unmount the file system
-        unsafe {
-            littlefs::lfs_unmount(&mut inner.file_system as *mut _);
-        }
-
-        // Configuration, Buffer sand Device are dropped here
-    }
-}
-
 impl FileSystem {
-    pub fn new(device: Device, cache_size: usize) -> Result<Self> {
+    pub fn new(device: &'static dyn DirectBlockDevice, cache_size: usize) -> Result<Self> {
         let block_size = device.get_block_size().map_err(|_| Error::InputOutput)?;
         let size = device.get_size().map_err(|_| Error::InputOutput)?;
 
-        let configuration: littlefs::lfs_config = Configuration::new(
-            device,
-            block_size,
-            usize::from(size),
-            cache_size,
-            cache_size,
-        )
-        .ok_or(Error::InvalidParameter)?
-        .try_into()
-        .map_err(|_| Error::InvalidParameter)?;
+        let configuration: littlefs::lfs_config =
+            Configuration::new(device, block_size, size as usize, cache_size, cache_size)
+                .ok_or(Error::InvalidParameter)?
+                .try_into()
+                .map_err(|_| Error::InvalidParameter)?;
 
         let configuration = Box::new(configuration);
 
@@ -102,32 +41,21 @@ impl FileSystem {
             )
         })?;
 
-        let inner = Inner {
-            file_system: unsafe { file_system.assume_init() },
-            open_files: BTreeMap::new(),
-            open_directories: BTreeMap::new(),
-        };
-
         Ok(Self {
-            inner: RwLock::new(inner),
+            file_system: Mutex::new(unsafe { file_system.assume_init() }),
             cache_size,
         })
     }
 
-    pub fn format(device: Device, cache_size: usize) -> Result<()> {
+    pub fn format(device: &impl DirectBlockDevice, cache_size: usize) -> Result<()> {
         let block_size = device.get_block_size().map_err(|_| Error::InputOutput)?;
         let size = device.get_size().map_err(|_| Error::InputOutput)?;
 
-        let configuration: littlefs::lfs_config = Configuration::new(
-            device,
-            block_size,
-            usize::from(size),
-            cache_size,
-            cache_size,
-        )
-        .ok_or(Error::InvalidParameter)?
-        .try_into()
-        .map_err(|_| Error::InvalidParameter)?;
+        let configuration: littlefs::lfs_config =
+            Configuration::new(device, block_size, size as usize, cache_size, cache_size)
+                .ok_or(Error::InvalidParameter)?
+                .try_into()
+                .map_err(|_| Error::InvalidParameter)?;
 
         let configuration = Box::new(configuration);
 
@@ -140,443 +68,316 @@ impl FileSystem {
         Ok(())
     }
 
-    fn borrow_mutable_inner_2_splitted(
-        inner_2: &mut Inner,
-    ) -> (
-        &mut littlefs::lfs_t,
-        &mut BTreeMap<LocalFileIdentifier, File>,
-        &mut BTreeMap<LocalFileIdentifier, Directory>,
-    ) {
-        (
-            &mut inner_2.file_system,
-            &mut inner_2.open_files,
-            &mut inner_2.open_directories,
-        )
-    }
-
-    #[cfg(target_pointer_width = "64")]
-    const DIRECTORY_FLAG: FileIdentifierInner = 1 << 31;
-    #[cfg(target_pointer_width = "32")]
-    const DIRECTORY_FLAG: FileIdentifierInner = 1 << 15;
-
-    const DIRECTORY_MINIMUM: FileIdentifier = FileIdentifier::new(Self::DIRECTORY_FLAG);
-
-    pub fn is_file(file: LocalFileIdentifier) -> bool {
-        file.split().1 < Self::DIRECTORY_MINIMUM
-    }
-
-    fn read_inner(
+    pub fn operation<T>(
         &self,
-    ) -> synchronization::rwlock::RwLockReadGuard<'_, CriticalSectionRawMutex, Inner> {
-        block_on(self.inner.read())
+        operation: impl FnOnce(&mut littlefs::lfs_t) -> Result<T>,
+    ) -> Result<T> {
+        let mut file_system = block_on(self.file_system.lock());
+
+        operation(&mut file_system)
     }
 
-    fn write_inner(
+    pub fn operation_with_context<I: 'static, T>(
         &self,
-    ) -> synchronization::rwlock::RwLockWriteGuard<'_, CriticalSectionRawMutex, Inner> {
-        block_on(self.inner.write())
+        context: &mut Context,
+        operation: impl FnOnce(&mut littlefs::lfs_t, &mut I) -> Result<T>,
+    ) -> Result<T> {
+        let mut file_system = block_on(self.file_system.lock());
+
+        let mut file = context
+            .get_private_data_of_type::<I>()
+            .ok_or(Error::InvalidParameter)?;
+
+        operation(&mut file_system, &mut file)
     }
 }
 
 unsafe impl Send for FileSystem {}
-
 unsafe impl Sync for FileSystem {}
 
-impl FileSystemTraits for FileSystem {
-    fn open(
-        &self,
-        task: task::TaskIdentifier,
-        path: &Path,
-        flags: Flags,
-        time: Time,
-        user: UserIdentifier,
-        group: GroupIdentifier,
-    ) -> Result<LocalFileIdentifier> {
-        let mut inner = self.write_inner();
+impl FileSystemOperations for FileSystem {
+    fn rename(&self, source: &Path, destination: &Path) -> Result<()> {
+        self.operation(|file_system| {
+            let source = CString::new(source.as_str()).map_err(|_| Error::InvalidParameter)?;
 
-        let file = File::open(
-            &mut inner.file_system,
-            path,
-            flags,
-            self.cache_size,
-            time,
-            user,
-            group,
-        )?;
+            let destination =
+                CString::new(destination.as_str()).map_err(|_| Error::InvalidParameter)?;
 
-        let file_identifier = get_new_file_identifier(
-            task,
-            Some(FileIdentifier::MINIMUM),
-            Some(Self::DIRECTORY_MINIMUM),
-            &inner.open_files,
-        )?;
+            convert_result(unsafe {
+                littlefs::lfs_rename(file_system as *mut _, source.as_ptr(), destination.as_ptr())
+            })?;
 
-        if inner.open_files.insert(file_identifier, file).is_some() {
-            return Err(Error::InternalError);
-        }
-
-        Ok(file_identifier)
-    }
-
-    fn close(&self, file: LocalFileIdentifier) -> Result<()> {
-        let mut inner = self.write_inner();
-
-        let file = inner
-            .open_files
-            .remove(&file)
-            .ok_or(Error::InvalidIdentifier)?;
-
-        file.close(&mut inner.file_system)?;
-
-        Ok(())
-    }
-
-    fn close_all(&self, task: task::TaskIdentifier) -> Result<()> {
-        let mut inner = self.write_inner();
-
-        // Get all the keys of the open files that belong to the task
-        let keys = inner
-            .open_files
-            .keys()
-            .filter(|key| key.split().0 == task)
-            .cloned()
-            .collect::<Vec<_>>();
-
-        // Close all the files corresponding to the keys
-        for key in keys {
-            if let Some(file) = inner.open_files.remove(&key) {
-                file.close(&mut inner.file_system)?;
-            }
-        }
-
-        Ok(())
-    }
-
-    fn duplicate(&self, file: LocalFileIdentifier) -> Result<LocalFileIdentifier> {
-        let (task, _) = file.split();
-
-        let mut inner = self.write_inner();
-
-        let file = inner
-            .open_files
-            .get(&file)
-            .ok_or(Error::InvalidIdentifier)?;
-
-        let file = file.clone();
-
-        let file_identifier = get_new_file_identifier(
-            task,
-            Some(Self::DIRECTORY_MINIMUM),
-            Some(FileIdentifier::MAXIMUM),
-            &inner.open_files,
-        )?;
-
-        if inner.open_files.insert(file_identifier, file).is_some() {
-            return Err(Error::InternalError);
-        }
-
-        Ok(file_identifier)
-    }
-
-    fn transfer(
-        &self,
-        new_task: task::TaskIdentifier,
-        file_identifier: LocalFileIdentifier,
-        new_file: Option<FileIdentifier>,
-    ) -> Result<LocalFileIdentifier> {
-        let mut inner = self.write_inner();
-
-        let file = inner
-            .open_files
-            .remove(&file_identifier)
-            .ok_or(Error::InvalidIdentifier)?;
-
-        let file_identifier = if let Some(new_file) = new_file {
-            let file = LocalFileIdentifier::new(new_task, new_file);
-
-            if inner.open_files.contains_key(&file) {
-                return Err(Error::InvalidIdentifier);
-            }
-
-            file
-        } else if Self::is_file(file_identifier) {
-            get_new_file_identifier(
-                new_task,
-                Some(FileIdentifier::MINIMUM),
-                Some(Self::DIRECTORY_MINIMUM),
-                &inner.open_files,
-            )?
-        } else {
-            get_new_file_identifier(
-                new_task,
-                Some(Self::DIRECTORY_MINIMUM),
-                Some(FileIdentifier::MAXIMUM),
-                &inner.open_directories,
-            )?
-        };
-
-        if inner.open_files.insert(file_identifier, file).is_some() {
-            return Err(Error::InternalError); // Should never happen
-        }
-
-        Ok(file_identifier)
+            Ok(())
+        })
     }
 
     fn remove(&self, path: &Path) -> Result<()> {
         let path = CString::new(path.as_str()).map_err(|_| Error::InvalidParameter)?;
 
-        let mut inner = self.write_inner();
+        self.operation(|file_system| {
+            convert_result(unsafe { littlefs::lfs_remove(file_system as *mut _, path.as_ptr()) })?;
 
-        convert_result(unsafe {
-            littlefs::lfs_remove(&mut inner.file_system as *mut _, path.as_ptr())
-        })?;
-
-        Ok(())
+            Ok(())
+        })
     }
 
-    fn read(&self, file: LocalFileIdentifier, buffer: &mut [u8], _: Time) -> Result<Size> {
-        let mut inner = self.write_inner();
+    fn create_directory(&self, path: &Path) -> Result<()> {
+        let path = CString::new(path.as_str()).unwrap();
 
-        let (file_system, open_files, _) = Self::borrow_mutable_inner_2_splitted(&mut inner);
+        self.operation(|file_system| {
+            convert_result(unsafe {
+                littlefs::lfs_mkdir(&mut *file_system as *mut _, path.as_ptr())
+            })?;
 
-        let file = open_files.get_mut(&file).ok_or(Error::InvalidIdentifier)?;
-
-        file.read(file_system, buffer)
+            Ok(())
+        })
     }
 
-    fn write(&self, file: LocalFileIdentifier, buffer: &[u8], _: Time) -> Result<Size> {
-        let mut inner = self.write_inner();
+    fn lookup_directory(&self, context: &mut Context, path: &Path) -> Result<()> {
+        self.operation(|file_system| {
+            let directory = Directory::lookup(file_system, path)?;
 
-        let (file_system, open_files, _) = Self::borrow_mutable_inner_2_splitted(&mut inner);
+            context.set_private_data(Box::new(directory));
 
-        let file = open_files.get_mut(&file).ok_or(Error::InvalidIdentifier)?;
-
-        file.write(file_system, buffer)
+            Ok(())
+        })
     }
 
-    fn rename(&self, source: &Path, destination: &Path) -> Result<()> {
-        let source = CString::new(source.as_str()).map_err(|_| Error::InvalidParameter)?;
-
-        let destination =
-            CString::new(destination.as_str()).map_err(|_| Error::InvalidParameter)?;
-
-        let mut inner = self.write_inner();
-
-        convert_result(unsafe {
-            littlefs::lfs_rename(
-                &mut inner.file_system as *mut _,
-                source.as_ptr(),
-                destination.as_ptr(),
-            )
-        })?;
-
-        Ok(())
+    fn lookup_file(&self, context: &mut Context, path: &Path, flags: Flags) -> Result<()> {
+        self.operation(|file_system| {
+            let file = File::lookup(file_system, path, flags, self.cache_size)?;
+            context.set_private_data(Box::new(file));
+            Ok(())
+        })
     }
 
-    fn set_position(&self, file: LocalFileIdentifier, position: &Position) -> Result<Size> {
-        let mut inner = self.write_inner();
-
-        let (file_system, open_files, _) = Self::borrow_mutable_inner_2_splitted(&mut inner);
-
-        let file = open_files.get_mut(&file).ok_or(Error::InvalidIdentifier)?;
-
-        file.set_position(file_system, position)
+    fn create_file(&self, path: &Path) -> Result<()> {
+        self.operation(|file_system| File::create(file_system, path))
     }
 
-    fn flush(&self, file: LocalFileIdentifier) -> Result<()> {
-        let mut inner = self.write_inner();
+    fn get_attributes(&self, path: &Path, attributes: &mut Attributes) -> Result<()> {
+        self.operation(|file_system| {
+            let path = CString::new(path.as_str()).map_err(|_| Error::InvalidParameter)?;
 
-        let (file_system, open_files, _) = Self::borrow_mutable_inner_2_splitted(&mut inner);
+            let mut internal_attributes =
+                unsafe { InternalAttributes::new_uninitialized().assume_init() };
 
-        let file = open_files.get_mut(&file).ok_or(Error::InvalidIdentifier)?;
+            convert_result(unsafe {
+                littlefs::lfs_getattr(
+                    &mut *file_system as *mut _,
+                    path.as_ptr(),
+                    InternalAttributes::IDENTIFIER,
+                    &mut internal_attributes as *mut _ as *mut _,
+                    size_of::<InternalAttributes>() as u32,
+                )
+            })?;
 
-        file.flush(file_system)
+            internal_attributes.into_attributes(attributes)?;
+
+            Ok(())
+        })
     }
 
-    fn get_statistics(&self, file: LocalFileIdentifier) -> Result<Statistics_type> {
-        let mut inner = self.write_inner();
+    fn set_attributes(&self, path: &Path, attributes: &Attributes) -> Result<()> {
+        self.operation(|file_system| {
+            let path = CString::new(path.as_str()).map_err(|_| Error::InvalidParameter)?;
 
-        let (file_system, open_files, open_directories) =
-            Self::borrow_mutable_inner_2_splitted(&mut inner);
+            let mut internal_attributes =
+                unsafe { InternalAttributes::new_uninitialized().assume_init() };
 
-        // open_directoriesy to get the metadata of the directories
-        if open_directories.get_mut(&file).is_some() {
-            let current_time: Time = time::get_instance().get_current_time().unwrap().into();
+            if !attributes.get_mask().are_all_set() {
+                convert_result(unsafe {
+                    littlefs::lfs_getattr(
+                        &mut *file_system as *mut _,
+                        path.as_ptr(),
+                        InternalAttributes::IDENTIFIER,
+                        &mut internal_attributes as *mut _ as *mut _,
+                        size_of::<Attributes>() as u32,
+                    )
+                })?;
+            }
 
-            Ok(Statistics_type::new(
-                FileSystemIdentifier::new(0),
-                Inode::new(0),
-                1,
-                Size::new(0),
-                current_time,
-                current_time,
-                current_time,
-                Kind::Directory,
-                Permissions::new_default(Kind::Directory),
-                UserIdentifier::new(0),
-                GroupIdentifier::new(0),
-            ))
-        } else if let Some(file) = open_files.get_mut(&file) {
-            Ok(file.get_statistics(file_system)?)
+            internal_attributes.from_attributes(attributes)?;
+
+            convert_result(unsafe {
+                littlefs::lfs_setattr(
+                    &mut *file_system as *mut _,
+                    path.as_ptr(),
+                    InternalAttributes::IDENTIFIER,
+                    attributes as *const _ as *const _,
+                    size_of::<Attributes>() as u32,
+                )
+            })?;
+
+            Ok(())
+        })
+    }
+}
+
+impl AttributeOperations for FileSystem {
+    fn get_attributes(&self, context: &mut Context, attributes: &mut Attributes) -> Result<()> {
+        if let Some(file) = context.get_private_data_of_type::<File>() {
+            file.get_attributes(attributes)
+        } else if let Some(directory) = context.get_private_data_of_type::<Directory>() {
+            directory.get_attributes(attributes)
         } else {
-            Err(Error::InvalidIdentifier)
+            Err(Error::InvalidParameter)
         }
     }
 
-    fn get_mode(&self, file: LocalFileIdentifier) -> Result<Mode> {
-        let inner = self.read_inner();
-
-        let result = if Self::is_file(file) {
-            inner
-                .open_files
-                .get(&file)
-                .ok_or(Error::InvalidIdentifier)?
-                .get_mode()
+    fn set_attributes(&self, context: &mut Context, attributes: &Attributes) -> Result<()> {
+        if let Some(file) = context.get_private_data_of_type::<File>() {
+            file.set_attributes(attributes)
+        } else if let Some(directory) = context.get_private_data_of_type::<Directory>() {
+            directory.set_attributes(attributes)
         } else {
-            inner
-                .open_directories
-                .get(&file)
-                .ok_or(Error::InvalidIdentifier)?;
-
-            Mode::READ_ONLY
-        };
-
-        Ok(result)
-    }
-
-    fn open_directory(
-        &self,
-        path: &Path,
-        task: task::TaskIdentifier,
-    ) -> Result<LocalFileIdentifier> {
-        let mut inner = self.write_inner();
-
-        let directory = Directory::open(&mut inner.file_system, path)?;
-
-        let file_identifier = get_new_file_identifier(
-            task,
-            Some(Self::DIRECTORY_MINIMUM),
-            Some(FileIdentifier::MAXIMUM),
-            &inner.open_directories,
-        )?;
-
-        if inner
-            .open_directories
-            .insert(file_identifier, directory)
-            .is_some()
-        {
-            return Err(Error::InternalError);
+            Err(Error::InvalidParameter)
         }
-
-        Ok(file_identifier)
     }
+}
 
-    fn read_directory(&self, file: LocalFileIdentifier) -> Result<Option<Entry>> {
-        let mut inner = self.write_inner();
-
-        let (file_system, _, open_directories) = Self::borrow_mutable_inner_2_splitted(&mut inner);
-
-        let directory = open_directories
-            .get_mut(&file)
-            .ok_or(Error::InvalidIdentifier)?;
-
-        directory.read(file_system)
-    }
-
-    fn set_position_directory(&self, file: LocalFileIdentifier, position: Size) -> Result<()> {
-        let mut inner = self.write_inner();
-
-        let (file_system, _, open_directories) = Self::borrow_mutable_inner_2_splitted(&mut inner);
-
-        let directory = open_directories
-            .get_mut(&file)
-            .ok_or(Error::InvalidIdentifier)?;
-
-        directory.set_position(file_system, position)
-    }
-
-    fn rewind_directory(&self, file: LocalFileIdentifier) -> Result<()> {
-        let mut inner = self.write_inner();
-
-        let (file_system, _, open_directories) = Self::borrow_mutable_inner_2_splitted(&mut inner);
-
-        let directory = open_directories
-            .get_mut(&file)
-            .ok_or(Error::InvalidIdentifier)?;
-
-        directory.rewind(file_system)?;
-
-        Ok(())
-    }
-
-    fn close_directory(&self, file: LocalFileIdentifier) -> Result<()> {
-        let mut inner = self.write_inner();
-
-        let (file_system, _, open_directories) = Self::borrow_mutable_inner_2_splitted(&mut inner);
-
-        let mut directory = open_directories
-            .remove(&file)
-            .ok_or(Error::InvalidIdentifier)?;
-
-        directory.close(file_system)?;
-
-        Ok(())
-    }
-
-    fn create_directory(
+impl BaseOperations for FileSystem {
+    fn read(
         &self,
-        path: &Path,
+        context: &mut Context,
+        buffer: &mut [u8],
+        absolute_position: file_system::Size,
+    ) -> Result<usize> {
+        self.operation_with_context(context, |file_system, file: &mut File| {
+            file.read(file_system, buffer, absolute_position)
+        })
+    }
 
-        time: Time,
-        user: UserIdentifier,
-        group: GroupIdentifier,
+    fn write(
+        &self,
+        context: &mut Context,
+        buffer: &[u8],
+        absolute_position: file_system::Size,
+    ) -> Result<usize> {
+        self.operation_with_context(context, |file_system, file: &mut File| {
+            file.write(file_system, buffer, absolute_position)
+        })
+    }
+
+    fn set_position(
+        &self,
+        context: &mut Context,
+        position: &file_system::Position,
+    ) -> Result<Size> {
+        self.operation_with_context(context, |file_system, file: &mut File| {
+            file.set_position(file_system, position)
+        })
+    }
+
+    fn flush(&self, context: &mut Context) -> Result<()> {
+        self.operation_with_context(context, |file_system, file: &mut File| {
+            file.flush(file_system)
+        })
+    }
+
+    fn clone_context(&self, context: &mut Context) -> Result<Context> {
+        if let Some(file) = context.get_private_data_of_type::<File>() {
+            Ok(Context::new(Some(file.clone())))
+        } else if let Some(directory) = context.get_private_data_of_type::<Directory>() {
+            Ok(Context::new(Some(directory.clone())))
+        } else {
+            return Err(Error::InvalidParameter);
+        }
+    }
+
+    fn close(&self, context: &mut Context) -> Result<()> {
+        self.operation(|file_system| {
+            let file = context
+                .take_private_data_of_type::<File>()
+                .ok_or(Error::InvalidParameter)?;
+
+            file.close(file_system)?;
+
+            Ok(())
+        })
+    }
+}
+
+impl FileOperations for FileSystem {}
+
+impl DirectoryOperations for FileSystem {
+    fn read(&self, context: &mut file_system::Context) -> Result<Option<file_system::Entry>> {
+        self.operation_with_context(context, |file_system, directory: &mut Directory| {
+            directory.read(file_system)
+        })
+    }
+
+    fn set_position(
+        &self,
+        context: &mut file_system::Context,
+        position: file_system::Size,
     ) -> Result<()> {
-        let mut inner = self.write_inner();
-
-        Directory::create_directory(&mut inner.file_system, path)?;
-
-        let metadata = Metadata::get_default(Kind::Directory, time, user, group)
-            .ok_or(Error::InvalidParameter)?;
-
-        File::set_metadata_from_path(&mut inner.file_system, path, &metadata)?;
-
-        Ok(())
+        self.operation_with_context(context, |file_system, directory: &mut Directory| {
+            directory.set_position(file_system, position)
+        })
     }
 
-    fn get_position_directory(&self, file: LocalFileIdentifier) -> Result<Size> {
-        let mut inner = self.write_inner();
-
-        let (file_system, _, open_directories) = Self::borrow_mutable_inner_2_splitted(&mut inner);
-
-        let directory = open_directories
-            .get_mut(&file)
-            .ok_or(Error::InvalidIdentifier)?;
-
-        directory.get_position(file_system)
+    fn get_position(&self, context: &mut file_system::Context) -> Result<file_system::Size> {
+        self.operation_with_context(context, |file_system, directory: &mut Directory| {
+            directory.get_position(file_system)
+        })
     }
 
-    fn set_metadata_from_path(&self, path: &Path, metadata: &Metadata) -> Result<()> {
-        let mut inner = self.write_inner();
-
-        File::set_metadata_from_path(&mut inner.file_system, path, metadata)?;
-
-        Ok(())
+    fn rewind(&self, context: &mut file_system::Context) -> Result<()> {
+        self.operation_with_context(context, |file_system, directory: &mut Directory| {
+            directory.rewind(file_system)
+        })
     }
 
-    fn get_metadata_from_path(&self, path: &Path) -> Result<Metadata> {
-        let mut inner = self.write_inner();
+    fn close(&self, context: &mut file_system::Context) -> Result<()> {
+        self.operation(|file_system| {
+            let directory = context
+                .take_private_data_of_type::<Directory>()
+                .ok_or(Error::InvalidParameter)?;
 
-        File::get_metadata_from_path(&mut inner.file_system, path)
+            directory.close(file_system)?;
+
+            Ok(())
+        })
     }
+}
 
-    fn get_metadata(&self, file: LocalFileIdentifier) -> Result<Metadata> {
-        let mut inner = self.write_inner();
+impl Drop for FileSystem {
+    fn drop(&mut self) {
+        let _ = self.operation(|file_system| {
+            let configuration =
+                unsafe { Box::from_raw(file_system.cfg as *mut littlefs::lfs_config) };
 
-        let (_, open_files, _) = Self::borrow_mutable_inner_2_splitted(&mut inner);
+            let _read_buffer = unsafe {
+                Vec::from_raw_parts(
+                    configuration.read_buffer as *mut u8,
+                    0,
+                    configuration.cache_size as usize,
+                )
+            };
+            let _write_buffer = unsafe {
+                Vec::from_raw_parts(
+                    configuration.prog_buffer as *mut u8,
+                    0,
+                    configuration.cache_size as usize,
+                )
+            };
+            let _look_ahead_buffer = unsafe {
+                Vec::from_raw_parts(
+                    configuration.lookahead_buffer as *mut u8,
+                    0,
+                    configuration.lookahead_size as usize,
+                )
+            };
 
-        let file = open_files.get_mut(&file).ok_or(Error::InvalidIdentifier)?;
+            let _device = unsafe { take_device_from_configuration(&*configuration) };
 
-        Ok(file.get_metadata()?.clone())
+            unsafe {
+                littlefs::lfs_unmount(&mut *file_system as *mut _);
+            }
+
+            Ok(())
+        });
     }
 }
 

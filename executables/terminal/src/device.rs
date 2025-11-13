@@ -1,11 +1,11 @@
 use alloc::string::String;
 
-use xila::file_system::{self, DeviceTrait};
+use xila::file_system::{self, BaseOperations};
 use xila::futures::block_on;
 
 use crate::terminal::Terminal;
 
-impl DeviceTrait for Terminal {
+impl BaseOperations for Terminal {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
         block_on(self.read_input(buffer)).map_err(|_| file_system::Error::InternalError)
     }

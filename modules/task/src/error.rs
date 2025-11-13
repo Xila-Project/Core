@@ -2,8 +2,8 @@ use core::{fmt, num::NonZeroU32};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, Clone)]
-#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum Error {
     InvalidTaskIdentifier = 1,
     InvalidSpawnerIdentifier,

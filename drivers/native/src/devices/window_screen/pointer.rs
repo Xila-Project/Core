@@ -1,4 +1,4 @@
-use file_system::{DeviceTrait, Size};
+use file_system::{BaseOperations, Size};
 use graphics::InputData;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
@@ -10,7 +10,7 @@ impl PointerDevice {
     }
 }
 
-impl DeviceTrait for PointerDevice {
+impl BaseOperations for PointerDevice {
     fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
         // - Cast the pointer data to the buffer.
         let data: &mut InputData = buffer

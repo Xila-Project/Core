@@ -1,4 +1,4 @@
-use core::fmt;
+use core::{fmt, ops::BitOr};
 
 use crate::Kind;
 
@@ -346,6 +346,7 @@ impl Permission {
         self.0
     }
 
+    /// Checks if the permission includes another permission
     pub fn include(&self, other: Self) -> bool {
         (self.0 & other.0) == other.0
     }
@@ -357,6 +358,14 @@ impl Permission {
         }
 
         Some(Self(unix))
+    }
+}
+
+impl BitOr for Permission {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 | rhs.0)
     }
 }
 
