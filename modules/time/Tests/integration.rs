@@ -2,14 +2,15 @@
 
 extern crate alloc;
 use core::time::Duration;
-use file_system::create_device;
 use log::information;
 
 #[test]
 fn test_get_current_time() {
-    let _ = time::initialize(create_device!(drivers_native::TimeDriver::new()));
+    let time_device = drivers_native::TimeDriver::new();
 
-    let current_time = time::get_instance().get_current_time().unwrap();
+    let time_manager = time::Manager::new(&time_device).unwrap();
+
+    let current_time = time_manager.get_current_time().unwrap();
 
     information!("Current time : {current_time:?}");
 
@@ -18,11 +19,11 @@ fn test_get_current_time() {
 
 #[test]
 fn test_get_current_time_since_startup() {
-    let _ = time::initialize(create_device!(drivers_native::TimeDriver::new()));
+    let time_device = drivers_native::TimeDriver::new();
 
-    let current_time = time::get_instance()
-        .get_current_time_since_startup()
-        .unwrap();
+    let time_manager = time::Manager::new(&time_device).unwrap();
+
+    let current_time = time_manager.get_current_time_since_startup().unwrap();
 
     information!("Time since startup : {current_time:?}");
 

@@ -15,13 +15,13 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use file_system::{Flags, Mode, Open, Path, PathOwned};
+use file_system::{AccessFlags, CreateFlags, Flags, Path, PathOwned};
 use miniserde::{Deserialize, Serialize};
 use users::{GroupIdentifier, GroupIdentifierInner, UserIdentifier, UserIdentifierInner};
 use virtual_file_system::{Directory, File, VirtualFileSystem};
 
 use crate::{
-    Error, Result, USERS_FOLDER_PATH,
+    Error, READ_CHUNK_SIZE, Result, USERS_FOLDER_PATH,
     hash::{generate_salt, hash_password},
 };
 
@@ -204,16 +204,26 @@ pub async fn authenticate_user<'a>(
 ) -> Result<UserIdentifier> {
     let path = get_user_file_path(user_name)?;
 
-    let user_file = File::open(virtual_file_system, path, Mode::READ_ONLY.into())
-        .await
-        .map_err(Error::FailedToOpenUserFile)?;
+    let mut user_file = File::open(
+        virtual_file_system,
+        task::get_instance().get_current_task_identifier().await,
+        path,
+        AccessFlags::Read.into(),
+    )
+    .await
+    .map_err(Error::FailedToOpenUserFile)?;
 
     let mut buffer = Vec::new();
 
     user_file
-        .read_to_end(&mut buffer)
+        .read_to_end(&mut buffer, READ_CHUNK_SIZE)
         .await
         .map_err(Error::FailedToReadUserFile)?;
+
+    user_file
+        .close(virtual_file_system)
+        .await
+        .map_err(Error::FailedToCloseFile)?;
 
     let user: User = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
         .map_err(Error::FailedToParseUserFile)?;
@@ -292,8 +302,10 @@ pub async fn create_user<'a>(
         salt,
     );
 
-    match Directory::create(virtual_file_system, USERS_FOLDER_PATH).await {
-        Ok(_) | Err(file_system::Error::AlreadyExists) => {}
+    let task = task::get_instance().get_current_task_identifier().await;
+
+    match Directory::create(virtual_file_system, task, USERS_FOLDER_PATH).await {
+        Ok(_) | Err(virtual_file_system::Error::AlreadyExists) => {}
         Err(error) => Err(Error::FailedToCreateUsersDirectory(error))?,
     }
 
@@ -302,10 +314,11 @@ pub async fn create_user<'a>(
         .append(user_name)
         .ok_or(Error::FailedToGetUserFilePath)?;
 
-    let user_file: File<'_> = File::open(
+    let mut user_file = File::open(
         virtual_file_system,
+        task,
         user_file_path,
-        Flags::new(Mode::WRITE_ONLY, Some(Open::CREATE_ONLY), None),
+        Flags::new(AccessFlags::Write, Some(CreateFlags::Create), None),
     )
     .await
     .map_err(Error::FailedToOpenUserFile)?;
@@ -316,6 +329,11 @@ pub async fn create_user<'a>(
         .write(user_json.as_bytes())
         .await
         .map_err(Error::FailedToWriteUserFile)?;
+
+    user_file
+        .close(virtual_file_system)
+        .await
+        .map_err(Error::FailedToCloseFile)?;
 
     Ok(user_identifier)
 }
@@ -359,10 +377,11 @@ pub async fn change_user_password<'a>(
         .append(user_name)
         .ok_or(Error::FailedToGetUserFilePath)?;
 
-    let user_file = File::open(
+    let mut user_file = File::open(
         virtual_file_system,
+        task::get_instance().get_current_task_identifier().await,
         user_file_path,
-        Flags::new(Mode::READ_WRITE, Some(Open::TRUNCATE), None),
+        Flags::new(AccessFlags::READ_WRITE, Some(CreateFlags::Truncate), None),
     )
     .await
     .map_err(Error::FailedToOpenUserFile)?;
@@ -370,7 +389,7 @@ pub async fn change_user_password<'a>(
     let mut buffer = Vec::new();
 
     user_file
-        .read_to_end(&mut buffer)
+        .read_to_end(&mut buffer, READ_CHUNK_SIZE)
         .await
         .map_err(Error::FailedToReadUserFile)?;
 
@@ -386,6 +405,11 @@ pub async fn change_user_password<'a>(
         .write(user_json.as_bytes())
         .await
         .map_err(Error::FailedToWriteUserFile)?;
+
+    user_file
+        .close(virtual_file_system)
+        .await
+        .map_err(Error::FailedToCloseFile)?;
 
     Ok(())
 }
@@ -418,10 +442,11 @@ pub async fn change_user_name<'a>(
 ) -> Result<()> {
     let file_path = get_user_file_path(current_name)?;
 
-    let user_file = File::open(
+    let mut user_file = File::open(
         virtual_file_system,
+        task::get_instance().get_current_task_identifier().await,
         file_path,
-        Flags::new(Mode::READ_WRITE, Some(Open::TRUNCATE), None),
+        Flags::new(AccessFlags::READ_WRITE, Some(CreateFlags::Truncate), None),
     )
     .await
     .map_err(Error::FailedToOpenUserFile)?;
@@ -429,7 +454,7 @@ pub async fn change_user_name<'a>(
     let mut buffer = Vec::new();
 
     user_file
-        .read_to_end(&mut buffer)
+        .read_to_end(&mut buffer, READ_CHUNK_SIZE)
         .await
         .map_err(Error::FailedToReadUserFile)?;
 
@@ -444,6 +469,11 @@ pub async fn change_user_name<'a>(
         .write(user_json.as_bytes())
         .await
         .map_err(Error::FailedToWriteUserFile)?;
+
+    user_file
+        .close(virtual_file_system)
+        .await
+        .map_err(Error::FailedToCloseFile)?;
 
     Ok(())
 }
@@ -477,16 +507,26 @@ pub async fn read_user_file<'a>(
 ) -> Result<User> {
     let user_file_path = get_user_file_path(file)?;
 
-    let user_file = File::open(virtual_file_system, user_file_path, Mode::READ_ONLY.into())
-        .await
-        .map_err(Error::FailedToReadUsersDirectory)?;
+    let mut user_file = File::open(
+        virtual_file_system,
+        task::get_instance().get_current_task_identifier().await,
+        user_file_path,
+        AccessFlags::Read.into(),
+    )
+    .await
+    .map_err(Error::FailedToReadUsersDirectory)?;
 
     buffer.clear();
 
     user_file
-        .read_to_end(buffer)
+        .read_to_end(buffer, READ_CHUNK_SIZE)
         .await
         .map_err(Error::FailedToReadUserFile)?;
+
+    user_file
+        .close(virtual_file_system)
+        .await
+        .map_err(Error::FailedToCloseFile)?;
 
     miniserde::json::from_str(core::str::from_utf8(buffer).unwrap())
         .map_err(Error::FailedToParseUserFile)

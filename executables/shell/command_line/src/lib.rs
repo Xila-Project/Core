@@ -4,14 +4,18 @@ extern crate alloc;
 
 use alloc::{
     borrow::ToOwned,
+    boxed::Box,
     string::{String, ToString},
     vec::Vec,
 };
 use core::fmt::Write;
 use core::num::NonZeroUsize;
-use xila::executable::Standard;
 use xila::file_system::Path;
 use xila::task;
+use xila::{
+    executable::{ExecutableTrait, Standard},
+    task::TaskIdentifier,
+};
 
 use crate::{Error, Result, parser::parse, tokenizer::tokenize};
 
@@ -26,6 +30,7 @@ use error::*;
 use xila::{executable, file_system::PathOwned};
 
 pub struct Shell {
+    task: TaskIdentifier,
     standard: Standard,
     current_directory: PathOwned,
     running: bool,
@@ -35,23 +40,24 @@ pub struct Shell {
 
 pub struct ShellExecutable;
 
-executable::implement_executable_device!(
-    structure: ShellExecutable,
-    mount_path: "/binaries/command_line_shell",
-    main_function: main,
-);
+impl ExecutableTrait for ShellExecutable {
+    fn main(standard: Standard, arguments: Vec<String>) -> executable::MainFuture {
+        Box::pin(async move { main(standard, arguments).await })
+    }
+}
 
 pub async fn main(
     standard: Standard,
     arguments: Vec<String>,
 ) -> core::result::Result<(), NonZeroUsize> {
-    Shell::new(standard).main(arguments).await
+    Shell::new(standard).await.main(arguments).await
 }
 
 impl Shell {
-    pub fn new(standard: Standard) -> Self {
+    pub async fn new(standard: Standard) -> Self {
         Self {
             standard,
+            task: task::get_instance().get_current_task_identifier().await,
             current_directory: Path::ROOT.to_owned(),
             running: true,
             user: "".to_string(),
@@ -91,7 +97,7 @@ impl Shell {
     }
 
     async fn main_interactive(&mut self, paths: &[&Path]) -> Result<()> {
-        let mut input_string = String::new();
+        let mut input_string = String::with_capacity(64);
 
         while self.running {
             let _ = write!(
@@ -106,7 +112,7 @@ impl Shell {
 
             input_string.clear();
 
-            self.standard.read_line(&mut input_string).await;
+            self.standard.read_line(&mut input_string).await.unwrap();
 
             if input_string.is_empty() {
                 continue;
@@ -125,8 +131,10 @@ impl Shell {
     }
 
     pub async fn main(&mut self, arguments: Vec<String>) -> core::result::Result<(), NonZeroUsize> {
+        let task = task::get_instance().get_current_task_identifier().await;
+
         let user = match task::get_instance()
-            .get_environment_variable(self.standard.get_task(), "User")
+            .get_environment_variable(task, "User")
             .await
         {
             Ok(user) => user.get_value().to_string(),
@@ -143,7 +151,7 @@ impl Shell {
         self.user = user;
 
         let paths = task::get_instance()
-            .get_environment_variable(self.standard.get_task(), "Paths")
+            .get_environment_variable(task, "Paths")
             .await
             .map_err(|_| Error::FailedToGetPath)?;
 
@@ -154,7 +162,7 @@ impl Shell {
             .collect::<Vec<&Path>>();
 
         let host = task::get_instance()
-            .get_environment_variable(self.standard.get_task(), "Host")
+            .get_environment_variable(task, "Host")
             .await
             .map_err(|_| Error::FailedToGetPath)?;
         self.host = host.get_value().to_string();

@@ -5,43 +5,8 @@ use core::{
 
 use task::{TaskIdentifier, TaskIdentifierInner};
 
-use super::{FileIdentifier, FileIdentifierInner};
+use crate::{FileIdentifier, FileIdentifierInner};
 
-/// Local file type
-///
-/// This type is used to identify an opened file in a file system.
-/// It is used for the file identification between the file system and the virtual file system.
-/// It is a wrapper around a tuple of [`TaskIdentifier`] and [`FileIdentifier`].
-/// It is unique from the file system point of view.
-///
-/// # Example
-///
-/// ```rust
-/// use file_system::{LocalFileIdentifier, FileIdentifier, FileSystemIdentifier, UniqueFileIdentifier};
-///
-/// use task::TaskIdentifier;
-///
-/// let Identifier = LocalFileIdentifier::new(
-///     TaskIdentifier::from(0x1234),
-///     FileIdentifier::from(0x5678),
-/// );
-///
-/// let (Task, File) = Identifier.split();
-///
-/// assert_eq!(Task, TaskIdentifier::from(0x1234));
-/// assert_eq!(File, FileIdentifier::from(0x5678));
-///
-/// let Minimum = LocalFileIdentifier::get_minimum(Task);
-/// assert_eq!(Minimum, LocalFileIdentifier::new(Task, FileIdentifier::MINIMUM));
-///
-/// let Maximum = LocalFileIdentifier::get_maximum(Task);
-/// assert_eq!(Maximum, LocalFileIdentifier::new(Task, FileIdentifier::MAXIMUM));
-///
-/// let (Task, Unique_file_identifier) = Identifier.into_unique_file_identifier(FileSystemIdentifier::from(0x9ABC));
-///
-/// assert_eq!(Task, TaskIdentifier::from(0x1234));
-/// assert_eq!(Unique_file_identifier, UniqueFileIdentifier::new(FileSystemIdentifier::from(0x9ABC), FileIdentifier::from(0x5678)));
-/// ```
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
 pub struct UniqueFileIdentifier(usize);
@@ -79,6 +44,10 @@ impl UniqueFileIdentifier {
         (task, file)
     }
 
+    pub const fn get_file(self) -> FileIdentifier {
+        self.split().1
+    }
+
     pub const fn get_minimum(task: TaskIdentifier) -> Self {
         Self::new(task, FileIdentifier::MINIMUM)
     }
@@ -89,6 +58,10 @@ impl UniqueFileIdentifier {
 
     pub const fn into_inner(self) -> usize {
         self.0
+    }
+
+    pub const fn from_raw(value: usize) -> Self {
+        Self(value)
     }
 }
 
@@ -108,24 +81,24 @@ impl Add<usize> for UniqueFileIdentifier {
 
 impl IntoIterator for UniqueFileIdentifier {
     type Item = UniqueFileIdentifier;
-    type IntoIter = LocalFileIdentifierIterator;
+    type IntoIter = UniqueFileIdentifierIterator;
 
     fn into_iter(self) -> Self::IntoIter {
         let (task, _) = self.split();
 
-        LocalFileIdentifierIterator {
+        UniqueFileIdentifierIterator {
             current: self,
             end: UniqueFileIdentifier::get_maximum(task),
         }
     }
 }
 
-pub struct LocalFileIdentifierIterator {
+pub struct UniqueFileIdentifierIterator {
     current: UniqueFileIdentifier,
     end: UniqueFileIdentifier,
 }
 
-impl Iterator for LocalFileIdentifierIterator {
+impl Iterator for UniqueFileIdentifierIterator {
     type Item = UniqueFileIdentifier;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -25,3 +25,7 @@ msgstr "Failed to get task identifier: {}"
 #: error.failed_to_execute
 msgid "Failed to execute: {}"
 msgstr "Failed to execute: {}"
+
+#: error.ressource_busy
+msgid "Resource busy"
+msgstr "Resource busy"

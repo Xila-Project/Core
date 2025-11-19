@@ -8,7 +8,7 @@ impl Shell {
         for argument in arguments {
             if let Some(name) = argument.strip_prefix('$') {
                 let environment_variable = task::get_instance()
-                    .get_environment_variable(self.standard.get_task(), name)
+                    .get_environment_variable(self.task, name)
                     .await
                     .map_err(Error::FailedToReadEnvironmentVariable)?;
 

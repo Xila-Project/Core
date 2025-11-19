@@ -1,6 +1,6 @@
-use alloc::{collections::VecDeque, string::String, sync::Arc};
+use alloc::collections::VecDeque;
 
-use exported_file_system::DirectFileOperations;
+use exported_file_system::{DirectBaseOperations, MountOperations};
 use futures::block_on;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
@@ -16,7 +16,7 @@ impl Pipe {
         Pipe(RwLock::new(VecDeque::with_capacity(buffer_size)))
     }
 
-    pub async fn write(&self, data: &[u8]) -> Result<Size> {
+    pub async fn write(&self, data: &[u8]) -> Result<usize> {
         let mut buffer = self.0.write().await;
 
         let length = data.len().min(buffer.capacity() - buffer.len());
@@ -32,7 +32,7 @@ impl Pipe {
         Ok(length as _)
     }
 
-    pub async fn read(&self, data: &mut [u8]) -> Result<Size> {
+    pub async fn read(&self, data: &mut [u8]) -> Result<usize> {
         let mut buffer = self.0.write().await;
 
         let length = data.len().min(buffer.len());
@@ -48,35 +48,41 @@ impl Pipe {
         Ok(length as _)
     }
 
-    pub async fn read_line(&self, data: &mut String) -> Result<Size> {
-        let mut buffer = self.0.write().await;
+    pub async fn read_until(&self, buffer: &mut [u8], delimiter: u8) -> Result<usize> {
+        let mut internal_buffer = self.0.write().await;
 
-        let length = data.len().min(buffer.len());
+        let mut bytes_read = 0;
 
-        if length == 0 {
-            return Err(Error::RessourceBusy);
-        }
-
-        for _ in 0..length {
-            let byte = buffer.pop_front().unwrap();
-
-            if byte == b'\n' {
+        while bytes_read < buffer.len() {
+            if internal_buffer.is_empty() {
                 break;
             }
 
-            data.push(byte as char);
+            let byte = internal_buffer.pop_front().unwrap();
+            buffer[bytes_read] = byte;
+            bytes_read += 1;
+
+            if byte == delimiter {
+                break;
+            }
         }
 
-        Ok(length as _)
+        if bytes_read == 0 {
+            return Err(Error::RessourceBusy);
+        }
+
+        Ok(bytes_read)
     }
 }
 
-impl DirectFileOperations for Pipe {
-    fn read(&self, buffer: &mut [u8], _absolute_position: Size) -> Result<Size> {
+impl DirectBaseOperations for Pipe {
+    fn read(&self, buffer: &mut [u8], _absolute_position: Size) -> Result<usize> {
         block_on(self.read(buffer))
     }
 
-    fn write(&self, buffer: &[u8], _absolute_position: Size) -> Result<Size> {
+    fn write(&self, buffer: &[u8], _absolute_position: Size) -> Result<usize> {
         block_on(self.write(buffer))
     }
 }
+
+impl MountOperations for Pipe {}

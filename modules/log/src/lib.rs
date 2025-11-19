@@ -109,6 +109,10 @@ pub fn initialize(logger: &'static dyn LoggerTrait) -> Result<(), log_external::
     Ok(())
 }
 
+pub fn is_initialized() -> bool {
+    LOGGER_INSTANCE.try_get().is_some()
+}
+
 pub fn test_write(logger: &impl LoggerTrait) {
     for i in 0..5 {
         logger.write(format_args!("This is a test message number {i}."));

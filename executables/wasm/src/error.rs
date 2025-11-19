@@ -3,7 +3,7 @@ use core::{
     num::{NonZeroU8, NonZeroUsize},
 };
 
-use xila::{file_system, internationalization::translate, task, virtual_machine};
+use xila::{internationalization::translate, task, virtual_file_system, virtual_machine};
 
 #[repr(u8)]
 pub enum Error {
@@ -13,10 +13,10 @@ pub enum Error {
     NotAWasmFile,
     FailedToOpenFile,
     FailedToReadFile,
-    FailedToDuplicateStandard(file_system::Error),
-    FailedToTransferStandard(file_system::Error),
+    FailedToDuplicateStandard(virtual_file_system::Error),
+    FailedToTransferStandard(virtual_file_system::Error),
     FailedToExecute(virtual_machine::Error),
-    FailedToOpenStandardFile(file_system::Error),
+    FailedToOpenStandardFile(virtual_file_system::Error),
     FailedToSpawnTask(task::Error),
 }
 

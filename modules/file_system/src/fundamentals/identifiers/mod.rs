@@ -6,11 +6,7 @@
 //! file system entities across different operations.
 
 mod entry;
-mod file;
-mod unique_file;
 
 pub use entry::*;
-pub use file::*;
-pub use unique_file::*;
 
 pub type Inode = u64;

@@ -1,7 +1,8 @@
 use alloc::{string::String, vec::Vec};
 use miniserde::{Deserialize, Serialize};
-use xila::file_system::{Mode, Path};
+use xila::file_system::{AccessFlags, Path};
 use xila::graphics::Color;
+use xila::task;
 use xila::virtual_file_system::{self, File};
 
 use crate::error::{Error, Result};
@@ -22,15 +23,22 @@ pub struct Shortcut {
 impl Shortcut {
     pub async fn read_from_path(path: &Path, buffer: &mut Vec<u8>) -> Result<Shortcut> {
         let virtual_file_system = virtual_file_system::get_instance();
+        let task = task::get_instance().get_current_task_identifier().await;
 
-        let shortcut_file = File::open(virtual_file_system, path, Mode::READ_ONLY.into())
-            .await
-            .map_err(Error::FailedToReadShortcutFile)?;
+        let mut shortcut_file =
+            File::open(virtual_file_system, task, path, AccessFlags::Read.into())
+                .await
+                .map_err(Error::FailedToReadShortcutFile)?;
 
         buffer.clear();
 
         shortcut_file
-            .read_to_end(buffer)
+            .read_to_end(buffer, 256)
+            .await
+            .map_err(Error::FailedToReadShortcutFile)?;
+
+        shortcut_file
+            .close(virtual_file_system)
             .await
             .map_err(Error::FailedToReadShortcutFile)?;
 

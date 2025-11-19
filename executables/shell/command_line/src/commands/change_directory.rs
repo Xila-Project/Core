@@ -1,5 +1,8 @@
 use alloc::borrow::ToOwned;
-use xila::{file_system::Path, virtual_file_system};
+use xila::{
+    file_system::Path,
+    virtual_file_system::{self, Directory},
+};
 
 use crate::{Error, Result, Shell};
 
@@ -21,10 +24,14 @@ impl Shell {
                 }
             }
         };
-        virtual_file_system::get_instance()
-            .open_directory(&current_directory, self.standard.get_task())
+
+        let virtual_file_system = virtual_file_system::get_instance();
+
+        let _ = Directory::open(virtual_file_system, self.task, &current_directory)
             .await
-            .map_err(Error::FailedToOpenDirectory)?;
+            .map_err(Error::FailedToOpenDirectory)?
+            .close(virtual_file_system)
+            .await;
 
         self.current_directory = current_directory.to_owned();
 

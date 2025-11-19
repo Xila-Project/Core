@@ -9,9 +9,9 @@ async fn main() {
 
     use command_line_shell::ShellExecutable;
     use drivers_std::loader::load_to_virtual_file_system;
-    use wasm::WasmDevice;
-    use xila::executable::{Standard, build_crate, mount_static_executables};
-    use xila::file_system::{MemoryDevice, Mode, create_device, create_file_system};
+    use wasm::WasmExecutable;
+    use xila::executable::{Standard, build_crate, mount_executables};
+    use xila::file_system::{AccessFlags, MemoryDevice, create_device, create_file_system};
     use xila::little_fs;
     use xila::task;
     use xila::time;
@@ -72,29 +72,29 @@ async fn main() {
     .await
     .unwrap();
 
-    mount_static_executables!(
+    mount_executables!(
         virtual_file_system,
         task,
         &[
             (&"/binaries/command_line_shell", ShellExecutable),
-            (&"/binaries/wasm", WasmDevice)
+            (&"/binaries/wasm", WasmExecutable)
         ]
     )
     .await
     .unwrap();
 
     let standard_in = virtual_file_system
-        .open(&"/devices/standard_in", Mode::READ_ONLY.into(), task)
+        .open(&"/devices/standard_in", AccessFlags::Read.into(), task)
         .await
         .unwrap();
 
     let standard_out = virtual_file_system
-        .open(&"/devices/standard_out", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/standard_out", AccessFlags::Write.into(), task)
         .await
         .unwrap();
 
     let standard_error = virtual_file_system
-        .open(&"/devices/standard_error", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/standard_error", AccessFlags::Write.into(), task)
         .await
         .unwrap();
 

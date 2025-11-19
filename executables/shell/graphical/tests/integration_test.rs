@@ -10,8 +10,10 @@ async fn main() {
     use drivers_native::window_screen;
     use graphical_shell::ShellExecutable;
     use xila::executable::Standard;
-    use xila::executable::mount_static_executables;
-    use xila::file_system::{Flags, MemoryDevice, Mode, Open, create_device, create_file_system};
+    use xila::executable::mount_executables;
+    use xila::file_system::{
+        AccessFlags, CreateFlags, Flags, MemoryDevice, create_device, create_file_system,
+    };
     use xila::graphics::{self, InputKind, Point, get_minimal_buffer_size};
     use xila::users::GroupIdentifier;
     use xila::virtual_file_system::{File, mount_static_devices};
@@ -81,7 +83,7 @@ async fn main() {
         .await
         .unwrap();
 
-    mount_static_executables!(
+    mount_executables!(
         virtual_file_system,
         task,
         &[(&"/binaries/graphical_shell", ShellExecutable),]
@@ -125,7 +127,7 @@ async fn main() {
         File::open(
             virtual_file_system,
             format!("/configuration/shared/shortcuts/test{i}.json").as_str(),
-            Flags::new(Mode::WRITE_ONLY, Some(Open::CREATE), None),
+            Flags::new(AccessFlags::Write, Some(CreateFlags::CREATE), None),
         )
         .await
         .unwrap()

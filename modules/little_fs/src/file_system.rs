@@ -1,69 +1,105 @@
-use core::mem::MaybeUninit;
-
-use alloc::{boxed::Box, ffi::CString, vec::Vec};
-use file_system::{
-    AttributeOperations, Attributes, BaseOperations, Context, DirectBlockDevice,
-    DirectoryOperations, FileOperations, FileSystemOperations, Flags, Path, Size,
-};
-use futures::block_on;
-use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
-
-use crate::{File, attributes::InternalAttributes, configuration::take_device_from_configuration};
+use core::ptr::null_mut;
 
 use super::{Configuration, Directory, convert_result, littlefs};
-
-use file_system::{Error, Result};
+use crate::{
+    File,
+    attributes::InternalAttributes,
+    configuration::{self, Buffers},
+};
+use alloc::{boxed::Box, ffi::CString};
+use file_system::{
+    AttributeFlags, AttributeOperations, Attributes, BaseOperations, Context, DirectBlockDevice,
+    DirectoryOperations, Entry, Error, FileOperations, FileSystemOperations, Flags, Kind,
+    MountOperations, Path, Position, Result, Size, mount::MutexMountWrapper,
+};
+use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 
 pub struct FileSystem {
-    file_system: Mutex<CriticalSectionRawMutex, littlefs::lfs_t>,
+    file_system: MutexMountWrapper<CriticalSectionRawMutex, littlefs::lfs_t>,
     cache_size: usize,
 }
 
 impl FileSystem {
+    pub fn new_format(device: &'static dyn DirectBlockDevice, cache_size: usize) -> Result<Self> {
+        Self::format(device, cache_size)?;
+
+        Self::new(device, cache_size)
+    }
+
     pub fn new(device: &'static dyn DirectBlockDevice, cache_size: usize) -> Result<Self> {
         let block_size = device.get_block_size().map_err(|_| Error::InputOutput)?;
-        let size = device.get_size().map_err(|_| Error::InputOutput)?;
+        let block_count = device.get_block_count().map_err(|_| Error::InputOutput)?;
 
-        let configuration: littlefs::lfs_config =
-            Configuration::new(device, block_size, size as usize, cache_size, cache_size)
-                .ok_or(Error::InvalidParameter)?
-                .try_into()
-                .map_err(|_| Error::InvalidParameter)?;
+        let configuration: littlefs::lfs_config = Configuration::new(
+            device,
+            block_size,
+            block_count as usize,
+            cache_size,
+            cache_size,
+        )
+        .ok_or(Error::InvalidParameter)?
+        .try_into()
+        .map_err(|_| Error::InvalidParameter)?;
 
         let configuration = Box::new(configuration);
 
-        let mut file_system = MaybeUninit::<littlefs::lfs_t>::uninit();
+        let mut file_system = littlefs::lfs_t::default();
 
-        convert_result(unsafe {
-            littlefs::lfs_mount(
-                file_system.as_mut_ptr() as *mut _,
-                Box::into_raw(configuration),
-            )
-        })?;
+        unsafe {
+            convert_result(littlefs::lfs_mount(
+                &mut file_system,
+                Box::leak(configuration),
+            ))?;
+
+            let result = convert_result(littlefs::lfs_getattr(
+                &mut file_system,
+                c"/".as_ptr(),
+                InternalAttributes::IDENTIFIER,
+                null_mut(),
+                0,
+            ));
+
+            if let Err(Error::NoAttribute) = result {
+                // Set root attributes if not present
+                let mut internal_attributes = InternalAttributes::new_uninitialized().assume_init();
+                internal_attributes.kind = Kind::Directory;
+
+                convert_result(littlefs::lfs_setattr(
+                    &mut file_system,
+                    c"/".as_ptr(),
+                    InternalAttributes::IDENTIFIER,
+                    &internal_attributes as *const _ as *const _,
+                    size_of::<InternalAttributes>() as u32,
+                ))?;
+            } else {
+                result?;
+            }
+        }
 
         Ok(Self {
-            file_system: Mutex::new(unsafe { file_system.assume_init() }),
+            file_system: MutexMountWrapper::new_mounted(file_system),
             cache_size,
         })
     }
 
-    pub fn format(device: &impl DirectBlockDevice, cache_size: usize) -> Result<()> {
+    pub fn format(device: &'static dyn DirectBlockDevice, cache_size: usize) -> Result<()> {
         let block_size = device.get_block_size().map_err(|_| Error::InputOutput)?;
-        let size = device.get_size().map_err(|_| Error::InputOutput)?;
+        let block_count = device.get_block_count().map_err(|_| Error::InputOutput)?;
 
-        let configuration: littlefs::lfs_config =
-            Configuration::new(device, block_size, size as usize, cache_size, cache_size)
-                .ok_or(Error::InvalidParameter)?
-                .try_into()
-                .map_err(|_| Error::InvalidParameter)?;
+        let configuration: littlefs::lfs_config = Configuration::new(
+            device,
+            block_size,
+            block_count as usize,
+            cache_size,
+            cache_size,
+        )
+        .ok_or(Error::InvalidParameter)?
+        .try_into()
+        .map_err(|_| Error::InvalidParameter)?;
 
-        let configuration = Box::new(configuration);
+        let mut file_system = littlefs::lfs_t::default();
 
-        let mut file_system = MaybeUninit::<littlefs::lfs_t>::uninit();
-
-        convert_result(unsafe {
-            littlefs::lfs_format(file_system.as_mut_ptr(), Box::into_raw(configuration))
-        })?;
+        convert_result(unsafe { littlefs::lfs_format(&mut file_system, &configuration) })?;
 
         Ok(())
     }
@@ -72,7 +108,7 @@ impl FileSystem {
         &self,
         operation: impl FnOnce(&mut littlefs::lfs_t) -> Result<T>,
     ) -> Result<T> {
-        let mut file_system = block_on(self.file_system.lock());
+        let mut file_system = self.file_system.try_get()?;
 
         operation(&mut file_system)
     }
@@ -82,18 +118,24 @@ impl FileSystem {
         context: &mut Context,
         operation: impl FnOnce(&mut littlefs::lfs_t, &mut I) -> Result<T>,
     ) -> Result<T> {
-        let mut file_system = block_on(self.file_system.lock());
+        let mut file_system = self.file_system.try_get()?;
 
-        let mut file = context
-            .get_private_data_of_type::<I>()
+        let file = context
+            .get_private_data_mutable_of_type::<I>()
             .ok_or(Error::InvalidParameter)?;
 
-        operation(&mut file_system, &mut file)
+        operation(&mut file_system, file)
     }
 }
 
 unsafe impl Send for FileSystem {}
 unsafe impl Sync for FileSystem {}
+
+impl MountOperations for FileSystem {
+    fn unmount(&self) -> Result<()> {
+        self.file_system.unmount()
+    }
+}
 
 impl FileSystemOperations for FileSystem {
     fn rename(&self, source: &Path, destination: &Path) -> Result<()> {
@@ -104,7 +146,7 @@ impl FileSystemOperations for FileSystem {
                 CString::new(destination.as_str()).map_err(|_| Error::InvalidParameter)?;
 
             convert_result(unsafe {
-                littlefs::lfs_rename(file_system as *mut _, source.as_ptr(), destination.as_ptr())
+                littlefs::lfs_rename(file_system, source.as_ptr(), destination.as_ptr())
             })?;
 
             Ok(())
@@ -115,19 +157,15 @@ impl FileSystemOperations for FileSystem {
         let path = CString::new(path.as_str()).map_err(|_| Error::InvalidParameter)?;
 
         self.operation(|file_system| {
-            convert_result(unsafe { littlefs::lfs_remove(file_system as *mut _, path.as_ptr()) })?;
+            convert_result(unsafe { littlefs::lfs_remove(file_system, path.as_ptr()) })?;
 
             Ok(())
         })
     }
 
     fn create_directory(&self, path: &Path) -> Result<()> {
-        let path = CString::new(path.as_str()).unwrap();
-
         self.operation(|file_system| {
-            convert_result(unsafe {
-                littlefs::lfs_mkdir(&mut *file_system as *mut _, path.as_ptr())
-            })?;
+            Directory::create(file_system, path)?;
 
             Ok(())
         })
@@ -136,9 +174,7 @@ impl FileSystemOperations for FileSystem {
     fn lookup_directory(&self, context: &mut Context, path: &Path) -> Result<()> {
         self.operation(|file_system| {
             let directory = Directory::lookup(file_system, path)?;
-
-            context.set_private_data(Box::new(directory));
-
+            context.set_private_data(directory);
             Ok(())
         })
     }
@@ -146,7 +182,7 @@ impl FileSystemOperations for FileSystem {
     fn lookup_file(&self, context: &mut Context, path: &Path, flags: Flags) -> Result<()> {
         self.operation(|file_system| {
             let file = File::lookup(file_system, path, flags, self.cache_size)?;
-            context.set_private_data(Box::new(file));
+            context.set_private_data(file);
             Ok(())
         })
     }
@@ -164,7 +200,7 @@ impl FileSystemOperations for FileSystem {
 
             convert_result(unsafe {
                 littlefs::lfs_getattr(
-                    &mut *file_system as *mut _,
+                    file_system,
                     path.as_ptr(),
                     InternalAttributes::IDENTIFIER,
                     &mut internal_attributes as *mut _ as *mut _,
@@ -185,14 +221,14 @@ impl FileSystemOperations for FileSystem {
             let mut internal_attributes =
                 unsafe { InternalAttributes::new_uninitialized().assume_init() };
 
-            if !attributes.get_mask().are_all_set() {
+            if attributes.get_mask() != AttributeFlags::All {
                 convert_result(unsafe {
                     littlefs::lfs_getattr(
-                        &mut *file_system as *mut _,
+                        file_system,
                         path.as_ptr(),
                         InternalAttributes::IDENTIFIER,
                         &mut internal_attributes as *mut _ as *mut _,
-                        size_of::<Attributes>() as u32,
+                        size_of::<InternalAttributes>() as u32,
                     )
                 })?;
             }
@@ -201,11 +237,11 @@ impl FileSystemOperations for FileSystem {
 
             convert_result(unsafe {
                 littlefs::lfs_setattr(
-                    &mut *file_system as *mut _,
+                    file_system,
                     path.as_ptr(),
                     InternalAttributes::IDENTIFIER,
-                    attributes as *const _ as *const _,
-                    size_of::<Attributes>() as u32,
+                    &internal_attributes as *const _ as *const _,
+                    size_of::<InternalAttributes>() as u32,
                 )
             })?;
 
@@ -216,9 +252,9 @@ impl FileSystemOperations for FileSystem {
 
 impl AttributeOperations for FileSystem {
     fn get_attributes(&self, context: &mut Context, attributes: &mut Attributes) -> Result<()> {
-        if let Some(file) = context.get_private_data_of_type::<File>() {
+        if let Some(file) = context.get_private_data_mutable_of_type::<File>() {
             file.get_attributes(attributes)
-        } else if let Some(directory) = context.get_private_data_of_type::<Directory>() {
+        } else if let Some(directory) = context.get_private_data_mutable_of_type::<Directory>() {
             directory.get_attributes(attributes)
         } else {
             Err(Error::InvalidParameter)
@@ -226,9 +262,9 @@ impl AttributeOperations for FileSystem {
     }
 
     fn set_attributes(&self, context: &mut Context, attributes: &Attributes) -> Result<()> {
-        if let Some(file) = context.get_private_data_of_type::<File>() {
+        if let Some(file) = context.get_private_data_mutable_of_type::<File>() {
             file.set_attributes(attributes)
-        } else if let Some(directory) = context.get_private_data_of_type::<Directory>() {
+        } else if let Some(directory) = context.get_private_data_mutable_of_type::<Directory>() {
             directory.set_attributes(attributes)
         } else {
             Err(Error::InvalidParameter)
@@ -241,7 +277,7 @@ impl BaseOperations for FileSystem {
         &self,
         context: &mut Context,
         buffer: &mut [u8],
-        absolute_position: file_system::Size,
+        absolute_position: Size,
     ) -> Result<usize> {
         self.operation_with_context(context, |file_system, file: &mut File| {
             file.read(file_system, buffer, absolute_position)
@@ -252,7 +288,7 @@ impl BaseOperations for FileSystem {
         &self,
         context: &mut Context,
         buffer: &[u8],
-        absolute_position: file_system::Size,
+        absolute_position: Size,
     ) -> Result<usize> {
         self.operation_with_context(context, |file_system, file: &mut File| {
             file.write(file_system, buffer, absolute_position)
@@ -262,10 +298,11 @@ impl BaseOperations for FileSystem {
     fn set_position(
         &self,
         context: &mut Context,
-        position: &file_system::Position,
+        current_position: Size,
+        position: &Position,
     ) -> Result<Size> {
         self.operation_with_context(context, |file_system, file: &mut File| {
-            file.set_position(file_system, position)
+            file.set_position(file_system, current_position, position)
         })
     }
 
@@ -275,23 +312,23 @@ impl BaseOperations for FileSystem {
         })
     }
 
-    fn clone_context(&self, context: &mut Context) -> Result<Context> {
+    fn clone_context(&self, context: &Context) -> Result<Context> {
         if let Some(file) = context.get_private_data_of_type::<File>() {
             Ok(Context::new(Some(file.clone())))
         } else if let Some(directory) = context.get_private_data_of_type::<Directory>() {
             Ok(Context::new(Some(directory.clone())))
         } else {
-            return Err(Error::InvalidParameter);
+            Err(Error::InvalidParameter)
         }
     }
 
     fn close(&self, context: &mut Context) -> Result<()> {
         self.operation(|file_system| {
-            let file = context
+            let mut file = context
                 .take_private_data_of_type::<File>()
                 .ok_or(Error::InvalidParameter)?;
 
-            file.close(file_system)?;
+            file.close(file_system, self.cache_size)?;
 
             Ok(())
         })
@@ -301,37 +338,33 @@ impl BaseOperations for FileSystem {
 impl FileOperations for FileSystem {}
 
 impl DirectoryOperations for FileSystem {
-    fn read(&self, context: &mut file_system::Context) -> Result<Option<file_system::Entry>> {
+    fn read(&self, context: &mut Context) -> Result<Option<Entry>> {
         self.operation_with_context(context, |file_system, directory: &mut Directory| {
             directory.read(file_system)
         })
     }
 
-    fn set_position(
-        &self,
-        context: &mut file_system::Context,
-        position: file_system::Size,
-    ) -> Result<()> {
-        self.operation_with_context(context, |file_system, directory: &mut Directory| {
-            directory.set_position(file_system, position)
-        })
-    }
-
-    fn get_position(&self, context: &mut file_system::Context) -> Result<file_system::Size> {
+    fn get_position(&self, context: &mut file_system::Context) -> Result<Size> {
         self.operation_with_context(context, |file_system, directory: &mut Directory| {
             directory.get_position(file_system)
         })
     }
 
-    fn rewind(&self, context: &mut file_system::Context) -> Result<()> {
+    fn set_position(&self, context: &mut Context, position: Size) -> Result<()> {
+        self.operation_with_context(context, |file_system, directory: &mut Directory| {
+            directory.set_position(file_system, position)
+        })
+    }
+
+    fn rewind(&self, context: &mut Context) -> Result<()> {
         self.operation_with_context(context, |file_system, directory: &mut Directory| {
             directory.rewind(file_system)
         })
     }
 
-    fn close(&self, context: &mut file_system::Context) -> Result<()> {
+    fn close(&self, context: &mut Context) -> Result<()> {
         self.operation(|file_system| {
-            let directory = context
+            let mut directory = context
                 .take_private_data_of_type::<Directory>()
                 .ok_or(Error::InvalidParameter)?;
 
@@ -345,35 +378,17 @@ impl DirectoryOperations for FileSystem {
 impl Drop for FileSystem {
     fn drop(&mut self) {
         let _ = self.operation(|file_system| {
-            let configuration =
+            unsafe {
+                littlefs::lfs_unmount(file_system);
+            }
+
+            let mut configuration =
                 unsafe { Box::from_raw(file_system.cfg as *mut littlefs::lfs_config) };
 
-            let _read_buffer = unsafe {
-                Vec::from_raw_parts(
-                    configuration.read_buffer as *mut u8,
-                    0,
-                    configuration.cache_size as usize,
-                )
-            };
-            let _write_buffer = unsafe {
-                Vec::from_raw_parts(
-                    configuration.prog_buffer as *mut u8,
-                    0,
-                    configuration.cache_size as usize,
-                )
-            };
-            let _look_ahead_buffer = unsafe {
-                Vec::from_raw_parts(
-                    configuration.lookahead_buffer as *mut u8,
-                    0,
-                    configuration.lookahead_size as usize,
-                )
-            };
-
-            let _device = unsafe { take_device_from_configuration(&*configuration) };
-
             unsafe {
-                littlefs::lfs_unmount(&mut *file_system as *mut _);
+                Buffers::take_from_configuration(&mut configuration);
+
+                configuration::Context::take_from_configuration(&mut *configuration);
             }
 
             Ok(())
@@ -385,9 +400,7 @@ impl Drop for FileSystem {
 mod tests {
     extern crate std;
 
-    use alloc::sync::Arc;
-    use file_system::{MemoryDevice, create_device};
-    use task::test;
+    use file_system::{MemoryDevice, file_system::tests::implement_file_system_tests};
 
     use super::*;
 
@@ -398,70 +411,14 @@ mod tests {
 
         task::initialize();
 
-        let _ = time::initialize(create_device!(drivers_native::TimeDriver::new()));
+        let _ = time::initialize(&drivers_native::TimeDriver).unwrap();
 
-        let mock_device = MemoryDevice::<512>::new(2048 * 512);
+        let device = Box::leak(Box::new(MemoryDevice::<512>::new(2048 * 512)));
 
-        let device = Device::new(Arc::new(mock_device));
-
-        FileSystem::format(device.clone(), CACHE_SIZE).unwrap();
+        FileSystem::format(device, CACHE_SIZE).unwrap();
 
         FileSystem::new(device, CACHE_SIZE).unwrap()
     }
 
-    #[test]
-    async fn test_open_close_delete() {
-        file_system::tests::test_open_close_delete(initialize()).await;
-    }
-
-    #[test]
-    async fn test_read_write() {
-        file_system::tests::test_read_write(initialize()).await;
-    }
-
-    #[test]
-    async fn test_move() {
-        file_system::tests::test_move(initialize()).await;
-    }
-
-    #[test]
-    async fn test_set_position() {
-        file_system::tests::test_set_position(initialize()).await;
-    }
-
-    #[test]
-    async fn test_flush() {
-        file_system::tests::test_flush(initialize()).await;
-    }
-
-    #[test]
-    async fn test_set_get_metadata() {
-        file_system::tests::test_set_get_metadata(initialize()).await;
-    }
-
-    #[test]
-    async fn test_read_directory() {
-        file_system::tests::test_read_directory(initialize()).await;
-    }
-
-    #[test]
-    async fn test_set_position_directory() {
-        file_system::tests::test_set_position_directory(initialize()).await;
-    }
-
-    #[test]
-    async fn test_rewind_directory() {
-        file_system::tests::test_rewind_directory(initialize()).await;
-    }
-
-    #[test]
-    async fn test_create_remove_directory() {
-        file_system::tests::test_create_remove_directory(initialize()).await;
-    }
-
-    #[cfg(feature = "std")]
-    #[test]
-    async fn test_loader() {
-        file_system::tests::test_loader(initialize());
-    }
+    implement_file_system_tests!(initialize());
 }

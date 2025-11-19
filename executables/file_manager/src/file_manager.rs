@@ -228,15 +228,17 @@ impl FileManager {
         // Clear existing files
         self.clear_file_list();
 
+        let task = task::get_instance().get_current_task_identifier().await;
+
         // Open directory
         let virtual_file_system = get_instance();
-        let directory = Directory::open(virtual_file_system, &self.current_path).await;
+        let mut directory = Directory::open(virtual_file_system, task, &self.current_path).await;
 
-        match directory {
+        match &mut directory {
             Ok(directory) => {
                 // Read directory entries
                 while let Ok(Some(entry)) = directory.read().await {
-                    let name = entry.get_name();
+                    let name = entry.name.clone();
 
                     // Skip "." and ".." entries
                     if name == "." || name == ".." {
@@ -245,8 +247,8 @@ impl FileManager {
 
                     let file_item = FileItem {
                         name: name.clone(),
-                        r#type: entry.get_type(),
-                        size: entry.get_size().as_u64(),
+                        r#type: entry.kind,
+                        size: entry.size,
                     };
 
                     self.files.push(file_item);
@@ -270,7 +272,7 @@ impl FileManager {
             Err(error) => {
                 // Show error message
                 self.show_error_message("Failed to open directory").await;
-                Err(Error::FailedToReadDirectory(error))
+                Err(Error::FailedToReadDirectory(*error))
             }
         }
     }

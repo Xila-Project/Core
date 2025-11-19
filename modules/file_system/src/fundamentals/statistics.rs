@@ -1,6 +1,6 @@
 use users::{GroupIdentifier, UserIdentifier};
 
-use crate::{Kind, Size, Time};
+use crate::{Attributes, Kind, Size, Time};
 
 use super::{Inode, Permissions};
 
@@ -62,5 +62,21 @@ impl Statistics {
             user,
             group,
         }
+    }
+
+    pub fn from_attributes(attributes: &Attributes) -> Option<Self> {
+        Some(Statistics::new(
+            *attributes.get_inode()?,
+            *attributes.get_links()?,
+            *attributes.get_size()?,
+            *attributes.get_creation()?,
+            *attributes.get_access()?,
+            *attributes.get_modification()?,
+            *attributes.get_status()?,
+            *attributes.get_kind()?,
+            *attributes.get_permissions()?,
+            *attributes.get_user()?,
+            *attributes.get_group()?,
+        ))
     }
 }

@@ -97,7 +97,7 @@ async fn integration_test() {
     let standard_in = virtual_file_system
         .open(
             &"/devices/standard_in",
-            file_system::Mode::READ_ONLY.into(),
+            file_system::AccessFlags::Read.into(),
             task,
         )
         .await
@@ -105,7 +105,7 @@ async fn integration_test() {
     let standard_out = virtual_file_system
         .open(
             &"/devices/standard_out",
-            file_system::Mode::WRITE_ONLY.into(),
+            file_system::AccessFlags::Write.into(),
             task,
         )
         .await
@@ -113,7 +113,7 @@ async fn integration_test() {
     let standard_error = virtual_file_system
         .open(
             &"/devices/standard_error",
-            file_system::Mode::WRITE_ONLY.into(),
+            file_system::AccessFlags::Write.into(),
             task,
         )
         .await

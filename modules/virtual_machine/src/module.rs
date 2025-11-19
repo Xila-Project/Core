@@ -1,7 +1,7 @@
 use core::{ffi::CStr, ptr::null_mut};
 
+use abi_context::FileIdentifier;
 use alloc::vec::Vec;
-use file_system::UniqueFileIdentifier;
 use wamr_rust_sdk::{module, sys::wasm_runtime_set_wasi_args_ex};
 
 use crate::{Error, Result, runtime::Runtime};
@@ -21,9 +21,9 @@ impl<'runtime> Module<'runtime> {
         runtime: &'runtime Runtime,
         buffer: Vec<u8>,
         name: &str,
-        standard_in: UniqueFileIdentifier,
-        standard_out: UniqueFileIdentifier,
-        standard_error: UniqueFileIdentifier,
+        standard_in: FileIdentifier,
+        standard_out: FileIdentifier,
+        standard_error: FileIdentifier,
     ) -> Result<Self> {
         // - Environment variables.
         let task_instance = task::get_instance();
@@ -47,9 +47,9 @@ impl<'runtime> Module<'runtime> {
             _environment_variables_raw: environment_variables_raw,
         };
 
-        let standard_in = standard_in.into_inner() as u64;
-        let standard_out = standard_out.into_inner() as u64;
-        let standard_error = standard_error.into_inner() as u64;
+        let standard_in = standard_in.into_inner();
+        let standard_out = standard_out.into_inner();
+        let standard_error = standard_error.into_inner();
 
         // - Set WASI arguments.
         unsafe {
@@ -63,9 +63,9 @@ impl<'runtime> Module<'runtime> {
                 environment_variables_length as u32,
                 null_mut(),
                 0,
-                u64::cast_signed(standard_in),
-                u64::cast_signed(standard_out),
-                u64::cast_signed(standard_error),
+                u64::cast_signed(standard_in as u64),
+                u64::cast_signed(standard_out as u64),
+                u64::cast_signed(standard_error as u64),
             )
         }
 

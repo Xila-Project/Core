@@ -15,7 +15,6 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[repr(u8)]
 pub enum Error {
     Graphics(graphics::Error) = 1,
-    FileSystem(file_system::Error),
     VirtualFileSystem(virtual_file_system::Error),
     FailedToCreateObject,
     FailedToGetChild,
@@ -46,12 +45,6 @@ impl From<Error> for NonZeroUsize {
 impl From<graphics::Error> for Error {
     fn from(error: graphics::Error) -> Self {
         Error::Graphics(error)
-    }
-}
-
-impl From<file_system::Error> for Error {
-    fn from(error: file_system::Error) -> Self {
-        Error::FileSystem(error)
     }
 }
 
@@ -96,9 +89,6 @@ impl Display for Error {
         match self {
             Error::Graphics(error) => {
                 write!(formatter, translate!("Graphics error : {}"), error)
-            }
-            Error::FileSystem(error) => {
-                write!(formatter, translate!("File system error: {}"), error)
             }
             Error::VirtualFileSystem(error) => {
                 write!(

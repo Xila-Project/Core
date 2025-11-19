@@ -14,7 +14,7 @@ async fn main() {
     use xila::executable;
     use xila::executable::Standard;
     use xila::executable::build_crate;
-    use xila::executable::mount_static_executables;
+    use xila::executable::mount_executables;
     use xila::file_system;
     use xila::file_system::Mbr;
     use xila::file_system::PartitionKind;
@@ -164,7 +164,7 @@ async fn main() {
         Box::pin(new_thread_executor())
     }
 
-    mount_static_executables!(
+    mount_executables!(
         virtual_file_system,
         task,
         &[
@@ -196,7 +196,7 @@ async fn main() {
             ),
             (
                 &"/binaries/wasm",
-                wasm::WasmDevice::new(Some(new_thread_executor_wrapper))
+                wasm::WasmExecutable::new(Some(new_thread_executor_wrapper))
             )
         ]
     )

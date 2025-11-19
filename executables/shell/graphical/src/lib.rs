@@ -16,7 +16,7 @@ use core::time::Duration;
 use home::Home;
 use layout::Layout;
 use login::Login;
-use xila::executable::{self, ArgumentsParser, Standard};
+use xila::executable::{self, ArgumentsParser, ExecutableTrait, Standard};
 use xila::file_system::Permissions;
 use xila::task;
 use xila::users;
@@ -45,11 +45,11 @@ pub struct Shell {
 
 pub struct ShellExecutable;
 
-executable::implement_executable_device!(
-    structure: ShellExecutable,
-    mount_path: "/binaries/graphical_shell",
-    main_function: main,
-);
+impl ExecutableTrait for ShellExecutable {
+    fn main(standard: Standard, arguments: Vec<String>) -> executable::MainFuture {
+        Box::pin(async move { main(standard, arguments).await })
+    }
+}
 
 impl Shell {
     pub async fn new(standard: Standard, show_keyboard: bool) -> Self {
@@ -83,12 +83,10 @@ impl Shell {
                 if let Some(user) = login.get_logged_user() {
                     let user_name = users::get_instance().get_user_name(user).await.unwrap();
 
+                    let task = task::get_instance().get_current_task_identifier().await;
+
                     task::get_instance()
-                        .set_environment_variable(
-                            self._standard.get_task(),
-                            "User",
-                            user_name.as_str(),
-                        )
+                        .set_environment_variable(task, "User", user_name.as_str())
                         .await
                         .map_err(Error::FailedToSetEnvironmentVariable)?;
 

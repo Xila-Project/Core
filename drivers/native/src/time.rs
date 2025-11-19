@@ -1,24 +1,14 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use core::time::Duration;
-use file_system::{BaseOperations, Error, Result, Size};
+use file_system::{
+    DirectBaseOperations, DirectCharacterDevice, Error, MountOperations, Result, Size,
+};
 
 pub struct TimeDriver;
 
-impl Default for TimeDriver {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl TimeDriver {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl BaseOperations for TimeDriver {
-    fn read(&self, buffer: &mut [u8]) -> Result<Size> {
+impl DirectBaseOperations for TimeDriver {
+    fn read(&self, buffer: &mut [u8], _: Size) -> Result<usize> {
         let duration = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|_| Error::InternalError)?;
@@ -34,22 +24,14 @@ impl BaseOperations for TimeDriver {
 
         buffer.copy_from_slice(duration_bytes);
 
-        Ok(buffer.len().into())
+        Ok(buffer.len())
     }
 
-    fn write(&self, _: &[u8]) -> Result<file_system::Size> {
-        Err(Error::UnsupportedOperation)
-    }
-
-    fn get_size(&self) -> file_system::Result<file_system::Size> {
-        Ok(size_of::<Duration>().into())
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> file_system::Result<file_system::Size> {
-        Err(Error::UnsupportedOperation)
-    }
-
-    fn flush(&self) -> file_system::Result<()> {
+    fn write(&self, _: &[u8], _: Size) -> Result<usize> {
         Err(Error::UnsupportedOperation)
     }
 }
+
+impl MountOperations for TimeDriver {}
+
+impl DirectCharacterDevice for TimeDriver {}

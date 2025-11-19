@@ -1,4 +1,4 @@
-use file_system::{BaseOperations, Size};
+use file_system::{CharacterDevice, DirectBaseOperations, MountOperations, Size};
 
 pub struct RandomDevice;
 
@@ -14,29 +14,26 @@ impl RandomDevice {
     }
 }
 
-impl BaseOperations for RandomDevice {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
+impl DirectBaseOperations for RandomDevice {
+    fn read(&self, buffer: &mut [u8], _: Size) -> file_system::Result<usize> {
         getrandom::fill(buffer).map_err(|_| file_system::Error::Other)?;
 
-        Ok(buffer.len().into())
+        Ok(buffer.len())
     }
 
-    fn write(&self, _buffer: &[u8]) -> file_system::Result<file_system::Size> {
+    fn write(&self, _: &[u8], _: Size) -> file_system::Result<usize> {
         Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn get_size(&self) -> file_system::Result<file_system::Size> {
-        Ok(0 as _)
     }
 
     fn set_position(
         &self,
+        _: Size,
         _position: &file_system::Position,
     ) -> file_system::Result<file_system::Size> {
         Err(file_system::Error::UnsupportedOperation)
     }
-
-    fn flush(&self) -> file_system::Result<()> {
-        Ok(())
-    }
 }
+
+impl MountOperations for RandomDevice {}
+
+impl CharacterDevice for RandomDevice {}

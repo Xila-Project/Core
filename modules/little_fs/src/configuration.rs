@@ -1,13 +1,13 @@
-use core::{ffi::c_void, mem::forget};
+use core::{ffi::c_void, ptr::null_mut};
 
-use alloc::{boxed::Box, vec};
+use alloc::{boxed::Box, vec, vec::Vec};
 use file_system::DirectBlockDevice;
 
 use super::{callbacks, littlefs};
 
 #[derive(Clone)]
-pub struct Configuration<'a> {
-    context: &'a dyn DirectBlockDevice,
+pub struct Configuration {
+    context: &'static dyn DirectBlockDevice,
     read_size: usize,
     program_size: usize,
     block_size: usize,
@@ -24,7 +24,7 @@ pub struct Configuration<'a> {
     flags: u32,
 }
 
-impl<'a> Configuration<'a> {
+impl Configuration {
     pub const DEFAULT_RAW: littlefs::lfs_config = littlefs::lfs_config {
         context: core::ptr::null_mut::<c_void>(),
         read: None,
@@ -51,16 +51,12 @@ impl<'a> Configuration<'a> {
     };
 
     pub fn new(
-        device: &'a dyn DirectBlockDevice,
+        device: &'static dyn DirectBlockDevice,
         block_size: usize,
-        total_size: usize,
+        block_count: usize,
         cache_size: usize,
         look_ahead_size: usize,
     ) -> Option<Self> {
-        if !total_size.is_multiple_of(block_size) {
-            return None;
-        }
-
         if !(block_size % cache_size) == 0 {
             return None;
         }
@@ -68,8 +64,6 @@ impl<'a> Configuration<'a> {
         if !look_ahead_size.is_multiple_of(8) {
             return None;
         }
-
-        let block_count = total_size / block_size;
 
         Some(Self {
             context: device,
@@ -147,18 +141,78 @@ impl<'a> Configuration<'a> {
     }
 }
 
-impl<'a> TryFrom<Configuration<'a>> for littlefs::lfs_config {
+pub struct Buffers {
+    read_buffer: Vec<u8>,
+    write_buffer: Vec<u8>,
+    look_ahead_buffer: Vec<u8>,
+}
+
+impl Buffers {
+    pub fn new(cache_size: usize, look_ahead_size: usize) -> Self {
+        Self {
+            read_buffer: vec![0_u8; cache_size],
+            write_buffer: vec![0_u8; cache_size],
+            look_ahead_buffer: vec![0_u8; look_ahead_size],
+        }
+    }
+
+    pub fn into_raw(self) -> (*mut c_void, *mut c_void, *mut c_void) {
+        (
+            Vec::leak(self.read_buffer) as *mut [u8] as *mut c_void,
+            Vec::leak(self.write_buffer) as *mut [u8] as *mut c_void,
+            Vec::leak(self.look_ahead_buffer) as *mut [u8] as *mut c_void,
+        )
+    }
+
+    pub fn take_from_configuration(configuration: &mut littlefs::lfs_config) -> Self {
+        let read_buffer = unsafe {
+            Vec::from_raw_parts(
+                configuration.read_buffer as *mut u8,
+                configuration.cache_size as usize,
+                configuration.cache_size as usize,
+            )
+        };
+
+        let write_buffer = unsafe {
+            Vec::from_raw_parts(
+                configuration.prog_buffer as *mut u8,
+                configuration.cache_size as usize,
+                configuration.cache_size as usize,
+            )
+        };
+
+        let look_ahead_buffer = unsafe {
+            Vec::from_raw_parts(
+                configuration.lookahead_buffer as *mut u8,
+                configuration.lookahead_size as usize,
+                configuration.lookahead_size as usize,
+            )
+        };
+
+        configuration.read_buffer = null_mut();
+        configuration.prog_buffer = null_mut();
+        configuration.lookahead_buffer = null_mut();
+
+        Self {
+            read_buffer,
+            write_buffer,
+            look_ahead_buffer,
+        }
+    }
+}
+
+impl TryFrom<Configuration> for littlefs::lfs_config {
     type Error = ();
 
     fn try_from(configuration: Configuration) -> Result<Self, Self::Error> {
-        let mut read_buffer = vec![0_u8; configuration.cache_size];
-        let mut write_buffer = read_buffer.clone();
-        let mut look_ahead_buffer = vec![0_u8; configuration.look_ahead_size];
+        // Allocate buffers on the heap and leak them so littlefs can use them for the lifetime of the filesystem
+        let buffers = Buffers::new(configuration.cache_size, configuration.look_ahead_size);
+        let (read_buffer_ptr, write_buffer_ptr, look_ahead_buffer_ptr) = buffers.into_raw();
 
-        let device = Box::new(Box::new(configuration.context));
+        let context = Context::new(configuration.context);
 
         let lfs_configuration = littlefs::lfs_config {
-            context: Box::into_raw(device) as *mut c_void,
+            context: context as *mut _ as *mut _,
             read: Some(callbacks::read_callback),
             prog: Some(callbacks::programm_callback),
             erase: Some(callbacks::erase_callback),
@@ -173,9 +227,9 @@ impl<'a> TryFrom<Configuration<'a>> for littlefs::lfs_config {
             },
             cache_size: configuration.cache_size as u32,
             lookahead_size: configuration.look_ahead_size as u32,
-            read_buffer: read_buffer.as_mut_ptr() as *mut c_void,
-            prog_buffer: write_buffer.as_mut_ptr() as *mut c_void,
-            lookahead_buffer: look_ahead_buffer.as_mut_ptr() as *mut c_void,
+            read_buffer: read_buffer_ptr,
+            prog_buffer: write_buffer_ptr,
+            lookahead_buffer: look_ahead_buffer_ptr,
             name_max: configuration.maximum_name_size.unwrap_or(0) as u32, // Default value : 255 (LFS_NAME_MAX)
             file_max: configuration.maximum_file_size.unwrap_or(0) as u32, // Default value : 2,147,483,647 (2 GiB) (LFS_FILE_MAX)
             attr_max: configuration.maximum_attributes_size.unwrap_or(0) as u32, // Default value : 1022 (LFS_ATTR_MAX)
@@ -185,26 +239,34 @@ impl<'a> TryFrom<Configuration<'a>> for littlefs::lfs_config {
             flags: configuration.flags,
         };
 
-        forget(read_buffer);
-        forget(write_buffer);
-        forget(look_ahead_buffer);
-
         Ok(lfs_configuration)
     }
 }
 
-pub unsafe fn take_device_from_configuration(
-    configuration: *const littlefs::lfs_config,
-) -> Box<Box<dyn DirectBlockDevice>> {
-    unsafe { Box::from_raw(configuration.read().context as *mut Box<dyn DirectBlockDevice>) }
+pub struct Context {
+    pub device: &'static dyn DirectBlockDevice,
 }
 
-pub unsafe fn get_device_from_configuration(
-    configuration: *const littlefs::lfs_config,
-) -> &'static dyn DirectBlockDevice {
-    let device = unsafe { take_device_from_configuration(configuration) };
+impl Context {
+    pub fn new(device: &'static dyn DirectBlockDevice) -> &'static mut Self {
+        Box::leak(Box::new(Self { device }))
+    }
 
-    let device_ref = Box::leak(device);
+    pub unsafe fn get_from_configuration(
+        configuration: *const littlefs::lfs_config,
+    ) -> &'static Self {
+        unsafe { &*((*configuration).context as *const Self) }
+    }
 
-    &**device_ref
+    pub unsafe fn take_from_configuration(
+        configuration: *mut littlefs::lfs_config,
+    ) -> Box<&'static dyn DirectBlockDevice> {
+        unsafe {
+            let raw_context = (*configuration).context as *mut _;
+
+            (*configuration).context = null_mut();
+
+            Box::from_raw(raw_context)
+        }
+    }
 }

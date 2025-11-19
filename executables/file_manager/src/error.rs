@@ -2,7 +2,7 @@ use core::{
     fmt::Display,
     num::{NonZeroU8, NonZeroUsize},
 };
-use xila::{file_system, graphics, task, virtual_file_system};
+use xila::{graphics, task, virtual_file_system};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -10,7 +10,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[repr(u8)]
 pub enum Error {
     Graphics(graphics::Error) = 1,
-    FileSystem(file_system::Error),
+    FileSystem(virtual_file_system::Error),
     VirtualFileSystem(virtual_file_system::Error),
     FailedToCreateObject,
     FailedToGetChild,
@@ -18,8 +18,8 @@ pub enum Error {
     InvalidUtf8(core::str::Utf8Error),
     FailedToSetTaskUser(task::Error),
     FailedToGetCurrentTaskIdentifier(task::Error),
-    FailedToReadDirectory(file_system::Error),
-    FailedToOpenStandardFile(file_system::Error),
+    FailedToReadDirectory(virtual_file_system::Error),
+    FailedToOpenStandardFile(virtual_file_system::Error),
     NullCharacterInString(alloc::ffi::NulError),
     MissingArguments,
 }
@@ -42,15 +42,9 @@ impl From<graphics::Error> for Error {
     }
 }
 
-impl From<file_system::Error> for Error {
-    fn from(error: file_system::Error) -> Self {
-        Error::FileSystem(error)
-    }
-}
-
 impl From<virtual_file_system::Error> for Error {
     fn from(error: virtual_file_system::Error) -> Self {
-        Error::VirtualFileSystem(error)
+        Error::FileSystem(error)
     }
 }
 

@@ -6,11 +6,15 @@
 //! simulation, and development purposes where you need a device that behaves
 //! like storage but doesn't require actual hardware.
 
-use alloc::vec;
+use core::fmt::Debug;
+
 use alloc::vec::Vec;
+use alloc::{boxed::Box, vec};
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
-use crate::{DirectBlockDevice, DirectFileOperations, Result, Size};
+use crate::{
+    DirectBaseOperations, DirectBlockDevice, Error, MountOperations, Result, Size, block_device,
+};
 
 /// In-memory device implementation with configurable block size.
 ///
@@ -26,21 +30,20 @@ use crate::{DirectBlockDevice, DirectFileOperations, Result, Size};
 /// # Examples
 ///
 /// ```rust
-/// # extern crate alloc;
-/// # use file_system::*;
+/// extern crate alloc;
+/// use file_system::{MemoryDevice, DirectBaseOperations, Position};
 ///
 /// // Create a 1MB memory device with 512-byte blocks
 /// let device = MemoryDevice::<512>::new(1024 * 1024);
-/// let device = create_device!(device);
 ///
 /// // Write some data
 /// let data = b"Hello, Memory Device!";
-/// device.write(data).unwrap();
+/// device.write(data, 0).unwrap();
 ///
 /// // Reset position and read back
-/// device.set_position(&Position::Start(0)).unwrap();
+/// device.set_position(0, &Position::Start(0)).unwrap();
 /// let mut buffer = alloc::vec![0u8; data.len()];
-/// device.read(&mut buffer).unwrap();
+/// device.read(&mut buffer, 0).unwrap();
 /// assert_eq!(&buffer, data);
 /// ```
 ///
@@ -49,6 +52,14 @@ use crate::{DirectBlockDevice, DirectFileOperations, Result, Size};
 /// The device uses an `RwLock` to ensure thread-safe access to the underlying data.
 /// Multiple readers can access the device simultaneously, but writes are exclusive.
 pub struct MemoryDevice<const BLOCK_SIZE: usize>(RwLock<CriticalSectionRawMutex, Vec<u8>>);
+
+impl<const BLOCK_SIZE: usize> Debug for MemoryDevice<BLOCK_SIZE> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("MemoryDevice")
+            .field("size", &self.0.try_read().map(|data| data.len()))
+            .finish()
+    }
+}
 
 impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
     /// Create a new memory device with the specified size.
@@ -79,6 +90,10 @@ impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
         let data: Vec<u8> = vec![0; size];
 
         Self(RwLock::new(data))
+    }
+
+    pub fn new_static(size: usize) -> &'static Self {
+        Box::leak(Box::new(Self::new(size)))
     }
 
     /// Create a memory device from existing data.
@@ -112,7 +127,7 @@ impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
     }
 }
 
-impl<const BLOCK_SIZE: usize> DirectFileOperations for MemoryDevice<BLOCK_SIZE> {
+impl<const BLOCK_SIZE: usize> DirectBaseOperations for MemoryDevice<BLOCK_SIZE> {
     /// Read data from the memory device.
     ///
     /// Reads data from the current position into the provided buffer.
@@ -127,7 +142,7 @@ impl<const BLOCK_SIZE: usize> DirectFileOperations for MemoryDevice<BLOCK_SIZE> 
 
         let read_size = buffer
             .len()
-            .min(inner.len().saturating_sub(absolute_position as usize));
+            .min(inner.len().saturating_sub(absolute_position));
         buffer[..read_size]
             .copy_from_slice(&inner[absolute_position..absolute_position + read_size]);
         Ok(read_size as _)
@@ -149,33 +164,45 @@ impl<const BLOCK_SIZE: usize> DirectFileOperations for MemoryDevice<BLOCK_SIZE> 
 
         Ok(write_size as _)
     }
+
+    fn control(
+        &self,
+        command: crate::ControlCommand,
+        argument: &mut crate::ControlArgument,
+    ) -> Result<()> {
+        match command {
+            block_device::GET_BLOCK_SIZE => {
+                *argument
+                    .cast::<usize>()
+                    .ok_or(crate::Error::InvalidParameter)? = BLOCK_SIZE;
+                Ok(())
+            }
+            block_device::GET_BLOCK_COUNT => {
+                let block_count = argument
+                    .cast::<usize>()
+                    .ok_or(crate::Error::InvalidParameter)?;
+
+                *block_count = self
+                    .0
+                    .try_read()
+                    .map_err(|_| crate::Error::RessourceBusy)?
+                    .len()
+                    / BLOCK_SIZE;
+                Ok(())
+            }
+            _ => Err(Error::UnsupportedOperation),
+        }
+    }
 }
 
-impl<const BLOCK_SIZE: usize> DirectBlockDevice for MemoryDevice<BLOCK_SIZE> {
-    fn get_size(&self) -> Result<Size> {
-        let inner = self.0.try_read().map_err(|_| crate::Error::RessourceBusy)?;
+impl<const BLOCK_SIZE: usize> MountOperations for MemoryDevice<BLOCK_SIZE> {}
 
-        Ok(inner.len() as Size)
-    }
+impl<const BLOCK_SIZE: usize> DirectBlockDevice for MemoryDevice<BLOCK_SIZE> {}
 
-    fn erase(&self, absolute_position: Size) -> Result<()> {
-        let mut inner = self
-            .0
-            .try_write()
-            .map_err(|_| crate::Error::RessourceBusy)?;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::implement_block_device_tests;
 
-        let absolute_position = absolute_position as usize;
-
-        inner[absolute_position..absolute_position + BLOCK_SIZE].fill(0);
-
-        Ok(())
-    }
-
-    fn get_block_count(&self) -> Result<Size> {
-        Ok(DirectBlockDevice::get_size(self)? / BLOCK_SIZE as Size)
-    }
-
-    fn get_block_size(&self) -> Result<usize> {
-        Ok(BLOCK_SIZE)
-    }
+    implement_block_device_tests!(MemoryDevice::<512>::new(4096));
 }

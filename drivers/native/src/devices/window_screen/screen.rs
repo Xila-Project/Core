@@ -1,4 +1,4 @@
-use file_system::{BaseOperations, Size};
+use file_system::{DirectBaseOperations, Size};
 use graphics::{ScreenReadData, ScreenWriteData};
 
 use crate::window_screen::inner_window::InnerWindow;
@@ -15,8 +15,8 @@ impl<'a> ScreenDevice<'a> {
     }
 }
 
-impl<'a> BaseOperations for ScreenDevice<'a> {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
+impl<'a> DirectBaseOperations for ScreenDevice<'a> {
+    fn read(&self, buffer: &mut [u8], _: Size) -> file_system::Result<usize> {
         let data: &mut ScreenReadData = buffer
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;
@@ -28,7 +28,7 @@ impl<'a> BaseOperations for ScreenDevice<'a> {
         Ok(size_of::<Self>() as _)
     }
 
-    fn write(&self, buffer: &[u8]) -> file_system::Result<file_system::Size> {
+    fn write(&self, buffer: &[u8], _: Size) -> file_system::Result<usize> {
         let data: &ScreenWriteData = buffer
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;
@@ -36,17 +36,5 @@ impl<'a> BaseOperations for ScreenDevice<'a> {
         futures::block_on(self.0.draw(data)).unwrap();
 
         Ok(size_of::<Self>() as _)
-    }
-
-    fn get_size(&self) -> file_system::Result<file_system::Size> {
-        Ok(size_of::<Self>() as _)
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> file_system::Result<file_system::Size> {
-        Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn flush(&self) -> file_system::Result<()> {
-        Ok(())
     }
 }

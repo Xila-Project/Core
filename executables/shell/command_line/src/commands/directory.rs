@@ -26,7 +26,7 @@ impl Shell {
         };
 
         virtual_file_system::get_instance()
-            .create_directory(&path, self.standard.get_task())
+            .create_directory(&path, self.task)
             .await
             .map_err(Error::FailedToCreateDirectory)
     }

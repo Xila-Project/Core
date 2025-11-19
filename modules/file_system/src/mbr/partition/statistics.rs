@@ -1,3 +1,5 @@
+use crate::Size;
+
 /// Comprehensive statistics about partitions in an MBR.
 ///
 /// This structure provides detailed statistical information about the partitions
@@ -24,9 +26,9 @@
 ///
 /// ```rust
 /// extern crate alloc;
-/// use file_system::*;
+/// use file_system::{mbr::{Mbr, PartitionKind, PartitionStatistics}, MemoryDevice};
 ///
-/// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
+/// let device = MemoryDevice::<512>::new(4 * 1024 * 1024);
 /// // Create an MBR with some partitions
 /// let mut mbr = Mbr::new_with_signature(0x12345678);
 /// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
@@ -35,7 +37,7 @@
 ///
 /// // Read it back and get statistics
 /// let mbr = Mbr::read_from_device(&device).unwrap();
-/// let stats = PartitionStatistics::from_mbr(&mbr);
+/// let stats = mbr.get_statistics();
 /// println!("Total partitions: {}", stats.total_partitions);
 /// println!("Bootable partitions: {}", stats.bootable_partitions);
 /// println!("Total used sectors: {}", stats.total_used_sectors);
@@ -57,7 +59,7 @@ pub struct PartitionStatistics {
     /// Number of partitions with unknown types.
     pub unknown_partitions: usize,
     /// Total sectors used by all partitions.
-    pub total_used_sectors: u64,
+    pub total_used_sectors: Size,
     /// Size of the largest partition in sectors.
     pub largest_partition_sectors: u32,
     /// Size of the smallest partition in sectors.

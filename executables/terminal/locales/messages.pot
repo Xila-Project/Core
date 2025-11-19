@@ -25,3 +25,7 @@ msgstr ""
 #: error.failed_to_execute
 msgid "Failed to execute: {}"
 msgstr ""
+
+#: error.ressource_busy
+msgid "Resource busy"
+msgstr ""

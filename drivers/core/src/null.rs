@@ -1,25 +1,17 @@
-use file_system::{BaseOperations, Size};
+use file_system::{CharacterDevice, DirectBaseOperations, MountOperations, Size};
 
 pub struct NullDevice;
 
-impl BaseOperations for NullDevice {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
+impl DirectBaseOperations for NullDevice {
+    fn read(&self, buffer: &mut [u8], _: Size) -> file_system::Result<usize> {
         Ok(buffer.len() as _)
     }
 
-    fn write(&self, buffer: &[u8]) -> file_system::Result<file_system::Size> {
+    fn write(&self, buffer: &[u8], _: Size) -> file_system::Result<usize> {
         Ok(buffer.len() as _)
-    }
-
-    fn get_size(&self) -> file_system::Result<file_system::Size> {
-        Ok(0 as _)
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> file_system::Result<file_system::Size> {
-        Ok(0 as _)
-    }
-
-    fn flush(&self) -> file_system::Result<()> {
-        Ok(())
     }
 }
+
+impl MountOperations for NullDevice {}
+
+impl CharacterDevice for NullDevice {}

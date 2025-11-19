@@ -3,7 +3,7 @@
 //! This module provides the core device trait and types for abstracting various
 //! storage devices, peripherals, and I/O endpoints in the file system.
 
-use crate::{Context, Error, Position, Result, Size};
+use crate::{Context, ControlArgument, ControlCommand, Error, Position, Result, Size};
 
 /// Core trait for all device implementations in the file system.
 ///
@@ -32,24 +32,24 @@ use crate::{Context, Error, Position, Result, Size};
 ///
 /// ```rust
 /// # extern crate alloc;
-/// # use file_system::*;
+/// # use file_system::{Size, MemoryDevice, DirectBaseOperations, Position};
 ///
 /// // Create a memory device for testing
-/// let device = create_device!(MemoryDevice::<512>::new(1024));
+/// let device = MemoryDevice::<512>::new(1024);
 ///
 /// // Write data
 /// let data = b"Hello, World!";
-/// let bytes_written = device.write(data).unwrap();
-/// assert_eq!(bytes_written.as_u64(), data.len() as u64);
+/// let bytes_written = device.write(data, 0).unwrap();
+/// assert_eq!(bytes_written, data.len());
 ///
 /// // Reset position and read back
-/// device.set_position(&Position::Start(0)).unwrap();
+/// device.set_position(0, &Position::Start(0)).unwrap();
 /// let mut buffer = alloc::vec![0u8; data.len()];
-/// let bytes_read = device.read(&mut buffer).unwrap();
-/// assert_eq!(bytes_read.as_u64(), data.len() as u64);
+/// let bytes_read = device.read(&mut buffer, 0).unwrap();
+/// assert_eq!(bytes_read, data.len());
 /// assert_eq!(&buffer, data);
 /// ```
-pub trait BaseOperations {
+pub trait BaseOperations: Send + Sync {
     fn open(&self, _context: &mut Context) -> Result<()> {
         Ok(())
     }
@@ -90,9 +90,14 @@ pub trait BaseOperations {
         context: &mut Context,
         buffer: &mut [u8],
         absolute_position: Size,
-        delimiter: u8,
+        delimiter: &[u8],
     ) -> Result<usize> {
+        if delimiter.is_empty() {
+            return Err(Error::InvalidParameter);
+        }
+
         let mut total_read = 0;
+        let mut match_count = 0;
 
         while total_read < buffer.len() {
             let bytes_read = self.read(
@@ -100,14 +105,26 @@ pub trait BaseOperations {
                 &mut buffer[total_read..total_read + 1],
                 absolute_position + total_read as Size,
             )?;
+
             if bytes_read == 0 {
-                break; // EOF reached
+                break; // End of file or no more data
             }
-            if buffer[total_read] == delimiter {
-                total_read += 1;
-                break; // Delimiter found
+
+            total_read += bytes_read;
+
+            // Check if we're matching the delimiter
+            if buffer[total_read - 1] == delimiter[match_count] {
+                match_count += 1;
+                if match_count == delimiter.len() {
+                    break; // Found complete delimiter
+                }
+            } else {
+                // Reset and check if current byte starts a new match
+                match_count = 0;
+                if buffer[total_read - 1] == delimiter[0] {
+                    match_count = 1;
+                }
             }
-            total_read += bytes_read as usize;
         }
 
         Ok(total_read)
@@ -152,7 +169,30 @@ pub trait BaseOperations {
             if bytes_written == 0 {
                 break; // Unable to write more
             }
-            total_written += bytes_written as usize;
+            total_written += bytes_written;
+        }
+
+        Ok(total_written)
+    }
+
+    fn write_vectored(
+        &self,
+        context: &mut Context,
+        buffers: &[&[u8]],
+        absolute_position: Size,
+    ) -> Result<usize> {
+        let mut total_written = 0;
+
+        for buffer in buffers {
+            if buffer.is_empty() {
+                continue; // Skip empty buffers
+            }
+            let bytes_written =
+                self.write(context, buffer, absolute_position + total_written as Size)?;
+            if bytes_written == 0 {
+                break; // Unable to write more
+            }
+            total_written += bytes_written;
         }
 
         Ok(total_written)
@@ -177,8 +217,17 @@ pub trait BaseOperations {
     /// # Errors
     ///
     /// * [`Error::InvalidParameter`] - Position is beyond device bounds
-    fn set_position(&self, _context: &mut Context, _position: &Position) -> Result<Size> {
-        Ok(0)
+    fn set_position(
+        &self,
+        _context: &mut Context,
+        _current_position: Size,
+        _position: &Position,
+    ) -> Result<Size> {
+        match _position {
+            Position::Start(position) => Ok(*position),
+            Position::Current(offset) => Ok(_current_position.wrapping_add(*offset as Size)),
+            Position::End(_) => Err(Error::UnsupportedOperation),
+        }
     }
 
     /// Flush any buffered data to the underlying storage.
@@ -194,22 +243,25 @@ pub trait BaseOperations {
     ///
     /// * `Ok(())` - Flush completed successfully
     /// * `Err(Error)` - Error during flush operation
-    fn flush(&self, context: &mut Context) -> Result<()>;
+    fn flush(&self, _context: &mut Context) -> Result<()> {
+        Ok(())
+    }
 
-    fn control(&self, _context: &mut Context, _request: usize, _argument: usize) -> Result<()> {
+    fn control(
+        &self,
+        _context: &mut Context,
+        _command: ControlCommand,
+        _argument: &mut ControlArgument,
+    ) -> Result<()> {
         Err(Error::UnsupportedOperation)
     }
 
-    fn get_size(&self, _context: &mut Context) -> Result<Size> {
-        Ok(0)
-    }
-
-    fn clone_context(&self, context: &mut Context) -> Result<Context>;
+    fn clone_context(&self, context: &Context) -> Result<Context>;
 }
 
 pub fn open_close_operation<D, R>(device: &D, operation: impl Fn(&D) -> Result<R>) -> Result<R>
 where
-    D: DirectFileOperations,
+    D: DirectBaseOperations,
 {
     device.open()?;
     let result = operation(device);
@@ -217,7 +269,7 @@ where
     result
 }
 
-pub trait DirectFileOperations {
+pub trait DirectBaseOperations: Send + Sync {
     fn open(&self) -> Result<()> {
         Ok(())
     }
@@ -228,64 +280,162 @@ pub trait DirectFileOperations {
 
     fn read(&self, buffer: &mut [u8], absolute_position: Size) -> Result<usize>;
 
+    fn read_until(
+        &self,
+        buffer: &mut [u8],
+        absolute_position: Size,
+        delimiter: &[u8],
+    ) -> Result<usize> {
+        if delimiter.is_empty() {
+            return Err(Error::InvalidParameter);
+        }
+
+        let mut total_read = 0;
+        let mut match_count = 0;
+
+        while total_read < buffer.len() {
+            let bytes_read = self.read(
+                &mut buffer[total_read..total_read + 1],
+                absolute_position + total_read as Size,
+            )?;
+
+            if bytes_read == 0 {
+                break; // End of file or no more data
+            }
+
+            total_read += bytes_read;
+
+            // Check if we're matching the delimiter
+            if buffer[total_read - 1] == delimiter[match_count] {
+                match_count += 1;
+                if match_count == delimiter.len() {
+                    break; // Found complete delimiter
+                }
+            } else {
+                // Reset and check if current byte starts a new match
+                match_count = 0;
+                if buffer[total_read - 1] == delimiter[0] {
+                    match_count = 1;
+                }
+            }
+        }
+
+        Ok(total_read)
+    }
+
     fn write(&self, buffer: &[u8], absolute_position: Size) -> Result<usize>;
+
+    fn write_pattern(
+        &self,
+        pattern: &[u8],
+        count: usize,
+        absolute_position: Size,
+    ) -> Result<usize> {
+        let mut total_written = 0;
+
+        for _ in 0..count {
+            let bytes_written = self.write(pattern, absolute_position + total_written as Size)?;
+            if bytes_written == 0 {
+                break; // Unable to write more
+            }
+            total_written += bytes_written;
+        }
+
+        Ok(total_written)
+    }
+
+    fn write_vectored(&self, buffers: &[&[u8]], absolute_position: Size) -> Result<usize> {
+        let mut total_written = 0;
+
+        for buffer in buffers {
+            if buffer.is_empty() {
+                continue; // Skip empty buffers
+            }
+            let bytes_written = self.write(buffer, absolute_position + total_written as Size)?;
+            if bytes_written == 0 {
+                break; // Unable to write more
+            }
+            total_written += bytes_written;
+        }
+
+        Ok(total_written)
+    }
 
     fn flush(&self) -> Result<()> {
         Ok(())
     }
 
-    fn set_position(&self, _position: &crate::Position) -> Result<Size> {
-        Ok(0)
+    fn set_position(&self, _current_position: Size, _position: &Position) -> Result<Size> {
+        match _position {
+            Position::Start(position) => Ok(*position),
+            Position::Current(offset) => Ok(_current_position.wrapping_add(*offset as Size)),
+            Position::End(_) => Err(Error::UnsupportedOperation),
+        }
     }
 
-    fn get_position_absolute(&self) -> Result<Size> {
-        self.set_position(&crate::Position::Current(0))
-    }
-
-    fn control(&self, _command: u32, _argument: usize) -> Result<usize> {
-        Err(crate::Error::UnsupportedOperation)
+    fn control(&self, _command: ControlCommand, _argument: &mut ControlArgument) -> Result<()> {
+        Err(Error::UnsupportedOperation)
     }
 }
 
 impl<T> BaseOperations for T
 where
-    T: DirectFileOperations,
+    T: DirectBaseOperations + Send + Sync,
 {
-    fn open(&self, _: &mut crate::Context) -> Result<()> {
+    fn open(&self, _: &mut Context) -> Result<()> {
         self.open()
     }
 
-    fn read(
-        &self,
-        _: &mut crate::Context,
-        buffer: &mut [u8],
-        absolute_position: Size,
-    ) -> Result<usize> {
+    fn read(&self, _: &mut Context, buffer: &mut [u8], absolute_position: Size) -> Result<usize> {
         self.read(buffer, absolute_position)
     }
 
-    fn write(
-        &self,
-        _: &mut crate::Context,
-        buffer: &[u8],
-        absolute_position: Size,
-    ) -> Result<usize> {
+    fn write(&self, _: &mut Context, buffer: &[u8], absolute_position: Size) -> Result<usize> {
         self.write(buffer, absolute_position)
     }
 
-    fn flush(&self, _: &mut crate::Context) -> Result<()> {
+    fn write_pattern(
+        &self,
+        _: &mut Context,
+        pattern: &[u8],
+        count: usize,
+        absolute_position: Size,
+    ) -> Result<usize> {
+        self.write_pattern(pattern, count, absolute_position)
+    }
+
+    fn write_vectored(
+        &self,
+        _context: &mut Context,
+        buffers: &[&[u8]],
+        absolute_position: Size,
+    ) -> Result<usize> {
+        self.write_vectored(buffers, absolute_position)
+    }
+
+    fn flush(&self, _: &mut Context) -> Result<()> {
         self.flush()
     }
 
-    fn set_position(&self, _: &mut crate::Context, position: &crate::Position) -> Result<Size> {
-        self.set_position(position)
+    fn set_position(
+        &self,
+        _context: &mut Context,
+        current_position: Size,
+        position: &Position,
+    ) -> Result<Size> {
+        self.set_position(current_position, position)
     }
 
-    fn control(&self, _: &mut crate::Context, command: usize, argument: usize) -> Result<()> {
-        self.control(command as u32, argument).map(|_| ())
+    fn control(
+        &self,
+        _: &mut Context,
+        command: ControlCommand,
+        argument: &mut ControlArgument,
+    ) -> Result<()> {
+        self.control(command, argument)
     }
 
-    fn clone_context(&self, _context: &mut Context) -> Result<Context> {
-        return Ok(Context::new::<()>(None));
+    fn clone_context(&self, _context: &Context) -> Result<Context> {
+        Ok(Context::new_empty())
     }
 }

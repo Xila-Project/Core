@@ -1,5 +1,7 @@
 use core::{fmt::Display, num::NonZeroU32};
 
+use embedded_io_async::ErrorKind;
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
@@ -25,9 +27,12 @@ pub enum Error {
     RessourceBusy,
     NotADirectory,
     NotAFile,
+    InvalidInode,
     InvalidMode,
     InvalidOpen,
     UnsupportedOperation,
+    FailedToWrite,
+    DelimiterNotFound,
     Orphaned,
 }
 
@@ -108,6 +113,27 @@ impl Display for Error {
             Error::NotAFile => write!(f, "Not a file"),
             Error::InvalidMode => write!(f, "Invalid mode"),
             Error::InvalidOpen => write!(f, "Invalid open"),
+            Error::InvalidInode => write!(f, "Invalid inode"),
+            Error::UnsupportedOperation => write!(f, "Unsupported operation"),
+            Error::FailedToWrite => write!(f, "Failed to write"),
+            Error::DelimiterNotFound => write!(f, "Delimiter not found"),
+            Error::Orphaned => write!(f, "Orphaned"),
+        }
+    }
+}
+
+impl core::error::Error for Error {}
+
+impl embedded_io_async::Error for Error {
+    fn kind(&self) -> ErrorKind {
+        match self {
+            Error::PermissionDenied => ErrorKind::PermissionDenied,
+            Error::NotADirectory => ErrorKind::InvalidInput,
+            Error::NotAFile => ErrorKind::InvalidInput,
+            Error::InvalidMode => ErrorKind::InvalidInput,
+            Error::InvalidOpen => ErrorKind::InvalidInput,
+            Error::UnsupportedOperation => ErrorKind::Unsupported,
+            _ => ErrorKind::Other,
         }
     }
 }

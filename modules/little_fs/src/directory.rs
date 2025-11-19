@@ -1,7 +1,7 @@
 use core::{ffi::CStr, mem::MaybeUninit};
 
-use crate::{error::convert_result, littlefs};
-use alloc::{ffi::CString, string::ToString};
+use crate::{attributes::InternalAttributes, error::convert_result, littlefs};
+use alloc::{boxed::Box, ffi::CString, string::ToString};
 use file_system::{Attributes, Entry, Kind, Path, Result, Size};
 
 #[derive(Clone)]
@@ -10,19 +10,44 @@ pub struct Directory {
     directory: littlefs::lfs_dir_t,
 }
 
+unsafe impl Send for Directory {}
+unsafe impl Sync for Directory {}
+
 impl Directory {
-    pub fn lookup(file_system: &mut littlefs::lfs_t, path: &Path) -> Result<Self> {
+    pub fn create(file_system: &mut littlefs::lfs_t, path: &Path) -> Result<()> {
         let path = CString::new(path.as_str()).unwrap();
 
-        let mut directory = MaybeUninit::<littlefs::lfs_dir_t>::uninit();
+        unsafe {
+            convert_result(littlefs::lfs_mkdir(file_system, path.as_ptr()))?;
+
+            let mut internal_attributes = InternalAttributes::new_uninitialized().assume_init();
+            internal_attributes.kind = Kind::Directory;
+
+            convert_result(littlefs::lfs_setattr(
+                file_system,
+                path.as_ptr(),
+                InternalAttributes::IDENTIFIER,
+                &internal_attributes as *const _ as *const _,
+                size_of::<InternalAttributes>() as u32,
+            ))?;
+        }
+
+        Ok(())
+    }
+
+    pub fn lookup(file_system: &mut littlefs::lfs_t, path: &Path) -> Result<Box<Self>> {
+        let path = CString::new(path.as_str()).unwrap();
+
+        let directory = Self {
+            directory: littlefs::lfs_dir_t::default(),
+        };
+        let mut directory = Box::new(directory);
 
         convert_result(unsafe {
-            littlefs::lfs_dir_open(file_system as *mut _, directory.as_mut_ptr(), path.as_ptr())
+            littlefs::lfs_dir_open(file_system, &mut directory.directory, path.as_ptr())
         })?;
 
-        Ok(Self {
-            directory: unsafe { directory.assume_init() },
-        })
+        Ok(directory)
     }
 
     pub fn get_attributes(&self, attributes: &mut Attributes) -> Result<()> {
@@ -38,17 +63,14 @@ impl Directory {
     }
 
     pub fn rewind(&mut self, file_system: &mut littlefs::lfs_t) -> Result<()> {
-        convert_result(unsafe {
-            littlefs::lfs_dir_rewind(file_system as *mut _, &mut self.directory as *mut _)
-        })?;
+        convert_result(unsafe { littlefs::lfs_dir_rewind(file_system, &mut self.directory) })?;
 
         Ok(())
     }
 
     pub fn get_position(&mut self, file_system: &mut littlefs::lfs_t) -> Result<Size> {
-        let offset = convert_result(unsafe {
-            littlefs::lfs_dir_tell(file_system as *mut _, &mut self.directory as *mut _)
-        })?;
+        let offset =
+            convert_result(unsafe { littlefs::lfs_dir_tell(file_system, &mut self.directory) })?;
 
         Ok(offset as _)
     }
@@ -60,8 +82,8 @@ impl Directory {
     ) -> Result<()> {
         convert_result(unsafe {
             littlefs::lfs_dir_seek(
-                file_system as *mut _,
-                &mut self.directory as *mut _,
+                file_system,
+                &mut self.directory,
                 position as littlefs::lfs_off_t,
             )
         })?;
@@ -76,8 +98,8 @@ impl Directory {
 
         let result = unsafe {
             littlefs::lfs_dir_read(
-                file_system as *mut _,
-                &mut self.directory as *mut _,
+                file_system,
+                &mut self.directory,
                 &mut informations as *mut _,
             )
         };
@@ -102,10 +124,8 @@ impl Directory {
         Ok(Some(entry))
     }
 
-    pub fn close(mut self, file_system: &mut littlefs::lfs_t) -> Result<()> {
-        convert_result(unsafe {
-            littlefs::lfs_dir_close(file_system as *mut _, &mut self.directory as *mut _)
-        })?;
+    pub fn close(&mut self, file_system: &mut littlefs::lfs_t) -> Result<()> {
+        convert_result(unsafe { littlefs::lfs_dir_close(file_system, &mut self.directory) })?;
 
         Ok(())
     }

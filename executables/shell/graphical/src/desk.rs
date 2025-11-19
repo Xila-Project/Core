@@ -281,23 +281,23 @@ impl Desk {
 
             let mut buffer: Vec<u8> = vec![];
 
-            let shortcuts_directory = Directory::open(virtual_file_system, SHORTCUT_PATH)
+            let shortcuts_directory = Directory::open(virtual_file_system, task, SHORTCUT_PATH)
                 .await
                 .map_err(Error::FailedToReadShortcutDirectory)?;
 
             for shortcut_entry in shortcuts_directory {
-                if shortcut_entry.get_type() != Kind::File {
+                if shortcut_entry.kind != Kind::File {
                     continue;
                 }
 
-                if !shortcut_entry.get_name().ends_with(".json") {
+                if !shortcut_entry.name.ends_with(".json") {
                     continue;
                 }
 
-                match Shortcut::read(shortcut_entry.get_name(), &mut buffer).await {
+                match Shortcut::read(&shortcut_entry.name, &mut buffer).await {
                     Ok(shortcut) => {
                         self.create_drawer_shortcut(
-                            shortcut_entry.get_name(),
+                            &shortcut_entry.name,
                             &shortcut.name,
                             shortcut.get_icon_color(),
                             &shortcut.icon_string,
@@ -305,10 +305,7 @@ impl Desk {
                         )?;
                     }
                     Err(e) => {
-                        error!(
-                            "Failed to read shortcut {}: {e:?}",
-                            shortcut_entry.get_name()
-                        );
+                        error!("Failed to read shortcut {}: {e:?}", shortcut_entry.name);
                         continue;
                     }
                 }

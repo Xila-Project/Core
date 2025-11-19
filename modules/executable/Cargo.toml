@@ -10,6 +10,9 @@ task = { workspace = true }
 users = { workspace = true }
 futures = { workspace = true }
 log = { workspace = true }
+little_fs = { workspace = true }
+time = { workspace = true }
+authentication = { workspace = true }
 
 [dev-dependencies]
 drivers_native = { workspace = true }

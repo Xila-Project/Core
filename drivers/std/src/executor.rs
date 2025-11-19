@@ -33,6 +33,10 @@ impl Executor {
         }
     }
 
+    pub fn new_static() -> &'static Self {
+        Box::leak(Box::new(Self::new()))
+    }
+
     pub fn stop(&self) {
         self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
         self.signaler.signal();

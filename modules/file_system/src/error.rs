@@ -112,6 +112,10 @@ pub enum Error {
     TimeError,
     /// Invalid inode reference.
     InvalidInode,
+    /// Not mounted.
+    NotMounted,
+    /// Already mounted.
+    AlreadyMounted,
     /// Other unclassified error.
     Other,
 }
@@ -215,6 +219,8 @@ impl Display for Error {
             Error::NoSpaceLeft => "No space left",
             Error::TimeError => "Time error",
             Error::InvalidInode => "Invalid inode",
+            Error::NotMounted => "Not mounted",
+            Error::AlreadyMounted => "Already mounted",
             Error::Other => "Other",
         };
 

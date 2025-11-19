@@ -10,8 +10,8 @@ async fn main() {
     use drivers_native::window_screen;
     use settings::SettingsExecutable;
     use xila::executable::Standard;
-    use xila::executable::mount_static_executables;
-    use xila::file_system::{MemoryDevice, Mode, create_device, create_file_system};
+    use xila::executable::mount_executables;
+    use xila::file_system::{AccessFlags, MemoryDevice, create_device, create_file_system};
     use xila::graphics::{self, InputKind, Point, get_minimal_buffer_size};
     use xila::log;
     use xila::virtual_file_system::{self, create_default_hierarchy, mount_static_devices};
@@ -105,7 +105,7 @@ async fn main() {
     .await
     .unwrap();
 
-    mount_static_executables!(
+    mount_executables!(
         virtual_file_system,
         task,
         &[(&"/binaries/settings", SettingsExecutable)]
@@ -114,17 +114,17 @@ async fn main() {
     .unwrap();
 
     let standard_in = virtual_file_system
-        .open(&"/devices/standard_in", Mode::READ_ONLY.into(), task)
+        .open(&"/devices/standard_in", AccessFlags::Read.into(), task)
         .await
         .unwrap();
 
     let standard_out = virtual_file_system
-        .open(&"/devices/standard_out", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/standard_out", AccessFlags::Write.into(), task)
         .await
         .unwrap();
 
     let standard_error = virtual_file_system
-        .open(&"/devices/standard_error", Mode::WRITE_ONLY.into(), task)
+        .open(&"/devices/standard_error", AccessFlags::Write.into(), task)
         .await
         .unwrap();
 

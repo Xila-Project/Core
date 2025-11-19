@@ -4,7 +4,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    FileSystem(file_system::Error),
+    FileSystem(virtual_file_system::Error),
     Task(task::Error),
     FailedToGetMainFunction,
     InvalidStackSize,
@@ -25,8 +25,8 @@ impl Display for Error {
     }
 }
 
-impl From<file_system::Error> for Error {
-    fn from(error: file_system::Error) -> Self {
+impl From<virtual_file_system::Error> for Error {
+    fn from(error: virtual_file_system::Error) -> Self {
         Error::FileSystem(error)
     }
 }

@@ -10,10 +10,10 @@ async fn main() {
     use drivers_native::window_screen;
     use file_manager::FileManagerExecutable;
     use xila::executable::Standard;
-    use xila::executable::mount_static_executables;
-    use xila::file_system::{MemoryDevice, Mode, create_device, create_file_system};
+    use xila::executable::mount_executables;
     use xila::graphics::{self, InputKind, Point, get_minimal_buffer_size};
-    use xila::virtual_file_system::{self, create_default_hierarchy, mount_static_devices};
+    use xila::virtual_file_system::mount_static;
+    use xila::virtual_file_system::{self, create_default_hierarchy};
     use xila::{executable, task, time, users};
 
     // - Initialize the task manager.
@@ -78,31 +78,42 @@ async fn main() {
         .await
         .unwrap();
 
-    mount_static_devices!(
+    mount_static!(
         virtual_file_system,
         task,
         &[
             (
                 &"/devices/standard_in",
+                CharacterDevice,
                 drivers_std::console::StandardInDevice
             ),
             (
                 &"/devices/standard_out",
+                CharacterDevice,
                 drivers_std::console::StandardOutDevice
             ),
             (
                 &"/devices/standard_error",
+                CharacterDevice,
                 drivers_std::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers_native::TimeDriver),
-            (&"/devices/random", drivers_shared::devices::RandomDevice),
-            (&"/devices/null", drivers_core::NullDevice)
+            (
+                &"/devices/time",
+                CharacterDevice,
+                drivers_native::TimeDriver
+            ),
+            (
+                &"/devices/random",
+                CharacterDevice,
+                drivers_shared::devices::RandomDevice
+            ),
+            (&"/devices/null", CharacterDevice, drivers_core::NullDevice)
         ]
     )
     .await
     .unwrap();
 
-    mount_static_executables!(
+    mount_executables!(
         virtual_file_system,
         task,
         &[(&"/binaries/file_manager", FileManagerExecutable)]
@@ -110,28 +121,15 @@ async fn main() {
     .await
     .unwrap();
 
-    let standard_in = virtual_file_system
-        .open(&"/devices/standard_in", Mode::READ_ONLY.into(), task)
-        .await
-        .unwrap();
-
-    let standard_out = virtual_file_system
-        .open(&"/devices/standard_out", Mode::WRITE_ONLY.into(), task)
-        .await
-        .unwrap();
-
-    let standard_error = virtual_file_system
-        .open(&"/devices/standard_error", Mode::WRITE_ONLY.into(), task)
-        .await
-        .unwrap();
-
-    let standard = Standard::new(
-        standard_in,
-        standard_out,
-        standard_error,
-        task,
+    let standard = Standard::open(
         virtual_file_system,
-    );
+        task,
+        &"/devices/standard_in",
+        &"/devices/standard_out",
+        &"/devices/standard_error",
+    )
+    .await
+    .unwrap();
 
     task_manager
         .set_environment_variable(task, "Paths", "/")

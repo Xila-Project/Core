@@ -4,6 +4,10 @@
 //! within a task's file descriptor table, similar to file descriptors in
 //! Unix-like systems.
 
+use task::TaskIdentifier;
+
+use crate::UniqueFileIdentifier;
+
 /// File identifier inner type.
 ///
 /// This is the underlying numeric type used for file identifiers. The size
@@ -35,7 +39,7 @@ pub type FileIdentifierInner = u32;
 /// # Examples
 ///
 /// ```rust
-/// use file_system::FileIdentifier;
+/// use abi_context::FileIdentifier;
 ///
 /// // Standard file identifiers
 /// assert_eq!(FileIdentifier::STANDARD_IN.into_inner(), 0);
@@ -54,23 +58,25 @@ impl FileIdentifier {
     /// Size in bits of the underlying identifier type.
     pub const SIZE_BITS: u8 = core::mem::size_of::<FileIdentifierInner>() as u8 * 8;
 
+    pub const INVALID: Self = Self::new(FileIdentifierInner::MAX);
+
     /// Standard input file identifier (traditionally 0).
-    pub const STANDARD_IN: FileIdentifier = FileIdentifier::new(0);
+    pub const STANDARD_IN: Self = Self::new(0);
 
     /// Standard output file identifier (traditionally 1).
-    pub const STANDARD_OUT: FileIdentifier = FileIdentifier::new(1);
+    pub const STANDARD_OUT: Self = Self::new(1);
 
     /// Standard error file identifier (traditionally 2).
-    pub const STANDARD_ERROR: FileIdentifier = FileIdentifier::new(2);
+    pub const STANDARD_ERROR: Self = Self::new(2);
 
     /// Minimum file identifier available for regular files.
     ///
     /// Regular files should use identifiers starting from this value to avoid
     /// conflicts with internal or reserved identifiers.
-    pub const MINIMUM: FileIdentifier = FileIdentifier::new(3);
+    pub const MINIMUM: Self = Self::new(3);
 
     /// Maximum possible file identifier value.
-    pub const MAXIMUM: FileIdentifier = FileIdentifier::new(FileIdentifierInner::MAX);
+    pub const MAXIMUM: Self = Self::new(FileIdentifierInner::MAX - 1);
 
     /// Create a new file identifier from a raw value.
     ///
@@ -81,7 +87,7 @@ impl FileIdentifier {
     /// # Examples
     ///
     /// ```rust
-    /// use file_system::FileIdentifier;
+    /// use abi_context::FileIdentifier;
     ///
     /// let file_id = FileIdentifier::new(5);
     /// assert_eq!(file_id.into_inner(), 5);
@@ -99,13 +105,17 @@ impl FileIdentifier {
     /// # Examples
     ///
     /// ```rust
-    /// use file_system::FileIdentifier;
+    /// use abi_context::FileIdentifier;
     ///
     /// let file_id = FileIdentifier::new(42);
     /// assert_eq!(file_id.into_inner(), 42);
     /// ```
     pub const fn into_inner(self) -> FileIdentifierInner {
         self.0
+    }
+
+    pub const fn into_unique(self, task: TaskIdentifier) -> UniqueFileIdentifier {
+        UniqueFileIdentifier::new(task, self)
     }
 }
 

@@ -1,53 +1,22 @@
-use core::ops::BitOr;
-
 use crate::{Inode, Kind, Permissions, Size, Time};
+use core::fmt::Debug;
+use shared::flags;
 use users::{GroupIdentifier, UserIdentifier};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(transparent)]
-pub struct AttributesMask(u16);
-
-impl AttributesMask {
-    pub const INODE: Self = Self(1 << 0);
-    pub const KIND: Self = Self(1 << 1);
-    pub const SIZE: Self = Self(1 << 2);
-    pub const LINKS: Self = Self(1 << 3);
-    pub const CREATION_TIME: Self = Self(1 << 4);
-    pub const MODIFICATION_TIME: Self = Self(1 << 5);
-    pub const ACCESS_TIME: Self = Self(1 << 6);
-    pub const STATUS_TIME: Self = Self(1 << 7);
-    pub const PERMISSIONS: Self = Self(1 << 8);
-    pub const USER: Self = Self(1 << 9);
-    pub const GROUP: Self = Self(1 << 10);
-    pub const NONE: Self = Self(0);
-    pub const ALL: Self = Self(0b111_1111_1111);
-
-    pub fn contains(&self, other: AttributesMask) -> bool {
-        ((*self).0 & other.0) == other.0
-    }
-
-    pub fn negate(&self) -> u16 {
-        !((*self).0)
-    }
-
-    pub fn are_all_set(&self) -> bool {
-        (*self) == Self::ALL
-    }
-
-    pub fn set(self, other: AttributesMask) -> Self {
-        Self(self.0 | other.0)
-    }
-
-    pub fn unset(self, other: AttributesMask) -> Self {
-        Self(self.0 & !other.0)
-    }
-}
-
-impl BitOr for AttributesMask {
-    type Output = Self;
-
-    fn bitor(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0)
+flags! {
+    /// Flags for file creation.
+    pub enum AttributeFlags: u16 {
+        Inode,
+        Kind,
+        Size,
+        Links,
+        CreationTime,
+        ModificationTime,
+        AccessTime,
+        StatusTime,
+        Permissions,
+        User,
+        Group,
     }
 }
 
@@ -86,22 +55,22 @@ pub struct Attributes {
     /// The file group.
     group: GroupIdentifier,
     /// Mask
-    mask: AttributesMask,
+    mask: AttributeFlags,
 }
 
 /// Macro to generate getter, mutable getter, and setter methods for Attributes fields
 macro_rules! generate_attribute_accessors {
     ($getter:ident, $mutable_getter:ident, $setter:ident, $field:ident, $field_type:ty, $mask_flag:expr) => {
         pub fn $getter(&self) -> Option<&$field_type> {
-            Self::get(&self.$field, $mask_flag)
+            Self::get(&self.$field, self.mask, $mask_flag)
         }
 
         pub fn $mutable_getter(&mut self) -> Option<&mut $field_type> {
-            Self::get_mutable(&mut self.$field, $mask_flag)
+            Self::get_mutable(&mut self.$field, self.mask, $mask_flag)
         }
 
         pub fn $setter(mut self, $field: $field_type) -> Self {
-            self.mask = self.mask.set($mask_flag);
+            self.mask = self.mask.insert($mask_flag);
             self.$field = $field;
 
             self
@@ -109,8 +78,14 @@ macro_rules! generate_attribute_accessors {
     };
 }
 
+impl Default for Attributes {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Attributes {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Attributes {
             inode: 0,
             kind: Kind::File,
@@ -123,31 +98,35 @@ impl Attributes {
             permissions: Permissions::NONE,
             user: UserIdentifier::ROOT,
             group: GroupIdentifier::ROOT,
-            mask: AttributesMask::NONE,
+            mask: AttributeFlags::None,
         }
     }
 
-    fn get<T>(field: &T, mask: AttributesMask) -> Option<&T> {
-        if mask.contains(mask) {
+    fn get<T>(field: &T, instance_mask: AttributeFlags, field_mask: AttributeFlags) -> Option<&T> {
+        if instance_mask.contains(field_mask) {
             Some(field)
         } else {
             None
         }
     }
 
-    fn get_mutable<T>(field: &mut T, mask: AttributesMask) -> Option<&mut T> {
-        if mask.contains(mask) {
+    fn get_mutable<T>(
+        field: &mut T,
+        instance_mask: AttributeFlags,
+        field_mask: AttributeFlags,
+    ) -> Option<&mut T> {
+        if instance_mask.contains(field_mask) {
             Some(field)
         } else {
             None
         }
     }
 
-    pub fn get_mask(&self) -> AttributesMask {
+    pub fn get_mask(&self) -> AttributeFlags {
         self.mask
     }
 
-    pub fn set_mask(mut self, mask: AttributesMask) -> Self {
+    pub fn set_mask(mut self, mask: AttributeFlags) -> Self {
         self.mask = mask;
         self
     }
@@ -158,7 +137,7 @@ impl Attributes {
         set_inode,
         inode,
         Inode,
-        AttributesMask::INODE
+        AttributeFlags::Inode
     );
     generate_attribute_accessors!(
         get_size,
@@ -166,7 +145,7 @@ impl Attributes {
         set_size,
         size,
         Size,
-        AttributesMask::SIZE
+        AttributeFlags::Size
     );
     generate_attribute_accessors!(
         get_kind,
@@ -174,7 +153,7 @@ impl Attributes {
         set_kind,
         kind,
         Kind,
-        AttributesMask::KIND
+        AttributeFlags::Kind
     );
     generate_attribute_accessors!(
         get_permissions,
@@ -182,7 +161,7 @@ impl Attributes {
         set_permissions,
         permissions,
         Permissions,
-        AttributesMask::PERMISSIONS
+        AttributeFlags::Permissions
     );
     generate_attribute_accessors!(
         get_user,
@@ -190,7 +169,7 @@ impl Attributes {
         set_user,
         user,
         UserIdentifier,
-        AttributesMask::USER
+        AttributeFlags::User
     );
     generate_attribute_accessors!(
         get_group,
@@ -198,7 +177,7 @@ impl Attributes {
         set_group,
         group,
         GroupIdentifier,
-        AttributesMask::GROUP
+        AttributeFlags::Group
     );
     generate_attribute_accessors!(
         get_creation,
@@ -206,7 +185,7 @@ impl Attributes {
         set_creation,
         creation,
         Time,
-        AttributesMask::CREATION_TIME
+        AttributeFlags::CreationTime
     );
     generate_attribute_accessors!(
         get_modification,
@@ -214,7 +193,7 @@ impl Attributes {
         set_modification,
         modification,
         Time,
-        AttributesMask::MODIFICATION_TIME
+        AttributeFlags::ModificationTime
     );
     generate_attribute_accessors!(
         get_access,
@@ -222,7 +201,7 @@ impl Attributes {
         set_access,
         access,
         Time,
-        AttributesMask::ACCESS_TIME
+        AttributeFlags::AccessTime
     );
     generate_attribute_accessors!(
         get_status,
@@ -230,7 +209,7 @@ impl Attributes {
         set_status,
         status,
         Time,
-        AttributesMask::STATUS_TIME
+        AttributeFlags::StatusTime
     );
     generate_attribute_accessors!(
         get_links,
@@ -238,6 +217,195 @@ impl Attributes {
         set_links,
         links,
         Size,
-        AttributesMask::LINKS
+        AttributeFlags::Links
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    extern crate std;
+    use std::format;
+
+    #[test]
+    fn test_attributes_new() {
+        let attrs = Attributes::new();
+        assert_eq!(attrs.inode, 0);
+        assert_eq!(attrs.kind, Kind::File);
+        assert_eq!(attrs.size, 0);
+        assert_eq!(attrs.links, 0);
+        assert_eq!(attrs.permissions, Permissions::NONE);
+        assert_eq!(attrs.user, UserIdentifier::ROOT);
+        assert_eq!(attrs.group, GroupIdentifier::ROOT);
+        assert_eq!(attrs.mask, AttributeFlags::None);
+    }
+
+    #[test]
+    fn test_attributes_default() {
+        let attrs = Attributes::default();
+        assert_eq!(attrs, Attributes::new());
+    }
+
+    #[test]
+    fn test_attributes_set_and_get_inode() {
+        let attrs = Attributes::new().set_inode(42);
+        assert_eq!(attrs.get_inode(), Some(&42));
+        assert!(attrs.mask.contains(AttributeFlags::Inode));
+    }
+
+    #[test]
+    fn test_attributes_set_and_get_size() {
+        let attrs = Attributes::new().set_size(1024);
+        assert_eq!(attrs.get_size(), Some(&1024));
+        assert!(attrs.mask.contains(AttributeFlags::Size));
+    }
+
+    #[test]
+    fn test_attributes_set_and_get_kind() {
+        let attrs = Attributes::new().set_kind(Kind::Directory);
+        assert_eq!(attrs.get_kind(), Some(&Kind::Directory));
+        assert!(attrs.mask.contains(AttributeFlags::Kind));
+    }
+
+    #[test]
+    fn test_attributes_set_and_get_permissions() {
+        let perms = Permissions::USER_READ_WRITE;
+        let attrs = Attributes::new().set_permissions(perms);
+        assert_eq!(attrs.get_permissions(), Some(&perms));
+        assert!(attrs.mask.contains(AttributeFlags::Permissions));
+    }
+
+    #[test]
+    fn test_attributes_set_and_get_user() {
+        let user = UserIdentifier::new(1000);
+        let attrs = Attributes::new().set_user(user);
+        assert_eq!(attrs.get_user(), Some(&user));
+        assert!(attrs.mask.contains(AttributeFlags::User));
+    }
+
+    #[test]
+    fn test_attributes_set_and_get_group() {
+        let group = GroupIdentifier::new(1000);
+        let attrs = Attributes::new().set_group(group);
+        assert_eq!(attrs.get_group(), Some(&group));
+        assert!(attrs.mask.contains(AttributeFlags::Group));
+    }
+
+    #[test]
+    fn test_attributes_set_and_get_creation_time() {
+        let time = Time::new(123456);
+        let attrs = Attributes::new().set_creation(time);
+        assert_eq!(attrs.get_creation(), Some(&time));
+        assert!(attrs.mask.contains(AttributeFlags::CreationTime));
+    }
+
+    #[test]
+    fn test_attributes_set_and_get_modification_time() {
+        let time = Time::new(123456);
+        let attrs = Attributes::new().set_modification(time);
+        assert_eq!(attrs.get_modification(), Some(&time));
+        assert!(attrs.mask.contains(AttributeFlags::ModificationTime));
+    }
+
+    #[test]
+    fn test_attributes_set_and_get_access_time() {
+        let time = Time::new(123456);
+        let attrs = Attributes::new().set_access(time);
+        assert_eq!(attrs.get_access(), Some(&time));
+        assert!(attrs.mask.contains(AttributeFlags::AccessTime));
+    }
+
+    #[test]
+    fn test_attributes_set_and_get_status_time() {
+        let time = Time::new(123456);
+        let attrs = Attributes::new().set_status(time);
+        assert_eq!(attrs.get_status(), Some(&time));
+        assert!(attrs.mask.contains(AttributeFlags::StatusTime));
+    }
+
+    #[test]
+    fn test_attributes_set_and_get_links() {
+        let attrs = Attributes::new().set_links(5);
+        assert_eq!(attrs.get_links(), Some(&5));
+        assert!(attrs.mask.contains(AttributeFlags::Links));
+    }
+
+    #[test]
+    fn test_attributes_get_returns_none_when_not_set() {
+        let attrs = Attributes::new();
+        assert_eq!(attrs.get_inode(), None);
+        assert_eq!(attrs.get_size(), None);
+        assert_eq!(attrs.get_kind(), None);
+        assert_eq!(attrs.get_permissions(), None);
+        assert_eq!(attrs.get_user(), None);
+        assert_eq!(attrs.get_group(), None);
+        assert_eq!(attrs.get_creation(), None);
+        assert_eq!(attrs.get_modification(), None);
+        assert_eq!(attrs.get_access(), None);
+        assert_eq!(attrs.get_status(), None);
+        assert_eq!(attrs.get_links(), None);
+    }
+
+    #[test]
+    fn test_attributes_mutable_getter() {
+        let mut attrs = Attributes::new().set_inode(42);
+
+        if let Some(inode) = attrs.get_mutable_inode() {
+            *inode = 100;
+        }
+
+        assert_eq!(attrs.get_inode(), Some(&100));
+    }
+
+    #[test]
+    fn test_attributes_mutable_getter_returns_none() {
+        let mut attrs = Attributes::new();
+        assert!(attrs.get_mutable_inode().is_none());
+    }
+
+    #[test]
+    fn test_attributes_set_mask() {
+        let mask = AttributeFlags::Inode | AttributeFlags::Size;
+        let attrs = Attributes::new().set_mask(mask);
+        assert_eq!(attrs.get_mask(), mask);
+    }
+
+    #[test]
+    fn test_attributes_chaining_setters() {
+        let attrs = Attributes::new()
+            .set_inode(42)
+            .set_size(1024)
+            .set_kind(Kind::Directory)
+            .set_permissions(Permissions::USER_FULL);
+
+        assert_eq!(attrs.get_inode(), Some(&42));
+        assert_eq!(attrs.get_size(), Some(&1024));
+        assert_eq!(attrs.get_kind(), Some(&Kind::Directory));
+        assert_eq!(attrs.get_permissions(), Some(&Permissions::USER_FULL));
+
+        assert!(attrs.mask.contains(AttributeFlags::Inode));
+        assert!(attrs.mask.contains(AttributeFlags::Size));
+        assert!(attrs.mask.contains(AttributeFlags::Kind));
+        assert!(attrs.mask.contains(AttributeFlags::Permissions));
+    }
+
+    #[test]
+    fn test_attributes_clone() {
+        let attrs1 = Attributes::new().set_inode(42).set_size(1024);
+        let attrs2 = attrs1.clone();
+
+        assert_eq!(attrs1, attrs2);
+        assert_eq!(attrs2.get_inode(), Some(&42));
+        assert_eq!(attrs2.get_size(), Some(&1024));
+    }
+
+    #[test]
+    fn test_attributes_partial_eq() {
+        let attrs1 = Attributes::new().set_inode(42);
+        let attrs2 = Attributes::new().set_inode(42);
+        let attrs3 = Attributes::new().set_inode(43);
+
+        assert_eq!(attrs1, attrs2);
+        assert_ne!(attrs1, attrs3);
+    }
 }

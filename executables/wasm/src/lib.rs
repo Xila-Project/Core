@@ -11,9 +11,11 @@ use alloc::{borrow::ToOwned, string::String, vec, vec::Vec};
 use core::fmt::Write;
 use core::num::NonZeroUsize;
 use core::pin::Pin;
+use executable::MainFuture;
 use xila::executable::ArgumentsParser;
-use xila::executable::{Standard, implement_executable_device};
-use xila::file_system::{Mode, Path};
+use xila::executable::ExecutableTrait;
+use xila::executable::Standard;
+use xila::file_system::{AccessFlags, Path};
 use xila::synchronization::once_lock::OnceLock;
 use xila::task::{self, SpawnerIdentifier};
 use xila::virtual_file_system::{self, File};
@@ -21,7 +23,7 @@ use xila::virtual_machine;
 
 pub use error::*;
 
-pub struct WasmDevice;
+pub struct WasmExecutable;
 
 type NewThreadExecutor =
     fn() -> Pin<Box<dyn core::future::Future<Output = SpawnerIdentifier> + Send>>;
@@ -30,7 +32,7 @@ static NEW_THREAD_EXECUTOR: OnceLock<NewThreadExecutor> = OnceLock::new();
 
 const DEFAULT_STACK_SIZE: usize = 4096;
 
-impl WasmDevice {
+impl WasmExecutable {
     pub fn new(new_thread_executor: Option<NewThreadExecutor>) -> Self {
         if let Some(new_thread_executor) = new_thread_executor {
             let _ = NEW_THREAD_EXECUTOR.init(new_thread_executor);
@@ -40,11 +42,11 @@ impl WasmDevice {
     }
 }
 
-implement_executable_device!(
-    structure: WasmDevice,
-    mount_path: "/binaries/wasm",
-    main_function: main,
-);
+impl ExecutableTrait for WasmExecutable {
+    fn main(standard: Standard, arguments: Vec<String>) -> MainFuture {
+        Box::pin(async move { main(standard, arguments).await })
+    }
+}
 
 pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<(), Error> {
     let parsed_arguments = ArgumentsParser::new(&arguments);
@@ -83,7 +85,7 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
     let file = File::open(
         virtual_file_system::get_instance(),
         &path,
-        Mode::READ_ONLY.into(),
+        AccessFlags::Read.into(),
     )
     .await
     .map_err(|_| Error::FailedToOpenFile)?;

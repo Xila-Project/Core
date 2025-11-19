@@ -3,6 +3,8 @@
 //! This module defines comprehensive error types that can occur during WASM module
 //! loading, compilation, instantiation, and execution.
 
+use core::fmt::Display;
+
 use alloc::string::String;
 use wamr_rust_sdk::RuntimeError;
 
@@ -65,8 +67,16 @@ pub enum Error {
     Time(time::Error),
 
     /// Failed to transfert file identifiers
-    FailedToTransferFileIdentifiers(file_system::Error),
+    FailedToRegisterFileContext,
 }
+
+impl Display for Error {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "{:?}", self)
+    }
+}
+
+impl core::error::Error for Error {}
 
 impl From<RuntimeError> for Error {
     fn from(error: RuntimeError) -> Self {

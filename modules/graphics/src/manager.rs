@@ -256,6 +256,10 @@ impl Manager {
         self.global_lock.lock().await
     }
 
+    pub fn try_lock(&self) -> Option<MutexGuard<'_, CriticalSectionRawMutex, ()>> {
+        self.global_lock.try_lock().ok()
+    }
+
     pub fn get_current_screen(&self) -> Result<*mut lvgl::lv_obj_t> {
         Ok(unsafe { lvgl::lv_screen_active() })
     }

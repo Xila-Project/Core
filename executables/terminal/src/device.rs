@@ -1,32 +1,38 @@
 use alloc::string::String;
 
-use xila::file_system::{self, BaseOperations};
+use xila::file_system::{
+    self, BaseOperations, DirectBaseOperations, DirectCharacterDevice, Error, MountOperations,
+    Position, Result, Size,
+};
 use xila::futures::block_on;
 
 use crate::terminal::Terminal;
 
-impl BaseOperations for Terminal {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
-        block_on(self.read_input(buffer)).map_err(|_| file_system::Error::InternalError)
+fn map_error(error: crate::Error) -> Error {
+    match error {
+        crate::Error::RessourceBusy => Error::RessourceBusy,
+        _ => Error::InternalError,
+    }
+}
+
+impl DirectBaseOperations for Terminal {
+    fn read(&self, buffer: &mut [u8], _: Size) -> Result<usize> {
+        self.read_input(buffer).map_err(map_error)
     }
 
-    fn write(&self, buffer: &[u8]) -> file_system::Result<file_system::Size> {
+    fn write(&self, buffer: &[u8], _: Size) -> Result<usize> {
         let string = String::from_utf8_lossy(buffer);
 
-        block_on(self.print(&string)).map_err(|_| file_system::Error::InternalError)?;
+        self.print(&string).map_err(map_error)?;
 
         Ok(buffer.len().into())
     }
 
-    fn get_size(&self) -> file_system::Result<file_system::Size> {
-        Ok(0_usize.into())
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> file_system::Result<file_system::Size> {
-        Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn flush(&self) -> file_system::Result<()> {
-        Ok(())
+    fn set_position(&self, _: Size, _: &Position) -> Result<Size> {
+        Err(Error::UnsupportedOperation)
     }
 }
+
+impl MountOperations for Terminal {}
+
+impl DirectCharacterDevice for Terminal {}

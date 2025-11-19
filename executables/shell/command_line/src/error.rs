@@ -2,7 +2,7 @@ use core::fmt::Display;
 use core::num::{NonZeroU16, NonZeroUsize};
 
 use alloc::fmt;
-use xila::file_system;
+use xila::virtual_file_system;
 use xila::{authentication, internationalization::translate, task};
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -28,13 +28,13 @@ pub enum Error {
     FailedToJoinTask,
     InvalidNumberOfArguments,
     FailedToJoinPath,
-    FailedToCreateDirectory(file_system::Error),
-    FailedToRemoveDirectory(file_system::Error),
-    FailedToOpenDirectory(file_system::Error),
-    FailedToOpenFile(file_system::Error),
+    FailedToCreateDirectory(virtual_file_system::Error),
+    FailedToRemoveDirectory(virtual_file_system::Error),
+    FailedToOpenDirectory(virtual_file_system::Error),
+    FailedToOpenFile(virtual_file_system::Error),
     InvalidArgument,
-    FailedToGetMetadata(file_system::Error),
-    FailedToReadDirectoryEntry(file_system::Error),
+    FailedToGetMetadata(virtual_file_system::Error),
+    FailedToReadDirectoryEntry(virtual_file_system::Error),
     FormatError,
 }
 

@@ -15,7 +15,7 @@ impl Shell {
         // - Set the current directory for the following commands.
         task::get_instance()
             .set_environment_variable(
-                self.standard.get_task(),
+                self.task,
                 "Current_directory",
                 self.current_directory.as_str(),
             )
