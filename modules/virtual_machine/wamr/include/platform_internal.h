@@ -37,7 +37,7 @@ extern "C"
 #define BH_PLATFORM_XILA
 #endif
 
-#define bh_socket_t size_t
+#define bh_socket_t XilaFileIdentifier
 
 #ifndef PATH_MAX
 #define PATH_MAX 256
@@ -124,11 +124,11 @@ extern "C"
 #define DT_LNK DTYPE_LINK
 #define DT_SOCK DTYPE_SOCK
 
-    typedef uint64_t os_dir_stream;
-    typedef uint64_t os_raw_file_handle;
-    typedef uint64_t os_file_handle;
+    typedef XilaFileIdentifier os_dir_stream;
+    typedef XilaFileIdentifier os_raw_file_handle;
+    typedef XilaFileIdentifier os_file_handle;
 
-    uint64_t os_get_invalid_handle();
+    XilaFileIdentifier os_get_invalid_handle();
 
     int os_getpagesize();
 

@@ -1,4 +1,4 @@
-use file_system::{DirectBaseOperations, Size};
+use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
 use graphics::{InputData, Key, State};
 use synchronization::{
     blocking_mutex::raw::{CriticalSectionRawMutex, RawMutex},
@@ -39,3 +39,7 @@ impl<const N: usize> DirectBaseOperations for KeyboardDevice<CriticalSectionRawM
         Err(file_system::Error::UnsupportedOperation)
     }
 }
+
+impl<const N: usize> MountOperations for KeyboardDevice<CriticalSectionRawMutex, N> {}
+
+impl<const N: usize> DirectCharacterDevice for KeyboardDevice<CriticalSectionRawMutex, N> {}

@@ -52,7 +52,7 @@ void into_wasi_file_statistics(const XilaFileSystemStatistics *statistics,
   wasi_statistics->st_size = statistics->size;
   wasi_statistics->st_atim = statistics->access;
   wasi_statistics->st_mtim = statistics->modification;
-  wasi_statistics->st_ctim = statistics->status_change;
+  wasi_statistics->st_ctim = statistics->status;
   wasi_statistics->st_filetype = into_wasi_file_type(statistics->kind);
 }
 

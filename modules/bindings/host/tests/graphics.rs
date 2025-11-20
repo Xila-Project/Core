@@ -2,7 +2,7 @@ extern crate abi_definitions;
 extern crate alloc;
 extern crate std;
 
-use drivers_native::TimeDriver;
+use drivers_native::TimeDevice;
 use executable::{Standard, build_crate};
 use file_system::{MemoryDevice, create_device, create_file_system};
 use graphics::lvgl;

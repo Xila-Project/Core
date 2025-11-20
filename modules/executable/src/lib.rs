@@ -23,7 +23,7 @@ pub use traits::*;
 pub use virtual_file_system as exported_virtual_file_system;
 
 use alloc::{string::String, vec::Vec};
-use file_system::{Path, Permission, Statistics};
+use file_system::{AccessFlags, Path, Permission, Statistics};
 use task::{JoinHandle, SpawnerIdentifier, TaskIdentifier};
 use users::UserIdentifier;
 use virtual_file_system::File;
@@ -99,24 +99,13 @@ pub async fn execute(
     let virtual_file_system = virtual_file_system::get_instance();
 
     let statistics = virtual_file_system.get_statistics(&path.as_ref()).await?;
-    log::information!("File: {:?}", statistics);
 
     // - Check the executable bit
     if !is_execute_allowed(&statistics, task_instance.get_user(task).await?).await {
         return Err(Error::PermissionDenied);
     }
 
-    log::information!("Executing file: {:?}", path.as_ref());
-
-    let mut file = File::open(
-        &virtual_file_system,
-        task,
-        &path,
-        file_system::AccessFlags::READ_WRITE.into(),
-    )
-    .await?;
-
-    log::information!("File opened: {:?}", file);
+    let mut file = File::open(&virtual_file_system, task, &path, AccessFlags::Read.into()).await?;
 
     // - Check if the user can override the user identifier
     let new_user = get_overridden_user(&statistics, task).await?;
@@ -127,8 +116,6 @@ pub async fn execute(
         .ok_or(virtual_file_system::Error::InvalidPath)?;
 
     let mut main_function: MainFunction = None;
-
-    log::information!("File: {:?}", file);
 
     file.control(GET_MAIN_FUNCTION, &mut main_function).await?;
 

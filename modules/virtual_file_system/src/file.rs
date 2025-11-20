@@ -73,6 +73,30 @@ impl File {
         poll(|| self.0.write(buffer)).await
     }
 
+    pub async fn read_from_path(
+        virtual_file_system: &VirtualFileSystem<'_>,
+        task: task::TaskIdentifier,
+        path: impl AsRef<Path>,
+        buffer: &mut Vec<u8>,
+    ) -> Result<()> {
+        buffer.clear();
+
+        let mut file = File::open(
+            virtual_file_system,
+            task,
+            path,
+            Flags::new(AccessFlags::Read, None, None),
+        )
+        .await?;
+
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer, 256).await?;
+
+        file.close(virtual_file_system).await?;
+
+        Ok(())
+    }
+
     pub async fn write_to_path(
         virtual_file_system: &VirtualFileSystem<'_>,
         task: task::TaskIdentifier,
@@ -83,7 +107,7 @@ impl File {
             virtual_file_system,
             task,
             path,
-            Flags::new(AccessFlags::Write, Some(CreateFlags::Create), None),
+            Flags::new(AccessFlags::Write, Some(CreateFlags::CREATE_TRUNCATE), None),
         )
         .await?;
 

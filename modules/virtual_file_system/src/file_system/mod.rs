@@ -296,12 +296,13 @@ impl<'a> VirtualFileSystem<'a> {
                         .set_modification(time)
                         .set_status(time)
                         .set_access(time)
+                        .set_permissions(Permissions::FILE_DEFAULT)
                         .set_kind(Kind::File);
                     Self::set_attributes(file_system.file_system, relative_path, &attributes)
                         .await?;
                 }
                 Err(file_system::Error::AlreadyExists) => {
-                    if !open.contains(CreateFlags::Exclusive) {
+                    if open.contains(CreateFlags::Exclusive) {
                         return Err(Error::AlreadyExists);
                     }
                 }
@@ -355,6 +356,12 @@ impl<'a> VirtualFileSystem<'a> {
 
         let mut context = Context::new_empty();
 
+        log::information!(
+            "Opening file system item at path: {:?} with kind: {:?}",
+            path,
+            kind
+        );
+
         let file = match kind {
             Kind::CharacterDevice => {
                 let mut devices = self.character_device.write().await;
@@ -396,7 +403,6 @@ impl<'a> VirtualFileSystem<'a> {
 
                 File::new(ItemStatic::File(file_system.file_system), flags, context)
             }
-            Kind::Directory => Err(Error::UnsupportedOperation)?,
             _ => Err(Error::UnsupportedOperation)?,
         };
 
@@ -495,6 +501,7 @@ impl<'a> VirtualFileSystem<'a> {
             .set_modification(time)
             .set_access(time)
             .set_kind(underlying_kind)
+            .set_permissions(Permissions::DEVICE_DEFAULT)
             .set_inode(inode);
         Self::set_attributes(parent_file_system.file_system, relative_path, &attributes).await?;
 
@@ -623,7 +630,15 @@ impl<'a> VirtualFileSystem<'a> {
 
         let (time, user, group) = self.get_time_user_group(task).await?;
 
-        file_system.file_system.create_directory(relative_path)?;
+        match file_system.file_system.create_directory(relative_path) {
+            Ok(()) => {}
+            Err(file_system::Error::AlreadyExists) => {
+                return Err(Error::AlreadyExists);
+            }
+            Err(e) => {
+                return Err(e.into());
+            }
+        }
 
         let attributes = Attributes::new()
             .set_inode(0)
@@ -636,6 +651,7 @@ impl<'a> VirtualFileSystem<'a> {
             .set_status(time)
             .set_kind(Kind::Directory)
             .set_permissions(Permissions::DIRECTORY_DEFAULT);
+
         Self::set_attributes(file_system.file_system, path.as_ref(), &attributes).await?;
 
         Ok(())
@@ -676,8 +692,6 @@ impl<'a> VirtualFileSystem<'a> {
     }
 
     pub async fn close(&self, item: &ItemStatic, context: &mut Context) -> Result<()> {
-        log::information!("Closing file system item request received: {:?}", item);
-
         match item {
             ItemStatic::File(file_system) | ItemStatic::Directory(file_system) => {
                 self.file_systems
@@ -763,8 +777,6 @@ impl<'a> VirtualFileSystem<'a> {
             })
             .await?;
         }
-
-        log::information!("Closing file system item");
 
         Ok(())
     }

@@ -13,6 +13,7 @@ log = { workspace = true }
 little_fs = { workspace = true }
 time = { workspace = true }
 authentication = { workspace = true }
+graphics = { workspace = true }
 
 [dev-dependencies]
 drivers_native = { workspace = true }

@@ -1,18 +1,6 @@
-use file_system::{CharacterDevice, DirectBaseOperations, MountOperations, Size};
+use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
 
 pub struct RandomDevice;
-
-impl Default for RandomDevice {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl RandomDevice {
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl DirectBaseOperations for RandomDevice {
     fn read(&self, buffer: &mut [u8], _: Size) -> file_system::Result<usize> {
@@ -36,4 +24,4 @@ impl DirectBaseOperations for RandomDevice {
 
 impl MountOperations for RandomDevice {}
 
-impl CharacterDevice for RandomDevice {}
+impl DirectCharacterDevice for RandomDevice {}

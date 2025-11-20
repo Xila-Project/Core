@@ -6,7 +6,7 @@ async fn main() {
 
     extern crate alloc;
 
-    use drivers_native::TimeDriver;
+    use drivers_native::TimeDevice;
     use drivers_std::executor::new_thread_executor;
     use std::fs;
     use xila::executable::Standard;

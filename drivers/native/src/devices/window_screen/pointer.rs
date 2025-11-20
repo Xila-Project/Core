@@ -1,4 +1,4 @@
-use file_system::{DirectBaseOperations, Size};
+use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
 use graphics::InputData;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
@@ -30,3 +30,7 @@ impl DirectBaseOperations for PointerDevice {
         Err(file_system::Error::UnsupportedOperation)
     }
 }
+
+impl MountOperations for PointerDevice {}
+
+impl DirectCharacterDevice for PointerDevice {}

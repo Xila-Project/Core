@@ -1,6 +1,6 @@
 use core::{ffi::c_void, ptr::null_mut};
 
-use alloc::{boxed::Box, vec, vec::Vec};
+use alloc::boxed::Box;
 use file_system::DirectBlockDevice;
 
 use super::{callbacks, littlefs};
@@ -141,73 +141,11 @@ impl Configuration {
     }
 }
 
-pub struct Buffers {
-    read_buffer: Vec<u8>,
-    write_buffer: Vec<u8>,
-    look_ahead_buffer: Vec<u8>,
-}
-
-impl Buffers {
-    pub fn new(cache_size: usize, look_ahead_size: usize) -> Self {
-        Self {
-            read_buffer: vec![0_u8; cache_size],
-            write_buffer: vec![0_u8; cache_size],
-            look_ahead_buffer: vec![0_u8; look_ahead_size],
-        }
-    }
-
-    pub fn into_raw(self) -> (*mut c_void, *mut c_void, *mut c_void) {
-        (
-            Vec::leak(self.read_buffer) as *mut [u8] as *mut c_void,
-            Vec::leak(self.write_buffer) as *mut [u8] as *mut c_void,
-            Vec::leak(self.look_ahead_buffer) as *mut [u8] as *mut c_void,
-        )
-    }
-
-    pub fn take_from_configuration(configuration: &mut littlefs::lfs_config) -> Self {
-        let read_buffer = unsafe {
-            Vec::from_raw_parts(
-                configuration.read_buffer as *mut u8,
-                configuration.cache_size as usize,
-                configuration.cache_size as usize,
-            )
-        };
-
-        let write_buffer = unsafe {
-            Vec::from_raw_parts(
-                configuration.prog_buffer as *mut u8,
-                configuration.cache_size as usize,
-                configuration.cache_size as usize,
-            )
-        };
-
-        let look_ahead_buffer = unsafe {
-            Vec::from_raw_parts(
-                configuration.lookahead_buffer as *mut u8,
-                configuration.lookahead_size as usize,
-                configuration.lookahead_size as usize,
-            )
-        };
-
-        configuration.read_buffer = null_mut();
-        configuration.prog_buffer = null_mut();
-        configuration.lookahead_buffer = null_mut();
-
-        Self {
-            read_buffer,
-            write_buffer,
-            look_ahead_buffer,
-        }
-    }
-}
-
 impl TryFrom<Configuration> for littlefs::lfs_config {
     type Error = ();
 
     fn try_from(configuration: Configuration) -> Result<Self, Self::Error> {
         // Allocate buffers on the heap and leak them so littlefs can use them for the lifetime of the filesystem
-        let buffers = Buffers::new(configuration.cache_size, configuration.look_ahead_size);
-        let (read_buffer_ptr, write_buffer_ptr, look_ahead_buffer_ptr) = buffers.into_raw();
 
         let context = Context::new(configuration.context);
 
@@ -227,9 +165,9 @@ impl TryFrom<Configuration> for littlefs::lfs_config {
             },
             cache_size: configuration.cache_size as u32,
             lookahead_size: configuration.look_ahead_size as u32,
-            read_buffer: read_buffer_ptr,
-            prog_buffer: write_buffer_ptr,
-            lookahead_buffer: look_ahead_buffer_ptr,
+            read_buffer: null_mut(),
+            prog_buffer: null_mut(),
+            lookahead_buffer: null_mut(),
             name_max: configuration.maximum_name_size.unwrap_or(0) as u32, // Default value : 255 (LFS_NAME_MAX)
             file_max: configuration.maximum_file_size.unwrap_or(0) as u32, // Default value : 2,147,483,647 (2 GiB) (LFS_FILE_MAX)
             attr_max: configuration.maximum_attributes_size.unwrap_or(0) as u32, // Default value : 1022 (LFS_ATTR_MAX)

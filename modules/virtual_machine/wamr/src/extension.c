@@ -1276,13 +1276,13 @@ int os_dumps_proc_mem_info(char *out, unsigned int size)
  */
 os_file_handle os_get_invalid_handle()
 {
-    return 0xFFFFFFFFFFFFFFFF;
+    return 0xFFFFFFFF;
 }
 
 os_raw_file_handle
 os_invalid_raw_handle()
 {
-    return 0xFFFFFFFFFFFFFFFF;
+    return 0xFFFFFFFF;
 }
 
 
@@ -1961,7 +1961,7 @@ os_closedir(os_dir_stream dir_stream)
  */
 os_dir_stream os_get_invalid_dir_stream()
 {
-    return 0xFFFFFFFFFFFFFFFF;
+    return 0xFFFFFFFF;
 }
 
 /**

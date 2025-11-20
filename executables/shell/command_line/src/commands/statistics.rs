@@ -1,7 +1,12 @@
 use crate::{Error, Result, Shell};
 use alloc::{borrow::ToOwned, format};
 use core::fmt::Write;
-use xila::{file_system::Path, internationalization::translate, users, virtual_file_system};
+use xila::{
+    file_system::Path,
+    internationalization::translate,
+    shared::{BYTES_SUFFIX, Unit},
+    users, virtual_file_system,
+};
 
 impl Shell {
     pub async fn statistics(&mut self, arguments: &[&str]) -> Result<()> {
@@ -39,21 +44,27 @@ impl Shell {
             }
         };
 
+        let size = Unit::new(statistics.size as f32, BYTES_SUFFIX.name);
+
         let _ = writeln!(
             self.standard.out(),
             r#"{}: {} - {} : {}
+{}: {} - {}: {}
 {}: {} - {}: {} - {}: {}
 {}: {}
 {}: {}
 {}: {}
 {}: {}
-{}: {}
-{}: {}
+
 "#,
             translate!("Kind"),
             statistics.kind,
             translate!("Inode"),
             statistics.inode,
+            translate!("Links"),
+            statistics.links,
+            translate!("Size"),
+            size,
             translate!("User"),
             user,
             translate!("Group"),
@@ -68,10 +79,6 @@ impl Shell {
             statistics.creation,
             translate!("Status"),
             statistics.status,
-            translate!("Links"),
-            statistics.links,
-            translate!("Size"),
-            statistics.size
         );
 
         Ok(())

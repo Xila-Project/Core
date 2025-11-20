@@ -34,24 +34,10 @@ impl File {
         file_system: &mut littlefs::lfs_t,
         path: &Path,
         flags: Flags,
-        cache_size: usize,
     ) -> Result<Box<Self>> {
         let path = CString::new(path.as_str()).map_err(|_| Error::InvalidParameter)?;
 
         let little_fs_flags = convert_flags(flags);
-
-        let buffer = vec![0_u8; cache_size];
-
-        // - Create the configuration
-        let configuration = Box::new(littlefs::lfs_file_config {
-            buffer: buffer.leak() as *mut [u8] as *mut c_void,
-            attrs: unsafe {
-                InternalAttributes::new_uninitialized()
-                    .assume_init()
-                    .into_lfs_attributes()
-            },
-            attr_count: 1,
-        });
 
         let file = Self {
             file: littlefs::lfs_file_t::default(),
@@ -59,12 +45,11 @@ impl File {
         let mut file = Box::new(file);
 
         unsafe {
-            convert_result(littlefs::lfs_file_opencfg(
+            convert_result(littlefs::lfs_file_open(
                 file_system,
                 &mut file.file,
                 path.as_ptr(),
                 little_fs_flags,
-                Box::leak(configuration),
             ))?;
         }
 
@@ -134,16 +119,9 @@ impl File {
         Ok(())
     }
 
-    pub fn close(&mut self, file_system: &mut littlefs::lfs_t, cache_size: usize) -> Result<()> {
+    pub fn close(&mut self, file_system: &mut littlefs::lfs_t) -> Result<()> {
         unsafe {
             convert_result(littlefs::lfs_file_close(file_system, &mut self.file))?;
-
-            let mut configuration = Box::from_raw(self.file.cfg as *mut littlefs::lfs_file_config);
-
-            let _attributes = InternalAttributes::take_from_file_configuration(&mut configuration);
-
-            let _buffer =
-                Vec::from_raw_parts(configuration.buffer as *mut u8, cache_size, cache_size);
         }
 
         Ok(())

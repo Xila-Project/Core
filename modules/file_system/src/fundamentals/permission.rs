@@ -178,10 +178,22 @@ impl Permissions {
         Permission::READ_EXECUTE,
         Special::NONE,
     );
+    pub const FILE_DEFAULT: Self = Self::new(
+        Permission::READ_WRITE,
+        Permission::Read,
+        Permission::Read,
+        Special::NONE,
+    );
     pub const DIRECTORY_DEFAULT: Self = Self::new(
         Permission::All,
         Permission::READ_EXECUTE,
         Permission::READ_EXECUTE,
+        Special::NONE,
+    );
+    pub const DEVICE_DEFAULT: Self = Self::new(
+        Permission::All,
+        Permission::READ_WRITE,
+        Permission::READ_WRITE,
         Special::NONE,
     );
 

@@ -5,13 +5,13 @@ use std::{
 
 use file_system::{
     ControlArgument, ControlCommand, DirectBaseOperations, DirectBlockDevice, Error,
-    MountOperations, Path, Position, Size, block_device,
+    MountOperations, Path, Position, Size, block_device, mount::MutexMountWrapper,
 };
-use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
+use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 
 use crate::io::map_error;
 
-pub struct FileDriveDevice(RwLock<CriticalSectionRawMutex, File>);
+pub struct FileDriveDevice(MutexMountWrapper<CriticalSectionRawMutex, File>);
 
 impl FileDriveDevice {
     pub fn new(path: &impl AsRef<Path>) -> Self {
@@ -25,20 +25,27 @@ impl FileDriveDevice {
             .open(path)
             .expect("Error opening file");
 
-        Self(RwLock::new(file))
+        file.set_len(16 * 1024 * 1024)
+            .expect("Error setting file size");
+
+        Self(MutexMountWrapper::new_mounted(file))
+    }
+
+    pub fn new_static(path: &impl AsRef<Path>) -> &'static Self {
+        Box::leak(Box::new(Self::new(path)))
     }
 }
 
 impl DirectBaseOperations for FileDriveDevice {
     fn read(&self, buffer: &mut [u8], position: Size) -> file_system::Result<usize> {
-        let mut inner = self.0.try_write().map_err(|_| Error::RessourceBusy)?;
+        let mut inner = self.0.try_get()?;
 
         inner.seek(SeekFrom::Start(position)).map_err(map_error)?;
         inner.read(buffer).map_err(map_error)
     }
 
     fn write(&self, buffer: &[u8], position: Size) -> file_system::Result<usize> {
-        let mut inner = self.0.try_write().map_err(|_| Error::RessourceBusy)?;
+        let mut inner = self.0.try_get()?;
 
         inner.seek(SeekFrom::Start(position)).map_err(map_error)?;
         inner.write(buffer).map_err(map_error)
@@ -50,7 +57,7 @@ impl DirectBaseOperations for FileDriveDevice {
         count: usize,
         absolute_position: Size,
     ) -> file_system::Result<usize> {
-        let mut inner = self.0.try_write().map_err(|_| Error::RessourceBusy)?;
+        let mut inner = self.0.try_get()?;
 
         inner
             .seek(SeekFrom::Start(absolute_position))
@@ -71,7 +78,7 @@ impl DirectBaseOperations for FileDriveDevice {
         };
 
         self.0
-            .try_write()
+            .try_get()
             .map_err(|_| Error::RessourceBusy)?
             .seek(position)
             .map_err(map_error)
@@ -79,7 +86,7 @@ impl DirectBaseOperations for FileDriveDevice {
 
     fn flush(&self) -> file_system::Result<()> {
         self.0
-            .try_write()
+            .try_get()
             .map_err(|_| Error::RessourceBusy)?
             .flush()
             .map_err(map_error)
@@ -103,7 +110,7 @@ impl DirectBaseOperations for FileDriveDevice {
 
                 let file_size = self
                     .0
-                    .try_write()
+                    .try_get()
                     .map_err(|_| Error::RessourceBusy)?
                     .metadata()
                     .map_err(map_error)?
@@ -118,7 +125,11 @@ impl DirectBaseOperations for FileDriveDevice {
     }
 }
 
-impl MountOperations for FileDriveDevice {}
+impl MountOperations for FileDriveDevice {
+    fn unmount(&self) -> file_system::Result<()> {
+        self.0.unmount()
+    }
+}
 
 impl DirectBlockDevice for FileDriveDevice {}
 

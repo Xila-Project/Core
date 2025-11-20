@@ -327,7 +327,7 @@ impl Desk {
             &"/devices/null",
             &"/devices/null",
             task,
-            &virtual_file_system::get_instance(),
+            virtual_file_system::get_instance(),
         )
         .await
         .map_err(Error::FailedToOpenStandardFile)?;

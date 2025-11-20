@@ -300,6 +300,9 @@ macro_rules! flags {
 
 #[cfg(test)]
 mod tests {
+    extern crate alloc;
+
+    use alloc::format;
 
     flags! {
         pub enum TestFlags: u8 {

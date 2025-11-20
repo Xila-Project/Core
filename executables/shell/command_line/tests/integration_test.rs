@@ -7,12 +7,14 @@ async fn main() {
     extern crate alloc;
 
     use command_line_shell::ShellExecutable;
+    use drivers_native::TimeDevice;
+    use drivers_shared::devices::RandomDevice;
     use drivers_std::log::Logger;
     use xila::executable::{self, Standard, initialize_for_tests, mount_executables};
     use xila::virtual_file_system::mount_static;
     use xila::{task, virtual_file_system};
 
-    initialize_for_tests(&Logger, &drivers_native::TimeDriver).await;
+    initialize_for_tests(&Logger, &TimeDevice, &RandomDevice, None, None).await;
 
     let virtual_file_system = virtual_file_system::get_instance();
     let task = task::get_instance().get_current_task_identifier().await;
@@ -36,7 +38,7 @@ async fn main() {
                 CharacterDevice,
                 drivers_std::console::StandardErrorDevice
             ),
-            ("/devices/time", CharacterDevice, drivers_native::TimeDriver),
+            ("/devices/time", CharacterDevice, drivers_native::TimeDevice),
             (
                 "/devices/random",
                 CharacterDevice,

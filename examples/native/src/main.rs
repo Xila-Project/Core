@@ -15,10 +15,6 @@ async fn main() {
     use xila::executable::Standard;
     use xila::executable::build_crate;
     use xila::executable::mount_executables;
-    use xila::file_system;
-    use xila::file_system::Mbr;
-    use xila::file_system::PartitionKind;
-    use xila::file_system::{create_device, create_file_system};
     use xila::graphics;
     use xila::host_bindings;
     use xila::little_fs;
@@ -28,22 +24,19 @@ async fn main() {
     use xila::time;
     use xila::users;
     use xila::virtual_file_system;
-    use xila::virtual_file_system::mount_static_devices;
+    use xila::virtual_file_system::mount_static;
     use xila::virtual_machine;
 
     // - Initialize the system
     log::initialize(&drivers_std::log::Logger).unwrap();
 
     // Initialize the task manager
+
     let task_manager = task::initialize();
+    let users_manager = users::initialize();
+    let time_manager = time::initialize(&drivers_native::TimeDevice).unwrap();
 
     let task = task_manager.get_current_task_identifier().await;
-
-    // Initialize the users manager
-    users::initialize();
-    // Initialize the time manager
-    time::initialize(create_device!(drivers_native::TimeDriver::new())).unwrap();
-
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
     const RESOLUTION: graphics::Point = graphics::Point::new(800, 600);
@@ -51,6 +44,11 @@ async fn main() {
         drivers_native::window_screen::new(RESOLUTION)
             .await
             .unwrap();
+    let (screen_device, pointer_device, keyboard_device) = (
+        Box::leak(Box::new(screen_device)),
+        Box::leak(Box::new(pointer_device)),
+        Box::leak(Box::new(keyboard_device)),
+    );
 
     // - - Initialize the graphics manager
     let graphics_manager = graphics::initialize(
@@ -85,72 +83,77 @@ async fn main() {
 
     // - Initialize the file system
     // Create a memory device
-    let drive = create_device!(drivers_std::drive_file::FileDriveDevice::new(
-        &"./drive.img"
-    ));
+    let drive = drivers_std::drive_file::FileDriveDevice::new_static(&"./drive.img");
 
     // Create a partition type
-    let partition = create_device!(
-        Mbr::find_or_create_partition_with_signature(&drive, 0xDEADBEEF, PartitionKind::Xila)
-            .unwrap()
-    );
+    //    let partition =
+    //        Mbr::find_or_create_partition_with_signature(drive, 0xDEADBEEF, PartitionKind::Xila)
+    //            .unwrap();
+    //
+    //    // Print MBR information
+    //    let mbr = Mbr::read_from_device(drive).unwrap();
+    //
+    //    information!("MBR information: {mbr}");
 
-    // Print MBR information
-    let mbr = Mbr::read_from_device(&drive).unwrap();
+    //    let partition = Box::leak(Box::new(partition));
 
-    information!("MBR information: {mbr}");
+    let file_system = little_fs::FileSystem::get_or_format(drive, 256).unwrap();
 
-    // Mount the file system
-    let file_system = match little_fs::FileSystem::new(partition.clone(), 256) {
-        Ok(file_system) => file_system,
-        // If the file system is not found, format it
-        Err(_) => {
-            partition
-                .set_position(&file_system::Position::Start(0))
-                .unwrap();
-
-            little_fs::FileSystem::format(partition.clone(), 256).unwrap();
-
-            little_fs::FileSystem::new(partition, 256).unwrap()
-        }
-    };
     // Initialize the virtual file system
-    let virtual_file_system =
-        virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
+    let virtual_file_system = virtual_file_system::initialize(
+        task_manager,
+        users_manager,
+        time_manager,
+        file_system,
+        None,
+    )
+    .unwrap();
+
+    log::information!("Virtual file system initialized.");
 
     // - - Mount the devices
 
     // - - Create the default system hierarchy
     let _ = virtual_file_system::create_default_hierarchy(virtual_file_system, task).await;
 
-    // - - Mount the devices
-    virtual_file_system::clean_devices(virtual_file_system)
-        .await
-        .unwrap();
+    log::information!("Default hierarchy created.");
 
-    mount_static_devices!(
+    mount_static!(
         virtual_file_system,
         task,
         &[
             (
                 &"/devices/standard_in",
+                CharacterDevice,
                 drivers_std::console::StandardInDevice
             ),
             (
                 &"/devices/standard_out",
+                CharacterDevice,
                 drivers_std::console::StandardOutDevice
             ),
             (
                 &"/devices/standard_error",
+                CharacterDevice,
                 drivers_std::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers_native::TimeDriver),
-            (&"/devices/random", drivers_shared::devices::RandomDevice),
-            (&"/devices/null", drivers_core::NullDevice)
+            (
+                &"/devices/time",
+                CharacterDevice,
+                drivers_native::TimeDevice
+            ),
+            (
+                &"/devices/random",
+                CharacterDevice,
+                drivers_shared::devices::RandomDevice
+            ),
+            (&"/devices/null", CharacterDevice, drivers_core::NullDevice)
         ]
     )
     .await
     .unwrap();
+
+    log::information!("Devices mounted.");
 
     // Initialize the virtual machine
     virtual_machine::initialize(&[&host_bindings::GraphicsBindings]);
@@ -163,6 +166,8 @@ async fn main() {
     -> core::pin::Pin<Box<dyn Future<Output = task::SpawnerIdentifier> + Send>> {
         Box::pin(new_thread_executor())
     }
+
+    log::information!("Mounting executables...");
 
     mount_executables!(
         virtual_file_system,
@@ -244,7 +249,8 @@ async fn main() {
         "administrator",
         Some(group_identifier),
     )
-    .await;
+    .await
+    .unwrap();
 
     let _ = authentication::create_user(
         virtual_file_system::get_instance(),
@@ -253,7 +259,8 @@ async fn main() {
         group_identifier,
         None,
     )
-    .await;
+    .await
+    .unwrap();
 
     // - - Set the environment variables
     task_manager

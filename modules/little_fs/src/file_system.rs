@@ -4,7 +4,7 @@ use super::{Configuration, Directory, convert_result, littlefs};
 use crate::{
     File,
     attributes::InternalAttributes,
-    configuration::{self, Buffers},
+    configuration::{self},
 };
 use alloc::{boxed::Box, ffi::CString};
 use file_system::{
@@ -16,7 +16,6 @@ use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 
 pub struct FileSystem {
     file_system: MutexMountWrapper<CriticalSectionRawMutex, littlefs::lfs_t>,
-    cache_size: usize,
 }
 
 impl FileSystem {
@@ -24,6 +23,22 @@ impl FileSystem {
         Self::format(device, cache_size)?;
 
         Self::new(device, cache_size)
+    }
+
+    pub fn get_or_format(
+        device: &'static dyn DirectBlockDevice,
+        cache_size: usize,
+    ) -> Result<Self> {
+        match Self::new(device, cache_size) {
+            Ok(file_system) => Ok(file_system),
+            Err(_) => {
+                device.set_position(0, &Position::Start(0))?;
+
+                Self::format(device, cache_size)?;
+
+                Self::new(device, cache_size)
+            }
+        }
     }
 
     pub fn new(device: &'static dyn DirectBlockDevice, cache_size: usize) -> Result<Self> {
@@ -78,7 +93,6 @@ impl FileSystem {
 
         Ok(Self {
             file_system: MutexMountWrapper::new_mounted(file_system),
-            cache_size,
         })
     }
 
@@ -181,7 +195,7 @@ impl FileSystemOperations for FileSystem {
 
     fn lookup_file(&self, context: &mut Context, path: &Path, flags: Flags) -> Result<()> {
         self.operation(|file_system| {
-            let file = File::lookup(file_system, path, flags, self.cache_size)?;
+            let file = File::lookup(file_system, path, flags)?;
             context.set_private_data(file);
             Ok(())
         })
@@ -209,6 +223,16 @@ impl FileSystemOperations for FileSystem {
             })?;
 
             internal_attributes.into_attributes(attributes)?;
+
+            if let Some(size) = attributes.get_mutable_size() {
+                let mut info = littlefs::lfs_info::default();
+
+                convert_result(unsafe {
+                    littlefs::lfs_stat(file_system, path.as_ptr(), &mut info)
+                })?;
+
+                *size = info.size as Size;
+            }
 
             Ok(())
         })
@@ -328,7 +352,7 @@ impl BaseOperations for FileSystem {
                 .take_private_data_of_type::<File>()
                 .ok_or(Error::InvalidParameter)?;
 
-            file.close(file_system, self.cache_size)?;
+            file.close(file_system)?;
 
             Ok(())
         })
@@ -386,8 +410,6 @@ impl Drop for FileSystem {
                 unsafe { Box::from_raw(file_system.cfg as *mut littlefs::lfs_config) };
 
             unsafe {
-                Buffers::take_from_configuration(&mut configuration);
-
                 configuration::Context::take_from_configuration(&mut *configuration);
             }
 
@@ -400,6 +422,7 @@ impl Drop for FileSystem {
 mod tests {
     extern crate std;
 
+    use drivers_std;
     use file_system::{MemoryDevice, file_system::tests::implement_file_system_tests};
 
     use super::*;
@@ -407,11 +430,15 @@ mod tests {
     const CACHE_SIZE: usize = 256;
 
     fn initialize() -> FileSystem {
+        if !log::is_initialized() {
+            let _ = log::initialize(&drivers_std::log::Logger);
+        }
+
         let _ = users::initialize();
 
         task::initialize();
 
-        let _ = time::initialize(&drivers_native::TimeDriver).unwrap();
+        let _ = time::initialize(&drivers_native::TimeDevice).unwrap();
 
         let device = Box::leak(Box::new(MemoryDevice::<512>::new(2048 * 512)));
 

@@ -34,25 +34,58 @@ pub async fn load_to_virtual_file_system<'a>(
 
     let task = task::get_instance().get_current_task_identifier().await;
 
+    log::information!(
+        "Loading file to virtual file system at path: {:?}",
+        destination_path.as_ref()
+    );
+
     let mut file = virtual_file_system::File::open(
         virtual_file_system,
         task,
         &destination_path.as_ref(),
-        Flags::new(AccessFlags::Read, Some(CreateFlags::CREATE_TRUNCATE), None),
+        Flags::new(AccessFlags::Write, Some(CreateFlags::CREATE_TRUNCATE), None),
     )
     .await?;
 
-    // Read and write file content block by block
-    let mut buffer = [0; 1024];
-    loop {
-        let read = source_file.read(&mut buffer)?;
+    log::information!(
+        "Copying content to virtual file system at path: {:?}",
+        destination_path.as_ref()
+    );
 
-        if read == 0 {
+    // Read and write file content block by block
+    let mut buffer = [0; 512];
+    let mut total_written = 0;
+    loop {
+        let bytes_read = source_file.read(&mut buffer)?;
+
+        if bytes_read == 0 {
             break;
         }
 
-        file.write(&buffer[..read]).await?;
+        if total_written > 152 * 1024 {
+            log::information!(
+                "Written {} KB to virtual file system at path: {:?}",
+                total_written / 1024,
+                destination_path.as_ref()
+            );
+        }
+
+        file.write(&buffer[..bytes_read]).await?;
+        total_written += bytes_read;
     }
+
+    log::information!(
+        "Finished loading file to virtual file system at path: {:?}, total bytes: {}",
+        destination_path.as_ref(),
+        total_written
+    );
+
+    file.close(virtual_file_system).await?;
+
+    log::information!(
+        "Closed file in virtual file system at path: {:?}",
+        destination_path.as_ref()
+    );
 
     Ok(())
 }

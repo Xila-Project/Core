@@ -6,6 +6,8 @@
 
 use core::fmt;
 
+use shared::Unit;
+
 use crate::mbr::PartitionKind;
 
 /// MBR partition table entry structure (16 bytes).
@@ -233,12 +235,12 @@ impl fmt::Display for PartitionEntry {
         } else {
             write!(
                 formatter,
-                "Partition: Type={:02X} ({}), Start_LBA={}, Size={} sectors ({} MB), Bootable={}",
+                "Partition: Type={:02X} ({}), Start_LBA={}, Size={} sectors ({}), Bootable={}",
                 self.kind.to_u8(),
                 self.kind,
                 self.start_block,
                 self.block_count,
-                (self.block_count as u64 * 512) / (1024 * 1024),
+                Unit::new(self.block_count * 512, "B"),
                 self.bootable
             )
         }

@@ -23,6 +23,7 @@ use virtual_file_system::{Directory, File, VirtualFileSystem};
 use crate::{
     Error, READ_CHUNK_SIZE, Result, USERS_FOLDER_PATH,
     hash::{generate_salt, hash_password},
+    user,
 };
 
 /// Represents a user account with all associated metadata.
@@ -314,26 +315,16 @@ pub async fn create_user<'a>(
         .append(user_name)
         .ok_or(Error::FailedToGetUserFilePath)?;
 
-    let mut user_file = File::open(
-        virtual_file_system,
-        task,
-        user_file_path,
-        Flags::new(AccessFlags::Write, Some(CreateFlags::Create), None),
-    )
-    .await
-    .map_err(Error::FailedToOpenUserFile)?;
-
     let user_json = miniserde::json::to_string(&user);
 
-    user_file
-        .write(user_json.as_bytes())
-        .await
-        .map_err(Error::FailedToWriteUserFile)?;
-
-    user_file
-        .close(virtual_file_system)
-        .await
-        .map_err(Error::FailedToCloseFile)?;
+    File::write_to_path(
+        virtual_file_system,
+        task,
+        &user_file_path,
+        user_json.as_bytes(),
+    )
+    .await
+    .map_err(Error::FailedToWriteUserFile)?;
 
     Ok(user_identifier)
 }
@@ -368,6 +359,8 @@ pub async fn change_user_password<'a>(
     user_name: &str,
     new_password: &str,
 ) -> Result<()> {
+    let task = task::get_instance().get_current_task_identifier().await;
+
     let salt = generate_salt().await?;
 
     let hash = hash_password(new_password, &salt);
@@ -377,39 +370,29 @@ pub async fn change_user_password<'a>(
         .append(user_name)
         .ok_or(Error::FailedToGetUserFilePath)?;
 
-    let mut user_file = File::open(
-        virtual_file_system,
-        task::get_instance().get_current_task_identifier().await,
-        user_file_path,
-        Flags::new(AccessFlags::READ_WRITE, Some(CreateFlags::Truncate), None),
-    )
-    .await
-    .map_err(Error::FailedToOpenUserFile)?;
-
     let mut buffer = Vec::new();
 
-    user_file
-        .read_to_end(&mut buffer, READ_CHUNK_SIZE)
+    File::read_from_path(virtual_file_system, task, &user_file_path, &mut buffer)
         .await
         .map_err(Error::FailedToReadUserFile)?;
 
-    let mut user: User = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
-        .map_err(Error::FailedToParseUserFile)?;
+    let mut user: User =
+        miniserde::json::from_str(core::str::from_utf8(buffer.as_slice()).unwrap())
+            .map_err(Error::FailedToParseUserFile)?;
 
     user.set_hash(hash);
     user.set_salt(salt);
 
     let user_json = miniserde::json::to_string(&user);
 
-    user_file
-        .write(user_json.as_bytes())
-        .await
-        .map_err(Error::FailedToWriteUserFile)?;
-
-    user_file
-        .close(virtual_file_system)
-        .await
-        .map_err(Error::FailedToCloseFile)?;
+    File::write_to_path(
+        virtual_file_system,
+        task,
+        &user_file_path,
+        user_json.as_bytes(),
+    )
+    .await
+    .map_err(Error::FailedToWriteUserFile)?;
 
     Ok(())
 }
@@ -442,38 +425,33 @@ pub async fn change_user_name<'a>(
 ) -> Result<()> {
     let file_path = get_user_file_path(current_name)?;
 
-    let mut user_file = File::open(
-        virtual_file_system,
-        task::get_instance().get_current_task_identifier().await,
-        file_path,
-        Flags::new(AccessFlags::READ_WRITE, Some(CreateFlags::Truncate), None),
-    )
-    .await
-    .map_err(Error::FailedToOpenUserFile)?;
-
     let mut buffer = Vec::new();
 
-    user_file
-        .read_to_end(&mut buffer, READ_CHUNK_SIZE)
-        .await
-        .map_err(Error::FailedToReadUserFile)?;
+    File::read_from_path(
+        virtual_file_system,
+        task::get_instance().get_current_task_identifier().await,
+        &file_path,
+        &mut buffer,
+    )
+    .await
+    .map_err(Error::FailedToReadUserFile)?;
 
-    let mut user: User = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
-        .map_err(Error::FailedToParseUserFile)?;
+    let mut user: User =
+        miniserde::json::from_str(core::str::from_utf8(buffer.as_slice()).unwrap())
+            .map_err(Error::FailedToParseUserFile)?;
 
     user.set_name(new_name.to_string());
 
     let user_json = miniserde::json::to_string(&user);
 
-    user_file
-        .write(user_json.as_bytes())
-        .await
-        .map_err(Error::FailedToWriteUserFile)?;
-
-    user_file
-        .close(virtual_file_system)
-        .await
-        .map_err(Error::FailedToCloseFile)?;
+    File::write_to_path(
+        virtual_file_system,
+        task::get_instance().get_current_task_identifier().await,
+        get_user_file_path(new_name)?,
+        user_json.as_bytes(),
+    )
+    .await
+    .map_err(Error::FailedToWriteUserFile)?;
 
     Ok(())
 }
@@ -507,27 +485,12 @@ pub async fn read_user_file<'a>(
 ) -> Result<User> {
     let user_file_path = get_user_file_path(file)?;
 
-    let mut user_file = File::open(
-        virtual_file_system,
-        task::get_instance().get_current_task_identifier().await,
-        user_file_path,
-        AccessFlags::Read.into(),
-    )
-    .await
-    .map_err(Error::FailedToReadUsersDirectory)?;
+    let task = task::get_instance().get_current_task_identifier().await;
 
-    buffer.clear();
-
-    user_file
-        .read_to_end(buffer, READ_CHUNK_SIZE)
+    File::read_from_path(virtual_file_system, task, &user_file_path, buffer)
         .await
         .map_err(Error::FailedToReadUserFile)?;
 
-    user_file
-        .close(virtual_file_system)
-        .await
-        .map_err(Error::FailedToCloseFile)?;
-
-    miniserde::json::from_str(core::str::from_utf8(buffer).unwrap())
+    miniserde::json::from_str(core::str::from_utf8(buffer.as_slice()).unwrap())
         .map_err(Error::FailedToParseUserFile)
 }

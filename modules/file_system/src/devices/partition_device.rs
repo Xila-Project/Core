@@ -219,6 +219,16 @@ impl<'a, D: DirectBaseOperations> DirectBaseOperations for PartitionDevice<'a, D
         Ok(bytes_written)
     }
 
+    fn write_pattern(
+        &self,
+        pattern: &[u8],
+        count: usize,
+        absolute_position: Size,
+    ) -> Result<usize> {
+        self.base_device
+            .write_pattern(pattern, count, self.start_block + absolute_position)
+    }
+
     fn set_position(&self, current_position: Size, position: &Position) -> Result<Size> {
         let mut position = *position;
 

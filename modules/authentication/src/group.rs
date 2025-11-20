@@ -229,21 +229,16 @@ pub async fn create_group<'a>(
 
     let group_file_path = get_group_file_path(group_name)?;
 
-    let mut group_file = File::open(
-        virtual_file_system,
-        task,
-        group_file_path,
-        Flags::new(AccessFlags::Write, Some(CreateFlags::Create), None),
-    )
-    .await
-    .map_err(Error::FailedToOpenGroupFile)?;
-
     let group_json = miniserde::json::to_string(&group);
 
-    group_file
-        .write(group_json.as_bytes())
-        .await
-        .map_err(Error::FailedToWriteGroupFile)?;
+    File::write_to_path(
+        virtual_file_system,
+        task,
+        &group_file_path,
+        group_json.as_bytes(),
+    )
+    .await
+    .map_err(Error::FailedToWriteGroupFile)?;
 
     Ok(group_identifier)
 }

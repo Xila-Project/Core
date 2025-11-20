@@ -11,9 +11,9 @@ use alloc::{borrow::ToOwned, string::String, vec, vec::Vec};
 use core::fmt::Write;
 use core::num::NonZeroUsize;
 use core::pin::Pin;
-use executable::MainFuture;
 use xila::executable::ArgumentsParser;
 use xila::executable::ExecutableTrait;
+use xila::executable::MainFuture;
 use xila::executable::Standard;
 use xila::file_system::{AccessFlags, Path};
 use xila::synchronization::once_lock::OnceLock;
@@ -67,11 +67,13 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
         .and_then(|arg| arg.value.map(Path::new))
         .ok_or(Error::MissingArgument("path"))?;
 
+    let task = task::get_instance().get_current_task_identifier().await;
+
     let path = if path.is_absolute() {
         path.to_owned()
     } else {
         let current_path = task::get_instance()
-            .get_environment_variable(standard.get_task(), "Current_directory")
+            .get_environment_variable(task, "Current_directory")
             .await
             .map_err(|_| Error::FailedToGetCurrentDirectory)?;
 
@@ -82,8 +84,9 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
         current_path.join(path).ok_or(Error::InvalidPath)?
     };
 
-    let file = File::open(
+    let mut file = File::open(
         virtual_file_system::get_instance(),
+        task,
         &path,
         AccessFlags::Read.into(),
     )
@@ -94,12 +97,13 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
         .get_statistics()
         .await
         .map_err(|_| Error::FailedToOpenFile)?
-        .get_size()
-        .into();
+        .size
+        .try_into()
+        .map_err(|_| Error::FailedToReadFile)?;
 
     let mut buffer = Vec::with_capacity(size);
 
-    file.read_to_end(&mut buffer)
+    file.read_to_end(&mut buffer, 256)
         .await
         .map_err(|_| Error::FailedToReadFile)?;
 
@@ -110,7 +114,7 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
 
         task::get_instance()
             .spawn(
-                standard.get_task(),
+                task,
                 "WASM Execution",
                 Some(spawner_identifier),
                 move |task_identifier| async move {

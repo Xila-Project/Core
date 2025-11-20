@@ -11,7 +11,6 @@ use core::num::NonZeroUsize;
 pub use error::*;
 pub use file_manager::*;
 use xila::executable::{self, ExecutableTrait, Standard};
-use xila::file_system::{AccessFlags, CreateFlags, Flags};
 use xila::task::TaskIdentifier;
 use xila::virtual_file_system::{File, VirtualFileSystem};
 

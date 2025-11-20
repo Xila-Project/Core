@@ -68,7 +68,8 @@ impl Standard {
             let bytes_read = self.standard_in.read(&mut temp_buffer).await?;
 
             if bytes_read == 0 {
-                return Err(virtual_file_system::Error::DelimiterNotFound);
+                task::sleep(Duration::from_millis(10)).await;
+                continue;
             }
 
             if temp_buffer[0] == b'\n' {

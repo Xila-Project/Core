@@ -5,9 +5,9 @@ use file_system::{
     DirectBaseOperations, DirectCharacterDevice, Error, MountOperations, Result, Size,
 };
 
-pub struct TimeDriver;
+pub struct TimeDevice;
 
-impl DirectBaseOperations for TimeDriver {
+impl DirectBaseOperations for TimeDevice {
     fn read(&self, buffer: &mut [u8], _: Size) -> Result<usize> {
         let duration = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -32,6 +32,6 @@ impl DirectBaseOperations for TimeDriver {
     }
 }
 
-impl MountOperations for TimeDriver {}
+impl MountOperations for TimeDevice {}
 
-impl DirectCharacterDevice for TimeDriver {}
+impl DirectCharacterDevice for TimeDevice {}

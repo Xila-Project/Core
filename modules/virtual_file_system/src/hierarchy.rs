@@ -13,7 +13,6 @@ pub async fn create_default_hierarchy(
     virtual_file_system
         .set_permissions(&Path::ROOT, Permissions::DIRECTORY_DEFAULT)
         .await?;
-
     virtual_file_system
         .create_directory(&Path::SYSTEM, task)
         .await?;

@@ -212,7 +212,7 @@ mod tests {
     async fn initialize() -> (TaskIdentifier, &'static VirtualFileSystem<'static>) {
         let users_manager = users::initialize();
 
-        let time_manager = time::initialize(&drivers_native::TimeDriver).unwrap();
+        let time_manager = time::initialize(&drivers_native::TimeDevice).unwrap();
 
         let task_manager = task::initialize();
 

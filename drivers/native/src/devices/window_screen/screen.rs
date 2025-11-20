@@ -1,4 +1,4 @@
-use file_system::{DirectBaseOperations, Size};
+use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
 use graphics::{ScreenReadData, ScreenWriteData};
 
 use crate::window_screen::inner_window::InnerWindow;
@@ -38,3 +38,7 @@ impl<'a> DirectBaseOperations for ScreenDevice<'a> {
         Ok(size_of::<Self>() as _)
     }
 }
+
+impl MountOperations for ScreenDevice<'_> {}
+
+impl DirectCharacterDevice for ScreenDevice<'_> {}

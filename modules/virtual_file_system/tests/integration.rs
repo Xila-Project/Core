@@ -12,7 +12,7 @@ async fn initialize<'a>() -> (TaskIdentifier, &'a VirtualFileSystem<'a>) {
 
     let users_manager = users::initialize();
 
-    let time_manager = time::initialize(drivers_native::TimeDriver::new_static()).unwrap();
+    let time_manager = time::initialize(&drivers_native::TimeDevice).unwrap();
 
     if !log::is_initialized() {
         log::initialize(&drivers_std::log::Logger).unwrap();
