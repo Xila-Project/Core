@@ -1,65 +1,41 @@
+extern crate alloc;
+
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[ignore]
 #[xila::task::test(task_path = xila::task)]
 async fn main() {
     drivers_std::memory::instantiate_global_allocator!();
 
-    extern crate alloc;
     extern crate abi_definitions;
 
     use command_line_shell::ShellExecutable;
+    use drivers_native::TimeDevice;
     use drivers_native::window_screen;
+    use drivers_shared::devices::RandomDevice;
+    use drivers_std::log::Logger;
     use terminal::TerminalExecutable;
-    use xila::executable::{self, Standard, mount_executables};
-    use xila::file_system::{AccessFlags, MemoryDevice, create_device, create_file_system};
-    use xila::graphics::{self, InputKind, Point, get_minimal_buffer_size};
-    use xila::log;
-    use xila::task;
-    use xila::users;
-    use xila::virtual_file_system::{self, create_default_hierarchy, mount_static_devices};
-
-    log::initialize(&drivers_std::log::Logger).unwrap();
-
-    // - Initialize the task manager.
-    let task_manager = task::initialize();
-
-    let task = task_manager.get_current_task_identifier().await;
-
-    // - Initialize the user manager.
-    let _ = users::initialize();
-
-    // - Initialize the time manager.
-    let _ = time::initialize(create_device!(drivers_native::TimeDriver::new()));
-
-    // - Initialize the graphics manager.
-
-    const RESOLUTION: Point = Point::new(800, 480);
+    use xila::executable::Standard;
+    use xila::executable::initialize_for_tests;
+    use xila::executable::mount_executables;
+    use xila::graphics::Point;
+    use xila::virtual_file_system::mount_static;
+    use xila::{executable, task, virtual_file_system};
 
     let (screen_device, pointer_device, keyboard_device, mut runner) =
-        window_screen::new(RESOLUTION).await.unwrap();
+        window_screen::new(Point::new(800, 600)).await.unwrap();
 
-    const BUFFER_SIZE: usize = get_minimal_buffer_size(&RESOLUTION);
-
-    let graphics_manager = graphics::initialize(
-        screen_device,
-        pointer_device,
-        InputKind::Pointer,
-        BUFFER_SIZE,
-        true,
+    initialize_for_tests(
+        &Logger,
+        &TimeDevice,
+        &RandomDevice,
+        Some((Box::new(screen_device), Box::new(pointer_device))),
+        Some(Box::new(keyboard_device)),
     )
     .await;
 
-    graphics_manager
-        .add_input_device(keyboard_device, InputKind::Keypad)
-        .await
-        .unwrap();
-
-    task_manager
-        .spawn(task, "Graphics", None, |_| {
-            graphics_manager.r#loop(task::Manager::sleep)
-        })
-        .await
-        .unwrap();
+    let task_manager = task::get_instance();
+    let virtual_file_system = virtual_file_system::get_instance();
+    let task = task_manager.get_current_task_identifier().await;
 
     task_manager
         .spawn(task, "Window screen runner", None, async move |_| {
@@ -68,94 +44,61 @@ async fn main() {
         .await
         .unwrap();
 
-    // - Initialize the virtual file system.
-    let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 512));
+    mount_executables!(
+        virtual_file_system,
+        task,
+        &[
+            (
+                &"/binaries/terminal",
+                TerminalExecutable::new(virtual_file_system, task,)
+                    .await
+                    .unwrap()
+            ),
+            (&"/binaries/command_line_shell", ShellExecutable),
+        ]
+    )
+    .await
+    .unwrap();
 
-    little_fs::FileSystem::format(memory_device.clone(), 256).unwrap();
-
-    let file_system = little_fs::FileSystem::new(memory_device, 256).unwrap();
-
-    let virtual_file_system =
-        virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
-
-    let task = task_manager.get_current_task_identifier().await;
-
-    create_default_hierarchy(virtual_file_system, task)
-        .await
-        .unwrap();
-
-    mount_static_devices!(
+    mount_static!(
         virtual_file_system,
         task,
         &[
             (
                 &"/devices/standard_in",
+                CharacterDevice,
                 drivers_std::console::StandardInDevice
             ),
             (
                 &"/devices/standard_out",
+                CharacterDevice,
                 drivers_std::console::StandardOutDevice
             ),
             (
                 &"/devices/standard_error",
+                CharacterDevice,
                 drivers_std::console::StandardErrorDevice
             ),
-            (&"/devices/time", drivers_native::TimeDriver),
-            (&"/devices/random", drivers_shared::devices::RandomDevice),
-            (&"/devices/null", drivers_core::NullDevice)
+            (
+                &"/devices/time",
+                CharacterDevice,
+                drivers_native::TimeDevice
+            ),
+            (&"/devices/null", CharacterDevice, drivers_core::NullDevice)
         ]
     )
     .await
     .unwrap();
 
-    mount_executables!(
-        virtual_file_system,
+    let standard = Standard::open(
+        &"/devices/standard_in",
+        &"/devices/standard_out",
+        &"/devices/standard_error",
         task,
-        &[
-            (&"/binaries/command_line_shell", ShellExecutable),
-            (&"/binaries/terminal", TerminalExecutable)
-        ]
+        virtual_file_system,
     )
     .await
     .unwrap();
-
-    let standard_in = virtual_file_system
-        .open(&"/devices/standard_in", AccessFlags::Read.into(), task)
-        .await
-        .unwrap();
-
-    let standard_out = virtual_file_system
-        .open(&"/devices/standard_out", AccessFlags::Write.into(), task)
-        .await
-        .unwrap();
-
-    let standard_error = virtual_file_system
-        .open(&"/devices/standard_error", AccessFlags::Write.into(), task)
-        .await
-        .unwrap();
-
-    let standard = Standard::new(
-        standard_in,
-        standard_out,
-        standard_error,
-        task,
-        virtual_file_system,
-    );
-
-    task_manager
-        .set_environment_variable(task, "User", "xila")
-        .await
-        .unwrap();
-
-    task_manager
-        .set_environment_variable(task, "Paths", "/")
-        .await
-        .unwrap();
-
-    task_manager
-        .set_environment_variable(task, "Host", "xila")
-        .await
-        .unwrap();
 
     let result = executable::execute("/binaries/terminal", vec![], standard, None)
         .await
@@ -163,5 +106,5 @@ async fn main() {
         .join()
         .await;
 
-    assert_eq!(result, 0);
+    assert!(result == 0);
 }

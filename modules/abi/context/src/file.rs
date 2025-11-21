@@ -58,7 +58,7 @@ impl FileIdentifier {
     /// Size in bits of the underlying identifier type.
     pub const SIZE_BITS: u8 = core::mem::size_of::<FileIdentifierInner>() as u8 * 8;
 
-    pub const INVALID: Self = Self::new(FileIdentifierInner::MAX);
+    pub const DIRECTORY_FLAG: FileIdentifierInner = 1 << (Self::SIZE_BITS - 1);
 
     /// Standard input file identifier (traditionally 0).
     pub const STANDARD_IN: Self = Self::new(0);
@@ -73,10 +73,16 @@ impl FileIdentifier {
     ///
     /// Regular files should use identifiers starting from this value to avoid
     /// conflicts with internal or reserved identifiers.
-    pub const MINIMUM: Self = Self::new(3);
+    pub const MINIMUM_FILE: Self = Self::new(3);
 
     /// Maximum possible file identifier value.
-    pub const MAXIMUM: Self = Self::new(FileIdentifierInner::MAX - 1);
+    pub const MAXIMUM_FILE: Self = Self::new(Self::DIRECTORY_FLAG - 1);
+
+    pub const MINIMUM_DIRECTORY: Self = Self::new(Self::DIRECTORY_FLAG);
+
+    pub const MAXIMUM_DIRECTORY: Self = Self::new(FileIdentifierInner::MAX - 1);
+
+    pub const INVALID: Self = Self::new(FileIdentifierInner::MAX);
 
     /// Create a new file identifier from a raw value.
     ///
@@ -116,6 +122,10 @@ impl FileIdentifier {
 
     pub const fn into_unique(self, task: TaskIdentifier) -> UniqueFileIdentifier {
         UniqueFileIdentifier::new(task, self)
+    }
+
+    pub const fn is_directory(self) -> bool {
+        (self.0 & Self::DIRECTORY_FLAG) != 0
     }
 }
 

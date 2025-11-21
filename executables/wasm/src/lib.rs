@@ -15,7 +15,8 @@ use xila::executable::ArgumentsParser;
 use xila::executable::ExecutableTrait;
 use xila::executable::MainFuture;
 use xila::executable::Standard;
-use xila::file_system::{AccessFlags, Path};
+use xila::file_system::{Kind, Path};
+use xila::log;
 use xila::synchronization::once_lock::OnceLock;
 use xila::task::{self, SpawnerIdentifier};
 use xila::virtual_file_system::{self, File};
@@ -84,26 +85,22 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
         current_path.join(path).ok_or(Error::InvalidPath)?
     };
 
-    let mut file = File::open(
-        virtual_file_system::get_instance(),
-        task,
-        &path,
-        AccessFlags::Read.into(),
-    )
-    .await
-    .map_err(|_| Error::FailedToOpenFile)?;
+    let virtual_file_system = virtual_file_system::get_instance();
 
-    let size: usize = file
-        .get_statistics()
+    let statistics = virtual_file_system
+        .get_statistics(&path)
         .await
-        .map_err(|_| Error::FailedToOpenFile)?
-        .size
-        .try_into()
-        .map_err(|_| Error::FailedToReadFile)?;
+        .map_err(|_| Error::InvalidPath)?;
 
-    let mut buffer = Vec::with_capacity(size);
+    if statistics.kind != Kind::File {
+        return Err(Error::NotAWasmFile);
+    }
 
-    file.read_to_end(&mut buffer, 256)
+    log::information!("Statistics: {:?}", statistics);
+
+    let mut buffer = Vec::with_capacity(statistics.size as usize);
+
+    File::read_from_path(virtual_file_system, task, path, &mut buffer)
         .await
         .map_err(|_| Error::FailedToReadFile)?;
 

@@ -4,12 +4,15 @@ use core::{
     ffi::{CStr, c_char},
     num::NonZeroU32,
     ptr::copy_nonoverlapping,
+    result,
 };
 
 use futures::block_on;
 
 use file_system::{AccessFlags, CreateFlags, Flags, StateFlags, character_device};
-use virtual_file_system::{Error, SynchronousFile, get_instance as get_file_system_instance};
+use virtual_file_system::{
+    Error, SynchronousDirectory, SynchronousFile, get_instance as get_file_system_instance,
+};
 
 use crate::{XilaTime, file_system::into_position};
 
@@ -28,7 +31,8 @@ where
     match function() {
         Ok(()) => 0,
         Err(error) => {
-            log::error!("File system error: {:?}", error); // Debug: Logging error
+            panic!("File system error: {:?}", error);
+            log::error!("File system error: {:?}", error);
 
             error.get()
         }
@@ -51,12 +55,36 @@ pub unsafe extern "C" fn xila_file_system_get_statistics(
 ) -> XilaFileSystemResult {
     unsafe {
         into_u32(move || {
+            log::information!("Getting file statistics");
+
             let statistics = XilaFileSystemStatistics::from_mutable_pointer(statistics)
                 .ok_or(Error::InvalidParameter)?;
 
-            let s = context::get_instance()
-                .perform_operation_on_file(file.into(), SynchronousFile::get_statistics)
-                .ok_or(Error::InvalidParameter)??;
+            log::information!("Performing operation on file to get statistics");
+
+            let context = context::get_instance();
+
+            let s = if let Some(result) = context
+                .perform_operation_on_directory(file.into(), SynchronousDirectory::get_statistics)
+            {
+                result.map_err(|e| {
+                    log::error!(
+                        "Performing operation on directory to get statistics: {:?}",
+                        e
+                    );
+                    e
+                })?
+            } else {
+                context
+                    .perform_operation_on_file(file.into(), SynchronousFile::get_statistics)
+                    .ok_or(Error::InvalidParameter)
+                    .map_err(|e| {
+                        log::error!("Performing operation on file to get statistics: {:?}", e);
+                        e
+                    })??
+            };
+
+            log::information!("File statistics obtained: {:?}", s);
 
             *statistics = XilaFileSystemStatistics::from_statistics(s);
 

@@ -16,7 +16,6 @@ use alloc::{
     format,
     string::{String, ToString},
 };
-use file_system::AccessFlags;
 use virtual_file_system::File;
 
 use crate::{Error, RANDOM_DEVICE_PATH, Result};
@@ -44,26 +43,13 @@ use crate::{Error, RANDOM_DEVICE_PATH, Result};
 pub async fn generate_salt() -> Result<String> {
     let virtual_file_system = virtual_file_system::get_instance();
 
-    let mut random_file = File::open(
-        virtual_file_system::get_instance(),
-        task::get_instance().get_current_task_identifier().await,
-        RANDOM_DEVICE_PATH,
-        AccessFlags::Read.into(),
-    )
-    .await
-    .map_err(Error::FailedToOpenRandomDevice)?;
+    let task = task::get_instance().get_current_task_identifier().await;
 
     let mut buffer = [0_u8; 16];
 
-    random_file
-        .read(&mut buffer)
+    File::read_slice_from_path(virtual_file_system, task, RANDOM_DEVICE_PATH, &mut buffer)
         .await
         .map_err(Error::FailedToReadRandomDevice)?;
-
-    random_file
-        .close(virtual_file_system)
-        .await
-        .map_err(Error::FailedToCloseFile)?;
 
     buffer.iter_mut().for_each(|byte| {
         *byte = *byte % 26 + 97;

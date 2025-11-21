@@ -1,10 +1,10 @@
 use core::mem::forget;
-
+use exported_file_system::{AttributeFlags, AttributeOperations, Attributes, Statistics};
 use file_system::{Context, DirectoryOperations, Entry, Flags, Path, Size};
 use futures::block_on;
 use task::TaskIdentifier;
 
-use crate::{ItemStatic, Result, VirtualFileSystem, blocking_operation};
+use crate::{Error, ItemStatic, Result, VirtualFileSystem, blocking_operation};
 
 pub struct SynchronousDirectory {
     pub(crate) directory: &'static dyn file_system::FileSystemOperations,
@@ -57,6 +57,20 @@ impl SynchronousDirectory {
         })?;
 
         Ok(entry)
+    }
+
+    pub fn get_statistics(&mut self) -> Result<Statistics> {
+        self.blocking_operation(|directory| {
+            let mut attributes = Attributes::new().set_mask(AttributeFlags::All);
+
+            AttributeOperations::get_attributes(
+                directory.directory,
+                &mut directory.context,
+                &mut attributes,
+            )?;
+
+            Statistics::from_attributes(&attributes).ok_or(Error::MissingAttribute)
+        })
     }
 
     pub fn get_position(&mut self) -> Result<Size> {

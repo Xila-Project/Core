@@ -1,6 +1,5 @@
-use core::time::Duration;
-
 use alloc::string::String;
+use core::time::Duration;
 use file_system::{AccessFlags, Path};
 use task::TaskIdentifier;
 use virtual_file_system::{File, VirtualFileSystem};

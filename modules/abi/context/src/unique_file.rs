@@ -49,11 +49,11 @@ impl UniqueFileIdentifier {
     }
 
     pub const fn get_minimum(task: TaskIdentifier) -> Self {
-        Self::new(task, FileIdentifier::MINIMUM)
+        Self::new(task, FileIdentifier::MINIMUM_FILE)
     }
 
     pub const fn get_maximum(task: TaskIdentifier) -> Self {
-        Self::new(task, FileIdentifier::MAXIMUM)
+        Self::new(task, FileIdentifier::MAXIMUM_FILE)
     }
 
     pub const fn into_inner(self) -> usize {

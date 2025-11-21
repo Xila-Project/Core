@@ -14,7 +14,7 @@ use alloc::{
     vec,
     vec::Vec,
 };
-use file_system::{AccessFlags, CreateFlags, Flags, Path, PathOwned};
+use file_system::{AccessFlags, Path, PathOwned};
 use miniserde::{Deserialize, Serialize};
 use users::{GroupIdentifier, GroupIdentifierInner, UserIdentifier, UserIdentifierInner};
 use virtual_file_system::{Directory, File, VirtualFileSystem};

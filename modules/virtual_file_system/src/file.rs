@@ -6,6 +6,7 @@ use embedded_io_async::ErrorType;
 use exported_file_system::{AccessFlags, ControlCommand, CreateFlags, Permissions};
 use file_system::{Context, Flags, Path, Position, Size, StateFlags, Statistics};
 use futures::block_on;
+use task::TaskIdentifier;
 use users::{GroupIdentifier, UserIdentifier};
 
 /// File structure.
@@ -73,9 +74,30 @@ impl File {
         poll(|| self.0.write(buffer)).await
     }
 
+    pub async fn read_slice_from_path(
+        virtual_file_system: &VirtualFileSystem<'_>,
+        task: TaskIdentifier,
+        path: impl AsRef<Path>,
+        buffer: &mut [u8],
+    ) -> Result<()> {
+        let mut file = File::open(
+            virtual_file_system,
+            task,
+            path,
+            Flags::new(AccessFlags::Read, None, None),
+        )
+        .await?;
+
+        file.read(buffer).await?;
+
+        file.close(virtual_file_system).await?;
+
+        Ok(())
+    }
+
     pub async fn read_from_path(
         virtual_file_system: &VirtualFileSystem<'_>,
-        task: task::TaskIdentifier,
+        task: TaskIdentifier,
         path: impl AsRef<Path>,
         buffer: &mut Vec<u8>,
     ) -> Result<()> {
@@ -89,8 +111,7 @@ impl File {
         )
         .await?;
 
-        let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer, 256).await?;
+        file.read_to_end(buffer, 256).await?;
 
         file.close(virtual_file_system).await?;
 
