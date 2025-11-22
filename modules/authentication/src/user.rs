@@ -15,7 +15,7 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use file_system::{AccessFlags, CreateFlags, Flags, Path, PathOwned};
+use file_system::{AccessFlags, Path, PathOwned};
 use miniserde::{Deserialize, Serialize};
 use users::{GroupIdentifier, GroupIdentifierInner, UserIdentifier, UserIdentifierInner};
 use virtual_file_system::{Directory, File, VirtualFileSystem};
@@ -23,7 +23,6 @@ use virtual_file_system::{Directory, File, VirtualFileSystem};
 use crate::{
     Error, READ_CHUNK_SIZE, Result, USERS_FOLDER_PATH,
     hash::{generate_salt, hash_password},
-    user,
 };
 
 /// Represents a user account with all associated metadata.

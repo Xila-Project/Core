@@ -1,5 +1,7 @@
 extern crate alloc;
 
+extern crate abi_definitions;
+
 use task::TaskIdentifier;
 
 use file_system::{AccessFlags, CreateFlags, Flags, MemoryDevice, Path, Position, StateFlags};
@@ -7,12 +9,14 @@ use file_system::{AccessFlags, CreateFlags, Flags, MemoryDevice, Path, Position,
 use task::test;
 use virtual_file_system::{File, VirtualFileSystem};
 
+drivers_std::instantiate_global_allocator!();
+
 async fn initialize<'a>() -> (TaskIdentifier, &'a VirtualFileSystem<'a>) {
     let task_instance = task::initialize();
 
     let users_manager = users::initialize();
 
-    let time_manager = time::initialize(&drivers_native::TimeDevice).unwrap();
+    let time_manager = time::initialize(&drivers_std::devices::TimeDevice).unwrap();
 
     if !log::is_initialized() {
         log::initialize(&drivers_std::log::Logger).unwrap();
@@ -69,7 +73,7 @@ async fn test_file() {
 
     core::mem::drop(file);
 
-    let _ = virtual_file_system.remove(file_path).await.unwrap();
+    let _ = virtual_file_system.remove(task, file_path).await.unwrap();
 }
 
 #[cfg(target_os = "linux")]
@@ -135,7 +139,7 @@ async fn test_named_pipe() {
     core::mem::drop(pipe_read);
     core::mem::drop(pipe_write);
 
-    virtual_file_system.remove(pipe_path).await.unwrap();
+    virtual_file_system.remove(task, pipe_path).await.unwrap();
 }
 
 #[cfg(target_os = "linux")]
@@ -175,5 +179,5 @@ async fn test_device() {
 
     core::mem::drop(device_file);
 
-    let _ = virtual_file_system.remove(DEVICE_PATH).await.unwrap();
+    let _ = virtual_file_system.remove(task, DEVICE_PATH).await.unwrap();
 }

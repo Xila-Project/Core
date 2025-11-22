@@ -1,6 +1,6 @@
 use super::{convert_flags, convert_result, littlefs};
 use crate::attributes::InternalAttributes;
-use alloc::{boxed::Box, ffi::CString, vec, vec::Vec};
+use alloc::{boxed::Box, ffi::CString, vec};
 use core::ffi::c_void;
 use file_system::{Attributes, Error, Flags, Path, Position, Result, Size};
 
@@ -103,7 +103,7 @@ impl File {
             InternalAttributes::get_from_file_configuration(unsafe { &*self.file.cfg })
                 .ok_or(Error::NoAttribute)?;
 
-        internal_attributes.into_attributes(attributes)?;
+        internal_attributes.update_attributes(attributes)?;
 
         Ok(())
     }
@@ -114,7 +114,7 @@ impl File {
         })
         .ok_or(Error::NoAttribute)?;
 
-        internal_attributes.from_attributes(attributes)?;
+        internal_attributes.update_with_attributes(attributes)?;
 
         Ok(())
     }

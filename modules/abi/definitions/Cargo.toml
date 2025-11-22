@@ -17,6 +17,7 @@ abi_context = { workspace = true }
 
 [features]
 default = []
+allocation_redundancy_check = []
 
 [dev-dependencies]
 drivers_native = { workspace = true }

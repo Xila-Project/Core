@@ -196,6 +196,7 @@ impl Context {
         unsafe { &*((*configuration).context as *const Self) }
     }
 
+    #[allow(clippy::redundant_allocation)]
     pub unsafe fn take_from_configuration(
         configuration: *mut littlefs::lfs_config,
     ) -> Box<&'static dyn DirectBlockDevice> {

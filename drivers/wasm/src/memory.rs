@@ -40,7 +40,8 @@
 use core::{cell::RefCell, ptr::NonNull};
 
 use linked_list_allocator::Heap;
-use memory::{Capabilities, Layout, ManagerTrait, utilities::round_to_page_size};
+use memory::{Layout, ManagerTrait, utilities::round_to_page_size};
+use memory_exported::CapabilityFlags;
 use synchronization::blocking_mutex::CriticalSectionMutex;
 
 use core::arch::wasm32::memory_grow;
@@ -123,11 +124,15 @@ impl MemoryManager {
 }
 
 impl ManagerTrait for MemoryManager {
-    unsafe fn allocate(&self, capabilities: Capabilities, layout: Layout) -> Option<NonNull<u8>> {
-        if capabilities.get_direct_memory_access() {
+    unsafe fn allocate(
+        &self,
+        capabilities: CapabilityFlags,
+        layout: Layout,
+    ) -> Option<NonNull<u8>> {
+        if capabilities.contains(CapabilityFlags::DirectMemoryAccess) {
             return None; // Direct memory access is not supported in this implementation
         }
-        if capabilities.get_executable() {
+        if capabilities.contains(CapabilityFlags::Executable) {
             return None; // Executable memory is not supported in this implementation
         }
 

@@ -24,7 +24,7 @@ macro_rules! mount_static {
     async || -> $crate::Result<()>
     {
         $(
-            let _ = $virtual_file_system.remove($path).await;
+            let _ = $virtual_file_system.remove($task, $path).await;
             $virtual_file_system.mount_static($task, $path, $crate::ItemStatic::$kind(&$device)).await?;
 
         )*

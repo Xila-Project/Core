@@ -8,19 +8,7 @@ use task::TaskIdentifier;
 
 use crate::UniqueFileIdentifier;
 
-/// File identifier inner type.
-///
-/// This is the underlying numeric type used for file identifiers. The size
-/// is architecture-dependent to optimize memory usage while providing sufficient
-/// identifier space:
-/// - 16 bits (0-65,535) on 32-bit systems  
-/// - 32 bits (0-4,294,967,295) on 64-bit systems
-///
-/// This provides a good balance between memory efficiency and identifier space.
-#[cfg(target_pointer_width = "32")]
 pub type FileIdentifierInner = u16;
-#[cfg(target_pointer_width = "64")]
-pub type FileIdentifierInner = u32;
 
 /// Type-safe wrapper for file identifiers.
 ///

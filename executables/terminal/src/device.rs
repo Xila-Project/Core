@@ -1,10 +1,8 @@
 use alloc::string::String;
 
 use xila::file_system::{
-    self, BaseOperations, DirectBaseOperations, DirectCharacterDevice, Error, MountOperations,
-    Position, Result, Size,
+    DirectBaseOperations, DirectCharacterDevice, Error, MountOperations, Position, Result, Size,
 };
-use xila::futures::block_on;
 
 use crate::terminal::Terminal;
 
@@ -25,7 +23,7 @@ impl DirectBaseOperations for Terminal {
 
         self.print(&string).map_err(map_error)?;
 
-        Ok(buffer.len().into())
+        Ok(buffer.len())
     }
 
     fn set_position(&self, _: Size, _: &Position) -> Result<Size> {

@@ -167,9 +167,9 @@ pub async fn main(standard: Standard, arguments: Vec<String>) -> Result<(), NonZ
     match inner_main(standard, arguments).await {
         Ok(()) => Ok(()),
         Err(error) => {
-            let _ = write!(
+            writeln!(
                 duplicated_standard.standard_error,
-                "WASM Executable Error: {}\n",
+                "WASM Executable Error: {}",
                 error
             )
             .unwrap();

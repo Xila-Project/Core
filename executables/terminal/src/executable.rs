@@ -13,7 +13,7 @@ impl TerminalExecutable {
         task: TaskIdentifier,
     ) -> Result<Self, String> {
         let _ = virtual_file_system
-            .create_directory(&"/configuration/shared/shortcuts", task)
+            .create_directory(task, &"/configuration/shared/shortcuts")
             .await;
 
         File::write_to_path(

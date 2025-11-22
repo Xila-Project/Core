@@ -219,11 +219,10 @@ macro_rules! flags {
                 write!(f, "{} {{ ", stringify!($identifier))?;
                 $(
                     if self.contains(Self::$k) {
-                        if !first {
+                        if !core::mem::replace(&mut first, false) {
                             write!(f, " | ")?;
                         }
                         write!(f, "{}", stringify!($k))?;
-                        first = false;
                     }
                 )*
                 write!(f, " }}")

@@ -1,9 +1,7 @@
 use core::num::NonZeroUsize;
 use core::str::Utf8Error;
 use core::{fmt::Display, num::NonZeroU8};
-use xila::{
-    executable, file_system, graphics, internationalization::translate, task, virtual_file_system,
-};
+use xila::{executable, graphics, internationalization::translate, task, virtual_file_system};
 
 pub type Result<T> = core::result::Result<T, Error>;
 

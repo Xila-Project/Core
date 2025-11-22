@@ -5,7 +5,6 @@ mod mouse;
 
 use alloc::string::String;
 pub use canvas_screen::*;
-use file_system::{Device, create_device};
 use graphics::Point;
 pub use keyboard::*;
 pub use mouse::*;
@@ -13,9 +12,9 @@ use wasm_bindgen::JsValue;
 use web_sys::{HtmlCanvasElement, Window};
 
 pub struct GraphicsDevices {
-    pub screen_device: Device,
-    pub mouse_device: Device,
-    pub keyboard_device: Device,
+    pub screen_device: CanvasScreenDevice,
+    pub mouse_device: MouseDevice,
+    pub keyboard_device: KeyboardDevice,
     pub canvas: HtmlCanvasElement,
 }
 
@@ -29,9 +28,9 @@ pub async fn new() -> Result<GraphicsDevices, String> {
     let mouse_device = MouseDevice::new(&canvas)?;
 
     Ok(GraphicsDevices {
-        screen_device: create_device!(screen_device),
-        mouse_device: create_device!(mouse_device),
-        keyboard_device: create_device!(keyboard_device),
+        screen_device,
+        mouse_device,
+        keyboard_device,
         canvas,
     })
 }

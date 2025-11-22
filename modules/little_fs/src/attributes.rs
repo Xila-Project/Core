@@ -1,4 +1,4 @@
-use core::{ffi::c_void, fmt::Debug, mem::MaybeUninit, ptr::null_mut};
+use core::{ffi::c_void, fmt::Debug, mem::MaybeUninit};
 
 use alloc::boxed::Box;
 use file_system::{Attributes, Inode, Kind, Permissions, Result, Time};
@@ -53,31 +53,6 @@ impl InternalAttributes {
         Box::leak(littlefs_attributes)
     }
 
-    pub fn take_from_file_configuration(
-        configuration: &mut super::littlefs::lfs_file_config,
-    ) -> Option<InternalAttributes> {
-        if configuration.attr_count == 0 {
-            return None;
-        }
-
-        let pointer = configuration.attrs;
-
-        if pointer.is_null() {
-            return None;
-        }
-
-        let attributes = unsafe { Box::from_raw(pointer) };
-
-        if attributes.size != size_of::<InternalAttributes>() as u32 {
-            return None;
-        }
-
-        configuration.attrs = null_mut();
-        configuration.attr_count = 0;
-
-        Some(unsafe { *Box::from_raw(attributes.buffer as _) })
-    }
-
     pub fn get_from_file_configuration(
         configuration: &super::littlefs::lfs_file_config,
     ) -> Option<&InternalAttributes> {
@@ -126,7 +101,7 @@ impl InternalAttributes {
         Some(attributes)
     }
 
-    pub fn into_attributes(&self, statistics: &mut Attributes) -> Result<()> {
+    pub fn update_attributes(&self, statistics: &mut Attributes) -> Result<()> {
         if let Some(inode) = statistics.get_mutable_inode() {
             *inode = self.inode;
         }
@@ -166,7 +141,7 @@ impl InternalAttributes {
         Ok(())
     }
 
-    pub fn from_attributes(&mut self, statistics: &Attributes) -> Result<()> {
+    pub fn update_with_attributes(&mut self, statistics: &Attributes) -> Result<()> {
         if let Some(inode) = statistics.get_inode() {
             self.inode = *inode;
         }
@@ -199,9 +174,9 @@ impl InternalAttributes {
             self.group = *group;
         }
 
-        statistics.get_kind().map(|kind| {
+        if let Some(kind) = statistics.get_kind() {
             self.kind = *kind;
-        });
+        }
 
         Ok(())
     }

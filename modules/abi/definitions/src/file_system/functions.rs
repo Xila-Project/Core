@@ -4,7 +4,6 @@ use core::{
     ffi::{CStr, c_char},
     num::NonZeroU32,
     ptr::copy_nonoverlapping,
-    result,
 };
 
 use futures::block_on;
@@ -31,7 +30,7 @@ where
     match function() {
         Ok(()) => 0,
         Err(error) => {
-            panic!("File system error: {:?}", error);
+            //panic!("File system error: {:?}", error);
             log::error!("File system error: {:?}", error);
 
             error.get()
@@ -67,20 +66,18 @@ pub unsafe extern "C" fn xila_file_system_get_statistics(
             let s = if let Some(result) = context
                 .perform_operation_on_directory(file.into(), SynchronousDirectory::get_statistics)
             {
-                result.map_err(|e| {
+                result.inspect_err(|&e| {
                     log::error!(
                         "Performing operation on directory to get statistics: {:?}",
                         e
                     );
-                    e
                 })?
             } else {
                 context
                     .perform_operation_on_file(file.into(), SynchronousFile::get_statistics)
                     .ok_or(Error::InvalidParameter)
-                    .map_err(|e| {
+                    .inspect_err(|&e| {
                         log::error!("Performing operation on file to get statistics: {:?}", e);
-                        e
                     })??
             };
 
@@ -586,7 +583,7 @@ pub unsafe extern "C" fn xila_file_system_create_directory(
             // Debug: Creating directory
 
             let task = context::get_instance().get_current_task_identifier();
-            block_on(get_file_system_instance().create_directory(&path, task))?;
+            block_on(get_file_system_instance().create_directory(task, &path))?;
 
             Ok(())
         })
@@ -661,7 +658,9 @@ pub unsafe extern "C" fn xila_file_system_remove(_path: *const c_char) -> XilaFi
                 .to_str()
                 .map_err(|_| Error::InvalidParameter)?;
 
-            block_on(get_file_system_instance().remove(path))?;
+            let task = context::get_instance().get_current_task_identifier();
+
+            block_on(get_file_system_instance().remove(task, path))?;
 
             Ok(())
         })

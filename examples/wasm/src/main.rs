@@ -7,16 +7,17 @@ async fn main() {
 
     extern crate alloc;
 
+    use alloc::boxed::Box;
     use alloc::string::ToString;
     use alloc::vec;
     use drivers_wasm::devices::graphics::GraphicsDevices;
     use xila::bootsplash::Bootsplash;
-    use xila::executable::{self, Standard, mount_static_executables};
-    use xila::file_system::{self, Mbr, PartitionKind, create_device, create_file_system};
+    use xila::executable::{self, Standard, mount_executables};
+    use xila::file_system::{self};
     use xila::log;
     use xila::task;
     use xila::time::{self, Duration};
-    use xila::virtual_file_system::mount_static_devices;
+    use xila::virtual_file_system::mount_static;
     use xila::{authentication, graphics, little_fs, users, virtual_file_system};
 
     console_error_panic_hook::set_once();
@@ -26,13 +27,9 @@ async fn main() {
 
     // Initialize the task manager
     let task_manager = task::initialize();
-
     let task = task_manager.get_current_task_identifier().await;
-
-    // Initialize the users manager
-    users::initialize();
-    // Initialize the time manager
-    let _ = time::initialize(create_device!(drivers_wasm::devices::TimeDevice::new())).unwrap();
+    let users_manager = users::initialize();
+    let time_manager = time::initialize(&drivers_wasm::devices::TimeDevice).unwrap();
 
     // - Initialize the graphics manager
     // - - Initialize the graphics driver
@@ -47,8 +44,8 @@ async fn main() {
 
     // - - Initialize the graphics manager
     let graphics_manager = graphics::initialize(
-        screen_device,
-        mouse_device,
+        Box::leak(Box::new(screen_device)),
+        Box::leak(Box::new(mouse_device)),
         graphics::InputKind::Pointer,
         graphics::get_recommended_buffer_size(&resolution),
         //graphics::get_minimal_buffer_size(&resolution),
@@ -57,7 +54,10 @@ async fn main() {
     .await;
 
     graphics_manager
-        .add_input_device(keyboard_device, graphics::InputKind::Keypad)
+        .add_input_device(
+            Box::leak(Box::new(keyboard_device)),
+            graphics::InputKind::Keypad,
+        )
         .await
         .unwrap();
 
@@ -72,37 +72,32 @@ async fn main() {
 
     // - Initialize the file system
     // Create a memory device
-    let drive = create_device!(file_system::MemoryDevice::<512>::new(16 * 1024 * 1024));
+    let drive = file_system::MemoryDevice::<512>::new_static(16 * 1024 * 1024);
     //let drive = create_device!(drivers_wasm::devices::DriveDevice::new(Path::new("xila_drive.img")));
 
     // Create a partition type
-    let partition = create_device!(
-        Mbr::find_or_create_partition_with_signature(&drive, 0xDEADBEEF, PartitionKind::Xila)
-            .unwrap()
-    );
+    // let partition = create_device!(
+    //     Mbr::find_or_create_partition_with_signature(&drive, 0xDEADBEEF, PartitionKind::Xila)
+    //         .unwrap()
+    // );
 
     // Print MBR information
-    let mbr = Mbr::read_from_device(&drive).unwrap();
+    // let mbr = Mbr::read_from_device(&drive).unwrap();
 
-    log::information!("MBR Information: {mbr}");
+    // log::information!("MBR Information: {mbr}");
 
     // Mount the file system
-    let file_system = match little_fs::FileSystem::new(partition.clone(), 512) {
-        Ok(file_system) => file_system,
-        // If the file system is not found, format it
-        Err(_) => {
-            partition
-                .set_position(&file_system::Position::Start(0))
-                .unwrap();
+    let file_system = little_fs::FileSystem::get_or_format(drive, 256).unwrap();
 
-            little_fs::FileSystem::format(partition.clone(), 512).unwrap();
-
-            little_fs::FileSystem::new(partition, 512).unwrap()
-        }
-    };
     // Initialize the virtual file system
-    let virtual_file_system =
-        virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
+    let virtual_file_system = virtual_file_system::initialize(
+        task_manager,
+        users_manager,
+        time_manager,
+        file_system,
+        None,
+    )
+    .unwrap();
 
     // - - Mount the devices
 
@@ -110,20 +105,40 @@ async fn main() {
     let _ = virtual_file_system::create_default_hierarchy(virtual_file_system, task).await;
 
     // - - Mount the devices
-    virtual_file_system::clean_devices(virtual_file_system)
+    virtual_file_system::clean_devices(virtual_file_system, task)
         .await
         .unwrap();
 
-    mount_static_devices!(
+    mount_static!(
         virtual_file_system,
         task,
         &[
-            (&"/devices/standard_in", drivers_core::NullDevice),
-            (&"/devices/standard_out", drivers_core::NullDevice),
-            (&"/devices/standard_error", drivers_core::NullDevice),
-            (&"/devices/time", drivers_wasm::devices::TimeDevice),
-            (&"/devices/random", drivers_shared::devices::RandomDevice),
-            (&"/devices/null", drivers_core::NullDevice)
+            (
+                &"/devices/standard_in",
+                CharacterDevice,
+                drivers_core::NullDevice
+            ),
+            (
+                &"/devices/standard_out",
+                CharacterDevice,
+                drivers_core::NullDevice
+            ),
+            (
+                &"/devices/standard_error",
+                CharacterDevice,
+                drivers_core::NullDevice
+            ),
+            (
+                &"/devices/time",
+                CharacterDevice,
+                drivers_wasm::devices::TimeDevice
+            ),
+            (
+                &"/devices/random",
+                CharacterDevice,
+                drivers_shared::devices::RandomDevice
+            ),
+            (&"/devices/null", CharacterDevice, drivers_core::NullDevice)
         ]
     )
     .await
@@ -131,7 +146,7 @@ async fn main() {
 
     // Mount static executables
 
-    mount_static_executables!(
+    mount_executables!(
         virtual_file_system,
         task,
         &[

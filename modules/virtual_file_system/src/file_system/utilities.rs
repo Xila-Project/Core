@@ -1,8 +1,8 @@
 use crate::{Error, Result, VirtualFileSystem, pipe::Pipe, poll};
 use alloc::{collections::btree_map::BTreeMap, vec::Vec};
 use exported_file_system::{
-    Attributes, BlockDevice, CharacterDevice, FileSystemOperations, Inode, Path, PathOwned,
-    Permission, Permissions, Time,
+    AttributeFlags, Attributes, BlockDevice, CharacterDevice, FileSystemOperations, Inode, Path,
+    PathOwned, Permission, Permissions, Time,
 };
 use task::TaskIdentifier;
 use users::{GroupIdentifier, UserIdentifier};
@@ -167,6 +167,58 @@ impl<'a> VirtualFileSystem<'a> {
             )?)
         })
         .await
+    }
+
+    pub(super) async fn check_permissions(
+        file_system: &dyn FileSystemOperations,
+        path: impl AsRef<Path>,
+        permissions: Permission,
+        user: UserIdentifier,
+    ) -> Result<()> {
+        let mut attributes = Attributes::default()
+            .set_mask(AttributeFlags::User | AttributeFlags::Group | AttributeFlags::Permissions);
+
+        Self::get_attributes(file_system, path.as_ref(), &mut attributes).await?;
+
+        if !Self::has_permissions(
+            users::get_instance(),
+            user,
+            permissions,
+            *attributes.get_user().ok_or(Error::MissingAttribute)?,
+            *attributes.get_group().ok_or(Error::MissingAttribute)?,
+            *attributes
+                .get_permissions()
+                .ok_or(Error::MissingAttribute)?,
+        )
+        .await
+        {
+            log::error!(
+                "Permission denied for path {:?} for user {:?}",
+                path.as_ref(),
+                user
+            );
+            return Err(Error::PermissionDenied);
+        }
+
+        Ok(())
+    }
+
+    pub(super) async fn check_permissions_with_parent(
+        file_system: &dyn FileSystemOperations,
+        path: impl AsRef<Path>,
+        current_permission: Permission,
+        parent_permission: Permission,
+        user: UserIdentifier,
+    ) -> Result<()> {
+        if !path.as_ref().is_root() {
+            let parent_path = path.as_ref().go_parent().ok_or(Error::InvalidPath)?;
+
+            Self::check_permissions(file_system, parent_path, parent_permission, user).await?;
+        }
+
+        Self::check_permissions(file_system, path.as_ref(), current_permission, user).await?;
+
+        Ok(())
     }
 }
 

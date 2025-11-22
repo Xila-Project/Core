@@ -2,13 +2,12 @@
 
 extern crate alloc;
 use core::time::Duration;
+use drivers_std::devices::TimeDevice;
 use log::information;
 
 #[test]
 fn test_get_current_time() {
-    let time_device = drivers_native::TimeDevice::new();
-
-    let time_manager = time::Manager::new(&time_device).unwrap();
+    let time_manager = time::Manager::new(&TimeDevice).unwrap();
 
     let current_time = time_manager.get_current_time().unwrap();
 
@@ -19,9 +18,7 @@ fn test_get_current_time() {
 
 #[test]
 fn test_get_current_time_since_startup() {
-    let time_device = drivers_native::TimeDevice::new();
-
-    let time_manager = time::Manager::new(&time_device).unwrap();
+    let time_manager = time::Manager::new(&TimeDevice).unwrap();
 
     let current_time = time_manager.get_current_time_since_startup().unwrap();
 

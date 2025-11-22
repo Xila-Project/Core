@@ -7,7 +7,6 @@ mod arguments_parser;
 mod building;
 mod error;
 mod standard;
-mod test;
 mod traits;
 
 pub use arguments_parser::*;
@@ -18,7 +17,6 @@ pub use file_system as exported_file_system;
 pub use futures as exported_futures;
 pub use standard::*;
 pub use task as exported_task;
-pub use test::*;
 pub use traits::*;
 pub use virtual_file_system as exported_virtual_file_system;
 
@@ -105,7 +103,7 @@ pub async fn execute(
         return Err(Error::PermissionDenied);
     }
 
-    let mut file = File::open(&virtual_file_system, task, &path, AccessFlags::Read.into()).await?;
+    let mut file = File::open(virtual_file_system, task, &path, AccessFlags::Read.into()).await?;
 
     // - Check if the user can override the user identifier
     let new_user = get_overridden_user(&statistics, task).await?;

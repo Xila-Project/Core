@@ -78,7 +78,7 @@ macro_rules! mount_executables {
         $(
             let __executable = $crate::ExecutableWrapper::new($executable);
 
-            let _ = $virtual_file_system.remove($path).await;
+            let _ = $virtual_file_system.remove($task, $path).await;
             $virtual_file_system.mount_character_device($task, $path, __executable).await?;
             $virtual_file_system.set_permissions($path, Permissions::EXECUTABLE).await?;
         )*

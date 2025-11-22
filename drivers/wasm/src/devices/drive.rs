@@ -1,5 +1,5 @@
 use alloc::string::{String, ToString};
-use file_system::{DeviceTrait, Path, Size};
+use file_system::{DirectBaseOperations, Path, Size};
 use futures::block_on;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use wasm_bindgen::prelude::*;
@@ -22,8 +22,6 @@ fn map_error_to_string(value: JsValue) -> String {
 
 struct Inner {
     handle: FileSystemSyncAccessHandle,
-    options: FileSystemReadWriteOptions,
-    estimate: StorageEstimate,
 }
 
 impl Drop for Inner {
@@ -70,48 +68,31 @@ impl Inner {
             .dyn_into::<FileSystemSyncAccessHandle>()
             .map_err(map_error_to_string)?;
 
-        Ok(Self {
-            handle,
-            options: FileSystemReadWriteOptions::new(),
-            estimate,
-        })
+        Ok(Self { handle, estimate })
     }
 
-    async fn write_async(&mut self, data: &[u8]) -> file_system::Result<Size> {
+    async fn write_async(&mut self, data: &[u8], position: Size) -> file_system::Result<usize> {
+        let options = FileSystemReadWriteOptions::new();
+        options.set_at(position as _);
+
         let size = self
             .handle
-            .write_with_u8_array_and_options(data, &self.options)
+            .write_with_u8_array_and_options(data, &options)
             .map_err(map_error_to_file_system_error)?;
-        let size = size as u64;
-        self.increment_position(size.as_u64());
-        Ok(size)
+
+        Ok(size as _)
     }
 
-    async fn read_async(&mut self, data: &mut [u8]) -> file_system::Result<Size> {
+    async fn read_async(&mut self, data: &mut [u8], position: Size) -> file_system::Result<usize> {
+        let options = FileSystemReadWriteOptions::new();
+        options.set_at(position as _);
+
         let size = self
             .handle
-            .read_with_u8_array_and_options(data, &self.options)
+            .read_with_u8_array_and_options(data, &options)
             .map_err(|_| file_system::Error::InputOutput)?;
-        let size = size as u64;
-        self.increment_position(size.as_u64());
-        Ok(size)
-    }
 
-    fn increment_position(&mut self, offset: u64) {
-        self.options
-            .set_at((self.get_absolute_position() + offset) as _);
-    }
-
-    pub fn get_absolute_position(&self) -> u64 {
-        self.options.get_at().unwrap_or_default() as u64
-    }
-
-    pub fn set_absolute_position(&mut self, pos: u64) {
-        self.options.set_at(pos as _);
-    }
-
-    pub fn get_estimate(&self) -> &StorageEstimate {
-        &self.estimate
+        Ok(size as _)
     }
 }
 
@@ -124,42 +105,23 @@ impl DriveDevice {
     }
 }
 
-impl DeviceTrait for DriveDevice {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
+impl DirectBaseOperations for DriveDevice {
+    fn read(&self, buffer: &mut [u8], position: Size) -> file_system::Result<usize> {
         let mut inner = block_on(self.0.write());
-        block_on(inner.read_async(buffer))
+        block_on(inner.read_async(buffer, position))
     }
 
-    fn write(&self, buffer: &[u8]) -> file_system::Result<file_system::Size> {
+    fn write(&self, buffer: &[u8], position: Size) -> file_system::Result<usize> {
         let mut inner = block_on(self.0.write());
-        block_on(inner.write_async(buffer))
-    }
-
-    fn get_size(&self) -> file_system::Result<file_system::Size> {
-        let inner = block_on(self.0.read());
-        let estimate = inner.get_estimate();
-        Ok(estimate.get_quota().unwrap_or(0.0) as _)
+        block_on(inner.write_async(buffer, position))
     }
 
     fn set_position(
         &self,
-        position: &file_system::Position,
-    ) -> file_system::Result<file_system::Size> {
-        let mut inner = block_on(self.0.write());
-        match position {
-            file_system::Position::Start(pos) => {
-                inner.set_absolute_position(*pos);
-            }
-            file_system::Position::End(pos) => {
-                let current_pos = inner.get_absolute_position();
-                inner.set_absolute_position(current_pos.saturating_sub(*pos as u64));
-            }
-            file_system::Position::Current(pos) => {
-                let current_pos = inner.get_absolute_position();
-                inner.set_absolute_position(current_pos.saturating_add(*pos as u64));
-            }
-        }
-        Ok(inner.get_absolute_position() as _)
+        current_position: Size,
+        _: &file_system::Position,
+    ) -> file_system::Result<Size> {
+        Ok(current_position) // TODO: Implement seek if needed
     }
 
     fn flush(&self) -> file_system::Result<()> {

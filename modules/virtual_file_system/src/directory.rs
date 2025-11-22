@@ -29,7 +29,7 @@ impl Directory {
         task: TaskIdentifier,
         path: impl AsRef<Path>,
     ) -> Result<()> {
-        virtual_file_system.create_directory(&path, task).await
+        virtual_file_system.create_directory(task, &path).await
     }
 
     pub async fn open<'a>(

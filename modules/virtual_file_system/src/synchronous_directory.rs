@@ -37,7 +37,7 @@ impl SynchronousDirectory {
         task: TaskIdentifier,
         path: impl AsRef<Path>,
     ) -> Result<()> {
-        block_on(virtual_file_system.create_directory(&path, task))
+        block_on(virtual_file_system.create_directory(task, &path))
     }
 
     pub fn open<'a>(

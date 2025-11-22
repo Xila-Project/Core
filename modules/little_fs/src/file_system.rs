@@ -222,7 +222,7 @@ impl FileSystemOperations for FileSystem {
                 )
             })?;
 
-            internal_attributes.into_attributes(attributes)?;
+            internal_attributes.update_attributes(attributes)?;
 
             if let Some(size) = attributes.get_mutable_size() {
                 let mut info = littlefs::lfs_info::default();
@@ -257,7 +257,7 @@ impl FileSystemOperations for FileSystem {
                 })?;
             }
 
-            internal_attributes.from_attributes(attributes)?;
+            internal_attributes.update_with_attributes(attributes)?;
 
             convert_result(unsafe {
                 littlefs::lfs_setattr(
@@ -429,6 +429,8 @@ mod tests {
 
     const CACHE_SIZE: usize = 256;
 
+    drivers_std::memory::instantiate_global_allocator!();
+
     fn initialize() -> FileSystem {
         if !log::is_initialized() {
             let _ = log::initialize(&drivers_std::log::Logger);
@@ -438,7 +440,7 @@ mod tests {
 
         task::initialize();
 
-        let _ = time::initialize(&drivers_native::TimeDevice).unwrap();
+        let _ = time::initialize(&drivers_std::devices::TimeDevice).unwrap();
 
         let device = Box::leak(Box::new(MemoryDevice::<512>::new(2048 * 512)));
 

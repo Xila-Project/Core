@@ -1,5 +1,4 @@
 use core::{
-    alloc::Layout,
     ffi::{c_char, c_void},
     ptr::null_mut,
     slice,
@@ -52,79 +51,33 @@ pub extern "C" fn strcpy(destination: *mut c_char, source: *const c_char) -> *mu
     destination
 }
 
+/// Allocates memory of the given size.
+///
+/// # Safety
+///
+/// The caller must ensure that the allocated memory is properly freed
+/// using `lfs_free` to avoid memory leaks.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn lfs_malloc(size: usize) -> *mut c_void {
-    if size == 0 {
-        return null_mut();
-    }
-
-    let total_size = size + size_of::<usize>();
-    let alignment = align_of::<usize>();
-
-    let layout = Layout::from_size_align(total_size, alignment).unwrap();
-
     unsafe {
-        let ptr = alloc::alloc::alloc(layout);
-
-        if ptr.is_null() {
-            return null_mut();
-        }
-
-        // Store the size at the beginning
-        let size_ptr = ptr as *mut usize;
-        *size_ptr = size;
-
-        // Return pointer to the memory after the size
-        ptr.add(size_of::<usize>()) as *mut c_void
+        abi_declarations::xila_memory_allocate(
+            null_mut(),
+            size,
+            1,
+            abi_declarations::XILA_MEMORY_CAPABILITIES_NONE,
+        )
     }
 }
 
+/// Frees memory allocated with lfs_malloc
+///
+/// # Safety
+///
+/// The caller must ensure that the pointer was allocated with lfs_malloc
+/// and has not already been freed.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn lfs_free(p: *mut c_void) {
-    if p.is_null() {
-        return;
-    }
-
     unsafe {
-        // Get the original pointer by subtracting the size of usize
-        let original_ptr = (p as *mut u8).sub(size_of::<usize>());
-
-        // Read the size stored at the beginning
-        let size_ptr = original_ptr as *mut usize;
-        let size = *size_ptr;
-
-        let total_size = size + size_of::<usize>();
-        let alignment = align_of::<usize>();
-
-        let layout = Layout::from_size_align(total_size, alignment).unwrap();
-
-        alloc::alloc::dealloc(original_ptr, layout);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_lfs_malloc_and_free() {
-        unsafe {
-            let size = 100;
-            let ptr = lfs_malloc(size);
-            assert!(!ptr.is_null());
-
-            // Write some data
-            let data_ptr = ptr as *mut u8;
-            for i in 0..size {
-                *data_ptr.add(i) = i as u8;
-            }
-
-            // Verify the data
-            for i in 0..size {
-                assert_eq!(*data_ptr.add(i), i as u8);
-            }
-
-            lfs_free(ptr);
-        }
+        abi_declarations::xila_memory_deallocate(p);
     }
 }

@@ -124,6 +124,10 @@ impl XilaFileSystemStatistics {
         }
     }
 
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences a raw pointer.
+    /// The caller must ensure that the pointer is valid and properly aligned.
     pub unsafe fn from_mutable_pointer<'a>(
         pointer: *mut XilaFileSystemStatistics,
     ) -> Option<&'a mut XilaFileSystemStatistics> {
@@ -139,7 +143,8 @@ impl XilaFileSystemStatistics {
     }
 }
 
-pub type XilaFileIdentifier = u32;
+pub type XilaFileIdentifier = u16;
+
 pub type XilaFileSystemSize = u64;
 
 pub type XilaFileSystemResult = u32;

@@ -25,3 +25,5 @@ embassy-executor = { workspace = true, default-features = false, features = [
 
 [dev-dependencies]
 little_fs = { workspace = true }
+abi_definitions = { workspace = true }
+critical-section = { workspace = true, features = ["std"] }

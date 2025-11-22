@@ -180,13 +180,13 @@ impl Permissions {
     );
     pub const FILE_DEFAULT: Self = Self::new(
         Permission::READ_WRITE,
-        Permission::Read,
+        Permission::READ_WRITE,
         Permission::Read,
         Special::NONE,
     );
     pub const DIRECTORY_DEFAULT: Self = Self::new(
         Permission::All,
-        Permission::READ_EXECUTE,
+        Permission::All,
         Permission::READ_EXECUTE,
         Special::NONE,
     );

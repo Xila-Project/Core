@@ -106,6 +106,9 @@ mod tests {
 
         let task_instance = task::initialize();
 
+        let _ = users::initialize();
+        let _ = time::initialize(&crate::devices::TimeDevice);
+
         let task = task_instance.get_current_task_identifier().await;
 
         little_fs::FileSystem::format(device, 256).unwrap();
@@ -129,20 +132,15 @@ mod tests {
 
         let mut buffer = vec![0; test_file.len()];
 
-        let mut file = virtual_file_system::File::open(
+        virtual_file_system::File::read_from_path(
             virtual_file_system,
             task,
             &destination_path,
-            AccessFlags::Read.into(),
+            &mut buffer,
         )
         .await
         .unwrap();
 
-        let read = file.read_to_end(&mut buffer, 1).await.unwrap();
-
-        file.close(virtual_file_system).await.unwrap();
-
-        assert_eq!(read, test_file.len());
         assert_eq!(buffer, test_file.as_bytes());
     }
 }

@@ -243,7 +243,7 @@ impl Manager {
                 )
                 .await?;
 
-                let instance = Instance::new(&self.runtime, &module, stack_size).unwrap();
+                let instance = Instance::new(&self.runtime, &module, stack_size)?;
 
                 let result = if let Some(function_name) = function_name {
                     instance.call_export_function(function_name, &function_arguments)?

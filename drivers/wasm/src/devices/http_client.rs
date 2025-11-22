@@ -1,4 +1,4 @@
-use file_system::DeviceTrait;
+use file_system::{BaseOperations, Context, Size};
 
 pub struct HttpClientDevice {
     // Fields for the HTTP client can be added here if needed
@@ -10,27 +10,21 @@ impl HttpClientDevice {
     }
 }
 
-impl DeviceTrait for HttpClientDevice {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
-        todo!()
-    }
-
-    fn write(&self, buffer: &[u8]) -> file_system::Result<file_system::Size> {
-        todo!()
-    }
-
-    fn get_size(&self) -> file_system::Result<file_system::Size> {
-        todo!()
-    }
-
-    fn set_position(
+impl BaseOperations for HttpClientDevice {
+    fn read(
         &self,
-        position: &file_system::Position,
-    ) -> file_system::Result<file_system::Size> {
+        context: &mut Context,
+        buffer: &mut [u8],
+        _: Size,
+    ) -> file_system::Result<usize> {
         todo!()
     }
 
-    fn flush(&self) -> file_system::Result<()> {
+    fn write(&self, context: &mut Context, buffer: &[u8], _: Size) -> file_system::Result<usize> {
         todo!()
+    }
+
+    fn clone_context(&self, context: &Context) -> file_system::Result<Context> {
+        Ok(Context::new_empty())
     }
 }

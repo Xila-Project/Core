@@ -14,34 +14,34 @@ pub async fn create_default_hierarchy(
         .set_permissions(&Path::ROOT, Permissions::DIRECTORY_DEFAULT)
         .await?;
     virtual_file_system
-        .create_directory(&Path::SYSTEM, task)
+        .create_directory(task, &Path::SYSTEM)
         .await?;
     virtual_file_system
-        .create_directory(&Path::CONFIGURATION, task)
+        .create_directory(task, &Path::CONFIGURATION)
         .await?;
     virtual_file_system
-        .create_directory(&Path::SHARED_CONFIGURATION, task)
+        .create_directory(task, &Path::SHARED_CONFIGURATION)
         .await?;
     virtual_file_system
-        .create_directory(&Path::DEVICES, task)
+        .create_directory(task, &Path::DEVICES)
         .await?;
     virtual_file_system
-        .create_directory(&Path::USERS, task)
+        .create_directory(task, &Path::USERS)
         .await?;
     virtual_file_system
-        .create_directory(&Path::DATA, task)
+        .create_directory(task, &Path::DATA)
         .await?;
     virtual_file_system
-        .create_directory(&Path::SHARED_DATA, task)
+        .create_directory(task, &Path::SHARED_DATA)
         .await?;
     virtual_file_system
-        .create_directory(&Path::BINARIES, task)
+        .create_directory(task, &Path::BINARIES)
         .await?;
     virtual_file_system
-        .create_directory(&Path::TEMPORARY, task)
+        .create_directory(task, &Path::TEMPORARY)
         .await?;
     virtual_file_system
-        .create_directory(&Path::LOGS, task)
+        .create_directory(task, &Path::LOGS)
         .await?;
 
     Ok(())
@@ -66,7 +66,7 @@ pub async fn clean_devices_in_directory<'a>(
             continue;
         }
 
-        match virtual_file_system.remove(&entry_path).await {
+        match virtual_file_system.remove(task, &entry_path).await {
             Ok(_) | Err(Error::InvalidIdentifier) => {}
             Err(error) => {
                 return Err(error);

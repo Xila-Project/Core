@@ -38,6 +38,7 @@ pub struct FileItem {
 
 impl FileManager {
     pub async fn new() -> Result<Self> {
+        log::information!("Starting file manager...");
         let _lock = graphics::get_instance().lock().await;
 
         let mut window = graphics::get_instance().create_window().await?;
@@ -232,10 +233,13 @@ impl FileManager {
 
         // Open directory
         let virtual_file_system = get_instance();
+
+        log::information!("Loading directory: {}", self.current_path);
         let mut directory = Directory::open(virtual_file_system, task, &self.current_path).await;
 
         match &mut directory {
             Ok(directory) => {
+                log::information!("Directory opened");
                 // Read directory entries
                 while let Ok(Some(entry)) = directory.read().await {
                     let name = entry.name.clone();
@@ -270,6 +274,7 @@ impl FileManager {
                 Ok(())
             }
             Err(error) => {
+                log::error!("Failed to open directory: {:?}", error);
                 // Show error message
                 self.show_error_message("Failed to open directory").await;
                 Err(Error::FailedToReadDirectory(*error))

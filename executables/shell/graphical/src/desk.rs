@@ -276,7 +276,7 @@ impl Desk {
             let virtual_file_system = virtual_file_system::get_instance();
 
             let _ = virtual_file_system
-                .create_directory(&SHORTCUT_PATH, task)
+                .create_directory(task, &SHORTCUT_PATH)
                 .await;
 
             let mut buffer: Vec<u8> = vec![];

@@ -19,7 +19,6 @@ async fn main() {
     use xila::host_bindings;
     use xila::little_fs;
     use xila::log;
-    use xila::log::information;
     use xila::task;
     use xila::time;
     use xila::users;
@@ -34,7 +33,7 @@ async fn main() {
 
     let task_manager = task::initialize();
     let users_manager = users::initialize();
-    let time_manager = time::initialize(&drivers_native::TimeDevice).unwrap();
+    let time_manager = time::initialize(&drivers_std::devices::TimeDevice).unwrap();
 
     let task = task_manager.get_current_task_identifier().await;
     // - Initialize the graphics manager
@@ -140,7 +139,7 @@ async fn main() {
             (
                 &"/devices/time",
                 CharacterDevice,
-                drivers_native::TimeDevice
+                drivers_std::devices::TimeDevice
             ),
             (
                 &"/devices/random",
@@ -220,7 +219,7 @@ async fn main() {
     .await
     .unwrap();
 
-    let calculator_binary_path = build_crate(&"calculator").unwrap();
+    let calculator_binary_path = build_crate("calculator").unwrap();
 
     load_to_virtual_file_system(
         virtual_file_system,

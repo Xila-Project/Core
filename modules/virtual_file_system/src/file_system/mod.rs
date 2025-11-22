@@ -7,7 +7,7 @@ use alloc::vec;
 use alloc::{boxed::Box, collections::BTreeMap};
 use core::ptr;
 use exported_file_system::{
-    BaseOperations, BlockDevice, CharacterDevice, CreateFlags, Permissions,
+    BaseOperations, BlockDevice, CharacterDevice, CreateFlags, Permission, Permissions,
 };
 use file_system::{
     AccessFlags, AttributeFlags, Attributes, Context, FileSystemOperations, Flags, Kind, Path,
@@ -220,6 +220,15 @@ impl<'a> VirtualFileSystem<'a> {
 
         let (time, user, _) = self.get_time_user_group(task).await?;
 
+        Self::check_permissions_with_parent(
+            file_system.file_system,
+            path,
+            Permission::Read,
+            Permission::Execute,
+            user,
+        )
+        .await?;
+
         let mut attributes = Attributes::new().set_mask(
             AttributeFlags::Kind
                 | AttributeFlags::User
@@ -228,28 +237,9 @@ impl<'a> VirtualFileSystem<'a> {
         );
         FileSystemOperations::get_attributes(file_system.file_system, path, &mut attributes)?;
         let kind = attributes.get_kind().ok_or(Error::MissingAttribute)?;
-        let owner_user = *attributes.get_user().ok_or(Error::MissingAttribute)?;
-        let owner_group = *attributes.get_group().ok_or(Error::MissingAttribute)?;
-        let permissions = *attributes
-            .get_permissions()
-            .ok_or(Error::MissingAttribute)?;
 
         if *kind != Kind::Directory {
             return Err(Error::NotADirectory);
-        }
-
-        let has_permissions = Self::has_permissions(
-            users::get_instance(),
-            user,
-            AccessFlags::Read.into_permission(),
-            owner_user,
-            owner_group,
-            permissions,
-        )
-        .await;
-
-        if !has_permissions {
-            return Err(Error::PermissionDenied);
         }
 
         let attributes = Attributes::new().set_access(time);
@@ -287,8 +277,18 @@ impl<'a> VirtualFileSystem<'a> {
         let (mode, open, _) = flags.split();
 
         if open.contains(CreateFlags::Create) {
-            match file_system.file_system.create_file(relative_path) {
+            let result = poll(|| Ok(file_system.file_system.create_file(relative_path)?)).await;
+
+            match result {
                 Ok(()) => {
+                    Self::check_permissions(
+                        file_system.file_system,
+                        path.go_parent().ok_or(Error::InvalidPath)?,
+                        Permission::Write | Permission::Execute,
+                        user,
+                    )
+                    .await?;
+
                     let attributes = Attributes::new()
                         .set_user(user)
                         .set_group(group)
@@ -301,15 +301,24 @@ impl<'a> VirtualFileSystem<'a> {
                     Self::set_attributes(file_system.file_system, relative_path, &attributes)
                         .await?;
                 }
-                Err(file_system::Error::AlreadyExists) => {
+                Err(Error::FileSystem(file_system::Error::AlreadyExists)) => {
                     if open.contains(CreateFlags::Exclusive) {
                         return Err(Error::AlreadyExists);
                     }
                 }
                 Err(e) => {
-                    return Err(e.into());
+                    return Err(e);
                 }
             }
+        } else {
+            Self::check_permissions_with_parent(
+                file_system.file_system,
+                path,
+                mode.into_permission(),
+                Permission::Execute,
+                user,
+            )
+            .await?;
         }
 
         let attributes = if mode.contains(AccessFlags::Write) {
@@ -319,13 +328,8 @@ impl<'a> VirtualFileSystem<'a> {
         };
         Self::set_attributes(file_system.file_system, relative_path, &attributes).await?;
 
-        let mut attributes = Attributes::new().set_mask(
-            AttributeFlags::Inode
-                | AttributeFlags::Kind
-                | AttributeFlags::User
-                | AttributeFlags::Group
-                | AttributeFlags::Permissions,
-        );
+        let mut attributes =
+            Attributes::new().set_mask(AttributeFlags::Inode | AttributeFlags::Kind);
         FileSystemOperations::get_attributes(
             file_system.file_system,
             relative_path,
@@ -333,26 +337,7 @@ impl<'a> VirtualFileSystem<'a> {
         )?;
 
         let kind = attributes.get_kind().ok_or(Error::MissingAttribute)?;
-        let owner_user = *attributes.get_user().ok_or(Error::MissingAttribute)?;
-        let owner_group = *attributes.get_group().ok_or(Error::MissingAttribute)?;
-        let permissions = *attributes
-            .get_permissions()
-            .ok_or(Error::MissingAttribute)?;
         let inode = *attributes.get_inode().ok_or(Error::MissingAttribute)?;
-
-        let has_permissions = Self::has_permissions(
-            users::get_instance(),
-            user,
-            mode.into_permission(),
-            owner_user,
-            owner_group,
-            permissions,
-        )
-        .await;
-
-        if !has_permissions {
-            return Err(Error::PermissionDenied);
-        }
 
         let mut context = Context::new_empty();
 
@@ -368,7 +353,7 @@ impl<'a> VirtualFileSystem<'a> {
 
                 let device = devices.get_mut(&inode).ok_or(Error::InvalidInode)?;
 
-                device.device.open(&mut context)?;
+                poll(|| Ok(device.device.open(&mut context)?)).await?;
                 device.reference_count += 1;
 
                 File::new(ItemStatic::CharacterDevice(device.device), flags, context)
@@ -378,7 +363,7 @@ impl<'a> VirtualFileSystem<'a> {
 
                 let device = devices.get_mut(&inode).ok_or(Error::InvalidInode)?;
 
-                device.device.open(&mut context)?;
+                poll(|| Ok(device.device.open(&mut context)?)).await?;
                 device.reference_count += 1;
 
                 File::new(ItemStatic::BlockDevice(device.device), flags, context)
@@ -387,17 +372,20 @@ impl<'a> VirtualFileSystem<'a> {
                 let mut pipes = self.pipes.write().await;
                 let pipe = pipes.get_mut(&inode).ok_or(Error::InvalidInode)?;
 
-                pipe.pipe.open(&mut context)?;
+                poll(|| Ok(pipe.pipe.open(&mut context)?)).await?;
                 pipe.reference_count += 1;
 
                 File::new(ItemStatic::Pipe(pipe.pipe), flags, context)
             }
             Kind::File => {
-                file_system.file_system.lookup_file(
-                    &mut context,
-                    relative_path,
-                    Flags::new(flags.get_mode(), None, None),
-                )?;
+                poll(|| {
+                    Ok(file_system.file_system.lookup_file(
+                        &mut context,
+                        relative_path,
+                        Flags::new(flags.get_mode(), None, None),
+                    )?)
+                })
+                .await?;
 
                 file_system.reference_count += 1;
 
@@ -424,6 +412,16 @@ impl<'a> VirtualFileSystem<'a> {
 
         let (parent_file_system, relative_path, _) =
             Self::get_mutable_file_system_from_path(&mut file_systems, &path)?; // Get the file system identifier and the relative path
+
+        let (_, user, _) = self.get_time_user_group(task).await?;
+
+        Self::check_permissions(
+            parent_file_system.file_system,
+            path.go_parent().ok_or(Error::InvalidPath)?,
+            Permission::Write,
+            user,
+        )
+        .await?;
 
         if let ItemStatic::FileSystem(_) = item {
             parent_file_system
@@ -500,14 +498,19 @@ impl<'a> VirtualFileSystem<'a> {
             .set_creation(time)
             .set_modification(time)
             .set_access(time)
+            .set_status(time)
             .set_kind(underlying_kind)
             .set_permissions(Permissions::DEVICE_DEFAULT)
             .set_inode(inode);
         Self::set_attributes(parent_file_system.file_system, relative_path, &attributes).await?;
 
-        item.as_mount_operations()
-            .ok_or(Error::UnsupportedOperation)?
-            .mount()?;
+        poll(|| {
+            Ok(item
+                .as_mount_operations()
+                .ok_or(Error::UnsupportedOperation)?
+                .mount()?)
+        })
+        .await?;
 
         Ok(())
     }
@@ -588,11 +591,21 @@ impl<'a> VirtualFileSystem<'a> {
         Ok((reader, writer))
     }
 
-    pub async fn remove(&self, path: impl AsRef<Path>) -> Result<()> {
+    pub async fn remove(&self, task: TaskIdentifier, path: impl AsRef<Path>) -> Result<()> {
         let file_systems = self.file_systems.read().await; // Get the file systems
 
         let (file_system, relative_path, _) =
             Self::get_file_system_from_path(&file_systems, &path)?; // Get the file system identifier and the relative path
+
+        let (_, user, _) = self.get_time_user_group(task).await?;
+
+        Self::check_permissions(
+            file_system.file_system,
+            path.as_ref().go_parent().ok_or(Error::InvalidPath)?,
+            Permission::Write,
+            user,
+        )
+        .await?;
 
         let mut attributes =
             Attributes::new().set_mask(AttributeFlags::Kind | AttributeFlags::Inode);
@@ -621,8 +634,8 @@ impl<'a> VirtualFileSystem<'a> {
 
     pub async fn create_directory(
         &self,
-        path: &impl AsRef<Path>,
         task: TaskIdentifier,
+        path: &impl AsRef<Path>,
     ) -> Result<()> {
         let file_systems = self.file_systems.read().await; // Get the file systems
 
@@ -630,13 +643,22 @@ impl<'a> VirtualFileSystem<'a> {
 
         let (time, user, group) = self.get_time_user_group(task).await?;
 
-        match file_system.file_system.create_directory(relative_path) {
+        // Get the parent directory attributes
+        Self::check_permissions(
+            file_system.file_system,
+            path.as_ref().go_parent().ok_or(Error::InvalidPath)?,
+            Permission::Write,
+            user,
+        )
+        .await?;
+
+        match poll(|| Ok(file_system.file_system.create_directory(relative_path)?)).await {
             Ok(()) => {}
-            Err(file_system::Error::AlreadyExists) => {
+            Err(Error::FileSystem(file_system::Error::AlreadyExists)) => {
                 return Err(Error::AlreadyExists);
             }
             Err(e) => {
-                return Err(e.into());
+                return Err(e);
             }
         }
 
@@ -674,9 +696,14 @@ impl<'a> VirtualFileSystem<'a> {
             return Err(Error::InvalidPath);
         }
 
-        Ok(old_file_system
-            .file_system
-            .rename(old_relative_path, new_relative_path)?)
+        poll(|| {
+            Ok(old_file_system
+                .file_system
+                .rename(old_relative_path, new_relative_path)?)
+        })
+        .await?;
+
+        Ok(())
     }
 
     pub async fn get_statistics(&self, path: &impl AsRef<Path>) -> Result<Statistics> {
@@ -788,8 +815,10 @@ impl<'a> VirtualFileSystem<'a> {
     ) -> Result<()> {
         let path = path.as_ref();
         let file_systems = self.file_systems.read().await; // Get the file systems
+
         let (file_system, relative_path, _) =
             Self::get_file_system_from_path(&file_systems, &path)?; // Get the file system identifier and the relative path
+
         let attributes = Attributes::new().set_permissions(permissions);
         Self::set_attributes(file_system.file_system, relative_path, &attributes).await
     }

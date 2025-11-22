@@ -1,7 +1,6 @@
 use crate::error::{Error, Result};
 use alloc::{collections::vec_deque::VecDeque, string::String};
 use core::ffi::CStr;
-use xila::file_system::Size;
 use xila::graphics::fonts::get_font_monospace_medium;
 use xila::graphics::{
     self, Color, EventKind, Key, Window,
