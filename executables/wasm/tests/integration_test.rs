@@ -9,115 +9,52 @@ async fn main() {
 
     use command_line_shell::ShellExecutable;
     use drivers_std::loader::load_to_virtual_file_system;
-    use wasm::WasmDevice;
-    use xila::executable::{Standard, build_crate, mount_static_executables};
-    use xila::file_system::{MemoryDevice, Mode, create_device, create_file_system};
-    use xila::little_fs;
+    use wasm::WasmExecutable;
+    use xila::executable::{build_crate, mount_executables};
     use xila::task;
-    use xila::time;
-    use xila::users;
-    use xila::virtual_file_system::{self, create_default_hierarchy, mount_static_devices};
+    use xila::virtual_file_system;
     use xila::virtual_machine;
 
-    let task_instance = task::initialize();
+    let standard = testing::initialize(false).await;
 
-    let _ = users::initialize();
-
-    let _ = time::initialize(create_device!(drivers_native::TimeDriver::new()));
+    let virtual_file_system = virtual_file_system::get_instance();
+    let task_instance = task::get_instance();
+    let task = task_instance.get_current_task_identifier().await;
 
     let _ = virtual_machine::initialize(&[]);
 
-    let memory_device = create_device!(MemoryDevice::<512>::new(1024 * 1024 * 512));
-
-    little_fs::FileSystem::format(memory_device.clone(), 256).unwrap();
-
-    let file_system = little_fs::FileSystem::new(memory_device, 256).unwrap();
-
     let binary_path = build_crate(&"wasm_wasm_test").unwrap();
-
-    let virtual_file_system =
-        virtual_file_system::initialize(create_file_system!(file_system), None).unwrap();
-
     load_to_virtual_file_system(virtual_file_system, binary_path, "/test_wasm.wasm")
         .await
         .unwrap();
 
-    let task = task_instance.get_current_task_identifier().await;
-
-    create_default_hierarchy(virtual_file_system, task)
-        .await
-        .unwrap();
-
-    mount_static_devices!(
+    mount_executables!(
         virtual_file_system,
         task,
         &[
-            (
-                &"/devices/standard_in",
-                drivers_std::console::StandardInDevice
-            ),
-            (
-                &"/devices/standard_out",
-                drivers_std::console::StandardOutDevice
-            ),
-            (
-                &"/devices/standard_error",
-                drivers_std::console::StandardErrorDevice
-            ),
-            (&"/devices/time", drivers_native::TimeDriver),
-            (&"/devices/random", drivers_shared::devices::RandomDevice),
-            (&"/devices/null", drivers_core::NullDevice)
+            ("/binaries/command_line_shell", ShellExecutable),
+            ("/binaries/wasm", WasmExecutable)
         ]
     )
     .await
     .unwrap();
 
-    mount_static_executables!(
-        virtual_file_system,
-        task,
-        &[
-            (&"/binaries/command_line_shell", ShellExecutable),
-            (&"/binaries/wasm", WasmDevice)
-        ]
+    let result = executable::execute(
+        "/binaries/wasm",
+        vec!["/test_wasm.wasm".to_string()],
+        standard,
+        None,
     )
     .await
-    .unwrap();
+    .unwrap()
+    .join()
+    .await;
 
-    let standard_in = virtual_file_system
-        .open(&"/devices/standard_in", Mode::READ_ONLY.into(), task)
-        .await
-        .unwrap();
-
-    let standard_out = virtual_file_system
-        .open(&"/devices/standard_out", Mode::WRITE_ONLY.into(), task)
-        .await
-        .unwrap();
-
-    let standard_error = virtual_file_system
-        .open(&"/devices/standard_error", Mode::WRITE_ONLY.into(), task)
-        .await
-        .unwrap();
-
-    let standard = Standard::new(
-        standard_in,
-        standard_out,
-        standard_error,
-        task,
-        virtual_file_system,
-    );
-
-    let environment_variables = &[("Paths", "/"), ("User", "alix_anneraud"), ("Host", "xila")];
-
-    task_instance
-        .set_environment_variables(task, environment_variables)
-        .await
-        .unwrap();
-
-    let result = executable::execute("/binaries/command_line_shell", vec![], standard, None)
-        .await
-        .unwrap()
-        .join()
-        .await;
+    //    let result = executable::execute("/binaries/command_line_shell", vec![], standard, None)
+    //        .await
+    //        .unwrap()
+    //        .join()
+    //        .await;
 
     assert!(result == 0);
 }
