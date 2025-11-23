@@ -2,12 +2,19 @@
 
 extern crate alloc;
 
+mod file;
+mod unique_file;
+
+pub use file::*;
+
 use alloc::{collections::btree_map::BTreeMap, vec, vec::Vec};
-use file_system::{Path, PathOwned, UniqueFileIdentifier};
+use file_system::{Path, PathOwned};
 use futures::block_on;
 use smol_str::SmolStr;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use task::TaskIdentifier;
+use unique_file::*;
+use virtual_file_system::{SynchronousDirectory, SynchronousFile};
 
 pub static CONTEXT: Context = Context::new();
 
@@ -17,8 +24,8 @@ pub fn get_instance() -> &'static Context {
 
 struct Inner {
     task: Option<TaskIdentifier>,
-    opened_file_identifiers_paths:
-        BTreeMap<(TaskIdentifier, UniqueFileIdentifier), (SmolStr, UniqueFileIdentifier)>,
+    directories: BTreeMap<UniqueFileIdentifier, (SmolStr, FileIdentifier, SynchronousDirectory)>,
+    files: BTreeMap<UniqueFileIdentifier, SynchronousFile>,
 }
 
 pub struct Context(RwLock<CriticalSectionRawMutex, Inner>);
@@ -33,7 +40,8 @@ impl Context {
     pub const fn new() -> Self {
         Self(RwLock::new(Inner {
             task: None,
-            opened_file_identifiers_paths: BTreeMap::new(),
+            directories: BTreeMap::new(),
+            files: BTreeMap::new(),
         }))
     }
 
@@ -41,39 +49,121 @@ impl Context {
         block_on(self.0.read()).task.expect("No current task set")
     }
 
-    pub fn insert_opened_file_identifier_path(
-        &self,
+    fn get_new_identifier<V>(
+        map: &BTreeMap<UniqueFileIdentifier, V>,
         task: TaskIdentifier,
-        file_identifier: UniqueFileIdentifier,
-        parent_file_identifier: Option<UniqueFileIdentifier>,
-        path: impl AsRef<Path>,
-    ) {
-        let mut inner = block_on(self.0.write());
-
-        let parent_file_identifier =
-            parent_file_identifier.unwrap_or(UniqueFileIdentifier::INVALID_FILE_IDENTIFIER);
-
-        inner.opened_file_identifiers_paths.insert(
-            (task, file_identifier),
-            (SmolStr::new(path.as_ref()), parent_file_identifier),
-        );
+    ) -> Option<UniqueFileIdentifier> {
+        UniqueFileIdentifier::get_minimum(task)
+            .into_iter()
+            .find(|identifier| !map.contains_key(identifier))
     }
 
-    pub fn remove_opened_file_identifier_path(
+    pub fn insert_file(
         &self,
         task: TaskIdentifier,
-        file_identifier: UniqueFileIdentifier,
-    ) {
+        file: SynchronousFile,
+        custom_file_identifier: Option<FileIdentifier>,
+    ) -> Option<FileIdentifier> {
+        let mut inner = block_on(self.0.write());
+
+        let file_identifier = if let Some(custom_file_identifier) = custom_file_identifier {
+            let file_identifier = UniqueFileIdentifier::new(task, custom_file_identifier);
+            if inner.files.contains_key(&file_identifier) {
+                panic!("File identifier {:?} is already in use", file_identifier);
+            }
+            file_identifier
+        } else {
+            Self::get_new_identifier(&inner.files, task).unwrap()
+        };
+
+        inner.files.insert(file_identifier, file);
+
+        Some(file_identifier.get_file())
+    }
+
+    pub fn perform_operation_on_file<F, O>(
+        &self,
+        file_identifier: FileIdentifier,
+        operation: F,
+    ) -> Option<O>
+    where
+        F: FnOnce(&mut SynchronousFile) -> O,
+    {
+        let task = self.get_current_task_identifier();
+        let file = UniqueFileIdentifier::new(task, file_identifier);
+
+        let mut inner = block_on(self.0.write());
+        let file = inner.files.get_mut(&file)?;
+
+        Some(operation(file))
+    }
+
+    pub fn perform_operation_on_directory<F, O>(
+        &self,
+        file: FileIdentifier,
+        operation: F,
+    ) -> Option<O>
+    where
+        F: FnOnce(&mut SynchronousDirectory) -> O,
+    {
+        let task = self.get_current_task_identifier();
+        let file = UniqueFileIdentifier::new(task, file);
+
         let mut inner = block_on(self.0.write());
         inner
-            .opened_file_identifiers_paths
-            .remove(&(task, file_identifier));
+            .directories
+            .get_mut(&file)
+            .map(|(_, _, directory)| operation(directory))
+    }
+
+    pub fn insert_directory(
+        &self,
+        task: TaskIdentifier,
+        parent_file_identifier: Option<FileIdentifier>,
+        path: impl AsRef<Path>,
+        directory: SynchronousDirectory,
+    ) -> Option<FileIdentifier> {
+        let mut inner = block_on(self.0.write());
+
+        let file_identifier = Self::get_new_identifier(&inner.directories, task).unwrap();
+
+        let parent_file_identifier = parent_file_identifier.unwrap_or(FileIdentifier::INVALID);
+
+        inner.directories.insert(
+            file_identifier,
+            (
+                SmolStr::new(path.as_ref()),
+                parent_file_identifier,
+                directory,
+            ),
+        );
+
+        Some(file_identifier.get_file())
+    }
+
+    pub fn remove_directory(&self, file: FileIdentifier) -> Option<SynchronousDirectory> {
+        let task = self.get_current_task_identifier();
+        let file = UniqueFileIdentifier::new(task, file);
+
+        let mut inner = block_on(self.0.write());
+        inner
+            .directories
+            .remove(&file)
+            .map(|(_, _, directory)| directory)
+    }
+
+    pub fn remove_file(&self, file: FileIdentifier) -> Option<SynchronousFile> {
+        let task = self.get_current_task_identifier();
+        let file = UniqueFileIdentifier::new(task, file);
+
+        let mut inner = block_on(self.0.write());
+        inner.files.remove(&file)
     }
 
     pub fn get_full_path(
         &self,
         task: TaskIdentifier,
-        file_identifier: UniqueFileIdentifier,
+        directory: FileIdentifier,
         path: impl AsRef<Path>,
     ) -> Option<PathOwned> {
         let inner = block_on(self.0.read());
@@ -82,20 +172,20 @@ impl Context {
 
         let mut new_size = path.as_ref().get_length();
 
-        let mut current_file_identifier = file_identifier;
+        let mut current_file_identifier = directory.into_unique(task);
 
-        while let Some((path, parent_file_identifier)) = inner
-            .opened_file_identifiers_paths
-            .get(&(task, current_file_identifier))
-        {
+        loop {
+            let (path, parent_file_identifier, _) =
+                inner.directories.get(&current_file_identifier)?;
+
             new_size += path.len() + 1; // +1 for the separator
 
-            if *parent_file_identifier == UniqueFileIdentifier::INVALID_FILE_IDENTIFIER {
+            if *parent_file_identifier == FileIdentifier::INVALID {
                 break;
             }
 
             stack.push(path);
-            current_file_identifier = *parent_file_identifier;
+            current_file_identifier = parent_file_identifier.into_unique(task);
         }
 
         let mut new_path = PathOwned::new_with_capacity(new_size);
@@ -128,7 +218,7 @@ impl Context {
     pub async fn call_abi<F, Fut, R>(&self, function: F) -> R
     where
         F: FnOnce() -> Fut,
-        Fut: core::future::Future<Output = R>,
+        Fut: Future<Output = R>,
     {
         let task = task::get_instance().get_current_task_identifier().await;
         self.set_task(task).await;
@@ -140,17 +230,17 @@ impl Context {
 
 #[cfg(test)]
 mod tests {
+    use core::mem::forget;
+
+    use file_system::{AccessFlags, DummyFileSystem};
+
     use super::*;
 
     #[test]
     fn test_context_new() {
         let context = Context::new();
         assert!(block_on(context.0.read()).task.is_none());
-        assert!(
-            block_on(context.0.read())
-                .opened_file_identifiers_paths
-                .is_empty()
-        );
+        assert!(block_on(context.0.read()).directories.is_empty());
     }
 
     #[test]
@@ -158,146 +248,174 @@ mod tests {
         let _ = get_instance();
     }
 
-    #[test]
-    fn test_insert_and_remove_opened_file_identifier_path() {
+    fn new_dummy_directory() -> SynchronousDirectory {
+        SynchronousDirectory::new(
+            &DummyFileSystem,
+            AccessFlags::READ_WRITE.into(),
+            file_system::Context::new_empty(),
+        )
+    }
+
+    fn initialize() -> (TaskIdentifier, Context) {
         let context = Context::new();
         let task = TaskIdentifier::new(1);
-        let file_id = UniqueFileIdentifier::from_raw(42);
-        let parent_id = Some(UniqueFileIdentifier::from_raw(10));
+        (task, context)
+    }
+
+    fn clean_up(context: &Context) {
+        let mut inner = block_on(context.0.write());
+
+        let keys = inner.directories.keys().cloned().collect::<Vec<_>>();
+
+        for key in keys {
+            let directory = inner.directories.remove(&key).unwrap();
+            forget(directory); // Do not call drop explicitly since they are invalid
+        }
+    }
+
+    #[test]
+    fn test_insert_and_remove_opened_file_identifier_path() {
+        let (task, context) = initialize();
+        let parent_id = FileIdentifier::new(10);
         let path = Path::from_str("test.txt");
 
-        context.insert_opened_file_identifier_path(task, file_id, parent_id, path);
+        let file_identifier = context
+            .insert_directory(task, Some(parent_id), path, new_dummy_directory())
+            .unwrap();
 
         let inner = block_on(context.0.read());
-        assert!(
-            inner
-                .opened_file_identifiers_paths
-                .contains_key(&(task, file_id))
-        );
+
+        let unique_file_identifier = UniqueFileIdentifier::new(task, file_identifier);
+
+        assert!(inner.directories.contains_key(&unique_file_identifier));
         drop(inner);
 
-        context.remove_opened_file_identifier_path(task, file_id);
+        // Set task before calling remove_directory since it calls get_current_task_identifier
+        block_on(context.set_task(task));
+        forget(context.remove_directory(file_identifier));
+        block_on(context.clear_task());
 
         let inner = block_on(context.0.read());
-        assert!(
-            !inner
-                .opened_file_identifiers_paths
-                .contains_key(&(task, file_id))
-        );
+        assert!(!inner.directories.contains_key(&unique_file_identifier));
+        drop(inner);
+
+        clean_up(&context);
     }
 
     #[test]
     fn test_insert_with_none_parent() {
-        let context = Context::new();
-        let task = TaskIdentifier::new(1);
-        let file_id = UniqueFileIdentifier::from_raw(42);
+        let (task, context) = initialize();
         let path = Path::from_str("test.txt");
+        let directory = new_dummy_directory();
 
-        context.insert_opened_file_identifier_path(task, file_id, None, path);
+        let file_identifier = context
+            .insert_directory(task, None, path, directory)
+            .unwrap();
 
         let inner = block_on(context.0.read());
-        let (_, parent) = inner
-            .opened_file_identifiers_paths
-            .get(&(task, file_id))
-            .unwrap();
-        assert_eq!(*parent, UniqueFileIdentifier::INVALID_FILE_IDENTIFIER);
+        let unique_file_identifier = UniqueFileIdentifier::new(task, file_identifier);
+        let (_, parent, _) = inner.directories.get(&unique_file_identifier).unwrap();
+        assert_eq!(*parent, FileIdentifier::INVALID);
+        drop(inner);
+
+        clean_up(&context);
     }
 
     #[test]
     fn test_get_full_path_single_level() {
-        let context = Context::new();
-        let task = TaskIdentifier::new(1);
-        let file_id = UniqueFileIdentifier::from_raw(42);
+        let (task, context) = initialize();
         let path = Path::from_str("base");
+        let directory = new_dummy_directory();
 
-        context.insert_opened_file_identifier_path(task, file_id, None, path);
+        let base_id = context
+            .insert_directory(task, None, path, directory)
+            .unwrap();
 
-        let result = context.get_full_path(task, file_id, Path::from_str("file.txt"));
-        assert!(result.is_some());
+        let result = context.get_full_path(task, base_id, Path::from_str("file.txt"));
+        // Since base has no parent (INVALID), it stops and only includes the provided path
+        assert_eq!(result.unwrap().as_str(), "/file.txt");
+
+        clean_up(&context);
     }
 
     #[test]
     fn test_get_full_path_nested() {
-        let context = Context::new();
-        let task = TaskIdentifier::new(1);
-        let root_id = UniqueFileIdentifier::from_raw(1);
-        let dir_id = UniqueFileIdentifier::from_raw(2);
-        let file_id = UniqueFileIdentifier::from_raw(3);
+        let (task, context) = initialize();
 
-        context.insert_opened_file_identifier_path(task, root_id, None, Path::from_str("root"));
-        context.insert_opened_file_identifier_path(
-            task,
-            dir_id,
-            Some(root_id),
-            Path::from_str("dir"),
-        );
-        context.insert_opened_file_identifier_path(
-            task,
-            file_id,
-            Some(dir_id),
-            Path::from_str("subdir"),
-        );
+        let root_id = context
+            .insert_directory(task, None, "root", new_dummy_directory())
+            .unwrap();
+        let dir_id = context
+            .insert_directory(task, Some(root_id), "dir", new_dummy_directory())
+            .unwrap();
+        let sub_dir_id = context
+            .insert_directory(task, Some(dir_id), "subdir", new_dummy_directory())
+            .unwrap();
 
-        let result = context.get_full_path(task, file_id, Path::from_str("file.txt"));
-        assert!(result.is_some());
+        let path = context
+            .get_full_path(task, sub_dir_id, Path::from_str("file.txt"))
+            .unwrap();
+        // The algorithm stops when reaching a directory with INVALID parent (root)
+        // So it builds path from children directories only, not including root
+        assert_eq!(path.as_str(), "/dir/subdir/file.txt");
+
+        clean_up(&context);
     }
 
     #[test]
     fn test_get_full_path_nonexistent() {
-        let context = Context::new();
-        let task = TaskIdentifier::new(1);
-        let file_id = UniqueFileIdentifier::from_raw(999);
+        let (task, context) = initialize();
+        let file_id = FileIdentifier::new(999);
 
         let result = context.get_full_path(task, file_id, Path::from_str("file.txt"));
-        assert!(result.is_some());
+        assert_eq!(result, None);
+
+        clean_up(&context);
     }
 
     #[test]
     fn test_remove_nonexistent_file() {
-        let context = Context::new();
-        let task = TaskIdentifier::new(1);
-        let file_id = UniqueFileIdentifier::from_raw(999);
+        let (task, context) = initialize();
+        let file_id = FileIdentifier::new(999);
 
-        context.remove_opened_file_identifier_path(task, file_id);
+        block_on(context.set_task(task));
+        let result = context.remove_directory(file_id);
+        block_on(context.clear_task());
 
-        let inner = block_on(context.0.read());
-        assert!(
-            !inner
-                .opened_file_identifiers_paths
-                .contains_key(&(task, file_id))
-        );
+        assert!(result.is_none());
+        clean_up(&context);
     }
 
     #[test]
     fn test_multiple_tasks() {
-        let context = Context::new();
-        let task1 = TaskIdentifier::new(1);
+        let (task1, context) = initialize();
         let task2 = TaskIdentifier::new(2);
-        let file_id = UniqueFileIdentifier::from_raw(42);
 
-        context.insert_opened_file_identifier_path(
-            task1,
-            file_id,
-            None,
-            Path::from_str("task1.txt"),
-        );
-        context.insert_opened_file_identifier_path(
-            task2,
-            file_id,
-            None,
-            Path::from_str("task2.txt"),
-        );
+        let file_id1 = context
+            .insert_directory(
+                task1,
+                None,
+                Path::from_str("task1.txt"),
+                new_dummy_directory(),
+            )
+            .unwrap();
+        let file_id2 = context
+            .insert_directory(
+                task2,
+                None,
+                Path::from_str("task2.txt"),
+                new_dummy_directory(),
+            )
+            .unwrap();
 
         let inner = block_on(context.0.read());
-        assert!(
-            inner
-                .opened_file_identifiers_paths
-                .contains_key(&(task1, file_id))
-        );
-        assert!(
-            inner
-                .opened_file_identifiers_paths
-                .contains_key(&(task2, file_id))
-        );
+        let unique_id1 = UniqueFileIdentifier::new(task1, file_id1);
+        let unique_id2 = UniqueFileIdentifier::new(task2, file_id2);
+
+        assert!(inner.directories.contains_key(&unique_id1));
+        assert!(inner.directories.contains_key(&unique_id2));
+        drop(inner);
+
+        clean_up(&context);
     }
 }
