@@ -1,0 +1,313 @@
+use crate::{Error, Result, VirtualFileSystem, pipe::Pipe, poll};
+use alloc::{collections::btree_map::BTreeMap, vec::Vec};
+use exported_file_system::{
+    AttributeFlags, Attributes, BlockDevice, CharacterDevice, FileSystemOperations, Inode, Path,
+    PathOwned, Permission, Permissions, Time,
+};
+use task::TaskIdentifier;
+use users::{GroupIdentifier, UserIdentifier};
+
+pub(super) struct InternalFileSystem {
+    pub reference_count: usize,
+    pub mount_point: PathOwned,
+    pub file_system: &'static dyn FileSystemOperations,
+}
+
+pub(super) struct InternalBlockDevice {
+    pub reference_count: usize,
+    pub device: &'static dyn BlockDevice,
+}
+
+pub(super) struct InternalCharacterDevice {
+    pub reference_count: usize,
+    pub device: &'static dyn CharacterDevice,
+}
+
+pub(super) struct InternalPipe {
+    pub reference_count: usize,
+    pub pipe: &'static Pipe,
+}
+
+pub(super) type FileSystemsArray = Vec<InternalFileSystem>;
+pub(super) type CharacterDevicesMap = BTreeMap<Inode, InternalCharacterDevice>;
+pub(super) type BlockDevicesMap = BTreeMap<Inode, InternalBlockDevice>;
+pub(super) type PipeMap = BTreeMap<Inode, InternalPipe>;
+
+impl<'a> VirtualFileSystem<'a> {
+    pub(super) async fn has_permissions(
+        users_manager: &users::Manager,
+        current_user: UserIdentifier,
+        necessary_permissions: Permission,
+        owner_user: UserIdentifier,
+        owner_group: GroupIdentifier,
+        permissions: Permissions,
+    ) -> bool {
+        if current_user == UserIdentifier::ROOT {
+            return true;
+        }
+
+        if current_user == owner_user && permissions.get_user().contains(necessary_permissions) {
+            return true;
+        }
+
+        if users_manager.is_in_group(current_user, owner_group).await
+            && permissions.get_group().contains(necessary_permissions)
+        {
+            return true;
+        }
+
+        if permissions.get_others().contains(necessary_permissions) {
+            return true;
+        }
+
+        false
+    }
+
+    pub(super) fn get_file_system_index_from_path(
+        file_systems: &FileSystemsArray,
+        path: &impl AsRef<Path>,
+    ) -> Result<usize> {
+        let mut result_score = 0;
+        let mut result: Option<usize> = None;
+
+        let path = path.as_ref();
+        let path_components = path.get_components();
+
+        for (i, file_system) in file_systems.iter().enumerate() {
+            let mount_point: &Path = file_system.mount_point.as_ref();
+            let mount_point_components = mount_point.get_components();
+
+            let score = path_components
+                .clone()
+                .get_common_components(mount_point_components);
+
+            if result_score < score {
+                result_score = score;
+                result = Some(i);
+            }
+        }
+
+        result.ok_or(Error::InvalidPath)
+    }
+
+    pub(super) fn get_mutable_file_system_from_path<'b, 'c>(
+        file_systems: &'b mut FileSystemsArray,
+        path: &'c impl AsRef<Path>,
+    ) -> Result<(&'b mut InternalFileSystem, &'c Path, usize)> {
+        let i = Self::get_file_system_index_from_path(file_systems, path)?;
+
+        let internal_file_system = &mut file_systems[i];
+
+        let relative_path = path
+            .as_ref()
+            .strip_prefix_absolute(&internal_file_system.mount_point)
+            .ok_or(Error::InvalidPath)?;
+
+        Ok((internal_file_system, relative_path, i))
+    }
+
+    pub(super) fn get_file_system_from_path<'b, 'c>(
+        file_systems: &'b FileSystemsArray,
+        path: &'c impl AsRef<Path>,
+    ) -> Result<(&'b InternalFileSystem, &'c Path, usize)> {
+        let i = Self::get_file_system_index_from_path(file_systems, path)?;
+
+        let internal_file_system = &file_systems[i];
+
+        let relative_path = path
+            .as_ref()
+            .strip_prefix_absolute(&internal_file_system.mount_point)
+            .ok_or(Error::InvalidPath)?;
+
+        Ok((internal_file_system, relative_path, i))
+    }
+
+    pub(super) async fn get_time_user_group(
+        &self,
+        task: TaskIdentifier,
+    ) -> Result<(Time, UserIdentifier, GroupIdentifier)> {
+        let time: Time = time::get_instance().get_current_time()?.into();
+
+        let user = task::get_instance().get_user(task).await?;
+
+        let group = users::get_instance().get_user_primary_group(user).await?;
+
+        Ok((time, user, group))
+    }
+
+    pub(super) fn get_new_inode<T>(devices: &BTreeMap<Inode, T>) -> Option<Inode> {
+        (1..Inode::MAX).find(|&inode| !devices.contains_key(&inode))
+    }
+
+    pub(super) async fn set_attributes(
+        file_system: &dyn FileSystemOperations,
+        path: impl AsRef<Path>,
+        attributes: &Attributes,
+    ) -> Result<()> {
+        poll(|| {
+            Ok(FileSystemOperations::set_attributes(
+                file_system,
+                path.as_ref(),
+                attributes,
+            )?)
+        })
+        .await
+    }
+
+    pub(super) async fn get_attributes(
+        file_system: &dyn FileSystemOperations,
+        path: impl AsRef<Path>,
+        attributes: &mut Attributes,
+    ) -> Result<()> {
+        poll(|| {
+            Ok(FileSystemOperations::get_attributes(
+                file_system,
+                path.as_ref(),
+                attributes,
+            )?)
+        })
+        .await
+    }
+
+    pub(super) async fn check_permissions(
+        file_system: &dyn FileSystemOperations,
+        path: impl AsRef<Path>,
+        asked_permissions: Permission,
+        current_user: UserIdentifier,
+    ) -> Result<()> {
+        let mut attributes = Attributes::default()
+            .set_mask(AttributeFlags::User | AttributeFlags::Group | AttributeFlags::Permissions);
+
+        Self::get_attributes(file_system, path.as_ref(), &mut attributes).await?;
+
+        let owner_user = *attributes.get_user().ok_or(Error::MissingAttribute)?;
+        let owner_group = *attributes.get_group().ok_or(Error::MissingAttribute)?;
+        let owner_permissions = *attributes
+            .get_permissions()
+            .ok_or(Error::MissingAttribute)?;
+
+        if !Self::has_permissions(
+            users::get_instance(),
+            current_user,
+            asked_permissions,
+            owner_user,
+            owner_group,
+            owner_permissions,
+        )
+        .await
+        {
+            log::error!(
+                "Asked permissions {:?} not granted for user {:?} on path {:?} (owner: {:?}, group: {:?}, permissions: {:?})",
+                asked_permissions,
+                owner_user,
+                path.as_ref(),
+                owner_user,
+                owner_group,
+                owner_permissions,
+            );
+            return Err(Error::PermissionDenied);
+        }
+
+        Ok(())
+    }
+
+    pub(super) async fn check_permissions_with_parent(
+        file_system: &dyn FileSystemOperations,
+        path: impl AsRef<Path>,
+        current_permission: Permission,
+        parent_permission: Permission,
+        user: UserIdentifier,
+    ) -> Result<()> {
+        if !path.as_ref().is_root() {
+            let parent_path = path.as_ref().go_parent().ok_or(Error::InvalidPath)?;
+
+            Self::check_permissions(file_system, parent_path, parent_permission, user).await?;
+        }
+
+        Self::check_permissions(file_system, path.as_ref(), current_permission, user).await?;
+
+        Ok(())
+    }
+
+    pub(super) async fn check_owner(
+        file_system: &dyn FileSystemOperations,
+        path: impl AsRef<Path>,
+        current_user: UserIdentifier,
+    ) -> Result<()> {
+        if current_user == UserIdentifier::ROOT {
+            return Ok(());
+        }
+
+        let mut attributes = Attributes::default().set_mask(AttributeFlags::User);
+
+        Self::get_attributes(file_system, path.as_ref(), &mut attributes).await?;
+
+        let owner_user = *attributes.get_user().ok_or(Error::MissingAttribute)?;
+
+        if current_user == owner_user {
+            return Ok(());
+        }
+
+        log::error!(
+            "User {:?} is not the owner {:?} of path {:?}",
+            current_user,
+            owner_user,
+            path.as_ref(),
+        );
+        Err(Error::PermissionDenied)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use alloc::{boxed::Box, string::ToString, vec};
+    use file_system::{DummyFileSystem, PathOwned};
+
+    use super::*;
+
+    #[test]
+    fn test_get_file_system_from_path() {
+        let file_systems: FileSystemsArray = vec![
+            InternalFileSystem {
+                reference_count: 1,
+                mount_point: PathOwned::new("/".to_string()).unwrap(),
+                file_system: Box::leak(Box::new(DummyFileSystem)),
+            },
+            InternalFileSystem {
+                reference_count: 1,
+                mount_point: PathOwned::new("/Foo".to_string()).unwrap(),
+                file_system: Box::leak(Box::new(DummyFileSystem)),
+            },
+            InternalFileSystem {
+                reference_count: 1,
+                mount_point: PathOwned::new("/Foo/Bar".to_string()).unwrap(),
+                file_system: Box::leak(Box::new(DummyFileSystem)),
+            },
+        ];
+
+        let (_, relative_path, i) =
+            VirtualFileSystem::get_file_system_from_path(&file_systems, &"/").unwrap();
+
+        assert_eq!(i, 0);
+        assert_eq!(relative_path, Path::ROOT);
+
+        let (_, relative_path, i) =
+            VirtualFileSystem::get_file_system_from_path(&file_systems, &"/Foo/Bar").unwrap();
+
+        assert_eq!(i, 2);
+        assert_eq!(relative_path, Path::ROOT);
+
+        let (_, relative_path, i) =
+            VirtualFileSystem::get_file_system_from_path(&file_systems, &"/Foo/Bar/Baz").unwrap();
+
+        assert_eq!(i, 2);
+        assert_eq!(relative_path, "/Baz".as_ref());
+
+        let (_, relative_path, i) =
+            VirtualFileSystem::get_file_system_from_path(&file_systems, &"/Foo").unwrap();
+
+        assert_eq!(i, 1);
+        assert_eq!(relative_path, Path::ROOT);
+    }
+}
