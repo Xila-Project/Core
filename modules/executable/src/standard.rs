@@ -1,25 +1,15 @@
-use alloc::{fmt, string::String};
-use core::{fmt::Debug, mem::forget};
-use file_system::{Mode, Path, UniqueFileIdentifier};
+use alloc::string::String;
+use core::time::Duration;
+use file_system::{AccessFlags, Path};
 use task::TaskIdentifier;
 use virtual_file_system::{File, VirtualFileSystem};
 
 use crate::Result;
 
 pub struct Standard {
-    pub standard_in: File<'static>,
-    pub standard_out: File<'static>,
-    pub standard_error: File<'static>,
-}
-
-impl Debug for Standard {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("Standard")
-            .field("standard_in", &self.standard_in)
-            .field("standard_out", &self.standard_out)
-            .field("standard_error", &self.standard_error)
-            .finish()
-    }
+    pub standard_in: File,
+    pub standard_out: File,
+    pub standard_error: File,
 }
 
 impl Standard {
@@ -31,59 +21,67 @@ impl Standard {
         virtual_file_system: &'static VirtualFileSystem<'static>,
     ) -> Result<Self> {
         let standard_in = virtual_file_system
-            .open(standard_in, Mode::READ_ONLY.into(), task)
+            .open(standard_in, AccessFlags::Read.into(), task)
             .await?;
 
         let standard_out = virtual_file_system
-            .open(standard_out, Mode::WRITE_ONLY.into(), task)
+            .open(standard_out, AccessFlags::Write.into(), task)
             .await?;
 
         let standard_error = virtual_file_system
-            .open(standard_error, Mode::WRITE_ONLY.into(), task)
+            .open(standard_error, AccessFlags::Write.into(), task)
             .await?;
 
-        Ok(Self::new(
+        Ok(Self::new(standard_in, standard_out, standard_error))
+    }
+
+    pub fn new(standard_in: File, standard_out: File, standard_error: File) -> Self {
+        Self {
             standard_in,
             standard_out,
             standard_error,
-            task,
-            virtual_file_system,
-        ))
-    }
-
-    pub fn new(
-        standard_in: UniqueFileIdentifier,
-        standard_out: UniqueFileIdentifier,
-        standard_error: UniqueFileIdentifier,
-        task: TaskIdentifier,
-        virtual_file_system: &'static VirtualFileSystem,
-    ) -> Self {
-        Self {
-            standard_in: File::from(standard_in, virtual_file_system, task),
-            standard_out: File::from(standard_out, virtual_file_system, task),
-            standard_error: File::from(standard_error, virtual_file_system, task),
         }
     }
 
-    pub fn out(&mut self) -> &mut File<'static> {
+    pub fn input(&mut self) -> &mut File {
+        &mut self.standard_in
+    }
+
+    pub fn out(&mut self) -> &mut File {
         &mut self.standard_out
     }
 
-    pub fn error(&mut self) -> &mut File<'static> {
+    pub fn error(&mut self) -> &mut File {
         &mut self.standard_error
     }
 
-    pub async fn read_line(&self, buffer: &mut String) {
+    pub async fn read_line(&mut self, buffer: &mut String) -> virtual_file_system::Result<()> {
         buffer.clear();
 
-        let _ = self.standard_in.read_line(buffer).await;
+        // This function read_until the source until the delimiter '\n' is found.
+        // If the delimiter is not found, expand the buffer
+
+        let mut temp_buffer = [0u8; 1];
+
+        loop {
+            let bytes_read = self.standard_in.read(&mut temp_buffer).await?;
+
+            if bytes_read == 0 {
+                task::sleep(Duration::from_millis(10)).await;
+                continue;
+            }
+
+            if temp_buffer[0] == b'\n' {
+                break;
+            } else {
+                buffer.push(temp_buffer[0] as char);
+            }
+        }
+
+        Ok(())
     }
 
-    pub fn get_task(&self) -> TaskIdentifier {
-        self.standard_in.get_task()
-    }
-
-    pub async fn duplicate(&self) -> file_system::Result<Self> {
+    pub async fn duplicate(&self) -> virtual_file_system::Result<Self> {
         Ok(Self {
             standard_in: self.standard_in.duplicate().await?,
             standard_out: self.standard_out.duplicate().await?,
@@ -91,37 +89,18 @@ impl Standard {
         })
     }
 
-    pub fn split(self) -> (File<'static>, File<'static>, File<'static>) {
+    pub fn split(self) -> (File, File, File) {
         (self.standard_in, self.standard_out, self.standard_error)
     }
 
-    pub fn into_file_identifiers(
+    pub async fn close(
         self,
-    ) -> (
-        UniqueFileIdentifier,
-        UniqueFileIdentifier,
-        UniqueFileIdentifier,
-    ) {
-        let result = (
-            self.standard_in.get_file_identifier(),
-            self.standard_out.get_file_identifier(),
-            self.standard_error.get_file_identifier(),
-        );
+        virtual_file_system: &VirtualFileSystem<'_>,
+    ) -> virtual_file_system::Result<()> {
+        self.standard_in.close(virtual_file_system).await?;
+        self.standard_out.close(virtual_file_system).await?;
+        self.standard_error.close(virtual_file_system).await?;
 
-        forget(self); // Prevent Drop from being called
-
-        result
-    }
-
-    pub async fn transfer(self, task: TaskIdentifier) -> file_system::Result<Self> {
-        let standard_in = self.standard_in.transfer(task, None).await?;
-        let standard_out = self.standard_out.transfer(task, None).await?;
-        let standard_error = self.standard_error.transfer(task, None).await?;
-
-        Ok(Self {
-            standard_in,
-            standard_out,
-            standard_error,
-        })
+        Ok(())
     }
 }
