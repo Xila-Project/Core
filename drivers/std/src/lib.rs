@@ -19,3 +19,8 @@ pub mod console;
 pub mod devices;
 
 pub extern crate memory as memory_exported;
+
+#[cfg(test)]
+mod tests {
+    extern crate abi_definitions;
+}
