@@ -1,6 +1,97 @@
-use core::fmt;
+use core::fmt::{self, Display};
+
+use shared::flags;
 
 use crate::Kind;
+
+flags! {
+    /// The permissions of a file or directory.
+    pub enum Permission: u8 {
+        Execute,
+        Write,
+        Read,
+    }
+}
+
+impl Permission {
+    pub const READ_WRITE: Self = Permission::None
+        .insert(Permission::Read)
+        .insert(Permission::Write);
+    pub const READ_EXECUTE: Self = Permission::None
+        .insert(Permission::Read)
+        .insert(Permission::Execute);
+    pub const WRITE_EXECUTE: Self = Permission::None
+        .insert(Permission::Write)
+        .insert(Permission::Execute);
+
+    pub const fn from_unix(unix: u8) -> Option<Self> {
+        if unix > 0b111 {
+            return None;
+        }
+
+        Some(Self(unix))
+    }
+
+    pub const fn to_unix(&self) -> u8 {
+        self.0
+    }
+}
+
+impl Display for Permission {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let read = if self.contains(Permission::Read) {
+            "r"
+        } else {
+            "-"
+        };
+        let write = if self.contains(Permission::Write) {
+            "w"
+        } else {
+            "-"
+        };
+        let execute = if self.contains(Permission::Execute) {
+            "x"
+        } else {
+            "-"
+        };
+
+        write!(f, "{read}{write}{execute}")
+    }
+}
+
+flags! {
+    /// The special permissions of a file or directory.
+    pub enum Special: u8 {
+        /// Sticky bit.
+        Sticky,
+        /// Set user identifier.
+        SetUserIdentifier,
+        /// Set group identifier.
+        SetGroupIdentifier,
+    }
+}
+
+impl fmt::Display for Special {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let sticky = if self.contains(Special::Sticky) {
+            "t"
+        } else {
+            "-"
+        };
+        let set_gid = if self.contains(Special::SetGroupIdentifier) {
+            "u"
+        } else {
+            "-"
+        };
+        let set_uid = if self.contains(Special::SetUserIdentifier) {
+            "g"
+        } else {
+            "-"
+        };
+
+        write!(f, "{sticky}{set_gid}{set_uid}")
+    }
+}
 
 /// Represents the permissions of a file or directory.
 ///
@@ -12,10 +103,10 @@ use crate::Kind;
 /// ```rust
 /// use file_system::{Permissions, Permission, Special};
 ///
-/// let user = Permission::new(true, false, false); // Read only
-/// let group = Permission::new(false, true, false); // Write only
-/// let others = Permission::new(false, false, true); // Execute only
-/// let special = Special::new(true, false, true); // Sticky and set user identifier
+/// let user = Permission::Read; // Read only
+/// let group = Permission::Write; // Write only
+/// let others = Permission::Execute; // Execute only
+/// let special = Special::None;
 ///
 /// let permissions = Permissions::new(user, group, others, special);
 ///
@@ -38,17 +129,29 @@ impl fmt::Display for Permissions {
     }
 }
 
+impl From<(Permission, Permission, Permission)> for Permissions {
+    fn from(value: (Permission, Permission, Permission)) -> Self {
+        Self::new(value.0, value.1, value.2, Special::NONE)
+    }
+}
+
+impl From<(Permission, Permission, Permission, Special)> for Permissions {
+    fn from(value: (Permission, Permission, Permission, Special)) -> Self {
+        Self::new(value.0, value.1, value.2, value.3)
+    }
+}
+
 impl Permissions {
     pub const NONE: Self = Self::new(
-        Permission::NONE,
-        Permission::NONE,
-        Permission::NONE,
+        Permission::None,
+        Permission::None,
+        Permission::None,
         Special::NONE,
     );
     pub const ALL_FULL: Self = Self::new(
-        Permission::FULL,
-        Permission::FULL,
-        Permission::FULL,
+        Permission::All,
+        Permission::All,
+        Permission::All,
         Special::NONE,
     );
     pub const ALL_READ_WRITE: Self = Self::new(
@@ -58,21 +161,39 @@ impl Permissions {
         Special::NONE,
     );
     pub const USER_FULL: Self = Self::new(
-        Permission::FULL,
-        Permission::NONE,
-        Permission::NONE,
+        Permission::All,
+        Permission::None,
+        Permission::None,
         Special::NONE,
     );
     pub const USER_READ_WRITE: Self = Self::new(
         Permission::READ_WRITE,
-        Permission::NONE,
-        Permission::NONE,
+        Permission::None,
+        Permission::None,
         Special::NONE,
     );
     pub const EXECUTABLE: Self = Self::new(
-        Permission::FULL,
+        Permission::All,
         Permission::READ_EXECUTE,
         Permission::READ_EXECUTE,
+        Special::NONE,
+    );
+    pub const FILE_DEFAULT: Self = Self::new(
+        Permission::READ_WRITE,
+        Permission::READ_WRITE,
+        Permission::Read,
+        Special::NONE,
+    );
+    pub const DIRECTORY_DEFAULT: Self = Self::new(
+        Permission::All,
+        Permission::All,
+        Permission::READ_EXECUTE,
+        Special::NONE,
+    );
+    pub const DEVICE_DEFAULT: Self = Self::new(
+        Permission::All,
+        Permission::READ_WRITE,
+        Permission::READ_WRITE,
         Special::NONE,
     );
 
@@ -95,25 +216,25 @@ impl Permissions {
     pub const fn new_default(r#type: Kind) -> Self {
         match r#type {
             Kind::Directory => Self::new(
-                Permission::FULL,
+                Permission::All,
                 Permission::READ_EXECUTE,
                 Permission::READ_EXECUTE,
                 Special::NONE,
             ),
             Kind::File => Self::new(
                 Permission::READ_WRITE,
-                Permission::READ_ONLY,
-                Permission::READ_ONLY,
+                Permission::Read,
+                Permission::Read,
                 Special::NONE,
             ),
             Kind::Pipe => Self::new(
                 Permission::READ_WRITE,
-                Permission::NONE,
-                Permission::NONE,
+                Permission::None,
+                Permission::None,
                 Special::NONE,
             ),
             Kind::BlockDevice => Self::new(
-                Permission::FULL,
+                Permission::All,
                 Permission::READ_WRITE,
                 Permission::READ_WRITE,
                 Special::NONE,
@@ -121,7 +242,7 @@ impl Permissions {
             Kind::CharacterDevice => Self::new(
                 Permission::READ_WRITE,
                 Permission::READ_WRITE,
-                Permission::NONE,
+                Permission::None,
                 Special::NONE,
             ),
             Kind::Socket => Self::ALL_READ_WRITE,
@@ -188,28 +309,6 @@ impl Permissions {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(transparent)]
-pub struct Special(u8);
-
-impl fmt::Display for Special {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let sticky = if self.get_sticky() { "t" } else { "-" };
-        let set_gid = if self.get_set_group_identifier() {
-            "u"
-        } else {
-            "-"
-        };
-        let set_uid = if self.get_set_user_identifier() {
-            "g"
-        } else {
-            "-"
-        };
-
-        write!(f, "{sticky}{set_gid}{set_uid}")
-    }
-}
-
 impl Special {
     pub const NONE: Self = Self(0);
     pub const STICKY: Self = Self(1);
@@ -260,115 +359,15 @@ impl Special {
     }
 }
 
-/// Represents a permission.
-///
-/// The permission can be read, write, and execute.
-///
-/// # Examples
-///
-/// ```rust
-/// use file_system::Permission;
-///
-/// let read = Permission::READ_ONLY;
-/// let write = Permission::WRITE_ONLY;
-/// let execute = Permission::EXECUTE_ONLY;
-///
-/// assert!(read.get_read() && !read.get_write() && !read.get_execute());
-/// assert!(!write.get_read() && write.get_write() && !write.get_execute());
-/// assert!(!execute.get_read() && !execute.get_write() && execute.get_execute());
-/// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(transparent)]
-pub struct Permission(u8);
-
-impl fmt::Display for Permission {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let read = if self.get_read() { "r" } else { "-" };
-        let write = if self.get_write() { "w" } else { "-" };
-        let execute = if self.get_execute() { "x" } else { "-" };
-
-        write!(f, "{read}{write}{execute}")
-    }
-}
-
-impl Permission {
-    pub const READ_ONLY: Self = Self::new(true, false, false);
-    pub const WRITE_ONLY: Self = Self::new(false, true, false);
-    pub const EXECUTE_ONLY: Self = Self::new(false, false, true);
-
-    pub const READ_WRITE: Self = Self::new(true, true, false);
-    pub const WRITE_EXECUTE: Self = Self::new(false, true, true);
-    pub const READ_EXECUTE: Self = Self::new(true, false, true);
-
-    pub const NONE: Self = Self::new(false, false, false);
-    pub const FULL: Self = Self::new(true, true, true);
-
-    /// Creates a new permission.
-    pub const fn new(read: bool, write: bool, execute: bool) -> Self {
-        Self((read as u8) << 2 | (write as u8) << 1 | execute as u8)
-    }
-
-    /// Sets the read permission.
-    pub fn set_read(mut self, read: bool) -> Self {
-        self.0 = (self.0 & 0b011) | (read as u8) << 2;
-        self
-    }
-
-    /// Sets the write permission.
-    pub fn set_write(mut self, write: bool) -> Self {
-        self.0 = (self.0 & 0b101) | (write as u8) << 1;
-        self
-    }
-
-    /// Sets the execute permission.
-    pub fn set_execute(mut self, execute: bool) -> Self {
-        self.0 = (self.0 & 0b110) | execute as u8;
-        self
-    }
-
-    /// Gets the read permission.
-    pub const fn get_read(&self) -> bool {
-        self.0 & 0b100 != 0
-    }
-
-    /// Gets the write permission.
-    pub const fn get_write(&self) -> bool {
-        self.0 & 0b010 != 0
-    }
-
-    /// Gets the execute permission.
-    pub const fn get_execute(&self) -> bool {
-        self.0 & 0b001 != 0
-    }
-
-    /// Converts the permission to a Unix permission.
-    pub const fn to_unix(&self) -> u8 {
-        self.0
-    }
-
-    pub fn include(&self, other: Self) -> bool {
-        (self.0 & other.0) == other.0
-    }
-
-    /// Creates a permission from a Unix permission.
-    pub fn from_unix(unix: u8) -> Option<Self> {
-        if unix > 0b111 {
-            return None;
-        }
-
-        Some(Self(unix))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_new_permissions() {
-        let user = Permission::new(true, false, false); // Read only
-        let group = Permission::new(false, true, false); // Write only
-        let others = Permission::new(false, false, true); // Execute only
+        let user = Permission::Read; // Read only
+        let group = Permission::Write; // Write only
+        let others = Permission::Execute; // Execute only
         let special = Special::new(true, false, true); // Sticky and set user identifier
         let permissions = Permissions::new(user, group, others, special);
         assert_eq!(permissions.0, 0b101_100_010_001);
@@ -376,42 +375,42 @@ mod tests {
 
     #[test]
     fn test_new_permission() {
-        assert_eq!(Permission::READ_ONLY.0, 0b100);
-        assert_eq!(Permission::WRITE_ONLY.0, 0b010);
-        assert_eq!(Permission::EXECUTE_ONLY.0, 0b001);
+        assert_eq!(Permission::Read.0, 0b100);
+        assert_eq!(Permission::Write.0, 0b010);
+        assert_eq!(Permission::Execute.0, 0b001);
         assert_eq!(Permission::READ_WRITE.0, 0b110);
         assert_eq!(Permission::WRITE_EXECUTE.0, 0b011);
         assert_eq!(Permission::READ_EXECUTE.0, 0b101);
-        assert_eq!(Permission::NONE.0, 0b000);
-        assert_eq!(Permission::FULL.0, 0b111);
+        assert_eq!(Permission::None.0, 0b000);
+        assert_eq!(Permission::All.0, 0b111);
     }
 
     #[test]
     fn test_permission_type_to_unix() {
-        let read = Permission::READ_ONLY;
+        let read = Permission::Read;
         assert_eq!(read.to_unix(), 4);
-        let write = Permission::WRITE_ONLY;
+        let write = Permission::Write;
         assert_eq!(write.to_unix(), 2);
-        let execute = Permission::EXECUTE_ONLY;
+        let execute = Permission::Execute;
         assert_eq!(execute.to_unix(), 1);
-        let full = Permission::FULL;
+        let full = Permission::All;
         assert_eq!(full.to_unix(), 7);
-        let none = Permission::NONE;
+        let none = Permission::None;
         assert_eq!(none.to_unix(), 0);
     }
 
     #[test]
     fn test_permission_type_from_unix() {
         let read = Permission::from_unix(4).unwrap();
-        assert!(read.get_read() && !read.get_write() && !read.get_execute());
+        assert_eq!(read, Permission::Read);
         let write = Permission::from_unix(2).unwrap();
-        assert!(!write.get_read() && write.get_write() && !write.get_execute());
+        assert_eq!(write, Permission::Write);
         let execute = Permission::from_unix(1).unwrap();
-        assert!(!execute.get_read() && !execute.get_write() && execute.get_execute());
+        assert_eq!(execute, Permission::Execute);
         let full = Permission::from_unix(7).unwrap();
-        assert!(full.get_read() && full.get_write() && full.get_execute());
+        assert_eq!(full, Permission::All);
         let no = Permission::from_unix(0).unwrap();
-        assert!(!no.get_read() && !no.get_write() && !no.get_execute());
+        assert_eq!(no, Permission::None);
     }
 
     #[test]
@@ -424,95 +423,95 @@ mod tests {
 
     #[test]
     fn test_permissions_type_to_unix() {
-        let user = Permission::new(true, false, true); // Read and execute
-        let group = Permission::new(true, true, false); // Read and write
-        let others = Permission::new(false, true, true); // Write and execute
+        let user = Permission::Read | Permission::Execute; // Read and execute
+        let group = Permission::Read | Permission::Write; // Read and write
+        let others = Permission::Write | Permission::Execute; // Write and execute
         let special = Special::new(true, false, true); // Sticky and set user identifier
         let permissions = Permissions::new(user, group, others, special);
         assert_eq!(permissions.as_u16(), 0b101_101_110_011);
     }
 
     #[test]
-    fn test_permission_type_include() {
-        let read = Permission::READ_ONLY;
-        let write = Permission::WRITE_ONLY;
+    fn test_permission_type_contains() {
+        let read = Permission::Read;
+        let write = Permission::Write;
         let read_write = Permission::READ_WRITE;
         let read_execute = Permission::READ_EXECUTE;
         let write_execute = Permission::WRITE_EXECUTE;
-        let execute = Permission::EXECUTE_ONLY;
-        let full = Permission::FULL;
-        let no = Permission::NONE;
+        let execute = Permission::Execute;
+        let full = Permission::All;
+        let no = Permission::None;
 
-        assert!(full.include(read));
-        assert!(full.include(write));
-        assert!(full.include(execute));
-        assert!(full.include(read_write));
-        assert!(full.include(read_execute));
-        assert!(full.include(write_execute));
-        assert!(full.include(full));
-        assert!(full.include(no));
+        assert!(full.contains(read));
+        assert!(full.contains(write));
+        assert!(full.contains(execute));
+        assert!(full.contains(read_write));
+        assert!(full.contains(read_execute));
+        assert!(full.contains(write_execute));
+        assert!(full.contains(full));
+        assert!(full.contains(no));
 
-        assert!(read.include(read));
-        assert!(!read.include(write));
-        assert!(!read.include(execute));
-        assert!(!read.include(read_write));
-        assert!(!read.include(read_execute));
-        assert!(!read.include(write_execute));
-        assert!(!read.include(full));
-        assert!(read.include(no));
+        assert!(read.contains(read));
+        assert!(!read.contains(write));
+        assert!(!read.contains(execute));
+        assert!(!read.contains(read_write));
+        assert!(!read.contains(read_execute));
+        assert!(!read.contains(write_execute));
+        assert!(!read.contains(full));
+        assert!(read.contains(no));
 
-        assert!(!write.include(read));
-        assert!(write.include(write));
-        assert!(!write.include(execute));
-        assert!(!write.include(read_write));
-        assert!(!write.include(read_execute));
-        assert!(!write.include(write_execute));
-        assert!(!write.include(full));
-        assert!(write.include(no));
+        assert!(!write.contains(read));
+        assert!(write.contains(write));
+        assert!(!write.contains(execute));
+        assert!(!write.contains(read_write));
+        assert!(!write.contains(read_execute));
+        assert!(!write.contains(write_execute));
+        assert!(!write.contains(full));
+        assert!(write.contains(no));
 
-        assert!(!execute.include(read));
-        assert!(!execute.include(write));
-        assert!(execute.include(execute));
-        assert!(!execute.include(read_write));
-        assert!(!execute.include(read_execute));
-        assert!(!execute.include(write_execute));
-        assert!(!execute.include(full));
-        assert!(execute.include(no));
+        assert!(!execute.contains(read));
+        assert!(!execute.contains(write));
+        assert!(execute.contains(execute));
+        assert!(!execute.contains(read_write));
+        assert!(!execute.contains(read_execute));
+        assert!(!execute.contains(write_execute));
+        assert!(!execute.contains(full));
+        assert!(execute.contains(no));
 
-        assert!(read_write.include(read));
-        assert!(read_write.include(write));
-        assert!(!read_write.include(execute));
-        assert!(read_write.include(read_write));
-        assert!(!read_write.include(read_execute));
-        assert!(!read_write.include(write_execute));
-        assert!(!read_write.include(full));
-        assert!(read_write.include(no));
+        assert!(read_write.contains(read));
+        assert!(read_write.contains(write));
+        assert!(!read_write.contains(execute));
+        assert!(read_write.contains(read_write));
+        assert!(!read_write.contains(read_execute));
+        assert!(!read_write.contains(write_execute));
+        assert!(!read_write.contains(full));
+        assert!(read_write.contains(no));
 
-        assert!(read_execute.include(read));
-        assert!(!read_execute.include(write));
-        assert!(read_execute.include(execute));
-        assert!(!read_execute.include(read_write));
-        assert!(read_execute.include(read_execute));
-        assert!(!read_execute.include(write_execute));
-        assert!(!read_execute.include(full));
-        assert!(read_execute.include(no));
+        assert!(read_execute.contains(read));
+        assert!(!read_execute.contains(write));
+        assert!(read_execute.contains(execute));
+        assert!(!read_execute.contains(read_write));
+        assert!(read_execute.contains(read_execute));
+        assert!(!read_execute.contains(write_execute));
+        assert!(!read_execute.contains(full));
+        assert!(read_execute.contains(no));
 
-        assert!(!write_execute.include(read));
-        assert!(write_execute.include(write));
-        assert!(write_execute.include(execute));
-        assert!(!write_execute.include(read_write));
-        assert!(!write_execute.include(read_execute));
-        assert!(write_execute.include(write_execute));
-        assert!(!write_execute.include(full));
-        assert!(write_execute.include(no));
+        assert!(!write_execute.contains(read));
+        assert!(write_execute.contains(write));
+        assert!(write_execute.contains(execute));
+        assert!(!write_execute.contains(read_write));
+        assert!(!write_execute.contains(read_execute));
+        assert!(write_execute.contains(write_execute));
+        assert!(!write_execute.contains(full));
+        assert!(write_execute.contains(no));
 
-        assert!(!no.include(read));
-        assert!(!no.include(write));
-        assert!(!no.include(execute));
-        assert!(!no.include(read_write));
-        assert!(!no.include(read_execute));
-        assert!(!no.include(write_execute));
-        assert!(!no.include(full));
-        assert!(no.include(no));
+        assert!(!no.contains(read));
+        assert!(!no.contains(write));
+        assert!(!no.contains(execute));
+        assert!(!no.contains(read_write));
+        assert!(!no.contains(read_execute));
+        assert!(!no.contains(write_execute));
+        assert!(!no.contains(full));
+        assert!(no.contains(no));
     }
 }
