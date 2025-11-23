@@ -11,6 +11,7 @@ mod item;
 mod r#macro;
 mod pipe;
 mod socket;
+mod synchronous_file;
 
 pub use directory::*;
 pub use error::*;
