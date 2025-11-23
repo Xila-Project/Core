@@ -1,5 +1,5 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
-use file_system::{DeviceTrait, Size};
+use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
 use futures::block_on;
 use graphics::{InputData, Point, State};
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
@@ -86,8 +86,8 @@ impl MouseDevice {
     }
 }
 
-impl DeviceTrait for MouseDevice {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
+impl DirectBaseOperations for MouseDevice {
+    fn read(&self, buffer: &mut [u8], _: Size) -> file_system::Result<usize> {
         let data: &mut InputData = buffer
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;
@@ -96,22 +96,14 @@ impl DeviceTrait for MouseDevice {
 
         data.set(inner.position, inner.state);
 
-        Ok(Size::new(0))
+        Ok(0)
     }
 
-    fn write(&self, _: &[u8]) -> file_system::Result<Size> {
+    fn write(&self, _: &[u8], _: Size) -> file_system::Result<usize> {
         Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn get_size(&self) -> file_system::Result<Size> {
-        Ok(size_of::<InputData>().into())
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {
-        Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn flush(&self) -> file_system::Result<()> {
-        Ok(())
     }
 }
+
+impl MountOperations for MouseDevice {}
+
+impl DirectCharacterDevice for MouseDevice {}

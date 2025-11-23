@@ -1,7 +1,7 @@
 use core::slice;
 
 use alloc::{rc::Rc, string::String, vec::Vec};
-use file_system::DeviceTrait;
+use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
 use futures::block_on;
 use graphics::{Area, Point, RenderingColor, ScreenReadData, ScreenWriteData};
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
@@ -110,8 +110,8 @@ impl CanvasScreenDevice {
     }
 }
 
-impl DeviceTrait for CanvasScreenDevice {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
+impl DirectBaseOperations for CanvasScreenDevice {
+    fn read(&self, buffer: &mut [u8], _: Size) -> file_system::Result<usize> {
         let data: &mut ScreenReadData = buffer
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;
@@ -124,10 +124,10 @@ impl DeviceTrait for CanvasScreenDevice {
 
         data.set_resolution(resolution);
 
-        Ok(file_system::Size::new(buffer.len() as u64))
+        Ok(buffer.len())
     }
 
-    fn write(&self, buffer: &[u8]) -> file_system::Result<file_system::Size> {
+    fn write(&self, buffer: &[u8], _: Size) -> file_system::Result<usize> {
         let screen_data: &ScreenWriteData = buffer
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;
@@ -138,25 +138,10 @@ impl DeviceTrait for CanvasScreenDevice {
             .draw_buffer(screen_data.get_area(), screen_data.get_buffer())
             .map_err(|_| file_system::Error::InputOutput)?;
 
-        Ok(file_system::Size::new(buffer.len() as u64))
-    }
-
-    fn get_size(&self) -> file_system::Result<file_system::Size> {
-        let inner = block_on(self.0.read());
-        let (width, height) = inner
-            .get_resolution()
-            .map_err(|_| file_system::Error::InputOutput)?
-            .into();
-        Ok(file_system::Size::new(
-            (width as usize * height as usize * size_of::<RenderingColor>()) as u64,
-        ))
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> file_system::Result<file_system::Size> {
-        Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn flush(&self) -> file_system::Result<()> {
-        Ok(())
+        Ok(buffer.len())
     }
 }
+
+impl MountOperations for CanvasScreenDevice {}
+
+impl DirectCharacterDevice for CanvasScreenDevice {}
