@@ -29,6 +29,7 @@ drivers_std = { workspace = true }
 futures = { workspace = true }
 log = { workspace = true }
 executable = { workspace = true, features = ["building"] }
+testing = { workspace = true }
 
 [[test]]
 name = "virtual_machine_test"
