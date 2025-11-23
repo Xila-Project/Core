@@ -16,4 +16,6 @@ pub mod drive_file;
 
 pub mod console;
 
+pub mod devices;
+
 pub extern crate memory as memory_exported;
