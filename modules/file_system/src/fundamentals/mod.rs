@@ -4,6 +4,7 @@
 //! including paths, sizes, positions, metadata, permissions, and other essential
 //! building blocks for file system operations.
 
+mod attributes;
 mod entry;
 mod flags;
 mod identifiers;
@@ -14,6 +15,7 @@ mod position;
 mod size;
 mod statistics;
 
+pub use attributes::*;
 pub use entry::*;
 pub use flags::*;
 pub use identifiers::*;
