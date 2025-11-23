@@ -38,7 +38,7 @@ use core::fmt;
 /// # Examples
 ///
 /// ```rust
-/// use file_system::*;
+/// use file_system::mbr::PartitionKind;
 ///
 /// let partition_type = PartitionKind::Fat32Lba;
 /// assert!(partition_type.is_fat());
@@ -117,7 +117,7 @@ impl PartitionKind {
     /// # Examples
     ///
     /// ```rust
-    /// use file_system::*;
+    /// use file_system::mbr::PartitionKind;
     ///
     /// assert_eq!(PartitionKind::from_u8(0x0C), PartitionKind::Fat32Lba);
     /// assert_eq!(PartitionKind::from_u8(0x83), PartitionKind::Linux);
