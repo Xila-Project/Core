@@ -19,6 +19,7 @@ use synchronization::{
 };
 use task::TaskIdentifier;
 use time::Duration;
+use users::{GroupIdentifier, UserIdentifier};
 use utilities::*;
 
 /// Instance of the virtual file system.
@@ -808,8 +809,34 @@ impl<'a> VirtualFileSystem<'a> {
         Ok(())
     }
 
+    pub async fn set_ownership(
+        &self,
+        task: TaskIdentifier,
+        path: impl AsRef<Path>,
+        user: Option<UserIdentifier>,
+        group: Option<GroupIdentifier>,
+    ) -> Result<()> {
+        let path = path.as_ref();
+        let file_systems = self.file_systems.read().await; // Get the file systems 
+
+        let (file_system, relative_path, _) =
+            Self::get_file_system_from_path(&file_systems, &path)?; // Get the file system identifier and the relative path
+        let (_, current_user, _) = self.get_time_user_group(task).await?;
+        Self::check_owner(file_system.file_system, relative_path, current_user).await?;
+
+        let mut attributes = Attributes::new();
+        if let Some(user) = user {
+            attributes = attributes.set_user(user);
+        }
+        if let Some(group) = group {
+            attributes = attributes.set_group(group);
+        }
+        Self::set_attributes(file_system.file_system, relative_path, &attributes).await
+    }
+
     pub async fn set_permissions(
         &self,
+        task: TaskIdentifier,
         path: impl AsRef<Path>,
         permissions: Permissions,
     ) -> Result<()> {
@@ -818,6 +845,9 @@ impl<'a> VirtualFileSystem<'a> {
 
         let (file_system, relative_path, _) =
             Self::get_file_system_from_path(&file_systems, &path)?; // Get the file system identifier and the relative path
+
+        let (_, current_user, _) = self.get_time_user_group(task).await?;
+        Self::check_owner(file_system.file_system, relative_path, current_user).await?;
 
         let attributes = Attributes::new().set_permissions(permissions);
         Self::set_attributes(file_system.file_system, relative_path, &attributes).await

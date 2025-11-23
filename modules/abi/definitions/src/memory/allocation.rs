@@ -35,7 +35,7 @@
 use core::ptr::null_mut;
 use core::{ffi::c_void, ptr::NonNull};
 use futures::block_on;
-use log::{trace, warning};
+use log::warning;
 use memory::{CapabilityFlags, Layout};
 use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 use synchronization::mutex::Mutex;
@@ -405,9 +405,9 @@ pub unsafe extern "C" fn xila_memory_allocate(
 ) -> *mut c_void {
     let _lock = block_on(ALLOCATION_MUTEX.lock());
 
-    trace!(
-        "xila_memory_allocate called with Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
-    );
+    //trace!(
+    //    "xila_memory_allocate called with Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
+    //);
 
     let (user_layout, total_layout) = get_layout_for_allocation(size, alignment);
 
@@ -446,7 +446,7 @@ pub unsafe extern "C" fn xila_memory_allocate(
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_memory_allocate_core(size: usize) -> *mut c_void {
-    trace!("xila_memory_allocate_core called with Size: {size}");
+    //trace!("xila_memory_allocate_core called with Size: {size}");
     unsafe {
         xila_memory_allocate(
             null_mut(),

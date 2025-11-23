@@ -68,12 +68,6 @@ impl Shell {
     }
 
     pub async fn main(&mut self) -> Result<(), NonZeroUsize> {
-        let virtual_file_system = xila::virtual_file_system::get_instance();
-        virtual_file_system
-            .set_permissions(SHORTCUT_PATH, Permissions::ALL_FULL)
-            .await
-            .unwrap();
-
         while self.running {
             self.layout.r#loop().await;
 

@@ -15,6 +15,7 @@ async fn main() {
     use xila::executable::Standard;
     use xila::executable::build_crate;
     use xila::executable::mount_executables;
+    use xila::file_system;
     use xila::graphics;
     use xila::host_bindings;
     use xila::little_fs;
@@ -82,7 +83,8 @@ async fn main() {
 
     // - Initialize the file system
     // Create a memory device
-    let drive = drivers_std::drive_file::FileDriveDevice::new_static(&"./drive.img");
+    //let drive = drivers_std::drive_file::FileDriveDevice::new_static(&"./drive.img");
+    let drive = file_system::MemoryDevice::<512>::new_static(16 * 1024 * 1024);
 
     // Create a partition type
     //    let partition =

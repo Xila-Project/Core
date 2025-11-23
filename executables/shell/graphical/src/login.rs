@@ -150,6 +150,8 @@ impl Login {
     }
 
     pub async fn event_handler(&mut self) {
+        let _lock = graphics::get_instance().lock().await;
+
         while let Some(event) = self.window.pop_event() {
             // If we are typing the user name or the password
             if event.get_code() == EventKind::ValueChanged

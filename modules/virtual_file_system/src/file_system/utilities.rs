@@ -173,37 +173,37 @@ impl<'a> VirtualFileSystem<'a> {
         file_system: &dyn FileSystemOperations,
         path: impl AsRef<Path>,
         asked_permissions: Permission,
-        user: UserIdentifier,
+        current_user: UserIdentifier,
     ) -> Result<()> {
         let mut attributes = Attributes::default()
             .set_mask(AttributeFlags::User | AttributeFlags::Group | AttributeFlags::Permissions);
 
         Self::get_attributes(file_system, path.as_ref(), &mut attributes).await?;
 
-        let user = *attributes.get_user().ok_or(Error::MissingAttribute)?;
-        let group = *attributes.get_group().ok_or(Error::MissingAttribute)?;
-        let permissions = *attributes
+        let owner_user = *attributes.get_user().ok_or(Error::MissingAttribute)?;
+        let owner_group = *attributes.get_group().ok_or(Error::MissingAttribute)?;
+        let owner_permissions = *attributes
             .get_permissions()
             .ok_or(Error::MissingAttribute)?;
 
         if !Self::has_permissions(
             users::get_instance(),
-            user,
+            current_user,
             asked_permissions,
-            user,
-            group,
-            permissions,
+            owner_user,
+            owner_group,
+            owner_permissions,
         )
         .await
         {
             log::error!(
                 "Asked permissions {:?} not granted for user {:?} on path {:?} (owner: {:?}, group: {:?}, permissions: {:?})",
                 asked_permissions,
-                user,
+                owner_user,
                 path.as_ref(),
-                user,
-                group,
-                permissions,
+                owner_user,
+                owner_group,
+                owner_permissions,
             );
             return Err(Error::PermissionDenied);
         }
@@ -227,6 +227,34 @@ impl<'a> VirtualFileSystem<'a> {
         Self::check_permissions(file_system, path.as_ref(), current_permission, user).await?;
 
         Ok(())
+    }
+
+    pub(super) async fn check_owner(
+        file_system: &dyn FileSystemOperations,
+        path: impl AsRef<Path>,
+        current_user: UserIdentifier,
+    ) -> Result<()> {
+        if current_user == UserIdentifier::ROOT {
+            return Ok(());
+        }
+
+        let mut attributes = Attributes::default().set_mask(AttributeFlags::User);
+
+        Self::get_attributes(file_system, path.as_ref(), &mut attributes).await?;
+
+        let owner_user = *attributes.get_user().ok_or(Error::MissingAttribute)?;
+
+        if current_user == owner_user {
+            return Ok(());
+        }
+
+        log::error!(
+            "User {:?} is not the owner {:?} of path {:?}",
+            current_user,
+            owner_user,
+            path.as_ref(),
+        );
+        Err(Error::PermissionDenied)
     }
 }
 

@@ -112,7 +112,7 @@ impl Layout {
         if let Ok(current_time) = current_time {
             let (_, _, _, hour, minute, _) = unix_to_human_time(current_time.as_secs() as i64);
 
-            let _ = graphics::get_instance().lock().await;
+            let _lock = graphics::get_instance().lock().await;
 
             self.clock_string = format!("{hour:02}:{minute:02}\0");
 

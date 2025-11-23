@@ -11,6 +11,7 @@ use core::num::NonZeroUsize;
 pub use error::*;
 pub use file_manager::*;
 use xila::executable::{self, ExecutableTrait, Standard};
+use xila::log;
 use xila::task::TaskIdentifier;
 use xila::virtual_file_system::{File, VirtualFileSystem};
 
@@ -50,14 +51,19 @@ impl FileManagerExecutable {
 
 impl ExecutableTrait for FileManagerExecutable {
     fn main(standard: Standard, arguments: Vec<String>) -> executable::MainFuture {
+        log::information!("Launching File Manager executable...");
         Box::pin(async move { main(standard, arguments).await })
     }
 }
 
 pub async fn main(_: Standard, _: Vec<String>) -> core::result::Result<(), NonZeroUsize> {
+    log::information!("Initializing file manager...");
+
     let mut file_manager = FileManager::new()
         .await
         .map_err(|_| NonZeroUsize::new(1).unwrap())?;
+
+    log::information!("Starting file manager...");
 
     // Run the main loop
     file_manager.run().await;

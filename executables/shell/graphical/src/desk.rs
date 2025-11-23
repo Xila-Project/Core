@@ -16,7 +16,7 @@ use xila::executable::Standard;
 use xila::file_system::Kind;
 use xila::futures::block_on;
 use xila::graphics::{self, Color, EventKind, Logo, Point, Window, lvgl};
-use xila::log::error;
+use xila::log::{self, error};
 use xila::task;
 use xila::virtual_file_system::{self, Directory};
 use xila::{
@@ -427,7 +427,10 @@ impl Desk {
     }
 
     pub async fn event_handler(&mut self) {
+        log::information!("Desk event handler called.");
         let _lock = graphics::get_instance().lock().await;
+        log::information!("Graphics locked in desk event handler.");
+
         while let Some(event) = self.window.pop_event() {
             match event.get_code() {
                 Self::HOME_EVENT => unsafe {
