@@ -1,5 +1,4 @@
-use std::fs::OpenOptions;
-use std::io::Write;
+use std::fs;
 
 pub static SHORTCUT: &str = r#"
 {
@@ -16,14 +15,8 @@ pub const SHORTCUT_PATH: &str = "/configuration/shared/shortcuts/calculator.json
 #[unsafe(no_mangle)]
 pub extern "C" fn __install() {
     println!("Installing Calculator shortcut...");
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(SHORTCUT_PATH)
-        .unwrap();
 
-    file.write_all(SHORTCUT.as_bytes()).unwrap();
+    fs::write(SHORTCUT_PATH, SHORTCUT).unwrap();
 
     println!("Calculator shortcut installed.");
 }
