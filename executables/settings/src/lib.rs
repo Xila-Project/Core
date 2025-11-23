@@ -6,14 +6,14 @@ mod error;
 mod settings;
 mod tabs;
 
+use alloc::boxed::Box;
 pub use error::*;
 pub use settings::*;
 
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::num::NonZeroUsize;
-use xila::executable::{self, Standard};
-use xila::file_system::{self, Flags, Mode, Open};
+use xila::executable::{self, ExecutableTrait, Standard};
 use xila::task::TaskIdentifier;
 use xila::virtual_file_system::{File, VirtualFileSystem};
 
@@ -40,37 +40,27 @@ impl SettingsExecutable {
         task: TaskIdentifier,
     ) -> core::result::Result<Self, String> {
         let _ = virtual_file_system
-            .create_directory(&"/configuration/shared/shortcuts", task)
+            .create_directory(task, &"/configuration/shared/shortcuts")
             .await;
 
-        let file = match File::open(
+        File::write_to_path(
             virtual_file_system,
+            task,
             "/configuration/shared/shortcuts/settings.json",
-            Flags::new(Mode::WRITE_ONLY, Open::CREATE_ONLY.into(), None),
+            get_shortcut().as_bytes(),
         )
         .await
-        {
-            Ok(file) => file,
-            Err(file_system::Error::AlreadyExists) => {
-                return Ok(Self);
-            }
-            Err(error) => Err(error.to_string())?,
-        };
-
-        let shortcut = get_shortcut();
-        file.write(shortcut.as_bytes())
-            .await
-            .map_err(|error| error.to_string())?;
+        .map_err(|error| error.to_string())?;
 
         Ok(Self)
     }
 }
 
-executable::implement_executable_device!(
-    structure: SettingsExecutable,
-    mount_path: "/binaries/settings",
-    main_function: main,
-);
+impl ExecutableTrait for SettingsExecutable {
+    fn main(standard: Standard, arguments: Vec<String>) -> executable::MainFuture {
+        Box::pin(async move { main(standard, arguments).await })
+    }
+}
 
 pub async fn main(_: Standard, _: Vec<String>) -> core::result::Result<(), NonZeroUsize> {
     let mut settings = Settings::new()
