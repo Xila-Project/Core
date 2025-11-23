@@ -1,13 +1,33 @@
 #[macro_export]
-macro_rules! mount_static_devices {
+macro_rules! mount {
 
-    ( $Virtual_file_system:expr, $Task_identifier:expr, &[ $( ($Path:expr, $Device:expr) ),* $(,)? ] ) => {
+    ( $virtual_file_system:expr, $task:expr, &[ $( (
+        $path:expr, $kind:expr, $device:expr) ),* $(,)? ] ) => {
 
     async || -> Result<(), $crate::exported_file_system::Error>
     {
-        use $crate::exported_file_system::create_device;
+        $(
+            let __device = Box::leak(Box::new($device));
+            $virtual_file_system.mount_static($task, $path, ItemStatic::$kind(__device)).await?;
 
-        $( $Virtual_file_system.mount_static_device($Task_identifier, $Path, create_device!($Device)).await?; )*
+        )*
+
+        Ok(())
+    }()
+};
+
+}
+
+#[macro_export]
+macro_rules! mount_static {
+    ( $virtual_file_system:expr, $task:expr, &[ $( ( $path:expr, $kind:ident, $device:expr ) ),* $(,)? ] ) => {
+    async || -> $crate::Result<()>
+    {
+        $(
+            let _ = $virtual_file_system.remove($task, $path).await;
+            $virtual_file_system.mount_static($task, $path, $crate::ItemStatic::$kind(&$device)).await?;
+
+        )*
 
         Ok(())
     }()
