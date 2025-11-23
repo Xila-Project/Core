@@ -52,25 +52,25 @@
 //!
 //! ```rust
 //! # extern crate alloc;
-//! # use file_system::*;
+//! # use file_system::{MemoryDevice, DirectBaseOperations};
 //!
 //! // Create an in-memory device for testing
-//! let device = create_device!(MemoryDevice::<512>::new(1024 * 1024));
+//! let device = MemoryDevice::<512>::new(1024 * 1024);
 //!
 //! // Write some data
 //! let data = b"Hello, File System!";
-//! let result = device.write(data);
+//! let result = device.write(data, 0);
 //! assert!(result.is_ok());
 //! ```
 //!
 //! ### MBR Operations
 //!
 //! ```rust
-//! # extern crate alloc;
-//! # use file_system::*;
+//! extern crate alloc;
+//! use file_system::{mbr::{Mbr, PartitionKind, create_partition_device}, MemoryDevice};
 //!
 //! // Create a device and format it with MBR
-//! let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
+//! let device = MemoryDevice::<512>::new(4 * 1024 * 1024);
 //!
 //! // Create MBR and add a partition
 //! let mut mbr = Mbr::new_with_signature(0x12345678);
@@ -80,7 +80,7 @@
 //! mbr.write_to_device(&device).unwrap();
 //!
 //! // Create a partition device
-//! let partition = create_partition_device(device, &mbr.partitions[0]).unwrap();
+//! let partition = create_partition_device(&device, &mbr.partitions[0]).unwrap();
 //! ```
 //!
 //! ## Safety and Concurrency
@@ -101,24 +101,19 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-mod device;
+mod context;
+mod devices;
 mod error;
-mod file_system;
 mod fundamentals;
-mod mbr;
-mod partition;
-
-mod memory_device;
+pub mod mbr;
+mod operations;
 mod time;
 
-pub use device::{Device, DeviceTrait};
 pub use error::*;
 
-pub use file_system::*;
-pub use fundamentals::*;
-pub use memory_device::*;
-pub use partition::*;
-pub use time::*;
+pub use context::*;
 
-// Export MBR module and its contents
-pub use mbr::*;
+pub use devices::*;
+pub use fundamentals::*;
+pub use operations::*;
+pub use time::*;
