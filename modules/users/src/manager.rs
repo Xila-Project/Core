@@ -175,12 +175,14 @@ impl Manager {
         group_identifier: GroupIdentifier,
     ) -> bool {
         let inner = self.0.read().await;
-        inner
-            .groups
-            .get(&group_identifier)
-            .unwrap()
-            .users
-            .contains(&user_identifier)
+
+        if let Some(group) = inner.groups.get(&group_identifier)
+            && group.users.contains(&user_identifier)
+        {
+            return true;
+        }
+
+        false
     }
 
     pub async fn get_user_groups(
