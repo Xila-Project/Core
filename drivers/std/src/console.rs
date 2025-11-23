@@ -1,28 +1,23 @@
 use std::io::{Read, Write, stderr, stdin, stdout};
 
-use file_system::{DeviceTrait, Size};
+use file_system::{
+    ControlArgument, ControlCommand, DirectBaseOperations, DirectCharacterDevice, MountOperations,
+    Size, character_device,
+};
 
 use crate::io::map_error;
 
 pub struct StandardInDevice;
 
-impl DeviceTrait for StandardInDevice {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
+impl DirectBaseOperations for StandardInDevice {
+    fn read(&self, buffer: &mut [u8], _: Size) -> file_system::Result<usize> {
         #[allow(clippy::unused_io_amount)]
         stdin().read(buffer).unwrap();
 
-        Ok(Size::new(buffer.len() as u64))
+        Ok(buffer.len() as _)
     }
 
-    fn write(&self, _: &[u8]) -> file_system::Result<Size> {
-        Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn get_size(&self) -> file_system::Result<Size> {
-        Ok(Size::new(0))
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {
+    fn write(&self, _: &[u8], _: Size) -> file_system::Result<usize> {
         Err(file_system::Error::UnsupportedOperation)
     }
 
@@ -30,63 +25,84 @@ impl DeviceTrait for StandardInDevice {
         Ok(())
     }
 
-    fn is_a_terminal(&self) -> bool {
-        true
+    fn control(
+        &self,
+        command: ControlCommand,
+        argument: &mut ControlArgument,
+    ) -> file_system::Result<()> {
+        control(command, argument)
     }
 }
 
+impl MountOperations for StandardInDevice {}
+
+impl DirectCharacterDevice for StandardInDevice {}
+
 pub struct StandardOutDevice;
 
-impl DeviceTrait for StandardOutDevice {
-    fn read(&self, _: &mut [u8]) -> file_system::Result<Size> {
+impl DirectBaseOperations for StandardOutDevice {
+    fn read(&self, _: &mut [u8], _: Size) -> file_system::Result<usize> {
         Err(file_system::Error::UnsupportedOperation)
     }
 
-    fn write(&self, buffer: &[u8]) -> file_system::Result<Size> {
-        Ok(Size::new(stdout().write(buffer).map_err(map_error)? as u64))
-    }
-
-    fn get_size(&self) -> file_system::Result<Size> {
-        Ok(Size::new(0))
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {
-        Err(file_system::Error::UnsupportedOperation)
+    fn write(&self, buffer: &[u8], _: Size) -> file_system::Result<usize> {
+        Ok(stdout().write(buffer).map_err(map_error)? as _)
     }
 
     fn flush(&self) -> file_system::Result<()> {
         stdout().flush().map_err(map_error)
     }
 
-    fn is_a_terminal(&self) -> bool {
-        true
+    fn control(
+        &self,
+        command: ControlCommand,
+        argument: &mut ControlArgument,
+    ) -> file_system::Result<()> {
+        control(command, argument)
     }
 }
 
+impl MountOperations for StandardOutDevice {}
+
+impl DirectCharacterDevice for StandardOutDevice {}
+
 pub struct StandardErrorDevice;
 
-impl DeviceTrait for StandardErrorDevice {
-    fn read(&self, _: &mut [u8]) -> file_system::Result<Size> {
+impl DirectBaseOperations for StandardErrorDevice {
+    fn read(&self, _: &mut [u8], _: Size) -> file_system::Result<usize> {
         Err(file_system::Error::UnsupportedOperation)
     }
 
-    fn write(&self, buffer: &[u8]) -> file_system::Result<Size> {
-        Ok(Size::new(stderr().write(buffer).map_err(map_error)? as u64))
-    }
-
-    fn get_size(&self) -> file_system::Result<Size> {
-        Ok(Size::new(0))
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {
-        Err(file_system::Error::UnsupportedOperation)
+    fn write(&self, buffer: &[u8], _: Size) -> file_system::Result<usize> {
+        Ok(stderr().write(buffer).map_err(map_error)? as _)
     }
 
     fn flush(&self) -> file_system::Result<()> {
         stderr().flush().map_err(map_error)
     }
 
-    fn is_a_terminal(&self) -> bool {
-        true
+    fn control(
+        &self,
+        command: ControlCommand,
+        argument: &mut ControlArgument,
+    ) -> file_system::Result<()> {
+        control(command, argument)
+    }
+}
+
+impl MountOperations for StandardErrorDevice {}
+
+impl DirectCharacterDevice for StandardErrorDevice {}
+
+fn control(command: ControlCommand, argument: &mut ControlArgument) -> file_system::Result<()> {
+    match command {
+        character_device::IS_A_TERMINAL => {
+            *argument
+                .cast::<bool>()
+                .ok_or(file_system::Error::InvalidParameter)? = true;
+
+            Ok(())
+        }
+        _ => Err(file_system::Error::UnsupportedOperation),
     }
 }
