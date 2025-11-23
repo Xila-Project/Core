@@ -1,73 +1,79 @@
-use core::fmt::Debug;
+use core::mem::forget;
 
-use file_system::{Entry, Path, Result, UniqueFileIdentifier};
+use exported_file_system::{FileSystemOperations, StateFlags};
+use file_system::{Context, Entry, Flags, Path, Size};
 use futures::block_on;
 use task::TaskIdentifier;
 
-use crate::VirtualFileSystem;
+use crate::{ItemStatic, Result, SynchronousDirectory, VirtualFileSystem, poll};
 
-pub struct Directory<'a> {
-    directory_identifier: UniqueFileIdentifier,
-    virtual_file_system: &'a VirtualFileSystem<'a>,
-    task: TaskIdentifier,
-}
+pub struct Directory(SynchronousDirectory);
 
-impl Debug for Directory<'_> {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        formatter
-            .debug_struct("Directory_type")
-            .field("File_identifier", &self.directory_identifier)
-            .field(
-                "Virtual_file_system",
-                &(self.virtual_file_system as *const _),
-            )
-            .finish()
+impl Directory {
+    pub(crate) fn new(
+        directory: &'static dyn FileSystemOperations,
+        flags: Flags,
+        context: Context,
+    ) -> Self {
+        let flags = Flags::new(
+            flags.get_mode(),
+            Some(flags.get_open()),
+            Some(flags.get_status().insert(StateFlags::NonBlocking)),
+        );
+
+        Self(SynchronousDirectory::new(directory, flags, context))
     }
-}
 
-impl Directory<'_> {
     pub async fn create<'a>(
         virtual_file_system: &'a VirtualFileSystem<'a>,
+        task: TaskIdentifier,
         path: impl AsRef<Path>,
     ) -> Result<()> {
-        let task = task::get_instance().get_current_task_identifier().await;
-
-        virtual_file_system.create_directory(&path, task).await
+        virtual_file_system.create_directory(task, &path).await
     }
 
     pub async fn open<'a>(
         virtual_file_system: &'a VirtualFileSystem<'a>,
+        task: TaskIdentifier,
         path: impl AsRef<Path>,
-    ) -> Result<Directory<'a>> {
-        let task = task::get_instance().get_current_task_identifier().await;
-
-        let directory_identifier = virtual_file_system.open_directory(&path, task).await?;
-
-        Ok(Directory {
-            directory_identifier,
-            virtual_file_system,
-            task,
-        })
+    ) -> Result<Self> {
+        virtual_file_system.open_directory(task, &path).await
     }
 
-    pub async fn read(&self) -> Result<Option<Entry>> {
-        self.virtual_file_system
-            .read_directory(self.directory_identifier, self.task)
-            .await
+    pub async fn read(&mut self) -> Result<Option<Entry>> {
+        poll(|| self.0.read()).await
+    }
+
+    pub async fn get_position(&mut self) -> Result<Size> {
+        poll(|| self.0.get_position()).await
+    }
+
+    pub async fn set_position(&mut self, position: Size) -> Result<()> {
+        poll(|| self.0.set_position(position)).await
+    }
+
+    pub async fn rewind(&mut self) -> Result<()> {
+        poll(|| self.0.set_position(0)).await
+    }
+
+    pub async fn close(mut self, virtual_file_system: &VirtualFileSystem<'_>) -> Result<()> {
+        let result = virtual_file_system
+            .close(
+                &ItemStatic::Directory(self.0.directory),
+                &mut self.0.context,
+            )
+            .await;
+        forget(self.0);
+
+        result
+    }
+
+    pub fn into_synchronous_directory(self) -> SynchronousDirectory {
+        self.0
     }
 }
 
-impl Drop for Directory<'_> {
-    fn drop(&mut self) {
-        block_on(
-            self.virtual_file_system
-                .close_directory(self.directory_identifier, self.task),
-        )
-        .unwrap();
-    }
-}
-
-impl Iterator for Directory<'_> {
+impl Iterator for Directory {
     type Item = Entry;
 
     fn next(&mut self) -> Option<Self::Item> {
