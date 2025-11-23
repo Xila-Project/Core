@@ -1,4 +1,5 @@
 mod error;
+pub mod flags;
 mod size;
 mod time;
 
