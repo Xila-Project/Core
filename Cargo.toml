@@ -80,7 +80,7 @@ wasm_c_bindings = ["wasm", "wasm_bindings/c_bindings"]
 
 
 [workspace.dependencies]
-# - Internal crates
+# - Modules
 wasm_bindings = { path = "modules/bindings/wasm" }
 
 abi_context = { path = "modules/abi/context" }
