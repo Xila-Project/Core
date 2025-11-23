@@ -2,8 +2,8 @@ use core::{fmt, num::NonZeroU32};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, Clone)]
-#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum Error {
     InvalidTaskIdentifier = 1,
     InvalidSpawnerIdentifier,
@@ -26,6 +26,8 @@ impl fmt::Display for Error {
         write!(f, "{self:?}")
     }
 }
+
+impl core::error::Error for Error {}
 
 impl From<Error> for NonZeroU32 {
     fn from(error: Error) -> Self {
@@ -191,19 +193,6 @@ mod tests {
     fn test_error_size() {
         // Ensure the error type has a reasonable size
         assert!(std::mem::size_of::<Error>() <= 8);
-    }
-
-    #[test]
-    fn test_error_repr_c() {
-        // Test that the error can be used in FFI contexts
-        // This mainly ensures the #[repr(C)] attribute works as expected
-        let error = Error::InvalidTaskIdentifier;
-        let error_discriminant = unsafe { std::mem::transmute::<Error, u32>(error) };
-        assert_eq!(error_discriminant, 1);
-
-        let error2 = Error::InvalidSpawnerIdentifier;
-        let error2_discriminant = unsafe { std::mem::transmute::<Error, u32>(error2) };
-        assert_eq!(error2_discriminant, 2);
     }
 
     #[test]
