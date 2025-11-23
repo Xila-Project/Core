@@ -1,7 +1,6 @@
-use crate::error::Result;
+use crate::error::{Error, Result};
 use alloc::{collections::vec_deque::VecDeque, string::String};
 use core::ffi::CStr;
-use xila::file_system::Size;
 use xila::graphics::fonts::get_font_monospace_medium;
 use xila::graphics::{
     self, Color, EventKind, Key, Window,
@@ -97,11 +96,13 @@ impl Terminal {
         Ok(Self(RwLock::new(inner)))
     }
 
-    pub async fn print(&self, text: &str) -> Result<()> {
-        let mut inner = self.0.write().await;
-        let _lock = graphics::get_instance().lock().await;
+    pub fn print(&self, text: &str) -> Result<()> {
+        let mut inner = self.0.try_write().map_err(|_| Error::RessourceBusy)?;
+        let _lock = graphics::get_instance()
+            .try_lock()
+            .ok_or(Error::RessourceBusy)?;
 
-        Self::print_internal(&mut inner, text).await?;
+        Self::print_internal(&mut inner, text)?;
 
         Ok(())
     }
@@ -125,7 +126,7 @@ impl Terminal {
         buffer.push_str(text);
     }
 
-    async fn print_internal(inner: &mut Inner, text: &str) -> Result<()> {
+    fn print_internal(inner: &mut Inner, text: &str) -> Result<()> {
         inner.buffer.pop(); // Remove the trailing null character
 
         Self::get_start_index(&mut inner.buffer, text);
@@ -153,8 +154,8 @@ impl Terminal {
         Ok(())
     }
 
-    pub async fn read_input(&self, buffer: &mut [u8]) -> Result<Size> {
-        let mut inner = self.0.write().await;
+    pub fn read_input(&self, buffer: &mut [u8]) -> Result<usize> {
+        let mut inner = self.0.try_write().map_err(|_| Error::RessourceBusy)?;
 
         let mut read = 0;
 
@@ -168,7 +169,7 @@ impl Terminal {
 
         inner.validated_input.drain(0..read);
 
-        Ok(Size::new(read as u64))
+        Ok(read)
     }
 
     fn get_input(text_area: *mut lv_obj_t) -> &'static str {
