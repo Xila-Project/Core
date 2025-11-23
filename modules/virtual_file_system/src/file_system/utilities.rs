@@ -172,7 +172,7 @@ impl<'a> VirtualFileSystem<'a> {
     pub(super) async fn check_permissions(
         file_system: &dyn FileSystemOperations,
         path: impl AsRef<Path>,
-        permissions: Permission,
+        asked_permissions: Permission,
         user: UserIdentifier,
     ) -> Result<()> {
         let mut attributes = Attributes::default()
@@ -180,22 +180,30 @@ impl<'a> VirtualFileSystem<'a> {
 
         Self::get_attributes(file_system, path.as_ref(), &mut attributes).await?;
 
+        let user = *attributes.get_user().ok_or(Error::MissingAttribute)?;
+        let group = *attributes.get_group().ok_or(Error::MissingAttribute)?;
+        let permissions = *attributes
+            .get_permissions()
+            .ok_or(Error::MissingAttribute)?;
+
         if !Self::has_permissions(
             users::get_instance(),
             user,
+            asked_permissions,
+            user,
+            group,
             permissions,
-            *attributes.get_user().ok_or(Error::MissingAttribute)?,
-            *attributes.get_group().ok_or(Error::MissingAttribute)?,
-            *attributes
-                .get_permissions()
-                .ok_or(Error::MissingAttribute)?,
         )
         .await
         {
             log::error!(
-                "Permission denied for path {:?} for user {:?}",
+                "Asked permissions {:?} not granted for user {:?} on path {:?} (owner: {:?}, group: {:?}, permissions: {:?})",
+                asked_permissions,
+                user,
                 path.as_ref(),
-                user
+                user,
+                group,
+                permissions,
             );
             return Err(Error::PermissionDenied);
         }

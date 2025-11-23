@@ -13,18 +13,18 @@ impl HttpClientDevice {
 impl BaseOperations for HttpClientDevice {
     fn read(
         &self,
-        context: &mut Context,
-        buffer: &mut [u8],
+        _context: &mut Context,
+        _buffer: &mut [u8],
         _: Size,
     ) -> file_system::Result<usize> {
         todo!()
     }
 
-    fn write(&self, context: &mut Context, buffer: &[u8], _: Size) -> file_system::Result<usize> {
+    fn write(&self, _context: &mut Context, _buffer: &[u8], _: Size) -> file_system::Result<usize> {
         todo!()
     }
 
-    fn clone_context(&self, context: &Context) -> file_system::Result<Context> {
+    fn clone_context(&self, _context: &Context) -> file_system::Result<Context> {
         Ok(Context::new_empty())
     }
 }

@@ -225,7 +225,6 @@ impl Attributes {
 mod tests {
     use super::*;
     extern crate std;
-    use std::format;
 
     #[test]
     fn test_attributes_new() {

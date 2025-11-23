@@ -40,12 +40,6 @@ impl Inner {
             .navigator()
             .storage();
 
-        let estimate = JsFuture::from(storage.estimate().map_err(map_error_to_string)?)
-            .await
-            .map_err(map_error_to_string)?
-            .dyn_into::<StorageEstimate>()
-            .map_err(map_error_to_string)?;
-
         let directory = JsFuture::from(storage.get_directory())
             .await
             .map_err(map_error_to_string)?
@@ -68,7 +62,7 @@ impl Inner {
             .dyn_into::<FileSystemSyncAccessHandle>()
             .map_err(map_error_to_string)?;
 
-        Ok(Self { handle, estimate })
+        Ok(Self { handle })
     }
 
     async fn write_async(&mut self, data: &[u8], position: Size) -> file_system::Result<usize> {

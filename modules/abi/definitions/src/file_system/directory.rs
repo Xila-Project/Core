@@ -254,7 +254,7 @@ mod tests {
         assert_ne!(result, 0, "Opening directory with null path should fail");
 
         // Test read directory with null output pointers
-        let invalid_handle: XilaFileIdentifier = 999999;
+        let invalid_handle: XilaFileIdentifier = 9999;
         let result = context
             .call_abi(async || unsafe {
                 xila_file_system_read_directory(
@@ -276,7 +276,7 @@ mod tests {
     async fn test_invalid_handle_operations() {
         initialize().await; // Ensure the test environment is initialized
         // Test operations on invalid directory handles
-        let invalid_handle: XilaFileIdentifier = 999999;
+        let invalid_handle: XilaFileIdentifier = 9999;
         let context = get_context_instance();
 
         // Test close with invalid handle
@@ -332,7 +332,7 @@ mod tests {
     async fn test_set_position_boundary_values() {
         initialize().await; // Ensure the test environment is initialized
         // Test set position with boundary values
-        let invalid_handle: XilaFileIdentifier = 999999;
+        let invalid_handle: XilaFileIdentifier = 9999;
         let context = get_context_instance();
 
         // Test with maximum value
@@ -508,7 +508,7 @@ mod tests {
         let (_task, _vfs) = initialize().await;
         let context = get_context_instance();
 
-        let invalid_directory_id: XilaFileIdentifier = 999999;
+        let invalid_directory_id: XilaFileIdentifier = 9999;
         let mut entry_name: *const c_char = core::ptr::null();
         let mut entry_type: XilaFileKind = XilaFileKind::File;
         let mut entry_size: XilaFileSystemSize = 0;
@@ -560,7 +560,7 @@ mod tests {
         let (_task, _vfs) = initialize().await;
         let context = get_context_instance();
 
-        let invalid_directory_id: XilaFileIdentifier = 999999;
+        let invalid_directory_id: XilaFileIdentifier = 9999;
 
         let result = context
             .call_abi(|| async { xila_file_system_close_directory(invalid_directory_id) })
@@ -678,7 +678,7 @@ mod tests {
         let (_task, _vfs) = initialize().await;
         let context = get_context_instance();
 
-        let invalid_directory_id: XilaFileIdentifier = 999999;
+        let invalid_directory_id: XilaFileIdentifier = 9999;
 
         let result = context
             .call_abi(|| async { xila_file_system_rewind_directory(invalid_directory_id) })
@@ -799,7 +799,7 @@ mod tests {
         let (_task, _vfs) = initialize().await;
         let context = get_context_instance();
 
-        let invalid_directory_id: XilaFileIdentifier = 999999;
+        let invalid_directory_id: XilaFileIdentifier = 9999;
 
         let result = context
             .call_abi(|| async { xila_file_system_directory_set_position(invalid_directory_id, 0) })
