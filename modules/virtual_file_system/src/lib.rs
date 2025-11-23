@@ -2,7 +2,6 @@
 
 extern crate alloc;
 
-mod device;
 mod directory;
 mod error;
 mod file;
