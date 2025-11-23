@@ -1,13 +1,13 @@
-use core::{ffi::c_void, mem::forget};
+use core::{ffi::c_void, ptr::null_mut};
 
-use alloc::{boxed::Box, vec};
-use file_system::Device;
+use alloc::boxed::Box;
+use file_system::DirectBlockDevice;
 
 use super::{callbacks, littlefs};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Configuration {
-    context: Device,
+    context: &'static dyn DirectBlockDevice,
     read_size: usize,
     program_size: usize,
     block_size: usize,
@@ -51,16 +51,12 @@ impl Configuration {
     };
 
     pub fn new(
-        device: Device,
+        device: &'static dyn DirectBlockDevice,
         block_size: usize,
-        total_size: usize,
+        block_count: usize,
         cache_size: usize,
         look_ahead_size: usize,
     ) -> Option<Self> {
-        if !total_size.is_multiple_of(block_size) {
-            return None;
-        }
-
         if !(block_size % cache_size) == 0 {
             return None;
         }
@@ -68,8 +64,6 @@ impl Configuration {
         if !look_ahead_size.is_multiple_of(8) {
             return None;
         }
-
-        let block_count = total_size / block_size;
 
         Some(Self {
             context: device,
@@ -151,12 +145,12 @@ impl TryFrom<Configuration> for littlefs::lfs_config {
     type Error = ();
 
     fn try_from(configuration: Configuration) -> Result<Self, Self::Error> {
-        let mut read_buffer = vec![0_u8; configuration.cache_size];
-        let mut write_buffer = read_buffer.clone();
-        let mut look_ahead_buffer = vec![0_u8; configuration.look_ahead_size];
+        // Allocate buffers on the heap and leak them so littlefs can use them for the lifetime of the filesystem
+
+        let context = Context::new(configuration.context);
 
         let lfs_configuration = littlefs::lfs_config {
-            context: Box::into_raw(Box::new(configuration.context)) as *mut c_void,
+            context: context as *mut _ as *mut _,
             read: Some(callbacks::read_callback),
             prog: Some(callbacks::programm_callback),
             erase: Some(callbacks::erase_callback),
@@ -171,9 +165,9 @@ impl TryFrom<Configuration> for littlefs::lfs_config {
             },
             cache_size: configuration.cache_size as u32,
             lookahead_size: configuration.look_ahead_size as u32,
-            read_buffer: read_buffer.as_mut_ptr() as *mut c_void,
-            prog_buffer: write_buffer.as_mut_ptr() as *mut c_void,
-            lookahead_buffer: look_ahead_buffer.as_mut_ptr() as *mut c_void,
+            read_buffer: null_mut(),
+            prog_buffer: null_mut(),
+            lookahead_buffer: null_mut(),
             name_max: configuration.maximum_name_size.unwrap_or(0) as u32, // Default value : 255 (LFS_NAME_MAX)
             file_max: configuration.maximum_file_size.unwrap_or(0) as u32, // Default value : 2,147,483,647 (2 GiB) (LFS_FILE_MAX)
             attr_max: configuration.maximum_attributes_size.unwrap_or(0) as u32, // Default value : 1022 (LFS_ATTR_MAX)
@@ -183,10 +177,35 @@ impl TryFrom<Configuration> for littlefs::lfs_config {
             flags: configuration.flags,
         };
 
-        forget(read_buffer);
-        forget(write_buffer);
-        forget(look_ahead_buffer);
-
         Ok(lfs_configuration)
+    }
+}
+
+pub struct Context {
+    pub device: &'static dyn DirectBlockDevice,
+}
+
+impl Context {
+    pub fn new(device: &'static dyn DirectBlockDevice) -> &'static mut Self {
+        Box::leak(Box::new(Self { device }))
+    }
+
+    pub unsafe fn get_from_configuration(
+        configuration: *const littlefs::lfs_config,
+    ) -> &'static Self {
+        unsafe { &*((*configuration).context as *const Self) }
+    }
+
+    #[allow(clippy::redundant_allocation)]
+    pub unsafe fn take_from_configuration(
+        configuration: *mut littlefs::lfs_config,
+    ) -> Box<&'static dyn DirectBlockDevice> {
+        unsafe {
+            let raw_context = (*configuration).context as *mut _;
+
+            (*configuration).context = null_mut();
+
+            Box::from_raw(raw_context)
+        }
     }
 }

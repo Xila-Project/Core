@@ -1,75 +1,78 @@
-use core::{ffi::CStr, fmt::Debug, mem::MaybeUninit};
+use core::{ffi::CStr, mem::MaybeUninit};
 
-use alloc::{ffi::CString, rc::Rc, string::ToString};
-use file_system::{Entry, Inode, Kind, Path, Result, Size};
+use crate::{attributes::InternalAttributes, error::convert_result, littlefs};
+use alloc::{boxed::Box, ffi::CString, string::ToString};
+use file_system::{Attributes, Entry, Kind, Path, Result, Size};
 
-use super::{convert_result, littlefs};
-
-struct Inner {
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct Directory {
     directory: littlefs::lfs_dir_t,
 }
 
-#[derive(Clone)]
-pub struct Directory(Rc<Inner>);
-
-impl Debug for Directory {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        formatter
-            .debug_struct("Directory_type")
-            .field("Inner", &self.0.directory)
-            .finish()
-    }
-}
+unsafe impl Send for Directory {}
+unsafe impl Sync for Directory {}
 
 impl Directory {
-    pub fn create_directory(file_system: &mut super::littlefs::lfs_t, path: &Path) -> Result<()> {
+    pub fn create(file_system: &mut littlefs::lfs_t, path: &Path) -> Result<()> {
         let path = CString::new(path.as_str()).unwrap();
 
-        convert_result(unsafe { littlefs::lfs_mkdir(file_system as *mut _, path.as_ptr()) })?;
+        unsafe {
+            convert_result(littlefs::lfs_mkdir(file_system, path.as_ptr()))?;
+
+            let mut internal_attributes = InternalAttributes::new_uninitialized().assume_init();
+            internal_attributes.kind = Kind::Directory;
+
+            convert_result(littlefs::lfs_setattr(
+                file_system,
+                path.as_ptr(),
+                InternalAttributes::IDENTIFIER,
+                &internal_attributes as *const _ as *const _,
+                size_of::<InternalAttributes>() as u32,
+            ))?;
+        }
 
         Ok(())
     }
 
-    pub fn open(file_system: &mut super::littlefs::lfs_t, path: &Path) -> Result<Self> {
+    pub fn lookup(file_system: &mut littlefs::lfs_t, path: &Path) -> Result<Box<Self>> {
         let path = CString::new(path.as_str()).unwrap();
 
-        let directory = MaybeUninit::<littlefs::lfs_dir_t>::uninit();
-
-        let directory = Self(Rc::new(Inner {
-            directory: unsafe { directory.assume_init() },
-        }));
+        let directory = Self {
+            directory: littlefs::lfs_dir_t::default(),
+        };
+        let mut directory = Box::new(directory);
 
         convert_result(unsafe {
-            littlefs::lfs_dir_open(
-                file_system as *mut _,
-                &directory.0.directory as *const _ as *mut _,
-                path.as_ptr(),
-            )
+            littlefs::lfs_dir_open(file_system, &mut directory.directory, path.as_ptr())
         })?;
 
         Ok(directory)
     }
 
-    pub fn rewind(&mut self, file_system: &mut super::littlefs::lfs_t) -> Result<()> {
-        convert_result(unsafe {
-            littlefs::lfs_dir_rewind(
-                file_system as *mut _,
-                &self.0.directory as *const _ as *mut _,
-            )
-        })?;
+    pub fn get_attributes(&self, attributes: &mut Attributes) -> Result<()> {
+        if let Some(kind) = attributes.get_mutable_kind() {
+            *kind = file_system::Kind::Directory;
+        }
 
         Ok(())
     }
 
-    pub fn get_position(&mut self, file_system: &mut super::littlefs::lfs_t) -> Result<Size> {
-        let offset = convert_result(unsafe {
-            littlefs::lfs_dir_tell(
-                file_system as *mut _,
-                &self.0.directory as *const _ as *mut _,
-            )
-        })?;
+    pub fn set_attributes(&self, _attributes: &Attributes) -> Result<()> {
+        Ok(())
+    }
 
-        Ok(Size::new(offset as u64))
+    pub fn rewind(&mut self, file_system: &mut littlefs::lfs_t) -> Result<()> {
+        convert_result(unsafe { littlefs::lfs_dir_rewind(file_system, &mut self.directory) })?;
+
+        Ok(())
+    }
+
+    pub fn get_position(&mut self, file_system: &mut littlefs::lfs_t) -> Result<Size> {
+        let offset =
+            convert_result(unsafe { littlefs::lfs_dir_tell(file_system, &mut self.directory) })?;
+
+        Ok(offset as _)
     }
 
     pub fn set_position(
@@ -79,24 +82,24 @@ impl Directory {
     ) -> Result<()> {
         convert_result(unsafe {
             littlefs::lfs_dir_seek(
-                file_system as *const _ as *mut _,
-                &self.0.directory as *const _ as *mut _,
-                u64::from(position) as littlefs::lfs_off_t,
+                file_system,
+                &mut self.directory,
+                position as littlefs::lfs_off_t,
             )
         })?;
 
         Ok(())
     }
 
-    pub fn read(&mut self, file_system: &mut super::littlefs::lfs_t) -> Result<Option<Entry>> {
+    pub fn read(&mut self, file_system: &mut littlefs::lfs_t) -> Result<Option<Entry>> {
         let informations = MaybeUninit::<littlefs::lfs_info>::uninit();
 
         let mut informations = unsafe { informations.assume_init() };
 
         let result = unsafe {
             littlefs::lfs_dir_read(
-                file_system as *mut _,
-                &self.0.directory as *const _ as *mut _,
+                file_system,
+                &mut self.directory,
                 &mut informations as *mut _,
             )
         };
@@ -116,23 +119,13 @@ impl Directory {
             Kind::File
         };
 
-        let entry = Entry::new(
-            Inode::new(0),
-            name,
-            r#type,
-            Size::new(informations.size as u64),
-        );
+        let entry = Entry::new(0, name, r#type, informations.size as _);
 
         Ok(Some(entry))
     }
 
-    pub fn close(&mut self, file_system: &mut super::littlefs::lfs_t) -> Result<()> {
-        convert_result(unsafe {
-            littlefs::lfs_dir_close(
-                file_system as *mut _,
-                &self.0.directory as *const _ as *mut _,
-            )
-        })?;
+    pub fn close(&mut self, file_system: &mut littlefs::lfs_t) -> Result<()> {
+        convert_result(unsafe { littlefs::lfs_dir_close(file_system, &mut self.directory) })?;
 
         Ok(())
     }
