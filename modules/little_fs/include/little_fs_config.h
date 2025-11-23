@@ -17,9 +17,9 @@ typedef unsigned int uint32_t;
 typedef int int32_t;
 typedef unsigned char uint8_t;
 
-#ifndef LFS_NO_MALLOC
-#include <stdlib.h>
-#endif
+//#ifndef LFS_NO_MALLOC
+//#include <stdlib.h>
+//#endif
 #ifndef LFS_NO_ASSERT
 #include <assert.h>
 #endif
@@ -217,31 +217,36 @@ uint32_t lfs_crc(uint32_t crc, const void *buffer,
 uint32_t lfs_crc(uint32_t crc, const void *buffer, size_t size);
 #endif
 
+
+void* lfs_malloc(size_t size);
+
+void lfs_free(void *p);
+
 // Allocate memory, only used if buffers are not provided to littlefs
 //
 // littlefs current has no alignment requirements, as it only allocates
 // byte-level buffers.
-static inline void *lfs_malloc(size_t size) {
-#if defined(LFS_MALLOC)
-  return LFS_MALLOC(size);
-#elif !defined(LFS_NO_MALLOC)
-  return malloc(size);
-#else
-  (void)size;
-  return NULL;
-#endif
-}
+//static inline void *lfs_malloc(size_t size) {
+//#if defined(LFS_MALLOC)
+//  return LFS_MALLOC(size);
+//#elif !defined(LFS_NO_MALLOC)
+//  return malloc(size);
+//#else
+//  (void)size;
+//  return NULL;
+//#endif
+//}
 
 // Deallocate memory, only used if buffers are not provided to littlefs
-static inline void lfs_free(void *p) {
-#if defined(LFS_FREE)
-  LFS_FREE(p);
-#elif !defined(LFS_NO_MALLOC)
-  free(p);
-#else
-  (void)p;
-#endif
-}
+//static inline void lfs_free(void *p) {
+//#if defined(LFS_FREE)
+//  LFS_FREE(p);
+//#elif !defined(LFS_NO_MALLOC)
+//  free(p);
+//#else
+//  (void)p;
+//#endif
+//}
 
 #ifdef __cplusplus
 } /* extern "C" */

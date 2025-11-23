@@ -1,5 +1,6 @@
 use core::{
     ffi::{c_char, c_void},
+    ptr::null_mut,
     slice,
 };
 
@@ -48,4 +49,35 @@ pub extern "C" fn strcpy(destination: *mut c_char, source: *const c_char) -> *mu
     }
 
     destination
+}
+
+/// Allocates memory of the given size.
+///
+/// # Safety
+///
+/// The caller must ensure that the allocated memory is properly freed
+/// using `lfs_free` to avoid memory leaks.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn lfs_malloc(size: usize) -> *mut c_void {
+    unsafe {
+        abi_declarations::xila_memory_allocate(
+            null_mut(),
+            size,
+            1,
+            abi_declarations::XILA_MEMORY_CAPABILITIES_NONE,
+        )
+    }
+}
+
+/// Frees memory allocated with lfs_malloc
+///
+/// # Safety
+///
+/// The caller must ensure that the pointer was allocated with lfs_malloc
+/// and has not already been freed.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn lfs_free(p: *mut c_void) {
+    unsafe {
+        abi_declarations::xila_memory_deallocate(p);
+    }
 }
