@@ -8,6 +8,7 @@ mod r#macro;
 mod manager;
 mod protection;
 mod statistics;
+pub mod test;
 mod r#trait;
 pub mod utilities;
 
