@@ -5,6 +5,7 @@
 //! building blocks for file system operations.
 
 mod attributes;
+mod control;
 mod entry;
 mod flags;
 mod identifiers;
@@ -16,6 +17,7 @@ mod size;
 mod statistics;
 
 pub use attributes::*;
+pub use control::*;
 pub use entry::*;
 pub use flags::*;
 pub use identifiers::*;
