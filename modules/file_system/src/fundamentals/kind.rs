@@ -30,7 +30,7 @@ use core::fmt::Display;
 #[repr(u8)]
 pub enum Kind {
     /// Regular file containing data
-    File,
+    File = 1,
     /// Directory containing other file system objects
     Directory,
     /// Block-oriented device (e.g., disk drives, storage devices)

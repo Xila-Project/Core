@@ -7,24 +7,22 @@
 mod entry;
 mod flags;
 mod identifiers;
-mod metadata;
+mod kind;
 mod path;
 mod permission;
 mod position;
 mod size;
 mod statistics;
-mod r#type;
 
 pub use entry::*;
 pub use flags::*;
 pub use identifiers::*;
-pub use metadata::*;
+pub use kind::*;
 pub use path::*;
 pub use permission::*;
 pub use position::*;
 pub use size::*;
 pub use statistics::*;
-pub use r#type::*;
 
 /// Standard block size representation for file system operations.
 ///
