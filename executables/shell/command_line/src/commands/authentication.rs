@@ -8,14 +8,14 @@ impl Shell {
         write!(self.standard.out(), translate!("User name: "))?;
         let _ = self.standard.out().flush().await;
 
-        let mut user_name = String::new();
-        self.standard.read_line(&mut user_name).await;
+        let mut user_name = String::with_capacity(32);
+        self.standard.read_line(&mut user_name).await.unwrap();
 
         write!(self.standard.out(), translate!("Password: "))?;
         let _ = self.standard.out().flush().await;
 
-        let mut password = String::new();
-        self.standard.read_line(&mut password).await;
+        let mut password = String::with_capacity(32);
+        self.standard.read_line(&mut password).await.unwrap();
 
         // - Check the user name and the password
         let user_identifier = authentication::authenticate_user(

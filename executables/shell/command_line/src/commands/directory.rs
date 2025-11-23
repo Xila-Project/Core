@@ -1,6 +1,9 @@
 use crate::{Error, Result, Shell};
 use alloc::borrow::ToOwned;
-use xila::{file_system::Path, virtual_file_system};
+use xila::{
+    file_system::Path,
+    virtual_file_system::{self, Directory},
+};
 
 impl Shell {
     pub async fn create_directory(&mut self, arguments: &[&str]) -> Result<()> {
@@ -25,8 +28,7 @@ impl Shell {
             }
         };
 
-        virtual_file_system::get_instance()
-            .create_directory(&path, self.standard.get_task())
+        Directory::create(virtual_file_system::get_instance(), self.task, &path)
             .await
             .map_err(Error::FailedToCreateDirectory)
     }
@@ -54,7 +56,7 @@ impl Shell {
         };
 
         virtual_file_system::get_instance()
-            .remove(&path)
+            .remove(self.task, &path)
             .await
             .map_err(Error::FailedToRemoveDirectory)
     }

@@ -1,6 +1,10 @@
 use crate::{Error, Result, Shell};
 use core::fmt::Write;
-use xila::{file_system::Path, virtual_file_system};
+use xila::{
+    file_system::Path,
+    log,
+    virtual_file_system::{self, Directory},
+};
 
 impl Shell {
     pub async fn list(&mut self, arguments: &[&str]) -> Result<()> {
@@ -10,18 +14,24 @@ impl Shell {
             Path::from_str(arguments[0])
         };
 
-        let directory = virtual_file_system::get_instance()
-            .open_directory(&path, self.standard.get_task())
+        let virtual_file_system = virtual_file_system::get_instance();
+
+        let mut directory = Directory::open(virtual_file_system, self.task, &path)
             .await
             .map_err(Error::FailedToOpenDirectory)?;
 
-        while let Some(entry) = virtual_file_system::get_instance()
-            .read_directory(directory, self.standard.get_task())
+        while let Some(entry) = directory
+            .read()
             .await
             .map_err(Error::FailedToReadDirectoryEntry)?
         {
-            writeln!(self.standard.out(), "{}", entry.get_name())?;
+            writeln!(self.standard.out(), "{}", entry.name)?;
         }
+
+        directory.close(virtual_file_system).await.map_err(|e| {
+            log::error!("Failed to close directory {:?}", path);
+            Error::FailedToOpenDirectory(e)
+        })?;
 
         Ok(())
     }
