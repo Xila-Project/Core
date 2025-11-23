@@ -1,4 +1,4 @@
-use file_system::{DeviceTrait, Size};
+use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
 use graphics::InputData;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
@@ -10,8 +10,8 @@ impl PointerDevice {
     }
 }
 
-impl DeviceTrait for PointerDevice {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
+impl DirectBaseOperations for PointerDevice {
+    fn read(&self, buffer: &mut [u8], _: Size) -> file_system::Result<usize> {
         // - Cast the pointer data to the buffer.
         let data: &mut InputData = buffer
             .try_into()
@@ -23,22 +23,14 @@ impl DeviceTrait for PointerDevice {
             *data = *guard;
         }
 
-        Ok(size_of::<InputData>().into())
+        Ok(size_of::<InputData>())
     }
 
-    fn write(&self, _: &[u8]) -> file_system::Result<Size> {
+    fn write(&self, _: &[u8], _: Size) -> file_system::Result<usize> {
         Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn get_size(&self) -> file_system::Result<Size> {
-        Ok(size_of::<InputData>().into())
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {
-        Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn flush(&self) -> file_system::Result<()> {
-        Ok(())
     }
 }
+
+impl MountOperations for PointerDevice {}
+
+impl DirectCharacterDevice for PointerDevice {}

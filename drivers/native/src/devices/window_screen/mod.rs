@@ -5,7 +5,6 @@ mod pointer;
 mod screen;
 mod window;
 
-use file_system::{Device, create_device};
 use graphics::{InputData, Key, Point, State};
 use synchronization::rwlock::RwLock;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, channel::Channel};
@@ -23,7 +22,17 @@ static POINTER_RWLOCK: RwLock<CriticalSectionRawMutex, InputData> =
     RwLock::new(InputData::default_constant());
 static INNER_WINDOW: InnerWindow = InnerWindow::new();
 
-pub async fn new(resolution: Point) -> Result<(Device, Device, Device, Runner<'static>), String> {
+pub async fn new(
+    resolution: Point,
+) -> Result<
+    (
+        ScreenDevice<'static>,
+        PointerDevice,
+        KeyboardDevice<CriticalSectionRawMutex, 64>,
+        Runner<'static>,
+    ),
+    String,
+> {
     let window = Window::new(
         resolution,
         &INNER_WINDOW,
@@ -39,10 +48,5 @@ pub async fn new(resolution: Point) -> Result<(Device, Device, Device, Runner<'s
 
     let keyboard_device = KeyboardDevice::new(KEYBOARD_CHANNEL.receiver());
 
-    Ok((
-        create_device!(screen_device),
-        create_device!(pointer_device),
-        create_device!(keyboard_device),
-        event_loop,
-    ))
+    Ok((screen_device, pointer_device, keyboard_device, event_loop))
 }
