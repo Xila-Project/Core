@@ -1,6 +1,6 @@
 use crate::{
     BaseOperations, ControlArgument, ControlCommand, ControlDirectionFlags, DirectBaseOperations,
-    MountOperations, Result, Size,
+    Error, MountOperations, Position, Result, Size,
 };
 
 pub const GET_BLOCK_SIZE: ControlCommand =
@@ -24,6 +24,22 @@ pub trait DirectBlockDevice: DirectBaseOperations + MountOperations {
         self.control(GET_BLOCK_COUNT, ControlArgument::from(&mut total_size))?;
         Ok(total_size)
     }
+}
+
+pub fn set_position(current_position: Size, position: &Position, size: Size) -> Result<Size> {
+    let new_position = match position {
+        Position::Start(position) => (*position)
+            .try_into()
+            .map_err(|_| Error::InvalidParameter)?,
+        Position::Current(offset) => (current_position as i64).wrapping_add(*offset),
+        Position::End(offset) => (size as i64).saturating_add(*offset),
+    };
+
+    if new_position < 0 || (new_position as u64) > size {
+        return Err(Error::InvalidParameter);
+    }
+
+    Ok(new_position as Size)
 }
 
 impl<T> BlockDevice for T where T: DirectBlockDevice + MountOperations {}
@@ -322,6 +338,125 @@ pub mod tests {
         let bytes_read = device.read(&mut context, &mut read_buffer, 0).unwrap();
         assert_eq!(bytes_read, large_data.len());
         assert_eq!(read_buffer, large_data);
+    }
+
+    /// Tests for the set_position function.
+    #[cfg(test)]
+    mod set_position_tests {
+        use super::*;
+
+        #[test]
+        fn test_position_start_valid() {
+            let result = set_position(100, &Position::Start(50), 1000);
+            assert_eq!(result.unwrap(), 50);
+        }
+
+        #[test]
+        fn test_position_start_at_zero() {
+            let result = set_position(100, &Position::Start(0), 1000);
+            assert_eq!(result.unwrap(), 0);
+        }
+
+        #[test]
+        fn test_position_start_at_size() {
+            let result = set_position(100, &Position::Start(1000), 1000);
+            assert_eq!(result.unwrap(), 1000);
+        }
+
+        #[test]
+        fn test_position_start_exceeds_size() {
+            let result = set_position(100, &Position::Start(1001), 1000);
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err(), Error::InvalidParameter);
+        }
+
+        #[test]
+        fn test_position_current_positive_offset() {
+            let result = set_position(100, &Position::Current(50), 1000);
+            assert_eq!(result.unwrap(), 150);
+        }
+
+        #[test]
+        fn test_position_current_negative_offset() {
+            let result = set_position(100, &Position::Current(-50), 1000);
+            assert_eq!(result.unwrap(), 50);
+        }
+
+        #[test]
+        fn test_position_current_zero_offset() {
+            let result = set_position(100, &Position::Current(0), 1000);
+            assert_eq!(result.unwrap(), 100);
+        }
+
+        #[test]
+        fn test_position_current_exceeds_size() {
+            let result = set_position(100, &Position::Current(901), 1000);
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err(), Error::InvalidParameter);
+        }
+
+        #[test]
+        fn test_position_current_wraps_to_valid() {
+            // Test wraparound behavior
+            let result = set_position(Size::MAX - 50, &Position::Current(100), Size::MAX);
+            assert_eq!(result.unwrap(), Size::MAX.wrapping_add(50));
+        }
+
+        #[test]
+        fn test_position_end_zero_offset() {
+            let result = set_position(100, &Position::End(0), 1000);
+            assert_eq!(result.unwrap(), 1000);
+        }
+
+        #[test]
+        fn test_position_end_negative_offset() {
+            let result = set_position(100, &Position::End(-50), 1000);
+            assert_eq!(result.unwrap(), 950);
+        }
+
+        #[test]
+        fn test_position_end_positive_offset() {
+            let result = set_position(100, &Position::End(10), 1000);
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err(), Error::InvalidParameter);
+        }
+
+        #[test]
+        fn test_position_end_negative_exceeds_zero() {
+            let result = set_position(100, &Position::End(-1001), 1000);
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err(), Error::InvalidParameter);
+        }
+
+        #[test]
+        fn test_position_end_exactly_at_start() {
+            let result = set_position(100, &Position::End(-1000), 1000);
+            assert_eq!(result.unwrap(), 0);
+        }
+
+        #[test]
+        fn test_position_boundaries() {
+            // Test at exact boundaries
+            let size = 1000;
+
+            // Start boundary
+            assert_eq!(set_position(0, &Position::Start(0), size).unwrap(), 0);
+            assert_eq!(set_position(0, &Position::Start(size), size).unwrap(), size);
+
+            // End boundary
+            assert_eq!(set_position(0, &Position::End(0), size).unwrap(), size);
+            assert_eq!(
+                set_position(0, &Position::End(-(size as i64)), size).unwrap(),
+                0
+            );
+
+            // Current boundary
+            assert_eq!(set_position(0, &Position::Current(0), size).unwrap(), 0);
+            assert_eq!(
+                set_position(0, &Position::Current(size as i64), size).unwrap(),
+                size
+            );
+        }
     }
 
     #[macro_export]
