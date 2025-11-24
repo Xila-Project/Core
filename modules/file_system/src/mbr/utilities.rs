@@ -1180,7 +1180,7 @@ mod tests {
 
         let _ = partition_device
             .set_position(512, &Position::Start(beyond_bounds_position))
-            .unwrap();
+            .unwrap_err();
         // This should either fail or be clamped to valid range
         // The exact behavior depends on the partition device implementation
 
