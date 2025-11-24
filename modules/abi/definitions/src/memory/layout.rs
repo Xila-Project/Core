@@ -1,8 +1,19 @@
-use core::alloc::Layout;
+use core::{alloc::Layout, fmt::Debug};
 
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct CompactLayout(usize);
+
+impl Debug for CompactLayout {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "CompactLayout {{ size: {}, alignment: {} }}",
+            self.get_size(),
+            self.get_alignment()
+        )
+    }
+}
 
 impl CompactLayout {
     /// Alignment is stored in the upper 4 bits in a log2 format
@@ -67,7 +78,7 @@ impl CompactLayout {
         self.0.to_le_bytes()
     }
 
-    pub const fn from_le_bytes(bytes: [u8; size_of::<Self>()]) -> Option<Self> {
+    pub fn from_le_bytes(bytes: [u8; size_of::<Self>()]) -> Option<Self> {
         let layout = Self(usize::from_le_bytes(bytes));
 
         if layout.get_size() > Self::MAXIMUM_SIZE
@@ -77,7 +88,7 @@ impl CompactLayout {
             return None;
         }
 
-        Some(Self(usize::from_le_bytes(bytes)))
+        Some(layout)
     }
 }
 

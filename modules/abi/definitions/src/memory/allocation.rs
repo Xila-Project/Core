@@ -144,7 +144,6 @@ pub extern "C" fn xila_memory_deallocate(pointer: *mut c_void) {
     let allocated = match Allocated::from_user_pointer(pointer as *mut u8) {
         Some(alloc) => alloc,
         None => {
-            warning!("xila_memory_deallocate called with null pointer, ignoring");
             return;
         }
     };

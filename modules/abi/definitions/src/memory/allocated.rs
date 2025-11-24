@@ -61,11 +61,7 @@ impl Allocated {
         // Read the layout stored before the user pointer
         let layout_ptr = unsafe { user_pointer.sub(size_of::<CompactLayout>()) };
         let layout_bytes = unsafe { slice::from_raw_parts(layout_ptr, size_of::<CompactLayout>()) };
-        let layout = CompactLayout::from_le_bytes(
-            layout_bytes
-                .try_into()
-                .expect("Failed to read CompactLayout from user pointer"),
-        )?;
+        let layout = CompactLayout::from_le_bytes(layout_bytes.try_into().ok()?)?;
 
         let padding = Self::get_padding(layout.get_alignment());
         let total_header_size = Self::HEADER_SIZE + padding;
