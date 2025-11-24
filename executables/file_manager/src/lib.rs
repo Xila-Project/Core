@@ -5,14 +5,17 @@ extern crate alloc;
 mod error;
 mod file_manager;
 
+use alloc::boxed::Box;
 use alloc::string::{String, ToString};
 use core::num::NonZeroUsize;
-pub use error::*;
-pub use file_manager::*;
-use xila::executable::{self, Standard};
-use xila::file_system::{self, Flags, Mode, Open};
+use core::time::Duration;
+use xila::executable::{self, ExecutableTrait, Standard};
+use xila::task;
 use xila::task::TaskIdentifier;
 use xila::virtual_file_system::{File, VirtualFileSystem};
+
+pub use error::*;
+pub use file_manager::*;
 
 pub const SHORTCUT: &str = r#"
 {
@@ -32,44 +35,36 @@ impl FileManagerExecutable {
         task: TaskIdentifier,
     ) -> core::result::Result<Self, String> {
         let _ = virtual_file_system
-            .create_directory(&"/configuration/shared/shortcuts", task)
+            .create_directory(task, &"/configuration/shared/shortcuts")
             .await;
 
-        let file = match File::open(
+        File::write_to_path(
             virtual_file_system,
+            task,
             "/configuration/shared/shortcuts/file_manager.json",
-            Flags::new(Mode::WRITE_ONLY, Open::CREATE_ONLY.into(), None),
+            SHORTCUT.as_bytes(),
         )
         .await
-        {
-            Ok(file) => file,
-            Err(file_system::Error::AlreadyExists) => {
-                return Ok(Self);
-            }
-            Err(error) => Err(error.to_string())?,
-        };
-
-        file.write(crate::SHORTCUT.as_bytes())
-            .await
-            .map_err(|error| error.to_string())?;
+        .map_err(|error| error.to_string())?;
 
         Ok(Self)
     }
 }
 
-executable::implement_executable_device!(
-    structure: FileManagerExecutable,
-    mount_path: "/binaries/file_manager",
-    main_function: main,
-);
+impl ExecutableTrait for FileManagerExecutable {
+    fn main(standard: Standard, arguments: Vec<String>) -> executable::MainFuture {
+        Box::pin(async move { main(standard, arguments).await })
+    }
+}
 
 pub async fn main(_: Standard, _: Vec<String>) -> core::result::Result<(), NonZeroUsize> {
     let mut file_manager = FileManager::new()
         .await
         .map_err(|_| NonZeroUsize::new(1).unwrap())?;
 
-    // Run the main loop
-    file_manager.run().await;
+    while file_manager.handle_events().await {
+        task::sleep(Duration::from_millis(50)).await;
+    }
 
     Ok(())
 }

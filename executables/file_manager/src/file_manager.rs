@@ -5,7 +5,7 @@ pub(crate) use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use core::{ptr::null_mut, time::Duration};
+use core::ptr::null_mut;
 use xila::file_system::{Kind, Path, PathOwned};
 use xila::graphics::{
     self, EventKind, Window, lvgl,
@@ -32,88 +32,98 @@ pub struct FileManager {
 #[derive(Clone)]
 pub struct FileItem {
     pub name: String,
-    pub r#type: Kind,
+    pub kind: Kind,
     pub size: u64,
 }
 
 impl FileManager {
     pub async fn new() -> Result<Self> {
-        let _lock = graphics::get_instance().lock().await;
+        let manager = graphics::lock!({
+            let mut window = graphics::get_instance().create_window().await?;
 
-        let mut window = graphics::get_instance().create_window().await?;
+            window.set_icon("Fm", palette::get(Hue::Cyan, palette::Tone::MAIN));
 
-        window.set_icon("Fm", palette::get(Hue::Cyan, palette::Tone::MAIN));
+            let mut manager = Self {
+                window,
+                toolbar: null_mut(),
+                up_button: null_mut(),
+                home_button: null_mut(),
+                refresh_button: null_mut(),
+                path_text_area: null_mut(),
+                go_button: null_mut(),
+                file_list: null_mut(),
+                current_path: PathOwned::root(),
+                files: Vec::new(),
+                running: true,
+            };
 
-        let mut manager = Self {
-            window,
-            toolbar: null_mut(),
-            up_button: null_mut(),
-            home_button: null_mut(),
-            refresh_button: null_mut(),
-            path_text_area: null_mut(),
-            go_button: null_mut(),
-            file_list: null_mut(),
-            current_path: PathOwned::root(),
-            files: Vec::new(),
-            running: true,
-        };
+            // Set up window layout for flex
+            unsafe {
+                lvgl::lv_obj_set_layout(
+                    manager.window.get_object(),
+                    lvgl::lv_layout_t_LV_LAYOUT_FLEX,
+                );
+                lvgl::lv_obj_set_flex_flow(
+                    manager.window.get_object(),
+                    lvgl::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN,
+                );
+                lvgl::lv_obj_set_style_pad_all(
+                    manager.window.get_object(),
+                    0,
+                    lvgl::LV_STATE_DEFAULT,
+                );
+            }
 
-        // Set up window layout for flex
-        unsafe {
-            lvgl::lv_obj_set_layout(
-                manager.window.get_object(),
-                lvgl::lv_layout_t_LV_LAYOUT_FLEX,
-            );
-            lvgl::lv_obj_set_flex_flow(
-                manager.window.get_object(),
-                lvgl::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN,
-            );
-            lvgl::lv_obj_set_style_pad_all(manager.window.get_object(), 0, lvgl::LV_STATE_DEFAULT);
-        }
+            manager.create_toolbar().await?;
+            manager.create_file_list().await?;
+            manager.load_directory().await?;
 
-        manager.create_toolbar().await?;
-        manager.create_file_list().await?;
-        manager.load_directory().await?;
+            manager
+        });
 
         Ok(manager)
     }
 
-    pub async fn run(&mut self) {
-        while self.running {
-            let event = match self.window.pop_event() {
-                Some(event) => event,
-                None => {
-                    task::Manager::sleep(Duration::from_millis(50)).await;
-                    continue;
+    pub async fn handle_events(&mut self) -> bool {
+        graphics::lock!({
+            while let Some(event) = self.window.pop_event() {
+                if let Err(e) = self.handle_event(event).await {
+                    log::error!("Error handling file manager event: {:?}", e);
                 }
-            };
-
-            match event.get_code() {
-                EventKind::Delete => {
-                    if event.get_target() == self.window.get_object() {
-                        self.running = false;
-                    }
-                }
-                EventKind::Clicked => {
-                    let target = event.get_target();
-
-                    // Handle different button clicks
-                    if target == self.up_button {
-                        self.handle_up_click().await;
-                    } else if target == self.home_button {
-                        self.handle_home_click().await;
-                    } else if target == self.refresh_button {
-                        self.handle_refresh_click().await;
-                    } else if target == self.go_button {
-                        self.handle_go_click().await;
-                    } else {
-                        // Handle file item clicks
-                        self.handle_file_click(target).await;
-                    }
-                }
-                _ => {}
             }
+        });
+
+        self.running
+    }
+
+    pub async fn handle_event(&mut self, event: graphics::Event) -> Result<()> {
+        match event.code {
+            EventKind::Delete => {
+                if event.target == self.window.get_object() {
+                    self.running = false;
+                }
+            }
+            EventKind::Clicked => {
+                let target = event.target;
+
+                // Handle different button clicks
+                if target == self.up_button {
+                    self.handle_up_click().await?;
+                } else if target == self.home_button {
+                    self.handle_home_click().await?;
+                } else if target == self.refresh_button {
+                    self.handle_refresh_click().await?;
+                } else if target == self.go_button {
+                    self.handle_go_click().await?;
+                } else {
+                    // Handle file item clicks
+                    self.handle_file_click(target).await?;
+                }
+            }
+            _ => {}
         }
+
+        Ok(())
     }
 
     async fn create_toolbar(&mut self) -> Result<()> {
@@ -228,58 +238,52 @@ impl FileManager {
         // Clear existing files
         self.clear_file_list();
 
+        let task = task::get_instance().get_current_task_identifier().await;
+
         // Open directory
         let virtual_file_system = get_instance();
-        let directory = Directory::open(virtual_file_system, &self.current_path).await;
 
-        match directory {
-            Ok(directory) => {
-                // Read directory entries
-                while let Ok(Some(entry)) = directory.read().await {
-                    let name = entry.get_name();
+        let mut directory = Directory::open(virtual_file_system, task, &self.current_path).await?;
 
-                    // Skip "." and ".." entries
-                    if name == "." || name == ".." {
-                        continue;
-                    }
+        // Read directory entries
+        while let Some(entry) = directory.read().await? {
+            let name = entry.name.clone();
 
-                    let file_item = FileItem {
-                        name: name.clone(),
-                        r#type: entry.get_type(),
-                        size: entry.get_size().as_u64(),
-                    };
-
-                    self.files.push(file_item);
-                }
-
-                // Sort files: directories first, then files
-                self.files.sort_by(|a, b| match (a.r#type, b.r#type) {
-                    (Kind::Directory, Kind::Directory) => a.name.cmp(&b.name),
-                    (Kind::Directory, _) => core::cmp::Ordering::Less,
-                    (_, Kind::Directory) => core::cmp::Ordering::Greater,
-                    _ => a.name.cmp(&b.name),
-                });
-
-                // Create UI for each file
-                for i in 0..self.files.len() {
-                    self.create_file_item(i).await?;
-                }
-
-                Ok(())
+            // Skip "." and ".." entries
+            if name == "." || name == ".." {
+                continue;
             }
-            Err(error) => {
-                // Show error message
-                self.show_error_message("Failed to open directory").await;
-                Err(Error::FailedToReadDirectory(error))
-            }
+
+            let file_item = FileItem {
+                name: name.clone(),
+                kind: entry.kind,
+                size: entry.size,
+            };
+
+            self.files.push(file_item);
         }
+
+        // Sort files: directories first, then files
+        self.files.sort_by(|a, b| match (a.kind, b.kind) {
+            (Kind::Directory, Kind::Directory) => a.name.cmp(&b.name),
+            (Kind::Directory, _) => core::cmp::Ordering::Less,
+            (_, Kind::Directory) => core::cmp::Ordering::Greater,
+            _ => a.name.cmp(&b.name),
+        });
+
+        // Create UI for each file
+        for i in 0..self.files.len() {
+            self.create_file_item(i).await?;
+        }
+
+        Ok(())
     }
 
     async fn create_file_item(&mut self, index: usize) -> Result<()> {
         unsafe {
             let file = &self.files[index];
 
-            let icon_symbol = match file.r#type {
+            let icon_symbol = match file.kind {
                 Kind::Directory => lvgl::LV_SYMBOL_DIRECTORY,
                 _ => lvgl::LV_SYMBOL_FILE,
             };
@@ -315,16 +319,13 @@ impl FileManager {
             if !self.path_text_area.is_null() {
                 let path_text = CString::new(self.current_path.to_string()).unwrap();
                 lvgl::lv_textarea_set_text(self.path_text_area, path_text.as_ptr());
+            } else {
+                log::error!("Path text area is null!");
             }
         }
     }
 
-    async fn show_error_message(&self, _message: &str) {
-        // TODO: Implement error message display
-        // For now, just print to console if logging is available
-    }
-
-    async fn handle_file_click(&mut self, target: *mut lvgl::lv_obj_t) {
+    async fn handle_file_click(&mut self, target: *mut lvgl::lv_obj_t) -> Result<()> {
         unsafe {
             // Check if the clicked object is a file list button
             let parent = lvgl::lv_obj_get_parent(target as *const lvgl::lv_obj_t);
@@ -335,7 +336,7 @@ impl FileManager {
                 if index < self.files.len() {
                     let file = &self.files[index];
 
-                    if file.r#type == Kind::Directory {
+                    if file.kind == Kind::Directory {
                         // Navigate to directory
                         if let Some(new_path) =
                             self.current_path.clone().join(Path::from_str(&file.name))
@@ -343,9 +344,7 @@ impl FileManager {
                             self.current_path = new_path;
                             self.update_path_label();
                             // Reload directory contents
-                            if let Err(error) = self.load_directory().await {
-                                log::error!("Failed to load directory: {error:?}");
-                            }
+                            self.load_directory().await?;
                         }
                     } else {
                         // Handle file selection/opening
@@ -354,33 +353,32 @@ impl FileManager {
                 }
             }
         }
+
+        Ok(())
     }
 
-    async fn handle_up_click(&mut self) {
+    async fn handle_up_click(&mut self) -> Result<()> {
         if let Some(parent_path) = self.current_path.go_parent() {
             self.current_path = parent_path.to_owned();
             self.update_path_label();
-            if let Err(error) = self.load_directory().await {
-                log::error!("Failed to load parent directory: {error:?}");
-            }
+            self.load_directory().await?;
         }
+        Ok(())
     }
 
-    async fn handle_home_click(&mut self) {
+    async fn handle_home_click(&mut self) -> Result<()> {
         self.current_path = PathOwned::root();
         self.update_path_label();
-        if let Err(error) = self.load_directory().await {
-            log::error!("Failed to load home directory: {error:?}");
-        }
+        self.load_directory().await?;
+        Ok(())
     }
 
-    async fn handle_refresh_click(&mut self) {
-        if let Err(error) = self.load_directory().await {
-            log::error!("Failed to refresh directory: {error:?}");
-        }
+    async fn handle_refresh_click(&mut self) -> Result<()> {
+        self.load_directory().await?;
+        Ok(())
     }
 
-    async fn handle_go_click(&mut self) {
+    async fn handle_go_click(&mut self) -> Result<()> {
         unsafe {
             if !self.path_text_area.is_null() {
                 // Get the text from the text area
@@ -400,15 +398,13 @@ impl FileManager {
                         self.update_path_label();
 
                         // Try to load the directory
-                        if let Err(error) = self.load_directory().await {
-                            log::error!("Failed to navigate to path '{path_str}': {error:?}");
-                            // If navigation fails, revert to previous path
-                            // For now, just stay on the current path
-                        }
+                        self.load_directory().await?;
                     }
                 }
             }
         }
+
+        Ok(())
     }
 
     pub async fn refresh(&mut self) -> Result<()> {
