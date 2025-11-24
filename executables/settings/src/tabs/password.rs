@@ -324,9 +324,7 @@ impl PasswordTab {
 
     pub async fn handle_event(&mut self, event: &Event) -> bool {
         // Handle password change button click
-        if event.get_code() == EventKind::Clicked
-            && event.get_target() == self.change_password_button
-        {
+        if event.code == EventKind::Clicked && event.target == self.change_password_button {
             self.handle_password_change().await;
             return true; // Event was handled
         }
