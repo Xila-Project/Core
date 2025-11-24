@@ -14,7 +14,7 @@ use crate::io::map_error;
 pub struct FileDriveDevice(MutexMountWrapper<CriticalSectionRawMutex, File>);
 
 impl FileDriveDevice {
-    pub fn new(path: &impl AsRef<Path>) -> Self {
+    pub fn new(path: &impl AsRef<Path>, size: Size) -> Self {
         let path = path.as_ref().as_str();
 
         let file = OpenOptions::new()
@@ -25,14 +25,13 @@ impl FileDriveDevice {
             .open(path)
             .expect("Error opening file");
 
-        file.set_len(16 * 1024 * 1024)
-            .expect("Error setting file size");
+        file.set_len(size).expect("Error setting file size");
 
         Self(MutexMountWrapper::new_mounted(file))
     }
 
-    pub fn new_static(path: &impl AsRef<Path>) -> &'static Self {
-        Box::leak(Box::new(Self::new(path)))
+    pub fn new_static(path: &impl AsRef<Path>, size: Size) -> &'static Self {
+        Box::leak(Box::new(Self::new(path, size)))
     }
 }
 
@@ -138,7 +137,8 @@ mod tests {
     use super::*;
     use file_system::implement_block_device_tests;
 
-    implement_block_device_tests!(FileDriveDevice::new(&Path::from_str(
-        "/tmp/file_drive_device_test.img"
-    )));
+    implement_block_device_tests!(FileDriveDevice::new(
+        &Path::from_str("/tmp/file_drive_device_test.img"),
+        16 * 1024 * 1024
+    ));
 }
