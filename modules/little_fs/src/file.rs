@@ -1,6 +1,6 @@
 use super::{convert_flags, convert_result, littlefs};
 use crate::attributes::InternalAttributes;
-use alloc::{boxed::Box, ffi::CString, vec};
+use alloc::{boxed::Box, ffi::CString};
 use core::ffi::c_void;
 use file_system::{Attributes, Error, Flags, Path, Position, Result, Size};
 
@@ -23,6 +23,9 @@ fn convert_position(position: &Position) -> (i32, i32) {
 
 #[derive(Clone)]
 pub struct File {
+    internal_attributes: InternalAttributes,
+    attributes: littlefs::lfs_attr,
+    configuration: littlefs::lfs_file_config,
     file: littlefs::lfs_file_t,
 }
 
@@ -40,16 +43,28 @@ impl File {
         let little_fs_flags = convert_flags(flags);
 
         let file = Self {
+            internal_attributes: unsafe { InternalAttributes::new_uninitialized().assume_init() },
             file: littlefs::lfs_file_t::default(),
+            attributes: littlefs::lfs_attr::default(),
+            configuration: littlefs::lfs_file_config::default(),
         };
+
         let mut file = Box::new(file);
 
+        file.attributes.type_ = InternalAttributes::IDENTIFIER;
+        file.attributes.buffer = &mut file.internal_attributes as *mut _ as *mut c_void;
+        file.attributes.size = core::mem::size_of::<InternalAttributes>() as u32;
+
+        file.configuration.attr_count = 1;
+        file.configuration.attrs = &mut file.attributes;
+
         unsafe {
-            convert_result(littlefs::lfs_file_open(
+            convert_result(littlefs::lfs_file_opencfg(
                 file_system,
                 &mut file.file,
                 path.as_ptr(),
                 little_fs_flags,
+                &file.configuration,
             ))?;
         }
 
@@ -61,26 +76,13 @@ impl File {
 
         let mut file = littlefs::lfs_file_t::default();
 
-        let mut buffer = vec![0_u8; 256];
-
-        let configuration = littlefs::lfs_file_config {
-            buffer: buffer.as_mut_ptr() as *mut c_void,
-            attrs: unsafe {
-                InternalAttributes::new_uninitialized()
-                    .assume_init()
-                    .into_lfs_attributes()
-            },
-            attr_count: 1,
-        };
-
         unsafe {
-            convert_result(littlefs::lfs_file_opencfg(
+            convert_result(littlefs::lfs_file_open(
                 file_system,
                 &mut file,
                 path.as_ptr(),
                 littlefs::lfs_open_flags_LFS_O_CREAT as i32
                     | littlefs::lfs_open_flags_LFS_O_EXCL as i32,
-                &configuration,
             ))?;
 
             convert_result(littlefs::lfs_file_close(file_system, &mut file))?;
@@ -99,22 +101,14 @@ impl File {
     }
 
     pub fn get_attributes(&mut self, attributes: &mut Attributes) -> Result<()> {
-        let internal_attributes =
-            InternalAttributes::get_from_file_configuration(unsafe { &*self.file.cfg })
-                .ok_or(Error::NoAttribute)?;
-
-        internal_attributes.update_attributes(attributes)?;
+        self.internal_attributes.update_attributes(attributes)?;
 
         Ok(())
     }
 
     pub fn set_attributes(&mut self, attributes: &Attributes) -> Result<()> {
-        let internal_attributes = InternalAttributes::get_mutable_from_file_configuration(unsafe {
-            &mut *(self.file.cfg as *mut _)
-        })
-        .ok_or(Error::NoAttribute)?;
-
-        internal_attributes.update_with_attributes(attributes)?;
+        self.internal_attributes
+            .update_with_attributes(attributes)?;
 
         Ok(())
     }

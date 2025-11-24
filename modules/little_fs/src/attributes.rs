@@ -1,10 +1,9 @@
-use core::{ffi::c_void, fmt::Debug, mem::MaybeUninit};
+use core::{fmt::Debug, mem::MaybeUninit};
 
-use alloc::boxed::Box;
 use file_system::{Attributes, Inode, Kind, Permissions, Result, Time};
-use littlefs2_sys::lfs_attr;
 use users::{GroupIdentifier, UserIdentifier};
 
+#[derive(Clone)]
 #[repr(C)] // For stable layout
 pub struct InternalAttributes {
     pub inode: Inode,
@@ -39,66 +38,6 @@ impl InternalAttributes {
 
     pub fn new_uninitialized() -> MaybeUninit<Self> {
         MaybeUninit::<Self>::uninit()
-    }
-
-    pub fn into_lfs_attributes(self) -> *mut lfs_attr {
-        let attributes = Box::leak(Box::new(self));
-
-        let littlefs_attributes = Box::new(lfs_attr {
-            type_: Self::IDENTIFIER,
-            buffer: attributes as *mut _ as *mut c_void,
-            size: size_of::<InternalAttributes>() as u32,
-        });
-
-        Box::leak(littlefs_attributes)
-    }
-
-    pub fn get_from_file_configuration(
-        configuration: &super::littlefs::lfs_file_config,
-    ) -> Option<&InternalAttributes> {
-        if configuration.attr_count == 0 {
-            return None;
-        }
-
-        let pointer = configuration.attrs;
-
-        if pointer.is_null() {
-            return None;
-        }
-
-        let littlefs_attributes = unsafe { Box::leak(Box::from_raw(pointer)) };
-
-        if littlefs_attributes.size != size_of::<InternalAttributes>() as u32 {
-            return None;
-        }
-
-        let attributes = Box::leak(unsafe { Box::from_raw(littlefs_attributes.buffer as _) });
-
-        Some(attributes)
-    }
-
-    pub fn get_mutable_from_file_configuration(
-        configuration: &mut super::littlefs::lfs_file_config,
-    ) -> Option<&mut InternalAttributes> {
-        if configuration.attr_count == 0 {
-            return None;
-        }
-
-        let pointer = configuration.attrs;
-
-        if pointer.is_null() {
-            return None;
-        }
-
-        let littlefs_attributes = unsafe { Box::leak(Box::from_raw(pointer)) };
-
-        if littlefs_attributes.size != size_of::<InternalAttributes>() as u32 {
-            return None;
-        }
-
-        let attributes = Box::leak(unsafe { Box::from_raw(littlefs_attributes.buffer as _) });
-
-        Some(attributes)
     }
 
     pub fn update_attributes(&self, statistics: &mut Attributes) -> Result<()> {
