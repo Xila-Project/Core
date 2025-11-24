@@ -248,9 +248,12 @@ impl<'a> VirtualFileSystem<'a> {
 
         let mut context = Context::new_empty();
 
-        file_system
-            .file_system
-            .lookup_directory(&mut context, relative_path)?;
+        poll(|| {
+            Ok(file_system
+                .file_system
+                .lookup_directory(&mut context, relative_path)?)
+        })
+        .await?;
 
         file_system.reference_count += 1;
 
@@ -341,12 +344,6 @@ impl<'a> VirtualFileSystem<'a> {
         let inode = *attributes.get_inode().ok_or(Error::MissingAttribute)?;
 
         let mut context = Context::new_empty();
-
-        log::information!(
-            "Opening file system item at path: {:?} with kind: {:?}",
-            path,
-            kind
-        );
 
         let file = match kind {
             Kind::CharacterDevice => {
