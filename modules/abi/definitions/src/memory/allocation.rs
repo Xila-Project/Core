@@ -629,7 +629,9 @@ mod tests {
     #[test]
     fn test_deallocate_null_pointer() {
         // Test that deallocating a null pointer doesn't crash
-        xila_memory_deallocate(core::ptr::null_mut());
+        unsafe {
+            xila_memory_deallocate(core::ptr::null_mut());
+        }
     }
 
     /// Tests reallocation from a null pointer (equivalent to allocation).

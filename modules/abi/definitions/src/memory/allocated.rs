@@ -226,7 +226,7 @@ mod tests {
         let allocated = Allocated::from_layout(base_ptr, &layout).unwrap();
 
         let user_ptr = allocated.get_user_pointer();
-        let recovered = Allocated::from_user_pointer(user_ptr).unwrap();
+        let recovered = unsafe { Allocated::from_user_pointer(user_ptr).unwrap() };
 
         // Verify the recovered struct matches the original
         assert_eq!(recovered.pointer, allocated.pointer);
