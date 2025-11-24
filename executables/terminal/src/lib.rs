@@ -15,6 +15,7 @@ use core::fmt::Write;
 use core::{num::NonZeroUsize, time::Duration};
 use error::*;
 use xila::executable::Standard;
+use xila::log;
 use xila::task::{self, TaskIdentifier};
 use xila::virtual_file_system::{self, ItemStatic};
 
@@ -31,7 +32,11 @@ pub const SHORTCUT: &str = r#"
 }"#;
 
 async fn mount_and_open(task: TaskIdentifier, terminal: &'static Terminal) -> Result<Standard> {
-    virtual_file_system::get_instance()
+    let virtual_file_system = virtual_file_system::get_instance();
+
+    let _ = virtual_file_system.remove(task, &"/devices/terminal").await;
+
+    virtual_file_system
         .mount_static(
             task,
             &"/devices/terminal",
@@ -44,7 +49,7 @@ async fn mount_and_open(task: TaskIdentifier, terminal: &'static Terminal) -> Re
         &"/devices/terminal",
         &"/devices/terminal",
         task,
-        virtual_file_system::get_instance(),
+        virtual_file_system,
     )
     .await?;
 
@@ -60,8 +65,8 @@ async fn inner_main(task: TaskIdentifier) -> Result<()> {
 
     xila::executable::execute("/binaries/command_line_shell", vec![], standard, None).await?;
 
-    while terminal.event_handler().await? {
-        task::Manager::sleep(Duration::from_millis(10)).await;
+    while terminal.handle_events().await? {
+        task::Manager::sleep(Duration::from_millis(20)).await;
     }
 
     Ok(())
@@ -75,6 +80,7 @@ pub async fn main(
 
     if let Err(error) = inner_main(task).await {
         let _ = writeln!(standard.error(), "{}", error);
+        log::error!("Terminal executable error: {}", error);
         return Err(error.into());
     }
 
