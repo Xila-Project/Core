@@ -30,10 +30,7 @@ impl Allocated {
 
         // The allocation must be aligned to at least the user data alignment
         // to ensure that base_ptr + offset is properly aligned
-        let allocation_layout = Layout::from_size_align(total_size, alignment)
-            .expect("Failed to create allocation layout");
-
-        allocation_layout
+        Layout::from_size_align(total_size, alignment).expect("Failed to create allocation layout")
     }
 
     fn new(pointer: *mut u8, padding: usize) -> Option<Self> {
@@ -53,7 +50,11 @@ impl Allocated {
         Some(allocated)
     }
 
-    pub fn from_user_pointer(user_pointer: *mut u8) -> Option<Self> {
+    /// # Safety
+    ///
+    /// The provided user pointer must have been obtained from a previous allocation
+    /// that stored a CompactLayout before the user pointer.
+    pub unsafe fn from_user_pointer(user_pointer: *mut u8) -> Option<Self> {
         if user_pointer.is_null() {
             return None;
         }
