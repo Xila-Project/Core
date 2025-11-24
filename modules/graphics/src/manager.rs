@@ -4,6 +4,7 @@ use alloc::{
     vec::Vec,
 };
 use file_system::DirectCharacterDevice;
+use futures::block_on;
 use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 use synchronization::mutex::{Mutex, MutexGuard};
 use synchronization::{once_lock::OnceLock, rwlock::RwLock};
@@ -254,6 +255,10 @@ impl Manager {
 
     pub async fn lock(&self) -> MutexGuard<'_, CriticalSectionRawMutex, ()> {
         self.global_lock.lock().await
+    }
+
+    pub fn synchronous_lock(&self) -> MutexGuard<'_, CriticalSectionRawMutex, ()> {
+        block_on(self.lock())
     }
 
     pub fn try_lock(&self) -> Option<MutexGuard<'_, CriticalSectionRawMutex, ()>> {
