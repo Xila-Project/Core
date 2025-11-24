@@ -170,10 +170,7 @@ impl Context {
                 .get_mut(&unique_file)
                 .map(|entry| operation_directory(&mut entry.directory))
         } else {
-            inner
-                .files
-                .get_mut(&unique_file)
-                .map(|file| operation_file(file))
+            inner.files.get_mut(&unique_file).map(operation_file)
         }
     }
 
