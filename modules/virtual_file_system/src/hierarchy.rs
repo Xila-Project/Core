@@ -26,6 +26,9 @@ pub async fn create_default_hierarchy(
         .create_directory(task, &Path::DEVICES)
         .await?;
     virtual_file_system
+        .set_permissions(task, &Path::DEVICES, Permissions::ALL_FULL)
+        .await?;
+    virtual_file_system
         .create_directory(task, &Path::USERS)
         .await?;
     virtual_file_system
