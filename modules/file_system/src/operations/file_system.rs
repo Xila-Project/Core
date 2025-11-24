@@ -28,10 +28,10 @@ pub trait FileSystemOperations: FileOperations + DirectoryOperations + MountOper
     ///
     /// # Errors
     ///
-    /// * [`Error::NotFound`] - File or directory doesn't exist
-    /// * [`Error::PermissionDenied`] - Insufficient permissions
-    /// * [`Error::DirectoryNotEmpty`] - Directory contains files
-    /// * [`Error::RessourceBusy`] - File is currently in use
+    /// * [`crate::Error::NotFound`] - File or directory doesn't exist
+    /// * [`crate::Error::PermissionDenied`] - Insufficient permissions
+    /// * [`crate::Error::DirectoryNotEmpty`] - Directory contains files
+    /// * [`crate::Error::RessourceBusy`] - File is currently in use
     fn remove(&self, path: &Path) -> Result<()>;
 
     /// Rename or move a file or directory.
@@ -52,9 +52,9 @@ pub trait FileSystemOperations: FileOperations + DirectoryOperations + MountOper
     ///
     /// # Errors
     ///
-    /// * [`Error::NotFound`] - Source file doesn't exist
-    /// * [`Error::AlreadyExists`] - Destination already exists
-    /// * [`Error::PermissionDenied`] - Insufficient permissions
+    /// * [`crate::Error::NotFound`] - Source file doesn't exist
+    /// * [`crate::Error::AlreadyExists`] - Destination already exists
+    /// * [`crate::Error::PermissionDenied`] - Insufficient permissions
     fn rename(&self, source: &Path, destination: &Path) -> Result<()>;
 
     // - Directory

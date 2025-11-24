@@ -26,7 +26,7 @@ use crate::{Context, ControlArgument, ControlCommand, Error, Position, Result, S
 /// ## Position Management
 ///
 /// Devices maintain an internal position cursor that affects read and write operations.
-/// The position can be manipulated using [`DeviceTrait::set_position`].
+/// The position can be manipulated using [`BaseOperations::set_position`].
 ///
 /// # Examples
 ///

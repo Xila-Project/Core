@@ -16,21 +16,23 @@
 //! ## Key Components
 //!
 //! ### File System Traits
-//! - [`FileSystemTraits`] - Core trait for implementing file systems
+//! - [`FileSystemOperations`] - Core trait for implementing file systems
 //! - Support for POSIX-like operations with task and user isolation
 //!
 //! ### Device Management
-//! - [`DeviceTrait`] - Abstraction for storage devices
+//! - [`CharacterDevice`] - Character device abstraction
+//! - [`BlockDevice`] - Block device abstraction
+//! - [`DirectCharacterDevice`] - Context-free direct character device operations
+//! - [`DirectBlockDevice`] - Context-free direct block device operations
 //! - [`MemoryDevice`] - In-memory device implementation for testing
-//! - [`Device`] - Thread-safe device wrapper
 //!
 //! ### Partition Support
 //! - [`PartitionDevice`] - Device representing a partition on a larger device
-//! - [`PartitionEntry`] - MBR partition table entry
-//! - [`PartitionKind`] - Enumeration of partition types
+//! - [`mbr::PartitionEntry`] - MBR partition table entry
+//! - [`mbr::PartitionKind`] - Enumeration of partition types
 //!
 //! ### MBR (Master Boot Record)
-//! - [`Mbr`] - Complete MBR structure with partition table
+//! - [`mbr::Mbr`] - Complete MBR structure with partition table
 //! - Utilities for creating, reading, and validating MBRs
 //! - Support for creating partition devices from MBR entries
 //!
