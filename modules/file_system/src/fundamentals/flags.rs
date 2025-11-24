@@ -78,9 +78,9 @@ flags! {
 ///     
 /// let flags = Flags::new(AccessFlags::READ_WRITE, Some(CreateFlags::Create), Some(StateFlags::NonBlocking));
 ///
-/// assert_eq!(flags.get_mode(), AccessFlags::READ_WRITE);
-/// assert_eq!(flags.get_open(), CreateFlags::Create);
-/// assert_eq!(flags.get_status(), StateFlags::NonBlocking);
+/// assert_eq!(flags.get_access(), AccessFlags::READ_WRITE);
+/// assert_eq!(flags.get_create(), CreateFlags::Create);
+/// assert_eq!(flags.get_state(), StateFlags::NonBlocking);
 /// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
@@ -90,9 +90,9 @@ impl Debug for Flags {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter
             .debug_struct("Flags")
-            .field("Mode", &self.get_mode())
-            .field("Open", &self.get_open())
-            .field("Status", &self.get_status())
+            .field("Access", &self.get_access())
+            .field("Create", &self.get_create())
+            .field("State", &self.get_state())
             .finish()
     }
 }
@@ -105,6 +105,7 @@ impl Flags {
     const OPEN_MASK: u16 = (1 << CreateFlags::bits_used()) - 1;
     const STATUS_MASK: u16 = (1 << StateFlags::bits_used()) - 1;
     const MODE_MASK: u16 = (1 << AccessFlags::bits_used()) - 1;
+
     pub const fn new(
         mode: AccessFlags,
         open: Option<CreateFlags>,
@@ -128,15 +129,15 @@ impl Flags {
         Self(flags)
     }
 
-    pub const fn get_mode(&self) -> AccessFlags {
+    pub const fn get_access(&self) -> AccessFlags {
         AccessFlags(((self.0 >> Self::MODE_POSITION) & Self::MODE_MASK) as u8)
     }
 
-    pub const fn get_open(&self) -> CreateFlags {
+    pub const fn get_create(&self) -> CreateFlags {
         CreateFlags(((self.0 >> Self::OPEN_POSITION) & Self::OPEN_MASK) as u8)
     }
 
-    pub const fn get_status(&self) -> StateFlags {
+    pub const fn get_state(&self) -> StateFlags {
         StateFlags(((self.0 >> Self::STATUS_POSITION) & Self::STATUS_MASK) as u8)
     }
 
@@ -159,18 +160,17 @@ impl Flags {
     }
 
     pub fn is_permission_granted(&self, permission: &Permission) -> bool {
-        let mode = self.get_mode();
+        let mode = self.get_access();
 
         let read = permission.contains(Permission::Read) && mode.contains(AccessFlags::Read); // Read permission
         let write = permission.contains(Permission::Write)
-            && (mode.contains(AccessFlags::Write)
-                || self.get_status().contains(StateFlags::Append)); // Write permission
+            && (mode.contains(AccessFlags::Write) || self.get_state().contains(StateFlags::Append)); // Write permission
 
         read || write
     }
 
     pub fn split(&self) -> (AccessFlags, CreateFlags, StateFlags) {
-        (self.get_mode(), self.get_open(), self.get_status())
+        (self.get_access(), self.get_create(), self.get_state())
     }
 }
 
@@ -196,15 +196,15 @@ mod tests {
 
         let new_mode = AccessFlags::Write;
         let flags = flags.set_mode(new_mode);
-        assert_eq!(flags.get_mode(), new_mode);
+        assert_eq!(flags.get_access(), new_mode);
 
         let new_open = CreateFlags::Exclusive | CreateFlags::Truncate;
         let flags = flags.set_open(new_open);
-        assert_eq!(flags.get_open(), new_open);
+        assert_eq!(flags.get_create(), new_open);
 
         let new_status = StateFlags::NonBlocking | StateFlags::SynchronousDataOnly;
         let flags = flags.set_status(new_status);
-        assert_eq!(flags.get_status(), new_status);
+        assert_eq!(flags.get_state(), new_status);
     }
 
     #[test]
@@ -222,7 +222,7 @@ mod tests {
     fn test_flags_type_from_mode_type() {
         let mode = AccessFlags::READ_WRITE;
         let flags: Flags = mode.into();
-        assert_eq!(flags.get_mode(), mode);
+        assert_eq!(flags.get_access(), mode);
     }
 
     #[test]
