@@ -16,6 +16,10 @@ pub const SHORTCUT_PATH: &str = "/configuration/shared/shortcuts/calculator.json
 pub extern "C" fn __install() {
     println!("Installing Calculator shortcut...");
 
+    // fs::create_dir_all("/configuration/shared/shortcuts").unwrap();
+
+    println!("Creating shortcut at {}", SHORTCUT_PATH);
+
     fs::write(SHORTCUT_PATH, SHORTCUT).unwrap();
 
     println!("Calculator shortcut installed.");
