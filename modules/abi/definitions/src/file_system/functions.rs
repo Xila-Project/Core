@@ -5,10 +5,8 @@ use core::{
     num::NonZeroU32,
     ptr::copy_nonoverlapping,
 };
-
-use futures::block_on;
-
 use file_system::{AccessFlags, CreateFlags, Flags, StateFlags, character_device};
+use futures::block_on;
 use virtual_file_system::{
     Error, SynchronousDirectory, SynchronousFile, get_instance as get_file_system_instance,
 };
@@ -25,15 +23,16 @@ use abi_context::{self as context, FileIdentifier};
 /// This function is used to convert a function returning a Result into a u32.
 pub fn into_u32<F>(function: F) -> XilaFileSystemResult
 where
-    F: FnOnce() -> Result<(), NonZeroU32>,
+    F: FnOnce() -> Result<(), virtual_file_system::Error>,
 {
     match function() {
         Ok(()) => 0,
         Err(error) => {
-            //panic!("File system error: {:?}", error);
-            log::error!("File system error: {:?}", error);
+            let non_zero: NonZeroU32 = error.into();
 
-            error.get()
+            log::error!("File system error: {:?} ({})", error, non_zero);
+
+            non_zero.get()
         }
     }
 }
@@ -54,18 +53,15 @@ pub unsafe extern "C" fn xila_file_system_get_statistics(
 ) -> XilaFileSystemResult {
     unsafe {
         into_u32(move || {
-            log::information!("Getting file statistics");
-
             let statistics = XilaFileSystemStatistics::from_mutable_pointer(statistics)
                 .ok_or(Error::InvalidParameter)?;
 
-            log::information!("Performing operation on file to get statistics");
-
             let context = context::get_instance();
 
-            let s = if let Some(result) = context
-                .perform_operation_on_directory(file.into(), SynchronousDirectory::get_statistics)
-            {
+            let s = if let Some(result) = context.perform_operation_on_directory(
+                file.try_into()?,
+                SynchronousDirectory::get_statistics,
+            ) {
                 result.inspect_err(|&e| {
                     log::error!(
                         "Performing operation on directory to get statistics: {:?}",
@@ -74,14 +70,12 @@ pub unsafe extern "C" fn xila_file_system_get_statistics(
                 })?
             } else {
                 context
-                    .perform_operation_on_file(file.into(), SynchronousFile::get_statistics)
+                    .perform_operation_on_file(file.try_into()?, SynchronousFile::get_statistics)
                     .ok_or(Error::InvalidParameter)
                     .inspect_err(|&e| {
                         log::error!("Performing operation on file to get statistics: {:?}", e);
                     })??
             };
-
-            log::information!("File statistics obtained: {:?}", s);
 
             *statistics = XilaFileSystemStatistics::from_statistics(s);
 
@@ -96,7 +90,8 @@ pub unsafe extern "C" fn xila_file_system_get_statistics(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn xila_file_system_get_statistics_from_path(
+pub unsafe extern "C" fn xila_file_system_get_statistics_from_path_at(
+    directory: XilaFileIdentifier,
     path: *const c_char,
     statistics: *mut XilaFileSystemStatistics,
     _: bool,
@@ -106,6 +101,14 @@ pub unsafe extern "C" fn xila_file_system_get_statistics_from_path(
             let path = CStr::from_ptr(path)
                 .to_str()
                 .map_err(|_| Error::InvalidParameter)?;
+
+            let context = context::get_instance();
+
+            let task = context.get_current_task_identifier();
+
+            let path = context::get_instance()
+                .resolve_path(task, directory.try_into()?, path)
+                .ok_or(Error::InvalidParameter)?;
 
             let statistics = XilaFileSystemStatistics::from_mutable_pointer(statistics)
                 .ok_or(Error::InvalidParameter)?;
@@ -142,7 +145,11 @@ pub unsafe extern "C" fn xila_file_system_get_access_mode(
             }
 
             let m = context::get_instance()
-                .perform_operation_on_file(file.into(), |f| SynchronousFile::get_mode(f))
+                .perform_operation_on_file_or_directory(
+                    file.try_into()?,
+                    |f| SynchronousFile::get_access(f),
+                    |d| SynchronousDirectory::get_access(d),
+                )
                 .ok_or(Error::InvalidIdentifier)??;
 
             mode.write(m.bits());
@@ -161,10 +168,16 @@ pub unsafe extern "C" fn xila_file_system_get_access_mode(
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_close(file: XilaFileIdentifier) -> XilaFileSystemResult {
     into_u32(move || {
-        context::get_instance()
-            .remove_file(file.into())
-            .ok_or(Error::InvalidIdentifier)?
-            .close(get_file_system_instance())?;
+        let file: FileIdentifier = file.try_into()?;
+
+        if !file.is_directory() {
+            context::get_instance()
+                .remove_file(file)
+                .ok_or(Error::InvalidIdentifier)?
+                .close(get_file_system_instance())?;
+        } else {
+            log::warning!("Attempted to close a directory with identifier: {:?}", file);
+        }
 
         Ok(())
     })
@@ -195,7 +208,7 @@ pub unsafe extern "C" fn xila_file_system_write_vectored(
             let buffers_length = core::slice::from_raw_parts(buffers_length, buffer_count);
 
             let size = context::get_instance()
-                .perform_operation_on_file(file.into(), |file| {
+                .perform_operation_on_file(file.try_into()?, |file| {
                     let mut current_written = 0;
 
                     for (buffer, length) in buffers.iter().zip(buffers_length.iter()) {
@@ -240,7 +253,7 @@ pub unsafe extern "C" fn xila_file_system_read_vectored(
             let buffers_length = core::slice::from_raw_parts_mut(buffers_length, buffer_count);
 
             let current_read = context::get_instance()
-                .perform_operation_on_file(file.into(), |file| {
+                .perform_operation_on_file(file.try_into()?, |file| {
                     let mut current_read = 0;
 
                     for (buffer_pointer, buffer_length) in
@@ -287,7 +300,7 @@ pub unsafe extern "C" fn xila_file_system_read_at_position_vectored(
             let buffers_length = core::slice::from_raw_parts_mut(buffers_length, buffer_count);
 
             let current_read = context::get_instance()
-                .perform_operation_on_file(file.into(), |file| {
+                .perform_operation_on_file(file.try_into()?, |file| {
                     file.set_position(&file_system::Position::Start(position))?;
 
                     let mut current_read = 0;
@@ -336,7 +349,7 @@ pub unsafe extern "C" fn xila_file_system_write_at_position_vectored(
             let buffers_length = core::slice::from_raw_parts(buffers_length, buffer_count);
 
             let current_written = context::get_instance()
-                .perform_operation_on_file(file.into(), |file| {
+                .perform_operation_on_file(file.try_into()?, |file| {
                     file.set_position(&file_system::Position::Start(position))?;
 
                     let mut current_written = 0;
@@ -382,7 +395,7 @@ pub unsafe extern "C" fn xila_file_system_is_a_terminal(
         let is_a_terminal = unsafe { &mut *is_a_terminal };
 
         context::get_instance()
-            .perform_operation_on_file(file.into(), |file| {
+            .perform_operation_on_file(file.try_into()?, |file| {
                 file.control(character_device::IS_A_TERMINAL, is_a_terminal)
             })
             .ok_or(Error::InvalidIdentifier)??;
@@ -393,21 +406,30 @@ pub unsafe extern "C" fn xila_file_system_is_a_terminal(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_is_stdin(file: XilaFileIdentifier) -> bool {
-    FileIdentifier::STANDARD_IN == file.into()
+    if let Ok(file) = file.try_into() {
+        // Debug: Checking if file is stdin
+        FileIdentifier::STANDARD_IN == file
+    } else {
+        false
+    }
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_is_stderr(file: XilaFileIdentifier) -> bool {
-    // Debug: Checking if file is stderr
-
-    FileIdentifier::STANDARD_ERROR == file.into()
+    if let Ok(file) = file.try_into() {
+        FileIdentifier::STANDARD_ERROR == file
+    } else {
+        false
+    }
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_is_stdout(file: XilaFileIdentifier) -> bool {
-    // Debug: Checking if file is stdout
-
-    FileIdentifier::STANDARD_OUT == file.into()
+    if let Ok(file) = file.try_into() {
+        FileIdentifier::STANDARD_OUT == file
+    } else {
+        false
+    }
 }
 
 /// This function is used to open a file.
@@ -510,7 +532,7 @@ pub extern "C" fn xila_file_system_flush(
 ) -> XilaFileSystemResult {
     into_u32(move || {
         context::get_instance()
-            .perform_operation_on_file(file.into(), |file| file.flush())
+            .perform_operation_on_file(file.try_into()?, |file| file.flush())
             .ok_or(Error::InvalidIdentifier)??;
 
         Ok(())
@@ -555,7 +577,9 @@ pub unsafe extern "C" fn xila_file_system_set_position(
             // Debug: Setting position
 
             let result = context::get_instance()
-                .perform_operation_on_file(file.into(), |file| file.set_position(&current_position))
+                .perform_operation_on_file(file.try_into()?, |file| {
+                    file.set_position(&current_position)
+                })
                 .ok_or(Error::InvalidIdentifier)??;
 
             *position = result;
@@ -571,7 +595,8 @@ pub unsafe extern "C" fn xila_file_system_set_position(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn xila_file_system_create_directory(
+pub unsafe extern "C" fn xila_file_system_create_directory_at(
+    directory: XilaFileIdentifier,
     path: *const c_char,
 ) -> XilaFileSystemResult {
     unsafe {
@@ -580,7 +605,13 @@ pub unsafe extern "C" fn xila_file_system_create_directory(
                 .to_str()
                 .map_err(|_| Error::InvalidParameter)?;
 
-            // Debug: Creating directory
+            let context = context::get_instance();
+
+            let task = context.get_current_task_identifier();
+
+            let path = context
+                .resolve_path(task, directory.try_into()?, path)
+                .ok_or(Error::InvalidParameter)?;
 
             let task = context::get_instance().get_current_task_identifier();
             block_on(get_file_system_instance().create_directory(task, &path))?;
@@ -676,7 +707,7 @@ pub extern "C" fn xila_file_system_truncate(
     into_u32(move || {
         let _task = context::get_instance().get_current_task_identifier();
 
-        let _file = FileIdentifier::new(_file);
+        let _file: FileIdentifier = _file.try_into()?;
 
         todo!();
     })

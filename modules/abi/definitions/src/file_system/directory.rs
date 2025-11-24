@@ -47,19 +47,21 @@ pub unsafe extern "C" fn xila_file_system_open_at(
         let (parent_identifier, full_path) = if relative_path == "/" {
             (None, Path::ROOT.to_owned())
         } else {
-            let identifier = FileIdentifier::new(directory);
+            let identifier: FileIdentifier = directory.try_into()?;
             let path = context
-                .get_full_path(task, identifier, relative_path)
-                .ok_or(Error::InvalidParameter)?;
+                .resolve_path(task, identifier, relative_path)
+                .unwrap();
+            //.ok_or(Error::InvalidParameter)?;
             (Some(identifier), path)
         };
 
         if is_directory {
-            let directory = SynchronousDirectory::open(virtual_file_system, task, relative_path)?;
+            let directory = SynchronousDirectory::open(virtual_file_system, task, &full_path)?;
+
             *out = context
                 .insert_directory(task, parent_identifier, relative_path, directory)
                 .ok_or(Error::InvalidIdentifier)?
-                .into_inner();
+                .into();
         } else {
             let mode = AccessFlags::from_bits_truncate(mode);
             let open = CreateFlags::from_bits_truncate(open);
@@ -72,7 +74,7 @@ pub unsafe extern "C" fn xila_file_system_open_at(
             *out = context
                 .insert_file(task, file, None)
                 .ok_or(Error::InvalidIdentifier)?
-                .into_inner();
+                .into();
         }
 
         Ok(())
@@ -110,8 +112,7 @@ pub unsafe extern "C" fn xila_file_system_open_directory(
             *directory = context
                 .insert_directory(task, None, path, d)
                 .ok_or(Error::InvalidIdentifier)?
-                .into_inner();
-
+                .into();
             Ok(())
         })
     }
@@ -137,7 +138,7 @@ pub unsafe extern "C" fn xila_file_system_read_directory(
             debug!("Reading directory {directory:?} for task {task:?}");
 
             let entry = get_context_instance()
-                .perform_operation_on_directory(directory.into(), SynchronousDirectory::read)
+                .perform_operation_on_directory(directory.try_into()?, SynchronousDirectory::read)
                 .ok_or(Error::InvalidIdentifier)??;
 
             if let Some(entry) = entry {
@@ -157,10 +158,8 @@ pub unsafe extern "C" fn xila_file_system_read_directory(
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_close_directory(directory: XilaFileIdentifier) -> u32 {
     into_u32(move || {
-        log::information!("Closing directory {directory:?} ");
-
         let d = get_context_instance()
-            .remove_directory(directory.into())
+            .remove_directory(directory.try_into()?)
             .ok_or(Error::InvalidIdentifier)?;
 
         d.close(get_file_system_instance())?;
@@ -175,7 +174,7 @@ pub extern "C" fn xila_file_system_rewind_directory(directory: XilaFileIdentifie
         debug!("Rewinding directory {directory:?} ");
 
         get_context_instance()
-            .perform_operation_on_directory(directory.into(), SynchronousDirectory::rewind)
+            .perform_operation_on_directory(directory.try_into()?, SynchronousDirectory::rewind)
             .ok_or(Error::InvalidIdentifier)??;
 
         Ok(())
@@ -191,7 +190,7 @@ pub extern "C" fn xila_file_system_directory_set_position(
         debug!("Setting position in directory {directory:?} to offset {offset}");
 
         get_context_instance()
-            .perform_operation_on_directory(directory.into(), |d| d.set_position(offset))
+            .perform_operation_on_directory(directory.try_into()?, |d| d.set_position(offset))
             .ok_or(Error::InvalidIdentifier)??;
 
         Ok(())
@@ -203,13 +202,17 @@ mod tests {
     extern crate std;
 
     use super::*;
-    use abi_context::{FileIdentifier, get_instance as get_context_instance};
+    use abi_context::get_instance as get_context_instance;
     use alloc::{ffi::CString, format, vec::Vec};
     use file_system::{AccessFlags, CreateFlags, MemoryDevice, PathOwned};
     use task::{TaskIdentifier, test};
     use virtual_file_system::{Directory, File, VirtualFileSystem};
 
     async fn initialize() -> (TaskIdentifier, &'static VirtualFileSystem<'static>) {
+        if !log::is_initialized() {
+            log::initialize(&drivers_std::log::Logger).unwrap();
+        }
+
         let users_manager = users::initialize();
 
         let time_manager = time::initialize(&drivers_std::devices::TimeDevice).unwrap();
@@ -949,7 +952,7 @@ mod tests {
         assert_ne!(result, 0, "Null path should cause error");
 
         // Test invalid operations on invalid handles
-        let invalid_handle = FileIdentifier::INVALID.into();
+        let invalid_handle = 0;
 
         let close_result = context
             .call_abi(|| async { xila_file_system_close_directory(invalid_handle) })
