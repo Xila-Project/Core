@@ -1715,18 +1715,7 @@ os_symlinkat(const char *old_path, os_file_handle handle, const char *new_path)
 __wasi_errno_t
 os_mkdirat(os_file_handle handle, const char *path)
 {
-    if (path[0] != '/')
-    {
-        size_t path_size = strlen(path) + 2;
-        char new_path[strlen(path) + 2];
-
-        new_path[0] = '/';
-        strncpy(new_path + 1, path, path_size);
-
-        return into_wasi_error(xila_file_system_create_directory(new_path));
-    }
-
-    return into_wasi_error(xila_file_system_create_directory(path));
+    return into_wasi_error(xila_file_system_create_directory_at(handle, path));
 }
 
 /**
