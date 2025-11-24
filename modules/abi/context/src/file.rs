@@ -22,7 +22,6 @@ pub type FileIdentifierInner = u16;
 /// - [`FileIdentifier::STANDARD_IN`] (0) - Standard input
 /// - [`FileIdentifier::STANDARD_OUT`] (1) - Standard output  
 /// - [`FileIdentifier::STANDARD_ERROR`] (2) - Standard error
-/// - [`FileIdentifier::MINIMUM`] (3) - First available identifier for regular files
 ///
 /// # Examples
 ///
