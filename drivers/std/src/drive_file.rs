@@ -137,8 +137,15 @@ mod tests {
     use super::*;
     use file_system::implement_block_device_tests;
 
-    implement_block_device_tests!(FileDriveDevice::new(
-        &Path::from_str("/tmp/file_drive_device_test.img"),
-        16 * 1024 * 1024
-    ));
+    fn create_test_device() -> FileDriveDevice {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
+
+        let id = COUNTER.fetch_add(1, Ordering::SeqCst);
+        let path = format!("/tmp/file_drive_device_test_{}.img", id);
+
+        FileDriveDevice::new(&Path::from_str(&path), 16 * 1024 * 1024)
+    }
+
+    implement_block_device_tests!(create_test_device());
 }
