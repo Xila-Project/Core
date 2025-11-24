@@ -18,42 +18,50 @@ impl Drop for Home {
 
 impl Home {
     pub async fn new(desk: *mut lvgl::lv_obj_t) -> Result<Self> {
-        let _lock = graphics::get_instance().lock().await; // Lock the graphics
+        let button = graphics::lock!({
+            unsafe {
+                let button = lvgl::lv_obj_create(lvgl::lv_layer_top());
 
-        let button = unsafe {
-            let button = lvgl::lv_obj_create(lvgl::lv_layer_top());
+                if button.is_null() {
+                    return Err(crate::error::Error::FailedToCreateObject);
+                }
 
-            if button.is_null() {
-                return Err(crate::error::Error::FailedToCreateObject);
+                lvgl::lv_obj_set_size(button, lvgl::lv_pct(40), 8);
+                lvgl::lv_obj_set_style_bg_color(
+                    button,
+                    lvgl::lv_color_white(),
+                    lvgl::LV_STATE_DEFAULT,
+                );
+                lvgl::lv_obj_set_style_bg_opa(
+                    button,
+                    lvgl::LV_OPA_50 as u8,
+                    lvgl::LV_STATE_DEFAULT,
+                );
+                lvgl::lv_obj_set_align(button, lvgl::lv_align_t_LV_ALIGN_BOTTOM_MID);
+                lvgl::lv_obj_set_y(button, -5);
+
+                lvgl::lv_obj_set_style_pad_all(button, 0, lvgl::LV_STATE_DEFAULT);
+                lvgl::lv_obj_set_style_border_width(button, 0, lvgl::LV_STATE_DEFAULT);
+
+                lvgl::lv_obj_remove_flag(button, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_GESTURE_BUBBLE);
+
+                lvgl::lv_obj_add_event_cb(
+                    button,
+                    Some(handle_pressing),
+                    lvgl::lv_event_code_t_LV_EVENT_PRESSING,
+                    null_mut(),
+                );
+
+                lvgl::lv_obj_add_event_cb(
+                    button,
+                    Some(handle_released),
+                    lvgl::lv_event_code_t_LV_EVENT_RELEASED,
+                    desk as *mut core::ffi::c_void,
+                );
+
+                button
             }
-
-            lvgl::lv_obj_set_size(button, lvgl::lv_pct(40), 8);
-            lvgl::lv_obj_set_style_bg_color(button, lvgl::lv_color_white(), lvgl::LV_STATE_DEFAULT);
-            lvgl::lv_obj_set_style_bg_opa(button, lvgl::LV_OPA_50 as u8, lvgl::LV_STATE_DEFAULT);
-            lvgl::lv_obj_set_align(button, lvgl::lv_align_t_LV_ALIGN_BOTTOM_MID);
-            lvgl::lv_obj_set_y(button, -5);
-
-            lvgl::lv_obj_set_style_pad_all(button, 0, lvgl::LV_STATE_DEFAULT);
-            lvgl::lv_obj_set_style_border_width(button, 0, lvgl::LV_STATE_DEFAULT);
-
-            lvgl::lv_obj_remove_flag(button, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_GESTURE_BUBBLE);
-
-            lvgl::lv_obj_add_event_cb(
-                button,
-                Some(handle_pressing),
-                lvgl::lv_event_code_t_LV_EVENT_PRESSING,
-                null_mut(),
-            );
-
-            lvgl::lv_obj_add_event_cb(
-                button,
-                Some(handle_released),
-                lvgl::lv_event_code_t_LV_EVENT_RELEASED,
-                desk as *mut core::ffi::c_void,
-            );
-
-            button
-        };
+        });
 
         Ok(Self { button })
     }

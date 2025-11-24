@@ -6,7 +6,8 @@ use core::{
 pub type Result<T> = core::result::Result<T, Error>;
 
 use xila::{
-    authentication, executable, file_system, graphics, internationalization::translate, task,
+    authentication, executable, graphics, internationalization::translate, task,
+    virtual_file_system,
 };
 
 #[derive(Debug, Clone)]
@@ -21,14 +22,14 @@ pub enum Error {
     FailedToSetTaskUser(task::Error),
     FailedToDeserializeShortcut(miniserde::Error),
     FailedToGetCurrentTaskIdentifier(task::Error),
-    FailedToReadShortcutDirectory(file_system::Error),
+    FailedToReadShortcutDirectory(virtual_file_system::Error),
     FailedToGetShortcutFilePath,
-    FailedToReadShortcutFile(file_system::Error),
+    FailedToReadShortcutFile(virtual_file_system::Error),
     FailedToOpenStandardFile(executable::Error),
     FailedToExecuteShortcut(executable::Error),
     NullCharacterInString(alloc::ffi::NulError),
     MissingArguments,
-    FailedToAddShortcut(file_system::Error),
+    FailedToAddShortcut(virtual_file_system::Error),
 }
 
 impl Error {

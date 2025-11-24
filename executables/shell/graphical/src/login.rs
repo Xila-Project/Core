@@ -22,75 +22,75 @@ pub struct Login {
 impl Login {
     pub async fn new() -> Result<Self> {
         // - Lock the graphics
-        let _lock = graphics::get_instance().lock();
+        graphics::lock!({
+            // - Create a window
+            let window = graphics::get_instance().create_window().await?;
 
-        // - Create a window
-        let window = graphics::get_instance().create_window().await?;
+            unsafe {
+                lvgl::lv_obj_set_flex_flow(window.get_object(), lvgl::LV_FLEX_COLUMN);
+                lvgl::lv_obj_set_flex_align(
+                    window.get_object(),
+                    lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+                    lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+                    lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+                );
+            }
 
-        unsafe {
-            lvgl::lv_obj_set_flex_flow(window.get_object(), lvgl::LV_FLEX_COLUMN);
-            lvgl::lv_obj_set_flex_align(
-                window.get_object(),
-                lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
-                lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
-                lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
-            );
-        }
+            let user_name_text_area = unsafe {
+                // - Create a text area for the user name
+                let user_name_text_area = lvgl::lv_textarea_create(window.get_object());
 
-        let user_name_text_area = unsafe {
-            // - Create a text area for the user name
-            let user_name_text_area = lvgl::lv_textarea_create(window.get_object());
+                lvgl::lv_textarea_set_placeholder_text(
+                    user_name_text_area,
+                    translate!(c"User name").as_ptr(),
+                );
+                lvgl::lv_textarea_set_one_line(user_name_text_area, true);
 
-            lvgl::lv_textarea_set_placeholder_text(
+                user_name_text_area
+            };
+
+            let password_text_area = unsafe {
+                // - Create a text area for the password
+                let password_text_area = lvgl::lv_textarea_create(window.get_object());
+
+                lvgl::lv_textarea_set_placeholder_text(
+                    password_text_area,
+                    translate!(c"Password").as_ptr(),
+                );
+                lvgl::lv_textarea_set_one_line(password_text_area, true);
+                lvgl::lv_textarea_set_password_mode(password_text_area, true);
+
+                password_text_area
+            };
+
+            let error_label = unsafe {
+                // - Create a label for the error
+                let error_label = lvgl::lv_label_create(window.get_object());
+
+                lvgl::lv_label_set_text(error_label, c"".as_ptr());
+
+                error_label
+            };
+
+            let button = unsafe {
+                // - Create a button
+                let button = lvgl::lv_button_create(window.get_object());
+
+                let label = lvgl::lv_label_create(button);
+
+                lvgl::lv_label_set_text(label, translate!(c"Login").as_ptr());
+
+                button
+            };
+
+            Ok(Login {
+                window,
                 user_name_text_area,
-                translate!(c"User name").as_ptr(),
-            );
-            lvgl::lv_textarea_set_one_line(user_name_text_area, true);
-
-            user_name_text_area
-        };
-
-        let password_text_area = unsafe {
-            // - Create a text area for the password
-            let password_text_area = lvgl::lv_textarea_create(window.get_object());
-
-            lvgl::lv_textarea_set_placeholder_text(
                 password_text_area,
-                translate!(c"Password").as_ptr(),
-            );
-            lvgl::lv_textarea_set_one_line(password_text_area, true);
-            lvgl::lv_textarea_set_password_mode(password_text_area, true);
-
-            password_text_area
-        };
-
-        let error_label = unsafe {
-            // - Create a label for the error
-            let error_label = lvgl::lv_label_create(window.get_object());
-
-            lvgl::lv_label_set_text(error_label, c"".as_ptr());
-
-            error_label
-        };
-
-        let button = unsafe {
-            // - Create a button
-            let button = lvgl::lv_button_create(window.get_object());
-
-            let label = lvgl::lv_label_create(button);
-
-            lvgl::lv_label_set_text(label, translate!(c"Login").as_ptr());
-
-            button
-        };
-
-        Ok(Login {
-            window,
-            user_name_text_area,
-            password_text_area,
-            button,
-            error_label,
-            user: None,
+                button,
+                error_label,
+                user: None,
+            })
         })
     }
 
@@ -150,23 +150,24 @@ impl Login {
     }
 
     pub async fn event_handler(&mut self) {
-        while let Some(event) = self.window.pop_event() {
+        graphics::lock! {{
+            while let Some(event) = self.window.pop_event() {
             // If we are typing the user name or the password
-            if event.get_code() == EventKind::ValueChanged
-                && (event.get_target() == self.user_name_text_area
-                    || event.get_target() == self.password_text_area)
+            if event.code == EventKind::ValueChanged
+                && (event.target == self.user_name_text_area
+                    || event.target == self.password_text_area)
             {
                 self.clear_error();
             }
             // If the "Login" button is clicked
-            else if event.get_code() == EventKind::Clicked && event.get_target() == self.button {
+            else if event.code == EventKind::Clicked && event.target == self.button {
                 let result = self.authenticate().await;
 
                 if let Err(error) = result {
                     self.print_error(error);
                 }
             }
-        }
+        }}}
     }
 
     pub fn get_logged_user(&self) -> Option<UserIdentifier> {
