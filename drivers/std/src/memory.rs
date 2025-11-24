@@ -6,30 +6,24 @@ use core::{
 };
 
 use libc::{
-    _SC_PAGE_SIZE, MAP_32BIT, MAP_ANONYMOUS, MAP_FAILED, MAP_PRIVATE, PROT_EXEC, PROT_READ,
-    PROT_WRITE, mmap, mremap, munmap, sysconf,
+    _SC_PAGE_SIZE, MAP_ANONYMOUS, MAP_FAILED, MAP_PRIVATE, PROT_EXEC, PROT_READ, PROT_WRITE, mmap,
+    mremap, munmap, sysconf,
 };
 use linked_list_allocator::Heap;
-use memory::{Capabilities, Layout, ManagerTrait};
+use memory::{CapabilityFlags, Layout, ManagerTrait};
 use synchronization::blocking_mutex::{CriticalSectionMutex, Mutex};
 
 // Initial heap size and growth constants
-const INITIAL_HEAP_SIZE: usize = 16 * 1024 * 1024; // 16MB
+const INITIAL_HEAP_SIZE: usize = 64 * 1024 * 1024; // 256MB - larger to avoid frequent expansions
 
 struct Region {
     pub heap: Heap,
-    pub capabilities: Capabilities,
+    pub capabilities: CapabilityFlags,
     pub slice: &'static mut [MaybeUninit<u8>],
 }
 
 pub struct MemoryManager {
     regions: CriticalSectionMutex<RefCell<[Region; 2]>>,
-}
-
-impl Default for MemoryManager {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl MemoryManager {
@@ -38,12 +32,12 @@ impl MemoryManager {
             regions: Mutex::new(RefCell::new([
                 Region {
                     heap: Heap::empty(),
-                    capabilities: Capabilities::new(false, false),
+                    capabilities: CapabilityFlags::None,
                     slice: &mut [],
                 },
                 Region {
                     heap: Heap::empty(),
-                    capabilities: Capabilities::new(true, false),
+                    capabilities: CapabilityFlags::Executable,
                     slice: &mut [],
                 },
             ])),
@@ -67,7 +61,11 @@ impl Drop for MemoryManager {
 }
 
 impl ManagerTrait for MemoryManager {
-    unsafe fn allocate(&self, capabilities: Capabilities, layout: Layout) -> Option<NonNull<u8>> {
+    unsafe fn allocate(
+        &self,
+        capabilities: CapabilityFlags,
+        layout: Layout,
+    ) -> Option<NonNull<u8>> {
         unsafe {
             self.regions.lock(|regions| {
                 let mut regions = regions.try_borrow_mut().ok()?;
@@ -75,7 +73,7 @@ impl ManagerTrait for MemoryManager {
                 // Find the first region that can satisfy the allocation request
                 let capable_regions = regions
                     .iter_mut()
-                    .filter(|region| region.capabilities.is_superset_of(capabilities));
+                    .filter(|region| region.capabilities.contains(capabilities));
 
                 // Try to allocate from the first capable region
                 for region in capable_regions {
@@ -87,7 +85,7 @@ impl ManagerTrait for MemoryManager {
 
                 let capable_regions = regions
                     .iter_mut()
-                    .filter(|region| region.capabilities.is_superset_of(capabilities));
+                    .filter(|region| region.capabilities.contains(capabilities));
 
                 // If no region could satisfy the request, try to expand existing regions
                 for region in capable_regions {
@@ -175,15 +173,19 @@ unsafe fn expand(region: &mut Region, tried_size: usize) -> bool {
             region.slice = new_slice;
             return true;
         }
-        // If the region is not empty, try to expand it
+        // If the region is not empty, try to expand it in place
         let region_old_size = region.slice.len();
         let new_size = region_old_size + tried_size;
         let new_size = round_page_size(new_size, page_size);
 
-        remap(&mut region.slice, new_size);
+        if !remap(&mut region.slice, new_size) {
+            // Failed to expand in place (likely no adjacent free virtual memory)
+            return false;
+        }
 
         let difference = new_size - region_old_size;
 
+        // Extend the heap with the newly available memory
         region.heap.extend(difference);
 
         true
@@ -198,22 +200,24 @@ const fn round_page_size(size: usize, page_size: usize) -> usize {
     (size + page_size - 1) & !(page_size - 1) // Round up to the nearest page size
 }
 
-unsafe fn map(size: usize, capabilities: Capabilities) -> &'static mut [MaybeUninit<u8>] {
+unsafe fn map(size: usize, capabilities: CapabilityFlags) -> &'static mut [MaybeUninit<u8>] {
     unsafe {
         let page_size = get_page_size();
         let size = round_page_size(size, page_size);
 
-        let capabilities = if capabilities.get_executable() {
+        let capabilities = if capabilities.contains(CapabilityFlags::Executable) {
             PROT_READ | PROT_WRITE | PROT_EXEC
         } else {
             PROT_READ | PROT_WRITE
         };
 
+        // Note: Removed MAP_32BIT to allow allocations anywhere in address space
+        // This makes it much easier for mremap to expand regions in place
         let pointer = mmap(
             null_mut(),
             size,
             capabilities,
-            MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT,
+            MAP_PRIVATE | MAP_ANONYMOUS,
             -1,
             0,
         );
@@ -226,20 +230,32 @@ unsafe fn map(size: usize, capabilities: Capabilities) -> &'static mut [MaybeUni
     }
 }
 
-unsafe fn remap(slice: &mut &'static mut [MaybeUninit<u8>], new_size: usize) {
+unsafe fn remap(slice: &mut &'static mut [MaybeUninit<u8>], new_size: usize) -> bool {
     unsafe {
         let page_size = get_page_size();
         let new_size = round_page_size(new_size, page_size);
 
         let old_size = slice.len();
+        let old_ptr = slice.as_mut_ptr() as *mut c_void;
 
-        let pointer = mremap(slice.as_mut_ptr() as *mut c_void, old_size, new_size, 0);
+        // Use flags=0 to ensure the mapping does NOT move (required for heap consistency)
+        let pointer = mremap(old_ptr, old_size, new_size, 0);
 
-        if (pointer == MAP_FAILED) || (pointer != slice.as_mut_ptr() as *mut c_void) {
-            panic!("Failed to reallocate memory");
+        if pointer == MAP_FAILED {
+            return false;
         }
 
-        *slice = core::slice::from_raw_parts_mut(slice.as_mut_ptr(), new_size);
+        // Verify the pointer didn't move (should be guaranteed with flags=0)
+        if pointer != old_ptr {
+            // This should never happen with flags=0, but if it does, we have a serious problem
+            // Try to unmap the new mapping and fail
+            munmap(pointer, new_size);
+            return false;
+        }
+
+        // Update the slice with the new size (pointer is the same)
+        *slice = core::slice::from_raw_parts_mut(pointer as *mut MaybeUninit<u8>, new_size);
+        true
     }
 }
 
@@ -252,10 +268,10 @@ unsafe fn unmap(pointer: *mut MaybeUninit<u8>, size: usize) {
 #[macro_export]
 macro_rules! instantiate_global_allocator {
     () => {
-        static __MEMORY_MANAGER: $crate::memory::MemoryManager =
+        static __DRIVERS_STD_MEMORY_ALLOCATOR: $crate::memory::MemoryManager =
             $crate::memory::MemoryManager::new();
 
-        $crate::memory_exported::instantiate_global_allocator!(&__MEMORY_MANAGER);
+        $crate::memory_exported::instantiate_global_allocator!(&__DRIVERS_STD_MEMORY_ALLOCATOR);
     };
 }
 pub use instantiate_global_allocator;
@@ -275,7 +291,7 @@ mod tests {
 
         // Allocate some memory using the test manager directly
         let layout = Layout::from_size_align(128, 8).unwrap();
-        let capabilities = Capabilities::new(false, false);
+        let capabilities = CapabilityFlags::None;
 
         unsafe {
             let allocation = test_manager.allocate(capabilities, layout);
@@ -299,7 +315,7 @@ mod tests {
 
             // Allocate some memory
             let layout = Layout::from_size_align(128, 8).unwrap();
-            let capabilities = Capabilities::new(false, false);
+            let capabilities = CapabilityFlags::None;
 
             let allocation = manager.allocate(capabilities, layout);
             assert!(allocation.is_some());
@@ -324,7 +340,7 @@ mod tests {
 
             // Perform an initial allocation to trigger initialization
             let layout = Layout::from(Layout::from_size_align(128, 8).unwrap());
-            let capabilities = Capabilities::new(false, false);
+            let capabilities = CapabilityFlags::None;
             let allocation = manager.allocate(capabilities, layout);
             assert!(allocation.is_some());
             if let Some(pointer) = allocation {
@@ -332,7 +348,7 @@ mod tests {
                 manager.deallocate(pointer, layout);
             }
 
-            let capabilities = Capabilities::new(true, false);
+            let capabilities = CapabilityFlags::Executable;
             let allocation = manager.allocate(capabilities, layout);
             assert!(allocation.is_some());
             if let Some(pointer) = allocation {
@@ -345,8 +361,16 @@ mod tests {
                 let regions_reference = regions.borrow();
                 assert!(!regions_reference[0].slice.is_empty());
                 assert!(!regions_reference[1].slice.is_empty());
-                assert!(!regions_reference[0].capabilities.get_executable());
-                assert!(regions_reference[1].capabilities.get_executable());
+                assert!(
+                    !regions_reference[0]
+                        .capabilities
+                        .contains(CapabilityFlags::Executable)
+                );
+                assert!(
+                    regions_reference[1]
+                        .capabilities
+                        .contains(CapabilityFlags::Executable)
+                );
             });
         }
     }
@@ -358,7 +382,7 @@ mod tests {
 
             // Allocate some memory
             let layout = Layout::from_size_align(128, 8).unwrap();
-            let capabilities = Capabilities::new(false, false);
+            let capabilities = CapabilityFlags::None;
 
             let allocation = manager.allocate(capabilities, layout);
             assert!(allocation.is_some());
@@ -377,7 +401,7 @@ mod tests {
 
             // Allocate some executable memory
             let layout = Layout::from_size_align(128, 8).unwrap();
-            let capabilities = Capabilities::new(true, false);
+            let capabilities = CapabilityFlags::Executable;
 
             let allocation = manager.allocate(capabilities, layout);
             assert!(allocation.is_some());
@@ -398,7 +422,7 @@ mod tests {
             // to trigger expansion
             let _page_size = get_page_size();
             let layout = Layout::from_size_align(INITIAL_HEAP_SIZE, 8).unwrap();
-            let capabilities: Capabilities = Capabilities::new(false, false);
+            let capabilities: CapabilityFlags = CapabilityFlags::None;
 
             let allocation1 = manager.allocate(capabilities, layout);
             assert!(allocation1.is_some());
@@ -424,7 +448,7 @@ mod tests {
 
             // Allocate some memory
             let layout = Layout::from_size_align(128, 8).unwrap();
-            let capabilities = Capabilities::new(false, false);
+            let capabilities = CapabilityFlags::None;
 
             let allocation = manager.allocate(capabilities, layout);
             assert!(allocation.is_some());
@@ -466,4 +490,6 @@ mod tests {
         assert_eq!(round_page_size(page_size + 1, page_size), page_size * 2);
         assert_eq!(round_page_size(page_size * 2, page_size), page_size * 2);
     }
+
+    memory::implement_memory_manager_tests!(MemoryManager::new());
 }
