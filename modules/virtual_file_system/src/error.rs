@@ -16,7 +16,7 @@ pub enum Error {
     InvalidIdentifier,
     AlreadyExists,
     Time(time::Error),
-    FileSystem(file_system::Error) = 0xFF,
+    FileSystem(file_system::Error) = 0x100,
     Network(network::Error) = 0x200,
     Users(users::Error) = 0x300,
     Task(task::Error) = 0x400,
