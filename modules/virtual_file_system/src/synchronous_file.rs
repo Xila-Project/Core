@@ -66,7 +66,7 @@ impl SynchronousFile {
     // - Operations
 
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
-        if !self.flags.get_mode().contains(AccessFlags::Write) {
+        if !self.flags.get_access().contains(AccessFlags::Write) {
             return Err(Error::InvalidMode);
         }
 
@@ -82,7 +82,7 @@ impl SynchronousFile {
     }
 
     pub fn write_vectored(&mut self, buffers: &[&[u8]]) -> Result<usize> {
-        if !self.flags.get_mode().contains(AccessFlags::Write) {
+        if !self.flags.get_access().contains(AccessFlags::Write) {
             return Err(Error::InvalidMode);
         }
 
@@ -233,8 +233,8 @@ impl SynchronousFile {
         Ok(())
     }
 
-    pub fn get_mode(&self) -> Result<AccessFlags> {
-        Ok(self.flags.get_mode())
+    pub fn get_access(&self) -> Result<AccessFlags> {
+        Ok(self.flags.get_access())
     }
 
     pub fn close_internal(

@@ -383,7 +383,7 @@ impl<'a> VirtualFileSystem<'a> {
                     Ok(file_system.file_system.lookup_file(
                         &mut context,
                         relative_path,
-                        Flags::new(flags.get_mode(), None, None),
+                        Flags::new(flags.get_access(), None, None),
                     )?)
                 })
                 .await?;

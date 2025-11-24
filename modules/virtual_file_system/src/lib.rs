@@ -41,7 +41,7 @@ pub async fn poll<O>(mut operation: impl FnMut() -> Result<O>) -> Result<O> {
 }
 
 pub fn blocking_operation<O>(flags: Flags, mut operation: impl FnMut() -> Result<O>) -> Result<O> {
-    let non_blocking = flags.get_status().contains(StateFlags::NonBlocking);
+    let non_blocking = flags.get_state().contains(StateFlags::NonBlocking);
 
     loop {
         match operation() {

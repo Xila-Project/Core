@@ -202,8 +202,8 @@ impl File {
         poll(|| self.0.control(command, argument)).await
     }
 
-    pub fn get_mode(&self) -> Result<AccessFlags> {
-        Ok(self.0.flags.get_mode())
+    pub fn get_access(&self) -> Result<AccessFlags> {
+        Ok(self.0.flags.get_access())
     }
 
     pub async fn close(mut self, virtual_file_system: &VirtualFileSystem<'_>) -> crate::Result<()> {

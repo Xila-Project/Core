@@ -16,9 +16,9 @@ impl Directory {
         context: Context,
     ) -> Self {
         let flags = Flags::new(
-            flags.get_mode(),
-            Some(flags.get_open()),
-            Some(flags.get_status().insert(StateFlags::NonBlocking)),
+            flags.get_access(),
+            Some(flags.get_create()),
+            Some(flags.get_state().insert(StateFlags::NonBlocking)),
         );
 
         Self(SynchronousDirectory::new(directory, flags, context))

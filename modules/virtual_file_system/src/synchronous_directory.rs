@@ -1,5 +1,7 @@
 use core::mem::forget;
-use exported_file_system::{AttributeFlags, AttributeOperations, Attributes, Statistics};
+use exported_file_system::{
+    AccessFlags, AttributeFlags, AttributeOperations, Attributes, Statistics,
+};
 use file_system::{Context, DirectoryOperations, Entry, Flags, Path, Size};
 use futures::block_on;
 use task::TaskIdentifier;
@@ -101,6 +103,10 @@ impl SynchronousDirectory {
                 &mut directory.context,
             )?)
         })
+    }
+
+    pub fn get_access(&self) -> Result<AccessFlags> {
+        Ok(self.flags.get_access())
     }
 
     pub fn close_internal<'a>(
