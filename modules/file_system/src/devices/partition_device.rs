@@ -249,13 +249,11 @@ impl<'a, D: MountOperations> MountOperations for PartitionDevice<'a, D> {}
 
 impl<'a, D: DirectBlockDevice> DirectBlockDevice for PartitionDevice<'a, D> {}
 
-impl<'a, D> fmt::Debug for PartitionDevice<'a, D>
-where
-    D: fmt::Debug,
-{
+impl<'a, D> fmt::Debug for PartitionDevice<'a, D> {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PartitionDevice")
+            .field("block_size", &self.block_size)
             .field("offset", &self.offset)
             .field("size", &self.size)
             .finish()
