@@ -19,9 +19,9 @@ use super::{Inode, Permissions};
 /// * `Last_status_change`: The last time the file's status was changed.
 /// * `Type`: The type of the file.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[repr(C)]
 pub struct Statistics {
     pub group: GroupIdentifier,
+    pub user: UserIdentifier,
     pub inode: Inode,
     pub creation: Time,
     pub access: Time,
@@ -31,7 +31,6 @@ pub struct Statistics {
     pub permissions: Permissions,
     pub kind: Kind,
     pub size: Size,
-    pub user: UserIdentifier,
 }
 
 impl Statistics {
