@@ -1,7 +1,7 @@
 //! Partition device implementation for accessing individual partitions.
 
 //!
-//! This module provides [`Partition_device_type`], which allows treating individual
+//! This module provides [`PartitionDevice`], which allows treating individual
 //! partitions on a storage device as separate devices. This is essential for file
 //! systems that need to operate on specific partitions rather than entire disks.
 
@@ -19,10 +19,10 @@ use crate::{
 /// within the partition boundaries. This allows file systems to operate on individual
 /// partitions without needing to know about the partition layout.
 ///
-/// # Thread Safety
 ///
-/// The partition device is thread-safe and uses atomic operations for position management.
-/// Multiple threads can safely access the same partition device simultaneously.
+/// Note: The partition device does not manage position state internally and does not use atomic operations.
+/// Thread safety depends on the underlying base device implementation.
+///
 ///
 /// # Examples
 ///
@@ -46,9 +46,9 @@ pub struct PartitionDevice<'a, D> {
     /// Block size
     block_size: usize,
     /// Byte offset from the beginning of the base device
-    start_block: Size,
+    offset: Size,
     /// Size of this partition in bytes
-    block_count: Size,
+    size: Size,
 }
 
 impl<'a, D: BaseOperations> PartitionDevice<'a, D> {
@@ -57,8 +57,9 @@ impl<'a, D: BaseOperations> PartitionDevice<'a, D> {
     /// # Arguments
     ///
     /// * `base_device` - The underlying storage device
-    /// * `offset` - Byte offset from the beginning of the base device
-    /// * `size` - Size of the partition in bytes
+    /// * `start_block` - Block index where the partition starts
+    /// * `block_count` - Number of blocks in the partition
+    /// * `block_size` - Size of each block in bytes
     ///
     /// # Examples
     ///
@@ -79,75 +80,15 @@ impl<'a, D: BaseOperations> PartitionDevice<'a, D> {
         Self {
             base_device,
             block_size,
-            start_block,
-            block_count,
+            offset: start_block * (block_size as Size),
+            size: block_count * (block_size as Size),
         }
     }
-
-    /// Get the byte offset of this partition within the base device.
+    /// Get the number of blocks in this partition.
     ///
     /// # Returns
     ///
-    /// The absolute byte offset from the beginning of the base device.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # extern crate alloc;
-    /// # use file_system::{MemoryDevice, PartitionDevice};
-    ///
-    /// let base_device = MemoryDevice::<512>::new(1024 * 1024);
-    /// let partition = PartitionDevice::new(&base_device, 100, 50, 512);
-    /// assert_eq!(partition.get_offset(), 100 * 512);
-    /// ```
-    pub fn get_offset(&self) -> Size {
-        self.start_block * (self.block_size as Size)
-    }
-
-    /// Get the size of this partition in bytes.
-    ///
-    /// # Returns
-    ///
-    /// The total size of the partition in bytes.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # extern crate alloc;
-    /// # use file_system::{MemoryDevice, PartitionDevice};
-    ///
-    /// let base_device = MemoryDevice::<512>::new(1024 * 1024);
-    /// let partition = PartitionDevice::new(&base_device, 100, 50, 512);
-    /// assert_eq!(partition.get_partition_size(), 50);
-    /// ```
-    pub fn get_partition_size(&self) -> u64 {
-        self.block_count
-    }
-
-    /// Get the starting LBA (Logical Block Address) of this partition.
-    ///
-    /// # Returns
-    ///
-    /// The sector number where this partition starts (assuming 512-byte sectors).
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # extern crate alloc;
-    /// # use file_system::{MemoryDevice, PartitionDevice};
-    ///
-    /// let base_device = MemoryDevice::<512>::new(1024 * 1024);
-    /// let partition = PartitionDevice::new(&base_device, 100, 50, 512);
-    /// assert_eq!(partition.get_start_lba(), 100);
-    /// ```
-    pub fn get_start_lba(&self) -> Size {
-        self.start_block
-    }
-
-    /// Get the size in sectors of this partition.
-    ///
-    /// # Returns
-    ///
+    /// The number of blocks in this partition, where each block is of the partition's configured block size.
     /// The number of 512-byte sectors this partition contains.
     ///
     /// # Examples
@@ -160,36 +101,60 @@ impl<'a, D: BaseOperations> PartitionDevice<'a, D> {
     /// let partition = PartitionDevice::new(&base_device, 100, 50, 512);
     /// assert_eq!(partition.get_block_count(), 50);
     /// ```
-    pub fn get_block_count(&self) -> u32 {
-        self.block_count as u32
+    pub const fn get_block_count(&self) -> u32 {
+        self.size as u32 / (self.block_size as u32)
+    }
+
+    pub const fn get_start_lba(&self) -> Size {
+        self.offset / (self.block_size as Size)
     }
 
     /// Get the base device
-    pub fn get_base_device(&self) -> &D {
+    pub const fn get_base_device(&self) -> &D {
         self.base_device
     }
 
     /// Check if the partition device is valid (non-zero size)
-    pub fn is_valid(&self) -> bool {
-        self.block_count > 0
+    pub const fn is_valid(&self) -> bool {
+        self.size > 0
     }
 
-    pub const fn get_size(&self) -> Size {
-        self.block_count * self.block_size as u64
+    const fn get_device_position(&self, absolute_position: Size) -> Option<Size> {
+        if absolute_position >= self.size {
+            return None;
+        }
+
+        let device_position = match self.offset.checked_add(absolute_position) {
+            Some(pos) => pos,
+            None => return None,
+        };
+
+        Some(device_position)
+    }
+
+    const fn get_total_buffer_length(
+        &self,
+        absolute_position: Size,
+        buffer_length: usize,
+    ) -> usize {
+        let remaining_size = self.size.saturating_sub(absolute_position) as usize;
+
+        if buffer_length > remaining_size {
+            remaining_size
+        } else {
+            buffer_length
+        }
     }
 }
 
 impl<'a, D: DirectBaseOperations> DirectBaseOperations for PartitionDevice<'a, D> {
     fn read(&self, buffer: &mut [u8], absolute_position: Size) -> Result<usize> {
-        if absolute_position >= self.block_count {
-            return Ok(0 as _);
-        }
+        let device_position = match self.get_device_position(absolute_position) {
+            Some(pos) => pos,
+            None => return Ok(0),
+        };
 
-        let read_size = self
-            .block_count
-            .saturating_sub(absolute_position)
-            .min(buffer.len() as u64) as usize;
-        let device_position = self.start_block + absolute_position;
+        let read_size = self.get_total_buffer_length(absolute_position, buffer.len());
 
         // Read from base device
         let bytes_read = self
@@ -200,16 +165,12 @@ impl<'a, D: DirectBaseOperations> DirectBaseOperations for PartitionDevice<'a, D
     }
 
     fn write(&self, buffer: &[u8], absolute_position: Size) -> Result<usize> {
-        if absolute_position >= self.get_size() {
-            return Ok(0);
-        }
+        let device_position = match self.get_device_position(absolute_position) {
+            Some(pos) => pos,
+            None => return Ok(0),
+        };
 
-        let write_size = self
-            .get_size()
-            .saturating_sub(absolute_position)
-            .min(buffer.len() as u64) as usize;
-
-        let device_position = self.start_block + absolute_position;
+        let write_size = self.get_total_buffer_length(absolute_position, buffer.len());
 
         // Write to base device
         let bytes_written = self
@@ -225,45 +186,36 @@ impl<'a, D: DirectBaseOperations> DirectBaseOperations for PartitionDevice<'a, D
         count: usize,
         absolute_position: Size,
     ) -> Result<usize> {
+        let device_position = match self.get_device_position(absolute_position) {
+            Some(pos) => pos,
+            None => return Ok(0),
+        };
+
+        let total_write_size = pattern.len() * count;
+        let maximum_write_size = self.get_total_buffer_length(absolute_position, total_write_size);
+
+        let adjusted_count = if total_write_size > maximum_write_size {
+            // Adjust count to fit within partition boundaries
+            maximum_write_size / pattern.len()
+        } else {
+            count
+        };
+
         self.base_device
-            .write_pattern(pattern, count, self.start_block + absolute_position)
+            .write_pattern(pattern, adjusted_count, device_position)
     }
 
     fn set_position(&self, current_position: Size, position: &Position) -> Result<Size> {
-        let mut position = *position;
+        let position = block_device::set_position(current_position, position, self.size)?;
 
-        match &mut position {
-            Position::Start(offset) => {
-                // Clamp to partition size
-                if *offset > self.get_size() {
-                    return Err(Error::InvalidParameter);
-                }
-
-                *offset += self.get_offset();
-            }
-            Position::Current(offset) => {
-                if *offset > 0 {
-                    if current_position.saturating_add(*offset as u64) > self.get_size() {
-                        return Err(Error::InvalidParameter);
-                    }
-                } else if current_position.saturating_sub((-*offset) as u64) > self.get_size() {
-                    return Err(Error::InvalidParameter);
-                }
-            }
-            Position::End(offset) => {
-                if *offset > 0 {
-                    return Err(Error::InvalidParameter);
-                }
-
-                let end_position = self.get_size() as i64 + *offset;
-                if end_position < 0 {
-                    return Err(Error::InvalidParameter);
-                }
-            }
-        }
+        let device_position = self
+            .get_device_position(position)
+            .ok_or(Error::InvalidParameter)?;
 
         self.base_device
-            .set_position(current_position + self.get_offset(), &position)
+            .set_position(device_position, &Position::Start(0))?;
+
+        Ok(position)
     }
 
     fn flush(&self) -> Result<()> {
@@ -285,7 +237,7 @@ impl<'a, D: DirectBaseOperations> DirectBaseOperations for PartitionDevice<'a, D
             block_device::GET_BLOCK_COUNT => {
                 *argument
                     .cast::<Size>()
-                    .ok_or(crate::Error::InvalidParameter)? = self.block_count;
+                    .ok_or(crate::Error::InvalidParameter)? = self.get_block_count() as Size;
                 Ok(())
             }
             _ => self.base_device.control(command, argument),
@@ -304,8 +256,8 @@ where
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PartitionDevice")
-            .field("offset", &self.start_block)
-            .field("size", &self.block_count)
+            .field("offset", &self.offset)
+            .field("size", &self.size)
             .finish()
     }
 }
