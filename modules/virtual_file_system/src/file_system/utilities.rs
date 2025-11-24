@@ -66,9 +66,9 @@ impl<'a> VirtualFileSystem<'a> {
     pub(super) fn get_file_system_index_from_path(
         file_systems: &FileSystemsArray,
         path: &impl AsRef<Path>,
-    ) -> Result<usize> {
+    ) -> usize {
         let mut result_score = 0;
-        let mut result: Option<usize> = None;
+        let mut result: usize = 0;
 
         let path = path.as_ref();
         let path_components = path.get_components();
@@ -83,18 +83,18 @@ impl<'a> VirtualFileSystem<'a> {
 
             if result_score < score {
                 result_score = score;
-                result = Some(i);
+                result = i;
             }
         }
 
-        result.ok_or(Error::InvalidPath)
+        result
     }
 
     pub(super) fn get_mutable_file_system_from_path<'b, 'c>(
         file_systems: &'b mut FileSystemsArray,
         path: &'c impl AsRef<Path>,
     ) -> Result<(&'b mut InternalFileSystem, &'c Path, usize)> {
-        let i = Self::get_file_system_index_from_path(file_systems, path)?;
+        let i = Self::get_file_system_index_from_path(file_systems, path);
 
         let internal_file_system = &mut file_systems[i];
 
@@ -110,7 +110,7 @@ impl<'a> VirtualFileSystem<'a> {
         file_systems: &'b FileSystemsArray,
         path: &'c impl AsRef<Path>,
     ) -> Result<(&'b InternalFileSystem, &'c Path, usize)> {
-        let i = Self::get_file_system_index_from_path(file_systems, path)?;
+        let i = Self::get_file_system_index_from_path(file_systems, path);
 
         let internal_file_system = &file_systems[i];
 
