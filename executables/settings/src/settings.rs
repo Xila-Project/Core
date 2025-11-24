@@ -1,19 +1,15 @@
 use alloc::string::String;
-use core::time::Duration;
-
 use xila::file_system::Kind;
 use xila::graphics::{
     self, EventKind, Window, lvgl,
     palette::{self, Hue},
 };
-use xila::task;
 
 use crate::error::Result;
 use crate::tabs::{AboutTab, GeneralTab, PasswordTab, Tab};
 
 pub struct Settings {
     window: Window,
-    running: bool,
     tabs: [Tab; 3],
 }
 
@@ -53,37 +49,29 @@ impl Settings {
             tab.create_ui(tabview).expect("Failed to create tab UI");
         });
 
-        let manager = Self {
-            window,
-            running: true,
-            tabs,
-        };
+        let manager = Self { window, tabs };
 
         Ok(manager)
     }
 
-    pub async fn run(&mut self) {
-        while self.running {
-            let event = match self.window.pop_event() {
-                Some(event) => event,
-                None => {
-                    task::Manager::sleep(Duration::from_millis(50)).await;
-                    continue;
-                }
-            };
+    pub async fn handle_events(&mut self) -> bool {
+        let mut running = true;
 
-            if event.get_code() == EventKind::Delete
-                && event.get_target() == self.window.get_object()
-            {
-                self.running = false;
-            } else {
-                // Let each tab handle the event
-                for tab in &mut self.tabs {
-                    if tab.handle_event(&event).await {
-                        break; // Event was handled, no need to check other tabs
+        graphics::lock!({
+            while let Some(event) = self.window.pop_event() {
+                if event.code == EventKind::Delete && event.target == self.window.get_object() {
+                    running = false;
+                } else {
+                    // Let each tab handle the event
+                    for tab in &mut self.tabs {
+                        if tab.handle_event(&event).await {
+                            break; // Event was handled, no need to check other tabs
+                        }
                     }
                 }
             }
-        }
+        });
+
+        running
     }
 }

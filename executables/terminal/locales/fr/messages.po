@@ -25,3 +25,7 @@ msgstr "Échec de la récupération de l'identifiant de la tâche: {}"
 #: error.failed_to_execute
 msgid "Failed to execute: {}"
 msgstr "Échec de l'exécution: {}"
+
+#: error.ressource_busy
+msgid "Resource busy"
+msgstr "Ressource occupée"

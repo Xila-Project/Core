@@ -14,7 +14,7 @@ use alloc::{
     vec,
     vec::Vec,
 };
-use file_system::{Flags, Mode, Open, Path, PathOwned};
+use file_system::{AccessFlags, Path, PathOwned};
 use miniserde::{Deserialize, Serialize};
 use users::{GroupIdentifier, GroupIdentifierInner, UserIdentifier, UserIdentifierInner};
 use virtual_file_system::{Directory, File, VirtualFileSystem};
@@ -141,16 +141,28 @@ pub async fn read_group_file<'a>(
         .append(file)
         .ok_or(Error::FailedToGetGroupFilePath)?;
 
-    let group_file = File::open(virtual_file_system, group_file_path, Mode::READ_ONLY.into())
-        .await
-        .map_err(Error::FailedToReadGroupDirectory)?;
+    let task = task::get_instance().get_current_task_identifier().await;
+
+    let mut group_file = File::open(
+        virtual_file_system,
+        task,
+        group_file_path,
+        AccessFlags::Read.into(),
+    )
+    .await
+    .map_err(Error::FailedToReadGroupDirectory)?;
 
     buffer.clear();
 
     group_file
-        .read_to_end(buffer)
+        .read_to_end(buffer, 32)
         .await
         .map_err(Error::FailedToReadGroupFile)?;
+
+    group_file
+        .close(virtual_file_system)
+        .await
+        .map_err(Error::FailedToCloseFile)?;
 
     miniserde::json::from_str(core::str::from_utf8(buffer).unwrap())
         .map_err(Error::FailedToParseGroupFile)
@@ -208,27 +220,25 @@ pub async fn create_group<'a>(
     // - Write group file.
     let group = Group::new(group_identifier.as_u16(), group_name.to_string(), vec![]);
 
-    match Directory::create(virtual_file_system, GROUP_FOLDER_PATH).await {
-        Ok(_) | Err(file_system::Error::AlreadyExists) => {}
+    let task = task::get_instance().get_current_task_identifier().await;
+
+    match Directory::create(virtual_file_system, task, GROUP_FOLDER_PATH).await {
+        Ok(_) | Err(virtual_file_system::Error::AlreadyExists) => {}
         Err(error) => Err(Error::FailedToCreateGroupsDirectory(error))?,
     };
 
     let group_file_path = get_group_file_path(group_name)?;
 
-    let group_file = File::open(
-        virtual_file_system,
-        group_file_path,
-        Flags::new(Mode::WRITE_ONLY, Some(Open::CREATE_ONLY), None),
-    )
-    .await
-    .map_err(Error::FailedToOpenGroupFile)?;
-
     let group_json = miniserde::json::to_string(&group);
 
-    group_file
-        .write(group_json.as_bytes())
-        .await
-        .map_err(Error::FailedToWriteGroupFile)?;
+    File::write_to_path(
+        virtual_file_system,
+        task,
+        &group_file_path,
+        group_json.as_bytes(),
+    )
+    .await
+    .map_err(Error::FailedToWriteGroupFile)?;
 
     Ok(group_identifier)
 }

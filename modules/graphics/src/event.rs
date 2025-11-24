@@ -2,26 +2,14 @@ use crate::{Key, lvgl};
 
 #[derive(Debug, Clone)]
 pub struct Event {
-    code: EventKind,
-    target: *mut lvgl::lv_obj_t,
-    key: Option<Key>,
+    pub code: EventKind,
+    pub target: *mut lvgl::lv_obj_t,
+    pub key: Option<Key>,
 }
 
 impl Event {
     pub fn new(code: EventKind, target: *mut lvgl::lv_obj_t, key: Option<Key>) -> Self {
         Self { code, target, key }
-    }
-
-    pub fn get_code(&self) -> EventKind {
-        self.code
-    }
-
-    pub fn get_target(&self) -> *mut lvgl::lv_obj_t {
-        self.target
-    }
-
-    pub fn get_key(&self) -> Option<Key> {
-        self.key
     }
 }
 

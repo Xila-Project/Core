@@ -30,10 +30,10 @@ pub fn get() -> TokenStream {
             if let Some(event) = window.pop_event() {
 
                 unsafe {
-                    *code = event.get_code() as u32 ;
+                    *code = event.code as u32 ;
 
                     *target = __pointer_table
-                    .get_wasm_pointer(event.get_target())
+                    .get_wasm_pointer(event.target)
                     .unwrap();
                 }
             }
@@ -45,7 +45,7 @@ pub fn get() -> TokenStream {
             let window = unsafe { graphics::Window::from_raw(window) };
 
             let code = if let Some(event) = window.peek_event() {
-                event.get_code() as u32
+                event.code as u32
             } else {
                 graphics::EventKind::All as u32
             };
@@ -59,7 +59,7 @@ pub fn get() -> TokenStream {
             let window = unsafe { graphics::Window::from_raw(window) };
 
             let target = if let Some(event) = window.peek_event() {
-                event.get_target()
+                event.target
             } else {
                 log::warning!("No event available for the window");
                 core::ptr::null_mut()

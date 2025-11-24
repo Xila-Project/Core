@@ -10,19 +10,16 @@ mod shortcut;
 
 extern crate alloc;
 
+use crate::{desk::Desk, error::Error};
 use alloc::{boxed::Box, string::String, vec::Vec};
 use core::num::NonZeroUsize;
 use core::time::Duration;
 use home::Home;
 use layout::Layout;
 use login::Login;
-use xila::executable::{self, ArgumentsParser, Standard};
-use xila::file_system::Permissions;
+use xila::executable::{self, ArgumentsParser, ExecutableTrait, Standard};
 use xila::task;
 use xila::users;
-
-use crate::shortcut::SHORTCUT_PATH;
-use crate::{desk::Desk, error::Error};
 
 pub async fn main(standard: Standard, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
     let mut parsed_arguments = ArgumentsParser::new(&arguments);
@@ -45,11 +42,11 @@ pub struct Shell {
 
 pub struct ShellExecutable;
 
-executable::implement_executable_device!(
-    structure: ShellExecutable,
-    mount_path: "/binaries/graphical_shell",
-    main_function: main,
-);
+impl ExecutableTrait for ShellExecutable {
+    fn main(standard: Standard, arguments: Vec<String>) -> executable::MainFuture {
+        Box::pin(async move { main(standard, arguments).await })
+    }
+}
 
 impl Shell {
     pub async fn new(standard: Standard, show_keyboard: bool) -> Self {
@@ -68,12 +65,6 @@ impl Shell {
     }
 
     pub async fn main(&mut self) -> Result<(), NonZeroUsize> {
-        let virtual_file_system = xila::virtual_file_system::get_instance();
-        virtual_file_system
-            .set_permissions(SHORTCUT_PATH, Permissions::ALL_FULL)
-            .await
-            .unwrap();
-
         while self.running {
             self.layout.r#loop().await;
 
@@ -83,12 +74,10 @@ impl Shell {
                 if let Some(user) = login.get_logged_user() {
                     let user_name = users::get_instance().get_user_name(user).await.unwrap();
 
+                    let task = task::get_instance().get_current_task_identifier().await;
+
                     task::get_instance()
-                        .set_environment_variable(
-                            self._standard.get_task(),
-                            "User",
-                            user_name.as_str(),
-                        )
+                        .set_environment_variable(task, "User", user_name.as_str())
                         .await
                         .map_err(Error::FailedToSetEnvironmentVariable)?;
 
@@ -105,10 +94,10 @@ impl Shell {
             if let Some(desk) = &mut self.desk
                 && !desk.is_hidden()
             {
-                desk.event_handler().await;
+                desk.handle_events().await;
             }
 
-            task::Manager::sleep(Duration::from_millis(20)).await;
+            task::sleep(Duration::from_millis(50)).await;
         }
 
         Ok(())

@@ -18,9 +18,9 @@ partition tables, which are used in traditional BIOS-based systems.
 ```rust
 extern crate alloc;
 
-use file_system::*;
+use file_system::{MemoryDevice, mbr::{Mbr, PartitionKind, create_partition_device}};
 
-let device = create_device!(MemoryDevice::<512>::new(512));
+let device = MemoryDevice::<512>::new(4 * 1024 * 1024);
 
 // Create a new MBR
 let mut mbr = Mbr::new_with_signature(0x12345678);
@@ -41,7 +41,7 @@ let partitions = mbr.get_valid_partitions();
 
 // Create a partition device
 if let Some(partition) = partitions.first() {
-    let partition_device = create_partition_device(device.clone(), partition).unwrap();
+    let partition_device = create_partition_device(&device, partition).unwrap();
 }
 ```
 */
@@ -49,12 +49,14 @@ if let Some(partition) = partitions.first() {
 use alloc::vec::Vec;
 use core::fmt;
 
-use crate::{PartitionDevice, PartitionStatistics};
+use crate::{DirectBlockDevice, PartitionDevice, Size};
 
+mod error;
+mod partition;
 mod utilities;
+pub use error::*;
+pub use partition::*;
 pub use utilities::*;
-
-use crate::{Device, Error, PartitionEntry, PartitionKind, Result};
 
 #[cfg(test)]
 use crate::MemoryDevice;
@@ -84,13 +86,15 @@ impl Mbr {
     /// Maximum number of primary partitions in MBR
     pub const MAXIMUM_PARTITIONS_COUNT: usize = 4;
 
+    pub const MINIMUM_START_BLOCK: Size = 2048;
+
     /// Create a new empty MBR
     pub fn new() -> Self {
         Self {
             bootstrap_code: [0; 440],
             disk_signature: [0; 4],
             reserved: [0; 2],
-            partitions: [PartitionEntry::new(); 4],
+            partitions: [PartitionEntry::new_empty(); 4],
             boot_signature: Self::SIGNATURE,
         }
     }
@@ -105,19 +109,19 @@ impl Mbr {
     /// Parse MBR from raw bytes
     pub fn from_bytes(data: &[u8]) -> Result<Self> {
         if data.len() < Self::SIZE {
-            return Err(Error::InvalidParameter);
+            return Err(Error::BufferTooSmall);
         }
 
         // Check MBR signature
         if data[510] != Self::SIGNATURE[0] || data[511] != Self::SIGNATURE[1] {
-            return Err(Error::Corrupted);
+            return Err(Error::InvalidSignature);
         }
 
         let mut mbr = Mbr {
             bootstrap_code: [0; 440],
             disk_signature: [0; 4],
             reserved: [0; 2],
-            partitions: [PartitionEntry::new(); 4],
+            partitions: [PartitionEntry::new_empty(); 4],
             boot_signature: [0; 2],
         };
 
@@ -135,26 +139,7 @@ impl Mbr {
             let offset = 446 + (i * 16);
             let partition_data = &data[offset..offset + 16];
 
-            partition.bootable = partition_data[0];
-            partition.start_head = partition_data[1];
-            partition.start_sector = partition_data[2];
-            partition.start_cylinder = partition_data[3];
-            partition.partition_type = partition_data[4];
-            partition.end_head = partition_data[5];
-            partition.end_sector = partition_data[6];
-            partition.end_cylinder = partition_data[7];
-            partition.start_lba = u32::from_le_bytes([
-                partition_data[8],
-                partition_data[9],
-                partition_data[10],
-                partition_data[11],
-            ]);
-            partition.size_sectors = u32::from_le_bytes([
-                partition_data[12],
-                partition_data[13],
-                partition_data[14],
-                partition_data[15],
-            ]);
+            *partition = PartitionEntry::parse(partition_data).unwrap();
         }
 
         // Copy boot signature
@@ -164,37 +149,42 @@ impl Mbr {
     }
 
     /// Read and parse MBR from a device
-    pub fn read_from_device(device: &Device) -> Result<Self> {
+    pub fn read_from_device(device: &impl DirectBlockDevice) -> Result<Self> {
         // Read the first 512 bytes (MBR sector)
+
+        device.open()?;
+
         let mut buffer = [0u8; Self::SIZE];
+        device.set_position(0, &crate::Position::Start(0))?;
+        let bytes_read = device.read(&mut buffer, 0)?;
 
-        // Set position to the beginning of the device
-        device.set_position(&crate::Position::Start(0))?;
-
-        // Read MBR data
-        let bytes_read = device.read(&mut buffer)?;
-
-        if bytes_read.as_u64() < Self::SIZE as u64 {
-            return Err(Error::InputOutput);
+        if bytes_read < Self::SIZE {
+            return Err(Error::ReadFailed);
         }
+
+        device.close()?;
 
         Self::from_bytes(&buffer)
     }
 
     /// Write MBR to a device
-    pub fn write_to_device(&self, device: &Device) -> Result<()> {
+    pub fn write_to_device(&self, device: &impl DirectBlockDevice) -> Result<()> {
         // Set position to the beginning of the device
-        device.set_position(&crate::Position::Start(0))?;
+
+        device.open()?;
+
+        device.set_position(0, &crate::Position::Start(0))?;
 
         // Convert to bytes and write
         let buffer = self.to_bytes();
-        let bytes_written = device.write(&buffer)?;
+        let bytes_written = device.write(&buffer, 0)?;
 
-        if bytes_written.as_u64() < Self::SIZE as u64 {
-            return Err(Error::InputOutput);
+        if bytes_written < Self::SIZE {
+            return Err(Error::WriteFailed);
         }
 
-        device.flush()?;
+        device.close()?;
+
         Ok(())
     }
 
@@ -221,31 +211,29 @@ impl Mbr {
 
     /// Get bootable partition (if any)
     pub fn get_bootable_partition(&self) -> Option<&PartitionEntry> {
-        self.partitions
-            .iter()
-            .find(|partition| partition.is_bootable())
+        self.partitions.iter().find(|partition| partition.bootable)
     }
 
     /// Get bootable partition (mutable, if any)
     pub fn get_bootable_partition_mut(&mut self) -> Option<&mut PartitionEntry> {
         self.partitions
             .iter_mut()
-            .find(|partition| partition.is_bootable())
+            .find(|partition| partition.bootable)
     }
 
     /// Set a partition as bootable (clears bootable flag from other partitions)
     pub fn set_bootable_partition(&mut self, index: usize) -> Result<()> {
         if index >= Self::MAXIMUM_PARTITIONS_COUNT {
-            return Err(Error::InvalidParameter);
+            return Err(Error::InvalidIndex);
         }
 
         // Clear bootable flag from all partitions
         for partition in &mut self.partitions {
-            partition.set_bootable(false);
+            partition.bootable = false;
         }
 
         // Set the specified partition as bootable
-        self.partitions[index].set_bootable(true);
+        self.partitions[index].bootable = true;
         Ok(())
     }
 
@@ -253,7 +241,7 @@ impl Mbr {
     pub fn has_gpt_protective_partition(&self) -> bool {
         self.partitions
             .iter()
-            .any(|partition| partition.get_partition_type() == PartitionKind::GptProtective)
+            .any(|partition| partition.kind == PartitionKind::GptProtective)
     }
 
     /// Get disk signature as u32
@@ -276,14 +264,12 @@ impl Mbr {
     /// Add a new partition
     pub fn add_partition(
         &mut self,
-        partition_type: crate::PartitionKind,
+        partition_type: PartitionKind,
         start_lba: u32,
         size_sectors: u32,
         bootable: bool,
     ) -> Result<usize> {
-        let slot = self
-            .get_free_partition_slot()
-            .ok_or(Error::FileSystemFull)?;
+        let slot = self.get_free_partition_slot().ok_or(Error::Full)?;
 
         let new_partition =
             PartitionEntry::new_with_params(bootable, partition_type, start_lba, size_sectors);
@@ -291,7 +277,7 @@ impl Mbr {
         // Check for overlaps with existing partitions
         for existing in &self.partitions {
             if existing.is_valid() && new_partition.overlaps_with(existing) {
-                return Err(Error::AlreadyExists);
+                return Err(Error::OverlappingPartitions);
             }
         }
 
@@ -308,7 +294,7 @@ impl Mbr {
     /// Remove a partition by index
     pub fn remove_partition(&mut self, index: usize) -> Result<()> {
         if index >= Self::MAXIMUM_PARTITIONS_COUNT {
-            return Err(Error::InvalidParameter);
+            return Err(Error::InvalidIndex);
         }
 
         self.partitions[index].clear();
@@ -354,9 +340,9 @@ impl Mbr {
     ///
     /// ```rust
     /// extern crate alloc;
-    /// use file_system::*;
+    /// use file_system::{MemoryDevice, mbr::{Mbr, PartitionKind}};
     ///
-    /// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
+    /// let device = MemoryDevice::<512>::new(4 * 1024 * 1024);
     /// // Create an MBR with multiple partitions
     /// let mut mbr = Mbr::new_with_signature(0x12345678);
     /// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
@@ -365,22 +351,22 @@ impl Mbr {
     ///
     /// // Read it back and create all partition devices
     /// let mbr = Mbr::read_from_device(&device).unwrap();
-    /// let partition_devices = mbr.create_all_partition_devices(device).unwrap();
+    /// let partition_devices = mbr.create_all_partition_devices(&device).unwrap();
     /// println!("Created {} partition devices", partition_devices.len());
     ///
     /// for (i, partition) in partition_devices.iter().enumerate() {
-    ///     println!("Partition {}: {} sectors", i, partition.get_sector_count());
+    ///     println!("Partition {}: {} blocks", i, partition.get_block_count());
     /// }
     /// ```
-    pub fn create_all_partition_devices(
+    pub fn create_all_partition_devices<'a, D: DirectBlockDevice>(
         &self,
-        base_device: Device,
-    ) -> Result<Vec<PartitionDevice>> {
+        base_device: &'a D,
+    ) -> Result<Vec<PartitionDevice<'a, D>>> {
         let mut devices = Vec::new();
 
         for partition in &self.partitions {
             if partition.is_valid() {
-                let device = create_partition_device(base_device.clone(), partition)?;
+                let device = create_partition_device(base_device, partition)?;
                 devices.push(device);
             }
         }
@@ -408,9 +394,9 @@ impl Mbr {
     ///
     /// ```rust
     /// extern crate alloc;
-    /// use file_system::*;
+    /// use file_system::{MemoryDevice, mbr::{PartitionKind, Mbr, PartitionEntry}};
     ///
-    /// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
+    /// let device = MemoryDevice::<512>::new(4 * 1024 * 1024);
     /// // Create an MBR with FAT32 partition
     /// let mut mbr = Mbr::new_with_signature(0x12345678);
     /// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
@@ -421,16 +407,11 @@ impl Mbr {
     /// let fat32_partitions = mbr.find_partitions_by_type(PartitionKind::Fat32Lba);
     /// println!("Found {} FAT32 partitions", fat32_partitions.len());
     /// ```
-    pub fn find_partitions_by_type(
-        &self,
-        partition_type: crate::PartitionKind,
-    ) -> Vec<(usize, &PartitionEntry)> {
+    pub fn find_partitions_by_type(&self, kind: PartitionKind) -> Vec<(usize, &PartitionEntry)> {
         self.partitions
             .iter()
             .enumerate()
-            .filter(|(_, partition)| {
-                partition.is_valid() && partition.get_partition_type() == partition_type
-            })
+            .filter(|(_, partition)| partition.is_valid() && partition.kind == kind)
             .collect()
     }
 
@@ -450,9 +431,9 @@ impl Mbr {
     ///
     /// ```rust
     /// extern crate alloc;
-    /// use file_system::*;
+    /// use file_system::{MemoryDevice, mbr::{Mbr, PartitionKind}};
     ///
-    /// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
+    /// let device = MemoryDevice::<512>::new(4 * 1024 * 1024);
     /// // First create and write a valid MBR
     /// let mut mbr = Mbr::new_with_signature(0x12345678);
     /// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
@@ -462,26 +443,25 @@ impl Mbr {
     /// let mbr = Mbr::read_from_device(&device).unwrap();
     /// match mbr.validate() {
     ///     Ok(()) => println!("MBR is valid"),
-    ///     Err(Error::Corrupted) => println!("MBR is corrupted"),
     ///     Err(e) => println!("Validation error: {}", e),
     /// }
     /// ```
     pub fn validate(&self) -> Result<()> {
         // Check MBR signature
         if !self.is_valid() {
-            return Err(Error::Corrupted);
+            return Err(Error::InvalidSignature);
         }
 
         // Check for overlapping partitions
         if self.has_overlapping_partitions() {
-            return Err(Error::Corrupted);
+            return Err(Error::OverlappingPartitions);
         }
 
         // Check that only one partition is bootable
-        let bootable_count = self.partitions.iter().filter(|p| p.is_bootable()).count();
+        let bootable_count = self.partitions.iter().filter(|p| p.bootable).count();
 
         if bootable_count > 1 {
-            return Err(Error::Corrupted);
+            return Err(Error::MultipleBootablePartitions);
         }
 
         Ok(())
@@ -500,9 +480,9 @@ impl Mbr {
     ///
     /// ```rust
     /// extern crate alloc;
-    /// use file_system::*;
+    /// use file_system::{MemoryDevice, mbr::{Mbr, PartitionKind}};
     ///
-    /// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
+    /// let device = MemoryDevice::<512>::new(4 * 1024 * 1024);
     /// // Create an MBR with some partitions
     /// let mut mbr = Mbr::new_with_signature(0x12345678);
     /// mbr.add_partition(PartitionKind::Fat32Lba, 2048, 1024, true).unwrap();
@@ -511,57 +491,51 @@ impl Mbr {
     ///
     /// // Read it back and analyze
     /// let mbr = Mbr::read_from_device(&device).unwrap();
-    /// let stats = mbr.generate_statistics();
+    /// let stats = mbr.get_statistics();
     /// if stats.total_partitions > 0 {
     ///     println!("Average partition size: {} sectors",
     ///              stats.total_used_sectors / stats.total_partitions as u64);
     /// }
     /// ```
-    pub fn generate_statistics(&self) -> PartitionStatistics {
+    pub fn get_statistics(&self) -> PartitionStatistics {
         let valid_partitions: Vec<_> = self.get_valid_partitions();
 
         let total_partitions = valid_partitions.len();
-        let bootable_partitions = valid_partitions.iter().filter(|p| p.is_bootable()).count();
+        let bootable_partitions = valid_partitions.iter().filter(|p| p.bootable).count();
 
-        let fat_partitions = valid_partitions
-            .iter()
-            .filter(|p| p.get_partition_type().is_fat())
-            .count();
+        let fat_partitions = valid_partitions.iter().filter(|p| p.kind.is_fat()).count();
 
         let linux_partitions = valid_partitions
             .iter()
-            .filter(|p| p.get_partition_type().is_linux())
+            .filter(|p| p.kind.is_linux())
             .count();
 
         let hidden_partitions = valid_partitions
             .iter()
-            .filter(|p| p.get_partition_type().is_hidden())
+            .filter(|p| p.kind.is_hidden())
             .count();
 
         let extended_partitions = valid_partitions
             .iter()
-            .filter(|p| p.get_partition_type().is_extended())
+            .filter(|p| p.kind.is_extended())
             .count();
 
         let unknown_partitions = valid_partitions
             .iter()
-            .filter(|p| matches!(p.get_partition_type(), crate::PartitionKind::Unknown(_)))
+            .filter(|p| matches!(p.kind, PartitionKind::Unknown(_)))
             .count();
 
-        let total_used_sectors = valid_partitions
-            .iter()
-            .map(|p| p.get_size_sectors() as u64)
-            .sum();
+        let total_used_sectors = valid_partitions.iter().map(|p| p.block_count as Size).sum();
 
         let largest_partition_sectors = valid_partitions
             .iter()
-            .map(|p| p.get_size_sectors())
+            .map(|p| p.block_count)
             .max()
             .unwrap_or(0);
 
         let smallest_partition_sectors = valid_partitions
             .iter()
-            .map(|p| p.get_size_sectors())
+            .map(|p| p.block_count)
             .min()
             .unwrap_or(0);
 
@@ -599,32 +573,36 @@ impl Mbr {
     /// # Examples
     ///
     /// ```rust
-    /// use file_system::*;
+    /// use file_system::mbr::{Mbr, PartitionKind};
     ///
-    /// // Create MBR for a 4MB device (8192 sectors)
+    /// // Create MBR for a 4MB device (8192 blocks)
     /// let mbr = Mbr::create_basic(0x12345678, PartitionKind::Fat32Lba, 8192).unwrap();
     ///
-    /// // The MBR will have one FAT32 partition starting at sector 2048
+    /// // The MBR will have one FAT32 partition starting at block 2048
     /// let partitions = mbr.get_valid_partitions();
     /// assert_eq!(partitions.len(), 1);
-    /// assert_eq!(partitions[0].get_start_lba(), 2048);
+    /// assert_eq!(partitions[0].start_block, 2048);
     /// ```
     pub fn create_basic(
         disk_signature: u32,
-        partition_type: crate::PartitionKind,
-        total_sectors: u32,
+        partition_type: PartitionKind,
+        block_count: u32,
     ) -> Result<Self> {
         let mut mbr = Self::new_with_signature(disk_signature);
 
         // Leave some space at the beginning (typically 2048 sectors for alignment)
-        let start_lba = 2048;
-        let partition_sectors = total_sectors.saturating_sub(start_lba);
+        let partition_block_count = block_count.saturating_sub(Self::MINIMUM_START_BLOCK as u32);
 
-        if partition_sectors == 0 {
-            return Err(Error::InvalidParameter);
+        if partition_block_count == 0 {
+            return Err(Error::DeviceTooSmall);
         }
 
-        mbr.add_partition(partition_type, start_lba, partition_sectors, true)?;
+        mbr.add_partition(
+            partition_type,
+            Self::MINIMUM_START_BLOCK as u32,
+            partition_block_count,
+            true,
+        )?;
 
         Ok(mbr)
     }
@@ -645,20 +623,7 @@ impl Mbr {
         // Copy partition entries
         for (i, partition) in self.partitions.iter().enumerate() {
             let offset = 446 + (i * 16);
-            buffer[offset] = partition.bootable;
-            buffer[offset + 1] = partition.start_head;
-            buffer[offset + 2] = partition.start_sector;
-            buffer[offset + 3] = partition.start_cylinder;
-            buffer[offset + 4] = partition.partition_type;
-            buffer[offset + 5] = partition.end_head;
-            buffer[offset + 6] = partition.end_sector;
-            buffer[offset + 7] = partition.end_cylinder;
-
-            let start_lba_bytes = partition.start_lba.to_le_bytes();
-            buffer[offset + 8..offset + 12].copy_from_slice(&start_lba_bytes);
-
-            let size_bytes = partition.size_sectors.to_le_bytes();
-            buffer[offset + 12..offset + 16].copy_from_slice(&size_bytes);
+            buffer[offset..offset + 16].copy_from_slice(&partition.to_bytes());
         }
 
         // Copy boot signature
@@ -689,9 +654,9 @@ impl Mbr {
     ///
     /// ```rust
     /// extern crate alloc;
-    /// use file_system::*;
+    /// use file_system::{MemoryDevice, mbr::{Mbr, PartitionKind}};
     ///
-    /// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
+    /// let device = MemoryDevice::<512>::new(4 * 1024 * 1024);
     ///
     /// // Look for partition with signature 0x12345678, create FAT32 partition if not found
     /// let partition = Mbr::find_or_create_partition_with_signature(
@@ -703,11 +668,11 @@ impl Mbr {
     /// // The partition device is ready to use
     /// assert!(partition.is_valid());
     /// ```
-    pub fn find_or_create_partition_with_signature(
-        device: &Device,
+    pub fn find_or_create_partition_with_signature<'a, D: DirectBlockDevice>(
+        device: &'a D,
         target_signature: u32,
-        partition_type: crate::PartitionKind,
-    ) -> Result<PartitionDevice> {
+        partition_type: PartitionKind,
+    ) -> Result<PartitionDevice<'a, D>> {
         // Try to read existing MBR from device
         if let Ok(existing_mbr) = Self::read_from_device(device) {
             // Check if the MBR has the target signature
@@ -717,7 +682,7 @@ impl Mbr {
 
                 // If we have at least one valid partition, return it
                 if !valid_partitions.is_empty() {
-                    return create_partition_device(device.clone(), valid_partitions[0]);
+                    return create_partition_device(device, valid_partitions[0]);
                 }
             }
         }
@@ -748,9 +713,9 @@ impl Mbr {
     ///
     /// ```rust
     /// extern crate alloc;
-    /// use file_system::*;
+    /// use file_system::{MemoryDevice, mbr::{Mbr, PartitionKind}};
     ///
-    /// let device = create_device!(MemoryDevice::<512>::new(4 * 1024 * 1024));
+    /// let device = MemoryDevice::<512>::new(4 * 1024 * 1024);
     ///
     /// // Format disk and create a Linux partition with specific signature
     /// let partition = Mbr::format_disk_with_signature_and_partition(
@@ -763,23 +728,23 @@ impl Mbr {
     /// assert!(partition.is_valid());
     /// assert_eq!(partition.get_start_lba(), 2048); // Standard alignment
     /// ```
-    pub fn format_disk_with_signature_and_partition(
-        device: &Device,
+    pub fn format_disk_with_signature_and_partition<'a, D: DirectBlockDevice>(
+        device: &'a D,
         disk_signature: u32,
-        partition_type: crate::PartitionKind,
-    ) -> Result<PartitionDevice> {
+        partition_type: PartitionKind,
+    ) -> Result<PartitionDevice<'a, D>> {
         // Get device size in sectors
-        let device_size = device.get_size()?;
-        let block_size = device.get_block_size()?;
-        let total_sectors = (device_size.as_u64() / block_size as u64) as u32;
+        device.open()?;
+        let block_count = device.get_block_count()?;
+        device.close()?;
 
         // Ensure device is large enough for a meaningful partition
-        if total_sectors < 2048 {
-            return Err(Error::InvalidParameter);
+        if block_count < 2048 {
+            return Err(Error::DeviceTooSmall);
         }
 
         // Create new MBR with the specified signature
-        let new_mbr = Self::create_basic(disk_signature, partition_type, total_sectors)?;
+        let new_mbr = Self::create_basic(disk_signature, partition_type, block_count as _)?;
 
         // Write the new MBR to device
         new_mbr.write_to_device(device)?;
@@ -787,11 +752,11 @@ impl Mbr {
         // Get the first (and only) partition
         let valid_partitions = new_mbr.get_valid_partitions();
         if valid_partitions.is_empty() {
-            return Err(Error::InternalError);
+            return Err(Error::NoValidPartitions);
         }
 
         // Create and return partition device
-        create_partition_device(device.clone(), valid_partitions[0])
+        create_partition_device(device, valid_partitions[0])
     }
 }
 
@@ -847,7 +812,7 @@ impl fmt::Display for Mbr {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::PartitionEntry;
+    use crate::mbr::PartitionEntry;
     use alloc::{format, vec};
 
     fn create_sample_mbr_bytes() -> [u8; 512] {
@@ -911,17 +876,17 @@ mod tests {
 
         // Check first partition
         let p1 = &partitions[0];
-        assert!(p1.is_bootable());
-        assert_eq!(p1.get_partition_type(), super::PartitionKind::Fat32Lba);
-        assert_eq!(p1.get_start_lba(), 2048);
-        assert_eq!(p1.get_size_sectors(), 204800);
+        assert!(p1.bootable);
+        assert_eq!(p1.kind, super::PartitionKind::Fat32Lba);
+        assert_eq!(p1.start_block, 2048);
+        assert_eq!(p1.block_count, 204800);
 
         // Check second partition
         let p2 = &partitions[1];
-        assert!(!p2.is_bootable());
-        assert_eq!(p2.get_partition_type(), super::PartitionKind::Linux);
-        assert_eq!(p2.get_start_lba(), 206848);
-        assert_eq!(p2.get_size_sectors(), 102400);
+        assert!(!p2.bootable);
+        assert_eq!(p2.kind, super::PartitionKind::Linux);
+        assert_eq!(p2.start_block, 206848);
+        assert_eq!(p2.block_count, 102400);
     }
 
     #[test]
@@ -932,7 +897,7 @@ mod tests {
 
         let result = Mbr::from_bytes(&data);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), crate::Error::Corrupted);
+        assert_eq!(result.unwrap_err(), Error::InvalidSignature);
     }
 
     #[test]
@@ -940,7 +905,7 @@ mod tests {
         let data = [0u8; 256]; // Too small
         let result = Mbr::from_bytes(&data);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), crate::Error::InvalidParameter);
+        assert_eq!(result.unwrap_err(), Error::BufferTooSmall);
     }
 
     #[test]
@@ -969,10 +934,7 @@ mod tests {
 
         let bootable = mbr.get_bootable_partition();
         assert!(bootable.is_some());
-        assert_eq!(
-            bootable.unwrap().get_partition_type(),
-            super::PartitionKind::Fat32Lba
-        );
+        assert_eq!(bootable.unwrap().kind, super::PartitionKind::Fat32Lba);
     }
 
     #[test]
@@ -987,12 +949,12 @@ mod tests {
 
         // Second partition should be bootable
         let bootable = mbr.get_bootable_partition().unwrap();
-        assert_eq!(bootable.get_partition_type(), super::PartitionKind::Linux);
+        assert_eq!(bootable.kind, super::PartitionKind::Linux);
 
         // Set first partition as bootable
         mbr.set_bootable_partition(0).unwrap();
         let bootable = mbr.get_bootable_partition().unwrap();
-        assert_eq!(bootable.get_partition_type(), super::PartitionKind::Fat32);
+        assert_eq!(bootable.kind, super::PartitionKind::Fat32);
     }
 
     #[test]
@@ -1008,11 +970,8 @@ mod tests {
 
         let partition = &mbr.partitions[index];
         assert!(partition.is_valid());
-        assert!(partition.is_bootable());
-        assert_eq!(
-            partition.get_partition_type(),
-            super::PartitionKind::Fat32Lba
-        );
+        assert!(partition.bootable);
+        assert_eq!(partition.kind, super::PartitionKind::Fat32Lba);
     }
 
     #[test]
@@ -1026,7 +985,7 @@ mod tests {
         // Try to add overlapping partition
         let result = mbr.add_partition(super::PartitionKind::Linux, 1500, 1000, false);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), crate::Error::AlreadyExists);
+        assert_eq!(result.unwrap_err(), Error::OverlappingPartitions);
     }
 
     #[test]
@@ -1043,7 +1002,7 @@ mod tests {
         // Try to add fifth partition
         let result = mbr.add_partition(super::PartitionKind::Fat32, 50000, 1000, false);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), crate::Error::FileSystemFull);
+        assert_eq!(result.unwrap_err(), Error::Full);
     }
 
     #[test]
@@ -1063,7 +1022,7 @@ mod tests {
         let mut mbr = super::Mbr::new();
         let result = mbr.remove_partition(5); // Invalid index
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), crate::Error::InvalidParameter);
+        assert_eq!(result.unwrap_err(), Error::InvalidIndex);
     }
 
     #[test]
@@ -1154,8 +1113,7 @@ mod tests {
         let mut data = vec![0u8; 4096 * 1024];
         data[0..512].copy_from_slice(&mbr_data);
 
-        let memory_device = MemoryDevice::<512>::from_vec(data);
-        let device = crate::create_device!(memory_device);
+        let device = MemoryDevice::<512>::from_vec(data);
 
         // The sample MBR has signature 0x12345678
         let result = Mbr::find_or_create_partition_with_signature(
@@ -1167,7 +1125,7 @@ mod tests {
 
         let partition_device = result.unwrap();
         assert!(partition_device.is_valid());
-        assert_eq!(partition_device.get_start_lba(), 2048); // From sample data
+        assert_eq!(partition_device.get_start_lba(), Mbr::MINIMUM_START_BLOCK); // From sample data
     }
 
     #[test]
@@ -1177,8 +1135,7 @@ mod tests {
         let mut data = vec![0u8; 4096 * 1024];
         data[0..512].copy_from_slice(&mbr_data);
 
-        let memory_device = MemoryDevice::<512>::from_vec(data);
-        let device = crate::create_device!(memory_device);
+        let device = MemoryDevice::<512>::from_vec(data);
 
         // Request different signature than what's in the sample MBR
         let result = Mbr::find_or_create_partition_with_signature(
@@ -1199,18 +1156,14 @@ mod tests {
         // Check partition type
         let valid_partitions = new_mbr.get_valid_partitions();
         assert_eq!(valid_partitions.len(), 1);
-        assert_eq!(
-            valid_partitions[0].get_partition_type(),
-            PartitionKind::Linux
-        );
+        assert_eq!(valid_partitions[0].kind, PartitionKind::Linux);
     }
 
     #[test]
     fn test_find_or_create_partition_with_signature_no_mbr() {
         // Create device with no MBR
         let data = vec![0u8; 4096 * 1024]; // 8MB device with no MBR
-        let memory_device = MemoryDevice::<512>::from_vec(data);
-        let device = crate::create_device!(memory_device);
+        let device = MemoryDevice::<512>::from_vec(data);
 
         let result = Mbr::find_or_create_partition_with_signature(
             &device,
@@ -1221,7 +1174,7 @@ mod tests {
 
         let partition_device = result.unwrap();
         assert!(partition_device.is_valid());
-        assert_eq!(partition_device.get_start_lba(), 2048); // Standard alignment
+        assert_eq!(partition_device.get_start_lba(), Mbr::MINIMUM_START_BLOCK); // Standard alignment
 
         // Verify MBR was created with correct signature
         let mbr = Mbr::read_from_device(&device).unwrap();
@@ -1237,8 +1190,7 @@ mod tests {
         let mbr_bytes = empty_mbr.to_bytes();
         data[0..512].copy_from_slice(&mbr_bytes);
 
-        let memory_device = MemoryDevice::<512>::from_vec(data);
-        let device = crate::create_device!(memory_device);
+        let device = MemoryDevice::<512>::from_vec(data);
 
         let result = Mbr::find_or_create_partition_with_signature(
             &device,
@@ -1255,17 +1207,13 @@ mod tests {
         assert_eq!(mbr.get_disk_signature(), 0x55667788);
         let valid_partitions = mbr.get_valid_partitions();
         assert_eq!(valid_partitions.len(), 1);
-        assert_eq!(
-            valid_partitions[0].get_partition_type(),
-            PartitionKind::NtfsExfat
-        );
+        assert_eq!(valid_partitions[0].kind, PartitionKind::NtfsExfat);
     }
 
     #[test]
     fn test_format_disk_with_signature_and_partition() {
         let data = vec![0u8; 2048 * 1024]; // 4MB device
-        let memory_device = MemoryDevice::<512>::from_vec(data);
-        let device = crate::create_device!(memory_device);
+        let device = MemoryDevice::<512>::from_vec(data);
 
         let result = Mbr::format_disk_with_signature_and_partition(
             &device,
@@ -1274,9 +1222,9 @@ mod tests {
         );
         assert!(result.is_ok());
 
-        let partition_device = result.unwrap();
+        let partition_device: PartitionDevice<'_, MemoryDevice<512>> = result.unwrap();
         assert!(partition_device.is_valid());
-        assert_eq!(partition_device.get_start_lba(), 2048);
+        assert_eq!(partition_device.get_start_lba(), Mbr::MINIMUM_START_BLOCK);
 
         // Verify MBR
         let mbr = Mbr::read_from_device(&device).unwrap();
@@ -1285,19 +1233,15 @@ mod tests {
 
         let valid_partitions = mbr.get_valid_partitions();
         assert_eq!(valid_partitions.len(), 1);
-        assert_eq!(
-            valid_partitions[0].get_partition_type(),
-            PartitionKind::LinuxSwap
-        );
-        assert!(valid_partitions[0].is_bootable()); // Should be bootable by default
+        assert_eq!(valid_partitions[0].kind, PartitionKind::LinuxSwap);
+        assert!(valid_partitions[0].bootable); // Should be bootable by default
     }
 
     #[test]
     fn test_format_disk_with_signature_and_partition_device_too_small() {
         // Create very small device (less than 2048 sectors)
         let data = vec![0u8; 1024]; // 2 sectors only
-        let memory_device = MemoryDevice::<512>::from_vec(data);
-        let device = crate::create_device!(memory_device);
+        let device = MemoryDevice::<512>::from_vec(data);
 
         let result = Mbr::format_disk_with_signature_and_partition(
             &device,
@@ -1305,6 +1249,6 @@ mod tests {
             PartitionKind::Fat32Lba,
         );
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), Error::InvalidParameter);
+        assert_eq!(result.unwrap_err(), Error::DeviceTooSmall);
     }
 }

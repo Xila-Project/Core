@@ -16,6 +16,7 @@ synchronization = { workspace = true }
 log = { workspace = true }
 abi_declarations = { workspace = true }
 internationalization = { workspace = true }
+futures = { workspace = true }
 
 [dev-dependencies]
 drivers_native = { workspace = true }

@@ -1,46 +1,28 @@
-use core::{fmt::Debug, mem::forget};
-
-use alloc::{string::String, vec::Vec};
+use super::VirtualFileSystem;
+use crate::{Error, ItemStatic, Result, SynchronousFile, poll};
+use alloc::{vec, vec::Vec};
+use core::mem::forget;
 use embedded_io_async::ErrorType;
-use exported_file_system::FileIdentifier;
-use file_system::{
-    Flags, Path, Position, Result, Size, Statistics_type, Status, UniqueFileIdentifier,
-};
+use exported_file_system::{AccessFlags, ControlCommand, CreateFlags, Permissions};
+use file_system::{Context, Flags, Path, Position, Size, StateFlags, Statistics};
 use futures::block_on;
 use task::TaskIdentifier;
-
-use super::VirtualFileSystem;
+use users::{GroupIdentifier, UserIdentifier};
 
 /// File structure.
 ///
 /// This structure is used to represent a file in the virtual file system.
 /// This is a wrapper around the virtual file system file identifier.
-pub struct File<'a> {
-    file_identifier: UniqueFileIdentifier,
-    file_system: &'a VirtualFileSystem<'a>,
-    task: TaskIdentifier,
+#[derive(Debug)]
+pub struct File(SynchronousFile);
+
+impl ErrorType for File {
+    type Error = Error;
 }
 
-impl Debug for File<'_> {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        formatter
-            .debug_struct("File")
-            .field("file_identifier", &self.file_identifier)
-            .field("file_system", &(self.file_system as *const _))
-            .field("task", &self.task)
-            .finish()
-    }
-}
-
-impl ErrorType for File<'_> {
-    type Error = file_system::Error;
-}
-
-impl embedded_io_async::Write for File<'_> {
+impl embedded_io_async::Write for File {
     async fn write(&mut self, buf: &[u8]) -> core::result::Result<usize, Self::Error> {
-        File::write(self, buf)
-            .await
-            .map(|size| size.as_u64() as usize)
+        File::write(self, buf).await
     }
 
     async fn flush(&mut self) -> core::result::Result<(), Self::Error> {
@@ -48,184 +30,192 @@ impl embedded_io_async::Write for File<'_> {
     }
 }
 
-impl core::fmt::Write for File<'_> {
+impl core::fmt::Write for File {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        block_on(self.write(s.as_bytes())).map(|_| ()).map_err(|e| {
+        if let Err(e) = block_on(self.write(s.as_bytes())) {
             log::error!("Error writing string to file: {}", e);
-            core::fmt::Error
-        })
+            return Err(core::fmt::Error);
+        }
+        Ok(())
     }
 }
 
-impl<'a> File<'a> {
-    pub fn from(
-        file_identifier: UniqueFileIdentifier,
-        file_system: &'a VirtualFileSystem<'a>,
-        task: TaskIdentifier,
-    ) -> Self {
-        Self {
-            file_identifier,
-            file_system,
-            task,
-        }
+impl File {
+    pub(crate) fn new(item: ItemStatic, flags: Flags, context: Context) -> Self {
+        Self(SynchronousFile::new(item, 0, flags, context))
     }
 
-    pub async fn open(
-        file_system: &'a VirtualFileSystem<'a>,
+    pub async fn open<'a>(
+        virtual_file_system: &'a VirtualFileSystem<'a>,
+        task: task::TaskIdentifier,
         path: impl AsRef<Path>,
         flags: Flags,
     ) -> Result<Self> {
-        let task = task::get_instance().get_current_task_identifier().await;
+        let file_identifier = virtual_file_system.open(&path, flags, task).await?;
 
-        let file_identifier = file_system.open(&path, flags, task).await?;
-
-        Ok(File {
-            file_identifier,
-            file_system,
-            task,
-        })
+        Ok(file_identifier)
     }
 
-    pub async fn create_unnamed_pipe(
+    pub async fn create_unnamed_pipe<'a>(
         file_system: &'a VirtualFileSystem<'a>,
         size: usize,
-        status: Status,
-        task: TaskIdentifier,
+        status: StateFlags,
     ) -> Result<(Self, Self)> {
-        let (file_identifier_read, file_identifier_write) =
-            file_system.create_unnamed_pipe(task, status, size).await?;
-
-        Ok((
-            File {
-                file_identifier: file_identifier_read,
-                file_system,
-                task,
-            },
-            File {
-                file_identifier: file_identifier_write,
-                file_system,
-                task,
-            },
-        ))
+        file_system.create_unnamed_pipe(size, status).await
     }
 
-    // - Setters
-    pub async fn set_position(&self, position: &Position) -> Result<Size> {
-        self.file_system
-            .set_position(self.get_file_identifier(), position, self.task)
-            .await
-    }
-
-    // - Getters
-    pub const fn get_file_identifier(&self) -> UniqueFileIdentifier {
-        self.file_identifier
-    }
-
-    pub const fn get_task(&self) -> TaskIdentifier {
-        self.task
+    pub async fn set_position(&mut self, position: &Position) -> Result<Size> {
+        poll(|| self.0.set_position(position)).await
     }
 
     // - Operations
 
-    pub async fn write(&self, buffer: &[u8]) -> Result<Size> {
-        self.file_system
-            .write(self.get_file_identifier(), buffer, self.task)
-            .await
+    pub async fn write(&mut self, buffer: &[u8]) -> Result<usize> {
+        poll(|| self.0.write(buffer)).await
     }
 
-    pub async fn write_line(&self, buffer: &[u8]) -> Result<Size> {
-        let size = self.write(buffer).await? + self.write(b"\n").await?;
-        Ok(size)
-    }
+    pub async fn read_slice_from_path(
+        virtual_file_system: &VirtualFileSystem<'_>,
+        task: TaskIdentifier,
+        path: impl AsRef<Path>,
+        buffer: &mut [u8],
+    ) -> Result<()> {
+        let mut file = File::open(
+            virtual_file_system,
+            task,
+            path,
+            Flags::new(AccessFlags::Read, None, None),
+        )
+        .await?;
 
-    pub async fn read(&self, buffer: &mut [u8]) -> Result<Size> {
-        self.file_system
-            .read(self.get_file_identifier(), buffer, self.task)
-            .await
-    }
-    pub async fn read_line(&self, buffer: &mut String) -> Result<Size> {
-        self.file_system
-            .read_line(self.get_file_identifier(), self.task, buffer)
-            .await
-    }
+        file.read(buffer).await?;
 
-    pub async fn read_to_end(&self, buffer: &mut Vec<u8>) -> Result<Size> {
-        self.file_system
-            .read_to_end(self.get_file_identifier(), self.task, buffer)
-            .await
-    }
-
-    pub async fn get_statistics(&self) -> Result<Statistics_type> {
-        self.file_system
-            .get_statistics(self.get_file_identifier(), self.task)
-            .await
-    }
-
-    pub async fn flush(&self) -> Result<()> {
-        self.file_system
-            .flush(self.get_file_identifier(), self.task)
-            .await
-    }
-
-    pub async fn close(self) -> crate::Result<()> {
-        self.file_system
-            .close(self.get_file_identifier(), self.task)
-            .await?;
-
-        forget(self); // Prevent Drop from being called
+        file.close(virtual_file_system).await?;
 
         Ok(())
     }
 
-    pub async fn duplicate(&self) -> Result<Self> {
-        let file_identifier = self
-            .file_system
-            .duplicate_file_identifier(self.get_file_identifier(), self.task)
-            .await?;
+    pub async fn read_from_path(
+        virtual_file_system: &VirtualFileSystem<'_>,
+        task: TaskIdentifier,
+        path: impl AsRef<Path>,
+        buffer: &mut Vec<u8>,
+    ) -> Result<()> {
+        buffer.clear();
 
-        Ok(File {
-            file_identifier,
-            file_system: self.file_system,
-            task: self.task,
-        })
-    }
-
-    pub async fn transfer(
-        mut self,
-        new_task: TaskIdentifier,
-        new_file: Option<FileIdentifier>,
-    ) -> Result<Self> {
-        self.file_identifier = self
-            .file_system
-            .transfer(self.get_file_identifier(), self.task, new_task, new_file)
-            .await?;
-
-        self.task = new_task;
-
-        Ok(self)
-    }
-
-    pub fn into_file_identifier(self) -> UniqueFileIdentifier {
-        let file_identifier = self.get_file_identifier();
-
-        forget(self); // Prevent Drop from being called
-
-        file_identifier
-    }
-}
-
-impl From<&File<'_>> for UniqueFileIdentifier {
-    fn from(val: &File<'_>) -> Self {
-        val.get_file_identifier()
-    }
-}
-
-impl Drop for File<'_> {
-    fn drop(&mut self) {
-        block_on(
-            self.file_system
-                .close(self.get_file_identifier(), self.task),
+        let mut file = File::open(
+            virtual_file_system,
+            task,
+            path,
+            Flags::new(AccessFlags::Read, None, None),
         )
-        .unwrap();
+        .await?;
+
+        file.read_to_end(buffer, 256).await?;
+
+        file.close(virtual_file_system).await?;
+
+        Ok(())
+    }
+
+    pub async fn write_to_path(
+        virtual_file_system: &VirtualFileSystem<'_>,
+        task: task::TaskIdentifier,
+        path: impl AsRef<Path>,
+        buffer: &[u8],
+    ) -> Result<()> {
+        let mut file = File::open(
+            virtual_file_system,
+            task,
+            path,
+            Flags::new(AccessFlags::Write, Some(CreateFlags::CREATE_TRUNCATE), None),
+        )
+        .await?;
+
+        file.write(buffer).await?;
+
+        file.close(virtual_file_system).await
+    }
+
+    pub async fn write_line(&mut self, buffer: &[u8]) -> Result<usize> {
+        poll(|| self.0.write_line(buffer)).await
+    }
+
+    pub async fn display_content<W: embedded_io_async::Write>(
+        &mut self,
+        w: &mut W,
+        buffer_size: usize,
+    ) -> Result<()> {
+        let mut buffer = vec![0u8; buffer_size];
+        loop {
+            let bytes_read = self.read(&mut buffer).await?;
+
+            if bytes_read == 0 {
+                break;
+            }
+
+            w.write(&buffer[..bytes_read])
+                .await
+                .map_err(|_| Error::FailedToWrite)?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
+        poll(|| self.0.read(buffer)).await
+    }
+
+    pub async fn read_until(&mut self, buffer: &mut [u8], delimiter: &[u8]) -> Result<usize> {
+        poll(|| self.0.read_until(buffer, delimiter)).await
+    }
+
+    pub async fn read_to_end(&mut self, buffer: &mut Vec<u8>, chunk_size: usize) -> Result<usize> {
+        poll(|| self.0.read_to_end(buffer, chunk_size)).await
+    }
+
+    pub async fn flush(&mut self) -> Result<()> {
+        poll(|| self.0.flush()).await
+    }
+
+    pub async fn duplicate(&self) -> Result<Self> {
+        Ok(Self(poll(|| self.0.duplicate()).await?))
+    }
+
+    pub async fn get_statistics(&mut self) -> Result<Statistics> {
+        poll(|| self.0.get_statistics()).await
+    }
+
+    pub async fn set_owner(
+        &mut self,
+        user: Option<UserIdentifier>,
+        group: Option<GroupIdentifier>,
+    ) -> Result<()> {
+        poll(|| self.0.set_owner(user, group)).await
+    }
+
+    pub async fn set_permissions(&mut self, permissions: Permissions) -> Result<()> {
+        poll(|| self.0.set_permissions(permissions)).await
+    }
+
+    pub async fn control<A>(&mut self, command: ControlCommand, argument: &mut A) -> Result<()> {
+        poll(|| self.0.control(command, argument)).await
+    }
+
+    pub fn get_access(&self) -> Result<AccessFlags> {
+        Ok(self.0.flags.get_access())
+    }
+
+    pub async fn close(mut self, virtual_file_system: &VirtualFileSystem<'_>) -> crate::Result<()> {
+        let result = virtual_file_system
+            .close(&self.0.item, &mut self.0.context)
+            .await;
+        forget(self);
+
+        result
+    }
+
+    pub fn into_synchronous_file(self) -> SynchronousFile {
+        self.0
     }
 }

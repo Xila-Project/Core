@@ -12,8 +12,10 @@ use core::fmt::Write;
 use core::num::NonZeroUsize;
 use core::pin::Pin;
 use xila::executable::ArgumentsParser;
-use xila::executable::{Standard, implement_executable_device};
-use xila::file_system::{Mode, Path};
+use xila::executable::ExecutableTrait;
+use xila::executable::MainFuture;
+use xila::executable::Standard;
+use xila::file_system::{Kind, Path};
 use xila::synchronization::once_lock::OnceLock;
 use xila::task::{self, SpawnerIdentifier};
 use xila::virtual_file_system::{self, File};
@@ -21,7 +23,7 @@ use xila::virtual_machine;
 
 pub use error::*;
 
-pub struct WasmDevice;
+pub struct WasmExecutable;
 
 type NewThreadExecutor =
     fn() -> Pin<Box<dyn core::future::Future<Output = SpawnerIdentifier> + Send>>;
@@ -30,7 +32,7 @@ static NEW_THREAD_EXECUTOR: OnceLock<NewThreadExecutor> = OnceLock::new();
 
 const DEFAULT_STACK_SIZE: usize = 4096;
 
-impl WasmDevice {
+impl WasmExecutable {
     pub fn new(new_thread_executor: Option<NewThreadExecutor>) -> Self {
         if let Some(new_thread_executor) = new_thread_executor {
             let _ = NEW_THREAD_EXECUTOR.init(new_thread_executor);
@@ -40,11 +42,11 @@ impl WasmDevice {
     }
 }
 
-implement_executable_device!(
-    structure: WasmDevice,
-    mount_path: "/binaries/wasm",
-    main_function: main,
-);
+impl ExecutableTrait for WasmExecutable {
+    fn main(standard: Standard, arguments: Vec<String>) -> MainFuture {
+        Box::pin(async move { main(standard, arguments).await })
+    }
+}
 
 pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<(), Error> {
     let parsed_arguments = ArgumentsParser::new(&arguments);
@@ -65,11 +67,13 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
         .and_then(|arg| arg.value.map(Path::new))
         .ok_or(Error::MissingArgument("path"))?;
 
+    let task = task::get_instance().get_current_task_identifier().await;
+
     let path = if path.is_absolute() {
         path.to_owned()
     } else {
         let current_path = task::get_instance()
-            .get_environment_variable(standard.get_task(), "Current_directory")
+            .get_environment_variable(task, "Current_directory")
             .await
             .map_err(|_| Error::FailedToGetCurrentDirectory)?;
 
@@ -80,24 +84,20 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
         current_path.join(path).ok_or(Error::InvalidPath)?
     };
 
-    let file = File::open(
-        virtual_file_system::get_instance(),
-        &path,
-        Mode::READ_ONLY.into(),
-    )
-    .await
-    .map_err(|_| Error::FailedToOpenFile)?;
+    let virtual_file_system = virtual_file_system::get_instance();
 
-    let size: usize = file
-        .get_statistics()
+    let statistics = virtual_file_system
+        .get_statistics(&path)
         .await
-        .map_err(|_| Error::FailedToOpenFile)?
-        .get_size()
-        .into();
+        .map_err(|_| Error::InvalidPath)?;
 
-    let mut buffer = Vec::with_capacity(size);
+    if statistics.kind != Kind::File {
+        return Err(Error::NotAWasmFile);
+    }
 
-    file.read_to_end(&mut buffer)
+    let mut buffer = Vec::with_capacity(statistics.size as usize);
+
+    File::read_from_path(virtual_file_system, task, path, &mut buffer)
         .await
         .map_err(|_| Error::FailedToReadFile)?;
 
@@ -108,7 +108,7 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
 
         task::get_instance()
             .spawn(
-                standard.get_task(),
+                task,
                 "WASM Execution",
                 Some(spawner_identifier),
                 move |task_identifier| async move {
@@ -164,9 +164,9 @@ pub async fn main(standard: Standard, arguments: Vec<String>) -> Result<(), NonZ
     match inner_main(standard, arguments).await {
         Ok(()) => Ok(()),
         Err(error) => {
-            let _ = write!(
+            writeln!(
                 duplicated_standard.standard_error,
-                "WASM Executable Error: {}\n",
+                "WASM Executable Error: {}",
                 error
             )
             .unwrap();

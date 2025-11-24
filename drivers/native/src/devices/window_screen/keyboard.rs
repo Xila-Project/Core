@@ -1,4 +1,4 @@
-use file_system::{DeviceTrait, Size};
+use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
 use graphics::{InputData, Key, State};
 use synchronization::{
     blocking_mutex::raw::{CriticalSectionRawMutex, RawMutex},
@@ -18,8 +18,8 @@ where
     }
 }
 
-impl<const N: usize> DeviceTrait for KeyboardDevice<CriticalSectionRawMutex, N> {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<Size> {
+impl<const N: usize> DirectBaseOperations for KeyboardDevice<CriticalSectionRawMutex, N> {
+    fn read(&self, buffer: &mut [u8], _: Size) -> file_system::Result<usize> {
         // - Cast
         let data: &mut InputData = buffer
             .try_into()
@@ -32,22 +32,14 @@ impl<const N: usize> DeviceTrait for KeyboardDevice<CriticalSectionRawMutex, N> 
 
         data.set_continue(!self.0.is_empty());
 
-        Ok(size_of::<InputData>().into())
+        Ok(size_of::<InputData>())
     }
 
-    fn write(&self, _: &[u8]) -> file_system::Result<Size> {
+    fn write(&self, _: &[u8], _: Size) -> file_system::Result<usize> {
         Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn get_size(&self) -> file_system::Result<Size> {
-        Ok(size_of::<InputData>().into())
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> file_system::Result<Size> {
-        Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn flush(&self) -> file_system::Result<()> {
-        Ok(())
     }
 }
+
+impl<const N: usize> MountOperations for KeyboardDevice<CriticalSectionRawMutex, N> {}
+
+impl<const N: usize> DirectCharacterDevice for KeyboardDevice<CriticalSectionRawMutex, N> {}

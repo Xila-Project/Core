@@ -1,6 +1,6 @@
 use core::ptr::NonNull;
 
-use crate::{Capabilities, Layout};
+use crate::{CapabilityFlags, Layout};
 
 /// Trait that defines the interface for memory allocators in the Xila system.
 ///
@@ -29,7 +29,8 @@ pub trait ManagerTrait: Send + Sync {
     /// This function is unsafe because the caller must ensure that:
     /// - The returned memory is properly initialized before use
     /// - The memory is properly deallocated when no longer needed
-    unsafe fn allocate(&self, capabilities: Capabilities, layout: Layout) -> Option<NonNull<u8>>;
+    unsafe fn allocate(&self, capabilities: CapabilityFlags, layout: Layout)
+    -> Option<NonNull<u8>>;
 
     /// Deallocates memory previously allocated by this allocator.
     ///
@@ -69,32 +70,42 @@ pub trait ManagerTrait: Send + Sync {
     /// - The returned memory is properly initialized before use
     unsafe fn reallocate(
         &self,
-        pointer: Option<NonNull<u8>>,
+        old_pointer: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
     ) -> Option<NonNull<u8>> {
-        // Default implementation simply deallocates and allocates again
-        let memory = unsafe { self.allocate(Capabilities::default(), new_layout) }?;
+        // if old_layout == new_layout {
+        //     return Some(old_pointer);
+        // }
+
+        let new_pointer = unsafe { self.allocate(CapabilityFlags::None, new_layout) }?;
 
         // Copy the old data to the new memory
-        let pointer = match pointer {
-            Some(ptr) => ptr,
-            None => return Some(memory),
-        };
 
         let old_size = old_layout.size();
         let new_size = new_layout.size();
         if old_size > 0 && new_size > 0 {
-            let old_ptr = pointer.as_ptr();
-            let new_ptr = memory.as_ptr();
-            unsafe {
-                core::ptr::copy_nonoverlapping(old_ptr, new_ptr, core::cmp::min(old_size, new_size))
-            };
+            let old_ptr = old_pointer.as_ptr();
+            let new_ptr = new_pointer.as_ptr();
+            let copy_size = core::cmp::min(old_size, new_size);
+
+            // Check if memory regions overlap
+            let old_end = old_ptr.wrapping_add(old_size);
+            let new_end = new_ptr.wrapping_add(new_size);
+            let overlaps = (old_ptr < new_end) && (new_ptr < old_end);
+
+            if overlaps {
+                // Use copy for overlapping regions (handles overlap correctly)
+                unsafe { core::ptr::copy(old_ptr, new_ptr, copy_size) };
+            } else {
+                // Use copy_nonoverlapping for non-overlapping regions (faster)
+                unsafe { core::ptr::copy_nonoverlapping(old_ptr, new_ptr, copy_size) };
+            }
         }
         // Deallocate the old memory
-        unsafe { self.deallocate(pointer, old_layout) };
+        unsafe { self.deallocate(old_pointer, old_layout) };
 
-        Some(memory)
+        Some(new_pointer)
     }
 
     /// Returns the amount of memory currently used in this allocator.

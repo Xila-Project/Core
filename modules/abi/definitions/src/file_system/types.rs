@@ -1,4 +1,4 @@
-use file_system::{Kind, Position};
+use file_system::{AccessFlags, CreateFlags, Kind, Position, StateFlags};
 
 use crate::{XilaGroupIdentifier, XilaTime, XilaUserIdentifier};
 
@@ -60,30 +60,29 @@ impl From<file_system::Kind> for XilaFileKind {
 pub type XilaFileSystemMode = u8;
 
 #[unsafe(no_mangle)]
-pub static XILA_FILE_SYSTEM_MODE_READ_MASK: u8 = file_system::Mode::READ_BIT;
+pub static XILA_FILE_SYSTEM_MODE_READ_MASK: u8 = AccessFlags::Read.bits();
 #[unsafe(no_mangle)]
-pub static XILA_FILE_SYSTEM_MODE_WRITE_MASK: u8 = file_system::Mode::WRITE_BIT;
+pub static XILA_FILE_SYSTEM_MODE_WRITE_MASK: u8 = AccessFlags::Write.bits();
 
 pub type XilaFileSystemOpen = u8;
 
 #[unsafe(no_mangle)]
-pub static XILA_FILE_SYSTEM_OPEN_CREATE_MASK: u8 = file_system::Open::CREATE_MASK;
+pub static XILA_FILE_SYSTEM_OPEN_CREATE_MASK: u8 = CreateFlags::Create.bits();
 #[unsafe(no_mangle)]
-pub static XILA_FILE_SYSTEM_OPEN_CREATE_ONLY_MASK: u8 = file_system::Open::EXCLUSIVE_MASK;
+pub static XILA_FILE_SYSTEM_OPEN_CREATE_ONLY_MASK: u8 = CreateFlags::Exclusive.bits();
 #[unsafe(no_mangle)]
-pub static XILA_FILE_SYSTEM_OPEN_TRUNCATE_MASK: u8 = file_system::Open::TRUNCATE_MASK;
-
+pub static XILA_FILE_SYSTEM_OPEN_TRUNCATE_MASK: u8 = CreateFlags::Truncate.bits();
 pub type XilaFileSystemStatus = u8;
 
 #[unsafe(no_mangle)]
-pub static XILA_FILE_SYSTEM_STATUS_APPEND_MASK: u8 = file_system::Status::APPEND_BIT;
+pub static XILA_FILE_SYSTEM_STATUS_APPEND_MASK: u8 = StateFlags::Append.bits();
 #[unsafe(no_mangle)]
-pub static XILA_FILE_SYSTEM_STATUS_NON_BLOCKING_MASK: u8 = file_system::Status::NON_BLOCKING_BIT;
+pub static XILA_FILE_SYSTEM_STATUS_NON_BLOCKING_MASK: u8 = StateFlags::NonBlocking.bits();
 #[unsafe(no_mangle)]
-pub static XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_MASK: u8 = file_system::Status::SYNCHRONOUS_BIT;
+pub static XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_MASK: u8 = StateFlags::Synchronous.bits();
 #[unsafe(no_mangle)]
 pub static XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_DATA_ONLY_MASK: u8 =
-    file_system::Status::SYNCHRONOUS_DATA_ONLY_BIT;
+    StateFlags::SynchronousDataOnly.bits();
 
 pub type XilaFileSystemInode = u64;
 
@@ -97,35 +96,41 @@ pub struct XilaFileSystemStatistics {
     inode: XilaFileSystemInode,
     links: u64,
     size: XilaFileSystemSize,
-    last_access: XilaTime,
-    last_modification: XilaTime,
-    last_status_change: XilaTime,
-    r#type: XilaFileKind,
+    creation: XilaTime,
+    access: XilaTime,
+    modification: XilaTime,
+    status: XilaTime,
+    kind: XilaFileKind,
     permissions: Permissions,
     user: XilaUserIdentifier,
     group: XilaGroupIdentifier,
 }
 
 impl XilaFileSystemStatistics {
-    pub fn from_statistics(statistics: file_system::Statistics_type) -> Self {
+    pub fn from_statistics(statistics: file_system::Statistics) -> Self {
         Self {
-            file_system: statistics.get_file_system().as_inner() as XilaFileSystemIdentifier,
-            inode: statistics.get_inode().as_u64(),
-            links: statistics.get_links(),
-            size: statistics.get_size().as_u64(),
-            last_access: statistics.get_last_access().as_u64(),
-            last_modification: statistics.get_last_modification().as_u64(),
-            last_status_change: statistics.get_last_status_change().as_u64(),
-            r#type: statistics.get_type().into(),
-            permissions: statistics.get_permissions().as_u16(),
-            user: statistics.get_user().as_u16(),
-            group: statistics.get_group().as_u16(),
+            file_system: 0,
+            inode: statistics.inode,
+            links: statistics.links,
+            size: statistics.size,
+            creation: statistics.creation.as_u64(),
+            access: statistics.access.as_u64(),
+            modification: statistics.modification.as_u64(),
+            status: statistics.status.as_u64(),
+            kind: statistics.kind.into(),
+            permissions: statistics.permissions.as_u16(),
+            user: statistics.user.as_u16(),
+            group: statistics.user.as_u16(),
         }
     }
 
-    pub fn from_mutable_pointer(
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences a raw pointer.
+    /// The caller must ensure that the pointer is valid and properly aligned.
+    pub unsafe fn from_mutable_pointer<'a>(
         pointer: *mut XilaFileSystemStatistics,
-    ) -> Option<*mut XilaFileSystemStatistics> {
+    ) -> Option<&'a mut XilaFileSystemStatistics> {
         if pointer.is_null() {
             return None;
         }
@@ -134,11 +139,12 @@ impl XilaFileSystemStatistics {
             return None;
         }
 
-        Some(pointer)
+        Some(unsafe { &mut *pointer })
     }
 }
 
-pub type XilaUniqueFileIdentifier = usize;
+pub type XilaFileIdentifier = u16;
+
 pub type XilaFileSystemSize = u64;
 
 pub type XilaFileSystemResult = u32;

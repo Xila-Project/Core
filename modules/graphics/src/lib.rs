@@ -10,6 +10,7 @@ mod error;
 mod event;
 mod input;
 mod logo;
+pub mod macros;
 mod manager;
 mod point;
 mod screen;

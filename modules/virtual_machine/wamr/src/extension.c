@@ -1276,13 +1276,13 @@ int os_dumps_proc_mem_info(char *out, unsigned int size)
  */
 os_file_handle os_get_invalid_handle()
 {
-    return 0xFFFFFFFFFFFFFFFF;
+    return 0;
 }
 
 os_raw_file_handle
 os_invalid_raw_handle()
 {
-    return 0xFFFFFFFFFFFFFFFF;
+    return 0;
 }
 
 
@@ -1347,7 +1347,7 @@ os_fstatat(os_file_handle handle, const char *path,
 
     XilaFileSystemStatistics file_system_statistics;
 
-    XilaFileSystemResult file_system_result = xila_file_system_get_statistics_from_path(path, &file_system_statistics, follow_symlink);
+    XilaFileSystemResult file_system_result = xila_file_system_get_statistics_from_path_at(handle, path, &file_system_statistics, follow_symlink);
 
     return into_wasi_error(file_system_result);
 }
@@ -1715,18 +1715,7 @@ os_symlinkat(const char *old_path, os_file_handle handle, const char *new_path)
 __wasi_errno_t
 os_mkdirat(os_file_handle handle, const char *path)
 {
-    if (path[0] != '/')
-    {
-        size_t path_size = strlen(path) + 2;
-        char new_path[strlen(path) + 2];
-
-        new_path[0] = '/';
-        strncpy(new_path + 1, path, path_size);
-
-        return into_wasi_error(xila_file_system_create_directory(new_path));
-    }
-
-    return into_wasi_error(xila_file_system_create_directory(path));
+    return into_wasi_error(xila_file_system_create_directory_at(handle, path));
 }
 
 /**
@@ -1961,7 +1950,7 @@ os_closedir(os_dir_stream dir_stream)
  */
 os_dir_stream os_get_invalid_dir_stream()
 {
-    return 0xFFFFFFFFFFFFFFFF;
+    return 0;
 }
 
 /**

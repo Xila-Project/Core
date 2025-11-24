@@ -5,32 +5,34 @@ use core::{
     num::NonZeroU32,
     ptr::copy_nonoverlapping,
 };
-
+use file_system::{AccessFlags, CreateFlags, Flags, StateFlags, character_device};
 use futures::block_on;
-
-use file_system::{Error, FileIdentifier, Flags, Mode, Open, Status};
-use virtual_file_system::get_instance as get_file_system_instance;
+use virtual_file_system::{
+    Error, SynchronousDirectory, SynchronousFile, get_instance as get_file_system_instance,
+};
 
 use crate::{XilaTime, file_system::into_position};
 
 use super::{
-    XilaFileSystemMode, XilaFileSystemOpen, XilaFileSystemResult, XilaFileSystemSize,
-    XilaFileSystemStatistics, XilaFileSystemStatus, XilaFileSystemWhence, XilaUniqueFileIdentifier,
+    XilaFileIdentifier, XilaFileSystemMode, XilaFileSystemOpen, XilaFileSystemResult,
+    XilaFileSystemSize, XilaFileSystemStatistics, XilaFileSystemStatus, XilaFileSystemWhence,
 };
 
-use abi_context as context;
+use abi_context::{self as context, FileIdentifier};
 
 /// This function is used to convert a function returning a Result into a u32.
 pub fn into_u32<F>(function: F) -> XilaFileSystemResult
 where
-    F: FnOnce() -> Result<(), NonZeroU32>,
+    F: FnOnce() -> Result<(), virtual_file_system::Error>,
 {
     match function() {
         Ok(()) => 0,
         Err(error) => {
-            log::error!("File system error: {:?}", error); // Debug: Logging error
+            let non_zero: NonZeroU32 = error.into();
 
-            error.get()
+            log::error!("File system error: {:?} ({})", error, non_zero);
+
+            non_zero.get()
         }
     }
 }
@@ -46,22 +48,36 @@ where
 /// This function may return an error if the file system fails to open the file.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_get_statistics(
-    file: XilaUniqueFileIdentifier,
+    file: XilaFileIdentifier,
     statistics: *mut XilaFileSystemStatistics,
 ) -> XilaFileSystemResult {
     unsafe {
         into_u32(move || {
-            let task_identifier = context::get_instance().get_current_task_identifier();
-
             let statistics = XilaFileSystemStatistics::from_mutable_pointer(statistics)
                 .ok_or(Error::InvalidParameter)?;
 
-            let file = file_system::UniqueFileIdentifier::from_raw(file);
+            let context = context::get_instance();
 
-            *statistics = XilaFileSystemStatistics::from_statistics(
-                block_on(get_file_system_instance().get_statistics(file, task_identifier))
-                    .expect("Failed to get file statistics."),
-            );
+            let s = if let Some(result) = context.perform_operation_on_directory(
+                file.try_into()?,
+                SynchronousDirectory::get_statistics,
+            ) {
+                result.inspect_err(|&e| {
+                    log::error!(
+                        "Performing operation on directory to get statistics: {:?}",
+                        e
+                    );
+                })?
+            } else {
+                context
+                    .perform_operation_on_file(file.try_into()?, SynchronousFile::get_statistics)
+                    .ok_or(Error::InvalidParameter)
+                    .inspect_err(|&e| {
+                        log::error!("Performing operation on file to get statistics: {:?}", e);
+                    })??
+            };
+
+            *statistics = XilaFileSystemStatistics::from_statistics(s);
 
             Ok(())
         })
@@ -74,7 +90,8 @@ pub unsafe extern "C" fn xila_file_system_get_statistics(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn xila_file_system_get_statistics_from_path(
+pub unsafe extern "C" fn xila_file_system_get_statistics_from_path_at(
+    directory: XilaFileIdentifier,
     path: *const c_char,
     statistics: *mut XilaFileSystemStatistics,
     _: bool,
@@ -85,11 +102,19 @@ pub unsafe extern "C" fn xila_file_system_get_statistics_from_path(
                 .to_str()
                 .map_err(|_| Error::InvalidParameter)?;
 
+            let context = context::get_instance();
+
+            let task = context.get_current_task_identifier();
+
+            let path = context::get_instance()
+                .resolve_path(task, directory.try_into()?, path)
+                .ok_or(Error::InvalidParameter)?;
+
             let statistics = XilaFileSystemStatistics::from_mutable_pointer(statistics)
                 .ok_or(Error::InvalidParameter)?;
 
             *statistics = XilaFileSystemStatistics::from_statistics(block_on(
-                get_file_system_instance().get_statistics_from_path(&path),
+                get_file_system_instance().get_statistics(&path),
             )?);
 
             Ok(())
@@ -108,24 +133,26 @@ pub unsafe extern "C" fn xila_file_system_get_statistics_from_path(
 /// This function may return an error if the file system fails to get the access mode of the file.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_get_access_mode(
-    file: XilaUniqueFileIdentifier,
+    file: XilaFileIdentifier,
     mode: *mut XilaFileSystemMode,
 ) -> XilaFileSystemResult {
     unsafe {
         // Debug: Getting file access mode
 
         into_u32(move || {
-            let task_identifier = context::get_instance().get_current_task_identifier();
-
             if mode.is_null() {
                 Err(Error::InvalidParameter)?;
             }
 
-            let file = file_system::UniqueFileIdentifier::from_raw(file);
+            let m = context::get_instance()
+                .perform_operation_on_file_or_directory(
+                    file.try_into()?,
+                    |f| SynchronousFile::get_access(f),
+                    |d| SynchronousDirectory::get_access(d),
+                )
+                .ok_or(Error::InvalidIdentifier)??;
 
-            mode.write(
-                block_on(get_file_system_instance().get_mode(file, task_identifier))?.as_u8(),
-            );
+            mode.write(m.bits());
 
             Ok(())
         })
@@ -139,13 +166,18 @@ pub unsafe extern "C" fn xila_file_system_get_access_mode(
 /// This function may return an error if the file system fails to close the file.
 ///
 #[unsafe(no_mangle)]
-pub extern "C" fn xila_file_system_close(file: XilaUniqueFileIdentifier) -> XilaFileSystemResult {
+pub extern "C" fn xila_file_system_close(file: XilaFileIdentifier) -> XilaFileSystemResult {
     into_u32(move || {
-        let task_identifier = context::get_instance().get_current_task_identifier();
+        let file: FileIdentifier = file.try_into()?;
 
-        let file = file_system::UniqueFileIdentifier::from_raw(file);
-
-        block_on(get_file_system_instance().close(file, task_identifier))?;
+        if !file.is_directory() {
+            context::get_instance()
+                .remove_file(file)
+                .ok_or(Error::InvalidIdentifier)?
+                .close(get_file_system_instance())?;
+        } else {
+            log::warning!("Attempted to close a directory with identifier: {:?}", file);
+        }
 
         Ok(())
     })
@@ -164,7 +196,7 @@ pub extern "C" fn xila_file_system_close(file: XilaUniqueFileIdentifier) -> Xila
 /// # Example
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_write_vectored(
-    file: XilaUniqueFileIdentifier,
+    file: XilaFileIdentifier,
     buffers: *const *const u8,
     buffers_length: *const usize,
     buffer_count: usize,
@@ -172,27 +204,25 @@ pub unsafe extern "C" fn xila_file_system_write_vectored(
 ) -> XilaFileSystemResult {
     unsafe {
         into_u32(move || {
-            let task_identifier = context::get_instance().get_current_task_identifier();
-
             let buffers = core::slice::from_raw_parts(buffers, buffer_count);
             let buffers_length = core::slice::from_raw_parts(buffers_length, buffer_count);
 
-            let mut current_written = 0;
+            let size = context::get_instance()
+                .perform_operation_on_file(file.try_into()?, |file| {
+                    let mut current_written = 0;
 
-            let file = file_system::UniqueFileIdentifier::from_raw(file);
+                    for (buffer, length) in buffers.iter().zip(buffers_length.iter()) {
+                        let buffer_slice = core::slice::from_raw_parts(*buffer, *length);
 
-            for (buffer, length) in buffers.iter().zip(buffers_length.iter()) {
-                let buffer_slice = core::slice::from_raw_parts(*buffer, *length);
+                        current_written += file.write(buffer_slice)?;
+                    }
 
-                current_written += usize::from(block_on(get_file_system_instance().write(
-                    file,
-                    buffer_slice,
-                    task_identifier,
-                ))?);
-            }
+                    Ok::<_, virtual_file_system::Error>(current_written)
+                })
+                .ok_or(Error::InvalidIdentifier)??;
 
             if !written.is_null() {
-                *written = current_written;
+                *written = size;
             }
 
             Ok(())
@@ -211,7 +241,7 @@ pub unsafe extern "C" fn xila_file_system_write_vectored(
 /// This function may return an error if the file system fails to open the file.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_read_vectored(
-    file: XilaUniqueFileIdentifier,
+    file: XilaFileIdentifier,
     buffers: *mut *mut u8,
     buffers_length: *mut usize,
     buffer_count: usize,
@@ -219,24 +249,27 @@ pub unsafe extern "C" fn xila_file_system_read_vectored(
 ) -> XilaFileSystemResult {
     unsafe {
         into_u32(move || {
-            let task_identifier = context::get_instance().get_current_task_identifier();
-
             let buffers = core::slice::from_raw_parts_mut(buffers, buffer_count);
             let buffers_length = core::slice::from_raw_parts_mut(buffers_length, buffer_count);
 
-            let mut current_read = 0;
+            let current_read = context::get_instance()
+                .perform_operation_on_file(file.try_into()?, |file| {
+                    let mut current_read = 0;
 
-            let file = file_system::UniqueFileIdentifier::from_raw(file);
+                    for (buffer_pointer, buffer_length) in
+                        buffers.iter_mut().zip(buffers_length.iter_mut())
+                    {
+                        let buffer =
+                            core::slice::from_raw_parts_mut(*buffer_pointer, *buffer_length);
 
-            for (buffer_pointer, buffer_length) in buffers.iter_mut().zip(buffers_length.iter_mut())
-            {
-                let buffer = core::slice::from_raw_parts_mut(*buffer_pointer, *buffer_length);
+                        let read_count = file.read(buffer)?;
 
-                let read =
-                    block_on(get_file_system_instance().read(file, buffer, task_identifier))?;
+                        current_read += read_count;
+                    }
 
-                current_read += usize::from(read);
-            }
+                    Ok::<_, virtual_file_system::Error>(current_read)
+                })
+                .ok_or(Error::InvalidIdentifier)??;
 
             if !read.is_null() {
                 *read = current_read;
@@ -254,7 +287,7 @@ pub unsafe extern "C" fn xila_file_system_read_vectored(
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_read_at_position_vectored(
-    file: XilaUniqueFileIdentifier,
+    file: XilaFileIdentifier,
     buffers: *mut *mut u8,
     buffers_length: *mut usize,
     buffer_count: usize,
@@ -263,31 +296,29 @@ pub unsafe extern "C" fn xila_file_system_read_at_position_vectored(
 ) -> XilaFileSystemResult {
     unsafe {
         into_u32(move || {
-            let task_identifier = context::get_instance().get_current_task_identifier();
-
             let buffers = core::slice::from_raw_parts_mut(buffers, buffer_count);
             let buffers_length = core::slice::from_raw_parts_mut(buffers_length, buffer_count);
 
-            let mut current_read = 0;
+            let current_read = context::get_instance()
+                .perform_operation_on_file(file.try_into()?, |file| {
+                    file.set_position(&file_system::Position::Start(position))?;
 
-            let file: file_system::UniqueFileIdentifier =
-                file_system::UniqueFileIdentifier::from_raw(file);
+                    let mut current_read = 0;
 
-            block_on(get_file_system_instance().set_position(
-                file,
-                &file_system::Position::Start(position),
-                task_identifier,
-            ))?;
+                    for (buffer_pointer, buffer_length) in
+                        buffers.iter_mut().zip(buffers_length.iter_mut())
+                    {
+                        let buffer =
+                            core::slice::from_raw_parts_mut(*buffer_pointer, *buffer_length);
 
-            for (buffer_pointer, buffer_length) in buffers.iter_mut().zip(buffers_length.iter_mut())
-            {
-                let buffer = core::slice::from_raw_parts_mut(*buffer_pointer, *buffer_length);
+                        let read_count = file.read(buffer)?;
 
-                let read =
-                    block_on(get_file_system_instance().read(file, buffer, task_identifier))?;
+                        current_read += read_count;
+                    }
 
-                current_read += usize::from(read);
-            }
+                    Ok::<_, virtual_file_system::Error>(current_read)
+                })
+                .ok_or(Error::InvalidIdentifier)??;
 
             if !read.is_null() {
                 *read = current_read;
@@ -305,7 +336,7 @@ pub unsafe extern "C" fn xila_file_system_read_at_position_vectored(
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_write_at_position_vectored(
-    file: XilaUniqueFileIdentifier,
+    file: XilaFileIdentifier,
     buffers: *const *const u8,
     buffers_length: *const usize,
     buffer_count: usize,
@@ -314,31 +345,24 @@ pub unsafe extern "C" fn xila_file_system_write_at_position_vectored(
 ) -> XilaFileSystemResult {
     unsafe {
         into_u32(move || {
-            let task_identifier = context::get_instance().get_current_task_identifier();
-
             let buffers = core::slice::from_raw_parts(buffers, buffer_count);
             let buffers_length = core::slice::from_raw_parts(buffers_length, buffer_count);
 
-            let mut current_written = 0;
+            let current_written = context::get_instance()
+                .perform_operation_on_file(file.try_into()?, |file| {
+                    file.set_position(&file_system::Position::Start(position))?;
 
-            let file: file_system::UniqueFileIdentifier =
-                file_system::UniqueFileIdentifier::from_raw(file);
+                    let mut current_written = 0;
 
-            block_on(get_file_system_instance().set_position(
-                file,
-                &file_system::Position::Start(position),
-                task_identifier,
-            ))?;
+                    for (buffer, length) in buffers.iter().zip(buffers_length.iter()) {
+                        let buffer_slice = core::slice::from_raw_parts(*buffer, *length);
 
-            for (buffer, length) in buffers.iter().zip(buffers_length.iter()) {
-                let buffer_slice = core::slice::from_raw_parts(*buffer, *length);
+                        current_written += file.write(buffer_slice)?;
+                    }
 
-                current_written += usize::from(block_on(get_file_system_instance().write(
-                    file,
-                    buffer_slice,
-                    task_identifier,
-                ))?);
-            }
+                    Ok::<_, virtual_file_system::Error>(current_written)
+                })
+                .ok_or(Error::InvalidIdentifier)??;
 
             if !written.is_null() {
                 *written = current_written;
@@ -360,58 +384,52 @@ pub unsafe extern "C" fn xila_file_system_write_at_position_vectored(
 /// This function may return an error if the file system fails to open the file.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_is_a_terminal(
-    file: XilaUniqueFileIdentifier,
+    file: XilaFileIdentifier,
     is_a_terminal: *mut bool,
 ) -> XilaFileSystemResult {
-    unsafe {
-        into_u32(move || {
-            let task_identifier = context::get_instance().get_current_task_identifier();
+    into_u32(move || {
+        if is_a_terminal.is_null() {
+            Err(Error::InvalidParameter)?;
+        }
 
-            if is_a_terminal.is_null() {
-                Err(Error::InvalidParameter)?;
-            }
+        let is_a_terminal = unsafe { &mut *is_a_terminal };
 
-            let file = file_system::UniqueFileIdentifier::from_raw(file);
+        context::get_instance()
+            .perform_operation_on_file(file.try_into()?, |file| {
+                file.control(character_device::IS_A_TERMINAL, is_a_terminal)
+            })
+            .ok_or(Error::InvalidIdentifier)??;
 
-            *is_a_terminal =
-                block_on(get_file_system_instance().is_a_terminal(file, task_identifier))?;
+        Ok(())
+    })
+}
 
-            Ok(())
-        })
+#[unsafe(no_mangle)]
+pub extern "C" fn xila_file_system_is_stdin(file: XilaFileIdentifier) -> bool {
+    if let Ok(file) = file.try_into() {
+        // Debug: Checking if file is stdin
+        FileIdentifier::STANDARD_IN == file
+    } else {
+        false
     }
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn xila_file_system_is_stdin(file: XilaUniqueFileIdentifier) -> bool {
-    let file = file_system::UniqueFileIdentifier::from_raw(file);
-
-    let (_, file) = file.split();
-
-    // Debug: Checking if file is stdin
-
-    file == FileIdentifier::STANDARD_IN
+pub extern "C" fn xila_file_system_is_stderr(file: XilaFileIdentifier) -> bool {
+    if let Ok(file) = file.try_into() {
+        FileIdentifier::STANDARD_ERROR == file
+    } else {
+        false
+    }
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn xila_file_system_is_stderr(file: XilaUniqueFileIdentifier) -> bool {
-    let file = file_system::UniqueFileIdentifier::from_raw(file);
-
-    let (_, file) = file.split();
-
-    // Debug: Checking if file is stderr
-
-    file == FileIdentifier::STANDARD_ERROR
-}
-
-#[unsafe(no_mangle)]
-pub extern "C" fn xila_file_system_is_stdout(file: XilaUniqueFileIdentifier) -> bool {
-    let file = file_system::UniqueFileIdentifier::from_raw(file);
-
-    let (_, file) = file.split();
-
-    // Debug: Checking if file is stdout
-
-    file == FileIdentifier::STANDARD_OUT
+pub extern "C" fn xila_file_system_is_stdout(file: XilaFileIdentifier) -> bool {
+    if let Ok(file) = file.try_into() {
+        FileIdentifier::STANDARD_OUT == file
+    } else {
+        false
+    }
 }
 
 /// This function is used to open a file.
@@ -425,7 +443,7 @@ pub unsafe extern "C" fn xila_file_system_open(
     mode: XilaFileSystemMode,
     open: XilaFileSystemOpen,
     status: XilaFileSystemStatus,
-    file: *mut XilaUniqueFileIdentifier,
+    file: *mut XilaFileIdentifier,
 ) -> XilaFileSystemResult {
     unsafe {
         into_u32(move || {
@@ -433,9 +451,9 @@ pub unsafe extern "C" fn xila_file_system_open(
                 .to_str()
                 .map_err(|_| Error::InvalidParameter)?;
 
-            let mode = Mode::from_u8(mode);
-            let open = Open::from_u8(open);
-            let status = Status::from_u8(status);
+            let mode = AccessFlags::from_bits_truncate(mode);
+            let open = CreateFlags::from_bits_truncate(open);
+            let status = StateFlags::from_bits_truncate(status);
 
             let flags = Flags::new(mode, Some(open), Some(status));
 
@@ -443,9 +461,12 @@ pub unsafe extern "C" fn xila_file_system_open(
 
             let task = context::get_instance().get_current_task_identifier();
 
-            *file = block_on(get_file_system_instance().open(&path, flags, task))
-                .expect("Failed to open file")
-                .into_inner();
+            let f = SynchronousFile::open(get_file_system_instance(), task, path, flags)?;
+
+            *file = context::get_instance()
+                .insert_file(task, f, None)
+                .ok_or(Error::InvalidIdentifier)?
+                .into();
 
             Ok(())
         })
@@ -454,7 +475,7 @@ pub unsafe extern "C" fn xila_file_system_open(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_set_flags(
-    _file: XilaUniqueFileIdentifier,
+    _file: XilaFileIdentifier,
     _status: XilaFileSystemStatus,
 ) -> XilaFileSystemResult {
     todo!()
@@ -467,7 +488,7 @@ pub extern "C" fn xila_file_system_set_flags(
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_get_flags(
-    _file: XilaUniqueFileIdentifier,
+    _file: XilaFileIdentifier,
     _status: *mut XilaFileSystemStatus,
 ) -> XilaFileSystemResult {
     todo!()
@@ -506,15 +527,13 @@ pub unsafe extern "C" fn xila_file_system_resolve_path(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_flush(
-    file: XilaUniqueFileIdentifier,
+    file: XilaFileIdentifier,
     _: bool,
 ) -> XilaFileSystemResult {
     into_u32(move || {
-        let task = context::get_instance().get_current_task_identifier();
-
-        let file = file_system::UniqueFileIdentifier::from_raw(file);
-
-        block_on(get_file_system_instance().flush(file, task))?;
+        context::get_instance()
+            .perform_operation_on_file(file.try_into()?, |file| file.flush())
+            .ok_or(Error::InvalidIdentifier)??;
 
         Ok(())
     })
@@ -522,7 +541,7 @@ pub extern "C" fn xila_file_system_flush(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_create_symbolic_link_at(
-    _: XilaUniqueFileIdentifier,
+    _: XilaFileIdentifier,
     _: *const c_char,
     _: *const c_char,
 ) -> XilaFileSystemResult {
@@ -531,7 +550,7 @@ pub extern "C" fn xila_file_system_create_symbolic_link_at(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_read_link_at(
-    _directory: XilaUniqueFileIdentifier,
+    _directory: XilaFileIdentifier,
     _path: *mut i8,
     _size: usize,
     _used: *mut usize,
@@ -546,23 +565,24 @@ pub extern "C" fn xila_file_system_read_link_at(
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_file_system_set_position(
-    file: XilaUniqueFileIdentifier,
+    file: XilaFileIdentifier,
     offset: i64,
     whence: XilaFileSystemWhence,
     position: *mut XilaFileSystemSize,
 ) -> XilaFileSystemResult {
     unsafe {
         into_u32(move || {
-            let task = context::get_instance().get_current_task_identifier();
             let current_position = into_position(whence, offset);
 
             // Debug: Setting position
 
-            let file = file_system::UniqueFileIdentifier::from_raw(file);
+            let result = context::get_instance()
+                .perform_operation_on_file(file.try_into()?, |file| {
+                    file.set_position(&current_position)
+                })
+                .ok_or(Error::InvalidIdentifier)??;
 
-            *position =
-                block_on(get_file_system_instance().set_position(file, &current_position, task))?
-                    .as_u64();
+            *position = result;
 
             Ok(())
         })
@@ -575,7 +595,8 @@ pub unsafe extern "C" fn xila_file_system_set_position(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn xila_file_system_create_directory(
+pub unsafe extern "C" fn xila_file_system_create_directory_at(
+    directory: XilaFileIdentifier,
     path: *const c_char,
 ) -> XilaFileSystemResult {
     unsafe {
@@ -584,10 +605,16 @@ pub unsafe extern "C" fn xila_file_system_create_directory(
                 .to_str()
                 .map_err(|_| Error::InvalidParameter)?;
 
-            // Debug: Creating directory
+            let context = context::get_instance();
+
+            let task = context.get_current_task_identifier();
+
+            let path = context
+                .resolve_path(task, directory.try_into()?, path)
+                .ok_or(Error::InvalidParameter)?;
 
             let task = context::get_instance().get_current_task_identifier();
-            block_on(get_file_system_instance().create_directory(&path, task))?;
+            block_on(get_file_system_instance().create_directory(task, &path))?;
 
             Ok(())
         })
@@ -625,7 +652,7 @@ pub unsafe extern "C" fn xila_file_system_rename(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_set_times(
-    _: XilaUniqueFileIdentifier,
+    _: XilaFileIdentifier,
     _: XilaTime,
     _: XilaTime,
     _: u8,
@@ -662,7 +689,9 @@ pub unsafe extern "C" fn xila_file_system_remove(_path: *const c_char) -> XilaFi
                 .to_str()
                 .map_err(|_| Error::InvalidParameter)?;
 
-            block_on(get_file_system_instance().remove(path))?;
+            let task = context::get_instance().get_current_task_identifier();
+
+            block_on(get_file_system_instance().remove(task, path))?;
 
             Ok(())
         })
@@ -672,13 +701,13 @@ pub unsafe extern "C" fn xila_file_system_remove(_path: *const c_char) -> XilaFi
 /// This function is used to truncate a file.
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_truncate(
-    _file: XilaUniqueFileIdentifier,
+    _file: XilaFileIdentifier,
     _length: XilaFileSystemSize,
 ) -> XilaFileSystemResult {
     into_u32(move || {
         let _task = context::get_instance().get_current_task_identifier();
 
-        let _file = file_system::UniqueFileIdentifier::from_raw(_file);
+        let _file: FileIdentifier = _file.try_into()?;
 
         todo!();
     })
@@ -700,7 +729,7 @@ pub unsafe extern "C" fn xila_file_system_link(
 /// This function is used to advice the file system about the access pattern of a file.
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_advise(
-    _file: XilaUniqueFileIdentifier,
+    _file: XilaFileIdentifier,
     _offset: XilaFileSystemSize,
     _length: XilaFileSystemSize,
     _advice: u8,
@@ -710,7 +739,7 @@ pub extern "C" fn xila_file_system_advise(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_allocate(
-    _file: XilaUniqueFileIdentifier,
+    _file: XilaFileIdentifier,
     _offset: XilaFileSystemSize,
     _length: XilaFileSystemSize,
 ) -> XilaFileSystemResult {

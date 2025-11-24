@@ -12,17 +12,16 @@ use alloc::{
     vec,
     vec::Vec,
 };
-use xila::executable::Standard;
 use xila::file_system::Kind;
-use xila::futures::block_on;
 use xila::graphics::{self, Color, EventKind, Logo, Point, Window, lvgl};
-use xila::log::error;
+use xila::log::{self, error};
 use xila::task;
 use xila::virtual_file_system::{self, Directory};
 use xila::{
     executable,
     graphics::theme::{self, get_border_color_primary},
 };
+use xila::{executable::Standard, graphics::Event};
 
 pub const WINDOWS_PARENT_CHILD_CHANGED: graphics::EventKind = graphics::EventKind::Custom2;
 
@@ -63,16 +62,6 @@ unsafe extern "C" fn event_handler(event: *mut lvgl::lv_event_t) {
     }
 }
 
-impl Drop for Desk {
-    fn drop(&mut self) {
-        unsafe {
-            let _lock = block_on(graphics::get_instance().lock());
-
-            lvgl::lv_obj_delete(self.dock);
-        }
-    }
-}
-
 impl Desk {
     const DOCK_ICON_SIZE: Point = Point::new(32, 32);
     const DRAWER_ICON_SIZE: Point = Point::new(48, 48);
@@ -88,144 +77,153 @@ impl Desk {
     }
 
     pub async fn new(windows_parent: *mut lvgl::lv_obj_t) -> Result<Self> {
-        let graphics = graphics::get_instance();
+        let desk = graphics::lock!({
+            let graphics = graphics::get_instance();
+            // - Create a window
+            let mut window = graphics.create_window().await?;
 
-        // - Lock the graphics
-        let _lock = graphics.lock().await; // Lock the graphics
+            window.set_icon("De", Color::BLACK);
 
-        // - Create a window
-        let mut window = graphics.create_window().await?;
+            unsafe {
+                lvgl::lv_obj_set_style_pad_all(window.get_object(), 0, lvgl::LV_STATE_DEFAULT);
 
-        window.set_icon("De", Color::BLACK);
-
-        unsafe {
-            lvgl::lv_obj_set_style_pad_all(window.get_object(), 0, lvgl::LV_STATE_DEFAULT);
-
-            lvgl::lv_obj_add_event_cb(
-                windows_parent,
-                Some(event_handler),
-                EventKind::All as u32,
-                window.get_object() as *mut core::ffi::c_void,
-            );
-        }
-
-        // - Create the logo
-        unsafe {
-            // Create the logo in the background of the window
-            let logo = Logo::new(window.get_object(), 4, Color::BLACK)?;
-            let logo_inner_object = logo.get_inner_object();
-            forget(logo); // Prevent the logo from being dropped
-
-            lvgl::lv_obj_set_align(logo_inner_object, lvgl::lv_align_t_LV_ALIGN_CENTER);
-            lvgl::lv_obj_add_flag(
-                logo_inner_object,
-                lvgl::lv_obj_flag_t_LV_OBJ_FLAG_OVERFLOW_VISIBLE,
-            );
-
-            // Set shadow color according to BG color
-            for i in 0..4 {
-                let part = lvgl::lv_obj_get_child(logo_inner_object, i);
-
-                lvgl::lv_obj_set_style_bg_opa(part, lvgl::LV_OPA_0 as u8, lvgl::LV_STATE_DEFAULT);
-
-                lvgl::lv_obj_set_style_border_width(part, 2, lvgl::LV_STATE_DEFAULT);
-                lvgl::lv_obj_set_style_border_color(
-                    part,
-                    get_border_color_primary().into_lvgl_color(),
-                    lvgl::LV_STATE_DEFAULT,
+                lvgl::lv_obj_add_event_cb(
+                    windows_parent,
+                    Some(event_handler),
+                    EventKind::All as u32,
+                    window.get_object() as *mut core::ffi::c_void,
                 );
             }
-        }
 
-        // - Create a tile view
-        let tile_view = unsafe {
-            let tile_view = lvgl::lv_tileview_create(window.get_object());
+            // - Create the logo
+            unsafe {
+                // Create the logo in the background of the window
+                let logo = Logo::new(window.get_object(), 4, Color::BLACK)?;
+                let logo_inner_object = logo.get_inner_object();
+                forget(logo); // Prevent the logo from being dropped
 
-            if tile_view.is_null() {
-                return Err(Error::FailedToCreateObject);
+                lvgl::lv_obj_set_align(logo_inner_object, lvgl::lv_align_t_LV_ALIGN_CENTER);
+                lvgl::lv_obj_add_flag(
+                    logo_inner_object,
+                    lvgl::lv_obj_flag_t_LV_OBJ_FLAG_OVERFLOW_VISIBLE,
+                );
+
+                // Set shadow color according to BG color
+                for i in 0..4 {
+                    let part = lvgl::lv_obj_get_child(logo_inner_object, i);
+
+                    lvgl::lv_obj_set_style_bg_opa(
+                        part,
+                        lvgl::LV_OPA_0 as u8,
+                        lvgl::LV_STATE_DEFAULT,
+                    );
+
+                    lvgl::lv_obj_set_style_border_width(part, 2, lvgl::LV_STATE_DEFAULT);
+                    lvgl::lv_obj_set_style_border_color(
+                        part,
+                        get_border_color_primary().into_lvgl_color(),
+                        lvgl::LV_STATE_DEFAULT,
+                    );
+                }
             }
 
-            lvgl::lv_obj_set_style_bg_opa(tile_view, lvgl::LV_OPA_0 as u8, lvgl::LV_STATE_DEFAULT);
-            lvgl::lv_obj_set_scrollbar_mode(
+            // - Create a tile view
+            let tile_view = unsafe {
+                let tile_view = lvgl::lv_tileview_create(window.get_object());
+
+                if tile_view.is_null() {
+                    return Err(Error::FailedToCreateObject);
+                }
+
+                lvgl::lv_obj_set_style_bg_opa(
+                    tile_view,
+                    lvgl::LV_OPA_0 as u8,
+                    lvgl::LV_STATE_DEFAULT,
+                );
+                lvgl::lv_obj_set_scrollbar_mode(
+                    tile_view,
+                    lvgl::lv_scrollbar_mode_t_LV_SCROLLBAR_MODE_OFF,
+                );
+
+                tile_view
+            };
+
+            // - Create the desk tile
+            let desk_tile = unsafe {
+                let desk =
+                    lvgl::lv_tileview_add_tile(tile_view, 0, 0, lvgl::lv_dir_t_LV_DIR_BOTTOM);
+
+                if desk.is_null() {
+                    return Err(Error::FailedToCreateObject);
+                }
+
+                lvgl::lv_obj_set_style_pad_all(desk, 20, lvgl::LV_STATE_DEFAULT);
+
+                desk
+            };
+
+            // - Create the drawer tile
+            let drawer_tile = unsafe {
+                let drawer = lvgl::lv_tileview_add_tile(tile_view, 0, 1, lvgl::lv_dir_t_LV_DIR_TOP);
+
+                if drawer.is_null() {
+                    return Err(Error::FailedToCreateObject);
+                }
+
+                lvgl::lv_obj_set_style_pad_top(drawer, 40, lvgl::LV_STATE_DEFAULT);
+                lvgl::lv_obj_set_style_pad_bottom(drawer, 40, lvgl::LV_STATE_DEFAULT);
+                lvgl::lv_obj_set_style_pad_left(drawer, 40, lvgl::LV_STATE_DEFAULT);
+                lvgl::lv_obj_set_flex_flow(drawer, lvgl::lv_flex_flow_t_LV_FLEX_FLOW_ROW_WRAP);
+
+                drawer
+            };
+
+            // - Create a dock
+            let dock = unsafe {
+                let dock = lvgl::lv_obj_create(desk_tile);
+
+                if dock.is_null() {
+                    return Err(Error::FailedToCreateObject);
+                }
+
+                lvgl::lv_obj_set_style_bg_color(
+                    dock,
+                    theme::get_background_color_primary_muted().into_lvgl_color(),
+                    lvgl::LV_STATE_DEFAULT,
+                );
+
+                lvgl::lv_obj_set_align(dock, lvgl::lv_align_t_LV_ALIGN_BOTTOM_MID);
+                lvgl::lv_obj_set_size(dock, lvgl::LV_SIZE_CONTENT, lvgl::LV_SIZE_CONTENT);
+                lvgl::lv_obj_set_style_border_width(dock, 0, lvgl::LV_STATE_DEFAULT);
+                lvgl::lv_obj_set_flex_flow(dock, lvgl::lv_flex_flow_t_LV_FLEX_FLOW_ROW);
+
+                lvgl::lv_obj_set_style_pad_all(dock, 12, lvgl::LV_STATE_DEFAULT);
+
+                dock
+            };
+
+            // - Create the main button
+            let main_button = unsafe {
+                let logo = Logo::new(dock, 1, Color::WHITE)?;
+                let inner_object = logo.get_inner_object();
+                forget(logo); // Prevent the logo from being dropped
+                inner_object
+            };
+
+            let shortcuts = BTreeMap::new();
+
+            let desk: Desk = Self {
+                window,
                 tile_view,
-                lvgl::lv_scrollbar_mode_t_LV_SCROLLBAR_MODE_OFF,
-            );
-
-            tile_view
-        };
-
-        // - Create the desk tile
-        let desk_tile = unsafe {
-            let desk = lvgl::lv_tileview_add_tile(tile_view, 0, 0, lvgl::lv_dir_t_LV_DIR_BOTTOM);
-
-            if desk.is_null() {
-                return Err(Error::FailedToCreateObject);
-            }
-
-            lvgl::lv_obj_set_style_pad_all(desk, 20, lvgl::LV_STATE_DEFAULT);
+                desk_tile,
+                drawer_tile,
+                dock,
+                main_button,
+                shortcuts,
+            };
 
             desk
-        };
-
-        // - Create the drawer tile
-        let drawer_tile = unsafe {
-            let drawer = lvgl::lv_tileview_add_tile(tile_view, 0, 1, lvgl::lv_dir_t_LV_DIR_TOP);
-
-            if drawer.is_null() {
-                return Err(Error::FailedToCreateObject);
-            }
-
-            lvgl::lv_obj_set_style_pad_top(drawer, 40, lvgl::LV_STATE_DEFAULT);
-            lvgl::lv_obj_set_style_pad_bottom(drawer, 40, lvgl::LV_STATE_DEFAULT);
-            lvgl::lv_obj_set_style_pad_left(drawer, 40, lvgl::LV_STATE_DEFAULT);
-            lvgl::lv_obj_set_flex_flow(drawer, lvgl::lv_flex_flow_t_LV_FLEX_FLOW_ROW_WRAP);
-
-            drawer
-        };
-
-        // - Create a dock
-        let dock = unsafe {
-            let dock = lvgl::lv_obj_create(desk_tile);
-
-            if dock.is_null() {
-                return Err(Error::FailedToCreateObject);
-            }
-
-            lvgl::lv_obj_set_style_bg_color(
-                dock,
-                theme::get_background_color_primary_muted().into_lvgl_color(),
-                lvgl::LV_STATE_DEFAULT,
-            );
-
-            lvgl::lv_obj_set_align(dock, lvgl::lv_align_t_LV_ALIGN_BOTTOM_MID);
-            lvgl::lv_obj_set_size(dock, lvgl::LV_SIZE_CONTENT, lvgl::LV_SIZE_CONTENT);
-            lvgl::lv_obj_set_style_border_width(dock, 0, lvgl::LV_STATE_DEFAULT);
-            lvgl::lv_obj_set_flex_flow(dock, lvgl::lv_flex_flow_t_LV_FLEX_FLOW_ROW);
-
-            lvgl::lv_obj_set_style_pad_all(dock, 12, lvgl::LV_STATE_DEFAULT);
-
-            dock
-        };
-
-        // - Create the main button
-        let main_button = unsafe {
-            let logo = Logo::new(dock, 1, Color::WHITE)?;
-            let inner_object = logo.get_inner_object();
-            forget(logo); // Prevent the logo from being dropped
-            inner_object
-        };
-
-        let shortcuts = BTreeMap::new();
-
-        let desk: Desk = Self {
-            window,
-            tile_view,
-            desk_tile,
-            drawer_tile,
-            dock,
-            main_button,
-            shortcuts,
-        };
+        });
 
         Ok(desk)
     }
@@ -276,28 +274,28 @@ impl Desk {
             let virtual_file_system = virtual_file_system::get_instance();
 
             let _ = virtual_file_system
-                .create_directory(&SHORTCUT_PATH, task)
+                .create_directory(task, &SHORTCUT_PATH)
                 .await;
 
             let mut buffer: Vec<u8> = vec![];
 
-            let shortcuts_directory = Directory::open(virtual_file_system, SHORTCUT_PATH)
+            let shortcuts_directory = Directory::open(virtual_file_system, task, SHORTCUT_PATH)
                 .await
                 .map_err(Error::FailedToReadShortcutDirectory)?;
 
             for shortcut_entry in shortcuts_directory {
-                if shortcut_entry.get_type() != Kind::File {
+                if shortcut_entry.kind != Kind::File {
                     continue;
                 }
 
-                if !shortcut_entry.get_name().ends_with(".json") {
+                if !shortcut_entry.name.ends_with(".json") {
                     continue;
                 }
 
-                match Shortcut::read(shortcut_entry.get_name(), &mut buffer).await {
+                match Shortcut::read(&shortcut_entry.name, &mut buffer).await {
                     Ok(shortcut) => {
                         self.create_drawer_shortcut(
-                            shortcut_entry.get_name(),
+                            &shortcut_entry.name,
                             &shortcut.name,
                             shortcut.get_icon_color(),
                             &shortcut.icon_string,
@@ -305,10 +303,7 @@ impl Desk {
                         )?;
                     }
                     Err(e) => {
-                        error!(
-                            "Failed to read shortcut {}: {e:?}",
-                            shortcut_entry.get_name()
-                        );
+                        error!("Failed to read shortcut {}: {e:?}", shortcut_entry.name);
                         continue;
                     }
                 }
@@ -330,7 +325,7 @@ impl Desk {
             &"/devices/null",
             &"/devices/null",
             task,
-            &virtual_file_system::get_instance(),
+            virtual_file_system::get_instance(),
         )
         .await
         .map_err(Error::FailedToOpenStandardFile)?;
@@ -429,97 +424,105 @@ impl Desk {
         Ok(())
     }
 
-    pub async fn event_handler(&mut self) {
-        let _lock = graphics::get_instance().lock().await;
-        while let Some(event) = self.window.pop_event() {
-            match event.get_code() {
-                Self::HOME_EVENT => unsafe {
-                    lvgl::lv_tileview_set_tile_by_index(self.tile_view, 0, 0, true);
-                },
-                EventKind::ValueChanged => {
-                    if event.get_target() == self.tile_view {
-                        unsafe {
-                            if lvgl::lv_tileview_get_tile_active(self.tile_view) == self.desk_tile {
-                                lvgl::lv_obj_clean(self.drawer_tile);
-                            } else if lvgl::lv_obj_get_child_count(self.drawer_tile) == 0 {
-                                let _ = self.create_drawer_interface(self.drawer_tile).await;
-                            }
-                        }
-                    }
+    pub async fn handle_events(&mut self) -> bool {
+        graphics::lock!({
+            while let Some(event) = self.window.pop_event() {
+                if let Err(error) = self.handle_event(event).await {
+                    log::error!("Failed to handle desk event: {error:?}");
                 }
-                EventKind::Clicked => {
-                    // If the target is a shortcut, execute the shortcut
-                    if let Some(shortcut_name) = self.shortcuts.get(&event.get_target()) {
-                        if let Err(error) = self.execute_shortcut(shortcut_name).await {
-                            error!("Failed to execute shortcut {shortcut_name}: {error:?}");
-                        }
-                    }
-                    // If the target is a dock icon, move the window to the foreground
-                    else if unsafe { lvgl::lv_obj_get_parent(event.get_target()) == self.dock } {
-                        // Ignore the main button
-                        if event.get_target() == self.main_button {
-                            continue;
-                        }
-
-                        let window_identifier =
-                            unsafe { lvgl::lv_obj_get_user_data(event.get_target()) as usize };
-
-                        graphics::get_instance()
-                            .maximize_window(window_identifier)
-                            .await
-                            .unwrap();
-                    }
-                }
-                EventKind::Pressed => {
-                    if event.get_target() == self.main_button
-                        || unsafe {
-                            lvgl::lv_obj_get_parent(event.get_target()) == self.main_button
-                        }
-                    {
-                        unsafe {
-                            lvgl::lv_obj_add_state(self.main_button, lvgl::LV_STATE_PRESSED as u16);
-                            for i in 0..4 {
-                                let part = lvgl::lv_obj_get_child(self.main_button, i);
-
-                                lvgl::lv_obj_add_state(part, lvgl::LV_STATE_PRESSED as u16);
-                            }
-                        }
-                    }
-                }
-                EventKind::Released => {
-                    if event.get_target() == self.main_button
-                        || unsafe {
-                            lvgl::lv_obj_get_parent(event.get_target()) == self.main_button
-                        }
-                    {
-                        const STATE: u16 = lvgl::LV_STATE_PRESSED as u16;
-
-                        unsafe {
-                            lvgl::lv_obj_add_state(self.main_button, STATE);
-                            for i in 0..4 {
-                                let part = lvgl::lv_obj_get_child(self.main_button, i);
-
-                                lvgl::lv_obj_remove_state(part, STATE);
-                            }
-                        }
-
-                        unsafe {
-                            lvgl::lv_tileview_set_tile_by_index(self.tile_view, 0, 1, true);
-                        }
-                    }
-                }
-                WINDOWS_PARENT_CHILD_CHANGED => {
-                    // Ignore consecutive windows parent child changed events
-                    if let Some(peeked_event) = self.window.peek_event()
-                        && peeked_event.get_code() == WINDOWS_PARENT_CHILD_CHANGED
-                    {
-                        continue;
-                    }
-
-                    self.refresh_dock().await.unwrap();
-                }
-                _ => {}
             }
+        });
+
+        true
+    }
+
+    pub async fn handle_event(&mut self, event: Event) -> Result<()> {
+        match event.code {
+            Self::HOME_EVENT => unsafe {
+                lvgl::lv_tileview_set_tile_by_index(self.tile_view, 0, 0, true);
+            },
+            EventKind::ValueChanged => {
+                if event.target == self.tile_view {
+                    unsafe {
+                        if lvgl::lv_tileview_get_tile_active(self.tile_view) == self.desk_tile {
+                            lvgl::lv_obj_clean(self.drawer_tile);
+                        } else if lvgl::lv_obj_get_child_count(self.drawer_tile) == 0 {
+                            let _ = self.create_drawer_interface(self.drawer_tile).await;
+                        }
+                    }
+                }
+            }
+            EventKind::Clicked => {
+                // If the target is a shortcut, execute the shortcut
+                if let Some(shortcut_name) = self.shortcuts.get(&event.target) {
+                    self.execute_shortcut(shortcut_name).await?;
+                }
+                // If the target is a dock icon, move the window to the foreground
+                else if unsafe { lvgl::lv_obj_get_parent(event.target) == self.dock } {
+                    // Ignore the main button
+                    if event.target == self.main_button {
+                        return Ok(());
+                    }
+
+                    let window_identifier =
+                        unsafe { lvgl::lv_obj_get_user_data(event.target) as usize };
+
+                    graphics::get_instance()
+                        .maximize_window(window_identifier)
+                        .await
+                        .unwrap();
+                }
+            }
+            EventKind::Pressed => {
+                if event.target == self.main_button
+                    || unsafe { lvgl::lv_obj_get_parent(event.target) == self.main_button }
+                {
+                    unsafe {
+                        lvgl::lv_obj_add_state(self.main_button, lvgl::LV_STATE_PRESSED as u16);
+                        for i in 0..4 {
+                            let part = lvgl::lv_obj_get_child(self.main_button, i);
+
+                            lvgl::lv_obj_add_state(part, lvgl::LV_STATE_PRESSED as u16);
+                        }
+                    }
+                }
+            }
+            EventKind::Released => {
+                if event.target == self.main_button
+                    || unsafe { lvgl::lv_obj_get_parent(event.target) == self.main_button }
+                {
+                    const STATE: u16 = lvgl::LV_STATE_PRESSED as u16;
+
+                    unsafe {
+                        lvgl::lv_obj_add_state(self.main_button, STATE);
+                        for i in 0..4 {
+                            let part = lvgl::lv_obj_get_child(self.main_button, i);
+
+                            lvgl::lv_obj_remove_state(part, STATE);
+                        }
+                    }
+
+                    unsafe {
+                        lvgl::lv_tileview_set_tile_by_index(self.tile_view, 0, 1, true);
+                    }
+                }
+            }
+            WINDOWS_PARENT_CHILD_CHANGED => {
+                // Ignore consecutive windows parent child changed events
+                if let Some(Event {
+                    code: WINDOWS_PARENT_CHILD_CHANGED,
+                    target: _,
+                    key: _,
+                }) = self.window.peek_event()
+                {
+                    return Ok(());
+                }
+
+                self.refresh_dock().await.unwrap();
+            }
+            _ => {}
         }
+
+        Ok(())
     }
 }

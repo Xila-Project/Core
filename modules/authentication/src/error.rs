@@ -24,13 +24,13 @@ pub enum Error {
     /// Failed to get the current task identifier
     FailedToGetCurrentTaskIdentifier(task::Error),
     /// Failed to read the users directory from the filesystem
-    FailedToReadUsersDirectory(file_system::Error),
+    FailedToReadUsersDirectory(virtual_file_system::Error),
     /// Failed to construct a valid user file path
     FailedToGetUserFilePath,
     /// Failed to open a user file for reading or writing
-    FailedToOpenUserFile(file_system::Error),
+    FailedToOpenUserFile(virtual_file_system::Error),
     /// Failed to read the contents of a user file
-    FailedToReadUserFile(file_system::Error),
+    FailedToReadUserFile(virtual_file_system::Error),
     /// Failed to parse JSON content from a user file
     FailedToParseUserFile(miniserde::Error),
     /// Failed to add a user to the Users manager
@@ -40,17 +40,17 @@ pub enum Error {
     /// Failed to create a new user account
     FailedToCreateUser(users::Error),
     /// Failed to write user data to a file
-    FailedToWriteUserFile(file_system::Error),
+    FailedToWriteUserFile(virtual_file_system::Error),
     /// Failed to create the users directory
-    FailedToCreateUsersDirectory(file_system::Error),
+    FailedToCreateUsersDirectory(virtual_file_system::Error),
     /// Failed to read the groups directory from the filesystem
-    FailedToReadGroupDirectory(file_system::Error),
+    FailedToReadGroupDirectory(virtual_file_system::Error),
     /// Failed to construct a valid group file path
     FailedToGetGroupFilePath,
     /// Failed to open a group file for reading or writing
-    FailedToOpenGroupFile(file_system::Error),
+    FailedToOpenGroupFile(virtual_file_system::Error),
     /// Failed to read the contents of a group file
-    FailedToReadGroupFile(file_system::Error),
+    FailedToReadGroupFile(virtual_file_system::Error),
     /// Failed to parse JSON content from a group file
     FailedToParseGroupFile(miniserde::Error),
     /// Failed to add a group to the Users manager
@@ -60,17 +60,19 @@ pub enum Error {
     /// Failed to create a new group
     FailedToCreateGroup(users::Error),
     /// Failed to write group data to a file
-    FailedToWriteGroupFile(file_system::Error),
+    FailedToWriteGroupFile(virtual_file_system::Error),
     /// Failed to create the groups directory
-    FailedToCreateGroupsDirectory(file_system::Error),
+    FailedToCreateGroupsDirectory(virtual_file_system::Error),
     /// The provided password is invalid or incorrect
     InvalidPassword,
     /// Failed to open the random device for salt generation
-    FailedToOpenRandomDevice(file_system::Error),
+    FailedToOpenRandomDevice(virtual_file_system::Error),
     /// Failed to read random data from the random device
-    FailedToReadRandomDevice(file_system::Error),
+    FailedToReadRandomDevice(virtual_file_system::Error),
     /// Failed to get user identifier from the Users manager
     FailedToGetUserIdentifier(users::Error),
+    /// Failed to close a file
+    FailedToCloseFile(virtual_file_system::Error),
 }
 
 impl Display for Error {
@@ -154,6 +156,9 @@ impl Display for Error {
             }
             Self::FailedToGetUserIdentifier(error) => {
                 write!(formatter, "Failed to get user identifier: {error}")
+            }
+            Self::FailedToCloseFile(error) => {
+                write!(formatter, "Failed to close file: {error}")
             }
         }
     }

@@ -7,8 +7,8 @@
 
 use core::{ffi::CStr, mem::forget};
 
+use abi_context::FileIdentifier;
 use alloc::{string::ToString, vec, vec::Vec};
-use file_system::{FileIdentifier, UniqueFileIdentifier};
 use synchronization::once_lock::OnceLock;
 use task::TaskIdentifier;
 use virtual_file_system::File;
@@ -202,28 +202,36 @@ impl Manager {
         &'static self,
         buffer: Vec<u8>,
         stack_size: usize,
-        (standard_in, standard_out, standard_error): (File<'_>, File<'_>, File<'_>),
+        (standard_in, standard_out, standard_error): (File, File, File),
         function_name: Option<&str>,
         function_arguments: Vec<WasmValue>,
         task: TaskIdentifier,
     ) -> Result<Vec<WasmValue>> {
-        abi_context::get_instance()
+        let abi_context = abi_context::get_instance();
+
+        abi_context
             .call_abi(async || {
-                let standard_in = standard_in
-                    .transfer(task, Some(FileIdentifier::STANDARD_IN))
-                    .await
-                    .map_err(Error::FailedToTransferFileIdentifiers)?
-                    .into_file_identifier();
-                let standard_out = standard_out
-                    .transfer(task, Some(FileIdentifier::STANDARD_OUT))
-                    .await
-                    .map_err(Error::FailedToTransferFileIdentifiers)?
-                    .into_file_identifier();
-                let standard_error = standard_error
-                    .transfer(task, Some(FileIdentifier::STANDARD_ERROR))
-                    .await
-                    .map_err(Error::FailedToTransferFileIdentifiers)?
-                    .into_file_identifier();
+                let standard_in = abi_context
+                    .insert_file(
+                        task,
+                        standard_in.into_synchronous_file(),
+                        Some(FileIdentifier::STANDARD_IN),
+                    )
+                    .ok_or(Error::FailedToRegisterFileContext)?;
+                let standard_out = abi_context
+                    .insert_file(
+                        task,
+                        standard_out.into_synchronous_file(),
+                        Some(FileIdentifier::STANDARD_OUT),
+                    )
+                    .ok_or(Error::FailedToRegisterFileContext)?;
+                let standard_error = abi_context
+                    .insert_file(
+                        task,
+                        standard_error.into_synchronous_file(),
+                        Some(FileIdentifier::STANDARD_ERROR),
+                    )
+                    .ok_or(Error::FailedToRegisterFileContext)?;
 
                 let module = Module::from_buffer(
                     &self.runtime,
@@ -235,7 +243,7 @@ impl Manager {
                 )
                 .await?;
 
-                let instance = Instance::new(&self.runtime, &module, stack_size).unwrap();
+                let instance = Instance::new(&self.runtime, &module, stack_size)?;
 
                 let result = if let Some(function_name) = function_name {
                     instance.call_export_function(function_name, &function_arguments)?

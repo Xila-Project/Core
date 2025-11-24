@@ -1,5 +1,7 @@
 use core::{fmt::Display, num::NonZeroU32};
 
+use embedded_io_async::ErrorKind;
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
@@ -11,8 +13,27 @@ pub enum Error {
     InvalidParameter,
     TooManyOpenFiles,
     FailedToGetTaskInformations,
-    FileSystem(file_system::Error) = 0xFF,
+    InvalidIdentifier,
+    AlreadyExists,
+    Time(time::Error),
+    FileSystem(file_system::Error) = 0x100,
     Network(network::Error) = 0x200,
+    Users(users::Error) = 0x300,
+    Task(task::Error) = 0x400,
+    MissingAttribute,
+    InvalidPath,
+    PermissionDenied,
+    TooManyInodes,
+    RessourceBusy,
+    NotADirectory,
+    NotAFile,
+    InvalidInode,
+    InvalidMode,
+    InvalidOpen,
+    UnsupportedOperation,
+    FailedToWrite,
+    DelimiterNotFound,
+    Orphaned,
 }
 
 impl Error {
@@ -35,6 +56,18 @@ impl From<Error> for NonZeroU32 {
     }
 }
 
+impl From<users::Error> for Error {
+    fn from(value: users::Error) -> Self {
+        Self::Users(value)
+    }
+}
+
+impl From<time::Error> for Error {
+    fn from(value: time::Error) -> Self {
+        Self::Time(value)
+    }
+}
+
 impl From<file_system::Error> for Error {
     fn from(value: file_system::Error) -> Self {
         Self::FileSystem(value)
@@ -44,6 +77,12 @@ impl From<file_system::Error> for Error {
 impl From<network::Error> for Error {
     fn from(value: network::Error) -> Self {
         Self::Network(value)
+    }
+}
+
+impl From<task::Error> for Error {
+    fn from(value: task::Error) -> Self {
+        Self::Task(value)
     }
 }
 
@@ -60,6 +99,41 @@ impl Display for Error {
             }
             Error::FileSystem(err) => write!(f, "File system error: {err}"),
             Error::Network(err) => write!(f, "Network error: {err}"),
+            Error::InvalidIdentifier => write!(f, "Invalid identifier"),
+            Error::AlreadyExists => write!(f, "Already exists"),
+            Error::Time(err) => write!(f, "Time error: {err}"),
+            Error::Users(err) => write!(f, "Users error: {err}"),
+            Error::Task(err) => write!(f, "Task error: {err}"),
+            Error::MissingAttribute => write!(f, "Missing attribute"),
+            Error::InvalidPath => write!(f, "Invalid path"),
+            Error::PermissionDenied => write!(f, "Permission denied"),
+            Error::TooManyInodes => write!(f, "Too many inodes"),
+            Error::RessourceBusy => write!(f, "Ressource busy"),
+            Error::NotADirectory => write!(f, "Not a directory"),
+            Error::NotAFile => write!(f, "Not a file"),
+            Error::InvalidMode => write!(f, "Invalid mode"),
+            Error::InvalidOpen => write!(f, "Invalid open"),
+            Error::InvalidInode => write!(f, "Invalid inode"),
+            Error::UnsupportedOperation => write!(f, "Unsupported operation"),
+            Error::FailedToWrite => write!(f, "Failed to write"),
+            Error::DelimiterNotFound => write!(f, "Delimiter not found"),
+            Error::Orphaned => write!(f, "Orphaned"),
+        }
+    }
+}
+
+impl core::error::Error for Error {}
+
+impl embedded_io_async::Error for Error {
+    fn kind(&self) -> ErrorKind {
+        match self {
+            Error::PermissionDenied => ErrorKind::PermissionDenied,
+            Error::NotADirectory => ErrorKind::InvalidInput,
+            Error::NotAFile => ErrorKind::InvalidInput,
+            Error::InvalidMode => ErrorKind::InvalidInput,
+            Error::InvalidOpen => ErrorKind::InvalidInput,
+            Error::UnsupportedOperation => ErrorKind::Unsupported,
+            _ => ErrorKind::Other,
         }
     }
 }

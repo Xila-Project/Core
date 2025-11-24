@@ -13,7 +13,7 @@ drivers_shared = { workspace = true }
 drivers_std = { workspace = true }
 time = { workspace = true }
 little_fs = { workspace = true }
-
+testing = { workspace = true }
 
 [[test]]
 name = "integration_test"

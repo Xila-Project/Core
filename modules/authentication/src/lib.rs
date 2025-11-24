@@ -41,6 +41,8 @@ pub use error::*;
 pub use group::*;
 pub use user::*;
 
+const READ_CHUNK_SIZE: usize = 32;
+
 /// Path to the users directory in the filesystem
 const USERS_FOLDER_PATH: &str = "/system/users";
 
@@ -90,14 +92,16 @@ pub async fn load_all_users_and_groups() -> Result<()> {
     let mut buffer: Vec<u8> = vec![];
 
     {
-        let groups_directory = Directory::open(virtual_file_system, GROUP_FOLDER_PATH)
+        let task = task::get_instance().get_current_task_identifier().await;
+
+        let groups_directory = Directory::open(virtual_file_system, task, GROUP_FOLDER_PATH)
             .await
             .map_err(Error::FailedToReadGroupDirectory)?;
 
         // Read all groups.
         for group_entry in groups_directory {
             let group = if let Ok(group) =
-                read_group_file(virtual_file_system, &mut buffer, group_entry.get_name()).await
+                read_group_file(virtual_file_system, &mut buffer, &group_entry.name).await
             {
                 group
             } else {
@@ -113,14 +117,16 @@ pub async fn load_all_users_and_groups() -> Result<()> {
     }
 
     {
-        let users_directory = Directory::open(virtual_file_system, USERS_FOLDER_PATH)
+        let task = task::get_instance().get_current_task_identifier().await;
+
+        let users_directory = Directory::open(virtual_file_system, task, USERS_FOLDER_PATH)
             .await
             .map_err(Error::FailedToReadUsersDirectory)?;
 
         // Read all users.
         for user_entry in users_directory {
             let user = if let Ok(user) =
-                read_user_file(virtual_file_system, &mut buffer, user_entry.get_name()).await
+                read_user_file(virtual_file_system, &mut buffer, &user_entry.name).await
             {
                 user
             } else {

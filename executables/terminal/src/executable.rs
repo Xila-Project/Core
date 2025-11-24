@@ -1,7 +1,7 @@
 use crate::main;
+use alloc::boxed::Box;
 use alloc::string::{String, ToString};
-use xila::executable::implement_executable_device;
-use xila::file_system::{self, Flags, Mode, Open};
+use xila::executable::ExecutableTrait;
 use xila::task::TaskIdentifier;
 use xila::virtual_file_system::{File, VirtualFileSystem};
 
@@ -13,33 +13,27 @@ impl TerminalExecutable {
         task: TaskIdentifier,
     ) -> Result<Self, String> {
         let _ = virtual_file_system
-            .create_directory(&"/configuration/shared/shortcuts", task)
+            .create_directory(task, &"/configuration/shared/shortcuts")
             .await;
 
-        let file = match File::open(
+        File::write_to_path(
             virtual_file_system,
+            task,
             "/configuration/shared/shortcuts/terminal.json",
-            Flags::new(Mode::WRITE_ONLY, Open::CREATE_ONLY.into(), None),
+            crate::SHORTCUT.as_bytes(),
         )
         .await
-        {
-            Ok(file) => file,
-            Err(file_system::Error::AlreadyExists) => {
-                return Ok(Self);
-            }
-            Err(error) => Err(error.to_string())?,
-        };
-
-        file.write(crate::SHORTCUT.as_bytes())
-            .await
-            .map_err(|error| error.to_string())?;
+        .map_err(|error| error.to_string())?;
 
         Ok(Self)
     }
 }
 
-implement_executable_device!(
-    structure: TerminalExecutable,
-    mount_path: "/binaries/terminal",
-    main_function: main,
-);
+impl ExecutableTrait for TerminalExecutable {
+    fn main(
+        standard: xila::executable::Standard,
+        arguments: alloc::vec::Vec<alloc::string::String>,
+    ) -> xila::executable::MainFuture {
+        Box::pin(async move { main(standard, arguments).await })
+    }
+}

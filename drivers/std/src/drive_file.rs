@@ -1,17 +1,20 @@
 use std::{
     fs::{File, OpenOptions},
-    io::{Read, Seek, Write},
-    sync::RwLock,
+    io::{Read, Seek, SeekFrom, Write},
 };
 
-use file_system::{DeviceTrait, Error, Path, Size};
+use file_system::{
+    ControlArgument, ControlCommand, DirectBaseOperations, DirectBlockDevice, Error,
+    MountOperations, Path, Position, Size, block_device, mount::MutexMountWrapper,
+};
+use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 
 use crate::io::map_error;
 
-pub struct FileDriveDevice(RwLock<File>);
+pub struct FileDriveDevice(MutexMountWrapper<CriticalSectionRawMutex, File>);
 
 impl FileDriveDevice {
-    pub fn new(path: &impl AsRef<Path>) -> Self {
+    pub fn new(path: &impl AsRef<Path>, size: Size) -> Self {
         let path = path.as_ref().as_str();
 
         let file = OpenOptions::new()
@@ -22,102 +25,127 @@ impl FileDriveDevice {
             .open(path)
             .expect("Error opening file");
 
-        Self(RwLock::new(file))
+        file.set_len(size).expect("Error setting file size");
+
+        Self(MutexMountWrapper::new_mounted(file))
+    }
+
+    pub fn new_static(path: &impl AsRef<Path>, size: Size) -> &'static Self {
+        Box::leak(Box::new(Self::new(path, size)))
     }
 }
 
-impl DeviceTrait for FileDriveDevice {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
-        self.0
-            .try_write()
-            .map_err(|_| Error::RessourceBusy)?
-            .read(buffer)
-            .map(|size| file_system::Size::new(size as u64))
-            .map_err(map_error)
+impl DirectBaseOperations for FileDriveDevice {
+    fn read(&self, buffer: &mut [u8], position: Size) -> file_system::Result<usize> {
+        let mut inner = self.0.try_get()?;
+
+        inner.seek(SeekFrom::Start(position)).map_err(map_error)?;
+        inner.read(buffer).map_err(map_error)
     }
 
-    fn write(&self, buffer: &[u8]) -> file_system::Result<file_system::Size> {
-        self.0
-            .try_write()
-            .map_err(|_| Error::RessourceBusy)?
-            .write(buffer)
-            .map(|size| file_system::Size::new(size as u64))
-            .map_err(map_error)
+    fn write(&self, buffer: &[u8], position: Size) -> file_system::Result<usize> {
+        let mut inner = self.0.try_get()?;
+
+        inner.seek(SeekFrom::Start(position)).map_err(map_error)?;
+        inner.write(buffer).map_err(map_error)
     }
 
-    fn get_size(&self) -> file_system::Result<file_system::Size> {
-        Ok((1024 * 1024 * 1024 * 4_usize).into())
-    }
-
-    fn set_position(
+    fn write_pattern(
         &self,
-        position: &file_system::Position,
-    ) -> file_system::Result<file_system::Size> {
+        pattern: &[u8],
+        count: usize,
+        absolute_position: Size,
+    ) -> file_system::Result<usize> {
+        let mut inner = self.0.try_get()?;
+
+        inner
+            .seek(SeekFrom::Start(absolute_position))
+            .map_err(map_error)?;
+
+        for _ in 0..count {
+            inner.write_all(pattern).map_err(map_error)?;
+        }
+
+        Ok(pattern.len() * count)
+    }
+
+    fn set_position(&self, _: Size, position: &Position) -> file_system::Result<Size> {
         let position = match position {
-            file_system::Position::Start(position) => std::io::SeekFrom::Start(*position),
-            file_system::Position::End(position) => std::io::SeekFrom::End(*position),
-            file_system::Position::Current(position) => std::io::SeekFrom::Current(*position),
+            Position::Start(position) => SeekFrom::Start(*position),
+            Position::End(position) => SeekFrom::End(*position),
+            Position::Current(position) => SeekFrom::Current(*position),
         };
 
         self.0
-            .try_write()
+            .try_get()
             .map_err(|_| Error::RessourceBusy)?
             .seek(position)
-            .map(Size::new)
             .map_err(map_error)
     }
 
     fn flush(&self) -> file_system::Result<()> {
-        self.0.write().unwrap().flush().map_err(map_error)
+        self.0
+            .try_get()
+            .map_err(|_| Error::RessourceBusy)?
+            .flush()
+            .map_err(map_error)
     }
 
-    fn erase(&self) -> file_system::Result<()> {
-        Ok(())
-    }
+    fn control(
+        &self,
+        command: ControlCommand,
+        argument: &mut ControlArgument,
+    ) -> file_system::Result<()> {
+        match command {
+            block_device::GET_BLOCK_SIZE => {
+                let block_size = argument.cast::<usize>().ok_or(Error::InvalidParameter)?;
 
-    fn get_block_size(&self) -> file_system::Result<usize> {
-        Ok(4096)
+                *block_size = 512; // Fixed block size for file drive device
+
+                Ok(())
+            }
+            block_device::GET_BLOCK_COUNT => {
+                let block_count = argument.cast::<Size>().ok_or(Error::InvalidParameter)?;
+
+                let file_size = self
+                    .0
+                    .try_get()
+                    .map_err(|_| Error::RessourceBusy)?
+                    .metadata()
+                    .map_err(map_error)?
+                    .len();
+
+                *block_count = file_size / 512; // Fixed block size for file drive device
+
+                Ok(())
+            }
+            _ => Err(Error::UnsupportedOperation),
+        }
     }
 }
+
+impl MountOperations for FileDriveDevice {
+    fn unmount(&self) -> file_system::Result<()> {
+        self.0.unmount()
+    }
+}
+
+impl DirectBlockDevice for FileDriveDevice {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use file_system::DeviceTrait;
+    use file_system::implement_block_device_tests;
 
-    #[test]
-    fn test_read_write() {
-        let file = FileDriveDevice::new(&"./test.img");
+    fn create_test_device() -> FileDriveDevice {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
 
-        let data = [1, 2, 3, 4, 5];
+        let id = COUNTER.fetch_add(1, Ordering::SeqCst);
+        let path = format!("/tmp/file_drive_device_test_{}.img", id);
 
-        assert_eq!(file.write(&data).unwrap(), Size::new(5));
-
-        file.set_position(&file_system::Position::Start(0)).unwrap();
-
-        let mut buffer = [0; 5];
-
-        assert_eq!(file.read(&mut buffer).unwrap(), Size::new(5));
-        assert_eq!(buffer, data);
+        FileDriveDevice::new(&Path::from_str(&path), 16 * 1024 * 1024)
     }
 
-    #[test]
-    fn test_read_write_at_position() {
-        let file = FileDriveDevice::new(&"./test.img");
-
-        file.set_position(&file_system::Position::Start(10))
-            .unwrap();
-
-        let data = [1, 2, 3, 4, 5];
-
-        assert_eq!(file.write(&data).unwrap(), Size::new(5));
-
-        file.set_position(&file_system::Position::Start(10))
-            .unwrap();
-
-        let mut buffer = [0; 5];
-
-        assert_eq!(file.read(&mut buffer).unwrap(), Size::new(5));
-        assert_eq!(buffer, data);
-    }
+    implement_block_device_tests!(create_test_device());
 }

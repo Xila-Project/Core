@@ -1,5 +1,7 @@
 use core::time::Duration;
-use file_system::{DeviceTrait, Error, Result, Size};
+use file_system::{
+    DirectBaseOperations, DirectCharacterDevice, Error, MountOperations, Result, Size,
+};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -50,8 +52,8 @@ impl TimeDevice {
     }
 }
 
-impl DeviceTrait for TimeDevice {
-    fn read(&self, buffer: &mut [u8]) -> Result<Size> {
+impl DirectBaseOperations for TimeDevice {
+    fn read(&self, buffer: &mut [u8], _: Size) -> Result<usize> {
         let duration = Self::get_current_time()?;
 
         let duration_bytes = unsafe {
@@ -70,47 +72,27 @@ impl DeviceTrait for TimeDevice {
         Ok(duration_bytes.len().into())
     }
 
-    fn write(&self, _: &[u8]) -> Result<Size> {
-        Err(Error::UnsupportedOperation)
-    }
-
-    fn get_size(&self) -> Result<Size> {
-        Ok(core::mem::size_of::<Duration>().into())
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> Result<Size> {
-        Err(Error::UnsupportedOperation)
-    }
-
-    fn flush(&self) -> Result<()> {
+    fn write(&self, _: &[u8], _: Size) -> Result<usize> {
         Err(Error::UnsupportedOperation)
     }
 }
+
+impl MountOperations for TimeDevice {}
+
+impl DirectCharacterDevice for TimeDevice {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_time_device_creation() {
-        let device = TimeDevice::new();
-        assert_eq!(
-            device.get_size().unwrap().as_u64(),
-            core::mem::size_of::<Duration>() as u64
-        );
-    }
-
-    #[test]
     fn test_time_device_read() {
         let device = TimeDevice::new();
         let mut buffer = [0u8; core::mem::size_of::<Duration>()];
 
-        let result = device.read(&mut buffer);
+        let result = device.read(&mut buffer, 0);
         assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap().as_u64(),
-            core::mem::size_of::<Duration>() as u64
-        );
+        assert_eq!(result.unwrap(), core::mem::size_of::<Duration>());
     }
 
     #[test]
@@ -118,24 +100,7 @@ mod tests {
         let device = TimeDevice::new();
         let buffer = [0u8; 8];
 
-        let result = device.write(&buffer);
-        assert!(matches!(result, Err(Error::UnsupportedOperation)));
-    }
-
-    #[test]
-    fn test_time_device_set_position_unsupported() {
-        let device = TimeDevice::new();
-        let position = file_system::Position::Start(0);
-
-        let result = device.set_position(&position);
-        assert!(matches!(result, Err(Error::UnsupportedOperation)));
-    }
-
-    #[test]
-    fn test_time_device_flush_unsupported() {
-        let device = TimeDevice::new();
-
-        let result = device.flush();
+        let result = device.write(&buffer, 0);
         assert!(matches!(result, Err(Error::UnsupportedOperation)));
     }
 }

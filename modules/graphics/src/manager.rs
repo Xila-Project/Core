@@ -3,6 +3,8 @@ use alloc::{
     vec,
     vec::Vec,
 };
+use file_system::DirectCharacterDevice;
+use futures::block_on;
 use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 use synchronization::mutex::{Mutex, MutexGuard};
 use synchronization::{once_lock::OnceLock, rwlock::RwLock};
@@ -10,7 +12,6 @@ use synchronization::{once_lock::OnceLock, rwlock::RwLock};
 use core::{future::Future, mem::forget};
 
 use core::time::Duration;
-use file_system::Device;
 
 use super::lvgl;
 
@@ -26,8 +27,8 @@ use crate::{Error, Result, ScreenReadData};
 static MANAGER_INSTANCE: OnceLock<Manager> = OnceLock::new();
 
 pub async fn initialize(
-    screen_device: Device,
-    input_device: Device,
+    screen_device: &'static dyn DirectCharacterDevice,
+    input_device: &'static dyn DirectCharacterDevice,
     input_device_type: InputKind,
     buffer_size: usize,
     double_buffered: bool,
@@ -88,8 +89,8 @@ unsafe impl Sync for Manager {}
 impl Manager {
     fn new(
         _: &time::Manager,
-        screen_device: Device,
-        input_device: Device,
+        screen_device: &'static dyn DirectCharacterDevice,
+        input_device: &'static dyn DirectCharacterDevice,
         input_device_type: InputKind,
         buffer_size: usize,
         double_buffered: bool,
@@ -161,7 +162,7 @@ impl Manager {
     pub async fn add_input_device(
         &self,
 
-        input_device: Device,
+        input_device: &'static dyn DirectCharacterDevice,
         input_type: InputKind,
     ) -> Result<()> {
         let input = Input::new(input_device, input_type)?;
@@ -172,16 +173,16 @@ impl Manager {
     }
 
     fn create_display(
-        screen_device: Device,
+        screen_device: &'static dyn DirectCharacterDevice,
         buffer_size: usize,
-        input_device: Device,
+        input_device: &'static dyn DirectCharacterDevice,
         input_device_type: InputKind,
         double_buffered: bool,
     ) -> Result<(Display, Input)> {
         let mut screen_read_data = ScreenReadData::default();
 
         screen_device
-            .read(screen_read_data.as_mut())
+            .read(screen_read_data.as_mut(), 0)
             .map_err(|_| Error::FailedToGetResolution)?;
 
         let resolution: Point = screen_read_data.get_resolution();
@@ -254,6 +255,14 @@ impl Manager {
 
     pub async fn lock(&self) -> MutexGuard<'_, CriticalSectionRawMutex, ()> {
         self.global_lock.lock().await
+    }
+
+    pub fn synchronous_lock(&self) -> MutexGuard<'_, CriticalSectionRawMutex, ()> {
+        block_on(self.lock())
+    }
+
+    pub fn try_lock(&self) -> Option<MutexGuard<'_, CriticalSectionRawMutex, ()>> {
+        self.global_lock.try_lock().ok()
     }
 
     pub fn get_current_screen(&self) -> Result<*mut lvgl::lv_obj_t> {

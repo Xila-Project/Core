@@ -1,7 +1,7 @@
 use core::num::NonZeroUsize;
 use core::str::Utf8Error;
 use core::{fmt::Display, num::NonZeroU8};
-use xila::{executable, file_system, graphics, internationalization::translate, task};
+use xila::{executable, graphics, internationalization::translate, task, virtual_file_system};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -11,9 +11,10 @@ pub enum Error {
     Graphics(graphics::Error) = 1,
     FailedToCreateObject,
     Utf8(Utf8Error),
-    FailedToMountDevice(file_system::Error),
+    FailedToMountDevice(virtual_file_system::Error),
     FailedToGetTaskIdentifier(task::Error),
     FailedToExecute(executable::Error),
+    RessourceBusy,
 }
 
 impl Error {
@@ -34,8 +35,8 @@ impl From<task::Error> for Error {
     }
 }
 
-impl From<file_system::Error> for Error {
-    fn from(error: file_system::Error) -> Self {
+impl From<virtual_file_system::Error> for Error {
+    fn from(error: virtual_file_system::Error) -> Self {
         Self::FailedToMountDevice(error)
     }
 }
@@ -76,6 +77,9 @@ impl Display for Error {
             }
             Self::FailedToExecute(error) => {
                 write!(formatter, translate!("Failed to execute: {}"), error)
+            }
+            Self::RessourceBusy => {
+                write!(formatter, translate!("Resource busy"))
             }
         }
     }

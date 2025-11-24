@@ -40,6 +40,16 @@ unsafe extern "C" fn event_callback(event: *mut lvgl::lv_event_t) {
 
                 (*queue).push_back(Event::new(EventKind::ChildCreated, target, None));
             }
+            lvgl::lv_event_code_t_LV_EVENT_DRAW_MAIN
+            | lvgl::lv_event_code_t_LV_EVENT_DRAW_MAIN_BEGIN
+            | lvgl::lv_event_code_t_LV_EVENT_DRAW_MAIN_END
+            | lvgl::lv_event_code_t_LV_EVENT_DRAW_POST
+            | lvgl::lv_event_code_t_LV_EVENT_DRAW_POST_BEGIN
+            | lvgl::lv_event_code_t_LV_EVENT_DRAW_POST_END
+            | lvgl::lv_event_code_t_LV_EVENT_GET_SELF_SIZE
+            | lvgl::lv_event_code_t_LV_EVENT_COVER_CHECK => {
+                // Ignore draw events
+            }
             lvgl::lv_event_code_t_LV_EVENT_KEY => {
                 let key = lvgl::lv_indev_get_key(lvgl::lv_indev_active());
 

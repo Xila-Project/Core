@@ -1,6 +1,5 @@
 use alloc::{boxed::Box, string::String};
-use file_system::DeviceTrait;
-
+use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
 use graphics::{InputData, Key, State};
 use synchronization::{
     blocking_mutex::raw::CriticalSectionRawMutex, channel::Channel, channel::Sender,
@@ -60,8 +59,8 @@ impl KeyboardDevice {
     }
 }
 
-impl DeviceTrait for KeyboardDevice {
-    fn read(&self, buffer: &mut [u8]) -> file_system::Result<file_system::Size> {
+impl DirectBaseOperations for KeyboardDevice {
+    fn read(&self, buffer: &mut [u8], _: Size) -> file_system::Result<usize> {
         //log::information!("Keyboard read: {:?}", buffer);
 
         let data: &mut InputData = buffer
@@ -75,25 +74,17 @@ impl DeviceTrait for KeyboardDevice {
 
         data.set_continue(!self.0.is_empty());
 
-        Ok(file_system::Size::new(buffer.len() as u64))
+        Ok(buffer.len())
     }
 
-    fn write(&self, _: &[u8]) -> file_system::Result<file_system::Size> {
+    fn write(&self, _: &[u8], _: Size) -> file_system::Result<usize> {
         Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn get_size(&self) -> file_system::Result<file_system::Size> {
-        Ok(size_of::<InputData>().into())
-    }
-
-    fn set_position(&self, _: &file_system::Position) -> file_system::Result<file_system::Size> {
-        Err(file_system::Error::UnsupportedOperation)
-    }
-
-    fn flush(&self) -> file_system::Result<()> {
-        Ok(())
     }
 }
+
+impl MountOperations for KeyboardDevice {}
+
+impl DirectCharacterDevice for KeyboardDevice {}
 
 fn map_key(key: &str) -> Option<Key> {
     if key.len() == 1 {

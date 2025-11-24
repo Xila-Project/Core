@@ -16,7 +16,6 @@ use alloc::{
     format,
     string::{String, ToString},
 };
-use file_system::Mode;
 use virtual_file_system::File;
 
 use crate::{Error, RANDOM_DEVICE_PATH, Result};
@@ -42,18 +41,13 @@ use crate::{Error, RANDOM_DEVICE_PATH, Result};
 /// The salt generation converts random bytes to lowercase letters (a-z)
 /// for readability while maintaining sufficient entropy for security.
 pub async fn generate_salt() -> Result<String> {
-    let random_file = File::open(
-        virtual_file_system::get_instance(),
-        RANDOM_DEVICE_PATH,
-        Mode::READ_ONLY.into(),
-    )
-    .await
-    .map_err(Error::FailedToOpenRandomDevice)?;
+    let virtual_file_system = virtual_file_system::get_instance();
+
+    let task = task::get_instance().get_current_task_identifier().await;
 
     let mut buffer = [0_u8; 16];
 
-    random_file
-        .read(&mut buffer)
+    File::read_slice_from_path(virtual_file_system, task, RANDOM_DEVICE_PATH, &mut buffer)
         .await
         .map_err(Error::FailedToReadRandomDevice)?;
 

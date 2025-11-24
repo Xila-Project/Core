@@ -108,7 +108,7 @@ msgstr "Nom d'utilisateur: "
 msgid "Password: "
 msgstr "Mot de passe: "
 
-msgid "Type"
+msgid "Kind"
 msgstr "Type"
 
 msgid "Inode"
@@ -131,3 +131,12 @@ msgstr "Modifié"
 
 msgid "Created"
 msgstr "Créé"
+
+msgid "Status"
+msgstr "Statut"
+
+msgid "Links"
+msgstr "Liens"
+
+msgid "Size"
+msgstr "Taille"

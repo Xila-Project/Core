@@ -1,35 +1,41 @@
 extern crate alloc;
 
+extern crate abi_definitions;
+
 use task::TaskIdentifier;
 
-use file_system::{
-    Flags, MemoryDevice, Mode, Open, Path, Position, Status, create_device, create_file_system,
-};
+use file_system::{AccessFlags, CreateFlags, Flags, MemoryDevice, Path, Position, StateFlags};
 #[cfg(target_os = "linux")]
 use task::test;
 use virtual_file_system::{File, VirtualFileSystem};
 
-async fn initialize<'a>() -> (TaskIdentifier, VirtualFileSystem<'a>) {
+drivers_std::instantiate_global_allocator!();
+
+async fn initialize<'a>() -> (TaskIdentifier, &'a VirtualFileSystem<'a>) {
     let task_instance = task::initialize();
 
-    let _ = users::initialize();
+    let users_manager = users::initialize();
 
-    let _ = time::initialize(create_device!(drivers_native::TimeDriver::new()));
+    let time_manager = time::initialize(&drivers_std::devices::TimeDevice).unwrap();
+
+    if !log::is_initialized() {
+        log::initialize(&drivers_std::log::Logger).unwrap();
+    }
 
     let task = task_instance.get_current_task_identifier().await;
 
-    let device = create_device!(MemoryDevice::<512>::new(1024 * 512));
+    let device = MemoryDevice::<512>::new_static(1024 * 512);
 
     let cache_size = 256;
 
-    little_fs::FileSystem::format(device.clone(), cache_size).unwrap();
+    little_fs::FileSystem::format(device, cache_size).unwrap();
     let file_system = little_fs::FileSystem::new(device, cache_size).unwrap();
 
-    let virtual_file_system = VirtualFileSystem::new(
+    let virtual_file_system = virtual_file_system::initialize(
         task_instance,
-        users::get_instance(),
-        time::get_instance(),
-        create_file_system!(file_system),
+        users_manager,
+        time_manager,
+        file_system,
         None,
     )
     .unwrap();
@@ -40,14 +46,15 @@ async fn initialize<'a>() -> (TaskIdentifier, VirtualFileSystem<'a>) {
 #[cfg(target_os = "linux")]
 #[test]
 async fn test_file() {
-    let (_, virtual_file_system) = initialize().await;
+    let (task, virtual_file_system) = initialize().await;
 
     let file_path = "/file";
 
-    let file = File::open(
+    let mut file = File::open(
         &virtual_file_system,
+        task,
         file_path,
-        Flags::new(Mode::READ_WRITE, Some(Open::CREATE_ONLY), None),
+        Flags::new(AccessFlags::READ_WRITE, Some(CreateFlags::Create), None),
     )
     .await
     .unwrap();
@@ -66,16 +73,16 @@ async fn test_file() {
 
     core::mem::drop(file);
 
-    let _ = virtual_file_system.remove(file_path).await.unwrap();
+    let _ = virtual_file_system.remove(task, file_path).await.unwrap();
 }
 
 #[cfg(target_os = "linux")]
 #[test]
 async fn test_unnamed_pipe() {
-    let (task, virtual_file_system) = initialize().await;
+    let (_, virtual_file_system) = initialize().await;
 
-    let (pipe_read, pipe_write) =
-        File::create_unnamed_pipe(&virtual_file_system, 512, Status::default(), task)
+    let (mut pipe_read, mut pipe_write) =
+        File::create_unnamed_pipe(&virtual_file_system, 512, StateFlags::None)
             .await
             .unwrap();
 
@@ -102,13 +109,23 @@ async fn test_named_pipe() {
         .await
         .unwrap();
 
-    let pipe_read = File::open(&virtual_file_system, pipe_path, Mode::READ_ONLY.into())
-        .await
-        .unwrap();
+    let mut pipe_read = File::open(
+        &virtual_file_system,
+        task,
+        pipe_path,
+        AccessFlags::Read.into(),
+    )
+    .await
+    .unwrap();
 
-    let pipe_write = File::open(&virtual_file_system, pipe_path, Mode::WRITE_ONLY.into())
-        .await
-        .unwrap();
+    let mut pipe_write = File::open(
+        &virtual_file_system,
+        task,
+        pipe_path,
+        AccessFlags::Write.into(),
+    )
+    .await
+    .unwrap();
 
     let data = b"Hello, world!";
 
@@ -122,7 +139,7 @@ async fn test_named_pipe() {
     core::mem::drop(pipe_read);
     core::mem::drop(pipe_write);
 
-    let _ = virtual_file_system.remove(pipe_path).await.unwrap();
+    virtual_file_system.remove(task, pipe_path).await.unwrap();
 }
 
 #[cfg(target_os = "linux")]
@@ -130,18 +147,23 @@ async fn test_named_pipe() {
 async fn test_device() {
     let (task, virtual_file_system) = initialize().await;
 
-    const DEVICE_PATH: &Path = Path::from_str("/devices");
+    const DEVICE_PATH: &Path = Path::from_str("/device");
 
-    let device = create_device!(MemoryDevice::<512>::new(512));
+    let device = MemoryDevice::<512>::new(512);
 
     virtual_file_system
-        .mount_static_device(task, &DEVICE_PATH, device)
+        .mount_block_device(task, &DEVICE_PATH, device)
         .await
         .unwrap();
 
-    let device_file = File::open(&virtual_file_system, DEVICE_PATH, Mode::READ_WRITE.into())
-        .await
-        .unwrap();
+    let mut device_file = File::open(
+        &virtual_file_system,
+        task,
+        DEVICE_PATH,
+        AccessFlags::READ_WRITE.into(),
+    )
+    .await
+    .unwrap();
 
     let data = 0x1234567890ABCDEF_u64;
 
@@ -157,5 +179,5 @@ async fn test_device() {
 
     core::mem::drop(device_file);
 
-    let _ = virtual_file_system.remove(DEVICE_PATH).await.unwrap();
+    let _ = virtual_file_system.remove(task, DEVICE_PATH).await.unwrap();
 }

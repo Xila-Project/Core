@@ -15,6 +15,7 @@ time = { workspace = true }
 little_fs = { workspace = true }
 command_line_shell = { workspace = true }
 abi_definitions = { workspace = true }
+testing = { workspace = true }
 
 [[test]]
 name = "integration_test"

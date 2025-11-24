@@ -80,7 +80,7 @@ wasm_c_bindings = ["wasm", "wasm_bindings/c_bindings"]
 
 
 [workspace.dependencies]
-# - Internal crates
+# - Modules
 wasm_bindings = { path = "modules/bindings/wasm" }
 
 abi_context = { path = "modules/abi/context" }
@@ -108,6 +108,7 @@ network = { path = "modules/network" }
 peripherals = { path = "modules/peripherals" }
 bootsplash = { path = "modules/bootsplash" }
 internationalization = { path = "modules/internationalization" }
+testing = { path = "modules/testing" }
 
 # - Drivers
 drivers_core = { path = "drivers/core" }
@@ -173,6 +174,7 @@ members = [
   "executables/shell/command_line",
   "modules/executable",
   "executables/wasm",
+  "executables/wasm/tests/wasm_test",
   "executables/shell/graphical",
   "executables/terminal",
   "executables/settings",
@@ -196,6 +198,7 @@ members = [
   "modules/internationalization",
   "modules/internationalization/macros",
   "modules/graphics/fonts_generator",
+  "modules/testing",
 ]
 
 [patch.crates-io]
