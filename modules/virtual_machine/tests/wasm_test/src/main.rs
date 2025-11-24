@@ -27,6 +27,8 @@ fn test_stdio() -> Result<(), ()> {
 }
 
 fn test_file() {
+    println!("Testing file operations...");
+
     {
         let mut file = OpenOptions::new()
             .write(true)
@@ -35,8 +37,12 @@ fn test_file() {
             .open("/test.txt")
             .unwrap();
 
+        println!("Writing to file...");
+
         file.write_all(b"Hello World from WASM!").unwrap();
     }
+
+    println!("File written successfully.");
 
     {
         let mut file = OpenOptions::new().read(true).open("/test.txt").unwrap();
@@ -47,6 +53,8 @@ fn test_file() {
 
         assert_eq!(string, "Hello World from WASM!");
     }
+
+    println!("File read successfully.");
 
     {
         rename("/test.txt", "/test2.txt").unwrap();
@@ -59,6 +67,8 @@ fn test_file() {
 
         assert_eq!(string, "Hello World from WASM!");
     }
+
+    println!("File renamed and read successfully.");
 }
 
 fn test_environment_variables() {
@@ -72,7 +82,31 @@ fn test_environment_variables() {
 }
 
 fn test_directory() {
+    println!("Testing directory operations...");
+
     create_dir("/test_dir").unwrap();
+
+    println!("Directory created successfully.");
+
+    {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open("/test_dir/file1.txt")
+            .unwrap();
+
+        file.write_all(b"File 1 in directory").unwrap();
+    }
+
+    {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open("/test_dir/file2.txt")
+            .unwrap();
+
+        file.write_all(b"File 2 in directory").unwrap();
+    }
 
     for entry in read_dir("/").unwrap() {
         let entry = entry.unwrap();
