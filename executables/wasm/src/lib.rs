@@ -16,7 +16,6 @@ use xila::executable::ExecutableTrait;
 use xila::executable::MainFuture;
 use xila::executable::Standard;
 use xila::file_system::{Kind, Path};
-use xila::log;
 use xila::synchronization::once_lock::OnceLock;
 use xila::task::{self, SpawnerIdentifier};
 use xila::virtual_file_system::{self, File};
@@ -95,8 +94,6 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
     if statistics.kind != Kind::File {
         return Err(Error::NotAWasmFile);
     }
-
-    log::information!("Statistics: {:?}", statistics);
 
     let mut buffer = Vec::with_capacity(statistics.size as usize);
 
