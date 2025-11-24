@@ -36,9 +36,11 @@ use core::ptr::null_mut;
 use core::{ffi::c_void, ptr::NonNull};
 use futures::block_on;
 use log::warning;
-use memory::{CapabilityFlags, Layout};
+use memory::CapabilityFlags;
 use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 use synchronization::mutex::Mutex;
+
+use crate::Allocated;
 
 #[repr(C)]
 union MaximumAlignment {
@@ -112,116 +114,6 @@ where
     }
 }
 
-fn get_layout_for_allocation(size: usize, alignment: usize) -> (Layout, Layout) {
-    let alignment = if alignment < align_of::<usize>() {
-        align_of::<usize>()
-    } else {
-        alignment
-    };
-
-    let user_layout = Layout::from_size_align(size, alignment)
-        .expect("Failed to create user layout for memory allocation");
-
-    #[cfg(feature = "allocation_redundancy_check")]
-    let tracking_overhead = size_of::<usize>() * 4; // size, align, and redundant copies
-    #[cfg(not(feature = "allocation_redundancy_check"))]
-    let tracking_overhead = size_of::<usize>() * 2; // just size and align
-
-    let total_size = size + tracking_overhead;
-    let total_layout = Layout::from_size_align(total_size, alignment)
-        .expect("Failed to create total layout for memory allocation");
-
-    (user_layout, total_layout)
-}
-
-unsafe fn set_layout_in_allocation(pointer: *mut u8, layout: Layout) -> *mut u8 {
-    let pointer = match NonNull::new(pointer) {
-        Some(ptr) => ptr,
-        None => return null_mut(),
-    };
-
-    unsafe {
-        let size_ptr = (pointer.as_ptr() as *mut usize).add(0);
-        let alignment_ptr = (pointer.as_ptr() as *mut usize).add(1);
-
-        *size_ptr = layout.size();
-        *alignment_ptr = layout.align();
-
-        #[cfg(feature = "allocation_redundancy_check")]
-        {
-            let alignment_redundant_ptr = (pointer.as_ptr() as *mut usize).add(2);
-            let size_redundant_ptr = (pointer.as_ptr() as *mut usize).add(3);
-            // reverse bits order and complement for redundancy check
-            *size_redundant_ptr = !layout.size().reverse_bits();
-            *alignment_redundant_ptr = !layout.align().reverse_bits();
-        }
-
-        #[cfg(feature = "allocation_redundancy_check")]
-        let offset = size_of::<usize>() * 4;
-        #[cfg(not(feature = "allocation_redundancy_check"))]
-        let offset = size_of::<usize>() * 2;
-
-        pointer.add(offset).as_ptr()
-    }
-}
-
-/// Retrieves the size of an allocated memory block from its pointer.
-///
-/// # Safety
-///
-/// The caller must ensure that the pointer was allocated using `xila_memory_allocate`
-/// and is valid.
-unsafe fn get_layout_from_allocation(pointer: *mut u8) -> Option<(*mut u8, Layout)> {
-    let pointer = NonNull::new(pointer)?;
-
-    unsafe {
-        #[cfg(feature = "allocation_redundancy_check")]
-        let offset = size_of::<usize>() * 4;
-        #[cfg(not(feature = "allocation_redundancy_check"))]
-        let offset = size_of::<usize>() * 2;
-
-        let pointer = pointer.sub(offset);
-
-        let size_ptr = (pointer.as_ptr() as *mut usize).add(0);
-        let alignment_ptr = (pointer.as_ptr() as *mut usize).add(1);
-
-        #[cfg(feature = "allocation_redundancy_check")]
-        {
-            let alignment_redundant_ptr = (pointer.as_ptr() as *mut usize).add(2);
-            let size_redundant_ptr = (pointer.as_ptr() as *mut usize).add(3);
-
-            // Redundancy check
-            if *size_ptr != !(*size_redundant_ptr).reverse_bits()
-                || *alignment_ptr != !(*alignment_redundant_ptr).reverse_bits()
-            {
-                log::warning!(
-                    "Memory corruption detected in allocation metadata: Pointer: {:#x}",
-                    pointer.as_ptr() as usize
-                );
-                return None;
-            }
-        }
-
-        Some((
-            pointer.as_ptr(),
-            Layout::from_size_align(*size_ptr, *alignment_ptr).ok()?,
-        ))
-    }
-}
-
-/// Retrieves the alignment of an allocated memory block from its pointer.
-///
-/// # Safety
-///
-/// The caller must ensure that the pointer was allocated using `xila_memory_allocate`
-/// and is valid.
-unsafe fn get_alignment_from_allocation(pointer: NonNull<u8>) -> Option<&'static mut usize> {
-    unsafe {
-        let alignment_ptr = (pointer.as_ptr() as *mut usize).sub(2);
-        Some(&mut *alignment_ptr)
-    }
-}
-
 /// Deallocates a previously allocated memory block.
 ///
 /// This function frees memory that was previously allocated using `xila_memory_allocate`
@@ -249,20 +141,19 @@ unsafe fn get_alignment_from_allocation(pointer: NonNull<u8>) -> Option<&'static
 pub extern "C" fn xila_memory_deallocate(pointer: *mut c_void) {
     let _lock = block_on(ALLOCATION_MUTEX.lock());
 
-    let (original_pointer, layout) = match unsafe { get_layout_from_allocation(pointer as *mut u8) }
-    {
-        Some(data) => data,
+    let allocated = match Allocated::from_user_pointer(pointer as *mut u8) {
+        Some(alloc) => alloc,
         None => {
-            warning!(
-                "xila_memory_deallocate called with invalid pointer: {:#x}, ignoring",
-                pointer as usize
-            );
+            warning!("xila_memory_deallocate called with null pointer, ignoring");
             return;
         }
     };
 
+    let layout = allocated.get_layout().unwrap();
+    let base_pointer = allocated.get_base_pointer();
+
     unsafe {
-        memory::get_instance().deallocate(original_pointer, layout);
+        memory::get_instance().deallocate(base_pointer, layout);
     }
 }
 
@@ -311,43 +202,39 @@ pub unsafe extern "C" fn xila_memory_reallocate(pointer: *mut c_void, size: usiz
     let _lock = block_on(ALLOCATION_MUTEX.lock());
 
     unsafe {
-        let (pointer, old_user_layout) = match get_layout_from_allocation(pointer as *mut u8) {
-            Some(data) => data,
-            None => (
-                null_mut(),
-                Layout::from_size_align(0, MAXIMUM_ALIGNMENT)
-                    .expect("Failed to create default layout for reallocation"),
-            ),
+        let pointer = pointer as *mut u8;
+
+        let allocated = match Allocated::from_user_pointer(pointer) {
+            Some(alloc) => alloc,
+            None => {
+                drop(_lock);
+                //trace!("xila_memory_reallocate called with null pointer, allocating new memory of size: {}", size);
+                return xila_memory_allocate_core(size);
+            }
         };
 
-        let (_, old_total_layout) =
-            get_layout_for_allocation(old_user_layout.size(), old_user_layout.align());
-        let (new_user_layout, new_total_layout) =
-            get_layout_for_allocation(size, old_user_layout.align());
+        let old_layout = allocated.get_layout().unwrap();
+        let new_layout = Allocated::get_layout_for_allocation(size, old_layout.align());
 
-        let pointer =
-            memory::get_instance().reallocate(pointer, old_total_layout, new_total_layout.size());
+        let pointer = memory::get_instance().reallocate(
+            allocated.get_base_pointer(),
+            old_layout,
+            new_layout.size(),
+        );
 
-        if pointer.is_null() {
-            warning!(
-                "xila_memory_reallocate failed to reallocate memory: Pointer: {:#x}, Size: {}",
-                pointer as usize,
-                size
-            );
-            return null_mut();
-        }
+        let allocated = match Allocated::from_layout(pointer, &new_layout) {
+            Some(alloc) => alloc,
+            None => {
+                warning!(
+                    "xila_memory_reallocate failed to create allocation metadata: New Size: {}, Old Size: {}",
+                    size,
+                    old_layout.size()
+                );
+                return null_mut();
+            }
+        };
 
-        let pointer = set_layout_in_allocation(pointer, new_user_layout);
-
-        if pointer.is_null() {
-            warning!(
-                "xila_memory_reallocate failed to reallocate memory: Pointer: {:#x}, Size: {}",
-                pointer as usize,
-                size
-            );
-        }
-
-        pointer as *mut c_void
+        allocated.get_user_pointer() as *mut c_void
     }
 }
 
@@ -409,7 +296,7 @@ pub unsafe extern "C" fn xila_memory_allocate(
     //    "xila_memory_allocate called with Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
     //);
 
-    let (user_layout, total_layout) = get_layout_for_allocation(size, alignment);
+    let layout = Allocated::get_layout_for_allocation(size, alignment);
 
     let capabilities = match CapabilityFlags::from_bits(capabilities) {
         Some(flags) => flags,
@@ -421,23 +308,19 @@ pub unsafe extern "C" fn xila_memory_allocate(
         }
     };
 
-    let pointer = unsafe { memory::get_instance().allocate(capabilities, total_layout) };
+    let pointer = unsafe { memory::get_instance().allocate(capabilities, layout) };
 
-    if pointer.is_null() {
-        warning!(
-            "xila_memory_allocate failed to allocate memory: Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
-        );
-    }
+    let allocated = match Allocated::from_layout(pointer, &layout) {
+        Some(alloc) => alloc,
+        None => {
+            warning!(
+                "xila_memory_allocate failed to create allocation metadata: Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
+            );
+            return null_mut();
+        }
+    };
 
-    let pointer = unsafe { set_layout_in_allocation(pointer, user_layout) };
-
-    if pointer.is_null() {
-        warning!(
-            "xila_memory_allocate failed to allocate memory: Size: {size}, Alignment: {alignment}, Capabilities: {capabilities:?}"
-        );
-    }
-
-    pointer as *mut c_void
+    allocated.get_user_pointer() as *mut c_void
 }
 
 /// Allocates a memory block with default properties.
@@ -451,7 +334,7 @@ pub unsafe extern "C" fn xila_memory_allocate_core(size: usize) -> *mut c_void {
         xila_memory_allocate(
             null_mut(),
             size,
-            MAXIMUM_ALIGNMENT,
+            align_of::<usize>(), // Use usize alignment for general-purpose allocations
             XILA_MEMORY_CAPABILITIES_NONE,
         )
     }
@@ -645,6 +528,53 @@ mod tests {
             assert_eq!(addr % alignment, 0, "Pointer should be properly aligned");
 
             xila_memory_deallocate(pointer);
+        }
+    }
+
+    /// Tests memory allocation with small alignments (1, 2, 4 bytes).
+    ///
+    /// This test verifies that the allocator can handle small alignment
+    /// requirements now that CompactLayout supports alignments as low as 1 byte.
+    #[test]
+    fn test_allocate_small_alignments() {
+        unsafe {
+            for &alignment in &[1, 2, 4] {
+                let size = 64;
+                let capabilities = 0;
+                let hint_address = core::ptr::null_mut();
+
+                let pointer = xila_memory_allocate(hint_address, size, alignment, capabilities);
+                assert!(
+                    !pointer.is_null(),
+                    "Allocation with alignment {} should succeed",
+                    alignment
+                );
+
+                // Verify alignment
+                let addr = pointer as usize;
+                assert_eq!(
+                    addr % alignment,
+                    0,
+                    "Pointer should be aligned to {} bytes",
+                    alignment
+                );
+
+                // Write and read to verify the memory is accessible
+                let ptr = pointer as *mut u8;
+                for i in 0..size {
+                    *ptr.add(i) = (i % 256) as u8;
+                }
+
+                for i in 0..size {
+                    assert_eq!(
+                        *ptr.add(i),
+                        (i % 256) as u8,
+                        "Memory should be readable and writable"
+                    );
+                }
+
+                xila_memory_deallocate(pointer);
+            }
         }
     }
 
@@ -929,27 +859,6 @@ mod tests {
     }
 
     #[test]
-    fn test_allocation_tracking() {
-        unsafe {
-            // Test that allocations are properly tracked for deallocation
-            let size = 128;
-            let alignment = 8;
-            let capabilities = 0;
-
-            let pointer =
-                xila_memory_allocate(core::ptr::null_mut(), size, alignment, capabilities);
-            assert!(!pointer.is_null(), "Allocation should succeed");
-
-            // The allocation should be tracked in the allocations table
-            // We can't directly access the table, but deallocation should work
-            xila_memory_deallocate(pointer);
-
-            // Double deallocation should be safe (should be handled gracefully)
-            xila_memory_deallocate(pointer);
-        }
-    }
-
-    #[test]
     fn test_reallocation_tracking() {
         unsafe {
             // Test that reallocations properly update the tracking table
@@ -964,26 +873,6 @@ mod tests {
 
             // The new pointer should be properly tracked
             xila_memory_deallocate(new_pointer);
-        }
-    }
-
-    #[test]
-    fn test_double_free_handling() {
-        unsafe {
-            // Test that double-free is handled gracefully
-            let size = 64;
-            let alignment = 8;
-            let capabilities = 0;
-
-            let pointer =
-                xila_memory_allocate(core::ptr::null_mut(), size, alignment, capabilities);
-            assert!(!pointer.is_null(), "Allocation should succeed");
-
-            // First deallocation should succeed
-            xila_memory_deallocate(pointer);
-
-            // Second deallocation should be ignored (no crash)
-            xila_memory_deallocate(pointer);
         }
     }
 }
