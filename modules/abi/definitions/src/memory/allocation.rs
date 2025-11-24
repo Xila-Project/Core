@@ -124,7 +124,6 @@ where
 /// - The pointer must have been returned by a previous call to `xila_memory_allocate`
 ///   or `xila_memory_reallocate`
 /// - The pointer must not be used after this function returns
-/// - Double-free is safe and will be ignored
 ///
 /// # Parameters
 ///
@@ -138,10 +137,10 @@ where
 /// xila_memory_deallocate(NULL); // Safe - ignored
 /// ```
 #[unsafe(no_mangle)]
-pub extern "C" fn xila_memory_deallocate(pointer: *mut c_void) {
+pub unsafe extern "C" fn xila_memory_deallocate(pointer: *mut c_void) {
     let _lock = block_on(ALLOCATION_MUTEX.lock());
 
-    let allocated = match Allocated::from_user_pointer(pointer as *mut u8) {
+    let allocated = match unsafe { Allocated::from_user_pointer(pointer as *mut u8) } {
         Some(alloc) => alloc,
         None => {
             return;
