@@ -5,12 +5,30 @@ use synchronization::{
     blocking_mutex::raw::CriticalSectionRawMutex, channel::Channel, channel::Sender,
 };
 use wasm_bindgen::{JsCast, prelude::Closure};
-use web_sys::KeyboardEvent;
+use web_sys::{ClipboardEvent, KeyboardEvent};
 
 #[derive(Debug)]
-pub struct KeyboardDevice(Box<Channel<CriticalSectionRawMutex, (Key, State), 64>>);
+pub struct KeyboardDevice(Box<Channel<CriticalSectionRawMutex, (Key, State), 512>>);
 
 impl KeyboardDevice {
+    fn handle_key_press_char<const N: usize>(
+        sender: Sender<'_, CriticalSectionRawMutex, (Key, State), N>,
+        character: char,
+        pressed: bool,
+    ) {
+        let key = Key::Character(character as u8);
+
+        let state = if pressed {
+            State::Pressed
+        } else {
+            State::Released
+        };
+
+        if let Err(e) = sender.try_send((key, state)) {
+            log::error!("Failed to send key event: {:?}", e);
+        }
+    }
+
     fn handle_key_press<const N: usize>(
         sender: Sender<'_, CriticalSectionRawMutex, (Key, State), N>,
         key: &str,
@@ -36,16 +54,20 @@ impl KeyboardDevice {
     }
 
     pub fn new() -> Result<Self, String> {
-        let document = web_sys::window()
-            .ok_or("Failed to get window")?
-            .document()
-            .ok_or("Failed to get document")?;
+        let window = web_sys::window().ok_or("Failed to get window")?;
+
+        let document = window.document().ok_or("Failed to get document")?;
 
         let inner = Self(Box::new(Channel::new()));
 
         let sender = inner.0.sender();
 
         let key_down_closure = Closure::wrap(Box::new(move |event: KeyboardEvent| {
+            // Skip handling Ctrl+V to avoid registering 'V' (paste event will handle it)
+            if event.ctrl_key() {
+                return;
+            }
+
             Self::handle_key_press(sender, &event.key(), true);
             Self::handle_key_press(sender, &event.key(), false);
         }) as Box<dyn FnMut(KeyboardEvent)>);
@@ -53,7 +75,26 @@ impl KeyboardDevice {
         document
             .add_event_listener_with_callback("keydown", key_down_closure.as_ref().unchecked_ref())
             .map_err(|_| "Failed to add keydown event listener")?;
+
+        let sender = inner.0.sender();
+
+        let paste_closure = Closure::wrap(Box::new(move |event: ClipboardEvent| {
+            if let Some(clipboard_data) = event.clipboard_data() {
+                if let Ok(text) = clipboard_data.get_data("text") {
+                    for char in text.chars() {
+                        Self::handle_key_press_char(sender, char, true);
+                        Self::handle_key_press_char(sender, char, false);
+                    }
+                }
+            }
+        }) as Box<dyn FnMut(ClipboardEvent)>);
+
+        window
+            .add_event_listener_with_callback("paste", paste_closure.as_ref().unchecked_ref())
+            .map_err(|_| "Failed to add paste event listener")?;
+
         key_down_closure.forget(); // Prevent memory leak by keeping the closure alive
+        paste_closure.forget(); // Prevent memory leak by keeping the closure alive
 
         Ok(inner)
     }
@@ -61,8 +102,6 @@ impl KeyboardDevice {
 
 impl DirectBaseOperations for KeyboardDevice {
     fn read(&self, buffer: &mut [u8], _: Size) -> file_system::Result<usize> {
-        //log::information!("Keyboard read: {:?}", buffer);
-
         let data: &mut InputData = buffer
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;

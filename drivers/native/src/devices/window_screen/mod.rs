@@ -17,7 +17,7 @@ use window::*;
 
 use crate::window_screen::event_loop::Runner;
 
-static KEYBOARD_CHANNEL: Channel<CriticalSectionRawMutex, (Key, State), 64> = Channel::new();
+static KEYBOARD_CHANNEL: Channel<CriticalSectionRawMutex, (Key, State), 512> = Channel::new();
 static POINTER_RWLOCK: RwLock<CriticalSectionRawMutex, InputData> =
     RwLock::new(InputData::default_constant());
 static INNER_WINDOW: InnerWindow = InnerWindow::new();
@@ -28,7 +28,7 @@ pub async fn new(
     (
         ScreenDevice<'static>,
         PointerDevice,
-        KeyboardDevice<CriticalSectionRawMutex, 64>,
+        KeyboardDevice<CriticalSectionRawMutex, 512>,
         Runner<'static>,
     ),
     String,

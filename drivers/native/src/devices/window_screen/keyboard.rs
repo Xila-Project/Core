@@ -25,14 +25,17 @@ impl<const N: usize> DirectBaseOperations for KeyboardDevice<CriticalSectionRawM
             .try_into()
             .map_err(|_| file_system::Error::InvalidParameter)?;
 
-        if let Ok((key, state)) = self.0.try_receive() {
+        let size = if let Ok((key, state)) = self.0.try_receive() {
             data.set_key(key);
             data.set_state(state);
-        }
+            size_of::<InputData>()
+        } else {
+            0
+        };
 
         data.set_continue(!self.0.is_empty());
 
-        Ok(size_of::<InputData>())
+        Ok(size)
     }
 
     fn write(&self, _: &[u8], _: Size) -> file_system::Result<usize> {
