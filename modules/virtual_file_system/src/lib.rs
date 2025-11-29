@@ -14,6 +14,8 @@ mod socket;
 mod synchronous_directory;
 mod synchronous_file;
 
+use core::time::Duration;
+
 pub use directory::*;
 pub use error::*;
 use exported_file_system::{Flags, StateFlags};
@@ -27,17 +29,16 @@ pub use synchronous_file::*;
 
 pub extern crate file_system as exported_file_system;
 
-use core::{future::poll_fn, task::Poll};
-
 pub async fn poll<O>(mut operation: impl FnMut() -> Result<O>) -> Result<O> {
-    poll_fn(|context| match operation() {
-        Err(Error::FileSystem(::file_system::Error::RessourceBusy)) | Err(Error::RessourceBusy) => {
-            context.waker().wake_by_ref();
-            Poll::Pending
+    loop {
+        match operation() {
+            Err(Error::FileSystem(::file_system::Error::RessourceBusy))
+            | Err(Error::RessourceBusy) => {
+                task::sleep(Duration::from_millis(10)).await;
+            }
+            other => return other,
         }
-        other => core::task::Poll::Ready(other),
-    })
-    .await
+    }
 }
 
 pub fn blocking_operation<O>(flags: Flags, mut operation: impl FnMut() -> Result<O>) -> Result<O> {
