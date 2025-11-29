@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 
+use arboard::Clipboard;
 use graphics::{InputData, Key, Point, State};
 use pixels::{Pixels, SurfaceTexture};
 use synchronization::rwlock::RwLock;
@@ -17,15 +18,17 @@ use super::InnerWindow;
 pub struct Window<'a> {
     resolution: Point,
     inner_window: &'a InnerWindow,
-    keyboard_receiver: Sender<'static, CriticalSectionRawMutex, (Key, State), 64>,
+    keyboard_receiver: Sender<'static, CriticalSectionRawMutex, (Key, State), 512>,
     pointer_rwlock: &'static RwLock<CriticalSectionRawMutex, InputData>,
+    is_control_pressed: bool,
+    clipboard: Clipboard,
 }
 
 impl<'a> Window<'a> {
-    pub const fn new(
+    pub fn new(
         resolution: Point,
         inner_window: &'a InnerWindow,
-        keyboard_receiver: Sender<'static, CriticalSectionRawMutex, (Key, State), 64>,
+        keyboard_receiver: Sender<'static, CriticalSectionRawMutex, (Key, State), 512>,
         pointer_rwlock: &'static RwLock<CriticalSectionRawMutex, InputData>,
     ) -> Self {
         Self {
@@ -33,6 +36,30 @@ impl<'a> Window<'a> {
             inner_window,
             keyboard_receiver,
             pointer_rwlock,
+            is_control_pressed: false,
+            clipboard: Clipboard::new().expect("Failed to initialize clipboard"),
+        }
+    }
+
+    pub fn paste(&mut self) -> Option<()> {
+        if let Some(text) = self.clipboard.get_text().ok() {
+            for character in text.chars() {
+                let key = Key::Character(character as u8);
+
+                if let Err(e) = self.keyboard_receiver.try_send((key, State::Pressed)) {
+                    log::error!("Failed to send key event: {:?}", e);
+                    return None;
+                }
+
+                if let Err(e) = self.keyboard_receiver.try_send((key, State::Released)) {
+                    log::error!("Failed to send key event: {:?}", e);
+                    return None;
+                }
+            }
+
+            Some(())
+        } else {
+            None
         }
     }
 }
@@ -92,6 +119,13 @@ impl<'a> ApplicationHandler for Window<'a> {
                             _ => Key::Character(key),
                         };
 
+                        if (Key::Character(b'v') == key || Key::Character(b'V') == key)
+                            && self.is_control_pressed
+                        {
+                            self.paste();
+                            return;
+                        }
+
                         if let Err(e) = self.keyboard_receiver.try_send((key, State::Pressed)) {
                             log::error!("Failed to send key event: {:?}", e);
                             return;
@@ -126,6 +160,9 @@ impl<'a> ApplicationHandler for Window<'a> {
                         log::error!("Failed to send key event: {:?}", e);
                     }
                 }
+            }
+            WindowEvent::ModifiersChanged(modifiers) => {
+                self.is_control_pressed = modifiers.state().control_key();
             }
             WindowEvent::CursorMoved {
                 device_id: _,
