@@ -9,6 +9,7 @@ mod execute;
 mod exit;
 mod list;
 mod statistics;
+mod web_request;
 
 fn check_no_more_arguments<'a, I>(options: &mut getargs::Options<&'a str, I>) -> crate::Result<()>
 where
