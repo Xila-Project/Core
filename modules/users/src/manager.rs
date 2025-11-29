@@ -44,7 +44,7 @@ impl Manager {
         groups.insert(
             GroupIdentifier::ROOT,
             InternalGroup {
-                name: "Root".to_string(),
+                name: "root".to_string(),
                 users: BTreeSet::new(),
             },
         );
@@ -53,7 +53,7 @@ impl Manager {
         users.insert(
             UserIdentifier::ROOT,
             InternalUser {
-                name: "Root".to_string(),
+                name: "root".to_string(),
                 primary_group: GroupIdentifier::ROOT,
             },
         );
@@ -224,7 +224,7 @@ impl Manager {
         if !inner
             .groups
             .get_mut(&group_identifier)
-            .unwrap()
+            .ok_or(Error::InvalidGroupIdentifier)?
             .users
             .insert(user_identifier)
         {
@@ -240,7 +240,7 @@ impl Manager {
             .await
             .groups
             .get(&identifier)
-            .unwrap()
+            .ok_or(Error::InvalidGroupIdentifier)?
             .name
             .clone())
     }
