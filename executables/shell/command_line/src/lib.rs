@@ -2,6 +2,7 @@
 
 extern crate alloc;
 
+use crate::{Error, Result};
 use alloc::{
     borrow::ToOwned,
     boxed::Box,
@@ -10,24 +11,20 @@ use alloc::{
 };
 use core::fmt::Write;
 use core::num::NonZeroUsize;
+use error::*;
 use xila::file_system::Path;
 use xila::task;
+use xila::{executable, file_system::PathOwned};
 use xila::{
     executable::{ExecutableTrait, Standard},
     task::TaskIdentifier,
 };
 
-use crate::{Error, Result, parser::parse, tokenizer::tokenize};
-
 mod commands;
 mod error;
-
-mod parser;
+//mod parser;
 mod resolver;
-mod tokenizer;
-
-use error::*;
-use xila::{executable, file_system::PathOwned};
+//mod tokenizer;
 
 pub struct Shell {
     task: TaskIdentifier,
@@ -67,30 +64,34 @@ impl Shell {
 
     async fn parse_input<'a, I>(&mut self, input: I, paths: &[&Path]) -> Result<()>
     where
-        I: IntoIterator<Item = &'a str>,
+        I: IntoIterator<Item = &'a str> + Clone,
     {
-        let tokens = tokenize(input);
-        let commands = parse(tokens)?;
+        let mut options: getargs::Options<&'a str, <I as IntoIterator>::IntoIter> =
+            getargs::Options::new(input.clone().into_iter());
 
-        for command in commands {
-            let result = match command.command {
-                "exit" => self.exit(&command.arguments).await,
-                "cd" => self.change_directory(&command.arguments).await,
-                "echo" => self.echo(&command.arguments).await,
-                "ls" => self.list(&command.arguments).await,
-                "clear" => self.clear(&command.arguments).await,
-                "cat" => self.concatenate(&command.arguments).await,
-                "stat" => self.statistics(&command.arguments).await,
-                "mkdir" => self.create_directory(&command.arguments).await,
-                "export" => self.set_environment_variable(&command.arguments).await,
-                "unset" => self.remove_environment_variable(&command.arguments).await,
-                "rm" => self.remove(&command.arguments).await,
-                _ => self.execute(command, paths).await,
-            };
+        let next_positional = match options.next_positional() {
+            Some(arg) => arg,
+            None => return Ok(()),
+        };
 
-            if let Err(error) = result {
-                writeln!(self.standard.standard_error, "{}", error)?;
-            }
+        let result = match next_positional {
+            "exit" => self.exit(&mut options).await,
+            "cd" => self.change_directory(&mut options).await,
+            "echo" => self.echo(&mut options).await,
+            "ls" => self.list(&mut options).await,
+            "clear" => self.clear(&mut options).await,
+            "cat" => self.concatenate(&mut options).await,
+            "stat" => self.statistics(&mut options).await,
+            "mkdir" => self.create_directory(&mut options).await,
+            "export" => self.set_environment_variable(&mut options).await,
+            "unset" => self.remove_environment_variable(&mut options).await,
+            "rm" => self.remove(&mut options).await,
+            "web_request" => self.web_request(&mut options).await,
+            _ => self.execute(input, paths).await,
+        };
+
+        if let Err(error) = result {
+            writeln!(self.standard.standard_error, "{}", error)?;
         }
 
         Ok(())

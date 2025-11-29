@@ -1,6 +1,7 @@
-use crate::{Error, Result, Shell};
+use crate::{Error, Result, Shell, commands::check_no_more_arguments};
 use alloc::{borrow::ToOwned, format};
 use core::fmt::Write;
+use getargs::Options;
 use xila::{
     file_system::Path,
     internationalization::translate,
@@ -9,12 +10,16 @@ use xila::{
 };
 
 impl Shell {
-    pub async fn statistics(&mut self, arguments: &[&str]) -> Result<()> {
-        if arguments.len() != 1 {
-            return Err(Error::InvalidNumberOfArguments);
-        }
+    pub async fn statistics<'a, I>(&mut self, options: &mut Options<&'a str, I>) -> Result<()>
+    where
+        I: Iterator<Item = &'a str>,
+    {
+        let path = options
+            .next_positional()
+            .ok_or(Error::MissingPositionalArgument("path"))?;
 
-        let path = Path::from_str(arguments[0]);
+        check_no_more_arguments(options)?;
+        let path = Path::from_str(path);
 
         let path = if path.is_absolute() {
             path.to_owned()

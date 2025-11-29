@@ -1,13 +1,22 @@
-use crate::{Error, Result, Shell};
+use crate::{Error, Result, Shell, commands::check_no_more_arguments};
+use getargs::Options;
 use xila::task;
 
 impl Shell {
-    pub async fn set_environment_variable(&mut self, arguments: &[&str]) -> Result<()> {
-        if arguments.len() != 1 {
-            return Err(Error::InvalidNumberOfArguments);
-        }
+    pub async fn set_environment_variable<'a, I>(
+        &mut self,
+        options: &mut Options<&'a str, I>,
+    ) -> Result<()>
+    where
+        I: Iterator<Item = &'a str>,
+    {
+        let argument = options
+            .next_positional()
+            .ok_or(Error::MissingPositionalArgument("name=value"))?;
 
-        let (name, value) = arguments[0].split_once('=').ok_or(Error::InvalidArgument)?;
+        check_no_more_arguments(options)?;
+
+        let (name, value) = argument.split_once('=').ok_or(Error::InvalidArgument)?;
 
         task::get_instance()
             .set_environment_variable(self.task, name, value)
@@ -15,12 +24,18 @@ impl Shell {
             .map_err(Error::FailedToSetEnvironmentVariable)
     }
 
-    pub async fn remove_environment_variable(&mut self, arguments: &[&str]) -> Result<()> {
-        if arguments.len() != 1 {
-            return Err(Error::InvalidNumberOfArguments);
-        }
+    pub async fn remove_environment_variable<'a, I>(
+        &mut self,
+        options: &mut Options<&'a str, I>,
+    ) -> Result<()>
+    where
+        I: Iterator<Item = &'a str>,
+    {
+        let name = options
+            .next_positional()
+            .ok_or(Error::MissingPositionalArgument("name"))?;
 
-        let name = arguments[0];
+        check_no_more_arguments(options)?;
 
         task::get_instance()
             .remove_environment_variable(self.task, name)

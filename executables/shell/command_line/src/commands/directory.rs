@@ -1,17 +1,23 @@
-use crate::{Error, Result, Shell};
+use crate::{Error, Result, Shell, commands::check_no_more_arguments};
 use alloc::borrow::ToOwned;
+use getargs::Options;
 use xila::{
     file_system::Path,
     virtual_file_system::{self, Directory},
 };
 
 impl Shell {
-    pub async fn create_directory(&mut self, arguments: &[&str]) -> Result<()> {
-        if arguments.len() != 1 {
-            return Err(Error::InvalidNumberOfArguments);
-        }
+    pub async fn create_directory<'a, I>(&mut self, options: &mut Options<&'a str, I>) -> Result<()>
+    where
+        I: Iterator<Item = &'a str>,
+    {
+        let path = options
+            .next_positional()
+            .ok_or(Error::MissingPositionalArgument("path"))?;
 
-        let path = Path::from_str(arguments[0]);
+        check_no_more_arguments(options)?;
+
+        let path = Path::from_str(path);
 
         if !path.is_valid() {
             return Err(Error::InvalidPath);
@@ -33,12 +39,16 @@ impl Shell {
             .map_err(Error::FailedToCreateDirectory)
     }
 
-    pub async fn remove(&mut self, arguments: &[&str]) -> Result<()> {
-        if arguments.len() != 1 {
-            return Err(Error::InvalidNumberOfArguments);
-        }
+    pub async fn remove<'a, I>(&mut self, options: &mut Options<&'a str, I>) -> Result<()>
+    where
+        I: Iterator<Item = &'a str>,
+    {
+        let path = options
+            .next_positional()
+            .ok_or(Error::MissingPositionalArgument("path"))?;
+        let path = Path::from_str(path);
 
-        let path = Path::from_str(arguments[0]);
+        check_no_more_arguments(options)?;
 
         if !path.is_valid() {
             return Err(Error::InvalidPath);

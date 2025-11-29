@@ -1,7 +1,6 @@
 use crate::{
     Shell,
     error::{Error, Result},
-    parser::Command,
     resolver::resolve,
 };
 use alloc::{
@@ -11,7 +10,10 @@ use alloc::{
 use xila::{executable::execute, file_system::Path, task};
 
 impl Shell {
-    pub async fn execute<'a>(&mut self, command: Command<'a>, paths: &[&Path]) -> Result<()> {
+    pub async fn execute<'a, I>(&mut self, input: I, paths: &[&Path]) -> Result<()>
+    where
+        I: IntoIterator<Item = &'a str>,
+    {
         // - Set the current directory for the following commands.
         task::get_instance()
             .set_environment_variable(
@@ -22,11 +24,13 @@ impl Shell {
             .await
             .map_err(Error::FailedToSetCurrentDirectory)?;
 
-        let path = Path::from_str(command.command);
+        let mut arguments = input.into_iter();
+
+        let path = Path::from_str(arguments.next().ok_or(Error::MissingCommand)?);
 
         if path.is_valid() {
             if path.is_absolute() {
-                self.run(path, command.arguments).await?;
+                self.run(path, arguments).await?;
             } else {
                 let path = self
                     .current_directory
@@ -34,12 +38,12 @@ impl Shell {
                     .join(path)
                     .ok_or(Error::FailedToJoinPath)?;
 
-                self.run(&path, command.arguments).await?;
+                self.run(&path, arguments).await?;
             }
         } else {
-            let path = resolve(command.command, paths).await?;
+            let path = resolve(path.as_str(), paths).await?;
 
-            self.run(&path, command.arguments).await?;
+            self.run(&path, arguments).await?;
         }
 
         Ok(())
@@ -47,7 +51,7 @@ impl Shell {
 
     async fn run<'a, I>(&mut self, path: &Path, arguments: I) -> Result<()>
     where
-        I: IntoIterator<Item = &'a str>,
+        I: Iterator<Item = &'a str>,
     {
         let standard = self.standard.duplicate().await.unwrap();
 
