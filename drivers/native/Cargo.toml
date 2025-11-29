@@ -20,3 +20,4 @@ embassy-executor = { workspace = true, default-features = false, features = [
   "arch-std",
   "executor-thread",
 ] }
+arboard = { version = "3.6", features = ["wayland-data-control"] }
