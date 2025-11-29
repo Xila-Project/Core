@@ -40,9 +40,9 @@ impl Settings {
 
         // Create tabs
         let mut tabs = [
-            Tab::GeneralTab(GeneralTab::new()),
-            Tab::PasswordTab(PasswordTab::new()),
-            Tab::AboutTab(AboutTab::new()),
+            Tab::General(GeneralTab::new()),
+            Tab::Password(PasswordTab::new()),
+            Tab::About(AboutTab::new()),
         ];
 
         tabs.iter_mut().for_each(|tab| {

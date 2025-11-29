@@ -3,25 +3,25 @@ use xila::graphics::{Event, lvgl};
 
 /// Enum to hold all tab types (avoids dyn compatibility issues with async traits)
 pub enum Tab {
-    GeneralTab(GeneralTab),
-    PasswordTab(PasswordTab),
-    AboutTab(AboutTab),
+    General(GeneralTab),
+    Password(PasswordTab),
+    About(AboutTab),
 }
 
 impl Tab {
     pub fn create_ui(&mut self, parent: *mut lvgl::lv_obj_t) -> Result<*mut lvgl::lv_obj_t> {
         match self {
-            Tab::GeneralTab(tab) => tab.create_ui(parent),
-            Tab::PasswordTab(tab) => tab.create_ui(parent),
-            Tab::AboutTab(tab) => tab.create_ui(parent),
+            Tab::General(tab) => tab.create_ui(parent),
+            Tab::Password(tab) => tab.create_ui(parent),
+            Tab::About(tab) => tab.create_ui(parent),
         }
     }
 
     pub async fn handle_event(&mut self, event: &Event) -> bool {
         match self {
-            Tab::GeneralTab(tab) => tab.handle_event(event).await,
-            Tab::PasswordTab(tab) => tab.handle_event(event).await,
-            Tab::AboutTab(tab) => tab.handle_event(event).await,
+            Tab::General(tab) => tab.handle_event(event).await,
+            Tab::Password(tab) => tab.handle_event(event).await,
+            Tab::About(tab) => tab.handle_event(event).await,
         }
     }
 }
