@@ -1,10 +1,11 @@
 use core::fmt::Write;
+use getargs::Options;
 use xila::{
     file_system::{AccessFlags, Path},
     virtual_file_system::{self, File},
 };
 
-use crate::{Error, Result, Shell};
+use crate::{Error, Result, Shell, commands::check_no_more_options};
 
 impl Shell {
     async fn read_file_and_write(&mut self, path: &Path) -> Result<()> {
@@ -24,19 +25,25 @@ impl Shell {
         Ok(())
     }
 
-    pub async fn concatenate(&mut self, arguments: &[&str]) -> Result<()> {
-        for path in arguments {
-            let path = Path::from_str(path);
+    pub async fn concatenate<'a, I>(&mut self, options: &mut Options<&'a str, I>) -> Result<()>
+    where
+        I: Iterator<Item = &'a str>,
+    {
+        check_no_more_options(options)?;
+
+        while let Some(argument) = options.next_positional() {
+            let path = Path::from_str(argument);
 
             if path.is_absolute() {
                 self.read_file_and_write(path).await?;
             } else {
-                match self.current_directory.clone().join(path) {
-                    Some(path) => self.read_file_and_write(&path).await?,
-                    None => {
-                        return Err(Error::FailedToJoinPath);
-                    }
-                }
+                let path = self
+                    .current_directory
+                    .clone()
+                    .join(path)
+                    .ok_or(Error::FailedToJoinPath)?;
+
+                self.read_file_and_write(&path).await?;
             }
         }
 

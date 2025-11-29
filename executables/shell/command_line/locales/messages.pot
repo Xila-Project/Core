@@ -82,8 +82,20 @@ msgstr ""
 msgid "Failed to open file: {}"
 msgstr ""
 
+msgid "Option requires a value"
+msgstr ""
+
+msgid "Option does not require a value"
+msgstr ""
+
 #: error.invalid_argument
 msgid "Invalid argument"
+msgstr ""
+
+msgid "Missing positional argument: {}"
+msgstr ""
+
+msgid "Invalid option"
 msgstr ""
 
 #: error.failed_to_get_metadata

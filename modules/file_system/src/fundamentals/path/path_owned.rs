@@ -131,6 +131,10 @@ impl PathOwned {
 
         self.0 = stack.join("/");
 
+        if self.0.is_empty() {
+            self.0.push('/');
+        }
+
         self
     }
 }

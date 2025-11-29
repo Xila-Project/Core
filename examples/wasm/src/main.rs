@@ -138,7 +138,12 @@ async fn main() {
                 CharacterDevice,
                 drivers_shared::devices::RandomDevice
             ),
-            (&"/devices/null", CharacterDevice, drivers_core::NullDevice)
+            (&"/devices/null", CharacterDevice, drivers_core::NullDevice),
+            (
+                &"/devices/https_client",
+                CharacterDevice,
+                drivers_wasm::devices::HttpClientDevice
+            ),
         ]
     )
     .await

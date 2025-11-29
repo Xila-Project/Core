@@ -32,10 +32,24 @@ pub enum Error {
     FailedToRemoveDirectory(virtual_file_system::Error),
     FailedToOpenDirectory(virtual_file_system::Error),
     FailedToOpenFile(virtual_file_system::Error),
+    RequiresValue,
+    DoesNotRequireValue,
     InvalidArgument,
+    MissingPositionalArgument(&'static str),
+    InvalidOption,
     FailedToGetMetadata(virtual_file_system::Error),
     FailedToReadDirectoryEntry(virtual_file_system::Error),
-    FormatError,
+    Format,
+}
+
+impl<A: getargs::Argument> From<getargs::Error<A>> for Error {
+    fn from(value: getargs::Error<A>) -> Self {
+        match value {
+            getargs::Error::RequiresValue(_) => Error::RequiresValue,
+            getargs::Error::DoesNotRequireValue(_) => Error::DoesNotRequireValue,
+            _ => Error::InvalidOption,
+        }
+    }
 }
 
 impl Error {
@@ -46,7 +60,7 @@ impl Error {
 
 impl From<fmt::Error> for Error {
     fn from(_: fmt::Error) -> Self {
-        Error::FormatError
+        Error::Format
     }
 }
 
@@ -126,8 +140,24 @@ impl Display for Error {
             Error::FailedToOpenFile(error) => {
                 write!(formatter, translate!("Failed to open file: {}"), error)
             }
+            Error::RequiresValue => {
+                write!(formatter, translate!("Option requires a value"))
+            }
+            Error::DoesNotRequireValue => {
+                write!(formatter, translate!("Option does not require a value"))
+            }
             Error::InvalidArgument => {
                 write!(formatter, translate!("Invalid argument"))
+            }
+            Error::MissingPositionalArgument(name) => {
+                write!(
+                    formatter,
+                    translate!("Missing positional argument: {}"),
+                    name
+                )
+            }
+            Error::InvalidOption => {
+                write!(formatter, translate!("Invalid option"))
             }
             Error::FailedToGetMetadata(error) => {
                 write!(formatter, translate!("Failed to get metadata: {}"), error)
@@ -146,7 +176,7 @@ impl Display for Error {
                     error
                 )
             }
-            Error::FormatError => {
+            Error::Format => {
                 write!(formatter, translate!("Format error"))
             }
             Error::FailedToReadEnvironmentVariable(error) => {

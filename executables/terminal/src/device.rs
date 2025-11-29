@@ -1,7 +1,8 @@
-use alloc::string::String;
-
-use xila::file_system::{
-    DirectBaseOperations, DirectCharacterDevice, Error, MountOperations, Position, Result, Size,
+use xila::{
+    file_system::{
+        DirectBaseOperations, DirectCharacterDevice, Error, MountOperations, Position, Result, Size,
+    },
+    shared::utf8_chunks,
 };
 
 use crate::terminal::Terminal;
@@ -19,9 +20,11 @@ impl DirectBaseOperations for Terminal {
     }
 
     fn write(&self, buffer: &[u8], _: Size) -> Result<usize> {
-        let string = String::from_utf8_lossy(buffer);
+        let chunks = utf8_chunks(buffer);
 
-        self.print(&string).map_err(map_error)?;
+        for string in chunks {
+            self.print(string).map_err(map_error)?;
+        }
 
         Ok(buffer.len())
     }

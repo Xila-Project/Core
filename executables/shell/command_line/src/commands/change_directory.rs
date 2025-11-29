@@ -4,15 +4,28 @@ use xila::{
     virtual_file_system::{self, Directory},
 };
 
-use crate::{Error, Result, Shell};
+use crate::{Error, Result, Shell, commands::check_no_more_arguments};
 
 impl Shell {
-    pub async fn change_directory(&mut self, arguments: &[&str]) -> Result<()> {
-        if arguments.len() != 1 {
-            return Err(Error::InvalidNumberOfArguments);
-        }
+    pub async fn change_directory<'a, I>(
+        &mut self,
+        options: &mut getargs::Options<&'a str, I>,
+    ) -> Result<()>
+    where
+        I: Iterator<Item = &'a str>,
+    {
+        let path = options.next_positional();
 
-        let current_directory = Path::from_str(arguments[0]).to_owned();
+        let path = match path {
+            Some(p) => p,
+            None => {
+                return Err(Error::MissingPositionalArgument("path"));
+            }
+        };
+
+        check_no_more_arguments(options)?;
+
+        let current_directory = Path::from_str(path).to_owned();
 
         let current_directory = if current_directory.is_absolute() {
             current_directory

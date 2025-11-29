@@ -11,6 +11,7 @@ critical-section = { workspace = true, features = ["std"] }
 futures = { workspace = true }
 synchronization = { workspace = true }
 log = { workspace = true }
+shared = { workspace = true }
 
 linked_list_allocator = { workspace = true }
 console_error_panic_hook = "0.1"
@@ -55,5 +56,13 @@ web-sys = { version = "0.3.64", features = [
   "FileSystemSyncAccessHandle",
   "FileSystemReadWriteOptions",
   "WebGl2RenderingContext",
+  "Request",
+  "Response",
+  "RequestInit",
+  "Headers",
+  "Url",
+  "UrlSearchParams",
+  "ClipboardEvent",
+  "DataTransfer",
 ] }
 js-sys = "0.3"

@@ -102,6 +102,7 @@ fn test_directory() {
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
+            .truncate(true)
             .open("/test_dir/file2.txt")
             .unwrap();
 
