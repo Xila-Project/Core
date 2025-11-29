@@ -87,15 +87,13 @@ impl Terminal {
                 input
             };
 
-            let inner = Inner {
+            Inner {
                 window,
                 buffer,
                 display,
                 input,
                 validated_input: VecDeque::with_capacity(128),
-            };
-
-            inner
+            }
         });
 
         Ok(Self(RwLock::new(inner)))
