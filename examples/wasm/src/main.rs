@@ -147,6 +147,11 @@ async fn main() {
                 CharacterDevice,
                 drivers_wasm::devices::HttpClientDevice
             ),
+            (
+                &"/devices/hasher",
+                CharacterDevice,
+                drivers_shared::devices::HashDevice
+            ),
         ]
     )
     .await

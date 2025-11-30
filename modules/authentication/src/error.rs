@@ -73,6 +73,8 @@ pub enum Error {
     FailedToGetUserIdentifier(users::Error),
     /// Failed to close a file
     FailedToCloseFile(virtual_file_system::Error),
+    /// Failed to hash
+    FailedToHashPassword(virtual_file_system::Error),
 }
 
 impl Display for Error {
@@ -159,6 +161,9 @@ impl Display for Error {
             }
             Self::FailedToCloseFile(error) => {
                 write!(formatter, "Failed to close file: {error}")
+            }
+            Self::FailedToHashPassword(error) => {
+                write!(formatter, "Failed to hash password: {error}")
             }
         }
     }

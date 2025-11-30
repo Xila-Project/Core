@@ -16,7 +16,10 @@ use alloc::{
     format,
     string::{String, ToString},
 };
-use virtual_file_system::File;
+use device::hash::{HashAlgorithm, SET_ALGORITHM};
+use file_system::AccessFlags;
+use task::TaskIdentifier;
+use virtual_file_system::{File, VirtualFileSystem};
 
 use crate::{Error, RANDOM_DEVICE_PATH, Result};
 
@@ -40,11 +43,10 @@ use crate::{Error, RANDOM_DEVICE_PATH, Result};
 ///
 /// The salt generation converts random bytes to lowercase letters (a-z)
 /// for readability while maintaining sufficient entropy for security.
-pub async fn generate_salt() -> Result<String> {
-    let virtual_file_system = virtual_file_system::get_instance();
-
-    let task = task::get_instance().get_current_task_identifier().await;
-
+pub async fn generate_salt(
+    virtual_file_system: &VirtualFileSystem<'_>,
+    task: TaskIdentifier,
+) -> Result<String> {
     let mut buffer = [0_u8; 16];
 
     File::read_slice_from_path(virtual_file_system, task, RANDOM_DEVICE_PATH, &mut buffer)
@@ -78,15 +80,49 @@ pub async fn generate_salt() -> Result<String> {
 /// This function uses SHA-512, which is cryptographically secure and resistant
 /// to collision attacks. The salt prevents rainbow table attacks and ensures
 /// that identical passwords have different hashes.
-pub fn hash_password(password: &str, salt: &str) -> String {
-    use sha2::Digest;
+pub async fn hash_password(
+    virtual_file_system: &VirtualFileSystem<'_>,
+    task: TaskIdentifier,
+    password: &str,
+    salt: &str,
+) -> Result<String> {
+    let mut file = File::open(
+        virtual_file_system,
+        task,
+        "/devices/hasher",
+        AccessFlags::READ_WRITE.into(),
+    )
+    .await
+    .map_err(Error::FailedToHashPassword)?;
 
-    let mut hasher = sha2::Sha512::new();
+    let mut algorithm = HashAlgorithm::Sha512;
 
-    hasher.update(password.as_bytes());
-    hasher.update(salt.as_bytes());
+    file.control(SET_ALGORITHM, &mut algorithm)
+        .await
+        .map_err(Error::FailedToHashPassword)?;
 
-    let hash = hasher.finalize();
+    file.write(password.as_bytes())
+        .await
+        .map_err(Error::FailedToHashPassword)?;
 
-    format!("{hash:x}")
+    file.write(salt.as_bytes())
+        .await
+        .map_err(Error::FailedToHashPassword)?;
+
+    let mut hash_buffer = [0_u8; 512 / 8];
+
+    file.read(&mut hash_buffer)
+        .await
+        .map_err(Error::FailedToHashPassword)?;
+
+    file.close(virtual_file_system)
+        .await
+        .map_err(Error::FailedToCloseFile)?;
+
+    let hash = hash_buffer
+        .iter()
+        .map(|byte| format!("{:02x}", byte))
+        .collect::<String>();
+
+    Ok(hash)
 }

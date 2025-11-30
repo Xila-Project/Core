@@ -204,14 +204,11 @@ pub async fn authenticate_user<'a>(
 ) -> Result<UserIdentifier> {
     let path = get_user_file_path(user_name)?;
 
-    let mut user_file = File::open(
-        virtual_file_system,
-        task::get_instance().get_current_task_identifier().await,
-        path,
-        AccessFlags::Read.into(),
-    )
-    .await
-    .map_err(Error::FailedToOpenUserFile)?;
+    let task = task::get_instance().get_current_task_identifier().await;
+
+    let mut user_file = File::open(virtual_file_system, task, path, AccessFlags::Read.into())
+        .await
+        .map_err(Error::FailedToOpenUserFile)?;
 
     let mut buffer = Vec::new();
 
@@ -228,7 +225,10 @@ pub async fn authenticate_user<'a>(
     let user: User = miniserde::json::from_str(core::str::from_utf8(&buffer).unwrap())
         .map_err(Error::FailedToParseUserFile)?;
 
-    if hash_password(password, user.get_salt()) == user.get_hash() {
+    let hashed_password =
+        hash_password(virtual_file_system, task, password, user.get_salt()).await?;
+
+    if hashed_password == user.get_hash() {
         Ok(user.get_identifier())
     } else {
         Err(Error::InvalidPassword)
@@ -289,9 +289,11 @@ pub async fn create_user<'a>(
         .map_err(Error::FailedToCreateUser)?;
 
     // - Hash password.
-    let salt = generate_salt().await?;
+    let task = task::get_instance().get_current_task_identifier().await;
 
-    let hash = hash_password(password, &salt);
+    let salt = generate_salt(virtual_file_system, task).await?;
+
+    let hash = hash_password(virtual_file_system, task, password, &salt).await?;
 
     // - Write user file.
     let user = User::new(
@@ -360,9 +362,9 @@ pub async fn change_user_password<'a>(
 ) -> Result<()> {
     let task = task::get_instance().get_current_task_identifier().await;
 
-    let salt = generate_salt().await?;
+    let salt = generate_salt(virtual_file_system, task).await?;
 
-    let hash = hash_password(new_password, &salt);
+    let hash = hash_password(virtual_file_system, task, new_password, &salt).await?;
 
     let user_file_path = Path::new(USERS_FOLDER_PATH)
         .to_owned()

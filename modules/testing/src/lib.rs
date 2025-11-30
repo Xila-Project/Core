@@ -138,7 +138,12 @@ pub async fn initialize(graphics_enabled: bool) -> Standard {
                 CharacterDevice,
                 drivers_std::devices::TimeDevice
             ),
-            (&"/devices/null", CharacterDevice, drivers_core::NullDevice)
+            (&"/devices/null", CharacterDevice, drivers_core::NullDevice),
+            (
+                &"/devices/hasher",
+                CharacterDevice,
+                drivers_shared::devices::HashDevice
+            ),
         ]
     )
     .await

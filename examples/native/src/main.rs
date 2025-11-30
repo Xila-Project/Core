@@ -155,7 +155,12 @@ async fn main() {
                 CharacterDevice,
                 drivers_shared::devices::RandomDevice
             ),
-            (&"/devices/null", CharacterDevice, drivers_core::NullDevice)
+            (&"/devices/null", CharacterDevice, drivers_core::NullDevice),
+            (
+                &"/devices/hasher",
+                CharacterDevice,
+                drivers_shared::devices::HashDevice
+            ),
         ]
     )
     .await

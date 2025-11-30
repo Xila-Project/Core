@@ -109,6 +109,7 @@ peripherals = { path = "modules/peripherals" }
 bootsplash = { path = "modules/bootsplash" }
 internationalization = { path = "modules/internationalization" }
 testing = { path = "modules/testing" }
+device = { path = "modules/device" }
 
 # - Drivers
 drivers_core = { path = "drivers/core" }
@@ -199,6 +200,7 @@ members = [
   "modules/internationalization/macros",
   "modules/graphics/fonts_generator",
   "modules/testing",
+  "modules/device",
 ]
 
 [patch.crates-io]
