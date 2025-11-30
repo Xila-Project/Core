@@ -55,24 +55,13 @@ impl Shell {
             }
         }
 
-        xila::log::information!(
-            "Preparing {} request to {:?} with {} headers",
-            method,
-            url,
-            headers.len()
-        );
-
         let virtual_file_system = xila::virtual_file_system::get_instance();
         let task = self.task;
 
         let mut buffer: Vec<u8> = vec![0; 4096];
 
-        xila::log::information!("Parsing URL: {:?}", url);
-
         let url = Url::parse(url.ok_or(crate::error::Error::MissingPositionalArgument("url"))?)
             .ok_or(crate::error::Error::InvalidArgument)?;
-
-        xila::log::information!("Parsed URL: {:?}", url);
 
         let mut request_builder = HttpRequestBuilder::from_buffer(&mut buffer);
 
@@ -85,8 +74,6 @@ impl Shell {
             .ok_or(crate::error::Error::InvalidArgument)?;
 
         for header in headers {
-            xila::log::information!("Processing header: {}", header);
-
             let (name, value) = header
                 .split_once(':')
                 .ok_or(crate::error::Error::InvalidArgument)?;
@@ -95,20 +82,13 @@ impl Shell {
             request_builder
                 .add_header(name, value.as_bytes())
                 .ok_or(crate::error::Error::InvalidArgument)?;
-            xila::log::information!("Added header: {}: {}", name, value);
         }
 
         if let Some(body) = body {
-            xila::log::information!("Body provided directly: {}", body);
-
             request_builder
                 .add_body(body.as_bytes())
                 .ok_or(crate::error::Error::InvalidArgument)?;
-
-            xila::log::information!("Added body: {}", body);
         } else if let Some(body_file) = body_file {
-            xila::log::information!("Reading body from file: {:?}", body_file);
-
             let mut buffer: Vec<u8> = Vec::with_capacity(4096);
 
             File::read_from_path(virtual_file_system, task, body_file, &mut buffer)
@@ -118,11 +98,7 @@ impl Shell {
             request_builder
                 .add_body(&buffer)
                 .ok_or(crate::error::Error::InvalidArgument)?;
-
-            xila::log::information!("Added body from file: {:?}", body_file);
         }
-
-        xila::log::information!("Built HTTP request, opening HTTP client device...");
 
         // Open http client device
         let mut file = File::open(
@@ -134,14 +110,10 @@ impl Shell {
         .await
         .map_err(crate::error::Error::FailedToOpenFile)?;
 
-        xila::log::information!("Opened HTTP client device");
-
         // Write request
         file.write(&buffer)
             .await
             .map_err(crate::error::Error::FailedToOpenFile)?;
-
-        xila::log::information!("Wrote HTTP request to device, reading response...");
 
         // Read header
 
@@ -151,8 +123,6 @@ impl Shell {
             .read(&mut buffer)
             .await
             .map_err(crate::error::Error::FailedToOpenFile)?;
-
-        xila::log::information!("Read {} bytes of response header", bytes_read);
 
         let _ = self.standard.out().write(&buffer[..bytes_read]).await;
         // Read body
@@ -164,11 +134,9 @@ impl Shell {
             .await
             .map_err(crate::error::Error::FailedToOpenFile)?;
 
-        xila::log::information!("Read {} bytes of response body", bytes_read);
-
         let bytes_print = bytes_read.min(128);
 
-        let _ = self.standard.out().write(&buffer[..bytes_print]).await;
+        let _ = self.standard.out().write_line(&buffer[..bytes_print]).await;
 
         file.close(virtual_file_system)
             .await
