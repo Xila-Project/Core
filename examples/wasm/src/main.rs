@@ -235,7 +235,9 @@ async fn main() {
 
     bootsplash.stop(graphics_manager).await.unwrap();
 
-    let arguments = if drivers_wasm::devices::graphics::has_touch_screen().unwrap() {
+    let has_touch_screen = drivers_wasm::devices::graphics::has_touch_screen().unwrap_or(false);
+
+    let arguments = if has_touch_screen {
         log::information!("Touch screen detected.");
         vec!["--show-keyboard".to_string()]
     } else {

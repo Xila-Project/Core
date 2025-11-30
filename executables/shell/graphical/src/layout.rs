@@ -3,7 +3,9 @@ use alloc::{format, string::String};
 use core::ptr::null_mut;
 use xila::graphics::{self, EventKind, lvgl, theme};
 use xila::shared::unix_to_human_time;
-use xila::{log, time};
+use xila::time;
+
+const KEYBOARD_SIZE_RATIO: f64 = 4.0 / 1.0;
 
 pub struct Layout {
     window: *mut lvgl::lv_obj_t,
@@ -79,14 +81,15 @@ pub unsafe extern "C" fn screen_event_handler(event: *mut lvgl::lv_event_t) {
             return;
         }
 
-        log::information!("event screen : {code:?}");
-
         match code {
             EventKind::Focused => {
                 if lvgl::lv_obj_has_class(target, &lvgl::lv_textarea_class) {
                     lvgl::lv_keyboard_set_textarea(keyboard, target);
                     lvgl::lv_obj_remove_flag(keyboard, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
                     lvgl::lv_obj_move_foreground(keyboard);
+
+                    let width = lvgl::lv_obj_get_width(keyboard);
+                    lvgl::lv_obj_set_height(keyboard, (width as f64 / KEYBOARD_SIZE_RATIO) as i32);
                 }
             }
             EventKind::Defocused => {
@@ -188,22 +191,25 @@ impl Layout {
                 clock
             };
 
-            // - - Create a label for the battery
-            let battery = unsafe {
-                // - - Create a label for the battery
-                let battery = lvgl::lv_label_create(header);
+            // - - Create a flex tray for the right side
+            let tray = {
+                unsafe {
+                    let tray = lvgl::lv_obj_create(header);
 
-                if battery.is_null() {
-                    return Err(Error::FailedToCreateObject);
+                    if tray.is_null() {
+                        return Err(Error::FailedToCreateObject);
+                    }
+
+                    lvgl::lv_obj_set_size(tray, lvgl::LV_SIZE_CONTENT, lvgl::LV_SIZE_CONTENT);
+                    lvgl::lv_obj_set_flex_flow(tray, lvgl::lv_flex_flow_t_LV_FLEX_FLOW_ROW);
+                    lvgl::lv_obj_set_style_pad_row(tray, 4, lvgl::LV_STATE_DEFAULT);
+                    lvgl::lv_obj_set_style_pad_column(tray, 8, lvgl::LV_STATE_DEFAULT);
+                    lvgl::lv_obj_set_style_pad_all(tray, 0, lvgl::LV_STATE_DEFAULT);
+                    lvgl::lv_obj_set_style_border_width(tray, 0, lvgl::LV_STATE_DEFAULT);
+                    lvgl::lv_obj_align(tray, lvgl::lv_align_t_LV_ALIGN_RIGHT_MID, 0, 0);
+
+                    tray
                 }
-
-                lvgl::lv_obj_set_align(battery, lvgl::lv_align_t_LV_ALIGN_RIGHT_MID);
-                lvgl::lv_label_set_text(
-                    battery,
-                    lvgl::LV_SYMBOL_BATTERY_3 as *const u8 as *const i8,
-                );
-
-                battery
             };
 
             // - - Create a label for the WiFi
@@ -211,16 +217,32 @@ impl Layout {
             let wi_fi = unsafe {
                 // - - Create a label for the WiFi
 
-                let wi_fi = lvgl::lv_label_create(header);
+                let wi_fi = lvgl::lv_label_create(tray);
 
                 if wi_fi.is_null() {
                     return Err(Error::FailedToCreateObject);
                 }
 
-                lvgl::lv_obj_align_to(wi_fi, battery, lvgl::lv_align_t_LV_ALIGN_OUT_LEFT_MID, 0, 0);
                 lvgl::lv_label_set_text(wi_fi, lvgl::LV_SYMBOL_WIFI as *const u8 as *const i8);
 
                 wi_fi
+            };
+
+            // - - Create a label for the battery
+            let battery = unsafe {
+                // - - Create a label for the battery
+                let battery = lvgl::lv_label_create(tray);
+
+                if battery.is_null() {
+                    return Err(Error::FailedToCreateObject);
+                }
+
+                lvgl::lv_label_set_text(
+                    battery,
+                    lvgl::LV_SYMBOL_BATTERY_3 as *const u8 as *const i8,
+                );
+
+                battery
             };
 
             // - - Create a body object
