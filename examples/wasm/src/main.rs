@@ -13,7 +13,8 @@ async fn main() {
     use drivers_wasm::devices::graphics::GraphicsDevices;
     use xila::bootsplash::Bootsplash;
     use xila::executable::{self, Standard, mount_executables};
-    use xila::file_system::{self};
+    use xila::file_system::mbr::{Mbr, PartitionKind};
+    use xila::file_system::{self, XILA_DISK_SIGNATURE};
     use xila::log;
     use xila::task;
     use xila::time::{self, Duration};
@@ -76,18 +77,20 @@ async fn main() {
     //let drive = create_device!(drivers_wasm::devices::DriveDevice::new(Path::new("xila_drive.img")));
 
     // Create a partition type
-    // let partition = create_device!(
-    //     Mbr::find_or_create_partition_with_signature(&drive, 0xDEADBEEF, PartitionKind::Xila)
-    //         .unwrap()
-    // );
+    let partition = Mbr::find_or_create_partition_with_signature(
+        drive,
+        XILA_DISK_SIGNATURE,
+        PartitionKind::Xila,
+    )
+    .unwrap();
+    let partition = Box::leak(Box::new(partition));
 
     // Print MBR information
-    // let mbr = Mbr::read_from_device(&drive).unwrap();
-
-    // log::information!("MBR Information: {mbr}");
+    let mbr = Mbr::read_from_device(&*drive).unwrap();
+    log::information!("MBR Information: {mbr}");
 
     // Mount the file system
-    let file_system = little_fs::FileSystem::get_or_format(drive, 256).unwrap();
+    let file_system = little_fs::FileSystem::get_or_format(partition, 256).unwrap();
 
     // Initialize the virtual file system
     let virtual_file_system = virtual_file_system::initialize(
