@@ -22,8 +22,6 @@ pub use executable;
 #[cfg(feature = "host")]
 pub use file_system;
 #[cfg(feature = "host")]
-pub use futures;
-#[cfg(feature = "host")]
 pub use graphics;
 #[cfg(feature = "virtual_machine")]
 pub use host_bindings;

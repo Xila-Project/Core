@@ -5,7 +5,7 @@ edition = "2024"
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
 file_system = { workspace = true }
-futures = { workspace = true }
+
 graphics = { workspace = true, features = ["rendering_xrgb8888"] }
 task = { workspace = true }
 log = { workspace = true }

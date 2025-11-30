@@ -25,7 +25,7 @@ impl<'a> DirectBaseOperations for ScreenDevice<'a> {
         let data: &[RenderingColor] =
             align_slice_to(buffer).ok_or(file_system::Error::InvalidParameter)?;
 
-        futures::block_on(self.0.draw(data)).unwrap();
+        task::block_on(self.0.draw(data)).unwrap();
 
         Ok(size_of::<Self>() as _)
     }
@@ -41,21 +41,21 @@ impl<'a> DirectBaseOperations for ScreenDevice<'a> {
                     .cast()
                     .ok_or(file_system::Error::InvalidParameter)?;
 
-                futures::block_on(self.0.set_drawing_area(*area)).unwrap();
+                task::block_on(self.0.set_drawing_area(*area)).unwrap();
             }
             GET_RESOLUTION => {
                 let resolution: &mut graphics::Point = argument
                     .cast()
                     .ok_or(file_system::Error::InvalidParameter)?;
 
-                *resolution = futures::block_on(self.0.get_resolution()).unwrap();
+                *resolution = task::block_on(self.0.get_resolution()).unwrap();
             }
             WAS_RESIZED => {
                 let was_resized: &mut bool = argument
                     .cast()
                     .ok_or(file_system::Error::InvalidParameter)?;
 
-                *was_resized = futures::block_on(self.0.was_resized()).unwrap();
+                *was_resized = task::block_on(self.0.was_resized()).unwrap();
             }
             _ => return Err(file_system::Error::UnsupportedOperation),
         }

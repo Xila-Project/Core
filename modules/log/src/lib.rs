@@ -102,9 +102,16 @@ impl Log for Logger {
 static LOGGER_INSTANCE: OnceLock<Logger> = OnceLock::new();
 
 pub fn initialize(logger: &'static dyn LoggerTrait) -> Result<(), log_external::SetLoggerError> {
-    let logger = LOGGER_INSTANCE.get_or_init(|| Logger(logger));
+    let log = LOGGER_INSTANCE.get_or_init(|| Logger(logger));
 
-    set_logger(logger).expect("Failed to set logger");
+    if set_logger(log).is_err() {
+        logger.log(&Record {
+            level: Level::Error,
+            target: "log",
+            arguments: format_args!("Logger has already been initialized."),
+        });
+    }
+
     set_max_level(log_external::LevelFilter::Trace);
     Ok(())
 }

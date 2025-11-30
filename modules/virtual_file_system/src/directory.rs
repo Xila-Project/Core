@@ -2,8 +2,8 @@ use core::mem::forget;
 
 use exported_file_system::{FileSystemOperations, StateFlags};
 use file_system::{Context, Entry, Flags, Path, Size};
-use futures::block_on;
 use task::TaskIdentifier;
+use task::block_on;
 
 use crate::{ItemStatic, Result, SynchronousDirectory, VirtualFileSystem, poll};
 

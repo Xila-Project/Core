@@ -11,7 +11,7 @@ time = { workspace = true }
 memory = { workspace = true }
 network = { workspace = true }
 synchronization = { workspace = true }
-futures = { workspace = true }
+
 log = { workspace = true }
 abi_context = { workspace = true }
 

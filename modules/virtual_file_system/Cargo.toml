@@ -10,7 +10,7 @@ users = { workspace = true }
 time = { workspace = true }
 network = { workspace = true }
 synchronization = { workspace = true }
-futures = { workspace = true }
+
 log = { workspace = true }
 
 embedded-io-async = { workspace = true }

@@ -2,10 +2,10 @@ use core::slice;
 
 use alloc::{boxed::Box, rc::Rc, string::String, vec::Vec};
 use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
-use futures::block_on;
 use graphics::{Area, GET_RESOLUTION, Point, RenderingColor, SET_DRAWING_AREA, WAS_RESIZED};
 use shared::align_slice_to;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
+use task::block_on;
 use wasm_bindgen::{Clamped, JsCast, JsValue, prelude::Closure};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 

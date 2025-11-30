@@ -1,5 +1,5 @@
 use super::{XilaFileIdentifier, XilaFileSystemResult, into_u32};
-use futures::block_on;
+use task::block_on;
 use task::get_instance as get_task_manager_instance;
 use virtual_file_system::Error;
 

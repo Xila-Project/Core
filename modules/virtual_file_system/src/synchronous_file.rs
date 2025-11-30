@@ -6,8 +6,8 @@ use exported_file_system::{ControlArgument, ControlCommand, Permissions};
 use file_system::{
     AccessFlags, AttributeFlags, Attributes, Context, Flags, Path, Position, Size, Statistics,
 };
-use futures::block_on;
 use task::TaskIdentifier;
+use task::block_on;
 use users::{GroupIdentifier, UserIdentifier};
 
 pub struct SynchronousFile {

@@ -2,8 +2,8 @@ use core::ffi::c_int;
 use core::ptr::null_mut;
 use core::{ffi::c_void, time::Duration};
 
-use futures::block_on;
 use task::Manager;
+use task::block_on;
 
 use abi_context as context;
 

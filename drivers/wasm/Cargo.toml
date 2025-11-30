@@ -8,7 +8,7 @@ file_system = { workspace = true }
 memory = { workspace = true }
 graphics = { workspace = true, features = ["rendering_xrgb8888"] }
 critical-section = { workspace = true, features = ["std"] }
-futures = { workspace = true }
+task = { workspace = true }
 synchronization = { workspace = true }
 log = { workspace = true }
 shared = { workspace = true }

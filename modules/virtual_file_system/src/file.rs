@@ -5,8 +5,8 @@ use core::mem::forget;
 use embedded_io_async::ErrorType;
 use exported_file_system::{AccessFlags, ControlCommand, CreateFlags, Permissions};
 use file_system::{Context, Flags, Path, Position, Size, StateFlags, Statistics};
-use futures::block_on;
 use task::TaskIdentifier;
+use task::block_on;
 use users::{GroupIdentifier, UserIdentifier};
 
 /// File structure.

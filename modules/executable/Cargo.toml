@@ -8,7 +8,7 @@ file_system = { workspace = true }
 virtual_file_system = { workspace = true }
 task = { workspace = true }
 users = { workspace = true }
-futures = { workspace = true }
+
 log = { workspace = true }
 
 [dev-dependencies]

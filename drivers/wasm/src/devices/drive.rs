@@ -1,7 +1,7 @@
 use alloc::string::{String, ToString};
 use file_system::{DirectBaseOperations, Path, Size};
-use futures::block_on;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
+use task::block_on;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::*;

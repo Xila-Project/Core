@@ -4,8 +4,8 @@ use std::{
     os::raw::c_void,
 };
 
-use futures::block_on;
 pub use graphics::lvgl;
+use task::block_on;
 
 use task::TaskIdentifier;
 use virtual_machine::{

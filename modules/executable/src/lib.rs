@@ -14,7 +14,6 @@ pub use arguments_parser::*;
 pub use building::*;
 pub use error::*;
 pub use file_system as exported_file_system;
-pub use futures as exported_futures;
 pub use standard::*;
 pub use task as exported_task;
 pub use traits::*;

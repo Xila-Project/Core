@@ -1,8 +1,8 @@
 use alloc::collections::VecDeque;
 
 use exported_file_system::{DirectBaseOperations, MountOperations};
-use futures::block_on;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
+use task::block_on;
 
 use file_system::{Error, Result, Size};
 

@@ -3,8 +3,8 @@ use exported_file_system::{
     AccessFlags, AttributeFlags, AttributeOperations, Attributes, StateFlags, Statistics,
 };
 use file_system::{Context, DirectoryOperations, Entry, Flags, Path, Size};
-use futures::block_on;
 use task::TaskIdentifier;
+use task::block_on;
 
 use crate::{Error, ItemStatic, Result, VirtualFileSystem, blocking_operation};
 
