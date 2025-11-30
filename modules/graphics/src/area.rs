@@ -1,6 +1,6 @@
 use crate::{Point, lvgl};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
 pub struct Area(Point, Point);
 
 impl Area {

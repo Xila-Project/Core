@@ -1,9 +1,11 @@
 use alloc::boxed::Box;
-use file_system::DirectCharacterDevice;
+use file_system::{ControlArgument, DirectCharacterDevice};
 
 use core::{ffi::c_void, ptr::null_mut, slice};
 
-use crate::{Area, Point, RenderingColor, Result, ScreenWriteData, draw_buffer::Buffer};
+use crate::{
+    Area, GET_RESOLUTION, Point, RenderingColor, Result, SET_DRAWING_AREA, draw_buffer::Buffer,
+};
 
 use super::lvgl;
 
@@ -26,21 +28,22 @@ unsafe extern "C" fn binding_callback_function(
     area: *const lvgl::lv_area_t,
     data: *mut u8,
 ) {
-    let area: Area = unsafe { *area }.into();
+    let mut area: Area = unsafe { *area }.into();
 
-    let buffer_size: usize = (area.get_width()) as usize * (area.get_height()) as usize;
+    let buffer_size: usize =
+        (area.get_width()) as usize * (area.get_height()) as usize * size_of::<RenderingColor>();
 
-    let buffer = unsafe { slice::from_raw_parts_mut(data as *mut RenderingColor, buffer_size) };
+    let buffer = unsafe { slice::from_raw_parts(data as *const u8, buffer_size) };
 
-    let screen_write_data = ScreenWriteData::new(area, buffer);
-
-    let user_data = unsafe { &*(lvgl::lv_display_get_user_data(display) as *mut UserData) };
+    let user_data = unsafe { &mut *(lvgl::lv_display_get_user_data(display) as *mut UserData) };
 
     let device = &user_data.device;
 
     device
-        .write(screen_write_data.as_ref(), 0)
-        .expect("Error writing to display");
+        .control(SET_DRAWING_AREA, ControlArgument::from(&mut area))
+        .expect("Error setting drawing area");
+
+    device.write(buffer, 0).expect("Error writing to display");
 
     unsafe { lvgl::lv_display_flush_ready(display) };
 }
@@ -56,10 +59,15 @@ impl Drop for Display {
 impl Display {
     pub fn new(
         device: &'static dyn DirectCharacterDevice,
-        resolution: Point,
         buffer_size: usize,
         double_buffered: bool,
     ) -> Result<Self> {
+        // Get the resolution from the device.
+        let mut resolution = Point::new(0, 0);
+        device
+            .control(GET_RESOLUTION, ControlArgument::from(&mut resolution))
+            .expect("Error getting resolution");
+
         // Create the display.
         let lvgl_display: *mut lvgl_rust_sys::_lv_display_t = unsafe {
             lvgl::lv_display_create(resolution.get_x() as i32, resolution.get_y() as i32)
@@ -101,6 +109,40 @@ impl Display {
             _buffer_1: buffer_1,
             _buffer_2: buffer_2,
         })
+    }
+
+    pub fn check_for_resizing(&self) {
+        let user_data =
+            unsafe { &mut *(lvgl::lv_display_get_user_data(self.display) as *mut UserData) };
+
+        let mut was_resize = false;
+
+        user_data
+            .device
+            .control(
+                crate::screen::WAS_RESIZED,
+                ControlArgument::from(&mut was_resize),
+            )
+            .expect("Error checking if display was resized");
+
+        if !was_resize {
+            return;
+        }
+
+        let mut resolution = Point::new(0, 0);
+
+        user_data
+            .device
+            .control(GET_RESOLUTION, ControlArgument::from(&mut resolution))
+            .expect("Error getting resolution");
+
+        unsafe {
+            lvgl::lv_display_set_resolution(
+                self.display,
+                resolution.get_x() as i32,
+                resolution.get_y() as i32,
+            );
+        }
     }
 
     pub fn get_lvgl_display(&self) -> *mut lvgl::lv_display_t {

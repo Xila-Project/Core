@@ -119,3 +119,5 @@ pub use devices::*;
 pub use fundamentals::*;
 pub use operations::*;
 pub use time::*;
+
+pub const XILA_DISK_SIGNATURE: u32 = u32::from_le_bytes(*b"Xila");

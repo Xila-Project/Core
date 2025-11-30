@@ -19,6 +19,7 @@ pub use embassy_executor;
 pub use environment_variable::*;
 pub use error::*;
 pub use futures;
+pub use futures::yield_now;
 pub use join_handle::*;
 pub use manager::*;
 pub use signal::*;

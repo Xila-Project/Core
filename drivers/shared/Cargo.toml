@@ -5,4 +5,9 @@ edition = "2024"
 
 [dependencies]
 file_system = { workspace = true }
+log = { workspace = true }
+shared = { workspace = true }
 getrandom = { version = "0.3.3" }
+
+[dev-dependencies]
+critical-section = { workspace = true, features = ["std"] }

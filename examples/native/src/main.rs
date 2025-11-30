@@ -15,6 +15,7 @@ async fn main() {
     use xila::executable::Standard;
     use xila::executable::build_crate;
     use xila::executable::mount_executables;
+    use xila::file_system::XILA_DISK_SIGNATURE;
     use xila::file_system::mbr::Mbr;
     use xila::file_system::mbr::PartitionKind;
     use xila::graphics;
@@ -89,9 +90,12 @@ async fn main() {
     //let drive = file_system::MemoryDevice::<512>::new_static(16 * 1024 * 1024);
 
     // Create a partition type
-    let partition =
-        Mbr::find_or_create_partition_with_signature(drive, 0xDEADBEEF, PartitionKind::Xila)
-            .unwrap();
+    let partition = Mbr::find_or_create_partition_with_signature(
+        drive,
+        XILA_DISK_SIGNATURE,
+        PartitionKind::Xila,
+    )
+    .unwrap();
 
     // Print MBR information
     let mbr = Mbr::read_from_device(drive).unwrap();

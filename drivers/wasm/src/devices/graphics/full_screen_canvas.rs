@@ -1,5 +1,5 @@
-use alloc::{boxed::Box, string::String};
-use wasm_bindgen::{JsCast, prelude::Closure};
+use alloc::string::String;
+use wasm_bindgen::JsCast;
 use web_sys::HtmlCanvasElement;
 
 use crate::devices::graphics::get_window_size;
@@ -30,21 +30,5 @@ pub fn new() -> Result<HtmlCanvasElement, String> {
     canvas.set_width(width);
     canvas.set_height(height);
 
-    let canvas_clone = canvas.clone();
-    let window_clone = window.clone();
-    let closure = Closure::wrap(Box::new(move |_: web_sys::Event| {
-        if let Some((width, height)) = get_window_size(&window_clone) {
-            canvas_clone.set_width(width);
-            canvas_clone.set_height(height);
-        } else {
-            log::error!("Failed to get window size");
-        }
-    }) as Box<dyn FnMut(_)>);
-
-    window
-        .add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref())
-        .unwrap();
-
-    closure.forget(); // Prevent memory leak by keeping the closure alive
     Ok(canvas)
 }
