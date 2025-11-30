@@ -143,7 +143,7 @@ pub fn test(arguments: TokenStream, input: TokenStream) -> TokenStream {
                         __SPAWNER = manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
-                    #task_path::futures::block_on(async move {
+                    #task_path::block_on(async move {
                         manager.spawn(
                             #task_path::Manager::ROOT_TASK_IDENTIFIER,
                             #function_name_string,
@@ -273,7 +273,7 @@ pub fn run(arguments: TokenStream, input: TokenStream) -> TokenStream {
                         __SPAWNER = manager.register_spawner(Spawner).expect("Failed to register spawner");
                     }
 
-                    #task_path::futures::block_on(async move {
+                    #task_path::block_on(async move {
                         manager.spawn(
                             #task_path::Manager::ROOT_TASK_IDENTIFIER,
                             #function_name_string,

@@ -5,7 +5,6 @@ use super::*;
 use crate::test;
 use alloc::{collections::BTreeMap, format, vec::Vec};
 use core::time::Duration;
-use futures::yield_now;
 use users::{GroupIdentifier, UserIdentifier};
 
 #[test(task_path = crate)]
