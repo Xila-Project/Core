@@ -15,7 +15,6 @@ virtual_file_system = { workspace = true }
 users = { workspace = true }
 task = { workspace = true }
 file_system = { workspace = true }
+device = { workspace = true }
 
-# External dependencies
-sha2 = { version = "0.10", features = ["asm"] } # SHA-512 cryptographic hashing
 miniserde = { workspace = true }
