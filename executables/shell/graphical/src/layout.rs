@@ -5,7 +5,7 @@ use xila::graphics::{self, EventKind, lvgl, theme};
 use xila::shared::unix_to_human_time;
 use xila::time;
 
-const KEYBOARD_SIZE_RATIO: f64 = 4.0 / 1.0;
+const KEYBOARD_SIZE_RATIO: f64 = 3.0 / 1.0;
 
 pub struct Layout {
     window: *mut lvgl::lv_obj_t,

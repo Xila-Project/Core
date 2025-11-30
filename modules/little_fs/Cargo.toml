@@ -14,7 +14,7 @@ users = { workspace = true }
 time = { workspace = true }
 littlefs2-sys = { version = "0.3.1", features = ["malloc"] }
 synchronization = { workspace = true }
-futures = { workspace = true }
+
 log = { workspace = true }
 abi_declarations = { workspace = true }
 
@@ -23,5 +23,5 @@ drivers_native = { workspace = true }
 drivers_core = { workspace = true }
 drivers_shared = { workspace = true }
 drivers_std = { workspace = true }
-futures = { workspace = true }
+
 abi_definitions = { workspace = true }

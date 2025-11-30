@@ -13,7 +13,7 @@ pub fn get() -> TokenStream {
         }
 
         pub unsafe fn window_create() -> *mut lv_obj_t {
-            futures::block_on(
+            task::block_on(
                 graphics::get_instance().create_window()
             ).unwrap().into_raw()
         }

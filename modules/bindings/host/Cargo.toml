@@ -13,7 +13,7 @@ task = { workspace = true }
 graphics = { workspace = true }
 time = { workspace = true }
 include_bytes_aligned = "0.1"
-futures = { workspace = true }
+
 log = { workspace = true }
 #wit-bindgen = "0.34.0"
 

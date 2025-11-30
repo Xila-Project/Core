@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 file_system = { workspace = true }
-futures = { workspace = true }
+
 synchronization = { workspace = true }
 time = { workspace = true }
 embassy-net = { workspace = true, features = [

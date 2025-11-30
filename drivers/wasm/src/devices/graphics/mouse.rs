@@ -1,8 +1,8 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
 use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
-use futures::block_on;
 use graphics::{InputData, Point, State};
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
+use task::block_on;
 use wasm_bindgen::{JsCast, prelude::Closure};
 use web_sys::{HtmlCanvasElement, MouseEvent, TouchEvent};
 

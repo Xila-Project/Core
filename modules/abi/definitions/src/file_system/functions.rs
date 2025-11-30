@@ -6,7 +6,7 @@ use core::{
     ptr::copy_nonoverlapping,
 };
 use file_system::{AccessFlags, CreateFlags, Flags, StateFlags, character_device};
-use futures::block_on;
+use task::block_on;
 use virtual_file_system::{
     Error, SynchronousDirectory, SynchronousFile, get_instance as get_file_system_instance,
 };

@@ -9,10 +9,10 @@ pub use file::*;
 
 use alloc::{collections::btree_map::BTreeMap, vec, vec::Vec};
 use file_system::{Path, PathOwned};
-use futures::block_on;
 use smol_str::SmolStr;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use task::TaskIdentifier;
+use task::block_on;
 use unique_file::UniqueFileIdentifier;
 use virtual_file_system::{SynchronousDirectory, SynchronousFile};
 

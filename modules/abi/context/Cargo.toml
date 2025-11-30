@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 task = { workspace = true }
-futures = { workspace = true }
+
 synchronization = { workspace = true }
 file_system = { workspace = true }
 log = { workspace = true }

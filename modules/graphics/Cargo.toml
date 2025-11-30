@@ -16,7 +16,8 @@ synchronization = { workspace = true }
 log = { workspace = true }
 abi_declarations = { workspace = true }
 internationalization = { workspace = true }
-futures = { workspace = true }
+
+task = { workspace = true }
 
 [dev-dependencies]
 drivers_native = { workspace = true }
@@ -25,7 +26,7 @@ drivers_shared = { workspace = true }
 drivers_std = { workspace = true }
 users = { workspace = true }
 task = { workspace = true }
-futures = { workspace = true }
+
 abi_definitions = { workspace = true }
 
 [features]

@@ -40,7 +40,6 @@ authentication = { workspace = true, optional = true }
 log = { workspace = true, optional = true }
 shared = { workspace = true, optional = true }
 synchronization = { workspace = true, optional = true }
-futures = { workspace = true, optional = true }
 host_bindings = { workspace = true, optional = true }
 bootsplash = { workspace = true, optional = true }
 
@@ -54,7 +53,6 @@ host = [
   "dep:abi_declarations",
   "dep:abi_definitions",
   "dep:little_fs",
-  "dep:futures",
   "dep:virtual_file_system",
   "dep:graphics",
   "dep:task",
@@ -100,7 +98,6 @@ host_bindings = { path = "modules/bindings/host" }
 bindings_utilities = { path = "modules/bindings/utilities" }
 authentication = { path = "modules/authentication" }
 log = { path = "modules/log" }
-futures = { path = "modules/futures" }
 shared = { path = "modules/shared" }
 synchronization = { path = "modules/synchronization" }
 target = { path = "modules/target" }
@@ -183,7 +180,6 @@ members = [
   "modules/network",
   "modules/synchronization",
   "modules/task/task_macros",
-  "modules/futures",
   "modules/log",
   "examples/native",
   "executables/calculator",

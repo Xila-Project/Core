@@ -4,10 +4,10 @@ use alloc::{
     vec::Vec,
 };
 use file_system::DirectCharacterDevice;
-use futures::block_on;
 use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 use synchronization::mutex::{Mutex, MutexGuard};
 use synchronization::{once_lock::OnceLock, rwlock::RwLock};
+use task::block_on;
 
 use core::{future::Future, mem::forget};
 

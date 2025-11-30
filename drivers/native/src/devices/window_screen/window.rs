@@ -96,20 +96,20 @@ impl<'a> ApplicationHandler for Window<'a> {
             .unwrap()
         };
 
-        futures::block_on(self.inner_window.replace(window, pixels));
+        task::block_on(self.inner_window.replace(window, pixels));
     }
 
     fn window_event(&mut self, _: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
         match event {
             WindowEvent::RedrawRequested => {
-                futures::block_on(self.inner_window.render()).unwrap();
+                task::block_on(self.inner_window.render()).unwrap();
             }
             WindowEvent::Resized(size) => {
                 let new_resolution = Point::new(size.width as i16, size.height as i16);
 
                 self.resolution = new_resolution;
 
-                futures::block_on(self.inner_window.resize(new_resolution)).unwrap();
+                task::block_on(self.inner_window.resize(new_resolution)).unwrap();
             }
             WindowEvent::KeyboardInput {
                 device_id: _,

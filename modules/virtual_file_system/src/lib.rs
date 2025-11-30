@@ -14,8 +14,6 @@ mod socket;
 mod synchronous_directory;
 mod synchronous_file;
 
-use core::time::Duration;
-
 pub use directory::*;
 pub use error::*;
 use exported_file_system::{Flags, StateFlags};
@@ -34,7 +32,7 @@ pub async fn poll<O>(mut operation: impl FnMut() -> Result<O>) -> Result<O> {
         match operation() {
             Err(Error::FileSystem(::file_system::Error::RessourceBusy))
             | Err(Error::RessourceBusy) => {
-                task::sleep(Duration::from_millis(10)).await;
+                task::yield_now().await;
             }
             other => return other,
         }

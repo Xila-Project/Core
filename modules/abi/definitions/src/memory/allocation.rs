@@ -34,11 +34,11 @@
 
 use core::ptr::null_mut;
 use core::{ffi::c_void, ptr::NonNull};
-use futures::block_on;
 use log::warning;
 use memory::CapabilityFlags;
 use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 use synchronization::mutex::Mutex;
+use task::block_on;
 
 use crate::Allocated;
 

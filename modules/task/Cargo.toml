@@ -10,7 +10,7 @@ embassy-executor = { workspace = true, default-features = false }
 embassy-futures = { workspace = true }
 smol_str = { version = "0.3" }
 synchronization = { workspace = true }
-futures = { workspace = true }
+
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
 embassy-time = { workspace = true, features = ["std"] }
