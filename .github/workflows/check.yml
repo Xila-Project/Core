@@ -46,14 +46,11 @@ jobs:
         run: RUSTDOCFLAGS="--deny warnings" cargo make doc-wasm
 
       - name: Build | Example (Native)
-        run: cargo make build -p native_example
+        run: cargo make build -p native_example && cargo clean -p native_example
 
       - name: Build | Example (WASM)
         working-directory: ./examples/wasm
-        run: trunk build
-
-      - name: Run | Tests
-        run: cargo make test
+        run: trunk build && cargo clean --target wasm32-unknown-unknown
 
       - name: Run | Coverage
         run: cargo make coverage --lcov --output-path lcov.info
