@@ -10,6 +10,7 @@ graphics = { workspace = true, features = ["rendering_xrgb8888"] }
 task = { workspace = true }
 log = { workspace = true }
 synchronization = { workspace = true }
+shared = { workspace = true }
 
 critical-section = { workspace = true, features = ["std"] }
 pixels = "0.15.0"

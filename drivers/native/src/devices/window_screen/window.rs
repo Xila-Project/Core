@@ -74,8 +74,7 @@ impl<'a> ApplicationHandler for Window<'a> {
 
             let window_attributes = window::Window::default_attributes()
                 .with_title("Xila")
-                .with_inner_size(size)
-                .with_min_inner_size(size);
+                .with_inner_size(size);
 
             let window = event_loop.create_window(window_attributes).unwrap();
 
@@ -104,6 +103,13 @@ impl<'a> ApplicationHandler for Window<'a> {
         match event {
             WindowEvent::RedrawRequested => {
                 futures::block_on(self.inner_window.render()).unwrap();
+            }
+            WindowEvent::Resized(size) => {
+                let new_resolution = Point::new(size.width as i16, size.height as i16);
+
+                self.resolution = new_resolution;
+
+                futures::block_on(self.inner_window.resize(new_resolution)).unwrap();
             }
             WindowEvent::KeyboardInput {
                 device_id: _,
