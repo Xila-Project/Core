@@ -15,14 +15,12 @@ use core::time::Duration;
 
 use super::lvgl;
 
-use super::Point;
-
 use crate::Display;
 use crate::Input;
 use crate::InputKind;
 use crate::window::Window;
 use crate::{Color, theme};
-use crate::{Error, Result, ScreenReadData};
+use crate::{Error, Result};
 
 static MANAGER_INSTANCE: OnceLock<Manager> = OnceLock::new();
 
@@ -135,10 +133,24 @@ impl Manager {
     where
         F: Future<Output = ()> + Send + 'static,
     {
+        let mut call_count: u8 = 0;
+
         loop {
             let time_until_next = unsafe {
                 let _lock = self.global_lock.lock().await;
-                lvgl::lv_timer_handler()
+                let inner = self.inner.read().await;
+
+                let time_until_next = lvgl::lv_timer_handler();
+
+                if call_count >= 30 {
+                    for display in &inner.displays {
+                        display.check_for_resizing();
+                    }
+                    call_count = 0;
+                }
+                call_count = call_count.saturating_add(1);
+
+                time_until_next
             };
 
             sleep(Duration::from_millis(time_until_next as u64)).await;
@@ -179,15 +191,7 @@ impl Manager {
         input_device_type: InputKind,
         double_buffered: bool,
     ) -> Result<(Display, Input)> {
-        let mut screen_read_data = ScreenReadData::default();
-
-        screen_device
-            .read(screen_read_data.as_mut(), 0)
-            .map_err(|_| Error::FailedToGetResolution)?;
-
-        let resolution: Point = screen_read_data.get_resolution();
-
-        let display = Display::new(screen_device, resolution, buffer_size, double_buffered)?;
+        let display = Display::new(screen_device, buffer_size, double_buffered)?;
 
         let input = Input::new(input_device, input_device_type)?;
 
