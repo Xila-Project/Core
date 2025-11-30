@@ -1,17 +1,22 @@
 use core::slice;
 
-use alloc::{rc::Rc, string::String, vec::Vec};
+use alloc::{boxed::Box, rc::Rc, string::String, vec::Vec};
 use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
 use futures::block_on;
-use graphics::{Area, Point, RenderingColor, ScreenReadData, ScreenWriteData};
+use graphics::{Area, GET_RESOLUTION, Point, RenderingColor, SET_DRAWING_AREA, WAS_RESIZED};
+use shared::align_slice_to;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
-use wasm_bindgen::{Clamped, JsCast, JsValue};
+use wasm_bindgen::{Clamped, JsCast, JsValue, prelude::Closure};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
+
+use crate::devices::graphics::get_window_size;
 
 struct Inner {
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
     conversion_buffer: Vec<u8>,
+    area: Area,
+    was_resized: bool,
 }
 
 impl Inner {
@@ -26,11 +31,15 @@ impl Inner {
             .dyn_into::<CanvasRenderingContext2d>()
             .map_err(|_| "Failed to cast to CanvasRenderingContext2d")?;
 
-        Ok(Self {
+        let canvas_screen = Self {
             canvas,
             context,
             conversion_buffer: Vec::new(),
-        })
+            area: Area::default(),
+            was_resized: false,
+        };
+
+        Ok(canvas_screen)
     }
 
     fn get_resolution(&self) -> Result<Point, String> {
@@ -61,8 +70,8 @@ impl Inner {
         bgra[i..len].copy_from_slice(&rgba[i..len]);
     }
 
-    fn draw_buffer(&mut self, area: Area, buffer: &[RenderingColor]) -> Result<(), String> {
-        let pixel_count = area.get_width() as usize * area.get_height() as usize;
+    fn draw_buffer(&mut self, buffer: &[RenderingColor]) -> Result<(), String> {
+        let pixel_count = self.area.get_width() as usize * self.area.get_height() as usize;
         let bytes_needed = pixel_count * size_of::<RenderingColor>();
 
         if self.conversion_buffer.capacity() < bytes_needed {
@@ -85,12 +94,12 @@ impl Inner {
         // now conversion_buffer is ready as &[u8]
         let image_data = ImageData::new_with_u8_clamped_array_and_sh(
             Clamped(&self.conversion_buffer),
-            area.get_width() as _,
-            area.get_height() as _,
+            self.area.get_width() as _,
+            self.area.get_height() as _,
         )
         .expect("Failed to create ImageData");
 
-        let (x, y) = area.get_point_1().into();
+        let (x, y) = self.area.get_point_1().into();
         self.context
             .put_image_data(&image_data, x as _, y as _)
             .unwrap();
@@ -106,39 +115,89 @@ unsafe impl Send for CanvasScreenDevice {}
 
 impl CanvasScreenDevice {
     pub async fn new(canvas: HtmlCanvasElement) -> Result<Self, String> {
-        Ok(Self(Rc::new(RwLock::new(Inner::new(canvas)?))))
+        let device = Self(Rc::new(RwLock::new(Inner::new(canvas.clone())?)));
+
+        let window = web_sys::window().ok_or("Failed to get window")?;
+        let device_clone = device.0.clone();
+        let window_clone = window.clone();
+        let closure = Closure::wrap(Box::new(move |_: web_sys::Event| {
+            if let Some((width, height)) = get_window_size(&window_clone) {
+                canvas.set_width(width);
+                canvas.set_height(height);
+                block_on(device_clone.write()).was_resized = true;
+            } else {
+                log::error!("Failed to get window size");
+            }
+        }) as Box<dyn FnMut(_)>);
+
+        window
+            .add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref())
+            .unwrap();
+
+        closure.forget(); // Prevent memory corruption by keeping the closure alive
+
+        Ok(device)
     }
 }
 
 impl DirectBaseOperations for CanvasScreenDevice {
-    fn read(&self, buffer: &mut [u8], _: Size) -> file_system::Result<usize> {
-        let data: &mut ScreenReadData = buffer
-            .try_into()
-            .map_err(|_| file_system::Error::InvalidParameter)?;
-
-        let inner = block_on(self.0.read());
-
-        let resolution = inner
-            .get_resolution()
-            .map_err(|_| file_system::Error::InputOutput)?;
-
-        data.set_resolution(resolution);
-
-        Ok(buffer.len())
+    fn read(&self, _: &mut [u8], _: Size) -> file_system::Result<usize> {
+        Err(file_system::Error::UnsupportedOperation)
     }
 
     fn write(&self, buffer: &[u8], _: Size) -> file_system::Result<usize> {
-        let screen_data: &ScreenWriteData = buffer
-            .try_into()
-            .map_err(|_| file_system::Error::InvalidParameter)?;
+        let buffer: &[RenderingColor] =
+            align_slice_to(buffer).ok_or(file_system::Error::InvalidParameter)?;
 
         let mut inner = block_on(self.0.write());
 
         inner
-            .draw_buffer(screen_data.get_area(), screen_data.get_buffer())
+            .draw_buffer(buffer)
             .map_err(|_| file_system::Error::InputOutput)?;
 
         Ok(buffer.len())
+    }
+
+    fn control(
+        &self,
+        command: file_system::ControlCommand,
+        argument: &mut file_system::ControlArgument,
+    ) -> file_system::Result<()> {
+        match command {
+            SET_DRAWING_AREA => {
+                let area: &mut Area = argument
+                    .cast()
+                    .ok_or(file_system::Error::InvalidParameter)?;
+
+                let mut inner = block_on(self.0.write());
+                inner.area = *area;
+            }
+            GET_RESOLUTION => {
+                let point: &mut Point = argument
+                    .cast()
+                    .ok_or(file_system::Error::InvalidParameter)?;
+
+                let inner = block_on(self.0.read());
+
+                let resolution = inner
+                    .get_resolution()
+                    .map_err(|_| file_system::Error::InputOutput)?;
+
+                *point = resolution;
+            }
+            WAS_RESIZED => {
+                let was_resized: &mut bool = argument
+                    .cast()
+                    .ok_or(file_system::Error::InvalidParameter)?;
+
+                let mut inner = block_on(self.0.write());
+                *was_resized = inner.was_resized;
+                inner.was_resized = false;
+            }
+            _ => return Err(file_system::Error::InvalidParameter),
+        }
+
+        Ok(())
     }
 }
 

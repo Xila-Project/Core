@@ -64,5 +64,7 @@ web-sys = { version = "0.3.64", features = [
   "UrlSearchParams",
   "ClipboardEvent",
   "DataTransfer",
+  "ResizeObserver",
+  "ResizeObserverEntry",
 ] }
 js-sys = "0.3"
