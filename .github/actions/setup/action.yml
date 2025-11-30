@@ -40,3 +40,6 @@ runs:
     - name: Setup | Trunk
       shell: bash
       run: cargo binstall trunk --no-confirm --force
+
+    - name: Setup | Cargo llvm-cov
+      uses: taiki-e/install-action@cargo-llvm-cov

@@ -54,3 +54,13 @@ jobs:
 
       - name: Run | Tests
         run: cargo make test
+
+      - name: Run | Coverage
+        run: cargo make coverage --lcov --output-path lcov.info
+
+      - name: Upload | Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # required for private repos or protected branches
+          files: lcov.info
+          fail_ci_if_error: true

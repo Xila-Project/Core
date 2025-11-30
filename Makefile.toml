@@ -1,6 +1,7 @@
 [config]
 default_to_workspace = false
 init_task = "generate-fonts"
+skip_core_tasks = true
 
 [tasks.install-tools]
 command = "npm"
@@ -124,6 +125,12 @@ args = ["run", "${@}"]
 toolchain = "stable"
 command = "cargo"
 args = ["build", "${@}"]
+
+[tasks.coverage]
+install_crate = "cargo-llvm-cov"
+toolchain = "stable"
+command = "cargo"
+args = ["llvm-cov", "--workspace", "${@}"]
 
 [tasks.before-commit]
 dependencies = ["format", "check", "doc", "clippy"]
