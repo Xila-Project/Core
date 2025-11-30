@@ -128,11 +128,8 @@ impl<'a> VirtualFileSystem<'a> {
 
         let mut attributes =
             Attributes::new().set_mask(AttributeFlags::Kind | AttributeFlags::Inode);
-        FileSystemOperations::get_attributes(
-            underlying_file_system.file_system,
-            path,
-            &mut attributes,
-        )?;
+        Self::get_attributes(underlying_file_system.file_system, path, &mut attributes).await?;
+
         let kind = attributes.get_kind().ok_or(Error::MissingAttribute)?;
         let inode = *attributes.get_inode().ok_or(Error::MissingAttribute)?;
 
@@ -236,7 +233,7 @@ impl<'a> VirtualFileSystem<'a> {
                 | AttributeFlags::Group
                 | AttributeFlags::Permissions,
         );
-        FileSystemOperations::get_attributes(file_system.file_system, path, &mut attributes)?;
+        Self::get_attributes(file_system.file_system, path, &mut attributes).await?;
         let kind = attributes.get_kind().ok_or(Error::MissingAttribute)?;
 
         if *kind != Kind::Directory {
@@ -334,11 +331,7 @@ impl<'a> VirtualFileSystem<'a> {
 
         let mut attributes =
             Attributes::new().set_mask(AttributeFlags::Inode | AttributeFlags::Kind);
-        FileSystemOperations::get_attributes(
-            file_system.file_system,
-            relative_path,
-            &mut attributes,
-        )?;
+        Self::get_attributes(file_system.file_system, path, &mut attributes).await?;
 
         let kind = attributes.get_kind().ok_or(Error::MissingAttribute)?;
         let inode = *attributes.get_inode().ok_or(Error::MissingAttribute)?;
