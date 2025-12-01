@@ -52,12 +52,13 @@ jobs:
         working-directory: ./examples/wasm
         run: trunk build && cargo clean --target wasm32-unknown-unknown
 
-      - name: Run | Coverage
+      - name: Run | Test
         run: cargo make coverage --lcov --output-path lcov.info
 
       - name: Upload | Coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # required for private repos or protected branches
+          slug: Xila-Project/Core
           files: lcov.info
           fail_ci_if_error: true
