@@ -6,6 +6,7 @@ pub struct IPv4([u8; 4]);
 
 impl IPv4 {
     pub const LOCALHOST: Self = Self([127, 0, 0, 1]);
+    pub const BROADCAST: Self = Self([255, 255, 255, 255]);
 
     pub const fn new(value: [u8; 4]) -> Self {
         Self(value)
@@ -17,6 +18,28 @@ impl IPv4 {
 
     pub const fn from_inner(value: [u8; 4]) -> Self {
         Self(value)
+    }
+
+    pub const fn is_multicast(&self) -> bool {
+        self.0[0] >= 224 && self.0[0] <= 239
+    }
+
+    pub const fn is_broadcast(&self) -> bool {
+        u32::from_be_bytes(self.0) == u32::from_be_bytes(Self::BROADCAST.0)
+    }
+
+    pub const fn to_ipv6_mapped(&self) -> IPv6 {
+        IPv6::new([
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, self.0[0], self.0[1], self.0[2], self.0[3],
+        ])
+    }
+
+    pub const fn into_embassy(self) -> core::net::Ipv4Addr {
+        core::net::Ipv4Addr::new(self.0[0], self.0[1], self.0[2], self.0[3])
+    }
+
+    pub const fn from_embassy(value: core::net::Ipv4Addr) -> Self {
+        Self(value.octets())
     }
 }
 
@@ -49,21 +72,29 @@ impl Display for IPv4 {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub struct IPv6([u16; 8]);
+pub struct IPv6([u8; 16]); // Avoid 2 byte alignment issues
 
 impl IPv6 {
-    pub const fn new(value: [u16; 8]) -> Self {
+    pub const fn new(value: [u8; 16]) -> Self {
         Self(value)
     }
 
-    pub const fn into_inner(self) -> [u16; 8] {
+    pub const fn into_inner(self) -> [u8; 16] {
         self.0
     }
 
-    pub const fn from_inner(value: [u16; 8]) -> Self {
+    pub const fn from_inner(value: [u8; 16]) -> Self {
         Self(value)
+    }
+
+    pub const fn into_embassy(self) -> core::net::Ipv6Addr {
+        core::net::Ipv6Addr::from_octets(self.0)
+    }
+
+    pub const fn from_embassy(value: core::net::Ipv6Addr) -> Self {
+        Self(value.octets())
     }
 }
 
@@ -71,7 +102,7 @@ impl TryFrom<&str> for IPv6 {
     type Error = ();
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let mut result = [0; 8];
+        let mut result = [0; 16];
         let mut index = 0;
 
         for part in value.split(':') {
@@ -80,8 +111,8 @@ impl TryFrom<&str> for IPv6 {
             }
 
             let part = u16::from_str_radix(part, 16).map_err(|_| ())?;
-            result[index] = part;
-            index += 1;
+            result[index..index + 2].copy_from_slice(&part.to_be_bytes());
+            index += 2;
         }
         if index != result.len() {
             return Err(());
@@ -101,10 +132,27 @@ impl Display for IPv6 {
     }
 }
 
+#[repr(C)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum IP {
     IPv4(IPv4),
     IPv6(IPv6),
+}
+
+impl IP {
+    pub const fn into_embassy_address(&self) -> embassy_net::IpAddress {
+        match self {
+            IP::IPv4(value) => embassy_net::IpAddress::Ipv4(value.into_embassy()),
+            IP::IPv6(value) => embassy_net::IpAddress::Ipv6(value.into_embassy()),
+        }
+    }
+
+    pub const fn from_embassy_address(value: embassy_net::IpAddress) -> Self {
+        match value {
+            embassy_net::IpAddress::Ipv4(v4_addr) => IP::IPv4(crate::IPv4::from_embassy(v4_addr)),
+            embassy_net::IpAddress::Ipv6(v6_addr) => IP::IPv6(crate::IPv6::from_embassy(v6_addr)),
+        }
+    }
 }
 
 impl Display for IP {
@@ -130,7 +178,16 @@ impl From<IPv6> for IP {
 
 #[cfg(test)]
 mod tests {
+    use alloc::string::ToString;
+
     use super::*;
+
+    #[test]
+    fn test_ipv4_display() {
+        let ip = IPv4::new([192, 168, 1, 1]);
+
+        assert_eq!(ip.to_string(), "192.168.1.1");
+    }
 
     #[test]
     fn test_ipv4_try_from() {
@@ -150,10 +207,17 @@ mod tests {
     }
 
     #[test]
+    fn test_ipv6_display() {
+        let ip = IPv6::new([0; 16]);
+
+        assert_eq!(ip.to_string(), "0:0:0:0:0:0:0:0");
+    }
+
+    #[test]
     fn test_ipv6_try_from() {
         let ip = IPv6::try_from("0:0:0:0:0:0:0:0").unwrap();
 
-        assert_eq!(ip.0, [0; 8]);
+        assert_eq!(ip.0, [0; 16]);
 
         IPv6::try_from("0:0:0:0:0:0:0:0:0").unwrap_err();
 
@@ -164,7 +228,8 @@ mod tests {
         assert_eq!(
             ip.0,
             [
-                0x1234, 0x5678, 0x9abc, 0xdef0, 0x1234, 0x5678, 0x9abc, 0xdef0
+                0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc,
+                0xde, 0xf0
             ]
         );
     }
