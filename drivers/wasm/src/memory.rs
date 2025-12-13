@@ -145,14 +145,14 @@ impl ManagerTrait for MemoryManager {
             .lock(|inner| unsafe { inner.borrow_mut().heap.deallocate(pointer, layout) });
     }
 
-    unsafe fn get_used(&self) -> usize {
+    fn get_used(&self) -> usize {
         self.0.lock(|inner| {
             let inner = inner.borrow();
             inner.heap.used()
         })
     }
 
-    unsafe fn get_free(&self) -> usize {
+    fn get_free(&self) -> usize {
         self.0.lock(|inner| {
             let inner = inner.borrow();
             inner.heap.free()
