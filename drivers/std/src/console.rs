@@ -1,11 +1,10 @@
-use std::io::{Read, Write, stderr, stdin, stdout};
-
-use file_system::{
-    ControlArgument, ControlCommand, DirectBaseOperations, DirectCharacterDevice, MountOperations,
-    Size, character_device,
-};
-
 use crate::io::map_error;
+use file_system::{
+    ControlCommand, ControlCommandIdentifier, DirectBaseOperations, DirectCharacterDevice,
+    MountOperations, Size, character_device::IS_A_TERMINAL,
+};
+use shared::AnyByLayout;
+use std::io::{Read, Write, stderr, stdin, stdout};
 
 pub struct StandardInDevice;
 
@@ -27,10 +26,11 @@ impl DirectBaseOperations for StandardInDevice {
 
     fn control(
         &self,
-        command: ControlCommand,
-        argument: &mut ControlArgument,
+        command: ControlCommandIdentifier,
+        input: &AnyByLayout,
+        output: &mut AnyByLayout,
     ) -> file_system::Result<()> {
-        control(command, argument)
+        control(command, input, output)
     }
 }
 
@@ -55,10 +55,11 @@ impl DirectBaseOperations for StandardOutDevice {
 
     fn control(
         &self,
-        command: ControlCommand,
-        argument: &mut ControlArgument,
+        command: ControlCommandIdentifier,
+        input: &AnyByLayout,
+        output: &mut AnyByLayout,
     ) -> file_system::Result<()> {
-        control(command, argument)
+        control(command, input, output)
     }
 }
 
@@ -83,10 +84,11 @@ impl DirectBaseOperations for StandardErrorDevice {
 
     fn control(
         &self,
-        command: ControlCommand,
-        argument: &mut ControlArgument,
+        command: ControlCommandIdentifier,
+        input: &AnyByLayout,
+        output: &mut AnyByLayout,
     ) -> file_system::Result<()> {
-        control(command, argument)
+        control(command, input, output)
     }
 }
 
@@ -94,12 +96,15 @@ impl MountOperations for StandardErrorDevice {}
 
 impl DirectCharacterDevice for StandardErrorDevice {}
 
-fn control(command: ControlCommand, argument: &mut ControlArgument) -> file_system::Result<()> {
+fn control(
+    command: ControlCommandIdentifier,
+    _: &AnyByLayout,
+    output: &mut AnyByLayout,
+) -> file_system::Result<()> {
     match command {
-        character_device::IS_A_TERMINAL => {
-            *argument
-                .cast::<bool>()
-                .ok_or(file_system::Error::InvalidParameter)? = true;
+        IS_A_TERMINAL::IDENTIFIER => {
+            let output: &mut bool = IS_A_TERMINAL::cast_output(output)?;
+            *output = true;
 
             Ok(())
         }

@@ -1,9 +1,12 @@
 use core::slice;
 
 use alloc::{boxed::Box, rc::Rc, string::String, vec::Vec};
-use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
+use file_system::{
+    ControlCommand, ControlCommandIdentifier, DirectBaseOperations, DirectCharacterDevice,
+    MountOperations, Size,
+};
 use graphics::{Area, GET_RESOLUTION, Point, RenderingColor, SET_DRAWING_AREA, WAS_RESIZED};
-use shared::align_slice_to;
+use shared::{AnyByLayout, align_slice_to};
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use task::block_on;
 use wasm_bindgen::{Clamped, JsCast, JsValue, prelude::Closure};
@@ -160,22 +163,19 @@ impl DirectBaseOperations for CanvasScreenDevice {
 
     fn control(
         &self,
-        command: file_system::ControlCommand,
-        argument: &mut file_system::ControlArgument,
+        command: ControlCommandIdentifier,
+        input: &AnyByLayout,
+        output: &mut AnyByLayout,
     ) -> file_system::Result<()> {
         match command {
-            SET_DRAWING_AREA => {
-                let area: &mut Area = argument
-                    .cast()
-                    .ok_or(file_system::Error::InvalidParameter)?;
+            SET_DRAWING_AREA::IDENTIFIER => {
+                let area = SET_DRAWING_AREA::cast_input(input)?;
 
                 let mut inner = block_on(self.0.write());
                 inner.area = *area;
             }
-            GET_RESOLUTION => {
-                let point: &mut Point = argument
-                    .cast()
-                    .ok_or(file_system::Error::InvalidParameter)?;
+            GET_RESOLUTION::IDENTIFIER => {
+                let point = GET_RESOLUTION::cast_output(output)?;
 
                 let inner = block_on(self.0.read());
 
@@ -185,10 +185,8 @@ impl DirectBaseOperations for CanvasScreenDevice {
 
                 *point = resolution;
             }
-            WAS_RESIZED => {
-                let was_resized: &mut bool = argument
-                    .cast()
-                    .ok_or(file_system::Error::InvalidParameter)?;
+            WAS_RESIZED::IDENTIFIER => {
+                let was_resized = WAS_RESIZED::cast_output(output)?;
 
                 let mut inner = block_on(self.0.write());
                 *was_resized = inner.was_resized;

@@ -1,9 +1,10 @@
-use device::hash::{self, HashAlgorithm};
+use device::hash::{self, HashAlgorithm, SET_ALGORITHM};
 use file_system::{
-    BaseOperations, CharacterDevice, Context, ControlArgument, ControlCommand, Error,
+    BaseOperations, CharacterDevice, Context, ControlCommand, ControlCommandIdentifier, Error,
     MountOperations, Result, Size,
 };
 use sha2::{Digest, Sha224, Sha256, Sha384, Sha512, Sha512_224, Sha512_256, digest::DynDigest};
+use shared::AnyByLayout;
 
 #[derive(Clone)]
 struct HashDeviceContext {
@@ -69,22 +70,21 @@ impl BaseOperations for HashDevice {
     fn control(
         &self,
         context: &mut Context,
-        command: ControlCommand,
-        argument: &mut ControlArgument,
+        command: ControlCommandIdentifier,
+        input: &AnyByLayout,
+        _: &mut AnyByLayout,
     ) -> Result<()> {
         let hash_context = context
             .get_private_data_mutable_of_type::<HashDeviceContext>()
             .ok_or_else(|| file_system::Error::InvalidParameter)?;
 
         match command {
-            hash::RESET => {
+            hash::RESET::IDENTIFIER => {
                 hash_context.hasher.reset();
                 Ok(())
             }
-            hash::SET_ALGORITHM => {
-                let algorithm = argument
-                    .cast::<HashAlgorithm>()
-                    .ok_or_else(|| file_system::Error::InvalidParameter)?;
+            hash::SET_ALGORITHM::IDENTIFIER => {
+                let algorithm = SET_ALGORITHM::cast_input(input)?;
 
                 *hash_context = HashDeviceContext::new(*algorithm)?;
                 Ok(())

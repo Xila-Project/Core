@@ -4,9 +4,12 @@ use std::{
 };
 
 use file_system::{
-    ControlArgument, ControlCommand, DirectBaseOperations, DirectBlockDevice, Error,
-    MountOperations, Path, Position, Size, block_device, mount::MutexMountWrapper,
+    ControlCommand, ControlCommandIdentifier, DirectBaseOperations, DirectBlockDevice, Error,
+    MountOperations, Path, Position, Size,
+    block_device::{GET_BLOCK_COUNT, GET_BLOCK_SIZE},
+    mount::MutexMountWrapper,
 };
+use shared::AnyByLayout;
 use synchronization::blocking_mutex::raw::CriticalSectionRawMutex;
 
 use crate::io::map_error;
@@ -93,19 +96,19 @@ impl DirectBaseOperations for FileDriveDevice {
 
     fn control(
         &self,
-        command: ControlCommand,
-        argument: &mut ControlArgument,
+        command: ControlCommandIdentifier,
+        _: &AnyByLayout,
+        output: &mut AnyByLayout,
     ) -> file_system::Result<()> {
         match command {
-            block_device::GET_BLOCK_SIZE => {
-                let block_size = argument.cast::<usize>().ok_or(Error::InvalidParameter)?;
-
+            GET_BLOCK_SIZE::IDENTIFIER => {
+                let block_size = GET_BLOCK_SIZE::cast_output(output)?;
                 *block_size = 512; // Fixed block size for file drive device
 
                 Ok(())
             }
-            block_device::GET_BLOCK_COUNT => {
-                let block_count = argument.cast::<Size>().ok_or(Error::InvalidParameter)?;
+            GET_BLOCK_COUNT::IDENTIFIER => {
+                let block_count = GET_BLOCK_COUNT::cast_output(output)?;
 
                 let file_size = self
                     .0
@@ -115,7 +118,7 @@ impl DirectBaseOperations for FileDriveDevice {
                     .map_err(map_error)?
                     .len();
 
-                *block_count = file_size / 512; // Fixed block size for file drive device
+                *block_count = (file_size / 512) as _; // Fixed block size for file drive device
 
                 Ok(())
             }
