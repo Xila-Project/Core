@@ -9,6 +9,10 @@ pub const BORDER_COLOR_PRIMARY: Color = Color::new(0x27, 0x27, 0x2a);
 pub const SECONDARY_COLOR: Color = palette::get(palette::Hue::Red, palette::Tone::MAIN);
 pub const IS_DARK: bool = true;
 
+pub const BORDER_WIDTH: i32 = 2;
+pub const RADIUS: i32 = BORDER_WIDTH * 4;
+pub const PADDING: i32 = 16;
+
 /// Rust representation of LVGL's `lv_theme_t` structure
 ///
 /// This struct is C FFI compatible and must match the memory layout of the C struct.
@@ -138,16 +142,63 @@ pub unsafe extern "C" fn theme_apply(_: *mut lvgl::lv_theme_t, object: *mut lvgl
                 && lvgl::lv_obj_get_child(tab_view, 0) == parent
                 && lvgl::lv_obj_check_type(tab_view, &lvgl::lv_tabview_class)
             {
-                lvgl::lv_obj_set_style_bg_color(
+                lvgl::lv_obj_set_style_pad_all(object, BORDER_WIDTH * 4, lvgl::LV_PART_MAIN);
+                lvgl::lv_obj_set_style_radius(object, RADIUS, lvgl::LV_PART_MAIN);
+
+                lvgl::lv_obj_set_style_border_side(
                     object,
-                    BACKGROUND_COLOR_PRIMARY.into_lvgl_color(),
+                    lvgl::lv_border_side_t_LV_BORDER_SIDE_FULL,
+                    lvgl::LV_STATE_CHECKED,
+                );
+                lvgl::lv_obj_set_style_border_side(
+                    object,
+                    lvgl::lv_border_side_t_LV_BORDER_SIDE_FULL,
                     lvgl::LV_PART_MAIN,
                 );
+                lvgl::lv_obj_set_style_border_color(
+                    object,
+                    PRIMARY_COLOR.into_lvgl_color(),
+                    lvgl::LV_STATE_CHECKED,
+                );
+                lvgl::lv_obj_set_style_border_color(
+                    object,
+                    PRIMARY_COLOR.into_lvgl_color(),
+                    lvgl::LV_PART_MAIN,
+                );
+
+                lvgl::lv_obj_set_style_border_width(object, BORDER_WIDTH, lvgl::LV_PART_MAIN);
+                lvgl::lv_obj_set_style_border_width(object, BORDER_WIDTH, lvgl::LV_STATE_CHECKED);
+                lvgl::lv_obj_set_style_border_opa(
+                    object,
+                    lvgl::LV_OPA_TRANSP as _,
+                    lvgl::LV_PART_MAIN,
+                );
+                lvgl::lv_obj_set_style_border_opa(
+                    object,
+                    lvgl::LV_OPA_COVER as _,
+                    lvgl::LV_STATE_CHECKED,
+                );
+
+                lvgl::lv_obj_set_style_bg_opa(object, lvgl::LV_OPA_TRANSP as _, lvgl::LV_PART_MAIN);
 
                 lvgl::lv_obj_set_style_text_color(
                     object,
                     PRIMARY_COLOR.into_lvgl_color(),
                     lvgl::LV_PART_MAIN,
+                );
+
+                lvgl::lv_obj_set_style_bg_color(
+                    parent,
+                    BACKGROUND_COLOR_PRIMARY_MUTED.into_lvgl_color(),
+                    lvgl::LV_PART_MAIN,
+                );
+                lvgl::lv_obj_set_style_radius(parent, RADIUS, lvgl::LV_PART_MAIN);
+                lvgl::lv_obj_set_style_pad_all(parent, BORDER_WIDTH * 2, lvgl::LV_PART_MAIN);
+                lvgl::lv_obj_set_flex_align(
+                    parent,
+                    lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+                    lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+                    lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
                 );
             }
         } else if class == &lvgl::lv_buttonmatrix_class {
@@ -159,11 +210,43 @@ pub unsafe extern "C" fn theme_apply(_: *mut lvgl::lv_theme_t, object: *mut lvgl
                 lvgl::LV_PART_MAIN,
             );
 
-            lvgl::lv_obj_set_style_border_width(object, 2, lvgl::LV_PART_ITEMS);
+            lvgl::lv_obj_set_style_border_width(object, BORDER_WIDTH, lvgl::LV_PART_ITEMS);
             lvgl::lv_obj_set_style_text_color(
                 object,
                 PRIMARY_COLOR.into_lvgl_color(),
                 lvgl::LV_PART_ITEMS,
+            );
+        } else if class == &lvgl::lv_checkbox_class {
+            apply_default_style(object, lvgl::LV_PART_MAIN);
+            apply_default_style(object, lvgl::LV_PART_INDICATOR);
+            lvgl::lv_obj_set_style_border_color(
+                object,
+                PRIMARY_COLOR.into_lvgl_color(),
+                lvgl::LV_PART_INDICATOR | lvgl::LV_STATE_CHECKED,
+            );
+            lvgl::lv_obj_set_style_text_color(
+                object,
+                BACKGROUND_COLOR_PRIMARY.into_lvgl_color(),
+                lvgl::LV_PART_INDICATOR | lvgl::LV_STATE_CHECKED,
+            );
+        } else if class == &lvgl::lv_list_text_class {
+            apply_default_style(object, lvgl::LV_PART_MAIN);
+            lvgl::lv_obj_set_style_pad_left(object, PADDING, lvgl::LV_PART_MAIN);
+            lvgl::lv_obj_set_style_bg_color(
+                object,
+                BACKGROUND_COLOR_PRIMARY_MUTED.into_lvgl_color(),
+                lvgl::LV_PART_MAIN,
+            );
+        } else if class == &lvgl::lv_list_button_class {
+            apply_default_style(object, lvgl::LV_PART_MAIN);
+            lvgl::lv_obj_set_style_pad_left(object, 2 * PADDING, lvgl::LV_PART_MAIN);
+        } else if class == &lvgl::lv_switch_class {
+            apply_default_style(object, lvgl::LV_PART_MAIN);
+            apply_default_style(object, lvgl::LV_PART_INDICATOR);
+            lvgl::lv_obj_set_style_bg_color(
+                object,
+                BACKGROUND_COLOR_PRIMARY.into_lvgl_color(),
+                lvgl::LV_PART_KNOB | lvgl::LV_STATE_CHECKED,
             );
         } else {
             apply_default_style(object, lvgl::LV_PART_MAIN);
