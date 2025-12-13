@@ -1,4 +1,4 @@
-use file_system::{ControlCommand, ControlDirectionFlags};
+use file_system::{ControlCommand, define_command};
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -13,6 +13,5 @@ pub enum HashAlgorithm {
     Sha512_256 = 7,
 }
 
-pub const RESET: ControlCommand = ControlCommand::new::<()>(ControlDirectionFlags::Write, b'H', 0);
-pub const SET_ALGORITHM: ControlCommand =
-    ControlCommand::new::<HashAlgorithm>(ControlDirectionFlags::Write, b'H', 1);
+define_command!(RESET, Write, b'H', 0, (), ());
+define_command!(SET_ALGORITHM, Write, b'H', 1, HashAlgorithm, ());
