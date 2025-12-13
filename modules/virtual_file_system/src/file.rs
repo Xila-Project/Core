@@ -198,7 +198,11 @@ impl File {
         poll(|| self.0.set_permissions(permissions)).await
     }
 
-    pub async fn control<A>(&mut self, command: ControlCommand, argument: &mut A) -> Result<()> {
+    pub async fn control<C>(&mut self, command: C, argument: &C::Input) -> Result<C::Output>
+    where
+        C: ControlCommand,
+        C::Output: Default,
+    {
         poll(|| self.0.control(command, argument)).await
     }
 
