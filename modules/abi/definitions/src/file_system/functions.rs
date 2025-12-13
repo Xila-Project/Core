@@ -392,13 +392,13 @@ pub unsafe extern "C" fn xila_file_system_is_a_terminal(
             Err(Error::InvalidParameter)?;
         }
 
-        let is_a_terminal = unsafe { &mut *is_a_terminal };
-
-        context::get_instance()
-            .perform_operation_on_file(file.try_into()?, |file| {
-                file.control(character_device::IS_A_TERMINAL, is_a_terminal)
-            })
-            .ok_or(Error::InvalidIdentifier)??;
+        unsafe {
+            *is_a_terminal = context::get_instance()
+                .perform_operation_on_file(file.try_into()?, |file| {
+                    file.control(character_device::IS_A_TERMINAL, &())
+                })
+                .ok_or(Error::InvalidIdentifier)??;
+        }
 
         Ok(())
     })

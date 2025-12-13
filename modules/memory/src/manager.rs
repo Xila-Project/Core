@@ -140,7 +140,7 @@ impl<'a> Manager<'a> {
     /// # Returns
     /// The number of bytes currently allocated.
     pub fn get_used(&self) -> usize {
-        unsafe { self.0.get_used() }
+        self.0.get_used()
     }
 
     /// Returns the amount of memory currently available.
@@ -149,7 +149,15 @@ impl<'a> Manager<'a> {
     /// The number of bytes available for allocation.
     ///
     pub fn get_free(&self) -> usize {
-        unsafe { self.0.get_free() }
+        self.0.get_free()
+    }
+
+    /// Returns the total size of the memory managed by this allocator.
+    ///
+    /// # Returns
+    /// The total number of bytes managed by the allocator.
+    pub fn get_total_size(&self) -> usize {
+        self.0.get_total_size()
     }
 }
 

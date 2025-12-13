@@ -1,6 +1,9 @@
-use file_system::{DirectBaseOperations, DirectCharacterDevice, MountOperations, Size};
+use file_system::{
+    ControlCommand, ControlCommandIdentifier, DirectBaseOperations, DirectCharacterDevice,
+    MountOperations, Size,
+};
 use graphics::{Area, GET_RESOLUTION, RenderingColor, SET_DRAWING_AREA, WAS_RESIZED};
-use shared::align_slice_to;
+use shared::{AnyByLayout, align_slice_to};
 
 use crate::window_screen::inner_window::InnerWindow;
 
@@ -32,28 +35,23 @@ impl<'a> DirectBaseOperations for ScreenDevice<'a> {
 
     fn control(
         &self,
-        command: file_system::ControlCommand,
-        argument: &mut file_system::ControlArgument,
+        command: ControlCommandIdentifier,
+        input: &AnyByLayout,
+        output: &mut AnyByLayout,
     ) -> file_system::Result<()> {
         match command {
-            SET_DRAWING_AREA => {
-                let area: &Area = argument
-                    .cast()
-                    .ok_or(file_system::Error::InvalidParameter)?;
+            SET_DRAWING_AREA::IDENTIFIER => {
+                let area: &Area = SET_DRAWING_AREA::cast_input(input)?;
 
                 task::block_on(self.0.set_drawing_area(*area)).unwrap();
             }
-            GET_RESOLUTION => {
-                let resolution: &mut graphics::Point = argument
-                    .cast()
-                    .ok_or(file_system::Error::InvalidParameter)?;
+            GET_RESOLUTION::IDENTIFIER => {
+                let resolution: &mut graphics::Point = GET_RESOLUTION::cast_output(output)?;
 
                 *resolution = task::block_on(self.0.get_resolution()).unwrap();
             }
-            WAS_RESIZED => {
-                let was_resized: &mut bool = argument
-                    .cast()
-                    .ok_or(file_system::Error::InvalidParameter)?;
+            WAS_RESIZED::IDENTIFIER => {
+                let was_resized: &mut bool = WAS_RESIZED::cast_output(output)?;
 
                 *was_resized = task::block_on(self.0.was_resized()).unwrap();
             }

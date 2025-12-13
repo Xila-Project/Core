@@ -10,10 +10,13 @@ use core::fmt::Debug;
 
 use alloc::vec::Vec;
 use alloc::{boxed::Box, vec};
+use shared::AnyByLayout;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
+use crate::block_device::GET_BLOCK_SIZE;
 use crate::{
-    DirectBaseOperations, DirectBlockDevice, Error, MountOperations, Result, Size, block_device,
+    ControlCommand, DirectBaseOperations, DirectBlockDevice, Error, MountOperations, Result, Size,
+    block_device,
 };
 
 /// In-memory device implementation with configurable block size.
@@ -51,9 +54,9 @@ use crate::{
 ///
 /// The device uses an `RwLock` to ensure thread-safe access to the underlying data.
 /// Multiple readers can access the device simultaneously, but writes are exclusive.
-pub struct MemoryDevice<const BLOCK_SIZE: usize>(RwLock<CriticalSectionRawMutex, Vec<u8>>);
+pub struct MemoryDevice<const BLOCK_SIZE: u32>(RwLock<CriticalSectionRawMutex, Vec<u8>>);
 
-impl<const BLOCK_SIZE: usize> Debug for MemoryDevice<BLOCK_SIZE> {
+impl<const BLOCK_SIZE: u32> Debug for MemoryDevice<BLOCK_SIZE> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("MemoryDevice")
             .field("size", &self.0.try_read().map(|data| data.len()))
@@ -61,7 +64,7 @@ impl<const BLOCK_SIZE: usize> Debug for MemoryDevice<BLOCK_SIZE> {
     }
 }
 
-impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
+impl<const BLOCK_SIZE: u32> MemoryDevice<BLOCK_SIZE> {
     /// Create a new memory device with the specified size.
     ///
     /// The device will be initialized with zeros and have the specified total size.
@@ -85,7 +88,7 @@ impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
     /// let device = MemoryDevice::<512>::new(4096);
     /// ```
     pub fn new(size: usize) -> Self {
-        assert!(size.is_multiple_of(BLOCK_SIZE));
+        assert!(size.is_multiple_of(BLOCK_SIZE as usize));
 
         let data: Vec<u8> = vec![0; size];
 
@@ -121,13 +124,13 @@ impl<const BLOCK_SIZE: usize> MemoryDevice<BLOCK_SIZE> {
     /// let device = MemoryDevice::<512>::from_vec(data);
     /// ```
     pub fn from_vec(data: Vec<u8>) -> Self {
-        assert!(data.len().is_multiple_of(BLOCK_SIZE));
+        assert!(data.len().is_multiple_of(BLOCK_SIZE as usize));
 
         Self(RwLock::new(data))
     }
 }
 
-impl<const BLOCK_SIZE: usize> DirectBaseOperations for MemoryDevice<BLOCK_SIZE> {
+impl<const BLOCK_SIZE: u32> DirectBaseOperations for MemoryDevice<BLOCK_SIZE> {
     /// Read data from the memory device.
     ///
     /// Reads data from the current position into the provided buffer.
@@ -167,37 +170,35 @@ impl<const BLOCK_SIZE: usize> DirectBaseOperations for MemoryDevice<BLOCK_SIZE> 
 
     fn control(
         &self,
-        command: crate::ControlCommand,
-        argument: &mut crate::ControlArgument,
+        command: crate::ControlCommandIdentifier,
+        _: &AnyByLayout,
+        output: &mut AnyByLayout,
     ) -> Result<()> {
         match command {
-            block_device::GET_BLOCK_SIZE => {
-                *argument
-                    .cast::<usize>()
-                    .ok_or(crate::Error::InvalidParameter)? = BLOCK_SIZE;
-                Ok(())
+            GET_BLOCK_SIZE::IDENTIFIER => {
+                let output = GET_BLOCK_SIZE::cast_output(output)?;
+                *output = BLOCK_SIZE;
             }
-            block_device::GET_BLOCK_COUNT => {
-                let block_count = argument
-                    .cast::<usize>()
-                    .ok_or(crate::Error::InvalidParameter)?;
+            block_device::GET_BLOCK_COUNT::IDENTIFIER => {
+                let output = block_device::GET_BLOCK_COUNT::cast_output(output)?;
 
-                *block_count = self
+                *output = (self
                     .0
                     .try_read()
                     .map_err(|_| crate::Error::RessourceBusy)?
                     .len()
-                    / BLOCK_SIZE;
-                Ok(())
+                    / BLOCK_SIZE as usize) as u32;
             }
-            _ => Err(Error::UnsupportedOperation),
+            _ => return Err(Error::UnsupportedOperation),
         }
+
+        Ok(())
     }
 }
 
-impl<const BLOCK_SIZE: usize> MountOperations for MemoryDevice<BLOCK_SIZE> {}
+impl<const BLOCK_SIZE: u32> MountOperations for MemoryDevice<BLOCK_SIZE> {}
 
-impl<const BLOCK_SIZE: usize> DirectBlockDevice for MemoryDevice<BLOCK_SIZE> {}
+impl<const BLOCK_SIZE: u32> DirectBlockDevice for MemoryDevice<BLOCK_SIZE> {}
 
 #[cfg(test)]
 mod tests {

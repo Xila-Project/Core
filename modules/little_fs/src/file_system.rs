@@ -47,8 +47,8 @@ impl FileSystem {
 
         let configuration: littlefs::lfs_config = Configuration::new(
             device,
-            block_size,
-            block_count as usize,
+            block_size as _,
+            block_count as _,
             cache_size,
             cache_size,
         )
@@ -102,8 +102,8 @@ impl FileSystem {
 
         let configuration: littlefs::lfs_config = Configuration::new(
             device,
-            block_size,
-            block_count as usize,
+            block_size as _,
+            block_count as _,
             cache_size,
             cache_size,
         )

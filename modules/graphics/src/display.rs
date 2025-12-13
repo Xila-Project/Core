@@ -1,10 +1,12 @@
 use alloc::boxed::Box;
-use file_system::{ControlArgument, DirectCharacterDevice};
+use file_system::{ControlCommand, DirectCharacterDevice};
+use shared::AnyByLayout;
 
 use core::{ffi::c_void, ptr::null_mut, slice};
 
 use crate::{
-    Area, GET_RESOLUTION, Point, RenderingColor, Result, SET_DRAWING_AREA, draw_buffer::Buffer,
+    Area, GET_RESOLUTION, Point, RenderingColor, Result, SET_DRAWING_AREA, WAS_RESIZED,
+    draw_buffer::Buffer,
 };
 
 use super::lvgl;
@@ -40,7 +42,11 @@ unsafe extern "C" fn binding_callback_function(
     let device = &user_data.device;
 
     device
-        .control(SET_DRAWING_AREA, ControlArgument::from(&mut area))
+        .control(
+            SET_DRAWING_AREA::IDENTIFIER,
+            AnyByLayout::from_mutable(&mut area),
+            AnyByLayout::NONE,
+        )
         .expect("Error setting drawing area");
 
     device.write(buffer, 0).expect("Error writing to display");
@@ -65,7 +71,11 @@ impl Display {
         // Get the resolution from the device.
         let mut resolution = Point::new(0, 0);
         device
-            .control(GET_RESOLUTION, ControlArgument::from(&mut resolution))
+            .control(
+                GET_RESOLUTION::IDENTIFIER,
+                AnyByLayout::NONE,
+                AnyByLayout::from_mutable(&mut resolution),
+            )
             .expect("Error getting resolution");
 
         // Create the display.
@@ -120,8 +130,9 @@ impl Display {
         user_data
             .device
             .control(
-                crate::screen::WAS_RESIZED,
-                ControlArgument::from(&mut was_resize),
+                WAS_RESIZED::IDENTIFIER,
+                AnyByLayout::NONE,
+                AnyByLayout::from_mutable(&mut was_resize),
             )
             .expect("Error checking if display was resized");
 
@@ -133,7 +144,11 @@ impl Display {
 
         user_data
             .device
-            .control(GET_RESOLUTION, ControlArgument::from(&mut resolution))
+            .control(
+                GET_RESOLUTION::IDENTIFIER,
+                AnyByLayout::NONE,
+                AnyByLayout::from_mutable(&mut resolution),
+            )
             .expect("Error getting resolution");
 
         unsafe {

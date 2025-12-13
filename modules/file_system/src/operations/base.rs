@@ -3,7 +3,9 @@
 //! This module provides the core device trait and types for abstracting various
 //! storage devices, peripherals, and I/O endpoints in the file system.
 
-use crate::{Context, ControlArgument, ControlCommand, Error, Position, Result, Size};
+use shared::AnyByLayout;
+
+use crate::{Context, ControlCommandIdentifier, Error, Position, Result, Size};
 
 /// Core trait for all device implementations in the file system.
 ///
@@ -250,8 +252,9 @@ pub trait BaseOperations: Send + Sync {
     fn control(
         &self,
         _context: &mut Context,
-        _command: ControlCommand,
-        _argument: &mut ControlArgument,
+        _command: ControlCommandIdentifier,
+        _input: &AnyByLayout,
+        _output: &mut AnyByLayout,
     ) -> Result<()> {
         Err(Error::UnsupportedOperation)
     }
@@ -373,7 +376,12 @@ pub trait DirectBaseOperations: Send + Sync {
         }
     }
 
-    fn control(&self, _command: ControlCommand, _argument: &mut ControlArgument) -> Result<()> {
+    fn control(
+        &self,
+        _command: ControlCommandIdentifier,
+        _input: &AnyByLayout,
+        _output: &mut AnyByLayout,
+    ) -> Result<()> {
         Err(Error::UnsupportedOperation)
     }
 }
@@ -429,10 +437,11 @@ where
     fn control(
         &self,
         _: &mut Context,
-        command: ControlCommand,
-        argument: &mut ControlArgument,
+        command: ControlCommandIdentifier,
+        input: &AnyByLayout,
+        output: &mut AnyByLayout,
     ) -> Result<()> {
-        self.control(command, argument)
+        self.control(command, input, output)
     }
 
     fn clone_context(&self, _context: &Context) -> Result<Context> {

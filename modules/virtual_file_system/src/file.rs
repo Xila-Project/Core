@@ -198,7 +198,11 @@ impl File {
         poll(|| self.0.set_permissions(permissions)).await
     }
 
-    pub async fn control<A>(&mut self, command: ControlCommand, argument: &mut A) -> Result<()> {
+    pub async fn control<C>(&mut self, command: C, argument: &C::Input) -> Result<C::Output>
+    where
+        C: ControlCommand,
+        C::Output: Default,
+    {
         poll(|| self.0.control(command, argument)).await
     }
 
@@ -217,5 +221,44 @@ impl File {
 
     pub fn into_synchronous_file(self) -> SynchronousFile {
         self.0
+    }
+}
+
+pub struct FileControlIterator<'a, C> {
+    file: &'a mut File,
+    get_command: C,
+    index: usize,
+    count: usize,
+}
+
+impl<'a, C> FileControlIterator<'a, C>
+where
+    C: ControlCommand<Input = usize>,
+    C::Output: Default,
+{
+    pub async fn new<Cc>(file: &'a mut File, count_command: Cc, get_command: C) -> Result<Self>
+    where
+        Cc: ControlCommand<Input = (), Output = usize>,
+    {
+        let count: usize = file.control(count_command, &()).await?;
+
+        Ok(Self {
+            file,
+            get_command,
+            index: 0,
+            count,
+        })
+    }
+
+    pub async fn next(&mut self) -> Result<Option<C::Output>> {
+        if self.index >= self.count {
+            return Ok(None);
+        }
+
+        let result = self.file.control(self.get_command, &self.index).await?;
+
+        self.index += 1;
+
+        Ok(Some(result))
     }
 }

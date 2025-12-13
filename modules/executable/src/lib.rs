@@ -112,9 +112,7 @@ pub async fn execute(
         .get_file_name()
         .ok_or(virtual_file_system::Error::InvalidPath)?;
 
-    let mut main_function: MainFunction = None;
-
-    file.control(GET_MAIN_FUNCTION, &mut main_function).await?;
+    let main_function: MainFunction = file.control(GET_MAIN_FUNCTION, &()).await?;
 
     let main = main_function.ok_or(Error::FailedToGetMainFunction)?;
 

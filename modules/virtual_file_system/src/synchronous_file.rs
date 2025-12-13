@@ -2,10 +2,11 @@ use core::{fmt::Debug, mem::forget};
 
 use crate::{Error, ItemStatic, Result, VirtualFileSystem};
 use alloc::{vec, vec::Vec};
-use exported_file_system::{ControlArgument, ControlCommand, Permissions};
+use exported_file_system::{ControlCommand, Permissions};
 use file_system::{
     AccessFlags, AttributeFlags, Attributes, Context, Flags, Path, Position, Size, Statistics,
 };
+use shared::AnyByLayout;
 use task::TaskIdentifier;
 use task::block_on;
 use users::{GroupIdentifier, UserIdentifier};
@@ -224,13 +225,24 @@ impl SynchronousFile {
         Ok(())
     }
 
-    pub fn control<A>(&mut self, command: ControlCommand, argument: &mut A) -> Result<()> {
+    pub fn control<C>(&mut self, _command: C, argument: &C::Input) -> Result<C::Output>
+    where
+        C: ControlCommand,
+        C::Output: Default,
+    {
+        let mut output = C::Output::default();
+
         self.item
             .as_base_operations()
             .ok_or(Error::UnsupportedOperation)?
-            .control(&mut self.context, command, ControlArgument::from(argument))?;
+            .control(
+                &mut self.context,
+                C::IDENTIFIER,
+                AnyByLayout::from(argument),
+                AnyByLayout::from_mutable(&mut output),
+            )?;
 
-        Ok(())
+        Ok(output)
     }
 
     pub fn get_access(&self) -> Result<AccessFlags> {

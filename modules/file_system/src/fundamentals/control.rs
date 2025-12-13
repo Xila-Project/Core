@@ -1,5 +1,6 @@
-use alloc::slice;
-use shared::flags;
+use shared::{AnyByLayout, flags};
+
+use crate::{Error, Result};
 
 flags! {
     /// The kinds of control commands.
@@ -11,11 +12,75 @@ flags! {
     }
 }
 
+struct ControlCommandInputOutput<I, O> {
+    pub _input: I,
+    pub _output: O,
+}
+
+pub trait ControlCommand: Clone + Copy {
+    type Input;
+    type Output;
+
+    const IDENTIFIER: ControlCommandIdentifier;
+
+    fn cast_input(input: &AnyByLayout) -> Result<&Self::Input> {
+        input.cast().ok_or(Error::InvalidParameter)
+    }
+
+    fn cast_output(output: &mut AnyByLayout) -> Result<&mut Self::Output> {
+        output.cast_mutable().ok_or(Error::InvalidParameter)
+    }
+
+    fn cast<'i, 'o>(
+        input: &'i AnyByLayout,
+        output: &'o mut AnyByLayout,
+    ) -> Result<(&'i Self::Input, &'o mut Self::Output)> {
+        Ok((Self::cast_input(input)?, Self::cast_output(output)?))
+    }
+}
+
+#[macro_export]
+macro_rules! define_command {
+    ($name:ident, Read, $kind:expr, $number:expr, $I:ty, $O:ty) => {
+        $crate::define_command!(
+            $name,
+            $crate::ControlDirectionFlags::Read,
+            $kind,
+            $number,
+            $I,
+            $O
+        );
+    };
+    ($name:ident, Write, $kind:expr, $number:expr, $I:ty, $O:ty) => {
+        $crate::define_command!(
+            $name,
+            $crate::ControlDirectionFlags::Write,
+            $kind,
+            $number,
+            $I,
+            $O
+        );
+    };
+    ($name:ident, $direction:expr, $kind:expr, $number:expr, $I:ty, $O:ty) => {
+        #[derive(Clone, Copy, Debug)]
+        #[allow(non_camel_case_types)]
+        pub struct $name;
+
+        impl ControlCommand for $name {
+            type Input = $I;
+            type Output = $O;
+
+            const IDENTIFIER: $crate::ControlCommandIdentifier =
+                $crate::ControlCommandIdentifier::new::<$I, $O>($direction, $kind, $number);
+        }
+    };
+}
+
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ControlCommand(usize);
+pub struct ControlCommandIdentifier(usize);
 
-impl ControlCommand {
+impl ControlCommandIdentifier {
     const NUMBER_SIZE: usize = 8;
     const KIND_SIZE: usize = 8;
     const SIZE_SIZE: usize = 14;
@@ -26,8 +91,28 @@ impl ControlCommand {
     const SIZE_SHIFT: usize = Self::KIND_SHIFT + Self::KIND_SIZE; // 16
     const DIRECTION_SHIFT: usize = Self::SIZE_SHIFT + Self::SIZE_SIZE; // 30
 
-    pub const fn new<A>(direction: ControlDirectionFlags, kind: u8, number: u8) -> Self {
-        Self::new_with_size(direction, size_of::<A>(), kind, number)
+    pub const fn new<I, O>(direction: ControlDirectionFlags, kind: u8, number: u8) -> Self {
+        let size = core::mem::size_of::<ControlCommandInputOutput<I, O>>();
+
+        Self::new_with_size(direction, size, kind, number)
+    }
+
+    pub const fn new_read<I, O>(kind: u8, number: u8) -> Self {
+        Self::new_with_size(
+            ControlDirectionFlags::Read,
+            size_of::<ControlCommandInputOutput<I, O>>(),
+            kind,
+            number,
+        )
+    }
+
+    pub const fn new_write<I, O>(kind: u8, number: u8) -> Self {
+        Self::new_with_size(
+            ControlDirectionFlags::Write,
+            size_of::<ControlCommandInputOutput<I, O>>(),
+            kind,
+            number,
+        )
     }
 
     pub const fn new_with_size(
@@ -63,55 +148,5 @@ impl ControlCommand {
 
     pub const fn get_number(&self) -> u8 {
         ((self.0 >> Self::NUMBER_SHIFT) & ((1 << Self::NUMBER_SIZE) - 1)) as u8
-    }
-}
-
-#[repr(transparent)]
-#[derive(Debug, PartialEq, Eq)]
-pub struct ControlArgument([u8]);
-
-impl<'a, T> From<&'a mut T> for &'a mut ControlArgument {
-    fn from(argument: &'a mut T) -> Self {
-        ControlArgument::from(argument)
-    }
-}
-
-impl ControlArgument {
-    pub fn from<T>(argument: &mut T) -> &mut Self {
-        unsafe {
-            let slice = slice::from_raw_parts_mut(argument as *mut T as *mut u8, size_of::<T>());
-            &mut *(slice as *mut [u8] as *mut Self)
-        }
-    }
-
-    pub fn cast<T>(&mut self) -> Option<&mut T> {
-        if size_of::<T>() > self.0.len() {
-            return None;
-        }
-
-        let argument = self.0.as_mut_ptr();
-
-        if argument.is_null() {
-            return None;
-        }
-
-        // check alignment
-        if argument.align_offset(align_of::<T>()) != 0 {
-            return None;
-        }
-
-        Some(unsafe { &mut *(argument as *mut T) })
-    }
-
-    pub fn get_size(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn get_alignment(&self) -> usize {
-        self.0.as_ptr().align_offset(1)
-    }
-
-    pub fn as_mutable_bytes(&mut self) -> &mut [u8] {
-        &mut self.0
     }
 }
