@@ -1,5 +1,4 @@
-use alloc::sync::Arc;
-use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
+use synchronization::{Arc, blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 
 pub struct JoinHandle<T>(Arc<Signal<CriticalSectionRawMutex, T>>);
 

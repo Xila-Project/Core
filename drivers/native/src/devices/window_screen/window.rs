@@ -1,10 +1,8 @@
-use alloc::sync::Arc;
-
 use arboard::Clipboard;
 use graphics::{InputData, Key, Point, State};
 use pixels::{Pixels, SurfaceTexture};
 use synchronization::rwlock::RwLock;
-use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, channel::Sender};
+use synchronization::{Arc, blocking_mutex::raw::CriticalSectionRawMutex, channel::Sender};
 use winit::{
     application::ApplicationHandler,
     dpi::LogicalSize,

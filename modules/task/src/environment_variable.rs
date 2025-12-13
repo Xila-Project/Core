@@ -1,5 +1,6 @@
-use alloc::{ffi::CString, format, sync::Arc};
+use alloc::{ffi::CString, format};
 use core::fmt::Debug;
+use synchronization::Arc;
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct EnvironmentVariable(Arc<CString>, usize);
