@@ -122,7 +122,7 @@ impl ManagerTrait for MemoryManager {
         }
     }
 
-    unsafe fn get_used(&self) -> usize {
+    fn get_used(&self) -> usize {
         self.regions.lock(|regions| {
             let regions = regions.borrow();
             let mut used = 0;
@@ -133,7 +133,7 @@ impl ManagerTrait for MemoryManager {
         })
     }
 
-    unsafe fn get_free(&self) -> usize {
+    fn get_free(&self) -> usize {
         self.regions.lock(|regions| {
             let regions = regions.borrow();
             let mut free = 0;
