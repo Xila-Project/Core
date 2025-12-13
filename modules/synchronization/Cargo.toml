@@ -8,3 +8,6 @@ embassy-sync = { workspace = true, features = ["std"] }
 
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
 embassy-sync = { workspace = true }
+
+[target.'cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))'.dev-dependencies]
+critical-section = { workspace = true, features = ["std"] }
