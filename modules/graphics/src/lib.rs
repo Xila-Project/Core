@@ -14,6 +14,7 @@ pub mod macros;
 mod manager;
 mod point;
 mod screen;
+pub mod symbols;
 mod window;
 
 pub mod lvgl;
