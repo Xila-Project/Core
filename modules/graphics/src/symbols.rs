@@ -83,4 +83,4 @@ pub const NEW_LINE: &CStr =
     unsafe { CStr::from_bytes_with_nul_unchecked(lvgl::LV_SYMBOL_NEW_LINE) };
 pub const DUMMY: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(lvgl::LV_SYMBOL_DUMMY) };
 // Additional symbols
-pub const NETWORK_WIRED: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"\xEF\x9B\xBF\0") };
+pub const NETWORK_WIRED: &CStr = c"\xEF\x9B\xBF";
