@@ -65,6 +65,16 @@ pub unsafe fn lv_obj_get_size(object: *mut lv_obj_t) -> Point {
     }
 }
 
+/// Add a tab to a tabview and adjust the tab button size
+///
+/// # Arguments
+///
+/// * `tabview` - The tabview to add the tab to.
+/// * `name` - The name of the tab.
+///
+/// # Safety
+///
+/// This function is unsafe because it may dereference raw pointers (e.g. `tabview`).
 pub unsafe fn lv_tabview_add_tab(tabview: *mut lv_obj_t, name: *const c_char) -> *mut lv_obj_t {
     unsafe {
         let page = lvgl_rust_sys::lv_tabview_add_tab(tabview, name);
