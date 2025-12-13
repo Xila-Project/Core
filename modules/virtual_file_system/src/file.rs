@@ -223,3 +223,42 @@ impl File {
         self.0
     }
 }
+
+pub struct FileControlIterator<'a, C> {
+    file: &'a mut File,
+    get_command: C,
+    index: usize,
+    count: usize,
+}
+
+impl<'a, C> FileControlIterator<'a, C>
+where
+    C: ControlCommand<Input = usize>,
+    C::Output: Default,
+{
+    pub async fn new<Cc>(file: &'a mut File, count_command: Cc, get_command: C) -> Result<Self>
+    where
+        Cc: ControlCommand<Input = (), Output = usize>,
+    {
+        let count: usize = file.control(count_command, &()).await?;
+
+        Ok(Self {
+            file,
+            get_command,
+            index: 0,
+            count,
+        })
+    }
+
+    pub async fn next(&mut self) -> Result<Option<C::Output>> {
+        if self.index >= self.count {
+            return Ok(None);
+        }
+
+        let result = self.file.control(self.get_command, &self.index).await?;
+
+        self.index += 1;
+
+        Ok(Some(result))
+    }
+}
