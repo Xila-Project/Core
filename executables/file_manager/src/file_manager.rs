@@ -6,7 +6,6 @@ pub(crate) use alloc::{
     vec::Vec,
 };
 use core::ptr::null_mut;
-use xila::file_system::{Kind, Path, PathOwned};
 use xila::graphics::{
     self, EventKind, Window, lvgl,
     palette::{self, Hue},
@@ -14,6 +13,10 @@ use xila::graphics::{
 use xila::log;
 use xila::task;
 use xila::virtual_file_system::{Directory, get_instance};
+use xila::{
+    file_system::{Kind, Path, PathOwned},
+    graphics::symbols,
+};
 
 pub struct FileManager {
     window: Window,
@@ -154,7 +157,7 @@ impl FileManager {
                 return Err(Error::FailedToCreateObject);
             }
             let up_label = lvgl::lv_label_create(self.up_button);
-            lvgl::lv_label_set_text(up_label, lvgl::LV_SYMBOL_UP as *const _ as *const i8);
+            lvgl::lv_label_set_text(up_label, symbols::UP.as_ptr());
             lvgl::lv_obj_center(up_label);
 
             // Remove event handler - events bubble up to window
@@ -166,7 +169,7 @@ impl FileManager {
             }
 
             let home_label = lvgl::lv_label_create(self.home_button);
-            lvgl::lv_label_set_text(home_label, lvgl::LV_SYMBOL_HOME as *const _ as *const i8);
+            lvgl::lv_label_set_text(home_label, symbols::HOME.as_ptr());
             lvgl::lv_obj_center(home_label);
 
             // Remove event handler - events bubble up to window
@@ -179,10 +182,7 @@ impl FileManager {
 
             let refresh_label = lvgl::lv_label_create(self.refresh_button);
 
-            lvgl::lv_label_set_text(
-                refresh_label,
-                lvgl::LV_SYMBOL_REFRESH as *const _ as *const i8,
-            );
+            lvgl::lv_label_set_text(refresh_label, symbols::REFRESH.as_ptr());
             lvgl::lv_obj_center(refresh_label);
 
             // Remove event handler - events bubble up to window
@@ -207,7 +207,7 @@ impl FileManager {
             }
 
             let go_label = lvgl::lv_label_create(self.go_button);
-            lvgl::lv_label_set_text(go_label, lvgl::LV_SYMBOL_RIGHT as *const _ as *const i8);
+            lvgl::lv_label_set_text(go_label, symbols::RIGHT.as_ptr());
             lvgl::lv_obj_center(go_label);
 
             self.update_path_label();
@@ -284,8 +284,8 @@ impl FileManager {
             let file = &self.files[index];
 
             let icon_symbol = match file.kind {
-                Kind::Directory => lvgl::LV_SYMBOL_DIRECTORY,
-                _ => lvgl::LV_SYMBOL_FILE,
+                Kind::Directory => symbols::DIRECTORY,
+                _ => symbols::FILE,
             };
 
             let name_cstring = CString::new(file.name.clone()).unwrap();

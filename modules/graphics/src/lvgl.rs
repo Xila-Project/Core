@@ -1,3 +1,5 @@
+use core::ffi::c_char;
+
 pub use lvgl_rust_sys::*;
 
 use crate::Point;
@@ -60,5 +62,35 @@ pub unsafe fn lv_obj_get_size(object: *mut lv_obj_t) -> Point {
         let height = lv_obj_get_height(object) as i16;
 
         Point::new(width, height)
+    }
+}
+
+/// Add a tab to a tabview and adjust the tab button size
+///
+/// # Arguments
+///
+/// * `tabview` - The tabview to add the tab to.
+/// * `name` - The name of the tab.
+///
+/// # Safety
+///
+/// This function is unsafe because it may dereference raw pointers (e.g. `tabview`).
+pub unsafe fn lv_tabview_add_tab(tabview: *mut lv_obj_t, name: *const c_char) -> *mut lv_obj_t {
+    unsafe {
+        let page = lvgl_rust_sys::lv_tabview_add_tab(tabview, name);
+
+        let bar = lv_tabview_get_tab_bar(tabview);
+
+        lv_obj_set_size(bar, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+
+        // get latest tab button
+        let tab_count = lv_obj_get_child_count(bar);
+        let button = lv_obj_get_child(bar, (tab_count - 1) as _);
+
+        // don't make it grow
+        lv_obj_set_flex_grow(button, 0);
+        lv_obj_set_size(button, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+
+        page
     }
 }

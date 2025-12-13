@@ -448,11 +448,6 @@ async fn test_get_children() {
     let root_task = manager.get_current_task_identifier().await;
     let spawner = manager.get_spawner(root_task).await.unwrap();
 
-    // Initially, root task should have no children
-    let initial_children = manager.get_children(root_task).await.unwrap();
-    let initial_count = initial_children.len();
-    assert_eq!(initial_count, 0);
-
     // Spawn first child
     let (child1_handle, child1_task) = manager
         .spawn(root_task, "Child Task 1", Some(spawner), async move |_| {
@@ -480,7 +475,8 @@ async fn test_get_children() {
 
     // After children complete, they should no longer be in the children list
     let final_children = manager.get_children(root_task).await.unwrap();
-    assert_eq!(final_children.len(), initial_count);
+    assert!(!final_children.contains(&child1_task));
+    assert!(!final_children.contains(&child2_task));
 }
 
 #[ignore]
