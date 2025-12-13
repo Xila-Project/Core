@@ -7,9 +7,12 @@
 
 use core::fmt;
 
+use shared::AnyByLayout;
+
 use crate::{
-    BaseOperations, DirectBaseOperations, DirectBlockDevice, Error, MountOperations, Position,
-    Result, Size, block_device,
+    BaseOperations, ControlCommand, ControlCommandIdentifier, DirectBaseOperations,
+    DirectBlockDevice, Error, MountOperations, Position, Result, Size,
+    block_device::{self, GET_BLOCK_COUNT, GET_BLOCK_SIZE},
 };
 
 /// A device implementation that represents a partition within a larger storage device.
@@ -44,7 +47,7 @@ pub struct PartitionDevice<'a, D> {
     /// Base device containing this partition
     base_device: &'a D,
     /// Block size
-    block_size: usize,
+    block_size: u32,
     /// Byte offset from the beginning of the base device
     offset: Size,
     /// Size of this partition in bytes
@@ -71,12 +74,7 @@ impl<'a, D: BaseOperations> PartitionDevice<'a, D> {
     /// // Create a partition starting at block 128 (64KB) with 256 blocks (128KB)
     /// let partition = PartitionDevice::new(&base_device, 128, 256, 512);
     /// ```
-    pub fn new(
-        base_device: &'a D,
-        start_block: Size,
-        block_count: Size,
-        block_size: usize,
-    ) -> Self {
+    pub fn new(base_device: &'a D, start_block: Size, block_count: Size, block_size: u32) -> Self {
         Self {
             base_device,
             block_size,
@@ -102,7 +100,7 @@ impl<'a, D: BaseOperations> PartitionDevice<'a, D> {
     /// assert_eq!(partition.get_block_count(), 50);
     /// ```
     pub const fn get_block_count(&self) -> u32 {
-        self.size as u32 / (self.block_size as u32)
+        self.size as u32 / self.block_size
     }
 
     pub const fn get_start_lba(&self) -> Size {
@@ -224,24 +222,25 @@ impl<'a, D: DirectBaseOperations> DirectBaseOperations for PartitionDevice<'a, D
 
     fn control(
         &self,
-        command: crate::ControlCommand,
-        argument: &mut crate::ControlArgument,
+        command: ControlCommandIdentifier,
+        input: &AnyByLayout,
+        output: &mut AnyByLayout,
     ) -> Result<()> {
         match command {
-            block_device::GET_BLOCK_SIZE => {
-                *argument
-                    .cast::<usize>()
-                    .ok_or(crate::Error::InvalidParameter)? = self.block_size;
-                Ok(())
+            GET_BLOCK_SIZE::IDENTIFIER => {
+                let output = GET_BLOCK_SIZE::cast_output(output)?;
+
+                *output = self.block_size;
             }
-            block_device::GET_BLOCK_COUNT => {
-                *argument
-                    .cast::<Size>()
-                    .ok_or(crate::Error::InvalidParameter)? = self.get_block_count() as Size;
-                Ok(())
+            GET_BLOCK_COUNT::IDENTIFIER => {
+                *output
+                    .cast_mutable::<Size>()
+                    .ok_or(Error::InvalidParameter)? = self.get_block_count() as Size;
             }
-            _ => self.base_device.control(command, argument),
+            _ => return self.base_device.control(command, input, output),
         }
+
+        Ok(())
     }
 }
 

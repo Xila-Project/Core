@@ -1,27 +1,34 @@
 use crate::{
-    BaseOperations, ControlArgument, ControlCommand, ControlDirectionFlags, DirectBaseOperations,
-    Error, MountOperations, Position, Result, Size,
+    BaseOperations, ControlCommand, DirectBaseOperations, Error, MountOperations, Position, Result,
+    Size, define_command,
 };
+use shared::AnyByLayout;
 
-pub const GET_BLOCK_SIZE: ControlCommand =
-    ControlCommand::new::<usize>(ControlDirectionFlags::Read, b'B', 0);
-pub const GET_BLOCK_COUNT: ControlCommand =
-    ControlCommand::new::<Size>(ControlDirectionFlags::Read, b'B', 1);
+define_command!(GET_BLOCK_SIZE, Read, b'B', 0, (), u32);
+define_command!(GET_BLOCK_COUNT, Read, b'B', 1, (), u32);
 
 pub trait BlockDevice: BaseOperations + MountOperations {}
 
 pub trait DirectBlockDevice: DirectBaseOperations + MountOperations {
-    fn get_block_size(&self) -> Result<usize> {
-        let mut block_size: usize = 0;
+    fn get_block_size(&self) -> Result<u32> {
+        let mut block_size: u32 = 0;
 
-        self.control(GET_BLOCK_SIZE, ControlArgument::from(&mut block_size))?;
+        self.control(
+            GET_BLOCK_SIZE::IDENTIFIER,
+            AnyByLayout::NONE,
+            AnyByLayout::from_mutable(&mut block_size),
+        )?;
         Ok(block_size)
     }
 
     fn get_block_count(&self) -> Result<Size> {
         let mut total_size: Size = 0;
 
-        self.control(GET_BLOCK_COUNT, ControlArgument::from(&mut total_size))?;
+        self.control(
+            GET_BLOCK_COUNT::IDENTIFIER,
+            AnyByLayout::NONE,
+            AnyByLayout::from_mutable(&mut total_size),
+        )?;
         Ok(total_size)
     }
 }
@@ -177,8 +184,9 @@ pub mod tests {
         device
             .control(
                 &mut context,
-                GET_BLOCK_COUNT,
-                ControlArgument::from(&mut (block_count)),
+                GET_BLOCK_COUNT::IDENTIFIER,
+                AnyByLayout::NONE,
+                AnyByLayout::from_mutable(&mut block_count),
             )
             .unwrap();
 
@@ -188,8 +196,9 @@ pub mod tests {
         device
             .control(
                 &mut context,
-                GET_BLOCK_SIZE,
-                ControlArgument::from(&mut (block_size)),
+                GET_BLOCK_SIZE::IDENTIFIER,
+                AnyByLayout::NONE,
+                AnyByLayout::from_mutable(&mut block_size),
             )
             .unwrap();
 
