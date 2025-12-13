@@ -2,12 +2,12 @@ use crate::Standard;
 use alloc::{boxed::Box, string::String, vec::Vec};
 use core::{num::NonZeroUsize, pin::Pin};
 use file_system::{
-    ControlCommand, ControlDirectionFlags, DirectBaseOperations, DirectCharacterDevice,
-    MountOperations,
+    ControlCommand, ControlCommandIdentifier, DirectBaseOperations, DirectCharacterDevice,
+    MountOperations, define_command,
 };
+use shared::AnyByLayout;
 
-pub const GET_MAIN_FUNCTION: ControlCommand =
-    ControlCommand::new::<MainFunction>(ControlDirectionFlags::Read, b'E', 1);
+define_command!(GET_MAIN_FUNCTION, Read, b'E', 1, (), MainFunction);
 
 pub trait ExecutableTrait: 'static + Send + Sync {
     fn main(standard: Standard, arguments: Vec<String>) -> MainFuture;
@@ -47,16 +47,16 @@ impl<T: ExecutableTrait> DirectBaseOperations for ExecutableWrapper<T> {
 
     fn control(
         &self,
-        command: ControlCommand,
-        argument: &mut file_system::ControlArgument,
+        command: ControlCommandIdentifier,
+        _: &AnyByLayout,
+        output: &mut AnyByLayout,
     ) -> file_system::Result<()> {
         log::debug!("ExecutableWrapper control command: {:?}", command);
 
         match command {
-            GET_MAIN_FUNCTION => {
-                *argument
-                    .cast::<MainFunction>()
-                    .ok_or(file_system::Error::InvalidParameter)? = Some(Box::new(T::main));
+            GET_MAIN_FUNCTION::IDENTIFIER => {
+                let output = GET_MAIN_FUNCTION::cast_output(output)?;
+                *output = Some(Box::new(T::main));
                 Ok(())
             }
             _ => Err(file_system::Error::UnsupportedOperation),
