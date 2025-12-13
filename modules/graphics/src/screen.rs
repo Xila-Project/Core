@@ -1,10 +1,7 @@
-use file_system::{ControlCommand, ControlDirectionFlags};
+use file_system::{ControlCommand, define_command};
 
 use crate::{Area, Point};
 
-pub const SET_DRAWING_AREA: ControlCommand =
-    ControlCommand::new::<Area>(ControlDirectionFlags::Write, b'D', 0x01);
-pub const GET_RESOLUTION: ControlCommand =
-    ControlCommand::new::<Point>(ControlDirectionFlags::Read, b'D', 0x02);
-pub const WAS_RESIZED: ControlCommand =
-    ControlCommand::new::<bool>(ControlDirectionFlags::Read, b'D', 0x03);
+define_command!(SET_DRAWING_AREA, Write, b'D', 0x01, Area, ());
+define_command!(GET_RESOLUTION, Read, b'D', 0x02, (), Point);
+define_command!(WAS_RESIZED, Read, b'D', 0x03, (), bool);
