@@ -1,7 +1,7 @@
 use crate::error::{Error, Result};
 use alloc::{format, string::String};
 use core::ptr::null_mut;
-use xila::graphics::{self, EventKind, lvgl, theme};
+use xila::graphics::{self, EventKind, lvgl, symbols, theme};
 use xila::shared::unix_to_human_time;
 use xila::time;
 
@@ -223,7 +223,7 @@ impl Layout {
                     return Err(Error::FailedToCreateObject);
                 }
 
-                lvgl::lv_label_set_text(wi_fi, lvgl::LV_SYMBOL_WIFI as *const u8 as *const i8);
+                lvgl::lv_label_set_text(wi_fi, symbols::WIFI.as_ptr());
 
                 wi_fi
             };
@@ -237,10 +237,7 @@ impl Layout {
                     return Err(Error::FailedToCreateObject);
                 }
 
-                lvgl::lv_label_set_text(
-                    battery,
-                    lvgl::LV_SYMBOL_BATTERY_3 as *const u8 as *const i8,
-                );
+                lvgl::lv_label_set_text(battery, symbols::BATTERY_3.as_ptr());
 
                 battery
             };
