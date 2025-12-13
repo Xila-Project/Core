@@ -112,21 +112,21 @@ pub trait ManagerTrait: Send + Sync {
     ///
     /// # Returns
     /// The number of bytes currently allocated.
-    ///
-    /// # Safety
-    /// This function is unsafe because it may rely on internal allocator state
-    /// that could be concurrently modified by other threads.
-    unsafe fn get_used(&self) -> usize;
+    fn get_used(&self) -> usize;
 
     /// Returns the amount of memory currently available in this allocator.
     ///
     /// # Returns
     /// The number of bytes available for allocation.
+    fn get_free(&self) -> usize;
+
+    /// Returns the total size of the memory managed by this allocator.
     ///
-    /// # Safety
-    /// This function is unsafe because it may rely on internal allocator state
-    /// that could be concurrently modified by other threads.
-    unsafe fn get_free(&self) -> usize;
+    /// # Returns
+    /// The total number of bytes managed by the allocator.
+    fn get_total_size(&self) -> usize {
+        self.get_used() + self.get_free()
+    }
 
     /// Flushes the instruction cache for a specific memory region.
     ///
