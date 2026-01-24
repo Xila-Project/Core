@@ -46,7 +46,7 @@ impl File {
     }
 
     pub async fn open<'a>(
-        virtual_file_system: &'a VirtualFileSystem<'a>,
+        virtual_file_system: &'a VirtualFileSystem,
         task: task::TaskIdentifier,
         path: impl AsRef<Path>,
         flags: Flags,
@@ -57,7 +57,7 @@ impl File {
     }
 
     pub async fn create_unnamed_pipe<'a>(
-        file_system: &'a VirtualFileSystem<'a>,
+        file_system: &'a VirtualFileSystem,
         size: usize,
         status: StateFlags,
     ) -> Result<(Self, Self)> {
@@ -75,7 +75,7 @@ impl File {
     }
 
     pub async fn read_slice_from_path(
-        virtual_file_system: &VirtualFileSystem<'_>,
+        virtual_file_system: &VirtualFileSystem,
         task: TaskIdentifier,
         path: impl AsRef<Path>,
         buffer: &mut [u8],
@@ -96,7 +96,7 @@ impl File {
     }
 
     pub async fn read_from_path(
-        virtual_file_system: &VirtualFileSystem<'_>,
+        virtual_file_system: &VirtualFileSystem,
         task: TaskIdentifier,
         path: impl AsRef<Path>,
         buffer: &mut Vec<u8>,
@@ -119,7 +119,7 @@ impl File {
     }
 
     pub async fn write_to_path(
-        virtual_file_system: &VirtualFileSystem<'_>,
+        virtual_file_system: &VirtualFileSystem,
         task: task::TaskIdentifier,
         path: impl AsRef<Path>,
         buffer: &[u8],
@@ -210,7 +210,7 @@ impl File {
         Ok(self.0.flags.get_access())
     }
 
-    pub async fn close(mut self, virtual_file_system: &VirtualFileSystem<'_>) -> crate::Result<()> {
+    pub async fn close(mut self, virtual_file_system: &VirtualFileSystem) -> crate::Result<()> {
         let result = virtual_file_system
             .close(&self.0.item, &mut self.0.context)
             .await;

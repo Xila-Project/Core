@@ -35,7 +35,7 @@ impl SynchronousDirectory {
     }
 
     pub fn create<'a>(
-        virtual_file_system: &'a VirtualFileSystem<'a>,
+        virtual_file_system: &'a VirtualFileSystem,
         task: TaskIdentifier,
         path: impl AsRef<Path>,
     ) -> Result<()> {
@@ -43,7 +43,7 @@ impl SynchronousDirectory {
     }
 
     pub fn open<'a>(
-        virtual_file_system: &'a VirtualFileSystem<'a>,
+        virtual_file_system: &'a VirtualFileSystem,
         task: TaskIdentifier,
         path: impl AsRef<Path>,
     ) -> Result<Self> {
@@ -114,16 +114,13 @@ impl SynchronousDirectory {
         Ok(self.flags.get_access())
     }
 
-    pub fn close_internal<'a>(
-        &mut self,
-        virtual_file_system: &'a VirtualFileSystem<'a>,
-    ) -> Result<()> {
+    pub fn close_internal<'a>(&mut self, virtual_file_system: &'a VirtualFileSystem) -> Result<()> {
         block_on(
             virtual_file_system.close(&ItemStatic::Directory(self.directory), &mut self.context),
         )
     }
 
-    pub fn close(mut self, virtual_file_system: &VirtualFileSystem<'_>) -> Result<()> {
+    pub fn close(mut self, virtual_file_system: &VirtualFileSystem) -> Result<()> {
         let result = self.close_internal(virtual_file_system);
         forget(self);
 

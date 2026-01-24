@@ -25,7 +25,7 @@ impl Directory {
     }
 
     pub async fn create<'a>(
-        virtual_file_system: &'a VirtualFileSystem<'a>,
+        virtual_file_system: &'a VirtualFileSystem,
         task: TaskIdentifier,
         path: impl AsRef<Path>,
     ) -> Result<()> {
@@ -33,7 +33,7 @@ impl Directory {
     }
 
     pub async fn open<'a>(
-        virtual_file_system: &'a VirtualFileSystem<'a>,
+        virtual_file_system: &'a VirtualFileSystem,
         task: TaskIdentifier,
         path: impl AsRef<Path>,
     ) -> Result<Self> {
@@ -56,7 +56,7 @@ impl Directory {
         poll(|| self.0.set_position(0)).await
     }
 
-    pub async fn close(mut self, virtual_file_system: &VirtualFileSystem<'_>) -> Result<()> {
+    pub async fn close(mut self, virtual_file_system: &VirtualFileSystem) -> Result<()> {
         let result = virtual_file_system
             .close(
                 &ItemStatic::Directory(self.0.directory),
