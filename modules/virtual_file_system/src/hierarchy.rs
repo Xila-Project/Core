@@ -5,53 +5,48 @@ use task::TaskIdentifier;
 
 use crate::{Directory, Error, Result, VirtualFileSystem};
 
+pub fn ignore_already_exists_error<T>(result: Result<T>) -> Result<()> {
+    match result {
+        Ok(_) | Err(Error::AlreadyExists) => Ok(()),
+        Err(error) => Err(error),
+    }
+}
+
 /// Create the default hierarchy of the file system.
 pub async fn create_default_hierarchy(
-    virtual_file_system: &VirtualFileSystem<'_>,
+    virtual_file_system: &VirtualFileSystem,
     task: TaskIdentifier,
 ) -> Result<()> {
     virtual_file_system
         .set_permissions(task, &Path::ROOT, Permissions::DIRECTORY_DEFAULT)
         .await?;
-    virtual_file_system
-        .create_directory(task, &Path::SYSTEM)
-        .await?;
-    virtual_file_system
-        .create_directory(task, &Path::CONFIGURATION)
-        .await?;
-    virtual_file_system
-        .create_directory(task, &Path::SHARED_CONFIGURATION)
-        .await?;
-    virtual_file_system
-        .create_directory(task, &Path::DEVICES)
-        .await?;
+
+    let paths = [
+        Path::SYSTEM,
+        Path::CONFIGURATION,
+        Path::SHARED_CONFIGURATION,
+        Path::DEVICES,
+        Path::USERS,
+        Path::DATA,
+        Path::SHARED_DATA,
+        Path::BINARIES,
+        Path::TEMPORARY,
+        Path::LOGS,
+    ];
+
+    for path in paths {
+        ignore_already_exists_error(virtual_file_system.create_directory(task, &path).await)?;
+    }
+
     virtual_file_system
         .set_permissions(task, &Path::DEVICES, Permissions::ALL_FULL)
-        .await?;
-    virtual_file_system
-        .create_directory(task, &Path::USERS)
-        .await?;
-    virtual_file_system
-        .create_directory(task, &Path::DATA)
-        .await?;
-    virtual_file_system
-        .create_directory(task, &Path::SHARED_DATA)
-        .await?;
-    virtual_file_system
-        .create_directory(task, &Path::BINARIES)
-        .await?;
-    virtual_file_system
-        .create_directory(task, &Path::TEMPORARY)
-        .await?;
-    virtual_file_system
-        .create_directory(task, &Path::LOGS)
         .await?;
 
     Ok(())
 }
 
 pub async fn clean_devices_in_directory<'a>(
-    virtual_file_system: &'a VirtualFileSystem<'a>,
+    virtual_file_system: &'a VirtualFileSystem,
     task: TaskIdentifier,
     path: &Path,
 ) -> Result<()> {
@@ -81,7 +76,7 @@ pub async fn clean_devices_in_directory<'a>(
 }
 
 pub async fn clean_devices<'a>(
-    virtual_file_system: &'a VirtualFileSystem<'a>,
+    virtual_file_system: &'a VirtualFileSystem,
     task: TaskIdentifier,
 ) -> Result<()> {
     clean_devices_in_directory(virtual_file_system, task, Path::DEVICES).await?;
