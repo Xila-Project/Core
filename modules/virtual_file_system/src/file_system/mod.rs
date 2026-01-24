@@ -1,7 +1,7 @@
 mod utilities;
 
 use crate::pipe::Pipe;
-use crate::{Directory, Error, File, ItemStatic, Result, SockerAddress, poll};
+use crate::{Directory, Error, File, ItemStatic, Result, poll};
 use alloc::borrow::ToOwned;
 use alloc::vec;
 use alloc::{boxed::Box, collections::BTreeMap};
@@ -13,12 +13,10 @@ use file_system::{
     AccessFlags, AttributeFlags, Attributes, Context, FileSystemOperations, Flags, Kind, Path,
     StateFlags, Statistics,
 };
-use network::{IP, Port, Protocol, SocketDriver};
 use synchronization::{
     blocking_mutex::raw::CriticalSectionRawMutex, once_lock::OnceLock, rwlock::RwLock,
 };
 use task::TaskIdentifier;
-use time::Duration;
 use users::{GroupIdentifier, UserIdentifier};
 use utilities::*;
 
@@ -30,20 +28,14 @@ pub fn initialize(
     users_manager: &'static users::Manager,
     time_manager: &'static time::Manager,
     root_file_system: impl FileSystemOperations + 'static,
-    network_socket_driver: Option<&'static dyn SocketDriver>,
-) -> Result<&'static VirtualFileSystem<'static>> {
-    let virtual_file_system = VirtualFileSystem::new(
-        task_manager,
-        users_manager,
-        time_manager,
-        root_file_system,
-        network_socket_driver,
-    );
+) -> Result<&'static VirtualFileSystem> {
+    let virtual_file_system =
+        VirtualFileSystem::new(task_manager, users_manager, time_manager, root_file_system);
 
     Ok(VIRTUAL_FILE_SYSTEM_INSTANCE.get_or_init(|| virtual_file_system))
 }
 
-pub fn get_instance() -> &'static VirtualFileSystem<'static> {
+pub fn get_instance() -> &'static VirtualFileSystem {
     VIRTUAL_FILE_SYSTEM_INSTANCE
         .try_get()
         .expect("Virtual file system is not initialized")
@@ -52,7 +44,7 @@ pub fn get_instance() -> &'static VirtualFileSystem<'static> {
 /// The virtual file system.
 ///
 /// It is a singleton.
-pub struct VirtualFileSystem<'a> {
+pub struct VirtualFileSystem {
     /// Mounted file systems.
     file_systems: RwLock<CriticalSectionRawMutex, FileSystemsArray>,
     /// Character devices.
@@ -61,17 +53,14 @@ pub struct VirtualFileSystem<'a> {
     block_device: RwLock<CriticalSectionRawMutex, BlockDevicesMap>,
     /// Pipes.
     pipes: RwLock<CriticalSectionRawMutex, PipeMap>,
-    /// Network sockets.
-    _network_socket_driver: Option<&'a dyn SocketDriver>,
 }
 
-impl<'a> VirtualFileSystem<'a> {
+impl VirtualFileSystem {
     pub fn new(
         _: &'static task::Manager,
         _: &'static users::Manager,
         _: &'static time::Manager,
         root_file_system: impl FileSystemOperations + 'static,
-        _network_socket_driver: Option<&'a dyn SocketDriver>,
     ) -> Self {
         let file_systems = vec![InternalFileSystem {
             reference_count: 1,
@@ -84,7 +73,6 @@ impl<'a> VirtualFileSystem<'a> {
             character_device: RwLock::new(BTreeMap::new()),
             block_device: RwLock::new(BTreeMap::new()),
             pipes: RwLock::new(BTreeMap::new()),
-            _network_socket_driver,
         }
     }
 
@@ -213,13 +201,10 @@ impl<'a> VirtualFileSystem<'a> {
 
         let mut file_systems = self.file_systems.write().await; // Get the file systems
 
-        let (file_system, relative_path, _) =
-            Self::get_mutable_file_system_from_path(&mut file_systems, &path)?; // Get the file system identifier and the relative path
-
         let (time, user, _) = self.get_time_user_group(task).await?;
 
         Self::check_permissions_with_parent(
-            file_system.file_system,
+            &file_systems,
             path,
             Permission::Read,
             Permission::Execute,
@@ -227,13 +212,16 @@ impl<'a> VirtualFileSystem<'a> {
         )
         .await?;
 
+        let (file_system, relative_path, _) =
+            Self::get_mutable_file_system_from_path(&mut file_systems, &path)?; // Get the file system identifier and the relative path
+
         let mut attributes = Attributes::new().set_mask(
             AttributeFlags::Kind
                 | AttributeFlags::User
                 | AttributeFlags::Group
                 | AttributeFlags::Permissions,
         );
-        Self::get_attributes(file_system.file_system, path, &mut attributes).await?;
+        Self::get_attributes(file_system.file_system, relative_path, &mut attributes).await?;
         let kind = attributes.get_kind().ok_or(Error::MissingAttribute)?;
 
         if *kind != Kind::Directory {
@@ -271,20 +259,23 @@ impl<'a> VirtualFileSystem<'a> {
 
         let mut file_systems = self.file_systems.write().await; // Get the file systems
 
-        let (file_system, relative_path, _) =
-            Self::get_mutable_file_system_from_path(&mut file_systems, &path)?; // Get the file system identifier and the relative path
-
         let (time, user, group) = self.get_time_user_group(task).await?;
         let (mode, open, _) = flags.split();
 
         if open.contains(CreateFlags::Create) {
+            let (file_system, relative_path, _) =
+                Self::get_mutable_file_system_from_path(&mut file_systems, &path)?; // Get the file system identifier and the relative path
+
             let result = poll(|| Ok(file_system.file_system.create_file(relative_path)?)).await;
 
             match result {
                 Ok(()) => {
                     Self::check_permissions(
                         file_system.file_system,
-                        path.go_parent().ok_or(Error::InvalidPath)?,
+                        path.go_parent().ok_or_else(|| {
+                            log::error!("Error getting parent path for {:?}", path);
+                            Error::InvalidPath
+                        })?,
                         Permission::Write | Permission::Execute,
                         user,
                     )
@@ -313,7 +304,7 @@ impl<'a> VirtualFileSystem<'a> {
             }
         } else {
             Self::check_permissions_with_parent(
-                file_system.file_system,
+                &file_systems,
                 path,
                 mode.into_permission(),
                 Permission::Execute,
@@ -321,6 +312,9 @@ impl<'a> VirtualFileSystem<'a> {
             )
             .await?;
         }
+
+        let (file_system, relative_path, _) =
+            Self::get_mutable_file_system_from_path(&mut file_systems, &path)?; // Get the file system identifier and the relative path
 
         let attributes = if mode.contains(AccessFlags::Write) {
             Attributes::new().set_modification(time).set_access(time)
@@ -394,7 +388,7 @@ impl<'a> VirtualFileSystem<'a> {
         path: impl AsRef<Path>,
         item: ItemStatic,
     ) -> Result<()> {
-        let path = path.as_ref();
+        let path: &Path = path.as_ref();
         if !path.is_valid() || !path.is_absolute() || path.is_root() {
             return Err(Error::InvalidPath);
         }
@@ -406,9 +400,11 @@ impl<'a> VirtualFileSystem<'a> {
 
         let (_, user, _) = self.get_time_user_group(task).await?;
 
+        let parent_path = path.go_parent().ok_or(Error::InvalidPath)?;
+
         Self::check_permissions(
             parent_file_system.file_system,
-            path.go_parent().ok_or(Error::InvalidPath)?,
+            parent_path,
             Permission::Write,
             user,
         )
@@ -447,15 +443,7 @@ impl<'a> VirtualFileSystem<'a> {
                 );
                 inode
             }
-            ItemStatic::FileSystem(file_system) => {
-                let mut file_systems = self.file_systems.write().await;
-                file_systems.push(InternalFileSystem {
-                    reference_count: 1,
-                    mount_point: path.to_owned(),
-                    file_system,
-                });
-                0
-            }
+            ItemStatic::FileSystem(_) => 0,
             ItemStatic::Pipe(pipe) => {
                 let mut pipes = self.pipes.write().await;
                 let inode = Self::get_new_inode(&*pipes).ok_or(Error::TooManyInodes)?;
@@ -483,6 +471,7 @@ impl<'a> VirtualFileSystem<'a> {
                 return Err(Error::InvalidIdentifier);
             }
         };
+
         let attributes = Attributes::new()
             .set_user(user)
             .set_group(group)
@@ -494,6 +483,14 @@ impl<'a> VirtualFileSystem<'a> {
             .set_permissions(Permissions::DEVICE_DEFAULT)
             .set_inode(inode);
         Self::set_attributes(parent_file_system.file_system, relative_path, &attributes).await?;
+
+        if let ItemStatic::FileSystem(file_system) = item {
+            file_systems.push(InternalFileSystem {
+                reference_count: 1,
+                mount_point: path.to_owned(),
+                file_system,
+            });
+        }
 
         poll(|| {
             Ok(item
@@ -607,9 +604,6 @@ impl<'a> VirtualFileSystem<'a> {
         let kind = attributes.get_kind().ok_or(Error::MissingAttribute)?;
 
         match kind {
-            Kind::Directory => {
-                return Err(Error::UnsupportedOperation);
-            }
             Kind::Pipe => {
                 let mut named_pipes = self.pipes.write().await;
 
@@ -841,54 +835,5 @@ impl<'a> VirtualFileSystem<'a> {
 
         let attributes = Attributes::new().set_permissions(permissions);
         Self::set_attributes(file_system.file_system, relative_path, &attributes).await
-    }
-
-    pub async fn send(&self, _task: TaskIdentifier, _data: &[u8]) -> Result<()> {
-        todo!()
-    }
-
-    pub async fn receive(&self, _task: TaskIdentifier, _data: &mut [u8]) -> Result<usize> {
-        todo!()
-    }
-
-    pub async fn send_to(
-        &self,
-        _task: TaskIdentifier,
-        _data: &[u8],
-        _address: SockerAddress,
-    ) -> Result<()> {
-        todo!()
-    }
-
-    pub async fn receive_from(&self, _data: &mut [u8]) -> Result<(usize, SockerAddress)> {
-        todo!()
-    }
-
-    pub async fn bind(&self, _address: SockerAddress, _protocol: Protocol) -> Result<()> {
-        todo!()
-    }
-
-    pub async fn connect(&self, _address: SockerAddress) -> Result<()> {
-        todo!()
-    }
-
-    pub async fn accept(&self) -> Result<Option<(IP, Port)>> {
-        todo!()
-    }
-
-    pub async fn set_send_timeout(&self, _timeout: Duration) -> Result<()> {
-        todo!()
-    }
-
-    pub async fn set_receive_timeout(&self, _timeout: Duration) -> Result<()> {
-        todo!()
-    }
-
-    pub async fn get_send_timeout(&self) -> Result<Option<Duration>> {
-        todo!()
-    }
-
-    pub async fn get_receive_timeout(&self) -> Result<Option<Duration>> {
-        todo!()
     }
 }
