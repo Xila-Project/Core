@@ -6,7 +6,7 @@
 
 use alloc::string::String;
 
-use crate::Kind;
+use crate::{Kind, Path, PathOwned};
 
 use super::{Inode, Size};
 
@@ -58,6 +58,10 @@ impl Entry {
             kind: r#type,
             size,
         }
+    }
+
+    pub fn join_path(&self, base_path: impl AsRef<Path>) -> Option<PathOwned> {
+        base_path.as_ref().join(Path::from_str(&self.name))
     }
 }
 
