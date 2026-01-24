@@ -8,7 +8,6 @@ file_system = { workspace = true }
 task = { workspace = true }
 users = { workspace = true }
 time = { workspace = true }
-network = { workspace = true }
 synchronization = { workspace = true }
 shared = { workspace = true }
 log = { workspace = true }
