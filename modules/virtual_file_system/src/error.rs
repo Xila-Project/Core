@@ -17,7 +17,6 @@ pub enum Error {
     AlreadyExists,
     Time(time::Error),
     FileSystem(file_system::Error) = 0x100,
-    Network(network::Error) = 0x200,
     Users(users::Error) = 0x300,
     Task(task::Error) = 0x400,
     MissingAttribute,
@@ -48,7 +47,6 @@ impl From<Error> for NonZeroU32 {
 
         let offset = match value {
             Error::FileSystem(error_type) => error_type.get_discriminant().get(),
-            Error::Network(error_type) => error_type.get_discriminant().get() as u32,
             _ => 0,
         };
 
@@ -74,12 +72,6 @@ impl From<file_system::Error> for Error {
     }
 }
 
-impl From<network::Error> for Error {
-    fn from(value: network::Error) -> Self {
-        Self::Network(value)
-    }
-}
-
 impl From<task::Error> for Error {
     fn from(value: task::Error) -> Self {
         Self::Task(value)
@@ -98,7 +90,6 @@ impl Display for Error {
                 write!(f, "Failed to get task informations")
             }
             Error::FileSystem(err) => write!(f, "File system error: {err}"),
-            Error::Network(err) => write!(f, "Network error: {err}"),
             Error::InvalidIdentifier => write!(f, "Invalid identifier"),
             Error::AlreadyExists => write!(f, "Already exists"),
             Error::Time(err) => write!(f, "Time error: {err}"),
