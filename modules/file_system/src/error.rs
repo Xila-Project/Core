@@ -116,6 +116,8 @@ pub enum Error {
     NotMounted,
     /// Already mounted.
     AlreadyMounted,
+    /// Invalid context
+    InvalidContext,
     /// Other unclassified error.
     Other,
 }
@@ -221,6 +223,7 @@ impl Display for Error {
             Error::InvalidInode => "Invalid inode",
             Error::NotMounted => "Not mounted",
             Error::AlreadyMounted => "Already mounted",
+            Error::InvalidContext => "Invalid context",
             Error::Other => "Other",
         };
 
