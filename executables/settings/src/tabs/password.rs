@@ -186,12 +186,22 @@ impl PasswordTab {
 }
 
 impl PasswordTab {
-    pub fn create_ui(
+    pub async fn create_ui(
         &mut self,
         parent_tabview: *mut lvgl::lv_obj_t,
     ) -> Result<*mut lvgl::lv_obj_t> {
         let tab_container =
             unsafe { lvgl::lv_tabview_add_tab(parent_tabview, translate!(c"Password").as_ptr()) };
+
+        unsafe {
+            lvgl::lv_obj_set_flex_flow(tab_container, lvgl::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN);
+            lvgl::lv_obj_set_flex_align(
+                tab_container,
+                lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+                lvgl::lv_flex_align_t_LV_FLEX_ALIGN_START,
+                lvgl::lv_flex_align_t_LV_FLEX_ALIGN_CENTER,
+            );
+        }
 
         if tab_container.is_null() {
             return Err(crate::error::Error::FailedToCreateUiElement);
@@ -213,45 +223,18 @@ impl PasswordTab {
                 current_password_label,
                 translate!(c"Current Password").as_ptr(),
             );
-            lvgl::lv_obj_align(
-                current_password_label,
-                lvgl::lv_align_t_LV_ALIGN_TOP_LEFT,
-                10,
-                10,
-            );
 
             let current_password_text_area = lvgl::lv_textarea_create(tab_container);
             lvgl::lv_textarea_set_password_mode(current_password_text_area, true);
             lvgl::lv_textarea_set_one_line(current_password_text_area, true);
-            lvgl::lv_obj_align_to(
-                current_password_text_area,
-                current_password_label,
-                lvgl::lv_align_t_LV_ALIGN_OUT_BOTTOM_LEFT,
-                0,
-                5,
-            );
 
             // New password
             let new_password_label = lvgl::lv_label_create(tab_container);
             lvgl::lv_label_set_text(new_password_label, translate!(c"New Password").as_ptr());
-            lvgl::lv_obj_align_to(
-                new_password_label,
-                current_password_text_area,
-                lvgl::lv_align_t_LV_ALIGN_OUT_BOTTOM_LEFT,
-                0,
-                20,
-            );
 
             let new_password_text_area = lvgl::lv_textarea_create(tab_container);
             lvgl::lv_textarea_set_password_mode(new_password_text_area, true);
             lvgl::lv_textarea_set_one_line(new_password_text_area, true);
-            lvgl::lv_obj_align_to(
-                new_password_text_area,
-                new_password_label,
-                lvgl::lv_align_t_LV_ALIGN_OUT_BOTTOM_LEFT,
-                0,
-                5,
-            );
 
             // Confirm password
             let confirm_password_label = lvgl::lv_label_create(tab_container);
@@ -259,34 +242,13 @@ impl PasswordTab {
                 confirm_password_label,
                 translate!(c"Confirm Password").as_ptr(),
             );
-            lvgl::lv_obj_align_to(
-                confirm_password_label,
-                new_password_text_area,
-                lvgl::lv_align_t_LV_ALIGN_OUT_BOTTOM_LEFT,
-                0,
-                20,
-            );
 
             let confirm_password_text_area = lvgl::lv_textarea_create(tab_container);
             lvgl::lv_textarea_set_password_mode(confirm_password_text_area, true);
             lvgl::lv_textarea_set_one_line(confirm_password_text_area, true);
-            lvgl::lv_obj_align_to(
-                confirm_password_text_area,
-                confirm_password_label,
-                lvgl::lv_align_t_LV_ALIGN_OUT_BOTTOM_LEFT,
-                0,
-                5,
-            );
 
             // Change password button
             let change_password_button = lvgl::lv_button_create(tab_container);
-            lvgl::lv_obj_align_to(
-                change_password_button,
-                confirm_password_text_area,
-                lvgl::lv_align_t_LV_ALIGN_OUT_BOTTOM_MID,
-                0,
-                30,
-            );
 
             let button_label = lvgl::lv_label_create(change_password_button);
             lvgl::lv_label_set_text(button_label, translate!(c"Change Password").as_ptr());
