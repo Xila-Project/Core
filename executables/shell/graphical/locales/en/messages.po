@@ -70,6 +70,9 @@ msgstr "Missing arguments"
 msgid "Failed to add shortcut: {}"
 msgstr "Failed to add shortcut: {}"
 
+msgid "Failed to open directory: {}"
+msgstr "Failed to open directory: {}"
+
 #: login.user_name
 msgid "User name"
 msgstr "User name"
