@@ -15,6 +15,7 @@ async fn main() {
     use xila::executable::Standard;
     use xila::executable::build_crate;
     use xila::executable::mount_executables;
+    use xila::file_system::AccessFlags;
     use xila::file_system::XILA_DISK_SIGNATURE;
     use xila::file_system::mbr::Mbr;
     use xila::file_system::mbr::PartitionKind;
@@ -22,10 +23,12 @@ async fn main() {
     use xila::host_bindings;
     use xila::little_fs;
     use xila::log;
+    use xila::network::{self, ADD_DNS_SERVER, ADD_IP_ADDRESS, ADD_ROUTE};
     use xila::task;
     use xila::time;
     use xila::users;
     use xila::virtual_file_system;
+    use xila::virtual_file_system::File;
     use xila::virtual_file_system::mount_static;
     use xila::virtual_machine;
 
@@ -108,14 +111,9 @@ async fn main() {
     let file_system = little_fs::FileSystem::get_or_format(partition, 256).unwrap();
 
     // Initialize the virtual file system
-    let virtual_file_system = virtual_file_system::initialize(
-        task_manager,
-        users_manager,
-        time_manager,
-        file_system,
-        None,
-    )
-    .unwrap();
+    let virtual_file_system =
+        virtual_file_system::initialize(task_manager, users_manager, time_manager, file_system)
+            .unwrap();
 
     log::information!("Virtual file system initialized.");
 
@@ -166,7 +164,42 @@ async fn main() {
     .await
     .unwrap();
 
-    log::information!("Devices mounted.");
+    let (interface_device, controller_device) = drivers_std::tuntap::new("xila0", false, true)
+        .expect("Failed to create network interface.");
+
+    let network_manager = network::initialize(
+        task_manager,
+        virtual_file_system,
+        &drivers_shared::devices::RandomDevice,
+    );
+
+    network_manager
+        .mount_interface(task, "tunnel0", interface_device, controller_device, None)
+        .await
+        .expect("Failed to mount network interface.");
+
+    let mut file = File::open(
+        virtual_file_system,
+        task,
+        "/devices/network/tunnel0",
+        AccessFlags::READ_WRITE.into(),
+    )
+    .await
+    .expect("Failed to open network interface file.");
+
+    for ip_cidr in drivers_std::tuntap::IP_ADDRESSES {
+        file.control(ADD_IP_ADDRESS, ip_cidr).await.ok();
+    }
+
+    for route in drivers_std::tuntap::ROUTES {
+        file.control(ADD_ROUTE, route).await.ok();
+    }
+
+    for dns_server in drivers_std::tuntap::DEFAULT_DNS_SERVERS {
+        file.control(ADD_DNS_SERVER, dns_server).await.ok();
+    }
+
+    file.close(virtual_file_system).await.unwrap();
 
     // Initialize the virtual machine
     virtual_machine::initialize(&[&host_bindings::GraphicsBindings]);
@@ -179,8 +212,6 @@ async fn main() {
     -> core::pin::Pin<Box<dyn Future<Output = task::SpawnerIdentifier> + Send>> {
         Box::pin(new_thread_executor())
     }
-
-    log::information!("Mounting executables...");
 
     mount_executables!(
         virtual_file_system,
