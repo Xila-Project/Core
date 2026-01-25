@@ -131,8 +131,8 @@ pub fn get_group_file_path(group_name: &str) -> Result<PathOwned> {
 /// - Path construction failures
 /// - File system errors (opening, reading)
 /// - JSON parsing errors
-pub async fn read_group_file<'a>(
-    virtual_file_system: &'a VirtualFileSystem<'a>,
+pub async fn read_group_file(
+    virtual_file_system: &VirtualFileSystem,
     buffer: &mut Vec<u8>,
     file: &str,
 ) -> Result<Group> {
@@ -194,8 +194,8 @@ pub async fn read_group_file<'a>(
 /// - Group identifier generation or assignment failures
 /// - File system operations (directory creation, file writing)
 /// - Users manager operations (adding group)
-pub async fn create_group<'a>(
-    virtual_file_system: &'a VirtualFileSystem<'a>,
+pub async fn create_group(
+    virtual_file_system: &VirtualFileSystem,
     group_name: &str,
     group_identifier: Option<GroupIdentifier>,
 ) -> Result<GroupIdentifier> {
