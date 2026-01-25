@@ -32,9 +32,9 @@ impl<'a> Components<'a> {
 
     pub fn strip_prefix(self, components: &Components<'a>) -> Option<Components<'a>> {
         let mut self_iter = self.clone();
-        let mut components_iter = components.clone();
+        let components_iter = components.clone();
 
-        while let Some(component) = components_iter.next() {
+        for component in components_iter {
             match self_iter.next() {
                 Some(self_component) if self_component == component => {}
                 _ => return None,

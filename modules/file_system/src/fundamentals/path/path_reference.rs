@@ -189,7 +189,7 @@ impl Path {
         Components::new(self)
     }
 
-    pub fn join(&self, path: &Path) -> Option<PathOwned> {
+    pub fn join(&self, path: impl AsRef<Path>) -> Option<PathOwned> {
         self.to_owned().join(path)
     }
 
