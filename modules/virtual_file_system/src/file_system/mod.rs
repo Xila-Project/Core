@@ -603,13 +603,10 @@ impl VirtualFileSystem {
         let inode = *attributes.get_inode().ok_or(Error::MissingAttribute)?;
         let kind = attributes.get_kind().ok_or(Error::MissingAttribute)?;
 
-        match kind {
-            Kind::Pipe => {
-                let mut named_pipes = self.pipes.write().await;
+        if kind == &Kind::Pipe {
+            let mut named_pipes = self.pipes.write().await;
 
-                named_pipes.remove(&inode);
-            }
-            _ => {}
+            named_pipes.remove(&inode);
         }
 
         poll(|| Ok(file_system.file_system.remove(relative_path)?)).await?;
