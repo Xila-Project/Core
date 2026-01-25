@@ -96,6 +96,12 @@ msgstr "Changer le mot de passe"
 msgid "About"
 msgstr "À propos"
 
+msgid "Operating System:"
+msgstr "Système d'exploitation :"
+
+msgid "Description:"
+msgstr "Description :"
+
 msgid "Developed by:"
 msgstr "Développé par :"
 
@@ -108,5 +114,38 @@ msgstr "Version :"
 msgid "Locale:"
 msgstr "Langue :"
 
-msgid "Fallback:"
-msgstr "De secours :"
+msgid "Memory:"
+msgstr "Mémoire :"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "Apply"
+msgstr "Appliquer"
+
+msgid "None"
+msgstr "Aucun"
+
+msgid "DHCP"
+msgstr "DHCP"
+
+msgid "Static"
+msgstr "Statique"
+
+msgid "Configuration Mode"
+msgstr "Mode de configuration"
+
+msgid "MAC Address"
+msgstr "Adresse MAC"
+
+msgid "Address"
+msgstr "Adresse"
+
+msgid "Routes"
+msgstr "Routes"
+
+msgid "Gateway"
+msgstr "Passerelle"
+
+msgid "DNS Servers"
+msgstr "Serveurs DNS"
