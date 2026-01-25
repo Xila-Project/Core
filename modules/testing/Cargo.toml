@@ -19,3 +19,4 @@ drivers_shared = { workspace = true }
 drivers_std = { workspace = true }
 executable = { workspace = true }
 abi_definitions = { workspace = true }
+network = { workspace = true }
