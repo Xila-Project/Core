@@ -108,6 +108,12 @@ msgstr "Failed to set current directory: {}"
 msgid "Failed to read directory entry: {}"
 msgstr "Failed to read directory entry: {}"
 
+msgid "Failed to resolve domain: {}"
+msgstr "Failed to resolve domain: {}"
+
+msgid "Failed to create socket: {}"
+msgstr "Failed to create socket: {}"
+
 msgid "Format error"
 msgstr "Format error"
 
@@ -152,3 +158,27 @@ msgstr "Links"
 
 msgid "Size"
 msgstr "Size"
+
+msgid "{} record(s) for domain '{}':"
+msgstr "{} record(s) for domain '{}':"
+
+msgid "No {} records found for domain '{}'"
+msgstr "No {} records found for domain '{}'"
+
+msgid "Failed to resolve domain '{}' for {} records: {}"
+msgstr "Failed to resolve domain '{}' for {} records: {}"
+
+msgid "Cannot resolve {}: Unknown host"
+msgstr "Cannot resolve {}: Unknown host"
+
+msgid "PING {} ({}): {} data bytes"
+msgstr "PING {} ({}): {} data bytes"
+
+msgid "{} bytes from {}: icmp_seq={} time={:.2} ms"
+msgstr "{} bytes from {}: icmp_seq={} time={:.2} ms"
+
+msgid "Request timeout for icmp_seq {}"
+msgstr "Request timeout for icmp_seq {}"
+
+msgid "Error: {}"
+msgstr "Error: {}"

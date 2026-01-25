@@ -3,11 +3,14 @@ mod change_directory;
 mod clear;
 mod concatenate;
 mod directory;
+mod dns;
 mod echo;
 mod environment_variables;
 mod execute;
 mod exit;
+mod ip;
 mod list;
+mod ping;
 mod statistics;
 mod web_request;
 

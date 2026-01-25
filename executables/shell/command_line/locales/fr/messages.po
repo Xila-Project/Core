@@ -108,6 +108,12 @@ msgstr "Échec de la définition du répertoire courant: {}"
 msgid "Failed to read directory entry: {}"
 msgstr "Échec de la lecture de l'entrée du répertoire: {}"
 
+msgid "Failed to resolve domain: {}"
+msgstr "Échec de la résolution du domaine: {}"
+
+msgid "Failed to create socket: {}"
+msgstr "Échec de la création du socket: {}"
+
 msgid "Format error"
 msgstr "Erreur de formatage"
 
@@ -152,3 +158,27 @@ msgstr "Liens"
 
 msgid "Size"
 msgstr "Taille"
+
+msgid "{} record(s) for domain '{}':"
+msgstr "Enregistrement(s) {} pour le domaine '{}':"
+
+msgid "No {} records found for domain '{}'"
+msgstr "Aucun enregistrement {} trouvé pour le domaine '{}'"
+
+msgid "Failed to resolve domain '{}' for {} records: {}"
+msgstr "Échec de la résolution du domaine '{}' pour les enregistrements {}: {}"
+
+msgid "Cannot resolve {}: Unknown host"
+msgstr "Impossible de résoudre {}: Hôte inconnu"
+
+msgid "PING {} ({}): {} data bytes"
+msgstr "PING {} ({}): {} octets de données"
+
+msgid "{} bytes from {}: icmp_seq={} time={:.2} ms"
+msgstr "{} octets de {}: icmp_seq={} temps={:.2} ms"
+
+msgid "Request timeout for icmp_seq {}"
+msgstr "Délai d'attente dépassé pour icmp_seq {}"
+
+msgid "Error: {}"
+msgstr "Erreur: {}"

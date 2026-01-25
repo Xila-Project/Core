@@ -2,8 +2,8 @@ use core::fmt::Display;
 use core::num::{NonZeroU16, NonZeroUsize};
 
 use alloc::fmt;
-use xila::virtual_file_system;
 use xila::{authentication, internationalization::translate, task};
+use xila::{network, virtual_file_system};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -39,6 +39,8 @@ pub enum Error {
     InvalidOption,
     FailedToGetMetadata(virtual_file_system::Error),
     FailedToReadDirectoryEntry(virtual_file_system::Error),
+    FailedToResolve(network::Error),
+    FailedToCreateSocket(network::Error),
     Format,
 }
 
@@ -175,6 +177,12 @@ impl Display for Error {
                     translate!("Failed to read directory entry: {}"),
                     error
                 )
+            }
+            Error::FailedToResolve(error) => {
+                write!(formatter, translate!("Failed to resolve domain: {}"), error)
+            }
+            Error::FailedToCreateSocket(error) => {
+                write!(formatter, translate!("Failed to create socket: {}"), error)
             }
             Error::Format => {
                 write!(formatter, translate!("Format error"))
