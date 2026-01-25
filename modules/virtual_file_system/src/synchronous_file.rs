@@ -43,8 +43,8 @@ impl SynchronousFile {
         }
     }
 
-    pub fn open<'a>(
-        virtual_file_system: &'a VirtualFileSystem,
+    pub fn open(
+        virtual_file_system: &VirtualFileSystem,
         task: TaskIdentifier,
         path: impl AsRef<Path>,
         flags: Flags,

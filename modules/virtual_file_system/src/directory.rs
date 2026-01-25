@@ -24,16 +24,16 @@ impl Directory {
         Self(SynchronousDirectory::new(directory, flags, context))
     }
 
-    pub async fn create<'a>(
-        virtual_file_system: &'a VirtualFileSystem,
+    pub async fn create(
+        virtual_file_system: &VirtualFileSystem,
         task: TaskIdentifier,
         path: impl AsRef<Path>,
     ) -> Result<()> {
         virtual_file_system.create_directory(task, &path).await
     }
 
-    pub async fn open<'a>(
-        virtual_file_system: &'a VirtualFileSystem,
+    pub async fn open(
+        virtual_file_system: &VirtualFileSystem,
         task: TaskIdentifier,
         path: impl AsRef<Path>,
     ) -> Result<Self> {

@@ -45,8 +45,8 @@ pub async fn create_default_hierarchy(
     Ok(())
 }
 
-pub async fn clean_devices_in_directory<'a>(
-    virtual_file_system: &'a VirtualFileSystem,
+pub async fn clean_devices_in_directory(
+    virtual_file_system: &VirtualFileSystem,
     task: TaskIdentifier,
     path: &Path,
 ) -> Result<()> {
@@ -75,8 +75,8 @@ pub async fn clean_devices_in_directory<'a>(
     Ok(())
 }
 
-pub async fn clean_devices<'a>(
-    virtual_file_system: &'a VirtualFileSystem,
+pub async fn clean_devices(
+    virtual_file_system: &VirtualFileSystem,
     task: TaskIdentifier,
 ) -> Result<()> {
     clean_devices_in_directory(virtual_file_system, task, Path::DEVICES).await?;

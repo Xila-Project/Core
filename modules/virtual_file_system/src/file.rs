@@ -45,8 +45,8 @@ impl File {
         Self(SynchronousFile::new(item, 0, flags, context))
     }
 
-    pub async fn open<'a>(
-        virtual_file_system: &'a VirtualFileSystem,
+    pub async fn open(
+        virtual_file_system: &VirtualFileSystem,
         task: task::TaskIdentifier,
         path: impl AsRef<Path>,
         flags: Flags,
@@ -56,8 +56,8 @@ impl File {
         Ok(file_identifier)
     }
 
-    pub async fn create_unnamed_pipe<'a>(
-        file_system: &'a VirtualFileSystem,
+    pub async fn create_unnamed_pipe(
+        file_system: &VirtualFileSystem,
         size: usize,
         status: StateFlags,
     ) -> Result<(Self, Self)> {
