@@ -94,3 +94,48 @@ pub unsafe fn lv_tabview_add_tab(tabview: *mut lv_obj_t, name: *const c_char) ->
         page
     }
 }
+
+unsafe extern "C" fn radio_event_handler(event: *mut lv_event_t) {
+    unsafe {
+        let code = lvgl_rust_sys::lv_event_get_code(event);
+        let target = lvgl_rust_sys::lv_event_get_target(event) as *mut lv_obj_t;
+        let user_data = lvgl_rust_sys::lv_event_get_user_data(event) as *mut lv_obj_t;
+
+        if code == lv_event_code_t_LV_EVENT_CLICKED {
+            let parent = user_data as *mut lv_obj_t;
+            let child_count = lvgl_rust_sys::lv_obj_get_child_count(parent);
+
+            for i in 0..child_count {
+                let child = lvgl_rust_sys::lv_obj_get_child(parent, i as _);
+                if child != target {
+                    lvgl_rust_sys::lv_obj_remove_state(child, lvgl_rust_sys::LV_STATE_CHECKED as _);
+                }
+            }
+
+            lvgl_rust_sys::lv_obj_add_state(target, lvgl_rust_sys::LV_STATE_CHECKED as _);
+        }
+    }
+}
+
+/// Create a radio button (a checkbox that behaves like a radio button)
+///
+/// # Arguments
+///
+/// * `parent` - The parent object of the radio button.
+///
+/// # Safety
+/// This function is unsafe because it may dereference raw pointers (e.g. `parent`).
+pub unsafe fn lv_radiobox_create(parent: *mut lv_obj_t) -> *mut lv_obj_t {
+    unsafe {
+        let checkbox = lvgl_rust_sys::lv_checkbox_create(parent);
+
+        lvgl_rust_sys::lv_obj_add_event_cb(
+            checkbox,
+            Some(radio_event_handler),
+            lvgl_rust_sys::lv_event_code_t_LV_EVENT_CLICKED,
+            parent as _,
+        );
+
+        checkbox
+    }
+}
