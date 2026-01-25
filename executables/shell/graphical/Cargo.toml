@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 xila = { path = "../../../", features = ["host"] }
 miniserde = { workspace = true }
+getargs = { version = "0.5" }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
 drivers_native = { workspace = true }
