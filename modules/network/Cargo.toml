@@ -5,12 +5,56 @@ edition = "2024"
 
 [dependencies]
 file_system = { workspace = true }
-
 synchronization = { workspace = true }
 time = { workspace = true }
+task = { workspace = true }
+users = { workspace = true }
+log = { workspace = true }
+virtual_file_system = { workspace = true }
+shared = { workspace = true }
+
 embassy-net = { workspace = true, features = [
+  "icmp",
+  "raw",
+  "udp",
+  "tcp",
+  "dns",
+  "mdns",
   "proto-ipv4",
   "proto-ipv6",
   "dhcpv4",
   "dhcpv4-hostname",
+  "medium-ip",
+  "medium-ethernet",
+  "log",
+  "alloc",
 ] }
+embassy-net-driver = { workspace = true }
+embedded-io-async = { workspace = true }
+embassy-time = { workspace = true }
+embassy-futures = { workspace = true }
+smol_str = { workspace = true }
+smoltcp = { workspace = true, features = [
+  "async",
+  "alloc",
+  "log",
+  "medium-ethernet",
+  "medium-ip",
+  "packetmeta-id",
+  "proto-ipv4",
+  "proto-ipv6",
+  "socket-raw",
+  "socket-udp",
+  "socket-tcp",
+  "socket-dns",
+  "socket-icmp",
+  "socket-dhcpv4",
+] }
+heapless = { version = "0.8" }
+
+[dev-dependencies]
+testing = { workspace = true }
+drivers_std = { workspace = true }
+drivers_shared = { workspace = true }
+little_fs = { workspace = true }
+abi_definitions = { workspace = true }
