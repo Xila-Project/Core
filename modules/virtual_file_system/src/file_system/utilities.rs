@@ -237,7 +237,7 @@ impl VirtualFileSystem {
             let parent_path = path.as_ref().go_parent().ok_or(Error::InvalidPath)?;
 
             let (parent_file_system, relative_path, _) =
-                Self::get_file_system_from_path(&file_systems, &parent_path)?; // Get the file system identifier and the relative path
+                Self::get_file_system_from_path(file_systems, &parent_path)?; // Get the file system identifier and the relative path
 
             Self::check_permissions(
                 parent_file_system.file_system,
@@ -248,8 +248,7 @@ impl VirtualFileSystem {
             .await?;
         }
 
-        let (file_system, relative_path, _) =
-            Self::get_file_system_from_path(&file_systems, &path)?; // Get the file system identifier and the relative path
+        let (file_system, relative_path, _) = Self::get_file_system_from_path(file_systems, &path)?; // Get the file system identifier and the relative path
 
         Self::check_permissions(
             file_system.file_system,
