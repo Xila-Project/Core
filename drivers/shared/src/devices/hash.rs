@@ -46,7 +46,7 @@ impl BaseOperations for HashDevice {
     fn read(&self, context: &mut Context, buffer: &mut [u8], _: Size) -> Result<usize> {
         let hash_context = context
             .get_private_data_mutable_of_type::<HashDeviceContext>()
-            .ok_or_else(|| file_system::Error::InvalidParameter)?;
+            .ok_or(file_system::Error::InvalidParameter)?;
 
         if buffer.len() < hash_context.hasher.output_size() {
             return Err(Error::InvalidParameter);
@@ -61,7 +61,7 @@ impl BaseOperations for HashDevice {
     fn write(&self, context: &mut Context, buffer: &[u8], _: Size) -> Result<usize> {
         let hash_context = context
             .get_private_data_mutable_of_type::<HashDeviceContext>()
-            .ok_or_else(|| file_system::Error::InvalidParameter)?;
+            .ok_or(file_system::Error::InvalidParameter)?;
 
         hash_context.hasher.update(buffer);
         Ok(buffer.len())
@@ -76,7 +76,7 @@ impl BaseOperations for HashDevice {
     ) -> Result<()> {
         let hash_context = context
             .get_private_data_mutable_of_type::<HashDeviceContext>()
-            .ok_or_else(|| file_system::Error::InvalidParameter)?;
+            .ok_or(file_system::Error::InvalidParameter)?;
 
         match command {
             hash::RESET::IDENTIFIER => {
@@ -96,7 +96,7 @@ impl BaseOperations for HashDevice {
     fn clone_context(&self, context: &Context) -> Result<Context> {
         let hash_context = context
             .get_private_data_of_type::<HashDeviceContext>()
-            .ok_or_else(|| file_system::Error::InvalidParameter)?;
+            .ok_or(file_system::Error::InvalidParameter)?;
 
         Ok(Context::new(Some(hash_context.clone())))
     }
