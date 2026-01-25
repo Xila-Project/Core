@@ -8,8 +8,8 @@ use xila::virtual_file_system::{File, VirtualFileSystem};
 pub struct TerminalExecutable;
 
 impl TerminalExecutable {
-    pub async fn new<'a>(
-        virtual_file_system: &'a VirtualFileSystem<'a>,
+    pub async fn new(
+        virtual_file_system: &VirtualFileSystem,
         task: TaskIdentifier,
     ) -> Result<Self, String> {
         let _ = virtual_file_system
