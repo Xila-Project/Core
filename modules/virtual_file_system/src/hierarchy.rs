@@ -32,6 +32,7 @@ pub async fn create_default_hierarchy(
         Path::BINARIES,
         Path::TEMPORARY,
         Path::LOGS,
+        Path::NETWORK_DEVICES,
     ];
 
     for path in paths {

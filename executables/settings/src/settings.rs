@@ -47,9 +47,7 @@ impl Settings {
         ];
 
         for tab in &mut tabs {
-            tab.create_ui(tabview)
-                .await
-                .expect("Failed to create tab UI");
+            tab.create_ui(tabview).await?;
         }
 
         let manager = Self { window, tabs };
