@@ -11,7 +11,7 @@ async fn main() {
         task, virtual_file_system,
     };
 
-    let standard = testing::initialize(false).await;
+    let standard = testing::initialize(false, true).await;
 
     let virtual_file_system = virtual_file_system::get_instance();
     let task = task::get_instance().get_current_task_identifier().await;
