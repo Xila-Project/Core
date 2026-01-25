@@ -15,7 +15,7 @@ async fn test() {
     let binary_path = build_crate(&"host_bindings_wasm_test").unwrap();
     let binary_buffer = fs::read(&binary_path).unwrap();
 
-    let standard = testing::initialize(true).await.split();
+    let standard = testing::initialize(true, false).await.split();
 
     let virtual_machine = virtual_machine::initialize(&[&host_bindings::GraphicsBindings]);
 

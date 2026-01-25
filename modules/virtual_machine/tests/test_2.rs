@@ -26,7 +26,7 @@ const FUNCTIONS: [FunctionDescriptor; 0] = Function_descriptors! {};
 #[ignore]
 #[test]
 async fn integration_test_2() {
-    let standard = testing::initialize(false).await.split();
+    let standard = testing::initialize(false, false).await.split();
 
     let task_instance = task::get_instance();
     let task = task_instance.get_current_task_identifier().await;
