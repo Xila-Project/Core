@@ -43,9 +43,7 @@ impl Shell {
             .map_err(Error::FailedToReadDirectoryEntry)?
         {
             if long {
-                let entry_path = path
-                    .join(Path::from_str(&entry.name))
-                    .ok_or(Error::FailedToJoinPath)?;
+                let entry_path = entry.join_path(path).ok_or(Error::FailedToJoinPath)?;
 
                 let statistics = virtual_file_system
                     .get_statistics(&entry_path)
