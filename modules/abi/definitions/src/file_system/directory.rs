@@ -208,7 +208,7 @@ mod tests {
     use task::{TaskIdentifier, test};
     use virtual_file_system::{Directory, File, VirtualFileSystem};
 
-    async fn initialize() -> (TaskIdentifier, &'static VirtualFileSystem<'static>) {
+    async fn initialize() -> (TaskIdentifier, &'static VirtualFileSystem) {
         if !log::is_initialized() {
             log::initialize(&drivers_std::log::Logger).unwrap();
         }
@@ -228,14 +228,9 @@ mod tests {
         little_fs::FileSystem::format(device, cache_size).unwrap();
         let file_system = little_fs::FileSystem::new(device, cache_size).unwrap();
 
-        let virtual_file_system = virtual_file_system::initialize(
-            task_manager,
-            users_manager,
-            time_manager,
-            file_system,
-            None,
-        )
-        .unwrap();
+        let virtual_file_system =
+            virtual_file_system::initialize(task_manager, users_manager, time_manager, file_system)
+                .unwrap();
 
         (task, virtual_file_system)
     }

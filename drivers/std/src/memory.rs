@@ -26,6 +26,12 @@ pub struct MemoryManager {
     regions: CriticalSectionMutex<RefCell<[Region; 2]>>,
 }
 
+impl Default for MemoryManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MemoryManager {
     pub const fn new() -> Self {
         MemoryManager {

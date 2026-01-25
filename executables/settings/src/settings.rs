@@ -6,11 +6,11 @@ use xila::graphics::{
 };
 
 use crate::error::Result;
-use crate::tabs::{AboutTab, GeneralTab, PasswordTab, Tab};
+use crate::tabs::{AboutTab, GeneralTab, NetworkTab, PasswordTab, Tab};
 
 pub struct Settings {
     window: Window,
-    tabs: [Tab; 3],
+    tabs: [Tab; 4],
 }
 
 #[derive(Clone)]
@@ -42,12 +42,15 @@ impl Settings {
         let mut tabs = [
             Tab::General(GeneralTab::new()),
             Tab::Password(PasswordTab::new()),
+            Tab::Network(NetworkTab::new()),
             Tab::About(AboutTab::new()),
         ];
 
-        tabs.iter_mut().for_each(|tab| {
-            tab.create_ui(tabview).expect("Failed to create tab UI");
-        });
+        for tab in &mut tabs {
+            tab.create_ui(tabview)
+                .await
+                .expect("Failed to create tab UI");
+        }
 
         let manager = Self { window, tabs };
 

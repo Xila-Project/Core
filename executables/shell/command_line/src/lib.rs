@@ -66,8 +66,7 @@ impl Shell {
     where
         I: IntoIterator<Item = &'a str> + Clone,
     {
-        let mut options: getargs::Options<&'a str, <I as IntoIterator>::IntoIter> =
-            getargs::Options::new(input.clone().into_iter());
+        let mut options = getargs::Options::new(input.clone().into_iter());
 
         let next_positional = match options.next_positional() {
             Some(arg) => arg,
@@ -87,6 +86,9 @@ impl Shell {
             "unset" => self.remove_environment_variable(&mut options).await,
             "rm" => self.remove(&mut options).await,
             "web_request" => self.web_request(&mut options).await,
+            "dns_resolve" => self.dns_resolve(&mut options).await,
+            "ping" => self.ping(&mut options).await,
+            "ip" => self.ip(&mut options).await,
             _ => self.execute(input, paths).await,
         };
 

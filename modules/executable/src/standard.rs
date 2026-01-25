@@ -18,7 +18,7 @@ impl Standard {
         standard_out: &impl AsRef<Path>,
         standard_error: &impl AsRef<Path>,
         task: TaskIdentifier,
-        virtual_file_system: &'static VirtualFileSystem<'static>,
+        virtual_file_system: &'static VirtualFileSystem,
     ) -> Result<Self> {
         let standard_in = virtual_file_system
             .open(standard_in, AccessFlags::Read.into(), task)
@@ -95,7 +95,7 @@ impl Standard {
 
     pub async fn close(
         self,
-        virtual_file_system: &VirtualFileSystem<'_>,
+        virtual_file_system: &VirtualFileSystem,
     ) -> virtual_file_system::Result<()> {
         self.standard_in.close(virtual_file_system).await?;
         self.standard_out.close(virtual_file_system).await?;

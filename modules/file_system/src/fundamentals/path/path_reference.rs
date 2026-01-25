@@ -21,6 +21,7 @@ impl Path {
 
     /// Stores system-wide settings in a structured format (e.g., JSON, TOML).
     pub const DEVICES: &'static Path = Self::from_str("/devices");
+    pub const NETWORK_DEVICES: &'static Path = Self::from_str("/devices/network");
 
     /// Hardware devices, symlinks for human-friendly names.
     pub const CONFIGURATION: &'static Path = Self::from_str("/configuration");
@@ -188,7 +189,7 @@ impl Path {
         Components::new(self)
     }
 
-    pub fn join(&self, path: &Path) -> Option<PathOwned> {
+    pub fn join(&self, path: impl AsRef<Path>) -> Option<PathOwned> {
         self.to_owned().join(path)
     }
 

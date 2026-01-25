@@ -24,16 +24,16 @@ impl Directory {
         Self(SynchronousDirectory::new(directory, flags, context))
     }
 
-    pub async fn create<'a>(
-        virtual_file_system: &'a VirtualFileSystem<'a>,
+    pub async fn create(
+        virtual_file_system: &VirtualFileSystem,
         task: TaskIdentifier,
         path: impl AsRef<Path>,
     ) -> Result<()> {
         virtual_file_system.create_directory(task, &path).await
     }
 
-    pub async fn open<'a>(
-        virtual_file_system: &'a VirtualFileSystem<'a>,
+    pub async fn open(
+        virtual_file_system: &VirtualFileSystem,
         task: TaskIdentifier,
         path: impl AsRef<Path>,
     ) -> Result<Self> {
@@ -56,7 +56,7 @@ impl Directory {
         poll(|| self.0.set_position(0)).await
     }
 
-    pub async fn close(mut self, virtual_file_system: &VirtualFileSystem<'_>) -> Result<()> {
+    pub async fn close(mut self, virtual_file_system: &VirtualFileSystem) -> Result<()> {
         let result = virtual_file_system
             .close(
                 &ItemStatic::Directory(self.0.directory),

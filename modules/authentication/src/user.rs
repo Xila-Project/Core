@@ -197,8 +197,8 @@ pub fn get_user_file_path(user_name: &str) -> Result<PathOwned> {
 /// - `Failed_to_read_user_file` - I/O error reading user file
 /// - `Failed_to_parse_user_file` - Invalid JSON format in user file
 /// - `Invalid_password` - Password doesn't match stored hash
-pub async fn authenticate_user<'a>(
-    virtual_file_system: &'a VirtualFileSystem<'a>,
+pub async fn authenticate_user(
+    virtual_file_system: &VirtualFileSystem,
     user_name: &str,
     password: &str,
 ) -> Result<UserIdentifier> {
@@ -263,8 +263,8 @@ pub async fn authenticate_user<'a>(
 /// - File system operations (directory creation, file writing)
 /// - Users manager operations (adding user)
 /// - Random salt generation failures
-pub async fn create_user<'a>(
-    virtual_file_system: &'a VirtualFileSystem<'a>,
+pub async fn create_user(
+    virtual_file_system: &VirtualFileSystem,
     user_name: &str,
     password: &str,
     primary_group: GroupIdentifier,
@@ -355,8 +355,8 @@ pub async fn create_user<'a>(
 /// - File system errors (opening, reading, writing user file)
 /// - Salt generation failures
 /// - JSON parsing errors
-pub async fn change_user_password<'a>(
-    virtual_file_system: &'a VirtualFileSystem<'a>,
+pub async fn change_user_password(
+    virtual_file_system: &VirtualFileSystem,
     user_name: &str,
     new_password: &str,
 ) -> Result<()> {
@@ -419,8 +419,8 @@ pub async fn change_user_password<'a>(
 /// - File system errors (opening, reading, writing user file)
 /// - JSON parsing errors
 /// - Path construction failures
-pub async fn change_user_name<'a>(
-    virtual_file_system: &'a VirtualFileSystem<'a>,
+pub async fn change_user_name(
+    virtual_file_system: &VirtualFileSystem,
     current_name: &str,
     new_name: &str,
 ) -> Result<()> {
@@ -479,8 +479,8 @@ pub async fn change_user_name<'a>(
 /// - Path construction failures
 /// - File system errors (opening, reading)
 /// - JSON parsing errors
-pub async fn read_user_file<'a>(
-    virtual_file_system: &'a VirtualFileSystem<'a>,
+pub async fn read_user_file(
+    virtual_file_system: &VirtualFileSystem,
     buffer: &mut Vec<u8>,
     file: &str,
 ) -> Result<User> {

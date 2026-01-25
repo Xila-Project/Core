@@ -30,6 +30,20 @@ impl<'a> Components<'a> {
         Components(path.as_str().split(SEPARATOR))
     }
 
+    pub fn strip_prefix(self, components: &Components<'a>) -> Option<Components<'a>> {
+        let mut self_iter = self.clone();
+        let components_iter = components.clone();
+
+        for component in components_iter {
+            match self_iter.next() {
+                Some(self_component) if self_component == component => {}
+                _ => return None,
+            }
+        }
+
+        Some(Components(self_iter.0))
+    }
+
     pub fn get_common_components(self, other: Components<'a>) -> usize {
         self.zip(other).take_while(|(a, b)| a == b).count()
     }

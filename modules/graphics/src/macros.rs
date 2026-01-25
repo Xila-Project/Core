@@ -12,7 +12,7 @@ macro_rules! lock {
 macro_rules! synchronous_lock {
     ($body:block) => {{
         let _lock = $crate::get_instance().synchronous_lock();
-        let __result = { $($body)* };
+        let __result = { $body };
         ::core::mem::drop(_lock);
         __result
     }};

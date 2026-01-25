@@ -93,14 +93,9 @@ async fn main() {
     let file_system = little_fs::FileSystem::get_or_format(partition, 256).unwrap();
 
     // Initialize the virtual file system
-    let virtual_file_system = virtual_file_system::initialize(
-        task_manager,
-        users_manager,
-        time_manager,
-        file_system,
-        None,
-    )
-    .unwrap();
+    let virtual_file_system =
+        virtual_file_system::initialize(task_manager, users_manager, time_manager, file_system)
+            .unwrap();
 
     // - - Mount the devices
 

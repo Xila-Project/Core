@@ -8,6 +8,7 @@ pub mod flags;
 mod http;
 mod size;
 mod slice;
+pub mod task;
 mod time;
 mod unit;
 mod utf8;

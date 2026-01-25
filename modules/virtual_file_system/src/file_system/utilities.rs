@@ -33,7 +33,7 @@ pub(super) type CharacterDevicesMap = BTreeMap<Inode, InternalCharacterDevice>;
 pub(super) type BlockDevicesMap = BTreeMap<Inode, InternalBlockDevice>;
 pub(super) type PipeMap = BTreeMap<Inode, InternalPipe>;
 
-impl<'a> VirtualFileSystem<'a> {
+impl VirtualFileSystem {
     pub(super) async fn has_permissions(
         users_manager: &users::Manager,
         current_user: UserIdentifier,
@@ -77,10 +77,17 @@ impl<'a> VirtualFileSystem<'a> {
             let mount_point: &Path = file_system.mount_point.as_ref();
             let mount_point_components = mount_point.get_components();
 
-            let score = path_components
+            let striped_components = path_components
                 .clone()
-                .get_common_components(mount_point_components);
+                .strip_prefix(&mount_point_components);
 
+            if striped_components.is_none() {
+                continue;
+            }
+
+            let score = mount_point_components.count();
+
+            // Only consider this file system if all mount point components match
             if result_score < score {
                 result_score = score;
                 result = i;
@@ -101,7 +108,15 @@ impl<'a> VirtualFileSystem<'a> {
         let relative_path = path
             .as_ref()
             .strip_prefix_absolute(&internal_file_system.mount_point)
-            .ok_or(Error::InvalidPath)?;
+            .ok_or_else(|| {
+                log::error!(
+                    "Error stripping prefix {:?} from path {:?}",
+                    internal_file_system.mount_point,
+                    path.as_ref()
+                );
+
+                Error::InvalidPath
+            })?;
 
         Ok((internal_file_system, relative_path, i))
     }
@@ -212,7 +227,7 @@ impl<'a> VirtualFileSystem<'a> {
     }
 
     pub(super) async fn check_permissions_with_parent(
-        file_system: &dyn FileSystemOperations,
+        file_systems: &FileSystemsArray,
         path: impl AsRef<Path>,
         current_permission: Permission,
         parent_permission: Permission,
@@ -221,10 +236,27 @@ impl<'a> VirtualFileSystem<'a> {
         if !path.as_ref().is_root() {
             let parent_path = path.as_ref().go_parent().ok_or(Error::InvalidPath)?;
 
-            Self::check_permissions(file_system, parent_path, parent_permission, user).await?;
+            let (parent_file_system, relative_path, _) =
+                Self::get_file_system_from_path(file_systems, &parent_path)?; // Get the file system identifier and the relative path
+
+            Self::check_permissions(
+                parent_file_system.file_system,
+                relative_path,
+                parent_permission,
+                user,
+            )
+            .await?;
         }
 
-        Self::check_permissions(file_system, path.as_ref(), current_permission, user).await?;
+        let (file_system, relative_path, _) = Self::get_file_system_from_path(file_systems, &path)?; // Get the file system identifier and the relative path
+
+        Self::check_permissions(
+            file_system.file_system,
+            relative_path,
+            current_permission,
+            user,
+        )
+        .await?;
 
         Ok(())
     }

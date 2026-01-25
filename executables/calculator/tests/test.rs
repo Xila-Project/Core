@@ -17,7 +17,7 @@ async fn main() {
     let binary_path = build_crate("calculator").unwrap();
     let binary_buffer = fs::read(binary_path).unwrap();
 
-    let standard = testing::initialize(true).await.split();
+    let standard = testing::initialize(true, false).await.split();
 
     let task_manager = task::get_instance();
     let virtual_machine = virtual_machine::initialize(&[&host_bindings::GraphicsBindings]);

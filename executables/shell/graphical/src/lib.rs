@@ -12,21 +12,35 @@ extern crate alloc;
 
 use crate::{desk::Desk, error::Error};
 use alloc::{boxed::Box, string::String, vec::Vec};
+use core::fmt::Write;
 use core::num::NonZeroUsize;
 use core::time::Duration;
+use getargs::Arg;
 use home::Home;
 use layout::Layout;
 use login::Login;
-use xila::executable::{self, ArgumentsParser, ExecutableTrait, Standard};
+use xila::executable::{self, ExecutableTrait, Standard};
 use xila::task;
 use xila::users;
 
-pub async fn main(standard: Standard, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
-    let mut parsed_arguments = ArgumentsParser::new(&arguments);
+pub async fn main(mut standard: Standard, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
+    let arguments = arguments.iter().map(|s| s.as_str());
 
-    let show_keyboard = parsed_arguments
-        .find_map(|argument| Some(argument.options.get_option("show-keyboard").is_some()))
-        .unwrap_or(false);
+    let mut options = getargs::Options::new(arguments);
+
+    let mut show_keyboard = false;
+
+    while let Some(argument) = options.next_arg().map_err(|e| {
+        writeln!(standard.error(), "{}", e).ok();
+        NonZeroUsize::new(1).unwrap()
+    })? {
+        match argument {
+            Arg::Short('k') | Arg::Long("show-keyboard") => {
+                show_keyboard = true;
+            }
+            _ => {}
+        }
+    }
 
     Shell::new(standard, show_keyboard).await.main().await
 }
@@ -66,7 +80,7 @@ impl Shell {
 
     pub async fn main(&mut self) -> Result<(), NonZeroUsize> {
         while self.running {
-            self.layout.r#loop().await;
+            self.layout.run().await;
 
             if let Some(login) = &mut self.login {
                 login.event_handler().await;

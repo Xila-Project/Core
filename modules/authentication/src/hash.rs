@@ -44,7 +44,7 @@ use crate::{Error, RANDOM_DEVICE_PATH, Result};
 /// The salt generation converts random bytes to lowercase letters (a-z)
 /// for readability while maintaining sufficient entropy for security.
 pub async fn generate_salt(
-    virtual_file_system: &VirtualFileSystem<'_>,
+    virtual_file_system: &VirtualFileSystem,
     task: TaskIdentifier,
 ) -> Result<String> {
     let mut buffer = [0_u8; 16];
@@ -81,7 +81,7 @@ pub async fn generate_salt(
 /// to collision attacks. The salt prevents rainbow table attacks and ensures
 /// that identical passwords have different hashes.
 pub async fn hash_password(
-    virtual_file_system: &VirtualFileSystem<'_>,
+    virtual_file_system: &VirtualFileSystem,
     task: TaskIdentifier,
     password: &str,
     salt: &str,

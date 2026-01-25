@@ -9,11 +9,12 @@ use drivers_native::window_screen;
 use drivers_shared::devices::RandomDevice;
 use drivers_std::{devices::TimeDevice, log::Logger};
 use executable::Standard;
-use file_system::MemoryDevice;
+use file_system::{AccessFlags, MemoryDevice};
+use network::{ADD_DNS_SERVER, ADD_IP_ADDRESS, ADD_ROUTE};
 use users::GroupIdentifier;
-use virtual_file_system::{ItemStatic, create_default_hierarchy, mount_static};
+use virtual_file_system::{File, ItemStatic, create_default_hierarchy, mount_static};
 
-pub async fn initialize(graphics_enabled: bool) -> Standard {
+pub async fn initialize(graphics_enabled: bool, network_enabled: bool) -> Standard {
     log::initialize(&Logger).unwrap();
 
     let task_manager = task::initialize();
@@ -71,7 +72,7 @@ pub async fn initialize(graphics_enabled: bool) -> Standard {
     let file_system = little_fs::FileSystem::new_format(memory_device, 256).unwrap();
 
     let virtual_file_system =
-        virtual_file_system::initialize(task_manager, users, time, file_system, None).unwrap();
+        virtual_file_system::initialize(task_manager, users, time, file_system).unwrap();
 
     let task = task_manager.get_current_task_identifier().await;
 
@@ -88,31 +89,44 @@ pub async fn initialize(graphics_enabled: bool) -> Standard {
         .await
         .unwrap();
 
-    let group_identifier = GroupIdentifier::new(1000);
+    if network_enabled {
+        let network_manager = network::initialize(
+            task_manager,
+            virtual_file_system,
+            &drivers_shared::devices::RandomDevice,
+        );
 
-    authentication::create_group(virtual_file_system, "administrator", Some(group_identifier))
+        let (interface_device, controller_device) =
+            drivers_std::tuntap::new("xila0", false, true).unwrap();
+
+        network_manager
+            .mount_interface(task, "tunnel0", interface_device, controller_device, None)
+            .await
+            .expect("Failed to mount network interface.");
+
+        let mut file = File::open(
+            virtual_file_system,
+            task,
+            "/devices/network/tunnel0",
+            AccessFlags::READ_WRITE.into(),
+        )
         .await
-        .unwrap();
+        .expect("Failed to open network interface file.");
 
-    authentication::create_user(
-        virtual_file_system,
-        "administrator",
-        "",
-        group_identifier,
-        None,
-    )
-    .await
-    .unwrap();
+        for ip_cidr in drivers_std::tuntap::IP_ADDRESSES {
+            file.control(ADD_IP_ADDRESS, ip_cidr).await.ok();
+        }
 
-    task_manager
-        .set_environment_variable(task, "Paths", "/")
-        .await
-        .unwrap();
+        for route in drivers_std::tuntap::ROUTES {
+            file.control(ADD_ROUTE, route).await.ok();
+        }
 
-    task_manager
-        .set_environment_variable(task, "Host", "xila")
-        .await
-        .unwrap();
+        for dns_server in drivers_std::tuntap::DEFAULT_DNS_SERVERS {
+            file.control(ADD_DNS_SERVER, dns_server).await.ok();
+        }
+
+        file.close(virtual_file_system).await.unwrap();
+    }
 
     mount_static!(
         virtual_file_system,
@@ -148,6 +162,32 @@ pub async fn initialize(graphics_enabled: bool) -> Standard {
     )
     .await
     .unwrap();
+
+    let group_identifier = GroupIdentifier::new(1000);
+
+    authentication::create_group(virtual_file_system, "administrator", Some(group_identifier))
+        .await
+        .unwrap();
+
+    authentication::create_user(
+        virtual_file_system,
+        "administrator",
+        "",
+        group_identifier,
+        None,
+    )
+    .await
+    .unwrap();
+
+    task_manager
+        .set_environment_variable(task, "Paths", "/")
+        .await
+        .unwrap();
+
+    task_manager
+        .set_environment_variable(task, "Host", "xila")
+        .await
+        .unwrap();
 
     Standard::open(
         &"/devices/standard_in",

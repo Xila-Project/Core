@@ -13,7 +13,7 @@ async fn main() {
         task, virtual_file_system,
     };
 
-    let standard = testing::initialize(true).await;
+    let standard = testing::initialize(true, false).await;
 
     mount_executables!(
         virtual_file_system::get_instance(),

@@ -13,7 +13,7 @@ impl GeneralTab {
         }
     }
 
-    pub fn create_ui(
+    pub async fn create_ui(
         &mut self,
         parent_tabview: *mut lvgl::lv_obj_t,
     ) -> Result<*mut lvgl::lv_obj_t> {

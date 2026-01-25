@@ -1,9 +1,15 @@
 use crate::error::{Error, Result};
 use alloc::{format, string::String};
+use core::ffi::CStr;
 use core::ptr::null_mut;
-use xila::graphics::{self, EventKind, lvgl, symbols, theme};
+use core::time::Duration;
+use xila::file_system::{AccessFlags, Path};
+use xila::graphics::{self, EventKind, lvgl, symbol, theme};
+use xila::log;
+use xila::network::InterfaceKind;
 use xila::shared::unix_to_human_time;
-use xila::time;
+use xila::virtual_file_system::{Directory, File};
+use xila::{network, time, virtual_file_system};
 
 const KEYBOARD_SIZE_RATIO: f64 = 3.0 / 1.0;
 
@@ -14,7 +20,8 @@ pub struct Layout {
     clock: *mut lvgl::lv_obj_t,
     clock_string: String,
     _battery: *mut lvgl::lv_obj_t,
-    _wi_fi: *mut lvgl::lv_obj_t,
+    network: *mut lvgl::lv_obj_t,
+    last_update: Duration,
 }
 
 impl Drop for Layout {
@@ -104,28 +111,121 @@ pub unsafe extern "C" fn screen_event_handler(event: *mut lvgl::lv_event_t) {
 }
 
 impl Layout {
-    pub async fn r#loop(&mut self) {
-        self.update_clock().await;
+    pub const UPDATE_INTERVAL: Duration = Duration::from_secs(30);
+
+    pub async fn run(&mut self) {
+        let current_time = match time::get_instance().get_current_time() {
+            Ok(time) => time,
+            Err(e) => {
+                log::error!("Failed to get current time: {}", e);
+                return;
+            }
+        };
+
+        if current_time - self.last_update < Self::UPDATE_INTERVAL {
+            return;
+        }
+
+        self.update_clock(current_time).await;
+
+        if let Err(e) = self.update_network_icon().await {
+            log::error!("Failed to update network icon: {}", e);
+        }
+
+        self.last_update = current_time;
     }
 
-    async fn update_clock(&mut self) {
-        // - Update the clock
-        let current_time = time::get_instance().get_current_time();
+    async fn get_interface_symbol(&self, file: &mut File) -> Result<Option<&CStr>> {
+        let is_up = file
+            .control(network::IS_LINK_UP, &())
+            .await
+            .map_err(Error::FailedToOpenDirectory)?;
 
-        if let Ok(current_time) = current_time {
-            let (_, _, _, hour, minute, _) = unix_to_human_time(current_time.as_secs() as i64);
-
-            graphics::lock!({
-                self.clock_string = format!("{hour:02}:{minute:02}\0");
-
-                unsafe {
-                    lvgl::lv_label_set_text_static(
-                        self.clock,
-                        self.clock_string.as_ptr() as *const i8,
-                    );
-                }
-            });
+        if !is_up {
+            return Ok(None);
         }
+
+        let kind = file
+            .control(network::GET_KIND, &())
+            .await
+            .map_err(Error::FailedToOpenDirectory)?;
+
+        let symbol = match kind {
+            InterfaceKind::WiFi => symbol::WIFI,
+            InterfaceKind::Ethernet => symbol::NETWORK_WIRED,
+            InterfaceKind::Unknown => c"?",
+        };
+
+        Ok(Some(symbol))
+    }
+
+    async fn get_network_symbol(&self) -> Result<&CStr> {
+        // Browse the network interfaces in the /devices/network directory
+
+        let virtual_file_system = virtual_file_system::get_instance();
+
+        let task_manager = xila::task::get_instance();
+
+        let task = task_manager.get_current_task_identifier().await;
+
+        let mut directory = Directory::open(virtual_file_system, task, Path::NETWORK_DEVICES)
+            .await
+            .map_err(Error::FailedToOpenDirectory)?;
+
+        while let Some(entry) = directory
+            .read()
+            .await
+            .map_err(Error::FailedToOpenDirectory)?
+        {
+            if entry.name == "." || entry.name == ".." {
+                continue;
+            }
+
+            let entry_path = entry.join_path(Path::NETWORK_DEVICES);
+
+            if let Some(entry_path) = entry_path {
+                let mut file = File::open(
+                    virtual_file_system,
+                    task,
+                    &entry_path,
+                    AccessFlags::Read.into(),
+                )
+                .await
+                .map_err(Error::FailedToOpenDirectory)?;
+
+                let symbol = self.get_interface_symbol(&mut file).await?;
+
+                if let Some(symbol) = symbol {
+                    return Ok(symbol);
+                }
+            }
+        }
+
+        Ok(c"")
+    }
+
+    async fn update_network_icon(&mut self) -> Result<()> {
+        let symbol = self.get_network_symbol().await?;
+
+        graphics::lock!({
+            unsafe {
+                lvgl::lv_label_set_text_static(self.network, symbol.as_ptr());
+            }
+        });
+
+        Ok(())
+    }
+
+    async fn update_clock(&mut self, current_time: Duration) {
+        let (_, _, _, hour, minute, _) = unix_to_human_time(current_time.as_secs() as i64);
+
+        graphics::lock!({
+            self.clock_string = format!("{hour:02}:{minute:02}\0");
+
+            unsafe {
+                lvgl::lv_label_set_text_static(self.clock, self.clock_string.as_ptr() as *const i8);
+            }
+        });
     }
 
     pub fn get_windows_parent(&self) -> *mut lvgl::lv_obj_t {
@@ -207,6 +307,11 @@ impl Layout {
                     lvgl::lv_obj_set_style_pad_all(tray, 0, lvgl::LV_STATE_DEFAULT);
                     lvgl::lv_obj_set_style_border_width(tray, 0, lvgl::LV_STATE_DEFAULT);
                     lvgl::lv_obj_align(tray, lvgl::lv_align_t_LV_ALIGN_RIGHT_MID, 0, 0);
+                    lvgl::lv_obj_set_style_bg_opa(
+                        tray,
+                        lvgl::LV_OPA_TRANSP as _,
+                        lvgl::LV_STATE_DEFAULT,
+                    );
 
                     tray
                 }
@@ -214,18 +319,18 @@ impl Layout {
 
             // - - Create a label for the WiFi
 
-            let wi_fi = unsafe {
+            let network = unsafe {
                 // - - Create a label for the WiFi
 
-                let wi_fi = lvgl::lv_label_create(tray);
+                let network = lvgl::lv_label_create(tray);
 
-                if wi_fi.is_null() {
+                if network.is_null() {
                     return Err(Error::FailedToCreateObject);
                 }
 
-                lvgl::lv_label_set_text(wi_fi, symbols::WIFI.as_ptr());
+                lvgl::lv_label_set_text(network, c"".as_ptr());
 
-                wi_fi
+                network
             };
 
             // - - Create a label for the battery
@@ -237,7 +342,7 @@ impl Layout {
                     return Err(Error::FailedToCreateObject);
                 }
 
-                lvgl::lv_label_set_text(battery, symbols::BATTERY_3.as_ptr());
+                lvgl::lv_label_set_text_static(battery, symbol::BATTERY_3.as_ptr());
 
                 battery
             };
@@ -304,7 +409,8 @@ impl Layout {
                 clock,
                 clock_string: String::with_capacity(6),
                 _battery: battery,
-                _wi_fi: wi_fi,
+                network,
+                last_update: Duration::ZERO,
             }
         });
 

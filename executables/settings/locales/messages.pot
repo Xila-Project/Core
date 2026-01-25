@@ -96,6 +96,12 @@ msgstr ""
 msgid "About"
 msgstr ""
 
+msgid "Operating System:"
+msgstr ""
+
+msgid "Description:"
+msgstr ""
+
 msgid "Developed by:"
 msgstr ""
 
@@ -108,5 +114,38 @@ msgstr ""
 msgid "Locale:"
 msgstr ""
 
-msgid "Fallback:"
+msgid "Memory:"
+msgstr ""
+
+msgid "Cancel"
+msgstr ""
+
+msgid "Apply"
+msgstr ""
+
+msgid "None"
+msgstr ""
+
+msgid "DHCP"
+msgstr ""
+
+msgid "Static"
+msgstr ""
+
+msgid "Configuration Mode"
+msgstr ""
+
+msgid "MAC Address"
+msgstr ""
+
+msgid "Address"
+msgstr ""
+
+msgid "Routes"
+msgstr ""
+
+msgid "Gateway"
+msgstr ""
+
+msgid "DNS Servers"
 msgstr ""

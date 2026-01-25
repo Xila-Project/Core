@@ -25,8 +25,8 @@ pub use task::*;
 pub use task_macros::{run, test};
 
 /// Sleep the current thread for a given duration.
-pub async fn sleep(duration: Duration) {
-    let nano_seconds = duration.as_nanos();
+pub async fn sleep(duration: impl Into<Duration>) {
+    let nano_seconds = duration.into().as_nanos();
 
     Timer::after(embassy_time::Duration::from_nanos(nano_seconds as u64)).await
 }

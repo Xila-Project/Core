@@ -96,6 +96,12 @@ msgstr "Change Password"
 msgid "About"
 msgstr "About"
 
+msgid "Operating System:"
+msgstr "Operating System:"
+
+msgid "Description:"
+msgstr "Description:"
+
 msgid "Developed by:"
 msgstr "Developed by:"
 
@@ -108,5 +114,38 @@ msgstr "Version:"
 msgid "Locale:"
 msgstr "Locale:"
 
-msgid "Fallback:"
-msgstr "Fallback:"
+msgid "Memory:"
+msgstr "Memory:"
+
+msgid "Cancel"
+msgstr "Cancel"
+
+msgid "Apply"
+msgstr "Apply"
+
+msgid "None"
+msgstr "None"
+
+msgid "DHCP"
+msgstr "DHCP"
+
+msgid "Static"
+msgstr "Static"
+
+msgid "Configuration Mode"
+msgstr "Configuration Mode"
+
+msgid "MAC Address"
+msgstr "MAC Address"
+
+msgid "Address"
+msgstr "Address"
+
+msgid "Routes"
+msgstr "Routes"
+
+msgid "Gateway"
+msgstr "Gateway"
+
+msgid "DNS Servers"
+msgstr "DNS Servers"

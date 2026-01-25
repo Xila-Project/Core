@@ -30,6 +30,7 @@ pub enum Error {
     NullCharacterInString(alloc::ffi::NulError),
     MissingArguments,
     FailedToAddShortcut(virtual_file_system::Error),
+    FailedToOpenDirectory(virtual_file_system::Error),
 }
 
 impl Error {
@@ -132,6 +133,9 @@ impl Display for Error {
             }
             Self::FailedToAddShortcut(error) => {
                 write!(formatter, translate!("Failed to add shortcut: {}"), error)
+            }
+            Self::FailedToOpenDirectory(error) => {
+                write!(formatter, translate!("Failed to open directory: {}"), error)
             }
         }
     }

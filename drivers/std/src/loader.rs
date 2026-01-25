@@ -24,8 +24,8 @@ impl From<io::Error> for Error {
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-pub async fn load_to_virtual_file_system<'a>(
-    virtual_file_system: &'a VirtualFileSystem<'a>,
+pub async fn load_to_virtual_file_system(
+    virtual_file_system: &VirtualFileSystem,
     source_path: impl AsRef<path::Path>,
     destination_path: impl AsRef<Path>,
 ) -> Result<()> {
@@ -89,7 +89,6 @@ mod tests {
             users::get_instance(),
             time::get_instance(),
             file_system,
-            None,
         )
         .unwrap();
 

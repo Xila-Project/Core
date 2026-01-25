@@ -40,7 +40,7 @@ impl<'a> Window<'a> {
     }
 
     pub fn paste(&mut self) -> Option<()> {
-        if let Some(text) = self.clipboard.get_text().ok() {
+        if let Ok(text) = self.clipboard.get_text() {
             for character in text.chars() {
                 let key = Key::Character(character as u8);
 

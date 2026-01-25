@@ -62,6 +62,9 @@ msgstr "Arguments manquants"
 msgid "Failed to add shortcut: {}"
 msgstr "Échec de l'ajout du raccourci: {}"
 
+msgid "Failed to open directory: {}"
+msgstr "Échec de l'ouverture du répertoire: {}"
+
 #: login.user_name
 msgid "User name"
 msgstr "Nom d'utilisateur"
