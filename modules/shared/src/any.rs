@@ -19,11 +19,13 @@ impl<'a, T> From<&'a T> for &'a AnyByLayout {
 impl AnyByLayout {
     pub const NONE: &mut Self = Self::from_mutable(&mut [0u8; 0]);
 
-    /// Gets a mutable reference to an `AnyByLayout` from raw parts.
+    /// Creates an `AnyByLayout` from raw parts.
     ///
     /// # Safety
-    /// The caller must ensure that the provided data pointer is valid for reads and writes
-    /// for the specified size, and that the memory is properly aligned.
+    ///
+    /// This function is unsafe because it creates a reference from a raw pointer.
+    /// The caller must ensure that the pointer is valid for reads and writes
+    /// for `size` bytes and properly aligned.
     pub unsafe fn from_raw_parts<'a>(data: *mut u8, size: usize) -> &'a mut Self {
         unsafe {
             let slice = slice::from_raw_parts_mut(data, size);
