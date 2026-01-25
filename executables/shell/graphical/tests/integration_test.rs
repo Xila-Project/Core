@@ -13,7 +13,7 @@ async fn main() {
     use xila::virtual_file_system::File;
     use xila::{executable, task, virtual_file_system};
 
-    let standard = testing::initialize(true).await;
+    let standard = testing::initialize(true, true).await;
 
     let task_manager = task::get_instance();
     let virtual_file_system = virtual_file_system::get_instance();
