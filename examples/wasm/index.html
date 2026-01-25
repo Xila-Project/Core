@@ -1,6 +1,52 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <link data-trunk rel="rust" data-keep-debug />
+    <link data-trunk rel="icon" href="images/logo.svg" />
+    <link data-trunk rel="copy-dir" href="images/" />
+    <link data-trunk rel="css" href="styles.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Prompt:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
+      rel="stylesheet"
+    />
+    <title>Xila WASM Example</title>
   </head>
+  <body>
+    <div id="sidebar">
+      <h2>Default credentials</h2>
+      <ul>
+        <li><strong>Username:</strong> administrator</li>
+        <li><strong>Password:</strong> (no password)</li>
+      </ul>
+      See <a href="https://www.xila.dev">xila.dev</a> for more information.
+
+      <button
+        id="sidebar-toggle"
+        onclick="toggleSidebar()"
+        aria-label="Toggle Credentials Sidebar"
+      >
+        <img
+          id="sidebar-arrow"
+          src="images/chevron-right-solid-full.svg"
+          alt="Toggle Sidebar"
+          style="width: 20px; height: 20px; transition: transform 0.2s"
+        />
+      </button>
+    </div>
+    <script>
+      function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        const arrow = document.getElementById("sidebar-arrow");
+        sidebar.classList.toggle("open");
+        if (sidebar.classList.contains("open")) {
+          arrow.src = "images/chevron-left-solid-full.svg";
+        } else {
+          arrow.src = "images/chevron-right-solid-full.svg";
+        }
+      }
+    </script>
+  </body>
 </html>
