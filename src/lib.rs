@@ -32,6 +32,8 @@ pub use log;
 #[cfg(feature = "host")]
 pub use memory;
 #[cfg(feature = "host")]
+pub use network;
+#[cfg(feature = "host")]
 pub use shared;
 #[cfg(feature = "host")]
 pub use synchronization;

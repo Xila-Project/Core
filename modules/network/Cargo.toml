@@ -13,23 +13,6 @@ log = { workspace = true }
 virtual_file_system = { workspace = true }
 shared = { workspace = true }
 
-embassy-net = { workspace = true, features = [
-  "icmp",
-  "raw",
-  "udp",
-  "tcp",
-  "dns",
-  "mdns",
-  "proto-ipv4",
-  "proto-ipv6",
-  "dhcpv4",
-  "dhcpv4-hostname",
-  "medium-ip",
-  "medium-ethernet",
-  "log",
-  "alloc",
-] }
-embassy-net-driver = { workspace = true }
 embedded-io-async = { workspace = true }
 embassy-time = { workspace = true }
 embassy-futures = { workspace = true }
