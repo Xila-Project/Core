@@ -30,8 +30,8 @@ pub const SHORTCUT: &str = r#"
 pub struct FileManagerExecutable;
 
 impl FileManagerExecutable {
-    pub async fn new<'a>(
-        virtual_file_system: &'a VirtualFileSystem<'a>,
+    pub async fn new(
+        virtual_file_system: &VirtualFileSystem,
         task: TaskIdentifier,
     ) -> core::result::Result<Self, String> {
         let _ = virtual_file_system
