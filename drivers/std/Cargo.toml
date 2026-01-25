@@ -23,6 +23,7 @@ embassy-executor = { workspace = true, default-features = false, features = [
   "arch-std",
   "executor-thread",
 ] }
+smoltcp = { workspace = true, features = ["phy-tuntap_interface"] }
 
 [dev-dependencies]
 little_fs = { workspace = true }
