@@ -1,7 +1,7 @@
 <h1 align="center">Xila core</h1>
 
 [![codecov](https://codecov.io/github/Xila-Project/Core/graph/badge.svg?token=01M6GQFBEC)](https://codecov.io/github/Xila-Project/Core)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-yellow.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
 ## 📝 Description
 
@@ -52,4 +52,4 @@ cd examples/wasm && trunk serve
 
 ## ℹ️ About
 
-This project is under the [MIT license](License.md).
+This project is under the [GNU General Public License v2.0](license.md).
