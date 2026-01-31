@@ -97,7 +97,7 @@ impl Environment<'_> {
     ///
     /// This function is unsafe because it is not checked that the address is valid.
     /// Please use `Validate_WASM_pointer` to check the address.
-    pub unsafe fn convert_to_wasm_pointer<T>(&self, pointer: *const T) -> WasmPointer {
+    pub unsafe fn convert_to_wasm_pointer<T>(&self, pointer: *mut T) -> WasmPointer {
         unsafe {
             wasm_runtime_addr_native_to_app(self.get_instance_pointer(), pointer as *mut c_void)
                 as WasmPointer

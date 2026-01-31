@@ -2,6 +2,7 @@ use std::{
     cell::OnceCell,
     collections::{BTreeMap, btree_map::Entry},
     os::raw::c_void,
+    ptr::null_mut,
 };
 
 pub use graphics::lvgl;
@@ -130,12 +131,209 @@ impl PointerTable {
 
 static mut POINTER_TABLE: OnceCell<PointerTable> = OnceCell::new();
 
+fn convert_argument(
+    environment: &Environment,
+    pointer_table: &mut PointerTable,
+    task: TaskIdentifier,
+    function: generated_bindings::FunctionCall,
+    argument: WasmUsize,
+    argument_index: usize,
+) -> Result<usize> {
+    if function.is_function_argument_pointer(argument_index) {
+        let native_pointer = unsafe {
+            environment
+                .convert_to_native_pointer(argument as WasmPointer)
+                .ok_or(Error::InvalidPointer)? as *mut c_void
+        };
+
+        if function.is_function_argument_lvgl_pointer(argument_index) {
+            let native_pointer = native_pointer as *mut u16;
+
+            let lvgl_pointer =
+                pointer_table.get_native_pointer(task, unsafe { *native_pointer })? as *mut c_void;
+
+            Ok(lvgl_pointer as usize)
+        } else {
+            Ok(native_pointer as usize)
+        }
+    } else {
+        Ok(argument as usize)
+    }
+}
+
+fn convert_result(
+    environment: &Environment,
+    pointer_table: &mut PointerTable,
+    task: TaskIdentifier,
+    function: generated_bindings::FunctionCall,
+    result_pointer: WasmPointer,
+) -> Result<()> {
+    if function.is_function_return_pointer() {
+        let native_pointer = unsafe {
+            environment
+                .convert_to_native_pointer(result_pointer)
+                .ok_or(Error::InvalidPointer)? as *mut c_void
+        };
+
+        if function.is_function_return_lvgl_pointer() {
+            let lvgl_pointer = native_pointer as *mut u16;
+
+            let wasm_identifier = pointer_table.get_wasm_pointer(
+                pointer_table.get_native_pointer::<c_void>(task, unsafe { *lvgl_pointer })?,
+            )?;
+
+            unsafe {
+                *lvgl_pointer = wasm_identifier;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+pub struct CustomData<'a> {
+    environment: Environment<'a>,
+    pointer_table: &'a mut PointerTable,
+}
+
 /// Call to graphics API
 ///
 /// # Safety
 ///
 /// This function is unsafe because it may dereference raw pointers (e.g. `Environment`, `Result` or `Arguments`).
 /// The pointer must be valid and properly aligned (ensured by the virtual machine).
+#[allow(clippy::too_many_arguments)]
+unsafe fn call_inner(
+    environment: EnvironmentPointer,
+    function: generated_bindings::FunctionCall,
+    argument_0: WasmUsize,
+    argument_1: WasmUsize,
+    argument_2: WasmUsize,
+    argument_3: WasmUsize,
+    argument_4: WasmUsize,
+    argument_5: WasmUsize,
+    argument_6: WasmUsize,
+    arguments_count: u8,
+    result_pointer: WasmPointer,
+) -> Result<()> {
+    unsafe {
+        let environment = Environment::from_raw_pointer(environment).unwrap();
+
+        let instance = graphics::get_instance();
+
+        let _lock = block_on(instance.lock());
+
+        let pointer_table_reference = &raw mut POINTER_TABLE;
+
+        let _ = (*pointer_table_reference).get_or_init(PointerTable::new);
+
+        let pointer_table_reference = (*pointer_table_reference).get_mut().unwrap();
+
+        let task = environment
+            .get_or_initialize_custom_data()
+            .map_err(|_| Error::EnvironmentRetrievalFailed)?
+            .get_task_identifier();
+
+        let argument_0 = convert_argument(
+            &environment,
+            pointer_table_reference,
+            task,
+            function,
+            argument_0,
+            0,
+        )?;
+        let argument_1 = convert_argument(
+            &environment,
+            pointer_table_reference,
+            task,
+            function,
+            argument_1,
+            1,
+        )?;
+        let argument_2 = convert_argument(
+            &environment,
+            pointer_table_reference,
+            task,
+            function,
+            argument_2,
+            2,
+        )?;
+        let argument_3 = convert_argument(
+            &environment,
+            pointer_table_reference,
+            task,
+            function,
+            argument_3,
+            3,
+        )?;
+        let argument_4 = convert_argument(
+            &environment,
+            pointer_table_reference,
+            task,
+            function,
+            argument_4,
+            4,
+        )?;
+        let argument_5 = convert_argument(
+            &environment,
+            pointer_table_reference,
+            task,
+            function,
+            argument_5,
+            5,
+        )?;
+        let argument_6 = convert_argument(
+            &environment,
+            pointer_table_reference,
+            task,
+            function,
+            argument_6,
+            6,
+        )?;
+        let result_pointer = environment
+            .convert_to_native_pointer(result_pointer)
+            .ok_or(Error::InvalidPointer)? as *mut c_void;
+
+        let custom_data = CustomData {
+            environment: environment,
+            pointer_table: pointer_table_reference,
+        };
+
+        generated_bindings::call_function(
+            task,
+            function,
+            argument_0,
+            argument_1,
+            argument_2,
+            argument_3,
+            argument_4,
+            argument_5,
+            argument_6,
+            arguments_count,
+            result_pointer,
+            &custom_data as *const _ as *mut _,
+        );
+
+        if function.is_function_return_pointer() {
+            let inner_pointer = *(result_pointer as *mut *mut c_void);
+
+            if function.is_function_return_lvgl_pointer() {
+                let result_pointer = result_pointer as *mut u16;
+
+                *result_pointer = pointer_table_reference.insert(task, inner_pointer)?;
+            } else {
+                let result_pointer = result_pointer as *mut WasmPointer;
+
+                *result_pointer = environment.convert_to_wasm_pointer(inner_pointer);
+            }
+        }
+
+        Ok(())
+
+        // Lock is automatically released here.
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub unsafe fn call(
     environment: EnvironmentPointer,
@@ -150,22 +348,9 @@ pub unsafe fn call(
     arguments_count: u8,
     result_pointer: WasmPointer,
 ) -> i32 {
-    unsafe {
-        let environment = Environment::from_raw_pointer(environment).unwrap();
-
-        let instance = graphics::get_instance();
-
-        let _lock = block_on(instance.lock());
-
-        let pointer_table_reference = &raw mut POINTER_TABLE;
-
-        let _ = (*pointer_table_reference).get_or_init(PointerTable::new);
-
-        let pointer_table_reference = (*pointer_table_reference).get_mut().unwrap();
-
-        let result = generated_bindings::call_function(
+    let result = unsafe {
+        call_inner(
             environment,
-            pointer_table_reference,
             function,
             argument_0,
             argument_1,
@@ -176,19 +361,17 @@ pub unsafe fn call(
             argument_6,
             arguments_count,
             result_pointer,
-        );
+        )
+    };
 
-        if let Err(error) = result {
+    match result {
+        Ok(_) => 0,
+        Err(error) => {
             log::error!(
                 "Error {error:?} durring graphics call: {function:?} with arguments: {argument_0:x}, {argument_1:x}, {argument_2:x}, {argument_3:x}, {argument_4:x}, {argument_5:x}, {argument_6:x}, count: {arguments_count}, result pointer: {result_pointer:x}"
             );
-
             error as i32
-        } else {
-            0
         }
-
-        // Lock is automatically released here.
     }
 }
 

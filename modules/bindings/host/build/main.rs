@@ -18,6 +18,11 @@ fn main() -> Result<(), ()> {
     let out_directory = env::var("OUT_DIR").unwrap();
     let out_directory = Path::new(out_directory.as_str());
 
+    println!(
+        "cargo:warning=bindings generation in {}",
+        out_directory.display()
+    );
+
     generator::generate(out_directory, &context).expect("Error generating native bindings");
 
     Ok(())

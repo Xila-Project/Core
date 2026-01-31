@@ -1,8 +1,75 @@
+use std::ops::{BitAnd, BitOr, Not, Shl};
+
 use proc_macro2::{Literal, TokenStream};
 use quote::{ToTokens, quote};
-use syn::{Ident, Signature};
+use syn::{FnArg, Ident, Signature};
 
 use crate::{format::snake_ident_to_upper_camel, function::get_function_identifier};
+
+pub const POINTERS_OFFSET: u32 = 16;
+pub const LVGL_POINTERS_OFFSET: u32 = 24;
+
+fn is_pointer(argument: &FnArg) -> bool {
+    match argument {
+        FnArg::Typed(pattern) => match &*pattern.ty {
+            syn::Type::Ptr(_) => true,
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
+fn is_lvgl_pointer(argument: &FnArg) -> bool {
+    match argument {
+        FnArg::Typed(pattern) => match &*pattern.ty {
+            syn::Type::Ptr(type_value) => {
+                let type_string = type_value.elem.to_token_stream().to_string();
+                type_string != "lv_obj_t"
+            }
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
+fn set_bit<T>(value: &mut T, index: u32, bit_is_on: bool)
+where
+    T: From<u8>
+        + BitOr<Output = T>
+        + BitAnd<Output = T>
+        + Not<Output = T>
+        + Shl<u32, Output = T>
+        + Copy,
+{
+    let mask = T::from(1) << index;
+    if bit_is_on {
+        *value = *value | mask;
+    } else {
+        *value = *value & !mask;
+    }
+}
+
+pub fn get_function_call_identifier(index: usize, signature: &Signature) -> u32 {
+    let mut pointers = 0_u8;
+
+    for (i, input) in signature.inputs.iter().enumerate() {
+        let bit_is_on = is_pointer(input);
+        set_bit(&mut pointers, i as u32, bit_is_on);
+    }
+
+    let mut lvgl_pointers = 0_u8;
+
+    for (i, input) in signature.inputs.iter().enumerate() {
+        let bit_is_on = is_lvgl_pointer(input);
+        set_bit(&mut lvgl_pointers, i as u32, bit_is_on);
+    }
+
+    let value: u32 = (index as u32)
+        | ((pointers as u32) << POINTERS_OFFSET)
+        | ((lvgl_pointers as u32) << LVGL_POINTERS_OFFSET);
+
+    value
+}
 
 pub fn get_variant_identifier(identifier: &Ident) -> Ident {
     let identifier = get_function_identifier("", identifier);
@@ -16,17 +83,19 @@ pub fn generate_code(signatures: Vec<Signature>) -> TokenStream {
 
     let variants = &signatures
         .into_iter()
-        .map(|signature| get_variant_identifier(&signature.ident))
         .enumerate()
-        .map(|(i, identifier)| {
-            let i = Literal::usize_unsuffixed(i);
-            quote! { #identifier = #i }
+        .map(|(i, signature)| {
+            let identifier = get_variant_identifier(&signature.ident);
+            let value = get_function_call_identifier(i, &signature);
+            let value = Literal::usize_unsuffixed(value as usize);
+
+            quote! { #identifier = #value }
         })
         .collect::<Vec<_>>();
 
     quote! {
         #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-        #[repr(u16)]
+        #[repr(u32)]
         pub enum FunctionCall {
             #(
                 #variants,

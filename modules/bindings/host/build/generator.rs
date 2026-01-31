@@ -18,27 +18,9 @@ fn generate_conversion_for_argument(
             let identifier = &*pattern.pat;
 
             match &*pattern.ty {
-                syn::Type::Ptr(type_value) => {
-                    let type_string = type_value.elem.to_token_stream().to_string();
-
-                    if type_string == "lv_obj_t" {
-                        Ok(quote! {
-
-                            let #identifier = __pointer_table.get_native_pointer(
-                                __task,
-                                #identifier.try_into().map_err(|_| Error::InvalidPointer)?
-                            )?;
-
-                        })
-                    } else {
-                        Ok(quote! {
-                            let #identifier : #type_value = unsafe { convert_to_native_pointer(
-                                &__environment,
-                                #identifier
-                            )? };
-                        })
-                    }
-                }
+                syn::Type::Ptr(type_value) => Ok(quote! {
+                    let #identifier : #type_value = #identifier as _;
+                }),
                 syn::Type::Path(path) => {
                     let path_string = type_tree.resolve(&path.path);
 
@@ -60,7 +42,7 @@ fn generate_conversion_for_argument(
                         })
                     } else if path_string_stripped == "lv_color32_t" {
                         Ok(quote! {
-                            let #identifier = unsafe { core::mem::transmute::<u32, #path_string_identifier>(#identifier) };
+                            let #identifier = unsafe { core::mem::transmute::<u32, #path_string_identifier>(#identifier as u32) };
                         })
                     } else if path_string_stripped == "lv_color16_t" {
                         Ok(quote! {
@@ -71,7 +53,7 @@ fn generate_conversion_for_argument(
                             let #identifier = #identifier as *mut lv_style_value_t;
                             let #identifier = unsafe { *#identifier };
                         })
-                    } else if path_string_stripped == "u32" {
+                    } else if path_string_stripped == "usize" {
                         Ok(quote! {})
                     } else {
                         Ok(quote! {
@@ -91,49 +73,15 @@ fn generate_conversion_for_output(r#return: &ReturnType) -> Result<Option<TokenS
         ReturnType::Type(_, r#type) => {
             let conversion = match &**r#type {
                 syn::Type::Ptr(type_value) => {
-                    let type_string = type_value.elem.to_token_stream().to_string();
-
-                    if type_string == "lv_obj_t" {
-                        quote! {
-
-                            let __result_2 : *mut u16 = unsafe { convert_to_native_pointer(&__environment, __result)? };
-
-                            let __result : *mut u16 = unsafe { convert_to_native_pointer(&__environment, __result)? };
-
-                            let __current_result = __pointer_table.insert(
-                                __task,
-                                __current_result as *mut core::ffi::c_void
-                            )?;
-
-
-                            unsafe {
-                                *__result =  __current_result;
-                            }
-                        }
-                    } else if type_string == "core :: ffi :: c_void" {
-                        quote! {
-                            let __current_result = unsafe { __environment.convert_to_wasm_pointer(
-                                __current_result
-                            ) };
-
-                            let __result : *mut WasmPointer = unsafe { convert_to_native_pointer(&__environment, __result)? };
-                        }
-                    } else {
-                        quote! {
-                            let __current_result = unsafe { __environment.convert_to_wasm_pointer(
-                                __current_result as *mut core::ffi::c_void
-                            ) };
-
-                            let __result : *mut WasmPointer = unsafe { convert_to_native_pointer(&__environment, __result)? };
-                        }
+                    quote! {
+                        let __result : *mut #type_value = __result as *mut _;
                     }
                 }
                 syn::Type::Path(r#type) => {
                     quote! {
-                        let __result : *mut #r#type = unsafe { convert_to_native_pointer(&__environment, __result)? };
+                        let __result : *mut #r#type = __result as *mut _;
                     }
                 }
-
                 t => {
                     return Err(format!("Unsupported return type : {t:?}"));
                 }
@@ -272,23 +220,20 @@ pub fn generate_code(
         #[allow(unused_variables)]
         #[allow(clippy::too_many_arguments)]
         pub unsafe fn call_function(
-            __environment: Environment,
-            __pointer_table: &mut PointerTable,
+            __task: TaskIdentifier,
             __function: FunctionCall,
-            __argument_0: WasmUsize,
-            __argument_1: WasmUsize,
-            __argument_2: WasmUsize,
-            __argument_3: WasmUsize,
-            __argument_4: WasmUsize,
-            __argument_5: WasmUsize,
-            __argument_6: WasmUsize,
+            __argument_0: usize,
+            __argument_1: usize,
+            __argument_2: usize,
+            __argument_3: usize,
+            __argument_4: usize,
+            __argument_5: usize,
+            __argument_6: usize,
             __arguments_count: u8,
-            __result: WasmPointer,
+            __result: *mut core::ffi::c_void,
+            __custom_data: *mut core::ffi::c_void,
         ) -> Result<()>
         {
-            let __custom_data = __environment.get_or_initialize_custom_data().map_err(|_| Error::EnvironmentRetrievalFailed)?;
-            let __task = __custom_data.get_task_identifier();
-
             match __function {
                 #(
                     #functions_call
@@ -303,10 +248,52 @@ pub fn generate_code(
     .to_token_stream())
 }
 
+fn generate_enumeration_impl() -> TokenStream {
+    let pointers_offset_litteral = Literal::usize_unsuffixed(enumeration::POINTERS_OFFSET as usize);
+    let lvgl_pointers_offset_litteral =
+        Literal::usize_unsuffixed(enumeration::LVGL_POINTERS_OFFSET as usize);
+
+    quote! {
+        impl FunctionCall {
+            fn get_bit(value: u32, index: u32) -> bool {
+                // 1. Shift the bit at 'index' to the far right
+                // 2. Use AND with 1 to isolate it
+                // 3. Compare the result to 1
+                (value >> index) & 1 == 1
+            }
+
+            pub fn is_function_argument_pointer(&self, index: usize) -> bool {
+                let value = *self as u32;
+                core::assert!(index < 8);
+                Self::get_bit(value, index as u32 + #pointers_offset_litteral)
+            }
+
+            pub fn is_function_argument_lvgl_pointer(&self, index: usize) -> bool {
+                let value = *self as u32;
+                core::assert!(index < 8);
+                Self::get_bit(value, index as u32 + #lvgl_pointers_offset_litteral)
+            }
+
+            pub fn is_function_return_pointer(&self) -> bool {
+                let value = *self as u32;
+                Self::get_bit(value, #pointers_offset_litteral + 8)
+            }
+
+            pub fn is_function_return_lvgl_pointer(&self) -> bool {
+                let value = *self as u32;
+                Self::get_bit(value, #lvgl_pointers_offset_litteral + 8)
+            }
+
+        }
+    }
+}
+
 pub fn generate(output_path: &Path, context: &LvglContext) -> Result<(), String> {
     let output_file_path = output_path.join("bindings.rs");
 
     let enumerations = enumeration::generate_code(context.get_signatures());
+
+    let enumerations_impl = generate_enumeration_impl();
 
     let functions = generate_code(
         context.get_type_tree(),
@@ -316,6 +303,8 @@ pub fn generate(output_path: &Path, context: &LvglContext) -> Result<(), String>
 
     let token_stream = quote! {
         #enumerations
+
+        #enumerations_impl
 
         #functions
     };
