@@ -1,7 +1,0 @@
-[package]
-name = "host_bindings_wasm_test"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-wasm_bindings = { workspace = true }

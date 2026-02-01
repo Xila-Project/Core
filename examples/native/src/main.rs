@@ -30,7 +30,6 @@ async fn main() {
     use xila::virtual_file_system;
     use xila::virtual_file_system::File;
     use xila::virtual_file_system::mount_static;
-    use xila::virtual_machine;
 
     // - Initialize the system
     log::initialize(&drivers_std::log::Logger).unwrap();
@@ -200,9 +199,6 @@ async fn main() {
     }
 
     file.close(virtual_file_system).await.unwrap();
-
-    // Initialize the virtual machine
-    virtual_machine::initialize(&[&host_bindings::GraphicsBindings]);
 
     // Mount static executables
 

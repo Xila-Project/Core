@@ -12,7 +12,6 @@ async fn main() {
     use xila::host_bindings;
     use xila::task;
     use xila::time::Duration;
-    use xila::virtual_machine;
 
     let binary_path = build_crate("calculator").unwrap();
     let binary_buffer = fs::read(binary_path).unwrap();
@@ -20,7 +19,6 @@ async fn main() {
     let standard = testing::initialize(true, false).await.split();
 
     let task_manager = task::get_instance();
-    let virtual_machine = virtual_machine::initialize(&[&host_bindings::GraphicsBindings]);
 
     let additional_spawner = new_thread_executor().await;
 
