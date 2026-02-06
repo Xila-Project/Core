@@ -75,7 +75,7 @@ impl<'module> Instance<'module> {
         }
     }
 
-    pub fn convert_to_wasm_pointer<T>(&self, pointer: *const T) -> WasmPointer {
+    pub fn translate_to_guest_pointer<T>(&self, pointer: *const T) -> WasmPointer {
         unsafe {
             wasm_runtime_addr_native_to_app(
                 self.get_inner_reference().get_inner_instance(),
@@ -88,7 +88,7 @@ impl<'module> Instance<'module> {
     ///
     /// This function is unsafe because it is not checked that the address is valid.
     #[allow(clippy::mut_from_ref)]
-    pub unsafe fn convert_to_native_pointer<T>(&self, address: WasmPointer) -> *mut T {
+    pub unsafe fn translate_to_host_pointer<T>(&self, address: WasmPointer) -> *mut T {
         unsafe {
             wasm_runtime_addr_app_to_native(
                 self.get_inner_reference().get_inner_instance(),
@@ -97,7 +97,7 @@ impl<'module> Instance<'module> {
         }
     }
 
-    pub fn call_export_function(
+    pub fn call_exported_function(
         &self,
         name: &str,
         parameters: &Vec<WasmValue>,

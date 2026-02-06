@@ -12,9 +12,12 @@ wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git",
 ] }
 
 [features]
-default = ["host"]
+default = ["wasm32", "host", "graphics"]
+graphics = []
 host = ["dep:xila"]
 guest = []
+wasm32 = []
+wasm64 = []
 
 [build-dependencies]
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }

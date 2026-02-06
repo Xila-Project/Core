@@ -19,7 +19,7 @@ fn generate_conversion_for_output(r#return: &ReturnType) -> Result<Option<TokenS
                         quote! {
 
 
-                            let __result : *mut u16 =  translate_to_native_pointer(&__environment, __result)? ;
+                            let __result : *mut u16 =  translate_to_host_pointer(&__environment, __result)? ;
 
                             let __current_result = __translation_map.insert(
                                 __task,
@@ -29,31 +29,49 @@ fn generate_conversion_for_output(r#return: &ReturnType) -> Result<Option<TokenS
                         }
                     } else if type_string == "core :: ffi :: c_void" {
                         quote! {
-                            let __current_result =  __environment.convert_to_wasm_pointer(
+                            let __current_result =  __environment.translate_to_guest_pointer(
                                 __current_result
                             ) ;
 
-                            let __result : *mut WasmPointer =  translate_to_native_pointer(&__environment, __result)? ;
+                            let __result : *mut WasmPointer =  translate_to_host_pointer(&__environment, __result)? ;
                         }
                     } else {
                         quote! {
-                            let __current_result =  __environment.convert_to_wasm_pointer(
+                            let __current_result =  __environment.translate_to_guest_pointer(
                                 __current_result as *mut core::ffi::c_void
                             ) ;
 
-                            let __result : *mut WasmPointer =  translate_to_native_pointer(&__environment, __result)? ;
+                            let __result : *mut WasmPointer =  translate_to_host_pointer(&__environment, __result)? ;
                         }
                     }
                 }
                 syn::Type::Path(r#type) => {
                     quote! {
-                        let __result : *mut #r#type =  translate_to_native_pointer(&__environment, __result)? ;
+                        let __result : *mut #r#type =  translate_to_host_pointer(&__environment, __result)? ;
                     }
                 }
 
                 t => {
                     return Err(format!("Unsupported return type : {t:?}"));
                 }
+            };
+
+            Ok(Some(quote! {
+                #conversion
+
+                *__result = __current_result;
+            }))
+        }
+        // If the return type is not specified, we don't need to convert it
+        ReturnType::Default => Ok(None),
+    }
+}
+
+fn gen_conv_for_output(r#return: &ReturnType) -> Result<Option<TokenStream>, String> {
+    match r#return {
+        ReturnType::Type(_, r#type) => {
+            let conversion = quote! {
+                let __current_result = TranslateInto::translate_into(__current_result, __translator)?;
             };
 
             Ok(Some(quote! {
@@ -93,7 +111,7 @@ fn generate_conversion_for_argument(
                         })
                     } else {
                         Ok(quote! {
-                            let #identifier : #type_value =  translate_to_native_pointer(
+                            let #identifier : #type_value =  translate_to_host_pointer(
                                 &__environment,
                                 #argument_identifier
                             )? ;
@@ -149,6 +167,23 @@ fn generate_conversion_for_argument(
     }
 }
 
+fn gen_conv_for_arg(
+    index: usize,
+    type_tree: &TypeTree,
+    argument: &FnArg,
+) -> Result<TokenStream, String> {
+    let argument_identifier = format_ident!("__argument_{}", index);
+
+    let identifier = match argument {
+        FnArg::Typed(pattern) => &*pattern.pat,
+        _ => return Err("Unsupported argument type".to_string()),
+    };
+
+    Ok(quote! {
+        let #identifier = TranslateFrom::translate_from(#argument_identifier, __translator)?;
+    })
+}
+
 fn generate_assign(index: usize, argument: &FnArg) -> Result<TokenStream, String> {
     match argument {
         FnArg::Typed(pattern) => {
@@ -187,7 +222,7 @@ fn generate_function_call(
     let assigns = right_inputs
         .iter()
         .enumerate()
-        .map(|(i, argument)| generate_conversion_for_argument(i, type_tree, argument))
+        .map(|(i, argument)| gen_conv_for_arg(i, type_tree, argument))
         .collect::<Result<Vec<_>, _>>()?;
 
     // - Generate the order of the arguments in the function call (name, name, ...)
@@ -205,24 +240,25 @@ fn generate_function_call(
     let variant_identifier = enumeration::get_variant_identifier(&function.ident);
 
     // - Generate the return conversion if needed (let __result = __current_result;)
-    let r#return = generate_conversion_for_output(&function.output)?;
+    let r#return = gen_conv_for_output(&function.output)?;
 
     // - Generate the code for the function call (let __current_result = Function_identifier(arguments);)
     let function_call = if let Some(r#return) = &r#return {
         quote! {
-            let __current_result = unsafe { #function_identifier(#(
+            let __current_result = #function_identifier(#(
                 #call_arguments,
-            )*) };
+            )*);
+
+            let __result = __translator.translate_to_host(__result, true)?;
 
             #r#return
         }
     } else {
         quote! {
-            unsafe {
                 #function_identifier(#(
                     #call_arguments,
                 )*);
-            }
+
         }
     };
 
@@ -260,9 +296,7 @@ pub fn generate_code(
         #[allow(unused_variables)]
         #[allow(clippy::too_many_arguments)]
         pub unsafe fn call_function(
-            __environment: Environment,
-            __translation_map: TranslationMap,
-            __task: TaskIdentifier,
+            __translator: Translator,
             __function: FunctionCall,
             __argument_0: WasmUsize,
             __argument_1: WasmUsize,
@@ -276,16 +310,20 @@ pub fn generate_code(
         ) -> Result<()>
         {
             use xila::graphics::lvgl::*;
-            use crate::host::bindings::graphics::{cast::{FromUsize, ToUsize}, error::{Error, Result},
-            translate_to_native_pointer
-        };
-
-            let result = match __function {
-                #(
-                    #functions_call
-                )*
-
+            use crate::host::bindings::graphics::{
+                translate::{TranslateFrom, TranslateInto},
+                error::{Error, Result},
+                translate_to_host_pointer,
             };
+
+            unsafe {
+                let result = match __function {
+                    #(
+                        #functions_call
+                    )*
+
+                };
+            }
 
             Ok(result)
         }
@@ -308,7 +346,7 @@ pub fn generate_inner(output_path: &Path, context: &LvglContext) -> Result<(), S
         use crate::host::{
             bindings::graphics::TranslationMap,
             virtual_machine::{
-                Environment, WasmPointer, WasmUsize
+                Environment, WasmPointer, WasmUsize, Translator
             }
         };
 

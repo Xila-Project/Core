@@ -2,10 +2,10 @@ mod custom_data;
 mod environment;
 mod error;
 mod instance;
-mod manager;
 mod module;
 mod registrable;
 mod runtime;
+mod translation;
 
 // Re-export key types from WAMR
 pub use wamr_rust_sdk::value::WasmValue;
@@ -15,13 +15,20 @@ pub use custom_data::*;
 pub use environment::*;
 pub use error::*;
 pub use instance::*;
-pub use manager::*;
 pub use module::*;
 pub use registrable::*;
 pub use runtime::*;
+pub use translation::*;
 
+#[cfg(feature = "wasm32")]
 /// Type alias for WASM pointer addresses in the 32-bit WASM address space
 pub type WasmPointer = u32;
+#[cfg(feature = "wasm64")]
+pub type WasmPointer = u64;
 
+#[cfg(feature = "wasm32")]
 /// Type alias for WASM size values (32-bit)
 pub type WasmUsize = u32;
+
+#[cfg(feature = "wasm64")]
+pub type WasmUsize = u64;

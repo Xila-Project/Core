@@ -1,11 +1,7 @@
 mod additionnal;
-mod cast;
 mod error;
-mod translation_map;
+mod translate;
 
-use crate::host::bindings::graphics::{
-    translation::translate_arguments, translation_map::TranslationMap,
-};
 use crate::host::virtual_machine::{
     Environment, EnvironmentPointer, FunctionDescriptor, Registrable, WasmPointer, WasmUsize,
 };
@@ -20,14 +16,9 @@ pub use error::{Error, Result};
 pub use xila::graphics::lvgl;
 
 mod generated_bindings {
-    use super::{
-        Error, Result, TaskIdentifier,
-        cast::{FromUsize, ToUsize},
-        lvgl::*,
-    };
-
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
+
 pub struct GraphicsBindings;
 
 impl Registrable for GraphicsBindings {
@@ -45,8 +36,6 @@ impl Registrable for GraphicsBindings {
     }
 }
 
-static mut POINTER_TABLE: OnceLock<TranslationMap> = OnceLock::new();
-
 fn convert_argument_custom(
     _environment: &Environment,
     _pointer_table: &mut TranslationMap,
@@ -57,36 +46,6 @@ fn convert_argument_custom(
 ) -> Result<usize> {
     // No custom casting implemented yet
     Ok(_argument as usize)
-}
-
-fn convert_result(
-    environment: &Environment,
-    pointer_table: &mut TranslationMap,
-    task: TaskIdentifier,
-    function: generated_bindings::FunctionCall,
-    result_pointer: WasmPointer,
-) -> Result<()> {
-    if function.is_function_return_pointer() {
-        let native_pointer = unsafe {
-            environment
-                .convert_to_native_pointer(result_pointer)
-                .ok_or(Error::InvalidPointer)? as *mut c_void
-        };
-
-        if function.is_function_return_lvgl_pointer() {
-            let lvgl_pointer = native_pointer as *mut u16;
-
-            let wasm_identifier = pointer_table.get_wasm_pointer(
-                pointer_table.get_native_pointer::<c_void>(task, unsafe { *lvgl_pointer })?,
-            )?;
-
-            unsafe {
-                *lvgl_pointer = wasm_identifier;
-            }
-        }
-    }
-
-    Ok(())
 }
 
 /// Call to graphics API
@@ -116,8 +75,6 @@ unsafe fn call_inner(
 
         let _lock = block_on(instance.lock());
 
-        let pointer_table_reference = &raw mut POINTER_TABLE;
-
         let translation_map = (*pointer_table_reference).get_or_init(TranslationMap::new);
 
         let translation_map = unsafe { &mut *(translation_map as *const _ as *mut _) };
@@ -127,11 +84,7 @@ unsafe fn call_inner(
             .map_err(|_| Error::EnvironmentRetrievalFailed)?
             .get_task_identifier();
 
-        let result_pointer = environment
-            .convert_to_native_pointer(result_pointer)
-            .ok_or(Error::InvalidPointer)? as *mut c_void;
-
-        let result = generated_bindings::call_function(
+        generated_bindings::call_function(
             environment,
             translation_map,
             task,
@@ -144,14 +97,7 @@ unsafe fn call_inner(
             argument_5,
             argument_6,
             arguments_count,
-        )?;
-
-        convert_result(
-            &environment,
-            translation_map,
-            task,
-            function,
-            result_pointer as WasmPointer,
+            result_pointer,
         )?;
 
         Ok(())

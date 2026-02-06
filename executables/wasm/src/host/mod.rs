@@ -108,7 +108,7 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
                 move |task_identifier| async move {
                     let standards = standard.split();
 
-                    let result = virtual_machine::get_instance()
+                    virtual_machine::get_instance()
                         .execute(
                             buffer,
                             stack_size,

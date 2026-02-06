@@ -89,9 +89,11 @@ impl LvglContext {
 
     pub fn filter_function(signature: &Signature) -> bool {
         let unauthorized_functions = [
+            "lv_obj_delete",
             "lv_obj_get_display",
             "lv_obj_delete_delayed",
             "lv_obj_delete_async",
+            "lv_buttonmatrix_set_map",
         ];
 
         let signature_ident_str = signature.ident.to_string();

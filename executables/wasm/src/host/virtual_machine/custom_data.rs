@@ -1,18 +1,11 @@
-use xila::task::TaskIdentifier;
+use core::ffi::c_void;
+
+use xila::{shared::BijectiveBTreeMap, task::TaskIdentifier};
+
+use crate::host::virtual_machine::WasmPointer;
 
 #[derive(Debug, Clone)]
 pub struct CustomData {
-    task_identifier: TaskIdentifier,
-}
-
-impl CustomData {
-    pub const fn new(task: TaskIdentifier) -> Self {
-        Self {
-            task_identifier: task,
-        }
-    }
-
-    pub const fn get_task_identifier(&self) -> TaskIdentifier {
-        self.task_identifier
-    }
+    pub task_identifier: TaskIdentifier,
+    pub translation_map: BijectiveBTreeMap<WasmPointer, *mut c_void>,
 }

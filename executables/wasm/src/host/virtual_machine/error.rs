@@ -5,7 +5,7 @@
 
 use alloc::string::String;
 use core::{
-    fmt::Display,
+    fmt::{self, Display},
     num::{NonZeroU8, NonZeroUsize},
 };
 use wamr_rust_sdk::RuntimeError;
@@ -82,12 +82,6 @@ pub enum Error {
 
     /// Failed to transfert file identifiers
     FailedToRegisterFileContext,
-}
-
-impl Display for Error {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "{:?}", self)
-    }
 }
 
 impl Error {
