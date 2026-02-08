@@ -15,20 +15,6 @@ pub fn format_rust(file_path: impl AsRef<Path>) -> Result<(), String> {
     Ok(())
 }
 
-pub fn format_c(file_path: &Path) -> Result<(), String> {
-    Command::new("clang-format")
-        .arg("-i")
-        .arg(
-            file_path
-                .to_str()
-                .ok_or("Error converting path to string")?,
-        )
-        .status()
-        .map_err(|code| format!("Error running clang-format : {code}"))?;
-
-    Ok(())
-}
-
 pub fn snake_to_upper_camel_case(input: &str) -> String {
     input
         .split('_')

@@ -14,29 +14,6 @@ use syn::visit::Visit;
 use syn::{FnArg, Ident, ReturnType, Signature, Type};
 use target::Architecture;
 
-pub fn is_pointer(argument: &FnArg) -> bool {
-    match argument {
-        FnArg::Typed(pattern) => match &*pattern.ty {
-            syn::Type::Ptr(_) => true,
-            _ => false,
-        },
-        _ => false,
-    }
-}
-
-pub fn is_lvgl_pointer(argument: &FnArg) -> bool {
-    match argument {
-        FnArg::Typed(pattern) => match &*pattern.ty {
-            syn::Type::Ptr(type_value) => {
-                let type_string = type_value.elem.to_token_stream().to_string();
-                type_string != "lv_obj_t"
-            }
-            _ => false,
-        },
-        _ => false,
-    }
-}
-
 fn convert_type(mut ty: Type) -> Type {
     match &mut ty {
         Type::Path(path) => {

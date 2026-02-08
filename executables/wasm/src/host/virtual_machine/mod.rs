@@ -7,9 +7,6 @@ mod registrable;
 mod runtime;
 mod translation;
 
-// Re-export key types from WAMR
-pub use wamr_rust_sdk::value::WasmValue;
-
 // Re-export all public types from modules
 pub use custom_data::*;
 pub use environment::*;

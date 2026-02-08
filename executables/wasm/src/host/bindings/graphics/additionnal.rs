@@ -1,23 +1,17 @@
 use core::ffi::CStr;
 
-use alloc::vec::Vec;
 use xila::{
     graphics::{self, Color, Window, lvgl},
     log,
-    task::{self, TaskIdentifier},
+    task::{self},
 };
 
-use crate::host::virtual_machine::{Environment, Translator};
+use crate::host::virtual_machine::{Translator, WasmPointer};
 
-pub unsafe fn object_delete(
-    __translation_map: &mut Translator,
-    __task: TaskIdentifier,
-    object: u16,
-) {
-    let object = __translation_map.remove(__task, object).unwrap();
-
+pub unsafe fn object_delete(__translator: &mut Translator, object: WasmPointer) {
+    let object = __translator.remove_host_translation(object).unwrap();
     unsafe {
-        lvgl::lv_obj_delete(object);
+        lvgl::lv_obj_delete(object as *mut _);
     }
 }
 
@@ -28,11 +22,10 @@ pub unsafe fn window_create() -> *mut lvgl::lv_obj_t {
 }
 
 pub unsafe fn window_pop_event(
-    __environment: Environment,
-    __translation_map: &mut TranslationMap,
+    __translator: &mut Translator,
     window: *mut lvgl::lv_obj_t,
     code: *mut u32,
-    target: *mut u16,
+    target: *mut WasmPointer,
 ) {
     let mut window = unsafe { graphics::Window::from_raw(window) };
 
@@ -40,7 +33,9 @@ pub unsafe fn window_pop_event(
         unsafe {
             *code = event.code as u32;
 
-            *target = __translation_map.get_wasm_pointer(event.target).unwrap();
+            *target = __translator
+                .translate_to_guest(event.target, false)
+                .unwrap_or(0);
         }
     }
 
@@ -62,9 +57,9 @@ pub unsafe fn window_get_event_code(window: *mut lvgl::lv_obj_t) -> u32 {
 }
 
 pub unsafe fn window_get_event_target(
-    __translation_map: &mut TranslationMap,
+    __translator: &mut Translator,
     window: *mut lvgl::lv_obj_t,
-) -> u16 {
+) -> WasmPointer {
     let window = unsafe { graphics::Window::from_raw(window) };
 
     let target = if let Some(event) = window.peek_event() {
@@ -76,7 +71,7 @@ pub unsafe fn window_get_event_target(
 
     core::mem::forget(window);
 
-    __translation_map.get_wasm_pointer(target).unwrap()
+    unsafe { __translator.translate_to_guest(target, false).unwrap() }
 }
 
 pub unsafe fn window_next_event(window: *mut lvgl::lv_obj_t) {
@@ -88,9 +83,6 @@ pub unsafe fn window_next_event(window: *mut lvgl::lv_obj_t) {
 }
 
 pub unsafe fn window_set_icon(
-    __environment: Environment,
-    __translation_map: &mut TranslationMap,
-    __task: TaskIdentifier,
     window: *mut lvgl::lv_obj_t,
     icon_string: *const core::ffi::c_char,
     icon_color: lvgl::lv_color_t,
@@ -103,49 +95,6 @@ pub unsafe fn window_set_icon(
     window.set_icon(icon_string, icon_color);
 
     core::mem::forget(window);
-}
-
-pub unsafe fn buttonmatrix_set_map(
-    __environment: Environment,
-    __translation_map: &mut TranslationMap,
-    __task: TaskIdentifier,
-    object: u16,
-    map: *const *const i8,
-) {
-    let map_as_u32 = map as *const u32;
-
-    // First pass: count entries (include terminating empty string)
-    let mut count: usize = 0;
-    loop {
-        let raw = unsafe { *map_as_u32.add(count) };
-        let ptr: *const i8 = unsafe { translate_to_host_pointer(&__environment, raw) };
-        // increment to include this entry
-        count += 1;
-        // if this entry points to an empty string, stop counting
-        if unsafe { *ptr == 0 } {
-            break;
-        }
-    }
-
-    // Allocate with the exact capacity to avoid bumps while pushing
-    let mut v: Vec<*const i8> = Vec::with_capacity(count);
-
-    let mut i = 0;
-    while i < count {
-        let val = unsafe { *map_as_u32.add(i) };
-        let val: *const i8 = unsafe { translate_to_host_pointer(&__environment, val).unwrap() };
-        v.push(val);
-        i += 1;
-    }
-
-    let object = __translation_map
-        .get_native_pointer(__task, object)
-        .unwrap();
-    unsafe {
-        lvgl::lv_buttonmatrix_set_map(object, v.as_ptr());
-    }
-
-    core::mem::forget(v); // ! : deallocate the vector to avoid memory leaks when the button matrix map is deleted
 }
 
 pub unsafe fn percentage(value: i32) -> i32 {

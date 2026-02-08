@@ -13,15 +13,12 @@ async fn main() {
     use xila::executable::{build_crate, mount_executables};
     use xila::task;
     use xila::virtual_file_system;
-    use xila::virtual_machine;
 
-    let standard = testing::initialize(false, false).await;
+    let standard = testing::initialize(true, false).await;
 
     let virtual_file_system = virtual_file_system::get_instance();
     let task_instance = task::get_instance();
     let task = task_instance.get_current_task_identifier().await;
-
-    let _ = virtual_machine::initialize(&[]);
 
     let binary_path = build_crate(&"wasm_wasm_test").unwrap();
     load_to_virtual_file_system(virtual_file_system, binary_path, "/test_wasm.wasm")

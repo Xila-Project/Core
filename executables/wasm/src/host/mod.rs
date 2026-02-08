@@ -2,6 +2,7 @@ mod bindings;
 mod virtual_machine;
 
 use alloc::boxed::Box;
+use alloc::string::ToString;
 use alloc::{borrow::ToOwned, string::String, vec, vec::Vec};
 use core::fmt::Write;
 use core::num::NonZeroUsize;
@@ -15,7 +16,9 @@ use xila::synchronization::once_lock::OnceLock;
 use xila::task::{self, SpawnerIdentifier};
 use xila::virtual_file_system::{self, File};
 
-use crate::host::virtual_machine::Error;
+#[cfg(feature = "graphics")]
+use crate::host::bindings::graphics::GraphicsBindings;
+use crate::host::virtual_machine::{Error, Registrable};
 
 pub struct WasmExecutable;
 
@@ -23,7 +26,13 @@ type NewThreadExecutor =
     fn() -> Pin<Box<dyn core::future::Future<Output = SpawnerIdentifier> + Send>>;
 
 static NEW_THREAD_EXECUTOR: OnceLock<NewThreadExecutor> = OnceLock::new();
-
+static RUNTIME: OnceLock<virtual_machine::Runtime> = OnceLock::new();
+const REGISTRABLES: &[&dyn Registrable] = &[
+    #[cfg(feature = "graphics")]
+    &GraphicsBindings,
+];
+const START_FUNCTION_NAME: &str = "_start";
+const INSTALL_FUNCTION_NAME: &str = "__install";
 const DEFAULT_STACK_SIZE: usize = 4096;
 
 impl WasmExecutable {
@@ -91,11 +100,22 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
 
     let mut buffer = Vec::with_capacity(statistics.size as usize);
 
-    File::read_from_path(virtual_file_system, task, path, &mut buffer)
+    File::read_from_path(virtual_file_system, task, &path, &mut buffer)
         .await
         .map_err(|_| Error::FailedToReadFile)?;
 
-    let function_name = if install { Some("__install") } else { None };
+    let name = path.get_file_name().to_string();
+
+    let function_name = if install {
+        INSTALL_FUNCTION_NAME
+    } else {
+        START_FUNCTION_NAME
+    };
+
+    let runtime = RUNTIME
+        .get_or_init(|| virtual_machine::Runtime::new(REGISTRABLES.iter().copied()).unwrap());
+
+    let standard = standard.split();
 
     if let Some(new_thread_executor) = NEW_THREAD_EXECUTOR.try_get() {
         let spawner_identifier = new_thread_executor().await;
@@ -106,21 +126,17 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
                 "WASM Execution",
                 Some(spawner_identifier),
                 move |task_identifier| async move {
-                    let standards = standard.split();
-
-                    virtual_machine::get_instance()
+                    runtime
                         .execute(
+                            &name,
                             buffer,
                             stack_size,
-                            standards,
+                            standard,
                             function_name,
                             vec![],
                             task_identifier,
                         )
                         .await
-                        .map_err(Error::FailedToExecute)?;
-
-                    Ok(result)
                 },
             )
             .await
@@ -129,21 +145,19 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
             .join()
             .await?;
     } else {
-        let standards = standard.split();
-
         let task_identifier = task::get_instance().get_current_task_identifier().await;
 
-        virtual_machine::get_instance()
+        runtime
             .execute(
+                &name,
                 buffer,
                 stack_size,
-                standards,
+                standard,
                 function_name,
                 vec![],
                 task_identifier,
             )
-            .await
-            .map_err(Error::FailedToExecute)?;
+            .await?;
     }
 
     Ok(())

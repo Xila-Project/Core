@@ -3,17 +3,12 @@ mod error;
 mod translate;
 
 use crate::host::virtual_machine::{
-    Environment, EnvironmentPointer, FunctionDescriptor, Registrable, WasmPointer, WasmUsize,
+    Environment, EnvironmentPointer, FunctionDescriptor, Registrable, Translator, WasmPointer,
+    WasmUsize,
 };
-use core::ffi::c_void;
-use xila::{
-    graphics, log,
-    synchronization::once_lock::OnceLock,
-    task::{TaskIdentifier, block_on},
-};
+use xila::{graphics, log, task::block_on};
 
 pub use error::{Error, Result};
-pub use xila::graphics::lvgl;
 
 mod generated_bindings {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
@@ -25,27 +20,6 @@ impl Registrable for GraphicsBindings {
     fn get_functions(&self) -> &[FunctionDescriptor] {
         &GRAPHICS_BINDINGS_FUNCTIONS
     }
-
-    #[cfg(not(target_arch = "x86_64"))]
-    fn is_xip(&self) -> bool {
-        true
-    }
-
-    fn get_name(&self) -> &'static str {
-        "xila_graphics\0"
-    }
-}
-
-fn convert_argument_custom(
-    _environment: &Environment,
-    _pointer_table: &mut TranslationMap,
-    _task: TaskIdentifier,
-    _function: generated_bindings::FunctionCall,
-    _argument_index: usize,
-    _argument: WasmUsize,
-) -> Result<usize> {
-    // No custom casting implemented yet
-    Ok(_argument as usize)
 }
 
 /// Call to graphics API
@@ -69,25 +43,17 @@ unsafe fn call_inner(
     result_pointer: WasmPointer,
 ) -> Result<()> {
     unsafe {
-        let environment = Environment::from_raw_pointer(environment).unwrap();
-
         let instance = graphics::get_instance();
 
         let _lock = block_on(instance.lock());
 
-        let translation_map = (*pointer_table_reference).get_or_init(TranslationMap::new);
+        let environment = Environment::from_raw_pointer(environment);
 
-        let translation_map = unsafe { &mut *(translation_map as *const _ as *mut _) };
-
-        let task = environment
-            .get_or_initialize_custom_data()
-            .map_err(|_| Error::EnvironmentRetrievalFailed)?
-            .get_task_identifier();
+        let mut translation_map = Translator::from_environment(environment)
+            .map_err(|_| Error::EnvironmentRetrievalFailed)?;
 
         generated_bindings::call_function(
-            environment,
-            translation_map,
-            task,
+            &mut translation_map,
             function,
             argument_0,
             argument_1,

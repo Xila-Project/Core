@@ -20,12 +20,12 @@ impl<L: Ord + Copy, R: Ord + Copy> BijectiveBTreeMap<L, R> {
         self.to_right.insert(key, value);
     }
 
-    pub fn get_key(&self, value: &R) -> Option<L> {
-        self.to_left.get(value).cloned()
+    pub fn get_by_left(&self, key: &L) -> Option<&R> {
+        self.to_right.get(key)
     }
 
-    pub fn get_value(&self, key: &L) -> Option<R> {
-        self.to_right.get(key).cloned()
+    pub fn get_by_right(&self, value: &R) -> Option<&L> {
+        self.to_left.get(value)
     }
 
     pub fn remove_by_key(&mut self, key: &L) -> Option<R> {
@@ -44,6 +44,14 @@ impl<L: Ord + Copy, R: Ord + Copy> BijectiveBTreeMap<L, R> {
         } else {
             None
         }
+    }
+
+    pub fn get_left_keys(&self) -> impl Iterator<Item = &L> {
+        self.to_right.keys()
+    }
+
+    pub fn get_right_keys(&self) -> impl Iterator<Item = &R> {
+        self.to_left.keys()
     }
 }
 

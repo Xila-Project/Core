@@ -1,18 +1,7 @@
-use core::ffi::c_void;
-
+use crate::host::virtual_machine::{CustomData, Result, module::Module, runtime::Runtime};
 use alloc::{boxed::Box, vec, vec::Vec};
 use wamr_rust_sdk::{
-    function::Function,
-    instance,
-    sys::{
-        wasm_runtime_addr_app_to_native, wasm_runtime_addr_native_to_app,
-        wasm_runtime_get_custom_data, wasm_runtime_validate_native_addr,
-    },
-    value::WasmValue,
-};
-
-use crate::host::virtual_machine::{
-    CustomData, Error, Result, WasmPointer, module::Module, runtime::Runtime,
+    function::Function, instance, sys::wasm_runtime_get_custom_data, value::WasmValue,
 };
 
 pub struct Instance<'module> {
@@ -53,48 +42,6 @@ impl<'module> Instance<'module> {
         };
 
         Ok(instance)
-    }
-
-    pub fn validate_native_pointer<T>(&self, pointer: *const T, size: usize) -> bool {
-        unsafe {
-            wasm_runtime_validate_native_addr(
-                self.get_inner_reference().get_inner_instance(),
-                pointer as *mut c_void,
-                size as u64,
-            )
-        }
-    }
-
-    pub fn validate_wasm_pointer(&self, address: WasmPointer, size: usize) -> bool {
-        unsafe {
-            wasm_runtime_validate_native_addr(
-                self.get_inner_reference().get_inner_instance(),
-                address as *mut c_void,
-                size as u64,
-            )
-        }
-    }
-
-    pub fn translate_to_guest_pointer<T>(&self, pointer: *const T) -> WasmPointer {
-        unsafe {
-            wasm_runtime_addr_native_to_app(
-                self.get_inner_reference().get_inner_instance(),
-                pointer as *mut c_void,
-            ) as WasmPointer
-        }
-    }
-
-    /// # Safety
-    ///
-    /// This function is unsafe because it is not checked that the address is valid.
-    #[allow(clippy::mut_from_ref)]
-    pub unsafe fn translate_to_host_pointer<T>(&self, address: WasmPointer) -> *mut T {
-        unsafe {
-            wasm_runtime_addr_app_to_native(
-                self.get_inner_reference().get_inner_instance(),
-                address as u64,
-            ) as *mut T
-        }
     }
 
     pub fn call_exported_function(

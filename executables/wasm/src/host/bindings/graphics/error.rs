@@ -2,9 +2,6 @@
 pub enum Error {
     InvalidArgumentsCount,
     InvalidPointer,
-    NativePointerNotFound,
-    WasmPointerNotFound,
-    PointerTableFull,
     EnvironmentRetrievalFailed,
 }
 

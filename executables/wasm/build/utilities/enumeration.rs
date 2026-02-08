@@ -1,8 +1,6 @@
-use std::ops::{BitAnd, BitOr, Not, Shl};
-
 use proc_macro2::{Literal, TokenStream};
 use quote::{ToTokens, quote};
-use syn::{FnArg, Ident, Signature};
+use syn::{Ident, Signature};
 
 use crate::utilities::{format::snake_ident_to_upper_camel, function::get_function_identifier};
 
@@ -21,7 +19,7 @@ pub fn generate_code(signatures: Vec<Signature>) -> TokenStream {
         .enumerate()
         .map(|(i, signature)| {
             let identifier = get_variant_identifier(&signature.ident);
-            let value = Literal::usize_unsuffixed(i as usize);
+            let value = Literal::usize_unsuffixed(i);
 
             quote! { #identifier = #value }
         })
@@ -29,7 +27,8 @@ pub fn generate_code(signatures: Vec<Signature>) -> TokenStream {
 
     quote! {
         #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-        #[repr(u32)]
+        #[allow(dead_code)]
+        #[repr(u16)]
         pub enum FunctionCall {
             #(
                 #variants,

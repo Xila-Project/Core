@@ -8,10 +8,4 @@ pub struct FunctionDescriptor {
 }
 pub trait Registrable {
     fn get_functions(&self) -> &[FunctionDescriptor];
-
-    fn is_xip(&self) -> bool {
-        false
-    }
-
-    fn get_name(&self) -> &'static str;
 }

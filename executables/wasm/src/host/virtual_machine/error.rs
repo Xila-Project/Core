@@ -5,11 +5,11 @@
 
 use alloc::string::String;
 use core::{
-    fmt::{self, Display},
+    fmt::{self},
     num::{NonZeroU8, NonZeroUsize},
 };
 use wamr_rust_sdk::RuntimeError;
-use xila::{shared, task, time, virtual_file_system};
+use xila::{internationalization::translate, shared, task, time, virtual_file_system};
 
 /// Result type alias for Virtual Machine operations
 pub type Result<T> = core::result::Result<T, Error>;
@@ -130,12 +130,46 @@ impl fmt::Display for Error {
             Error::FailedToTransferStandard(e) => {
                 write!(f, translate!("Failed to transfer standard: {:?}"), e)
             }
-            Error::FailedToExecute(e) => write!(f, translate!("Failed to execute: {:?}"), e),
             Error::FailedToOpenStandardFile(e) => {
                 write!(f, translate!("Failed to open standard file: {:?}"), e)
             }
             Error::FailedToSpawnTask(e) => {
                 write!(f, translate!("Failed to spawn task: {:?}"), e)
+            }
+            Error::InvalidPointer => write!(f, translate!("Invalid pointer provided")),
+            Error::InvalidUtf8String => write!(f, translate!("Invalid UTF-8 string")),
+            Error::SliceConversionFailed(e) => {
+                write!(f, translate!("Slice conversion failed: {:?}"), e)
+            }
+            Error::NotImplemented => write!(f, translate!("Functionality not implemented")),
+            Error::InitializationFailure => {
+                write!(f, translate!("WASM runtime initialization failed"))
+            }
+            Error::CompilationError(e) => write!(f, translate!("WASM compilation error: {}"), e),
+            Error::ExecutionError(e) => write!(f, translate!("WASM execution error: {}"), e),
+            Error::FunctionNotFound => {
+                write!(f, translate!("Requested function not found in module"))
+            }
+            Error::AllocationFailure => write!(f, translate!("Memory allocation failed")),
+            Error::FailedToGetTaskInformations(e) => {
+                write!(f, translate!("Failed to get task information: {:?}"), e)
+            }
+            Error::PoisonedLock => write!(f, translate!("Mutex or lock is poisoned")),
+            Error::InvalidModule => {
+                write!(f, translate!("Invalid WASM module format or structure"))
+            }
+            Error::InternalError => write!(f, translate!("Internal runtime error")),
+            Error::InvalidThreadIdentifier => {
+                write!(f, translate!("Invalid thread identifier provided"))
+            }
+            Error::Time(e) => {
+                write!(f, translate!("Time-related error: {:?}"), e)
+            }
+            Error::FailedToRegisterFileContext => {
+                write!(f, translate!("Failed to register file context"))
+            }
+            Error::InstantiationFailure(e) => {
+                write!(f, translate!("WASM instantiation error: {}"), e)
             }
         }
     }
