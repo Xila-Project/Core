@@ -45,3 +45,57 @@ msgstr "Échec de l'ouverture du fichier standard: {:?}"
 #: error.failed_to_spawn_task
 msgid "Failed to spawn task: {:?}"
 msgstr "Échec de la création de la tâche: {:?}"
+
+msgid "Invalid pointer provided"
+msgstr "Pointeur invalide fourni"
+
+msgid "Invalid UTF-8 string"
+msgstr "Chaîne UTF-8 invalide"
+
+msgid "Slice conversion failed: {:?}"
+msgstr "Échec de la conversion de tranche: {:?}"
+
+msgid "Functionality not implemented"
+msgstr "Fonctionnalité non implémentée"
+
+msgid "WASM runtime initialization failed"
+msgstr "Échec de l'initialisation du runtime WASM"
+
+msgid "WASM compilation error: {}"
+msgstr "Erreur de compilation WASM: {}"
+
+msgid "WASM instantiation failure: {}"
+msgstr "Échec de l'instanciation WASM: {}"
+
+msgid "WASM instantiation error: {}"
+msgstr "Erreur d'instanciation WASM: {}"
+
+msgid "WASM execution error: {}"
+msgstr "Erreur d'exécution WASM: {}"
+
+msgid "Requested function not found in module"
+msgstr "Fonction demandée non trouvée dans le module"
+
+msgid "Memory allocation failed"
+msgstr "Échec de l'allocation mémoire"
+
+msgid "Failed to get task information: {:?}"
+msgstr "Échec de la récupération des informations de tâche: {:?}"
+
+msgid "Mutex or lock is poisoned"
+msgstr "Le mutex ou le verrou est empoisonné"
+
+msgid "Invalid WASM module format or structure"
+msgstr "Format ou structure de module WASM invalide"
+
+msgid "Internal runtime error"
+msgstr "Erreur interne du runtime"
+
+msgid "Invalid thread identifier provided"
+msgstr "Identifiant de thread invalide fourni"
+
+msgid "Time-related error: {:?}"
+msgstr "Erreur liée au temps: {:?}"
+
+msgid "Failed to register file context"
+msgstr "Échec de l'enregistrement du contexte de fichier"

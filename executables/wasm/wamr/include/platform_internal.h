@@ -6,7 +6,7 @@
 #ifndef _XILA_PLATFORM_INTERNAL_H
 #define _XILA_PLATFORM_INTERNAL_H
 
-#include "../../../abi/xila.h"
+#include "../../../../modules/abi/xila.h"
 
 //#include "stubs.h"
 #include <stdint.h>

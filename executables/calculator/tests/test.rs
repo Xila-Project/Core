@@ -1,52 +1,66 @@
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[xila::task::test(task_path = xila::task)]
-#[ignore]
 async fn main() {
     drivers_std::memory::instantiate_global_allocator!();
 
     extern crate alloc;
 
-    use drivers_std::executor::new_thread_executor;
-    use std::fs;
-    use xila::executable::build_crate;
-    use xila::host_bindings;
+    use drivers_std::loader::load_to_virtual_file_system;
+    use wasm::WasmExecutable;
+    use xila::executable;
+    use xila::executable::{build_crate, mount_executables};
     use xila::task;
-    use xila::time::Duration;
-    use xila::virtual_machine;
+    use xila::virtual_file_system;
 
-    let binary_path = build_crate("calculator").unwrap();
-    let binary_buffer = fs::read(binary_path).unwrap();
+    let standard = testing::initialize(true, false).await;
 
-    let standard = testing::initialize(true, false).await.split();
+    let virtual_file_system = virtual_file_system::get_instance();
+    let task_instance = task::get_instance();
+    let task = task_instance.get_current_task_identifier().await;
 
-    let task_manager = task::get_instance();
-    let virtual_machine = virtual_machine::initialize(&[&host_bindings::GraphicsBindings]);
+    let binary_path = build_crate(&"calculator").unwrap();
+    load_to_virtual_file_system(
+        virtual_file_system,
+        binary_path,
+        "/binaries/calculator.wasm",
+    )
+    .await
+    .unwrap();
 
-    let additional_spawner = new_thread_executor().await;
+    fn new_thread_executor_wrapper()
+    -> core::pin::Pin<Box<dyn Future<Output = task::SpawnerIdentifier> + Send>> {
+        use drivers_std::executor::new_thread_executor;
 
-    task_manager
-        .spawn(
-            task_manager.get_current_task_identifier().await,
-            "Runner",
-            Some(additional_spawner),
-            async move |task| {
-                virtual_machine
-                    .execute(
-                        binary_buffer.to_vec(),
-                        8 * 1024,
-                        standard,
-                        None,
-                        vec![],
-                        task,
-                    )
-                    .await
-                    .unwrap();
-            },
-        )
-        .await
-        .unwrap();
-
-    loop {
-        task::Manager::sleep(Duration::from_millis(1000)).await;
+        Box::pin(new_thread_executor())
     }
+
+    mount_executables!(
+        virtual_file_system,
+        task,
+        &[(
+            "/binaries/wasm",
+            WasmExecutable::new(Some(new_thread_executor_wrapper))
+        )]
+    )
+    .await
+    .unwrap();
+
+    let result = executable::execute(
+        "/binaries/wasm",
+        vec!["/binaries/calculator.wasm".to_string()],
+        standard,
+        None,
+    )
+    .await
+    .unwrap()
+    .join()
+    .await;
+
+    //    let result = executable::execute("/binaries/command_line_shell", vec![], standard, None)
+    //        .await
+    //        .unwrap()
+    //        .join()
+    //        .await;
+
+    assert!(result == 0);
 }

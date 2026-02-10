@@ -34,7 +34,7 @@ args = [
   "--target",
   "x86_64-unknown-linux-gnu",
   "--features",
-  "host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+  "host,abi_definitions,graphics_rendering_xrgb8888",
 ]
 
 [tasks.check-wasm]
@@ -54,7 +54,7 @@ command = "cargo"
 args = [
   "doc",
   "--features",
-  "host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+  "host,abi_definitions,graphics_rendering_xrgb8888",
   "--target",
   "x86_64-unknown-linux-gnu",
 ]
@@ -95,7 +95,7 @@ args = [
   "--target",
   "x86_64-unknown-linux-gnu",
   "--features",
-  "host,abi_definitions,virtual_machine,graphics_rendering_xrgb8888",
+  "host,abi_definitions,graphics_rendering_xrgb8888",
   "--all-targets",
   "--",
   "-D",

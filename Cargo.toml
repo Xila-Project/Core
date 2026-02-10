@@ -18,15 +18,12 @@ lto = true
 # - Always included
 internationalization = { workspace = true }
 
-# - WASM
-wasm_bindings = { workspace = true, optional = true }
 
 # - Host
 abi_context = { workspace = true, optional = true }
 abi_declarations = { workspace = true, optional = true }
 abi_definitions = { workspace = true, optional = true }
 little_fs = { workspace = true, optional = true }
-virtual_machine = { workspace = true, optional = true }
 virtual_file_system = { workspace = true, optional = true }
 graphics = { workspace = true, optional = true }
 task = { workspace = true, optional = true }
@@ -40,16 +37,11 @@ authentication = { workspace = true, optional = true }
 log = { workspace = true, optional = true }
 shared = { workspace = true, optional = true }
 synchronization = { workspace = true, optional = true }
-host_bindings = { workspace = true, optional = true }
 bootsplash = { workspace = true, optional = true }
 network = { workspace = true, optional = true }
 
 [features]
-default = []
-
-executable_building = ["executable/building"]
-
-host = [
+default = [
   "dep:abi_context",
   "dep:abi_declarations",
   "dep:abi_definitions",
@@ -71,23 +63,19 @@ host = [
   "abi_definitions",
   "dep:network",
 ]
+
+executable_building = ["executable/building"]
+host = []
 abi_definitions = ["dep:abi_definitions"]
-virtual_machine = ["dep:virtual_machine", "dep:host_bindings"]
 graphics_rendering_rgb565 = ["graphics/rendering_rgb565"]
 graphics_rendering_xrgb8888 = ["graphics/rendering_xrgb8888"]
-wasm = ["dep:wasm_bindings"]
-wasm_c_bindings = ["wasm", "wasm_bindings/c_bindings"]
 
 
 [workspace.dependencies]
-# - Modules
-wasm_bindings = { path = "modules/bindings/wasm" }
-
 abi_context = { path = "modules/abi/context" }
 abi_declarations = { path = "modules/abi/declarations" }
 abi_definitions = { path = "modules/abi/definitions" }
 little_fs = { path = "modules/little_fs" }
-virtual_machine = { path = "modules/virtual_machine" }
 virtual_file_system = { path = "modules/virtual_file_system" }
 graphics = { path = "modules/graphics" }
 time = { path = "modules/time" }
@@ -96,8 +84,6 @@ users = { path = "modules/users" }
 memory = { path = "modules/memory" }
 executable = { path = "modules/executable" }
 file_system = { path = "modules/file_system" }
-host_bindings = { path = "modules/bindings/host" }
-bindings_utilities = { path = "modules/bindings/utilities" }
 authentication = { path = "modules/authentication" }
 log = { path = "modules/log" }
 shared = { path = "modules/shared" }
@@ -153,7 +139,6 @@ embedded-io = { version = "0.7", features = ["alloc"] }
 [workspace]
 members = [
   "modules/file_system",
-  "modules/virtual_machine",
   "modules/graphics",
   "modules/task",
   "modules/users",
@@ -166,10 +151,6 @@ members = [
   "modules/virtual_file_system",
   "modules/little_fs",
   "modules/target",
-  "modules/bindings/utilities",
-  "modules/bindings/host",
-  "modules/bindings/host/tests/wasm_test",
-  "modules/bindings/wasm",
   "executables/file_manager",
   "executables/shell/command_line",
   "modules/executable",
@@ -193,7 +174,6 @@ members = [
   "drivers/shared",
   "drivers/std",
   "drivers/wasm",
-  "modules/virtual_machine/tests/wasm_test",
   "modules/internationalization",
   "modules/internationalization/macros",
   "modules/graphics/fonts_generator",

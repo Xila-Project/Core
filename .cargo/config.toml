@@ -23,7 +23,7 @@ LVGL_FONTS_DIR = { value = "modules/graphics/fonts_generator/generated_fonts", r
 
 WAMR_BUILD_PLATFORM = "XILA"
 
-WAMR_SHARED_PLATFORM_CONFIG = { value = "modules/virtual_machine/wamr/shared_platform.cmake", relative = true }
+WAMR_SHARED_PLATFORM_CONFIG = { value = "executables/wasm/wamr/shared_platform.cmake", relative = true }
 LLVM_LIB_CFG_PATH = "/usr/lib/llvm-19/cmake/"
 LITTLEFS_CONFIG = { value = "modules/little_fs/include/little_fs_config.h", relative = true }
 

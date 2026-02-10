@@ -1,10 +1,9 @@
 use core::{ffi::CStr, ptr::null_mut};
 
-use abi_context::FileIdentifier;
+use crate::host::virtual_machine::{Error, Result, runtime::Runtime};
 use alloc::vec::Vec;
 use wamr_rust_sdk::{module, sys::wasm_runtime_set_wasi_args_ex};
-
-use crate::{Error, Result, runtime::Runtime};
+use xila::{abi_context::FileIdentifier, task};
 
 pub struct Module<'runtime> {
     module: module::Module<'runtime>,
