@@ -2,7 +2,7 @@ use proc_macro2::{Literal, TokenStream};
 use quote::{ToTokens, quote};
 use syn::{Ident, Signature};
 
-use crate::{format::snake_ident_to_upper_camel, function::get_function_identifier};
+use crate::utilities::{format::snake_ident_to_upper_camel, function::get_function_identifier};
 
 pub fn get_variant_identifier(identifier: &Ident) -> Ident {
     let identifier = get_function_identifier("", identifier);
@@ -16,16 +16,18 @@ pub fn generate_code(signatures: Vec<Signature>) -> TokenStream {
 
     let variants = &signatures
         .into_iter()
-        .map(|signature| get_variant_identifier(&signature.ident))
         .enumerate()
-        .map(|(i, identifier)| {
-            let i = Literal::usize_unsuffixed(i);
-            quote! { #identifier = #i }
+        .map(|(i, signature)| {
+            let identifier = get_variant_identifier(&signature.ident);
+            let value = Literal::usize_unsuffixed(i);
+
+            quote! { #identifier = #value }
         })
         .collect::<Vec<_>>();
 
     quote! {
         #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+        #[allow(dead_code)]
         #[repr(u16)]
         pub enum FunctionCall {
             #(

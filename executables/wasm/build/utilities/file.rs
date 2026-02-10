@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::format::format_rust;
+use crate::utilities::format::format_rust;
 
 pub fn write_token_stream_to_file(
     path: impl AsRef<Path>,

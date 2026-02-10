@@ -27,22 +27,6 @@ impl LvglContext {
         self.definitions.clone()
     }
 
-    pub fn get_type_tree(&self) -> &TypeTree {
-        &self.type_tree
-    }
-
-    pub fn get_types(&self) -> &Vec<ItemType> {
-        &self.types
-    }
-
-    pub fn get_structures(&self) -> &Vec<ItemStruct> {
-        &self.structures
-    }
-
-    pub fn get_unions(&self) -> &Vec<ItemUnion> {
-        &self.unions
-    }
-
     fn contains_excluded_type(signature: &Signature) -> bool {
         signature.inputs.iter().any(|input| match input {
             syn::FnArg::Typed(pat_type) => match &*pat_type.ty {
@@ -89,14 +73,17 @@ impl LvglContext {
 
     pub fn filter_function(signature: &Signature) -> bool {
         let unauthorized_functions = [
-            "lv_obj_get_display",
             "lv_obj_delete",
+            "lv_obj_get_display",
             "lv_obj_delete_delayed",
             "lv_obj_delete_async",
-            "lv_buttonmatrix_set_map",
+            "lv_obj_null_on_delete",
+            "lv_buttonmatrix_get_map",
         ];
 
-        if unauthorized_functions.contains(&signature.ident.to_string().as_str()) {
+        let signature_ident_str = signature.ident.to_string();
+
+        if unauthorized_functions.contains(&signature_ident_str.as_str()) {
             return false;
         }
 
@@ -135,7 +122,7 @@ impl LvglContext {
 
         if !authorized_prefixes
             .iter()
-            .any(|&prefix| signature.ident.to_string().starts_with(prefix))
+            .any(|&prefix| signature_ident_str.starts_with(prefix))
         {
             return false;
         }
