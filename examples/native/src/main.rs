@@ -20,7 +20,6 @@ async fn main() {
     use xila::file_system::mbr::Mbr;
     use xila::file_system::mbr::PartitionKind;
     use xila::graphics;
-    use xila::host_bindings;
     use xila::little_fs;
     use xila::log;
     use xila::network::{self, ADD_DNS_SERVER, ADD_IP_ADDRESS, ADD_ROUTE};

@@ -17,6 +17,7 @@ host = ["dep:xila", "dep:wamr-rust-sdk"]
 guest = []
 wasm32 = []
 wasm64 = []
+default_host = ["host", "graphics", "wasm32"]
 
 [build-dependencies]
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
@@ -40,4 +41,3 @@ testing = { workspace = true }
 [[test]]
 name = "integration_test"
 path = "tests/integration_test.rs"
-features = ["host", "graphics", "wasm32"]

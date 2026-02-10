@@ -24,6 +24,7 @@ fn convert_type(mut ty: Type) -> Type {
                     "lv_obj_flag_t" => format_ident!("ObjectFlag"),
                     "lv_obj_point_transform_flag_t" => format_ident!("ObjectPointTransformFlag"),
                     "lv_result_t" => format_ident!("LvglResult"),
+                    "WasmPointer" => format_ident!("c_void"),
                     identifier => {
                         let ident = if identifier.starts_with("lv_") {
                             let ident = identifier.strip_prefix("lv_").unwrap_or(identifier);
@@ -129,7 +130,7 @@ fn generate_xila_graphics_call(signature: &Signature) -> TokenStream {
 
     quote! {
         xila_graphics_call(
-                    crate::FunctionCall::#enumeration_variant,
+                    FunctionCall::#enumeration_variant,
                     #( #passed_arguments ),*,
                     #argument_count,
                     #passed_result

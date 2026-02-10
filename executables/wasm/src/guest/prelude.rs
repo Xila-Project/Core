@@ -1,4 +1,5 @@
-use crate::FunctionCall;
+pub use crate::FunctionCall;
+pub use core::ffi::c_void;
 
 #[link(wasm_import_module = "host")]
 unsafe extern "C" {

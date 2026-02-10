@@ -1,6 +1,6 @@
 use crate::{evaluator::Evaluator, parser::Parser};
 use std::{ptr::null_mut, thread::sleep};
-use xila::bindings::{
+use wasm::{
     self, Color, EventCode, FlexFlow, Object, ObjectFlag, buttonmatrix_create,
     buttonmatrix_get_selected_button, buttonmatrix_set_map, label_create, label_set_text,
     object_add_flag, object_create, object_set_flex_flow, object_set_flex_grow, object_set_height,
@@ -117,7 +117,7 @@ const BUTTON_MAP: [*const i8; 48] = [
     c"pi".as_ptr(),
     c"e".as_ptr(),
     c"\n".as_ptr(),
-    c"".as_ptr(), // End marker
+    null_mut(), // Extra null to fill the 48-button map
 ];
 
 impl ButtonIdentifier {
@@ -144,7 +144,7 @@ pub struct Interface {
 }
 
 impl Interface {
-    pub fn new() -> bindings::Result<Self> {
+    pub fn new() -> wasm::Result<Self> {
         let window = unsafe { Self::create_window() }?;
 
         let (display, display_label) = unsafe { Self::create_display(window) }?;
@@ -162,7 +162,7 @@ impl Interface {
         })
     }
 
-    unsafe fn create_window() -> bindings::Result<*mut Object> {
+    unsafe fn create_window() -> wasm::Result<*mut Object> {
         // Create main window
         unsafe {
             let window = window_create()?;
@@ -183,7 +183,7 @@ impl Interface {
         }
     }
 
-    unsafe fn create_display(window: *mut Object) -> bindings::Result<(*mut Object, *mut Object)> {
+    unsafe fn create_display(window: *mut Object) -> wasm::Result<(*mut Object, *mut Object)> {
         unsafe {
             // Create display container using generic object create
             let display = object_create(window)?;
@@ -204,7 +204,7 @@ impl Interface {
         }
     }
 
-    unsafe fn create_button_matrix(window: *mut Object) -> bindings::Result<*mut Object> {
+    unsafe fn create_button_matrix(window: *mut Object) -> wasm::Result<*mut Object> {
         // Create button matrix for calculator
         unsafe {
             let button_matrix = buttonmatrix_create(window)?;
@@ -223,7 +223,7 @@ impl Interface {
             // Define button layout - Extended scientific calculator
 
             // Set the button map
-            buttonmatrix_set_map(button_matrix as u16, BUTTON_MAP.as_ptr())?;
+            buttonmatrix_set_map(button_matrix, BUTTON_MAP.as_ptr())?;
 
             // Optional: Make some buttons wider if needed
             // buttonmatrix_set_button_width(self.button_matrix, 31, 2); // Make "0" wider
@@ -232,7 +232,7 @@ impl Interface {
         }
     }
 
-    fn update_display(&mut self) -> bindings::Result<()> {
+    fn update_display(&mut self) -> wasm::Result<()> {
         unsafe {
             let display_text = if self.show_result {
                 self.current_expression.clone()
@@ -257,7 +257,7 @@ impl Interface {
         Ok(())
     }
 
-    unsafe fn handle_button_matrix_event(&mut self) -> bindings::Result<()> {
+    unsafe fn handle_button_matrix_event(&mut self) -> wasm::Result<()> {
         // Get the selected button ID from the button matrix
         let selected_button_id: u32 =
             unsafe { buttonmatrix_get_selected_button(self.button_matrix) }?;
@@ -269,7 +269,7 @@ impl Interface {
         Ok(())
     }
 
-    fn handle_button_press(&mut self, button: ButtonIdentifier) -> bindings::Result<()> {
+    fn handle_button_press(&mut self, button: ButtonIdentifier) -> wasm::Result<()> {
         match button {
             ButtonIdentifier::Clear => {
                 self.current_expression.clear();

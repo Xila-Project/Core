@@ -1,5 +1,5 @@
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-#[ignore]
+#[cfg(all(feature = "host", feature = "graphics"))]
 #[xila::task::test(task_path = xila::task)]
 async fn main() {
     drivers_std::memory::instantiate_global_allocator!();

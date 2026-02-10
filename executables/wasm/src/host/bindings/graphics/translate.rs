@@ -1,11 +1,11 @@
 use core::ffi::{c_char, c_void};
 use core::mem::transmute;
 
-use alloc::vec::Vec;
-use xila::graphics::lvgl::{self, lv_style_value_t};
-
 use crate::host::bindings::graphics::{Error, Result};
 use crate::host::virtual_machine::{Translator, WasmPointer, WasmUsize};
+use alloc::vec::Vec;
+use xila::graphics::lvgl::{self, lv_style_value_t};
+use xila::log;
 
 pub trait TranslateFrom {
     unsafe fn translate_from(wasm_usize: WasmUsize, translator: &mut Translator) -> Result<Self>
@@ -348,14 +348,24 @@ impl TranslateFrom for *const *const c_void {
     #[inline]
     unsafe fn translate_from(wasm_usize: WasmUsize, translator: &mut Translator) -> Result<Self> {
         unsafe {
+            log::information!("Translating array of pointers at guest address {wasm_usize:x}");
+
             let array: *mut WasmPointer = translator
                 .translate_to_host(wasm_usize as WasmPointer, true)
                 .ok_or(Error::InvalidPointer)?;
+
+            log::information!(
+                "Translating array of pointers at guest address {wasm_usize:x} (host address {array:p})"
+            );
 
             let count = (0..)
                 .map(|i| *array.add(i))
                 .take_while(|&ptr| ptr != 0)
                 .count();
+
+            log::information!(
+                "Array of pointers at guest address {wasm_usize:x} has {count} elements"
+            );
 
             let vec: Result<Vec<*const c_void>> = (0..count)
                 .map(|i| *array.add(i))
