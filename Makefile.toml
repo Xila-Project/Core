@@ -23,8 +23,12 @@ install_crate = "taplo-cli"
 command = "taplo"
 args = ["format", "${@}"]
 
+[tasks.format-json]
+command = "npx"
+args = ["prettier", "--write", "**/*.json", "${@}"]
+
 [tasks.format]
-dependencies = ["format-rust", "format-toml"]
+dependencies = ["format-rust", "format-toml", "format-json"]
 
 [tasks.check-host]
 toolchain = "stable"
