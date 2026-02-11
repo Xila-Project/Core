@@ -31,7 +31,7 @@ jobs:
           mkdir -p ./pages/host/
           cp -r ./target/x86_64-unknown-linux-gnu/doc/* ./pages/host/
 
-      - name: Build | Documentation (WASM)
+      - name: Build | Documentation (Guest)
         run: |
           cargo make doc-guest
           mkdir -p ./pages/guest/
