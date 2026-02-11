@@ -1,5 +1,6 @@
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 #[xila::task::test(task_path = xila::task)]
+#[ignore = "This test is meant to be run interactively"]
 async fn main() {
     drivers_std::memory::instantiate_global_allocator!();
 
