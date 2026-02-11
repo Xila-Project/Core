@@ -20,7 +20,6 @@ async fn main() {
     use xila::file_system::mbr::Mbr;
     use xila::file_system::mbr::PartitionKind;
     use xila::graphics;
-    use xila::host_bindings;
     use xila::little_fs;
     use xila::log;
     use xila::network::{self, ADD_DNS_SERVER, ADD_IP_ADDRESS, ADD_ROUTE};
@@ -30,7 +29,6 @@ async fn main() {
     use xila::virtual_file_system;
     use xila::virtual_file_system::File;
     use xila::virtual_file_system::mount_static;
-    use xila::virtual_machine;
 
     // - Initialize the system
     log::initialize(&drivers_std::log::Logger).unwrap();
@@ -200,9 +198,6 @@ async fn main() {
     }
 
     file.close(virtual_file_system).await.unwrap();
-
-    // Initialize the virtual machine
-    virtual_machine::initialize(&[&host_bindings::GraphicsBindings]);
 
     // Mount static executables
 

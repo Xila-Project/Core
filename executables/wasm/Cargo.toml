@@ -2,9 +2,33 @@
 name = "wasm"
 version = "0.1.0"
 edition = "2024"
+build = "build/main.rs"
 
 [dependencies]
-xila = { path = "../../", features = ["host", "virtual_machine"] }
+xila = { path = "../../", optional = true }
+wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git", features = [
+  "multi-module",
+], optional = true }
+
+[features]
+default = []
+graphics = []
+c_bindings = []
+host = ["dep:xila", "dep:wamr-rust-sdk"]
+guest = []
+wasm32 = []
+wasm64 = []
+default_host = ["host", "graphics", "wasm32"]
+default_guest = ["guest", "graphics", "c_bindings"]
+
+[build-dependencies]
+lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
+bindgen = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true, features = ["full", "visit", "extra-traits"] }
+target = { workspace = true }
+proc-macro2 = { workspace = true }
+cbindgen = { workspace = true }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
 drivers_native = { workspace = true }

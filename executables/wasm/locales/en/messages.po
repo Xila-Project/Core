@@ -45,3 +45,57 @@ msgstr "Failed to open standard file: {:?}"
 #: error.failed_to_spawn_task
 msgid "Failed to spawn task: {:?}"
 msgstr "Failed to spawn task: {:?}"
+
+msgid "Invalid pointer provided"
+msgstr "Invalid pointer provided"
+
+msgid "Invalid UTF-8 string"
+msgstr "Invalid UTF-8 string"
+
+msgid "Slice conversion failed: {:?}"
+msgstr "Slice conversion failed: {:?}"
+
+msgid "Functionality not implemented"
+msgstr "Functionality not implemented"
+
+msgid "WASM runtime initialization failed"
+msgstr "WASM runtime initialization failed"
+
+msgid "WASM compilation error: {}"
+msgstr "WASM compilation error: {}"
+
+msgid "WASM instantiation failure: {}"
+msgstr "WASM instantiation failure: {}"
+
+msgid "WASM instantiation error: {}"
+msgstr "WASM instantiation error: {}"
+
+msgid "WASM execution error: {}"
+msgstr "WASM execution error: {}"
+
+msgid "Requested function not found in module"
+msgstr "Requested function not found in module"
+
+msgid "Memory allocation failed"
+msgstr "Memory allocation failed"
+
+msgid "Failed to get task information: {:?}"
+msgstr "Failed to get task information: {:?}"
+
+msgid "Mutex or lock is poisoned"
+msgstr "Mutex or lock is poisoned"
+
+msgid "Invalid WASM module format or structure"
+msgstr "Invalid WASM module format or structure"
+
+msgid "Internal runtime error"
+msgstr "Internal runtime error"
+
+msgid "Invalid thread identifier provided"
+msgstr "Invalid thread identifier provided"
+
+msgid "Time-related error: {:?}"
+msgstr "Time-related error: {:?}"
+
+msgid "Failed to register file context"
+msgstr "Failed to register file context"
