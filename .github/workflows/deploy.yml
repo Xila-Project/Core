@@ -35,7 +35,7 @@ jobs:
         run: |
           cargo make doc-guest
           mkdir -p ./pages/guest/
-          cp -r ./target/wasm32-unknown-unknown/doc/guest/* ./pages/guest/
+          cp -r ./target/wasm32-unknown-unknown/doc/* ./pages/guest/
 
       - name: Build | WASM demonstration (en)
         working-directory: ./examples/wasm
