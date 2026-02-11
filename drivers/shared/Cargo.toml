@@ -9,7 +9,7 @@ log = { workspace = true }
 shared = { workspace = true }
 device = { workspace = true }
 
-getrandom = { version = "0.3.3" }
+getrandom = { version = "0.4.1" }
 sha2 = { version = "0.10", features = ["asm"] }
 
 [dev-dependencies]

@@ -17,7 +17,7 @@ linked_list_allocator = { workspace = true }
 console_error_panic_hook = "0.1"
 console_log = "1"
 wasm-bindgen-futures = "0.4"
-getrandom = { version = "0.3.3", features = ["wasm_js"] }
+getrandom = { version = "0.4.1", features = ["wasm_js"] }
 embassy-executor = { workspace = true, default-features = false, features = [
   "arch-wasm",
   "executor-thread",
