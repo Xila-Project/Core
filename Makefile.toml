@@ -37,6 +37,19 @@ args = [
   "host,abi_definitions,graphics_rendering_xrgb8888",
 ]
 
+[tasks.check-guest]
+toolchain = "stable"
+command = "cargo"
+args = [
+  "check",
+  "--target",
+  "wasm32-unknown-unknown",
+  "--package",
+  "wasm",
+  "--features",
+  "default_guest",
+]
+
 [tasks.doc-host]
 toolchain = "stable"
 command = "cargo"
@@ -48,16 +61,24 @@ args = [
   "x86_64-unknown-linux-gnu",
 ]
 
-[tasks.doc-wasm]
+[tasks.doc-guest]
 toolchain = "stable"
 command = "cargo"
-args = ["doc", "--features", "wasm", "--target", "wasm32-unknown-unknown"]
+args = [
+  "doc",
+  "--package",
+  "wasm",
+  "--features",
+  "default_guest",
+  "--target",
+  "wasm32-unknown-unknown",
+]
 
 [tasks.doc]
-dependencies = ["doc-host", "doc-wasm"]
+dependencies = ["doc-host", "doc-guest"]
 
 [tasks.check]
-dependencies = ["check-host"]
+dependencies = ["check-host", "check-guest"]
 
 [tasks.clippy-host]
 install_crate = "clippy"
@@ -75,8 +96,26 @@ args = [
   "warnings",
 ]
 
+[tasks.clippy-guest]
+install_crate = "clippy"
+toolchain = "stable"
+command = "cargo"
+args = [
+  "clippy",
+  "--package",
+  "wasm",
+  "--features",
+  "default_guest",
+  "--target",
+  "wasm32-unknown-unknown",
+  "--all-targets",
+  "--",
+  "-D",
+  "warnings",
+]
+
 [tasks.clippy]
-dependencies = ["clippy-host"]
+dependencies = ["clippy-host", "clippy-guest"]
 
 [tasks.lint]
 install_crate = "clippy"
