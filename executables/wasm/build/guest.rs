@@ -12,7 +12,6 @@ use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::visit::Visit;
 use syn::{FnArg, Ident, ReturnType, Signature, Type};
-use target::Architecture;
 
 fn convert_type(mut ty: Type) -> Type {
     match &mut ty {
@@ -275,6 +274,11 @@ fn generate_c_abi_functions(
         #( #generated_c_abi_functions )*
     };
 
+    println!(
+        "cargo:warning=Generating C ABI functions at path: {}",
+        path.as_ref().display()
+    );
+
     write_token_stream_to_file(path, token_stream)?;
 
     Ok(())
@@ -298,11 +302,6 @@ fn generate_c_functions_module_body(path: impl AsRef<Path>) -> Result<(), String
 }
 
 pub fn generate(output_path: &Path) {
-    // Build only for WASM32 architecture.
-    if Architecture::get() != Architecture::WASM32 {
-        return;
-    }
-
     let input = lvgl_rust_sys::_bindgen_raw_src();
     let parsed_input = syn::parse_file(input).expect("Error parsing input file");
 

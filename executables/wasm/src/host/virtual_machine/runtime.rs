@@ -58,6 +58,7 @@ impl Runtime {
     /// # Errors
     ///
     /// Returns an error if module loading, instantiation, or execution fails
+    #[allow(clippy::too_many_arguments)]
     pub async fn execute(
         &'static self,
         name: &str,
@@ -99,7 +100,7 @@ impl Runtime {
                     .ok_or(Error::FailedToRegisterFileContext)?;
 
                 let module = Module::from_buffer(
-                    &self,
+                    self,
                     buffer,
                     name,
                     standard_in,
@@ -108,7 +109,7 @@ impl Runtime {
                 )
                 .await?;
 
-                let instance = Instance::new(&self, &module, stack_size as _)?;
+                let instance = Instance::new(self, &module, stack_size as _)?;
 
                 let result = instance.call_exported_function(function_name, &function_arguments)?;
 

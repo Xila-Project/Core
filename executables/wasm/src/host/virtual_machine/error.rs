@@ -48,13 +48,13 @@ pub enum Error {
     InitializationFailure,
 
     /// WASM module compilation failed with detailed error message
-    CompilationError(String),
+    Compilation(String),
 
     /// WASM module instantiation failed with detailed error message
     InstantiationFailure(String),
 
     /// WASM function execution failed with detailed error message
-    ExecutionError(String),
+    Execution(String),
 
     /// Requested function was not found in the module
     FunctionNotFound,
@@ -72,7 +72,7 @@ pub enum Error {
     InvalidModule,
 
     /// Internal runtime error
-    InternalError,
+    Internal,
 
     /// Invalid thread identifier provided
     InvalidThreadIdentifier,
@@ -98,9 +98,9 @@ impl From<RuntimeError> for Error {
             RuntimeError::NotImplemented => Error::NotImplemented,
             RuntimeError::InitializationFailure => Error::InitializationFailure,
             RuntimeError::WasmFileFSError(_) => Error::InitializationFailure,
-            RuntimeError::CompilationError(e) => Error::CompilationError(e),
+            RuntimeError::CompilationError(e) => Error::Compilation(e),
             RuntimeError::InstantiationFailure(e) => Error::InstantiationFailure(e),
-            RuntimeError::ExecutionError(e) => Error::ExecutionError(e.message),
+            RuntimeError::ExecutionError(e) => Error::Execution(e.message),
             RuntimeError::FunctionNotFound => Error::FunctionNotFound,
         }
     }
@@ -145,8 +145,8 @@ impl fmt::Display for Error {
             Error::InitializationFailure => {
                 write!(f, translate!("WASM runtime initialization failed"))
             }
-            Error::CompilationError(e) => write!(f, translate!("WASM compilation error: {}"), e),
-            Error::ExecutionError(e) => write!(f, translate!("WASM execution error: {}"), e),
+            Error::Compilation(e) => write!(f, translate!("WASM compilation error: {}"), e),
+            Error::Execution(e) => write!(f, translate!("WASM execution error: {}"), e),
             Error::FunctionNotFound => {
                 write!(f, translate!("Requested function not found in module"))
             }
@@ -158,7 +158,7 @@ impl fmt::Display for Error {
             Error::InvalidModule => {
                 write!(f, translate!("Invalid WASM module format or structure"))
             }
-            Error::InternalError => write!(f, translate!("Internal runtime error")),
+            Error::Internal => write!(f, translate!("Internal runtime error")),
             Error::InvalidThreadIdentifier => {
                 write!(f, translate!("Invalid thread identifier provided"))
             }

@@ -17,9 +17,7 @@ impl Environment {
         unsafe { &mut *(raw_pointer as *mut Self) }
     }
 
-    pub unsafe fn get_or_initialize_custom_data<'a, 'b, T: Default>(
-        &'a mut self,
-    ) -> Result<&'b mut T> {
+    pub unsafe fn get_or_initialize_custom_data<'b, T: Default>(&mut self) -> Result<&'b mut T> {
         unsafe {
             let custom_data = wasm_runtime_get_custom_data(self.get_instance_pointer()) as *mut T;
 
@@ -53,7 +51,7 @@ impl Environment {
                 return None;
             }
 
-            if (pointer as usize) % core::mem::align_of::<T>() != 0 {
+            if !(pointer as usize).is_multiple_of(core::mem::align_of::<T>()) {
                 return None;
             }
 
