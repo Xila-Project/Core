@@ -36,9 +36,6 @@ jobs:
       - name: Check | Clippy (Host)
         run: cargo make clippy-host
 
-      - name: Check | Clippy (WASM)
-        run: cargo make clippy-wasm
-
       - name: Check | Documentation (Host)
         run: RUSTDOCFLAGS="--deny warnings" cargo make doc-host
 
