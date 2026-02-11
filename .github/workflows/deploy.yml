@@ -29,15 +29,13 @@ jobs:
         run: |
           cargo make doc-host
           mkdir -p ./pages/host/
-          cp ./documentation/index.html ./pages/host/
           cp -r ./target/x86_64-unknown-linux-gnu/doc/* ./pages/host/
 
       - name: Build | Documentation (WASM)
         run: |
-          cargo make doc-wasm
-          mkdir -p ./pages/wasm/
-          cp ./documentation/index.html ./pages/wasm
-          cp -r ./target/wasm32-unknown-unknown/doc/* ./pages/wasm/
+          cargo make doc-guest
+          mkdir -p ./pages/guest/
+          cp -r ./target/wasm32-unknown-unknown/doc/guest/* ./pages/guest/
 
       - name: Build | WASM demonstration (en)
         working-directory: ./examples/wasm
