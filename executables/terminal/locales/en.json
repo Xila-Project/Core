@@ -1,0 +1,9 @@
+{
+  "Graphics: {}": "Graphics: {}",
+  "Failed to create object": "Failed to create object",
+  "UTF-8: {}": "UTF-8: {}",
+  "Failed to mount device: {}": "Failed to mount device: {}",
+  "Failed to get task identifier: {}": "Failed to get task identifier: {}",
+  "Failed to execute: {}": "Failed to execute: {}",
+  "Resource busy": "Resource busy"
+}
