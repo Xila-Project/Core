@@ -37,17 +37,6 @@ args = [
   "host,abi_definitions,graphics_rendering_xrgb8888",
 ]
 
-[tasks.check-wasm]
-toolchain = "stable"
-command = "cargo"
-args = [
-  "check",
-  "--target",
-  "wasm32-unknown-unknown",
-  "--features",
-  "wasm,wasm_c_bindings",
-]
-
 [tasks.doc-host]
 toolchain = "stable"
 command = "cargo"
@@ -68,23 +57,7 @@ args = ["doc", "--features", "wasm", "--target", "wasm32-unknown-unknown"]
 dependencies = ["doc-host", "doc-wasm"]
 
 [tasks.check]
-dependencies = ["check-host", "check-wasm"]
-
-[tasks.clippy-wasm]
-install_crate = "clippy"
-toolchain = "stable"
-command = "cargo"
-args = [
-  "clippy",
-  "--target",
-  "wasm32-unknown-unknown",
-  "--features",
-  "wasm,wasm_c_bindings",
-  "--all-targets",
-  "--",
-  "-D",
-  "warnings",
-]
+dependencies = ["check-host"]
 
 [tasks.clippy-host]
 install_crate = "clippy"
@@ -103,7 +76,7 @@ args = [
 ]
 
 [tasks.clippy]
-dependencies = ["clippy-host", "clippy-wasm"]
+dependencies = ["clippy-host"]
 
 [tasks.lint]
 install_crate = "clippy"
