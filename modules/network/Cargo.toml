@@ -33,7 +33,7 @@ smoltcp = { workspace = true, features = [
   "socket-icmp",
   "socket-dhcpv4",
 ] }
-heapless = { version = "0.8" }
+heapless = { version = "0.9" }
 
 [dev-dependencies]
 testing = { workspace = true }
