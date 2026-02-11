@@ -13,6 +13,7 @@ wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git",
 [features]
 default = []
 graphics = []
+c_bindings = []
 host = ["dep:xila", "dep:wamr-rust-sdk"]
 guest = []
 wasm32 = []
