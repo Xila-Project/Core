@@ -1,13 +1,8 @@
-mod file;
-mod parse;
-
 use std::{collections::HashMap, fs};
 
 use once_cell::sync::Lazy;
 use proc_macro::TokenStream;
 use quote::quote;
-
-use crate::{file::filter_files, parse::PoParser};
 
 static TRANSLATION_MAP: Lazy<HashMap<String, String>> = Lazy::new(|| {
     let path = std::env::var("CARGO_MANIFEST_DIR")
@@ -20,50 +15,55 @@ static TRANSLATION_MAP: Lazy<HashMap<String, String>> = Lazy::new(|| {
 
     let path = path.canonicalize().expect("Failed to canonicalize path");
 
-    let locale_directory_path = path.join(locale.to_lowercase());
-
-    let po_files = fs::read_dir(&locale_directory_path)
-        .expect("Failed to read locale directory")
-        .filter_map(filter_files);
-
     let mut generated_items = HashMap::new();
 
-    po_files.for_each(|content| {
-        PoParser::new(&content).for_each(|res| match res {
-            Ok((msgid, msgstr)) => {
-                if !msgstr.is_empty() {
-                    generated_items.insert(msgid, msgstr);
+    // Load locale file
+    let locale_file_path = path.join(format!("{}.json", locale.to_lowercase()));
+    if locale_file_path.exists() {
+        match fs::read_to_string(&locale_file_path) {
+            Ok(content) => match serde_json::from_str::<HashMap<String, String>>(&content) {
+                Ok(translations) => {
+                    for (key, value) in translations {
+                        if !value.is_empty() {
+                            generated_items.insert(key, value);
+                        }
+                    }
                 }
-            }
+                Err(e) => {
+                    eprintln!("Error parsing JSON file {:?}: {}", locale_file_path, e);
+                }
+            },
             Err(e) => {
-                eprintln!("Error parsing PO file: {}", e);
+                eprintln!("Failed to read locale file {:?}: {}", locale_file_path, e);
             }
-        });
-    });
+        }
+    }
 
-    let fallback_directory_path = path.join(fallback.to_lowercase());
-
-    // open file
-    let po_files = fs::read_dir(&fallback_directory_path)
-        .map_err(|err| {
-            format!(
-                "Failed to read fallback locale directory {:?}: {}",
-                &fallback_directory_path, err
-            )
-        })
-        .expect("Failed to read fallback locale directory")
-        .filter_map(filter_files);
-
-    po_files.for_each(|content| {
-        PoParser::new(&content).for_each(|res| match res {
-            Ok((msgid, msgstr)) => {
-                generated_items.entry(msgid).or_insert(msgstr);
-            }
+    // Load fallback file
+    let fallback_file_path = path.join(format!("{}.json", fallback.to_lowercase()));
+    if fallback_file_path.exists() {
+        match fs::read_to_string(&fallback_file_path) {
+            Ok(content) => match serde_json::from_str::<HashMap<String, String>>(&content) {
+                Ok(translations) => {
+                    for (key, value) in translations {
+                        generated_items.entry(key).or_insert(value);
+                    }
+                }
+                Err(e) => {
+                    eprintln!(
+                        "Error parsing fallback JSON file {:?}: {}",
+                        fallback_file_path, e
+                    );
+                }
+            },
             Err(e) => {
-                eprintln!("Error parsing PO file: {}", e);
+                eprintln!(
+                    "Failed to read fallback locale file {:?}: {}",
+                    fallback_file_path, e
+                );
             }
-        });
-    });
+        }
+    }
 
     generated_items
 });

@@ -33,6 +33,9 @@ jobs:
       - name: Check | Formatting (Rust)
         run: cargo make format-rust -- --check
 
+      - name: Check | Formatting (JSON)
+        run: npx prettier --check "**/*.json"
+
       - name: Check | Clippy (Host)
         run: cargo make clippy-host
 

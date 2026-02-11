@@ -8,6 +8,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "lv_font_conv": "github:lvgl/lv_font_conv"
+    "lv_font_conv": "github:lvgl/lv_font_conv",
+    "prettier": "^3.8.1"
   }
 }

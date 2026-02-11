@@ -1,0 +1,23 @@
+{
+  "Graphics error: {}": "Graphics error: {}",
+  "Failed to create object": "Failed to create object",
+  "Failed to get child": "Failed to get child",
+  "Failed to set environment variable: {}": "Failed to set environment variable: {}",
+  "Invalid UTF-8: {}": "Invalid UTF-8: {}",
+  "Authentication failed: {}": "Authentication failed: {}",
+  "Failed to set task user: {}": "Failed to set task user: {}",
+  "Failed to deserialize shortcut: {}": "Failed to deserialize shortcut: {}",
+  "Failed to get current task identifier: {}": "Failed to get current task identifier: {}",
+  "Failed to read shortcut directory: {}": "Failed to read shortcut directory: {}",
+  "Failed to get shortcut file path": "Failed to get shortcut file path",
+  "Failed to read shortcut file: {}": "Failed to read shortcut file: {}",
+  "Failed to open standard file: {}": "Failed to open standard file: {}",
+  "Failed to execute shortcut: {}": "Failed to execute shortcut: {}",
+  "Null character in string: {}": "Null character in string: {}",
+  "Missing arguments": "Missing arguments",
+  "Failed to add shortcut: {}": "Failed to add shortcut: {}",
+  "Failed to open directory: {}": "Failed to open directory: {}",
+  "User name": "User name",
+  "Password": "Password",
+  "Login": "Login"
+}

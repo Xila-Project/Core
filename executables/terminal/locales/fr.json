@@ -1,0 +1,9 @@
+{
+  "Graphics: {}": "Graphique: {}",
+  "Failed to create object": "Échec de la création de l'objet",
+  "UTF-8: {}": "UTF-8: {}",
+  "Failed to mount device: {}": "Échec du montage du périphérique: {}",
+  "Failed to get task identifier: {}": "Échec de la récupération de l'identifiant de la tâche: {}",
+  "Failed to execute: {}": "Échec de l'exécution: {}",
+  "Resource busy": "Ressource occupée"
+}
