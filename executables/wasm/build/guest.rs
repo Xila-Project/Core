@@ -316,7 +316,11 @@ pub fn generate(output_path: &Path) {
     let enumerations_generated_path = output_path.join("enumeration.generated.rs");
     let functions_generated_path = output_path.join("functions.generated.rs");
     let c_functions_generated_path = output_path.join("c_functions.generated.rs");
-    let c_functions_module_path = crate_directory.join("src").join("c_functions.rs");
+    let c_functions_module_path = crate_directory
+        .join("src")
+        .join("guest")
+        .join("graphics")
+        .join("c_functions.rs");
     let c_header_path = output_path.join("xila_graphics.h");
 
     generate_enumeration(&enumerations_generated_path, &context).unwrap();
