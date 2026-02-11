@@ -177,11 +177,7 @@ pub fn generate_inner(output_path: &Path, context: &LvglContext) -> Result<(), S
     let functions = generate_code(context.get_signatures(), context.get_definitions())?;
 
     let token_stream = quote! {
-        use crate::host::{
-            virtual_machine::{
-                Environment, WasmPointer, WasmUsize, Translator
-            }
-        };
+        use crate::host::virtual_machine::{Translator, WasmPointer, WasmUsize};
         use crate::host::bindings::graphics::error::Result;
 
         #enumerations
