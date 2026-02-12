@@ -68,6 +68,11 @@ impl FileIdentifier {
     pub const MINIMUM_DIRECTORY: Self = Self::new_panic(Self::DIRECTORY_FLAG);
 
     pub const MAXIMUM_DIRECTORY: Self = Self::new_panic(FileIdentifierInner::MAX);
+
+    pub const MINIMUM_SOCKET: Self = Self::new_panic(Self::DIRECTORY_FLAG);
+
+    pub const MAXIMUM_SOCKET: Self = Self::new_panic(FileIdentifierInner::MAX);
+
     /// Create a new file identifier from a raw value.
     ///
     /// # Arguments

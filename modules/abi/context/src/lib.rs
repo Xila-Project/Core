@@ -9,6 +9,8 @@ pub use file::*;
 
 use alloc::{collections::btree_map::BTreeMap, vec, vec::Vec};
 use file_system::{Path, PathOwned};
+use network::TcpSocket;
+use network::UdpSocket;
 use smol_str::SmolStr;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 use task::TaskIdentifier;
@@ -30,10 +32,16 @@ struct DirectoryEntry {
 
 type FileEntry = SynchronousFile;
 
+enum SocketEntry {
+    Tcp(TcpSocket),
+    Udp(UdpSocket),
+}
+
 struct Inner {
     task: Option<TaskIdentifier>,
     directories: BTreeMap<UniqueFileIdentifier, DirectoryEntry>,
     files: BTreeMap<UniqueFileIdentifier, FileEntry>,
+    sockets: BTreeMap<UniqueFileIdentifier, SocketEntry>,
 }
 
 pub struct Context(RwLock<CriticalSectionRawMutex, Inner>);
@@ -50,6 +58,7 @@ impl Context {
             task: None,
             directories: BTreeMap::new(),
             files: BTreeMap::new(),
+            sockets: BTreeMap::new(),
         }))
     }
 
@@ -126,6 +135,18 @@ impl Context {
         )
     }
 
+    fn get_new_identifier_socket(
+        map: &BTreeMap<UniqueFileIdentifier, SocketEntry>,
+        task: TaskIdentifier,
+    ) -> Option<UniqueFileIdentifier> {
+        Self::get_new_identifier(
+            map,
+            task,
+            FileIdentifier::MINIMUM_SOCKET,
+            FileIdentifier::MAXIMUM_SOCKET,
+        )
+    }
+
     pub fn insert_file(
         &self,
         task: TaskIdentifier,
@@ -141,7 +162,7 @@ impl Context {
             }
             file_identifier
         } else {
-            Self::get_new_identifier_file(&inner.files, task).unwrap()
+            Self::get_new_identifier_file(&inner.files, task)?
         };
 
         inner.files.insert(file_identifier, file);
@@ -218,7 +239,7 @@ impl Context {
     ) -> Option<FileIdentifier> {
         let mut inner = block_on(self.0.write());
 
-        let file_identifier = Self::get_new_identifier_directory(&inner.directories, task).unwrap();
+        let file_identifier = Self::get_new_identifier_directory(&inner.directories, task)?;
 
         inner.directories.insert(
             file_identifier,
@@ -230,6 +251,31 @@ impl Context {
         );
 
         Some(file_identifier.get_file())
+    }
+
+    fn insert_socket(&self, task: TaskIdentifier, socket: SocketEntry) -> Option<FileIdentifier> {
+        let mut inner = block_on(self.0.write());
+
+        let file_identifier = Self::get_new_identifier_socket(&inner.sockets, task)?;
+
+        inner.sockets.insert(file_identifier, socket);
+
+        Some(file_identifier.get_file())
+    }
+
+    pub fn insert_tcp_socket(
+        &self,
+        task: TaskIdentifier,
+        socket: TcpSocket,
+    ) -> Option<FileIdentifier> {
+        self.insert_socket(task, SocketEntry::Tcp(socket))
+    }
+    pub fn insert_udp_socket(
+        &self,
+        task: TaskIdentifier,
+        socket: UdpSocket,
+    ) -> Option<FileIdentifier> {
+        self.insert_socket(task, SocketEntry::Udp(socket))
     }
 
     pub fn remove_directory(&self, file: FileIdentifier) -> Option<SynchronousDirectory> {

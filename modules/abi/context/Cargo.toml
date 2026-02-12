@@ -11,6 +11,7 @@ file_system = { workspace = true }
 log = { workspace = true }
 smol_str = { workspace = true }
 virtual_file_system = { workspace = true }
+network = { workspace = true }
 
 [dev-dependencies]
 drivers_core = { workspace = true }
