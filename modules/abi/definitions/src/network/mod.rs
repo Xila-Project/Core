@@ -1,3 +1,6 @@
+use core::ffi::c_char;
+
+use network::IpAddress;
 use task::block_on;
 
 use crate::XilaFileIdentifier;
@@ -30,16 +33,35 @@ pub extern "C" fn xila_network_socket_create(
             let socket = block_on(network::get_instance().new_tcp_socket(2048, 2048, None))?;
             context
                 .insert_tcp_socket(task, socket)
-                .ok_or(network::Error::Other)
+                .ok_or(network::Error::Other)?
         } else {
             let socket =
                 block_on(network::get_instance().new_udp_socket(2048, 2048, 16, 16, None))?;
-            context.insert_udp_socket(task, socket)?
+            context
+                .insert_udp_socket(task, socket)
+                .ok_or(network::Error::Other)?
         };
 
         unsafe {
             *identifier = new_identifier.into_inner();
         }
+
+        Ok(())
+    })
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn xila_network_socket_connect(
+    identifier: XilaFileIdentifier,
+    ip_address: *const c_char,
+    port: u16,
+) -> i32 {
+    into_i32(|| {
+        let context = abi_context::get_instance();
+
+        let socket = context
+            .get_tcp_socket(identifier.into())
+            .ok_or(network::Error::Other)?;
 
         Ok(())
     })

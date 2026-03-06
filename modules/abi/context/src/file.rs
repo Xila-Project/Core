@@ -45,7 +45,10 @@ impl FileIdentifier {
     /// Size in bits of the underlying identifier type.
     pub const SIZE_BITS: u8 = core::mem::size_of::<FileIdentifierInner>() as u8 * 8;
 
-    const DIRECTORY_FLAG: FileIdentifierInner = 1 << (Self::SIZE_BITS - 1);
+    const FILE_FLAG: FileIdentifierInner = 0b00 << (Self::SIZE_BITS - 2);
+    const DIRECTORY_FLAG: FileIdentifierInner = 0b01 << (Self::SIZE_BITS - 2);
+    const UDP_SOCKET_FLAG: FileIdentifierInner = 0b10 << (Self::SIZE_BITS - 2);
+    const TCP_SOCKET_FLAG: FileIdentifierInner = 0b11 << (Self::SIZE_BITS - 2);
 
     /// Standard input file identifier (traditionally 0).
     pub const STANDARD_IN: Self = Self::new_panic(1);
@@ -63,16 +66,23 @@ impl FileIdentifier {
     pub const MINIMUM_FILE: Self = Self::new_panic(4);
 
     /// Maximum possible file identifier value.
-    pub const MAXIMUM_FILE: Self = Self::new_panic(Self::DIRECTORY_FLAG - 1);
+    pub const MAXIMUM_FILE: Self =
+        Self::new_panic(Self::FILE_FLAG | (FileIdentifierInner::MAX >> 2));
 
     pub const MINIMUM_DIRECTORY: Self = Self::new_panic(Self::DIRECTORY_FLAG);
 
-    pub const MAXIMUM_DIRECTORY: Self = Self::new_panic(FileIdentifierInner::MAX);
+    pub const MAXIMUM_DIRECTORY: Self =
+        Self::new_panic(Self::DIRECTORY_FLAG | (FileIdentifierInner::MAX >> 2));
 
-    pub const MINIMUM_SOCKET: Self = Self::new_panic(Self::DIRECTORY_FLAG);
+    pub const MINIMUM_UDP_SOCKET: Self = Self::new_panic(Self::UDP_SOCKET_FLAG);
 
-    pub const MAXIMUM_SOCKET: Self = Self::new_panic(FileIdentifierInner::MAX);
+    pub const MAXIMUM_UDP_SOCKET: Self =
+        Self::new_panic(Self::UDP_SOCKET_FLAG | (FileIdentifierInner::MAX >> 2));
 
+    pub const MINIMUM_TCP_SOCKET: Self = Self::new_panic(Self::TCP_SOCKET_FLAG);
+
+    pub const MAXIMUM_TCP_SOCKET: Self =
+        Self::new_panic(Self::TCP_SOCKET_FLAG | (FileIdentifierInner::MAX >> 2));
     /// Create a new file identifier from a raw value.
     ///
     /// # Arguments
@@ -105,6 +115,14 @@ impl FileIdentifier {
 
     pub const fn is_directory(self) -> bool {
         (self.0.get() & Self::DIRECTORY_FLAG) != 0
+    }
+
+    pub const fn is_tcp_socket(self) -> bool {
+        (self.0.get() & Self::TCP_SOCKET_FLAG) != 0
+    }
+
+    pub const fn is_udp_socket(self) -> bool {
+        (self.0.get() & Self::UDP_SOCKET_FLAG) != 0
     }
 }
 
