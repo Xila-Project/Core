@@ -154,6 +154,7 @@ members = [
   "executables/file_manager",
   "executables/shell/command_line",
   "modules/executable",
+  "modules/executable/macros",
   "executables/wasm",
   "executables/wasm/tests/wasm_test",
   "executables/shell/graphical",
