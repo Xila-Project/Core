@@ -15,7 +15,7 @@ use crate::{XilaFileSystemState, XilaTime, file_system::into_position};
 
 use super::{
     XilaFileIdentifier, XilaFileSystemMode, XilaFileSystemOpen, XilaFileSystemResult,
-    XilaFileSystemSize, XilaFileSystemStatistics, XilaFileSystemStatus, XilaFileSystemWhence,
+    XilaFileSystemSize, XilaFileSystemStatistics, XilaFileSystemWhence,
 };
 
 use abi_context::{self as context, FileIdentifier};
