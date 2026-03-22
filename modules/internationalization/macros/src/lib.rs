@@ -4,21 +4,29 @@ use once_cell::sync::Lazy;
 use proc_macro::TokenStream;
 use quote::quote;
 
-static TRANSLATION_MAP: Lazy<HashMap<String, String>> = Lazy::new(|| {
+static TRANSLATION_PATH: Lazy<std::path::PathBuf> = Lazy::new(|| {
     let path = std::env::var("CARGO_MANIFEST_DIR")
         .map(std::path::PathBuf::from)
         .expect("CARGO_MANIFEST_DIR is not set");
-    let path = path.join("locales");
+    path.join("locales")
+        .canonicalize()
+        .expect("Failed to canonicalize path")
+});
 
-    let locale = std::env::var("INTERNATIONALIZATION_LOCALE").unwrap_or("en".to_string());
-    let fallback = std::env::var("INTERNATIONALIZATION_FALLBACK").unwrap_or("en".to_string());
+static LOCALE: Lazy<String> =
+    Lazy::new(|| std::env::var("INTERNATIONALIZATION_LOCALE").unwrap_or_else(|_| "en".to_string()));
 
-    let path = path.canonicalize().expect("Failed to canonicalize path");
+static FALLBACK_LOCALE: Lazy<String> = Lazy::new(|| {
+    std::env::var("INTERNATIONALIZATION_FALLBACK").unwrap_or_else(|_| "en".to_string())
+});
 
+static TRANSLATION_MAP: Lazy<HashMap<String, String>> = Lazy::new(|| {
     let mut generated_items = HashMap::new();
 
     // Load locale file
-    let locale_file_path = path.join(format!("{}.json", locale.to_lowercase()));
+    let locale_file_path = TRANSLATION_PATH
+        .clone()
+        .join(format!("{}.json", LOCALE.to_lowercase()));
     if locale_file_path.exists() {
         match fs::read_to_string(&locale_file_path) {
             Ok(content) => match serde_json::from_str::<HashMap<String, String>>(&content) {
@@ -40,7 +48,9 @@ static TRANSLATION_MAP: Lazy<HashMap<String, String>> = Lazy::new(|| {
     }
 
     // Load fallback file
-    let fallback_file_path = path.join(format!("{}.json", fallback.to_lowercase()));
+    let fallback_file_path = TRANSLATION_PATH
+        .clone()
+        .join(format!("{}.json", FALLBACK_LOCALE.to_lowercase()));
     if fallback_file_path.exists() {
         match fs::read_to_string(&fallback_file_path) {
             Ok(content) => match serde_json::from_str::<HashMap<String, String>>(&content) {
@@ -81,10 +91,13 @@ pub fn translate(input: TokenStream) -> TokenStream {
 
     let identifier = identifier.strip_suffix("\"").unwrap_or(identifier);
 
-    let value = TRANSLATION_MAP
-        .get(identifier)
-        .cloned()
-        .unwrap_or_else(|| panic!("Translation for '{}' not found", identifier));
+    let value = TRANSLATION_MAP.get(identifier).cloned().unwrap_or_else(|| {
+        panic!(
+            "Translation for '{}' not found in locale or fallback (path: {:?})",
+            identifier,
+            TRANSLATION_PATH.clone()
+        )
+    });
 
     let value = if c {
         let c_string_value = syn::LitCStr::new(
