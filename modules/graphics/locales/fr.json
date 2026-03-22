@@ -1,0 +1,13 @@
+{
+  "Invalid reference": "Référence invalide",
+  "Already initialized": "Déjà initialisé",
+  "Not initialized": "Non initialisé",
+  "Out of memory": "Pas assez de mémoire",
+  "Already in use": "Déjà utilisé",
+  "Failed to register": "Impossible d'enregistrer",
+  "Failed to get resolution": "Impossible d'obtenir la résolution",
+  "Not registered": "Non enregistré",
+  "Not available": "Non disponible",
+  "Failed to create object": "Impossible de créer l'objet",
+  "Invalid window identifier": "Identifiant de fenêtre invalide"
+}

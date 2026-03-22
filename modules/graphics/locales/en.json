@@ -1,0 +1,13 @@
+{
+  "Invalid reference": "Invalid reference",
+  "Already initialized": "Already initialized",
+  "Not initialized": "Not initialized",
+  "Out of memory": "Out of memory",
+  "Already in use": "Already in use",
+  "Failed to register": "Failed to register",
+  "Failed to get resolution": "Failed to get resolution",
+  "Not registered": "Not registered",
+  "Not available": "Not available",
+  "Failed to create object": "Failed to create object",
+  "Invalid window identifier": "Invalid window identifier"
+}
