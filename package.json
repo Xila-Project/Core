@@ -4,11 +4,20 @@
   "description": "<h1 align=\"center\">Xila core</h1>",
   "main": "index.js",
   "directories": {},
-  "scripts": {},
+  "scripts": {
+    "tolgee:push": "tolgee push",
+    "tolgee:pull": "tolgee pull",
+    "format": "prettier --write ."
+  },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "glob": "^13.0.6",
     "lv_font_conv": "github:lvgl/lv_font_conv",
-    "prettier": "^3.8.1"
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@tolgee/cli": "^2.16.1"
   }
 }
