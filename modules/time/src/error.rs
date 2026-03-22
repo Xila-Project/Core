@@ -1,4 +1,5 @@
 use core::fmt::Display;
+use internationalization::translate;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Error {
@@ -10,9 +11,11 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Error::NotInitialized => write!(f, "Time module not initialized"),
-            Error::AlreadyInitialized => write!(f, "Time module already initialized"),
-            Error::DeviceError(e) => write!(f, "Device error: {}", e),
+            Error::NotInitialized => write!(f, translate!("Time module not initialized")),
+            Error::AlreadyInitialized => {
+                write!(f, translate!("Time module already initialized"))
+            }
+            Error::DeviceError(e) => write!(f, translate!("Device error: {}"), e),
         }
     }
 }

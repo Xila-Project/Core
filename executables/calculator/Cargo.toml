@@ -3,6 +3,9 @@ name = "calculator"
 version = "0.1.0"
 edition = "2024"
 
+[dependencies]
+internationalization = { workspace = true }
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm = { workspace = true, features = ["guest", "graphics"] }
 

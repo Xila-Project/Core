@@ -2,6 +2,7 @@ use core::{fmt::Debug, mem::forget};
 
 use crate::{Error, ItemStatic, Result, VirtualFileSystem};
 use alloc::{vec, vec::Vec};
+use exported_file_system::StateFlags;
 use exported_file_system::{ControlCommand, Permissions};
 use file_system::{
     AccessFlags, AttributeFlags, Attributes, Context, Flags, Path, Position, Size, Statistics,
@@ -247,6 +248,10 @@ impl SynchronousFile {
 
     pub fn get_access(&self) -> Result<AccessFlags> {
         Ok(self.flags.get_access())
+    }
+
+    pub fn get_state(&self) -> Result<StateFlags> {
+        Ok(self.flags.get_state())
     }
 
     pub fn close_internal(&mut self, virtual_file_system: &VirtualFileSystem) -> crate::Result<()> {

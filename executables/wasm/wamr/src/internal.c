@@ -98,37 +98,37 @@ XilaFileSystemOpen into_xila_open(__wasi_oflags_t wasi_open) {
   return open;
 }
 
-XilaFileSystemStatus into_xila_status(__wasi_fdflags_t wasi_status) {
-  XilaFileSystemStatus status = 0;
+XilaFileSystemState into_xila_state(__wasi_fdflags_t wasi_status) {
+  XilaFileSystemState status = 0;
 
   if (wasi_status & __WASI_FDFLAG_APPEND)
-    status |= XILA_FILE_SYSTEM_STATUS_APPEND_MASK;
+    status |= XILA_FILE_SYSTEM_STATE_APPEND_MASK;
 
   if (wasi_status & __WASI_FDFLAG_SYNC)
-    status |= XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_MASK;
+    status |= XILA_FILE_SYSTEM_STATE_SYNCHRONOUS_MASK;
 
   if (wasi_status & __WASI_FDFLAG_DSYNC)
-    status |= XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_DATA_ONLY_MASK;
+    status |= XILA_FILE_SYSTEM_STATE_SYNCHRONOUS_DATA_ONLY_MASK;
 
   if (wasi_status & __WASI_FDFLAG_NONBLOCK)
-    status |= XILA_FILE_SYSTEM_STATUS_NON_BLOCKING_MASK;
+    status |= XILA_FILE_SYSTEM_STATE_NON_BLOCKING_MASK;
 
   return status;
 }
 
-__wasi_fdflags_t into_wasi_status(XilaFileSystemStatus status) {
+__wasi_fdflags_t into_wasi_state(XilaFileSystemState status) {
   __wasi_fdflags_t wasi_status = 0;
 
-  if (status & XILA_FILE_SYSTEM_STATUS_APPEND_MASK)
+  if (status & XILA_FILE_SYSTEM_STATE_APPEND_MASK)
     wasi_status |= __WASI_FDFLAG_APPEND;
 
-  if (status & XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_MASK)
+  if (status & XILA_FILE_SYSTEM_STATE_SYNCHRONOUS_MASK)
     wasi_status |= __WASI_FDFLAG_SYNC;
 
-  if (status & XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_DATA_ONLY_MASK)
+  if (status & XILA_FILE_SYSTEM_STATE_SYNCHRONOUS_DATA_ONLY_MASK)
     wasi_status |= __WASI_FDFLAG_DSYNC;
 
-  if (status & XILA_FILE_SYSTEM_STATUS_NON_BLOCKING_MASK)
+  if (status & XILA_FILE_SYSTEM_STATE_NON_BLOCKING_MASK)
     wasi_status |= __WASI_FDFLAG_NONBLOCK;
 
   return wasi_status;

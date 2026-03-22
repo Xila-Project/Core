@@ -1,4 +1,5 @@
 use core::fmt::Display;
+use internationalization::translate;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -21,17 +22,17 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         let string = match self {
-            Error::InvalidReference => "Invalid reference",
-            Error::AlreadyInitialized => "Already initialized",
-            Error::NotInitialized => "Not initialized",
-            Error::OutOfMemory => "Out of memory",
-            Error::AlreadyInUse => "Already in use",
-            Error::FailedToRegister => "Failed to register",
-            Error::FailedToGetResolution => "Failed to get resolution",
-            Error::NotRegistered => "Not registered",
-            Error::NotAvailable => "Not available",
-            Error::FailedToCreateObject => "Failed to create object",
-            Error::InvalidWindowIdentifier => "Invalid window identifier",
+            Error::InvalidReference => translate!("Invalid reference"),
+            Error::AlreadyInitialized => translate!("Already initialized"),
+            Error::NotInitialized => translate!("Not initialized"),
+            Error::OutOfMemory => translate!("Out of memory"),
+            Error::AlreadyInUse => translate!("Already in use"),
+            Error::FailedToRegister => translate!("Failed to register"),
+            Error::FailedToGetResolution => translate!("Failed to get resolution"),
+            Error::NotRegistered => translate!("Not registered"),
+            Error::NotAvailable => translate!("Not available"),
+            Error::FailedToCreateObject => translate!("Failed to create object"),
+            Error::InvalidWindowIdentifier => translate!("Invalid window identifier"),
         };
 
         write!(formatter, "{string}")

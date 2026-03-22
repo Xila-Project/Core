@@ -1,0 +1,7 @@
+{
+  "Invalid pointer": "Invalid pointer",
+  "Invalid length": "Invalid length",
+  "Invalid UTF-8 string": "Invalid UTF-8 string",
+  "Buffer too small": "Buffer too small",
+  "Failed to convert length": "Failed to convert length"
+}

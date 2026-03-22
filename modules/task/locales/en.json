@@ -1,0 +1,16 @@
+{
+  "InvalidTaskIdentifier": "Invalid task identifier",
+  "InvalidSpawnerIdentifier": "Invalid spawner identifier",
+  "ThreadNotRegistered": "Thread not registered",
+  "ThreadAlreadyRegistered": "Thread already registered",
+  "FailedToCreateThread": "Failed to create thread",
+  "NoThreadForTask": "No thread for task",
+  "FailedToSpawnThread": "Failed to spawn thread",
+  "InvalidEnvironmentVariable": "Invalid environment variable",
+  "TooManyTasks": "Too many tasks",
+  "TooManySpawners": "Too many spawners",
+  "AlreadyInitialized": "Already initialized",
+  "AlreadySet": "Already set",
+  "NotInitialized": "Not initialized",
+  "NoSpawnerAvailable": "No spawner available"
+}

@@ -1,0 +1,16 @@
+{
+  "InvalidTaskIdentifier": "Identifiant de tâche invalide",
+  "InvalidSpawnerIdentifier": "Identifiant de producteur invalide",
+  "ThreadNotRegistered": "Thread non enregistré",
+  "ThreadAlreadyRegistered": "Thread déjà enregistré",
+  "FailedToCreateThread": "Impossible de créer le thread",
+  "NoThreadForTask": "Aucun thread pour la tâche",
+  "FailedToSpawnThread": "Impossible de générer le thread",
+  "InvalidEnvironmentVariable": "Variable d'environnement invalide",
+  "TooManyTasks": "Trop de tâches",
+  "TooManySpawners": "Trop de producteurs",
+  "AlreadyInitialized": "Déjà initialisé",
+  "AlreadySet": "Déjà défini",
+  "NotInitialized": "Non initialisé",
+  "NoSpawnerAvailable": "Aucun producteur disponible"
+}

@@ -12,6 +12,7 @@ users = { workspace = true }
 log = { workspace = true }
 virtual_file_system = { workspace = true }
 shared = { workspace = true }
+internationalization = { workspace = true }
 
 embedded-io-async = { workspace = true }
 embassy-time = { workspace = true }

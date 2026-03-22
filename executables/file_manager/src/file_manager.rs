@@ -6,6 +6,7 @@ pub(crate) use alloc::{
     vec::Vec,
 };
 use core::ptr::null_mut;
+use xila::internationalization::translate;
 use xila::log;
 use xila::task;
 use xila::virtual_file_system::{Directory, get_instance};
@@ -90,7 +91,7 @@ impl FileManager {
         graphics::lock!({
             while let Some(event) = self.window.pop_event() {
                 if let Err(e) = self.handle_event(event).await {
-                    log::error!("Error handling file manager event: {:?}", e);
+                    log::error!(translate!("Error handling file manager event: {:?}"), e);
                 }
             }
         });
@@ -391,7 +392,7 @@ impl FileManager {
                     if let Ok(path_str) = text_cstr.to_str() {
                         // Try to create a path from the entered string
                         let new_path = PathOwned::new(path_str.to_string()).unwrap_or_else(|| {
-                            log::error!("Invalid path entered: {path_str}");
+                            log::error!(translate!("Invalid path entered: {}"), path_str);
                             self.current_path.clone()
                         });
 

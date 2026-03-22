@@ -18,3 +18,4 @@ file_system = { workspace = true }
 device = { workspace = true }
 
 miniserde = { workspace = true }
+internationalization = { workspace = true }

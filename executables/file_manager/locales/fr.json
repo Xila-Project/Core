@@ -1,0 +1,4 @@
+{
+  "Error handling file manager event: {:?}": "Erreur lors du traitement de l'evenement du gestionnaire de fichiers : {:?}",
+  "Invalid path entered: {}": "Chemin invalide saisi : {}"
+}

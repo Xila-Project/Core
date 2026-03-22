@@ -26,7 +26,8 @@ WAMR_BUILD_PLATFORM = "XILA"
 WAMR_SHARED_PLATFORM_CONFIG = { value = "executables/wasm/wamr/shared_platform.cmake", relative = true }
 LLVM_LIB_CFG_PATH = "/usr/lib/llvm-19/cmake/"
 LITTLEFS_CONFIG = { value = "modules/little_fs/include/little_fs_config.h", relative = true }
-
+INTERNATIONALIZATION_LOCALE = "en"
+INTERNATIONALIZATION_FALLBACK = "en"
 
 [target.wasm32-unknown-unknown]
 rustflags = ['--cfg', 'getrandom_backend="wasm_js"']

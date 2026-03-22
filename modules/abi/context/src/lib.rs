@@ -5,6 +5,8 @@ extern crate alloc;
 mod file;
 mod unique_file;
 
+use core::fmt::Debug;
+
 pub use file::*;
 
 use alloc::{collections::btree_map::BTreeMap, vec, vec::Vec};
@@ -313,6 +315,17 @@ impl Context {
         let result = function().await;
         self.clear_task().await;
         result
+    }
+}
+
+impl Debug for Context {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let inner = block_on(self.0.read());
+        f.debug_struct("Context")
+            .field("task", &inner.task)
+            .field("directories", &inner.directories.keys())
+            .field("files", &inner.files.keys())
+            .finish()
     }
 }
 

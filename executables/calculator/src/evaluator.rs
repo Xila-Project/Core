@@ -1,5 +1,6 @@
 use crate::parser::{BinaryOperator, Expression, UnaryOperator};
 use crate::token::FunctionToken;
+use internationalization::translate;
 
 pub struct Evaluator;
 
@@ -17,7 +18,7 @@ impl Evaluator {
                     BinaryOperator::Multiply => Ok(left_val * right_val),
                     BinaryOperator::Divide => {
                         if right_val == 0.0 {
-                            Err("Division by zero".to_string())
+                            Err(translate!("Division by zero").to_string())
                         } else {
                             Ok(left_val / right_val)
                         }
@@ -25,7 +26,7 @@ impl Evaluator {
                     BinaryOperator::Power => Ok(left_val.powf(right_val)),
                     BinaryOperator::Modulo => {
                         if right_val == 0.0 {
-                            Err("Modulo by zero".to_string())
+                            Err(translate!("Modulo by zero").to_string())
                         } else {
                             Ok(left_val % right_val)
                         }
@@ -50,7 +51,7 @@ impl Evaluator {
                 match function {
                     FunctionToken::SquareRoot => {
                         if arg_val < 0.0 {
-                            Err("Square root of negative number".to_string())
+                            Err(translate!("Square root of negative number").to_string())
                         } else {
                             Ok(arg_val.sqrt())
                         }
@@ -66,14 +67,14 @@ impl Evaluator {
                     FunctionToken::HyperbolicTangent => Ok(arg_val.tanh()),
                     FunctionToken::Logarithm => {
                         if arg_val <= 0.0 {
-                            Err("Logarithm of non-positive number".to_string())
+                            Err(translate!("Logarithm of non-positive number").to_string())
                         } else {
                             Ok(arg_val.log10())
                         }
                     }
                     FunctionToken::NaturalLogarithm => {
                         if arg_val <= 0.0 {
-                            Err("Natural logarithm of non-positive number".to_string())
+                            Err(translate!("Natural logarithm of non-positive number").to_string())
                         } else {
                             Ok(arg_val.ln())
                         }
@@ -85,9 +86,9 @@ impl Evaluator {
                     FunctionToken::Power10 => Ok(10.0_f64.powf(arg_val)),
                     FunctionToken::Factorial => {
                         if arg_val < 0.0 || arg_val.fract() != 0.0 {
-                            Err("Factorial requires non-negative integer".to_string())
+                            Err(translate!("Factorial requires non-negative integer").to_string())
                         } else if arg_val > 170.0 {
-                            Err("Factorial too large".to_string())
+                            Err(translate!("Factorial too large").to_string())
                         } else {
                             let n = arg_val as u64;
                             let mut result = 1.0;
@@ -99,7 +100,7 @@ impl Evaluator {
                     }
                     FunctionToken::Inverse => {
                         if arg_val == 0.0 {
-                            Err("Division by zero".to_string())
+                            Err(translate!("Division by zero").to_string())
                         } else {
                             Ok(1.0 / arg_val)
                         }

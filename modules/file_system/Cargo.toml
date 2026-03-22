@@ -8,6 +8,7 @@ task = { workspace = true }
 users = { workspace = true }
 shared = { workspace = true }
 synchronization = { workspace = true }
+internationalization = { workspace = true }
 
 embedded-io-async = { workspace = true }
 

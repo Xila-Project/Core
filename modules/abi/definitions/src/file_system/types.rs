@@ -72,16 +72,16 @@ pub static XILA_FILE_SYSTEM_OPEN_CREATE_MASK: u8 = CreateFlags::Create.bits();
 pub static XILA_FILE_SYSTEM_OPEN_CREATE_ONLY_MASK: u8 = CreateFlags::Exclusive.bits();
 #[unsafe(no_mangle)]
 pub static XILA_FILE_SYSTEM_OPEN_TRUNCATE_MASK: u8 = CreateFlags::Truncate.bits();
-pub type XilaFileSystemStatus = u8;
+pub type XilaFileSystemState = u8;
 
 #[unsafe(no_mangle)]
-pub static XILA_FILE_SYSTEM_STATUS_APPEND_MASK: u8 = StateFlags::Append.bits();
+pub static XILA_FILE_SYSTEM_STATE_APPEND_MASK: u8 = StateFlags::Append.bits();
 #[unsafe(no_mangle)]
-pub static XILA_FILE_SYSTEM_STATUS_NON_BLOCKING_MASK: u8 = StateFlags::NonBlocking.bits();
+pub static XILA_FILE_SYSTEM_STATE_NON_BLOCKING_MASK: u8 = StateFlags::NonBlocking.bits();
 #[unsafe(no_mangle)]
-pub static XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_MASK: u8 = StateFlags::Synchronous.bits();
+pub static XILA_FILE_SYSTEM_STATE_SYNCHRONOUS_MASK: u8 = StateFlags::Synchronous.bits();
 #[unsafe(no_mangle)]
-pub static XILA_FILE_SYSTEM_STATUS_SYNCHRONOUS_DATA_ONLY_MASK: u8 =
+pub static XILA_FILE_SYSTEM_STATE_SYNCHRONOUS_DATA_ONLY_MASK: u8 =
     StateFlags::SynchronousDataOnly.bits();
 
 pub type XilaFileSystemInode = u64;

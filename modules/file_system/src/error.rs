@@ -4,6 +4,7 @@
 //! along with conversion traits and display implementations for comprehensive error reporting.
 
 use core::{fmt::Display, num::NonZeroU32};
+use internationalization::translate;
 
 /// Standard result type for file system operations.
 ///
@@ -182,49 +183,53 @@ impl From<Error> for NonZeroU32 {
 impl Display for Error {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         let string = match self {
-            Error::FailedToInitializeFileSystem => "Failed to initialize file system",
-            Error::PermissionDenied => "Permission denied",
-            Error::NotFound => "Not found",
-            Error::AlreadyExists => "Already exists",
-            Error::DirectoryAlreadyExists => "Directory already exists",
-            Error::FileSystemFull => "File system full",
-            Error::FileSystemError => "File system error",
-            Error::InvalidPath => "Invalid path",
-            Error::InvalidFile => "Invalid file",
-            Error::InvalidDirectory => "Invalid directory",
-            Error::InvalidSymbolicLink => "Invalid symbolic link",
-            Error::Unknown => "Unknown",
-            Error::InvalidIdentifier => "Invalid identifier",
-            Error::FailedToGetTaskInformations => "Failed to get task informations",
-            Error::FailedToGetUsersInformations => "Failed to get users informations",
-            Error::TooManyMountedFileSystems => "Too many mounted file systems",
-            Error::TooManyOpenFiles => "Too many open files",
-            Error::InternalError => "Internal error",
-            Error::InvalidMode => "Invalid mode",
-            Error::UnsupportedOperation => "Unsupported operation",
-            Error::RessourceBusy => "Ressource busy",
-            Error::AlreadyInitialized => "Already initialized",
-            Error::NotInitialized => "Not initialized",
-            Error::FailedToGetUsersManagerInstance => "Failed to get users manager instance",
-            Error::FailedToGetTaskManagerInstance => "Failed to get task manager instance",
-            Error::InvalidParameter => "Invalid parameter",
-            Error::InvalidFlags => "Invalid flags",
-            Error::NotDirectory => "Not directory",
-            Error::IsDirectory => "Is directory",
-            Error::InputOutput => "Input output",
-            Error::DirectoryNotEmpty => "Directory not empty",
-            Error::FileTooLarge => "File too large",
-            Error::NoAttribute => "No attribute",
-            Error::NameTooLong => "Name too long",
-            Error::Corrupted => "Corrupted",
-            Error::NoMemory => "No memory",
-            Error::NoSpaceLeft => "No space left",
-            Error::TimeError => "Time error",
-            Error::InvalidInode => "Invalid inode",
-            Error::NotMounted => "Not mounted",
-            Error::AlreadyMounted => "Already mounted",
-            Error::InvalidContext => "Invalid context",
-            Error::Other => "Other",
+            Error::FailedToInitializeFileSystem => translate!("Failed to initialize file system"),
+            Error::PermissionDenied => translate!("Permission denied"),
+            Error::NotFound => translate!("Not found"),
+            Error::AlreadyExists => translate!("Already exists"),
+            Error::DirectoryAlreadyExists => translate!("Directory already exists"),
+            Error::FileSystemFull => translate!("File system full"),
+            Error::FileSystemError => translate!("File system error"),
+            Error::InvalidPath => translate!("Invalid path"),
+            Error::InvalidFile => translate!("Invalid file"),
+            Error::InvalidDirectory => translate!("Invalid directory"),
+            Error::InvalidSymbolicLink => translate!("Invalid symbolic link"),
+            Error::Unknown => translate!("Unknown"),
+            Error::InvalidIdentifier => translate!("Invalid identifier"),
+            Error::FailedToGetTaskInformations => translate!("Failed to get task informations"),
+            Error::FailedToGetUsersInformations => translate!("Failed to get users informations"),
+            Error::TooManyMountedFileSystems => translate!("Too many mounted file systems"),
+            Error::TooManyOpenFiles => translate!("Too many open files"),
+            Error::InternalError => translate!("Internal error"),
+            Error::InvalidMode => translate!("Invalid mode"),
+            Error::UnsupportedOperation => translate!("Unsupported operation"),
+            Error::RessourceBusy => translate!("Ressource busy"),
+            Error::AlreadyInitialized => translate!("Already initialized"),
+            Error::NotInitialized => translate!("Not initialized"),
+            Error::FailedToGetUsersManagerInstance => {
+                translate!("Failed to get users manager instance")
+            }
+            Error::FailedToGetTaskManagerInstance => {
+                translate!("Failed to get task manager instance")
+            }
+            Error::InvalidParameter => translate!("Invalid parameter"),
+            Error::InvalidFlags => translate!("Invalid flags"),
+            Error::NotDirectory => translate!("Not directory"),
+            Error::IsDirectory => translate!("Is directory"),
+            Error::InputOutput => translate!("Input output"),
+            Error::DirectoryNotEmpty => translate!("Directory not empty"),
+            Error::FileTooLarge => translate!("File too large"),
+            Error::NoAttribute => translate!("No attribute"),
+            Error::NameTooLong => translate!("Name too long"),
+            Error::Corrupted => translate!("Corrupted"),
+            Error::NoMemory => translate!("No memory"),
+            Error::NoSpaceLeft => translate!("No space left"),
+            Error::TimeError => translate!("Time error"),
+            Error::InvalidInode => translate!("Invalid inode"),
+            Error::NotMounted => translate!("Not mounted"),
+            Error::AlreadyMounted => translate!("Already mounted"),
+            Error::InvalidContext => translate!("Invalid context"),
+            Error::Other => translate!("Other"),
         };
 
         write!(formatter, "{string}")
