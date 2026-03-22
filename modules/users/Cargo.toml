@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 synchronization = { workspace = true }
+internationalization = { workspace = true }
 
 [dev-dependencies]
 drivers_native = { workspace = true }
