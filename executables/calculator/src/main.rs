@@ -22,5 +22,10 @@ fn main() {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
-    println!("This executable is intended to be run in a WASM environment.");
+    println!(
+        "{}",
+        internationalization::translate!(
+            "This executable is intended to be run in a WASM environment."
+        )
+    );
 }

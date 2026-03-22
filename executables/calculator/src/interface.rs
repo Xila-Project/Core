@@ -1,4 +1,5 @@
 use crate::{evaluator::Evaluator, parser::Parser};
+use internationalization::translate;
 use std::{ptr::null_mut, thread::sleep};
 use wasm::{
     self, Color, EventCode, FlexFlow, Object, ObjectFlag, buttonmatrix_create,
@@ -66,10 +67,10 @@ pub enum ButtonIdentifier {
 
 const BUTTON_MAP: [*const i8; 48] = [
     // Row 1: Clear, Backspace, Angle mode, Parentheses, Division, Factorial, Abs
-    c"RAD".as_ptr(), // Angle mode toggle
+    translate!(c"RAD").as_ptr(), // Angle mode toggle
     c"(".as_ptr(),
     c")".as_ptr(),
-    c"Clear".as_ptr(),
+    translate!(c"Clear").as_ptr(),
     c"<".as_ptr(), // Backspace
     c"x!".as_ptr(),
     c"/".as_ptr(),
@@ -244,9 +245,9 @@ impl Interface {
 
             // Add angle mode indicator
             let mode_indicator = if self.is_radian_mode {
-                " [RAD]"
+                translate!(" [RAD]")
             } else {
-                " [DEG]"
+                translate!(" [DEG]")
             };
             let full_text = format!("{}{}", display_text, mode_indicator);
 
@@ -308,7 +309,7 @@ impl Interface {
                             self.show_result = true;
                         }
                         Err(e) => {
-                            self.current_expression = format!("Error: {}", e);
+                            self.current_expression = format!(translate!("Error: {}"), e);
                             self.show_result = true;
                         }
                     }

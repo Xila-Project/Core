@@ -1,0 +1,17 @@
+{
+  "Division by zero": "Division by zero",
+  "Modulo by zero": "Modulo by zero",
+  "Square root of negative number": "Square root of negative number",
+  "Logarithm of non-positive number": "Logarithm of non-positive number",
+  "Natural logarithm of non-positive number": "Natural logarithm of non-positive number",
+  "Factorial requires non-negative integer": "Factorial requires non-negative integer",
+  "Factorial too large": "Factorial too large",
+  "Expected {:?}, found {:?}": "Expected {:?}, found {:?}",
+  "Unexpected token: {:?}": "Unexpected token: {:?}",
+  "RAD": "RAD",
+  "Clear": "Clear",
+  " [RAD]": " [RAD]",
+  " [DEG]": " [DEG]",
+  "Error: {}": "Error: {}",
+  "This executable is intended to be run in a WASM environment.": "This executable is intended to be run in a WASM environment."
+}

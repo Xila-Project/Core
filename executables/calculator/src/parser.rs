@@ -1,5 +1,7 @@
 use std::iter::Peekable;
 
+use internationalization::translate;
+
 use crate::{
     lexer::Lexer,
     token::{ConstantToken, FunctionToken, Token},
@@ -66,7 +68,7 @@ impl<'a> Parser<'a> {
             Ok(())
         } else {
             Err(format!(
-                "Expected {:?}, found {:?}",
+                translate!("Expected {:?}, found {:?}"),
                 expected,
                 self.current_token()
             ))
@@ -194,7 +196,12 @@ impl<'a> Parser<'a> {
                     ConstantToken::E => std::f64::consts::E,
                 })
             }
-            _ => return Err(format!("Unexpected token: {:?}", self.current_token())),
+            _ => {
+                return Err(format!(
+                    translate!("Unexpected token: {:?}"),
+                    self.current_token()
+                ));
+            }
         };
 
         Ok(primary)
