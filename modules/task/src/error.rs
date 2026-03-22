@@ -1,4 +1,5 @@
 use core::{fmt, num::NonZeroU32};
+use internationalization::translate;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -23,7 +24,24 @@ pub enum Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{self:?}")
+        match self {
+            Error::InvalidTaskIdentifier => write!(f, translate!("InvalidTaskIdentifier")),
+            Error::InvalidSpawnerIdentifier => write!(f, translate!("InvalidSpawnerIdentifier")),
+            Error::ThreadNotRegistered => write!(f, translate!("ThreadNotRegistered")),
+            Error::ThreadAlreadyRegistered => write!(f, translate!("ThreadAlreadyRegistered")),
+            Error::FailedToCreateThread => write!(f, translate!("FailedToCreateThread")),
+            Error::NoThreadForTask => write!(f, translate!("NoThreadForTask")),
+            Error::FailedToSpawnThread => write!(f, translate!("FailedToSpawnThread")),
+            Error::InvalidEnvironmentVariable => {
+                write!(f, translate!("InvalidEnvironmentVariable"))
+            }
+            Error::TooManyTasks => write!(f, translate!("TooManyTasks")),
+            Error::TooManySpawners => write!(f, translate!("TooManySpawners")),
+            Error::AlreadyInitialized => write!(f, translate!("AlreadyInitialized")),
+            Error::AlreadySet => write!(f, translate!("AlreadySet")),
+            Error::NotInitialized => write!(f, translate!("NotInitialized")),
+            Error::NoSpawnerAvailable => write!(f, translate!("NoSpawnerAvailable")),
+        }
     }
 }
 
