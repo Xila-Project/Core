@@ -1,4 +1,5 @@
 use core::fmt::Display;
+use internationalization::translate;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -17,10 +18,10 @@ impl Display for Error {
             Error::FileSystem(error) => write!(formatter, "{error}"),
             Error::Task(error) => write!(formatter, "{error}"),
             Error::FailedToGetMainFunction => {
-                write!(formatter, "Failed to get main function")
+                write!(formatter, translate!("Failed to get main function"))
             }
-            Error::InvalidStackSize => write!(formatter, "Invalid stack size"),
-            Error::PermissionDenied => write!(formatter, "Permission denied"),
+            Error::InvalidStackSize => write!(formatter, translate!("Invalid stack size")),
+            Error::PermissionDenied => write!(formatter, translate!("Permission denied")),
         }
     }
 }

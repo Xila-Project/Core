@@ -10,6 +10,7 @@ task = { workspace = true }
 users = { workspace = true }
 shared = { workspace = true }
 log = { workspace = true }
+internationalization = { workspace = true }
 
 [dev-dependencies]
 drivers_native = { workspace = true }
