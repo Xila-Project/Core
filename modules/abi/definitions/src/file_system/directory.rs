@@ -1,4 +1,4 @@
-use crate::{XilaFileIdentifier, XilaFileSystemMode, XilaFileSystemOpen, XilaFileSystemStatus};
+use crate::{XilaFileIdentifier, XilaFileSystemMode, XilaFileSystemOpen, XilaFileSystemState};
 use abi_context::{FileIdentifier, get_instance as get_context_instance};
 use alloc::{borrow::ToOwned, ffi::CString};
 use core::{
@@ -26,7 +26,7 @@ pub unsafe extern "C" fn xila_file_system_open_at(
     is_directory: bool,
     mode: XilaFileSystemMode,
     open: XilaFileSystemOpen,
-    status: XilaFileSystemStatus,
+    status: XilaFileSystemState,
     out: *mut XilaFileIdentifier,
 ) -> u32 {
     into_u32(move || unsafe {

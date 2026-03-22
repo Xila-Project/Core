@@ -1362,13 +1362,13 @@ os_fstatat(os_file_handle handle, const char *path,
 __wasi_errno_t
 os_file_get_fdflags(os_file_handle handle, __wasi_fdflags_t *flags)
 {
-    XilaFileSystemStatus status;
+    XilaFileSystemState status;
 
-    XilaFileSystemResult result = xila_file_system_get_flags(handle, &status);
+    XilaFileSystemResult result = xila_file_system_get_state_flags(handle, &status);
 
     if (result == 0)
     {
-        *flags = into_wasi_status(status);
+        *flags = into_wasi_state(status);
     }
 
     return into_wasi_error(result);
@@ -1384,7 +1384,7 @@ os_file_get_fdflags(os_file_handle handle, __wasi_fdflags_t *flags)
 __wasi_errno_t
 os_file_set_fdflags(os_file_handle handle, __wasi_fdflags_t flags)
 {
-    XilaFileSystemStatus status = into_xila_status(flags);
+    XilaFileSystemState status = into_xila_state(flags);
 
     return xila_file_system_set_flags(handle, status);
 }
@@ -1446,7 +1446,7 @@ os_openat(os_file_handle handle, const char *path, __wasi_oflags_t oflags,
 {
     XilaFileSystemMode mode = into_xila_mode(access_mode);
     XilaFileSystemOpen open = into_xila_open(oflags);
-    XilaFileSystemStatus status = into_xila_status(fd_flags);
+    XilaFileSystemState status = into_xila_state(fd_flags);
 
     return into_wasi_error(xila_file_system_open_at(handle, path, oflags & __WASI_O_DIRECTORY, mode, open, status, out));
 }
@@ -1465,7 +1465,7 @@ os_file_get_access_mode(os_file_handle handle,
 {
     uint8_t mode;
 
-    XilaFileSystemResult file_system_result = xila_file_system_get_access_mode(handle, &mode);
+    XilaFileSystemResult file_system_result = xila_file_system_get_access_flags(handle, &mode);
 
     if (file_system_result == 0)
     {

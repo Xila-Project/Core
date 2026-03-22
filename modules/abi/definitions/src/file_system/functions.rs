@@ -11,7 +11,7 @@ use virtual_file_system::{
     Error, SynchronousDirectory, SynchronousFile, get_instance as get_file_system_instance,
 };
 
-use crate::{XilaTime, file_system::into_position};
+use crate::{XilaFileSystemState, XilaTime, file_system::into_position};
 
 use super::{
     XilaFileIdentifier, XilaFileSystemMode, XilaFileSystemOpen, XilaFileSystemResult,
@@ -132,7 +132,7 @@ pub unsafe extern "C" fn xila_file_system_get_statistics_from_path_at(
 ///
 /// This function may return an error if the file system fails to get the access mode of the file.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn xila_file_system_get_access_mode(
+pub unsafe extern "C" fn xila_file_system_get_access_flags(
     file: XilaFileIdentifier,
     mode: *mut XilaFileSystemMode,
 ) -> XilaFileSystemResult {
@@ -442,7 +442,7 @@ pub unsafe extern "C" fn xila_file_system_open(
     path: *const c_char,
     mode: XilaFileSystemMode,
     open: XilaFileSystemOpen,
-    status: XilaFileSystemStatus,
+    status: XilaFileSystemState,
     file: *mut XilaFileIdentifier,
 ) -> XilaFileSystemResult {
     unsafe {
@@ -476,7 +476,7 @@ pub unsafe extern "C" fn xila_file_system_open(
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_file_system_set_flags(
     _file: XilaFileIdentifier,
-    _status: XilaFileSystemStatus,
+    _status: XilaFileSystemState,
 ) -> XilaFileSystemResult {
     todo!()
 }
@@ -487,9 +487,9 @@ pub extern "C" fn xila_file_system_set_flags(
 ///
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn xila_file_system_get_flags(
+pub unsafe extern "C" fn xila_file_system_get_state_flags(
     _file: XilaFileIdentifier,
-    _status: *mut XilaFileSystemStatus,
+    _status: *mut XilaFileSystemState,
 ) -> XilaFileSystemResult {
     todo!()
 }
