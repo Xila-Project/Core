@@ -31,6 +31,7 @@ where
             let non_zero: NonZeroU32 = error.into();
 
             log::error!("File system error: {:?} ({})", error, non_zero);
+            log::error!("Context debug info: {:?}", context::get_instance());
 
             non_zero.get()
         }
@@ -491,7 +492,25 @@ pub unsafe extern "C" fn xila_file_system_get_state_flags(
     _file: XilaFileIdentifier,
     _status: *mut XilaFileSystemState,
 ) -> XilaFileSystemResult {
-    todo!()
+    unsafe {
+        into_u32(move || {
+            if _status.is_null() {
+                Err(Error::InvalidParameter)?;
+            }
+
+            let state = context::get_instance()
+                .perform_operation_on_file_or_directory(
+                    _file.try_into()?,
+                    |f| SynchronousFile::get_state(f),
+                    |d| SynchronousDirectory::get_state(d),
+                )
+                .ok_or(Error::InvalidIdentifier)??;
+
+            _status.write(state.bits());
+
+            Ok(())
+        })
+    }
 }
 
 /// This function is used to convert a path to a resolved path (i.e. a path without symbolic links or relative paths).

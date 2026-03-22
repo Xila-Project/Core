@@ -114,6 +114,10 @@ impl SynchronousDirectory {
         Ok(self.flags.get_access())
     }
 
+    pub fn get_state(&self) -> Result<StateFlags> {
+        Ok(self.flags.get_state())
+    }
+
     pub fn close_internal(&mut self, virtual_file_system: &VirtualFileSystem) -> Result<()> {
         block_on(
             virtual_file_system.close(&ItemStatic::Directory(self.directory), &mut self.context),
