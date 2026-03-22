@@ -1,6 +1,7 @@
 use core::{fmt::Display, num::NonZeroU32};
 
 use embedded_io_async::ErrorKind;
+use internationalization::translate;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -81,34 +82,34 @@ impl From<task::Error> for Error {
 impl Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Error::AlreadyInitialized => write!(f, "Already initialized"),
-            Error::UnavailableDriver => write!(f, "Unavailable driver"),
-            Error::InvalidFileSystem => write!(f, "Invalid file system"),
-            Error::InvalidParameter => write!(f, "Invalid parameter"),
-            Error::TooManyOpenFiles => write!(f, "Too many open files"),
+            Error::AlreadyInitialized => write!(f, translate!("Already initialized")),
+            Error::UnavailableDriver => write!(f, translate!("Unavailable driver")),
+            Error::InvalidFileSystem => write!(f, translate!("Invalid file system")),
+            Error::InvalidParameter => write!(f, translate!("Invalid parameter")),
+            Error::TooManyOpenFiles => write!(f, translate!("Too many open files")),
             Error::FailedToGetTaskInformations => {
-                write!(f, "Failed to get task informations")
+                write!(f, translate!("Failed to get task informations"))
             }
-            Error::FileSystem(err) => write!(f, "File system error: {err}"),
-            Error::InvalidIdentifier => write!(f, "Invalid identifier"),
-            Error::AlreadyExists => write!(f, "Already exists"),
-            Error::Time(err) => write!(f, "Time error: {err}"),
-            Error::Users(err) => write!(f, "Users error: {err}"),
-            Error::Task(err) => write!(f, "Task error: {err}"),
-            Error::MissingAttribute => write!(f, "Missing attribute"),
-            Error::InvalidPath => write!(f, "Invalid path"),
-            Error::PermissionDenied => write!(f, "Permission denied"),
-            Error::TooManyInodes => write!(f, "Too many inodes"),
-            Error::RessourceBusy => write!(f, "Ressource busy"),
-            Error::NotADirectory => write!(f, "Not a directory"),
-            Error::NotAFile => write!(f, "Not a file"),
-            Error::InvalidMode => write!(f, "Invalid mode"),
-            Error::InvalidOpen => write!(f, "Invalid open"),
-            Error::InvalidInode => write!(f, "Invalid inode"),
-            Error::UnsupportedOperation => write!(f, "Unsupported operation"),
-            Error::FailedToWrite => write!(f, "Failed to write"),
-            Error::DelimiterNotFound => write!(f, "Delimiter not found"),
-            Error::Orphaned => write!(f, "Orphaned"),
+            Error::FileSystem(err) => write!(f, translate!("File system error: {}"), err),
+            Error::InvalidIdentifier => write!(f, translate!("Invalid identifier")),
+            Error::AlreadyExists => write!(f, translate!("Already exists")),
+            Error::Time(err) => write!(f, translate!("Time error: {}"), err),
+            Error::Users(err) => write!(f, translate!("Users error: {}"), err),
+            Error::Task(err) => write!(f, translate!("Task error: {}"), err),
+            Error::MissingAttribute => write!(f, translate!("Missing attribute")),
+            Error::InvalidPath => write!(f, translate!("Invalid path")),
+            Error::PermissionDenied => write!(f, translate!("Permission denied")),
+            Error::TooManyInodes => write!(f, translate!("Too many inodes")),
+            Error::RessourceBusy => write!(f, translate!("Ressource busy")),
+            Error::NotADirectory => write!(f, translate!("Not a directory")),
+            Error::NotAFile => write!(f, translate!("Not a file")),
+            Error::InvalidMode => write!(f, translate!("Invalid mode")),
+            Error::InvalidOpen => write!(f, translate!("Invalid open")),
+            Error::InvalidInode => write!(f, translate!("Invalid inode")),
+            Error::UnsupportedOperation => write!(f, translate!("Unsupported operation")),
+            Error::FailedToWrite => write!(f, translate!("Failed to write")),
+            Error::DelimiterNotFound => write!(f, translate!("Delimiter not found")),
+            Error::Orphaned => write!(f, translate!("Orphaned")),
         }
     }
 }
