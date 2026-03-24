@@ -1,6 +1,7 @@
-use crate::{Error, Result, Shell, commands::check_no_more_arguments};
+use crate::{Error, Result, Shell};
 use alloc::{borrow::ToOwned, format};
 use core::fmt::Write;
+use executable_macros::GetArgs;
 use getargs::Options;
 use xila::{
     file_system::Path,
@@ -9,16 +10,17 @@ use xila::{
     users, virtual_file_system,
 };
 
+#[derive(GetArgs)]
+struct StatisticsArguments<'a> {
+    path: &'a str,
+}
+
 impl Shell {
     pub async fn statistics<'a, I>(&mut self, options: &mut Options<&'a str, I>) -> Result<()>
     where
         I: Iterator<Item = &'a str>,
     {
-        let path = options
-            .next_positional()
-            .ok_or(Error::MissingPositionalArgument("path"))?;
-
-        check_no_more_arguments(options)?;
+        let StatisticsArguments { path } = StatisticsArguments::parse(options)?;
         let path = Path::from_str(path);
 
         let path = if path.is_absolute() {

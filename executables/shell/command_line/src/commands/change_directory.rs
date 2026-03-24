@@ -1,10 +1,16 @@
 use alloc::borrow::ToOwned;
+use executable_macros::GetArgs;
 use xila::{
     file_system::Path,
     virtual_file_system::{self, Directory},
 };
 
-use crate::{Error, Result, Shell, commands::check_no_more_arguments};
+use crate::{Error, Result, Shell};
+
+#[derive(GetArgs)]
+struct ChangeDirectoryArguments<'a> {
+    path: &'a str,
+}
 
 impl Shell {
     pub async fn change_directory<'a, I>(
@@ -14,16 +20,7 @@ impl Shell {
     where
         I: Iterator<Item = &'a str>,
     {
-        let path = options.next_positional();
-
-        let path = match path {
-            Some(p) => p,
-            None => {
-                return Err(Error::MissingPositionalArgument("path"));
-            }
-        };
-
-        check_no_more_arguments(options)?;
+        let ChangeDirectoryArguments { path } = ChangeDirectoryArguments::parse(options)?;
 
         let current_directory = Path::from_str(path).to_owned();
 

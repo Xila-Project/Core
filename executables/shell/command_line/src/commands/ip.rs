@@ -3,6 +3,7 @@ use crate::{
     error::{Error, Result},
 };
 use core::fmt::Write;
+use executable_macros::GetArgs;
 use xila::{
     file_system::{AccessFlags, Path},
     log,
@@ -10,6 +11,11 @@ use xila::{
     task::{self, TaskIdentifier},
     virtual_file_system::{self, Directory, File, FileControlIterator, VirtualFileSystem},
 };
+
+#[derive(GetArgs)]
+struct IpArguments<'a> {
+    command: &'a str,
+}
 
 impl Shell {
     pub async fn open_interface(
@@ -172,9 +178,7 @@ impl Shell {
     where
         I: Iterator<Item = &'a str>,
     {
-        let command = options
-            .next_positional()
-            .ok_or(crate::Error::MissingPositionalArgument("command"))?;
+        let IpArguments { command } = IpArguments::parse(options)?;
 
         let virtual_file_system = virtual_file_system::get_instance();
         let task_manager = task::get_instance();

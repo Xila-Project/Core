@@ -1,35 +1,32 @@
 use crate::{Error, Result, Shell};
 use alloc::string::ToString;
 use core::fmt::Write;
-use getargs::Arg;
+use executable_macros::GetArgs;
 use xila::{
     file_system::{Kind, Path},
     log, users,
     virtual_file_system::{self, Directory},
 };
 
+#[derive(GetArgs)]
+struct ListArguments<'a> {
+    #[arg(positional, default = "")]
+    path: &'a str,
+    #[arg(flag, short = 'l', long = "long")]
+    long: bool,
+}
+
 impl Shell {
     pub async fn list<'a, I>(&mut self, options: &mut getargs::Options<&'a str, I>) -> Result<()>
     where
         I: Iterator<Item = &'a str>,
     {
-        let mut path: &Path = self.current_directory.as_ref();
-
-        let mut long = false;
-
-        while let Some(argument) = options.next_arg()? {
-            match argument {
-                Arg::Positional(p) => {
-                    path = Path::from_str(p);
-                }
-                Arg::Short('l') | Arg::Long("long") => {
-                    long = true;
-                }
-                _ => {
-                    return Err(Error::InvalidOption);
-                }
-            }
-        }
+        let ListArguments { path, long } = ListArguments::parse(options)?;
+        let path: &Path = if path.is_empty() {
+            self.current_directory.as_ref()
+        } else {
+            Path::from_str(path)
+        };
 
         let virtual_file_system = virtual_file_system::get_instance();
 

@@ -1,10 +1,26 @@
-use crate::{Error, Result, Shell, commands::check_no_more_arguments};
+use crate::{Error, Result, Shell};
 use core::fmt::Write;
-use getargs::{Arg, Options};
+use executable_macros::GetArgs;
+use getargs::Options;
 use xila::{
     internationalization::translate,
     network::{self, DnsQueryKind, DnsSocket},
 };
+
+#[derive(GetArgs)]
+struct DnsResolveArguments<'a> {
+    domain: &'a str,
+    #[arg(flag, short = 'a', long = "a")]
+    a_enabled: bool,
+    #[arg(flag, short = 'A', long = "aaaa")]
+    aaaa_enabled: bool,
+    #[arg(flag, short = 'c', long = "cname")]
+    cname_enabled: bool,
+    #[arg(flag, short = 'n', long = "ns")]
+    ns_enabled: bool,
+    #[arg(flag, short = 's', long = "soa")]
+    soa_enabled: bool,
+}
 
 impl Shell {
     fn format_kind(kind: DnsQueryKind) -> &'static str {
@@ -61,48 +77,16 @@ impl Shell {
     where
         I: Iterator<Item = &'a str>,
     {
-        let mut domain = "";
-        let mut a_enabled = false;
-        let mut aaaa_enabled = false;
-        let mut cname_enabled = false;
-        let mut ns_enabled = false;
-        let mut soa_enabled = false;
-        let mut default = true;
+        let DnsResolveArguments {
+            domain,
+            a_enabled,
+            aaaa_enabled,
+            cname_enabled,
+            ns_enabled,
+            soa_enabled,
+        } = DnsResolveArguments::parse(options)?;
 
-        while let Some(argument) = options.next_arg()? {
-            if let Arg::Long(_) | Arg::Short(_) = &argument {
-                default = false;
-            }
-
-            match argument {
-                Arg::Short('a') | Arg::Long("a") => {
-                    a_enabled = true;
-                }
-                Arg::Short('A') | Arg::Long("aaaa") => {
-                    aaaa_enabled = true;
-                }
-                Arg::Short('c') | Arg::Long("cname") => {
-                    cname_enabled = true;
-                }
-                Arg::Short('n') | Arg::Long("ns") => {
-                    ns_enabled = true;
-                }
-                Arg::Short('s') | Arg::Long("soa") => {
-                    soa_enabled = true;
-                }
-                Arg::Positional(p) => {
-                    if !domain.is_empty() {
-                        return Err(crate::Error::InvalidNumberOfArguments);
-                    }
-                    domain = p;
-                }
-                _ => {
-                    return Err(crate::Error::InvalidOption);
-                }
-            }
-        }
-
-        check_no_more_arguments(options)?;
+        let default = !a_enabled && !aaaa_enabled && !cname_enabled && !ns_enabled && !soa_enabled;
 
         let socket = network::get_instance()
             .new_dns_socket(None)

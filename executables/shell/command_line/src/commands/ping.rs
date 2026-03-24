@@ -1,5 +1,5 @@
 use core::fmt::Write;
-use getargs::Arg;
+use executable_macros::GetArgs;
 use xila::{
     internationalization::translate,
     network::{self, DnsQueryKind, Duration, IcmpEndpoint},
@@ -9,6 +9,17 @@ use crate::{Error, Shell};
 
 const ICMP_IDENTIFIER: u16 = 0x22b;
 
+#[derive(GetArgs)]
+struct PingArguments<'a> {
+    target: &'a str,
+    #[arg(short = 'c', long = "count", default = 4)]
+    count: u16,
+    #[arg(short = 't', long = "timeout", default = 5)]
+    timeout: u64,
+    #[arg(short = 's', long = "size", default = 56)]
+    size: usize,
+}
+
 impl Shell {
     pub async fn ping<'a, I>(
         &mut self,
@@ -17,42 +28,12 @@ impl Shell {
     where
         I: Iterator<Item = &'a str>,
     {
-        let mut count = 4;
-        let mut timeout_seconds = 5;
-        let mut target: &'a str = "";
-        let mut payload_size = 56;
-
-        while let Some(argument) = options.next_arg()? {
-            match argument {
-                Arg::Short('c') | Arg::Long("count") => {
-                    let value = options
-                        .next_positional()
-                        .ok_or(crate::Error::MissingPositionalArgument("count"))?;
-                    count = value.parse().map_err(|_| crate::Error::InvalidOption)?;
-                }
-                Arg::Short('t') | Arg::Long("timeout") => {
-                    let value = options
-                        .next_positional()
-                        .ok_or(crate::Error::MissingPositionalArgument("timeout"))?;
-                    timeout_seconds = value.parse().map_err(|_| crate::Error::InvalidOption)?;
-                }
-                Arg::Short('s') | Arg::Long("size") => {
-                    let value = options
-                        .next_positional()
-                        .ok_or(crate::Error::MissingPositionalArgument("size"))?;
-                    payload_size = value.parse().map_err(|_| crate::Error::InvalidOption)?;
-                }
-                Arg::Positional(p) => {
-                    if !target.is_empty() {
-                        return Err(crate::Error::InvalidNumberOfArguments);
-                    }
-                    target = p;
-                }
-                _ => {
-                    return Err(crate::Error::InvalidOption);
-                }
-            }
-        }
+        let PingArguments {
+            target,
+            count,
+            timeout: timeout_seconds,
+            size: payload_size,
+        } = PingArguments::parse(options)?;
 
         let network = network::get_instance();
 

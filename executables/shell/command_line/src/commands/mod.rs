@@ -14,18 +14,6 @@ mod ping;
 mod statistics;
 mod web_request;
 
-fn check_no_more_arguments<'a, I>(options: &mut getargs::Options<&'a str, I>) -> crate::Result<()>
-where
-    I: Iterator<Item = &'a str>,
-{
-    if options.next_positional().is_some() {
-        xila::log::information!("More arguments ! : {:?}", options.next_arg());
-        return Err(crate::Error::InvalidNumberOfArguments);
-    }
-
-    Ok(())
-}
-
 fn check_no_more_options<'a, I>(options: &mut getargs::Options<&'a str, I>) -> crate::Result<()>
 where
     I: Iterator<Item = &'a str>,
