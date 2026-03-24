@@ -5,8 +5,6 @@
   "main": "index.js",
   "directories": {},
   "scripts": {
-    "tolgee:push": "tolgee push",
-    "tolgee:pull": "tolgee pull",
     "format": "prettier --write ."
   },
   "author": "",
