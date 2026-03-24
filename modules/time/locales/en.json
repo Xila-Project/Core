@@ -1,5 +1,5 @@
 {
   "Device error: {}": "Device error: {}",
-  "Time module not initialized": "Time module not initialized",
-  "Time module already initialized": "Time module already initialized"
+  "Time module already initialized": "Time module already initialized",
+  "Time module not initialized": "Time module not initialized"
 }
