@@ -1,6 +1,17 @@
-use crate::{Error, Result, Shell, commands::check_no_more_arguments};
+use crate::{Error, Result, Shell};
+use executable_macros::GetArgs;
 use getargs::Options;
 use xila::task;
+
+#[derive(GetArgs)]
+struct SetEnvironmentVariableArguments<'a> {
+    argument: &'a str,
+}
+
+#[derive(GetArgs)]
+struct RemoveEnvironmentVariableArguments<'a> {
+    name: &'a str,
+}
 
 impl Shell {
     pub async fn set_environment_variable<'a, I>(
@@ -10,11 +21,8 @@ impl Shell {
     where
         I: Iterator<Item = &'a str>,
     {
-        let argument = options
-            .next_positional()
-            .ok_or(Error::MissingPositionalArgument("name=value"))?;
-
-        check_no_more_arguments(options)?;
+        let SetEnvironmentVariableArguments { argument } =
+            SetEnvironmentVariableArguments::parse(options)?;
 
         let (name, value) = argument.split_once('=').ok_or(Error::InvalidArgument)?;
 
@@ -31,11 +39,8 @@ impl Shell {
     where
         I: Iterator<Item = &'a str>,
     {
-        let name = options
-            .next_positional()
-            .ok_or(Error::MissingPositionalArgument("name"))?;
-
-        check_no_more_arguments(options)?;
+        let RemoveEnvironmentVariableArguments { name } =
+            RemoveEnvironmentVariableArguments::parse(options)?;
 
         task::get_instance()
             .remove_environment_variable(self.task, name)

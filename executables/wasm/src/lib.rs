@@ -8,6 +8,9 @@ mod host;
 #[cfg(feature = "host")]
 pub use host::*;
 
+#[cfg(feature = "host")]
+pub use host::Error;
+
 #[cfg(feature = "guest")]
 mod guest;
 

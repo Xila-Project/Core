@@ -7,7 +7,7 @@ use alloc::{borrow::ToOwned, string::String, vec, vec::Vec};
 use core::fmt::Write;
 use core::num::NonZeroUsize;
 use core::pin::Pin;
-use xila::executable::ArgumentsParser;
+use executable_macros::GetArgs;
 use xila::executable::ExecutableTrait;
 use xila::executable::MainFuture;
 use xila::executable::Standard;
@@ -18,7 +18,9 @@ use xila::virtual_file_system::{self, File};
 
 #[cfg(feature = "graphics")]
 use crate::host::bindings::graphics::GraphicsBindings;
-use crate::host::virtual_machine::{Error, Registrable};
+use crate::host::virtual_machine::Registrable;
+
+pub use crate::host::virtual_machine::Error;
 
 pub struct WasmExecutable;
 
@@ -34,6 +36,15 @@ const REGISTRABLES: &[&dyn Registrable] = &[
 const START_FUNCTION_NAME: &str = "_start";
 const INSTALL_FUNCTION_NAME: &str = "__install";
 const DEFAULT_STACK_SIZE: usize = 4096;
+
+#[derive(GetArgs)]
+struct WasmArguments<'a> {
+    path: &'a str,
+    #[arg(flag)]
+    install: bool,
+    #[arg(default = DEFAULT_STACK_SIZE)]
+    stack_size: usize,
+}
 
 impl WasmExecutable {
     pub fn new(new_thread_executor: Option<NewThreadExecutor>) -> Self {
@@ -52,23 +63,13 @@ impl ExecutableTrait for WasmExecutable {
 }
 
 pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<(), Error> {
-    let parsed_arguments = ArgumentsParser::new(&arguments);
-
-    let install = parsed_arguments
-        .clone()
-        .any(|a| a.options.get_option("install").is_some());
-    let stack_size = parsed_arguments
-        .clone()
-        .find_map(|a| {
-            a.options
-                .get_option("stack-size")
-                .and_then(|s| s.parse::<usize>().ok())
-        })
-        .unwrap_or(DEFAULT_STACK_SIZE);
-    let path = parsed_arguments
-        .last()
-        .and_then(|arg| arg.value.map(Path::new))
-        .ok_or(Error::MissingArgument("path"))?;
+    let mut options = getargs::Options::new(arguments.iter().map(|argument| argument.as_str()));
+    let WasmArguments {
+        install,
+        stack_size,
+        path,
+    } = WasmArguments::parse(&mut options)?;
+    let path = Path::new(path);
 
     let task = task::get_instance().get_current_task_identifier().await;
 

@@ -22,6 +22,9 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[repr(C)]
 pub enum Error {
     MissingArgument(&'static str),
+    MissingPositionalArgument(&'static str),
+    InvalidNumberOfArguments,
+    InvalidOption,
     FailedToGetCurrentDirectory,
     InvalidPath,
     NotAWasmFile,
@@ -116,6 +119,15 @@ impl fmt::Display for Error {
         match self {
             Error::MissingArgument(argument) => {
                 write!(f, translate!("Missing argument: {}"), argument)
+            }
+            Error::MissingPositionalArgument(argument) => {
+                write!(f, "Missing positional argument: {}", argument)
+            }
+            Error::InvalidNumberOfArguments => {
+                write!(f, "Invalid number of arguments")
+            }
+            Error::InvalidOption => {
+                write!(f, "Invalid option")
             }
             Error::FailedToGetCurrentDirectory => {
                 write!(f, translate!("Failed to get current directory"))

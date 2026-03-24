@@ -29,6 +29,8 @@ pub enum Error {
     FailedToExecuteShortcut(executable::Error),
     NullCharacterInString(alloc::ffi::NulError),
     MissingArguments,
+    InvalidOption,
+    InvalidNumberOfArguments,
     FailedToAddShortcut(virtual_file_system::Error),
     FailedToOpenDirectory(virtual_file_system::Error),
 }
@@ -130,6 +132,12 @@ impl Display for Error {
             }
             Self::MissingArguments => {
                 write!(formatter, translate!("Missing arguments"))
+            }
+            Self::InvalidOption => {
+                write!(formatter, "Invalid option")
+            }
+            Self::InvalidNumberOfArguments => {
+                write!(formatter, "Invalid number of arguments")
             }
             Self::FailedToAddShortcut(error) => {
                 write!(formatter, translate!("Failed to add shortcut: {}"), error)
