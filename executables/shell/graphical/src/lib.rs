@@ -15,7 +15,7 @@ use alloc::{boxed::Box, string::String, vec::Vec};
 use core::fmt::Write;
 use core::num::NonZeroUsize;
 use core::time::Duration;
-use getargs::Arg;
+use executable_macros::GetArgs;
 use home::Home;
 use layout::Layout;
 use login::Login;
@@ -23,24 +23,22 @@ use xila::executable::{self, ExecutableTrait, Standard};
 use xila::task;
 use xila::users;
 
+#[derive(GetArgs)]
+struct GraphicalShellArguments {
+    #[arg(flag, short = 'k', long = "show-keyboard")]
+    show_keyboard: bool,
+}
+
 pub async fn main(mut standard: Standard, arguments: Vec<String>) -> Result<(), NonZeroUsize> {
     let arguments = arguments.iter().map(|s| s.as_str());
 
     let mut options = getargs::Options::new(arguments);
 
-    let mut show_keyboard = false;
-
-    while let Some(argument) = options.next_arg().map_err(|e| {
-        writeln!(standard.error(), "{}", e).ok();
-        NonZeroUsize::new(1).unwrap()
-    })? {
-        match argument {
-            Arg::Short('k') | Arg::Long("show-keyboard") => {
-                show_keyboard = true;
-            }
-            _ => {}
-        }
-    }
+    let GraphicalShellArguments { show_keyboard } = GraphicalShellArguments::parse(&mut options)
+        .map_err(|e| {
+            writeln!(standard.error(), "{}", e).ok();
+            NonZeroUsize::new(1).unwrap()
+        })?;
 
     Shell::new(standard, show_keyboard).await.main().await
 }
