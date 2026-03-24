@@ -123,7 +123,7 @@ proc-macro2 = { version = "1.0" }
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
 embassy-executor = { version = "0.9", default-features = false }
 embassy-futures = { version = "0.1" }
-embassy-sync = { version = "0.7" }
+embassy-sync = { version = "0.8" }
 embassy-time = { version = "0.5" }
 critical-section = { version = "1.2" }
 smoltcp = { version = "0.12" }
