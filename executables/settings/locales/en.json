@@ -24,9 +24,7 @@
   "Formatting error": "Formatting error",
   "Gateway": "Gateway",
   "General": "General",
-  "General settings will be implemented here": {
-    "": "General settings will be implemented here."
-  },
+  "General settings will be implemented here.": "General settings will be implemented here.",
   "Graphics error : {}": "Graphics error : {}",
   "Invalid UTF-8 string: {}": "Invalid UTF-8 string: {}",
   "License:": "License:",

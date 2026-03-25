@@ -19,6 +19,7 @@ type TolgeeConfig = {
   };
   pull: {
     path: string;
+    delimiter?: string | null;
     fileStructureTemplate: string;
   };
 };
@@ -66,6 +67,7 @@ const config: TolgeeConfig = {
   },
   pull: {
     path: "./",
+    delimiter: "",
     fileStructureTemplate: "{namespace}/locales/{languageTag}.json",
   },
 };

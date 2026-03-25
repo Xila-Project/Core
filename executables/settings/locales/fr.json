@@ -24,9 +24,7 @@
   "Formatting error": "Erreur de formatage",
   "Gateway": "Passerelle",
   "General": "Général",
-  "General settings will be implemented here": {
-    "": "Les réglages généraux seront implémentés ici."
-  },
+  "General settings will be implemented here.": "Les réglages généraux seront implémentés ici.",
   "Graphics error : {}": "Erreur graphique: {}",
   "Invalid UTF-8 string: {}": "Chaîne UTF-8 invalide : {}",
   "License:": "Licence :",

@@ -12,8 +12,6 @@
   "Natural logarithm of non-positive number": "Logarithme naturel d'un nombre non positif",
   "RAD": "RAD",
   "Square root of negative number": "Racine carree d'un nombre negatif",
-  "This executable is intended to be run in a WASM environment": {
-    "": "Cet executable est concu pour etre execute dans un environnement WASM."
-  },
+  "This executable is intended to be run in a WASM environment.": "Cet executable est concu pour etre execute dans un environnement WASM.",
   "Unexpected token: {:?}": "Jeton inattendu: {:?}"
 }
