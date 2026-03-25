@@ -30,6 +30,22 @@ args = ["prettier", "--write", "**/*.json", "${@}"]
 [tasks.format]
 dependencies = ["format-rust", "format-toml", "format-json"]
 
+[tasks.translate-compare]
+command = "npm"
+args = ["exec", "tolgee", "compare", "${@}"]
+
+[tasks.translate-sync]
+command = "npm"
+args = ["exec", "tolgee", "sync", "--", "--remove-unused", "${@}"]
+
+[tasks.translate-pull]
+command = "npm"
+args = ["exec", "tolgee", "pull", "${@}"]
+
+[tasks.translate-push]
+command = "npm"
+args = ["exec", "tolgee", "push", "${@}"]
+
 [tasks.check-host]
 toolchain = "stable"
 command = "cargo"

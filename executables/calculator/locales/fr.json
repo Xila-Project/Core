@@ -1,17 +1,17 @@
 {
+  " [DEG]": " [DEG]",
+  " [RAD]": " [RAD]",
+  "Clear": "Effacer",
   "Division by zero": "Division par zero",
-  "Modulo by zero": "Modulo par zero",
-  "Square root of negative number": "Racine carree d'un nombre negatif",
-  "Logarithm of non-positive number": "Logarithme d'un nombre non positif",
-  "Natural logarithm of non-positive number": "Logarithme naturel d'un nombre non positif",
+  "Error: {}": "Erreur: {}",
+  "Expected {:?}, found {:?}": "Attendu {:?}, trouve {:?}",
   "Factorial requires non-negative integer": "La factorielle requiert un entier non negatif",
   "Factorial too large": "Factorielle trop grande",
-  "Expected {:?}, found {:?}": "Attendu {:?}, trouve {:?}",
-  "Unexpected token: {:?}": "Jeton inattendu: {:?}",
+  "Logarithm of non-positive number": "Logarithme d'un nombre non positif",
+  "Modulo by zero": "Modulo par zero",
+  "Natural logarithm of non-positive number": "Logarithme naturel d'un nombre non positif",
   "RAD": "RAD",
-  "Clear": "Effacer",
-  " [RAD]": " [RAD]",
-  " [DEG]": " [DEG]",
-  "Error: {}": "Erreur: {}",
-  "This executable is intended to be run in a WASM environment.": "Cet executable est concu pour etre execute dans un environnement WASM."
+  "Square root of negative number": "Racine carree d'un nombre negatif",
+  "This executable is intended to be run in a WASM environment.": "Cet executable est concu pour etre execute dans un environnement WASM.",
+  "Unexpected token: {:?}": "Jeton inattendu: {:?}"
 }
