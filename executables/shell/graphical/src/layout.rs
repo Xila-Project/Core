@@ -1,5 +1,5 @@
 use crate::error::{Error, Result};
-use alloc::{format, string::String};
+use alloc::string::String;
 use core::ffi::CStr;
 use core::ptr::null_mut;
 use core::time::Duration;
@@ -7,9 +7,8 @@ use xila::file_system::{AccessFlags, Path};
 use xila::graphics::{self, EventKind, lvgl, symbol, theme};
 use xila::log;
 use xila::network::InterfaceKind;
-use xila::shared::unix_to_human_time;
 use xila::virtual_file_system::{Directory, File};
-use xila::{network, time, virtual_file_system};
+use xila::{internationalization, network, time, virtual_file_system};
 
 const KEYBOARD_SIZE_RATIO: f64 = 3.0 / 1.0;
 
@@ -217,10 +216,10 @@ impl Layout {
     }
 
     async fn update_clock(&mut self, current_time: Duration) {
-        let (_, _, _, hour, minute, _) = unix_to_human_time(current_time.as_secs() as i64);
-
         graphics::lock!({
-            self.clock_string = format!("{hour:02}:{minute:02}\0");
+            self.clock_string =
+                internationalization::format_unix_timestamp(current_time.as_secs() as i64, "%H:%M");
+            self.clock_string.push('\0');
 
             unsafe {
                 lvgl::lv_label_set_text_static(self.clock, self.clock_string.as_ptr() as *const i8);

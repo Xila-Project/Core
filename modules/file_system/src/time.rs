@@ -6,7 +6,7 @@
 
 use core::fmt::{self, Display, Formatter};
 use core::time::Duration;
-use shared::unix_to_human_time;
+use shared::decompose_unix_timestamp;
 
 /// Represents a point in time for file system operations.
 ///
@@ -100,7 +100,8 @@ impl From<Time> for Duration {
 
 impl Display for Time {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let (year, month, day, hour, minute, second) = unix_to_human_time(self.seconds as i64);
+        let (year, month, day, hour, minute, second) =
+            decompose_unix_timestamp(self.seconds as i64);
 
         write!(
             f,
