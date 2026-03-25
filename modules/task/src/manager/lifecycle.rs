@@ -75,14 +75,13 @@ impl Manager {
             .expect("Failed to get task metadata")
             .spawner_identifier = spawner;
 
-        let token = pool.spawn(task);
+        let token = pool.spawn(task).expect("Failed to spawn task");
 
         inner
             .spawners
             .get(&spawner)
             .expect("Failed to get spawner")
-            .spawn(token)
-            .expect("Failed to spawn task");
+            .spawn(token);
 
         Ok((join_handle_parent, identifier))
     }
