@@ -1,6 +1,5 @@
 {
   "Failed to duplicate standard: {:?}": "Failed to duplicate standard: {:?}",
-  "Failed to execute: {:?}": "Failed to execute: {:?}",
   "Failed to get current directory": "Failed to get current directory",
   "Failed to get task information: {:?}": "Failed to get task information: {:?}",
   "Failed to open file": "Failed to open file",
@@ -26,6 +25,5 @@
   "WASM compilation error: {}": "WASM compilation error: {}",
   "WASM execution error: {}": "WASM execution error: {}",
   "WASM instantiation error: {}": "WASM instantiation error: {}",
-  "WASM instantiation failure: {}": "WASM instantiation failure: {}",
   "WASM runtime initialization failed": "WASM runtime initialization failed"
 }

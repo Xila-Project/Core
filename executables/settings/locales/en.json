@@ -20,7 +20,6 @@
   "Failed to read directory: {}": "Failed to read directory: {}",
   "Failed to set environment variable: {}": "Failed to set environment variable: {}",
   "Failed to set task user: {}": "Failed to set task user: {}",
-  "File system error: {}": "File system error: {}",
   "Formatting error": "Formatting error",
   "Gateway": "Gateway",
   "General": "General",

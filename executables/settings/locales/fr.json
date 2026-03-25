@@ -20,7 +20,6 @@
   "Failed to read directory: {}": "Échec de la lecture du répertoire: {}",
   "Failed to set environment variable: {}": "Échec de la définition de la variable d'environnement: {}",
   "Failed to set task user: {}": "Échec de la définition de l'utilisateur de la tâche: {}",
-  "File system error: {}": "Erreur du système de fichiers: {}",
   "Formatting error": "Erreur de formatage",
   "Gateway": "Passerelle",
   "General": "Général",

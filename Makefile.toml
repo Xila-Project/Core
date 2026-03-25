@@ -36,7 +36,7 @@ args = ["exec", "tolgee", "compare", "${@}"]
 
 [tasks.translate-sync]
 command = "npm"
-args = ["exec", "tolgee", "sync", "--remove-unused", "${@}"]
+args = ["exec", "tolgee", "sync", "--", "--remove-unused", "${@}"]
 
 [tasks.translate-pull]
 command = "npm"

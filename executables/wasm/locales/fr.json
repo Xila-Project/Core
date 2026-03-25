@@ -1,6 +1,5 @@
 {
   "Failed to duplicate standard: {:?}": "Échec de la duplication du standard: {:?}",
-  "Failed to execute: {:?}": "Échec de l'exécution: {:?}",
   "Failed to get current directory": "Échec de la récupération du répertoire actuel",
   "Failed to get task information: {:?}": "Échec de la récupération des informations de tâche: {:?}",
   "Failed to open file": "Échec de l'ouverture du fichier",
@@ -26,6 +25,5 @@
   "WASM compilation error: {}": "Erreur de compilation WASM: {}",
   "WASM execution error: {}": "Erreur d'exécution WASM: {}",
   "WASM instantiation error: {}": "Erreur d'instanciation WASM: {}",
-  "WASM instantiation failure: {}": "Échec de l'instanciation WASM: {}",
   "WASM runtime initialization failed": "Échec de l'initialisation du runtime WASM"
 }
