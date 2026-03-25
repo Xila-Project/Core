@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 internationalization_macros = { path = "./macros" }
+shared = { path = "../shared" }
 
 [features]
 default = []
