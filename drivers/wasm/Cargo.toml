@@ -19,7 +19,7 @@ console_log = "1"
 wasm-bindgen-futures = "0.4"
 getrandom = { version = "0.4.2", features = ["wasm_js"] }
 embassy-executor = { workspace = true, default-features = false, features = [
-  "arch-wasm",
+  "platform-wasm",
   "executor-thread",
 ] }
 wasm-bindgen = "0.2"

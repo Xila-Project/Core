@@ -24,8 +24,8 @@ command = "taplo"
 args = ["format", "${@}"]
 
 [tasks.format-json]
-command = "npx"
-args = ["prettier", "--write", "**/*.json", "${@}"]
+command = "npm"
+args = ["exec", "prettier", "--", "--write", "**/*.json", "${@}"]
 
 [tasks.format]
 dependencies = ["format-rust", "format-toml", "format-json"]
