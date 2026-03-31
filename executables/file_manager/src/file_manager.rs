@@ -101,7 +101,7 @@ impl FileManager {
 
     pub async fn handle_event(&mut self, event: graphics::Event) -> Result<()> {
         match event.code {
-            EventKind::Delete => {
+            EventKind::Delete | EventKind::CloseRequested => {
                 if event.target == self.window.get_object() {
                     self.running = false;
                 }

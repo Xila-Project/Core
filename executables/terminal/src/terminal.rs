@@ -191,7 +191,11 @@ impl Terminal {
 
             while let Some(event) = inner.window.pop_event() {
                 match event.code {
-                    EventKind::Delete => running = false,
+                    EventKind::Delete | EventKind::CloseRequested => {
+                        if event.target == inner.window.get_object() {
+                            running = false;
+                        }
+                    }
                     EventKind::Key => {
                         if let Some(Key::Enter) = event.key {
                             let text = Self::get_input(inner.input);
