@@ -60,7 +60,9 @@ impl Settings {
 
         graphics::lock!({
             while let Some(event) = self.window.pop_event() {
-                if event.code == EventKind::Delete && event.target == self.window.get_object() {
+                if (event.code == EventKind::Delete || event.code == EventKind::CloseRequested)
+                    && event.target == self.window.get_object()
+                {
                     running = false;
                 } else {
                     // Let each tab handle the event
