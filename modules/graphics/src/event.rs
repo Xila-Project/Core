@@ -85,7 +85,7 @@ pub enum EventKind {
     Last = lvgl::lv_event_code_t_LV_EVENT_LAST as u16,
     Custom1,
     Custom2,
-    Custom3,
+    CloseRequested,
     Custom4,
     Custom5,
     Custom6,

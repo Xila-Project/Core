@@ -16,6 +16,10 @@ pub struct Window {
 
 impl Drop for Window {
     fn drop(&mut self) {
+        if !self.is_valid() {
+            return;
+        }
+
         unsafe {
             let user_data = lvgl::lv_obj_get_user_data(self.window) as *mut UserData;
 
@@ -63,6 +67,10 @@ unsafe extern "C" fn event_callback(event: *mut lvgl::lv_event_t) {
 }
 
 impl Window {
+    fn is_valid(&self) -> bool {
+        unsafe { lvgl::lv_obj_is_valid(self.window) }
+    }
+
     /// Create a new window.
     ///
     /// # Arguments
@@ -116,6 +124,10 @@ impl Window {
     }
 
     pub fn peek_event(&self) -> Option<Event> {
+        if !self.is_valid() {
+            return None;
+        }
+
         let user_data = unsafe { lvgl::lv_obj_get_user_data(self.window) as *mut UserData };
 
         let user_data = unsafe { Box::from_raw(user_data) };
@@ -128,6 +140,10 @@ impl Window {
     }
 
     pub fn pop_event(&mut self) -> Option<Event> {
+        if !self.is_valid() {
+            return None;
+        }
+
         let user_data = unsafe { lvgl::lv_obj_get_user_data(self.window) as *mut UserData };
 
         let mut user_data = unsafe { Box::from_raw(user_data) };

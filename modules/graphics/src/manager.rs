@@ -251,6 +251,32 @@ impl Manager {
         }
     }
 
+    pub async fn send_window_close_request(&self, identifier: usize) -> Result<()> {
+        let window_count = self.get_window_count().await?;
+
+        let window_parent = self.inner.read().await.window_parent;
+
+        let found = (0..window_count).any(|index| unsafe {
+            let child = lvgl::lv_obj_get_child(window_parent, index as i32);
+
+            child == identifier as *mut lvgl::lv_obj_t
+        });
+
+        if !found {
+            return Err(Error::InvalidWindowIdentifier);
+        }
+
+        unsafe {
+            lvgl::lv_obj_send_event(
+                identifier as *mut lvgl::lv_obj_t,
+                crate::EventKind::CloseRequested.into_lvgl_code(),
+                core::ptr::null_mut(),
+            );
+        }
+
+        Ok(())
+    }
+
     pub async fn lock_function<T>(&self, function: impl FnOnce() -> Result<T>) -> Result<T> {
         let _lock = self.global_lock.lock().await;
 
