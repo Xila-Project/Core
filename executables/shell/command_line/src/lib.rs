@@ -89,6 +89,7 @@ impl Shell {
             "dns_resolve" => self.dns_resolve(&mut options).await,
             "ping" => self.ping(&mut options).await,
             "ip" => self.ip(&mut options).await,
+            "pwd" => self.print_working_directory(&mut options).await,
             _ => self.execute(input, paths).await,
         };
 
