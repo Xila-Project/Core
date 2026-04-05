@@ -11,6 +11,7 @@ mod exit;
 mod ip;
 mod list;
 mod ping;
+mod print_working_directory;
 mod statistics;
 mod web_request;
 
