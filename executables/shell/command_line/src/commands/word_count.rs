@@ -1,24 +1,23 @@
 use crate::{Error, Result, Shell};
-use alloc::string::ToString;
+use alloc::borrow::ToOwned;
 use core::fmt::Write;
 use executable_macros::GetArgs;
 use xila::{
-    file_system::{AccessFlags, Kind, Path},
-    log, users,
-    virtual_file_system::{self, Directory, File},
+    file_system::{AccessFlags, Path},
+    virtual_file_system::{self, File},
 };
 
 #[derive(GetArgs)]
 struct ListArguments<'a> {
     #[arg(positional, default = "")]
     path: &'a str,
-    #[arg(flag, short = 'c', long = "characters")]
+    #[arg(flag, short = 'c', long = "characters", default = true)]
     characters: bool,
-    #[arg(flag, short = 'w', long = "words")]
+    #[arg(flag, short = 'w', long = "words", default = true)]
     words: bool,
-    #[arg(flag, short = 'l', long = "lines")]
+    #[arg(flag, short = 'l', long = "lines", default = true)]
     lines: bool,
-    #[arg(flag, short = 'L', long = "longest-line")]
+    #[arg(flag, short = 'L', long = "longest-line", default = false)]
     longest_line: bool,
 }
 
@@ -37,10 +36,15 @@ impl Shell {
             lines,
             longest_line,
         } = ListArguments::parse(options)?;
-        let path: &Path = if path.is_empty() {
-            self.current_directory.as_ref()
+
+        let path = Path::from_str(path);
+        let path = if path.is_absolute() {
+            path.to_owned()
         } else {
-            Path::from_str(path)
+            self.current_directory
+                .clone()
+                .join(path)
+                .ok_or(Error::FailedToJoinPath)?
         };
 
         let virtual_file_system = virtual_file_system::get_instance();
