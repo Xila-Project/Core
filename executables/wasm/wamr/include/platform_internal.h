@@ -8,29 +8,28 @@
 
 #include "../../../../modules/abi/xila.h"
 
-//#include "stubs.h"
-#include <stdint.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+// #include "stubs.h"
+#include <arpa/inet.h>
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include <math.h>
-#include <unistd.h>
+#include <poll.h>
 #include <pthread.h>
-#include <arpa/inet.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
-#include <poll.h>
-#include <limits.h>
-#include <assert.h>
-#include <sys/ioctl.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif /* end of extern "C" */
 
 #ifndef BH_PLATFORM_XILA
@@ -43,35 +42,33 @@ extern "C"
 #define PATH_MAX 256
 #endif
 
-    typedef size_t korp_tid;
+typedef size_t korp_tid;
 
-    struct RawMutex
-    {
-        uint8_t _[32];
-    } __attribute__((aligned(8)));
+struct RawMutex {
+  uint8_t _[32];
+} __attribute__((aligned(8)));
 
-    typedef struct RawMutex korp_mutex;
+typedef struct RawMutex korp_mutex;
 
-    typedef pthread_cond_t korp_cond;
-    typedef XilaThreadIdentifier korp_thread;
+typedef pthread_cond_t korp_cond;
+typedef XilaThreadIdentifier korp_thread;
 
-    struct RawRwLock
-    {
-        uint8_t _[8];
-    } __attribute__((aligned(8)));
+struct RawRwLock {
+  uint8_t _[8];
+} __attribute__((aligned(8)));
 
-    typedef struct RawRwLock korp_rwlock;
+typedef struct RawRwLock korp_rwlock;
 
-    typedef struct XilaSemaphore korp_sem;
+typedef struct XilaSemaphore korp_sem;
 
-    // #define OS_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
+// #define OS_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 
 #define BH_APPLET_PRESERVED_STACK_SIZE (2 * BH_KB)
 
 /* Default thread priority */
 #define BH_THREAD_DEFAULT_PRIORITY 5
 
-    /* Special value for tv_nsec field of timespec */
+/* Special value for tv_nsec field of timespec */
 
 #define UTIME_NOW ((1l << 30) - 1l)
 #ifndef __cplusplus
@@ -90,13 +87,13 @@ extern "C"
 #undef DT_DIR
 #endif
 
-    /* Below parts of d_type define are ported from Nuttx, under Apache License v2.0
-     */
+/* Below parts of d_type define are ported from Nuttx, under Apache License v2.0
+ */
 
-    /* File type code for the d_type field in dirent structure.
-     * Note that because of the simplified filesystem organization of the NuttX,
-     * top-level, pseudo-file system, an inode can be BOTH a file and a directory
-     */
+/* File type code for the d_type field in dirent structure.
+ * Note that because of the simplified filesystem organization of the NuttX,
+ * top-level, pseudo-file system, an inode can be BOTH a file and a directory
+ */
 
 #define DTYPE_UNKNOWN 0
 #define DTYPE_FIFO 1
@@ -124,14 +121,17 @@ extern "C"
 #define DT_LNK DTYPE_LINK
 #define DT_SOCK DTYPE_SOCK
 
-    typedef XilaFileIdentifier os_dir_stream;
-    typedef XilaFileIdentifier os_raw_file_handle;
-    typedef XilaFileIdentifier os_file_handle;
+typedef struct timespec os_timespec;
 
-    XilaFileIdentifier os_get_invalid_handle();
+typedef XilaFileIdentifier os_dir_stream;
+typedef XilaFileIdentifier os_raw_file_handle;
+typedef XilaFileIdentifier os_file_handle;
+typedef XilaFileSystemPollEvent os_poll_file_handle;
+typedef XilaFileIdentifier os_nfds_t;
 
-    int os_getpagesize();
+XilaFileIdentifier os_get_invalid_handle();
 
+int os_getpagesize();
 
 #ifdef __cplusplus
 }
