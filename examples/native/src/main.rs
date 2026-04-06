@@ -7,7 +7,6 @@ async fn main() {
 
     use alloc::vec;
     use core::time::Duration;
-    use drivers_std::executor::new_thread_executor;
     use drivers_std::loader::load_to_virtual_file_system;
     use xila::authentication;
     use xila::bootsplash::Bootsplash;
@@ -208,11 +207,6 @@ async fn main() {
 
     let virtual_file_system = virtual_file_system::get_instance();
 
-    fn new_thread_executor_wrapper()
-    -> core::pin::Pin<Box<dyn Future<Output = task::SpawnerIdentifier> + Send>> {
-        Box::pin(new_thread_executor())
-    }
-
     mount_executables!(
         virtual_file_system,
         task,
@@ -243,10 +237,7 @@ async fn main() {
                     .await
                     .unwrap()
             ),
-            (
-                &"/binaries/wasm",
-                wasm::WasmExecutable::new(Some(new_thread_executor_wrapper))
-            )
+            (&"/binaries/wasm", wasm::WasmExecutable::new(None))
         ]
     )
     .await
