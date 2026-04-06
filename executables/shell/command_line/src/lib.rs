@@ -1,6 +1,8 @@
 #![no_std]
 
 extern crate alloc;
+#[cfg(test)]
+extern crate std;
 
 use crate::{Error, Result};
 use alloc::{
@@ -26,6 +28,8 @@ mod error;
 mod resolver;
 //mod tokenizer;
 
+use commands::{CommandContext, dispatch_user_command, resolve_user_command};
+
 pub struct Shell {
     task: TaskIdentifier,
     standard: Standard,
@@ -36,6 +40,54 @@ pub struct Shell {
 }
 
 pub struct ShellExecutable;
+
+struct ShellCommandContext<'a> {
+    shell: &'a mut Shell,
+}
+
+impl<'a> ShellCommandContext<'a> {
+    fn new(shell: &'a mut Shell) -> Self {
+        Self { shell }
+    }
+}
+
+impl CommandContext for ShellCommandContext<'_> {
+    fn task_id(&self) -> TaskIdentifier {
+        self.shell.task
+    }
+
+    fn current_directory(&self) -> &Path {
+        &self.shell.current_directory
+    }
+
+    fn set_current_directory(&mut self, directory: PathOwned) {
+        self.shell.current_directory = directory;
+    }
+
+    fn stop(&mut self) {
+        self.shell.running = false;
+    }
+
+    fn write_out_fmt(&mut self, arguments: core::fmt::Arguments<'_>) -> Result<()> {
+        self.shell
+            .standard
+            .out()
+            .write_fmt(arguments)
+            .map_err(Into::into)
+    }
+
+    async fn write_out(&mut self, buffer: &[u8]) {
+        let _ = self.shell.standard.out().write(buffer).await;
+    }
+
+    async fn write_out_line(&mut self, buffer: &[u8]) {
+        let _ = self.shell.standard.out().write_line(buffer).await;
+    }
+
+    fn standard(&mut self) -> &mut Standard {
+        &mut self.shell.standard
+    }
+}
 
 impl ExecutableTrait for ShellExecutable {
     fn main(standard: Standard, arguments: Vec<String>) -> executable::MainFuture {
@@ -74,26 +126,13 @@ impl Shell {
         };
 
         let result = match next_positional {
-            "exit" => self.exit(&mut options).await,
-            "cd" => self.change_directory(&mut options).await,
-            "echo" => self.echo(&mut options).await,
-            "ls" => self.list(&mut options).await,
-            "clear" => self.clear(&mut options).await,
-            "cat" => self.concatenate(&mut options).await,
-            "stat" => self.statistics(&mut options).await,
-            "mkdir" => self.create_directory(&mut options).await,
-            "export" => self.set_environment_variable(&mut options).await,
-            "unset" => self.remove_environment_variable(&mut options).await,
-            "rm" => self.remove(&mut options).await,
-            "web_request" => self.web_request(&mut options).await,
-            "dns_resolve" => self.dns_resolve(&mut options).await,
-            "ping" => self.ping(&mut options).await,
-            "ip" => self.ip(&mut options).await,
-            "pwd" => self.print_working_directory(&mut options).await,
-            "printenv" => self.print_environment_variable(&mut options).await,
-            "which" => self.which(&mut options, paths).await,
-            "wc" => self.word_count(&mut options).await,
-            _ => self.execute(input, paths).await,
+            command => match resolve_user_command(command) {
+                Some(user_command) => {
+                    let mut context = ShellCommandContext::new(self);
+                    dispatch_user_command(user_command, &mut context, &mut options, paths).await
+                }
+                None => self.execute(input, paths).await,
+            },
         };
 
         if let Err(error) = result {
