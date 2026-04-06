@@ -29,11 +29,11 @@ impl UserCommand for WordCountCommand {
 struct WordCountArguments<'a> {
     #[arg(positional, default = "")]
     path: &'a str,
-    #[arg(flag, short = 'c', long = "characters", default = true)]
+    #[arg(flag, short = 'c', long = "characters", default = false)]
     characters: bool,
-    #[arg(flag, short = 'w', long = "words", default = true)]
+    #[arg(flag, short = 'w', long = "words", default = false)]
     words: bool,
-    #[arg(flag, short = 'l', long = "lines", default = true)]
+    #[arg(flag, short = 'l', long = "lines", default = false)]
     lines: bool,
     #[arg(flag, short = 'L', long = "longest-line", default = false)]
     longest_line: bool,
@@ -159,8 +159,18 @@ where
     I: Iterator<Item = &'a str>,
     C: CommandContext,
 {
-    let arguments = WordCountArguments::parse(options)?;
+    let mut arguments = WordCountArguments::parse(options)?;
     let path = resolve_path(context, arguments.path)?;
+
+    if arguments.characters || arguments.words || arguments.lines || arguments.longest_line {
+        // At least one specific count requested, do nothing
+    } else {
+        // No specific count requested, default to all counts
+        arguments.characters = true;
+        arguments.words = true;
+        arguments.lines = true;
+        arguments.longest_line = true;
+    }
 
     let file = File::open(
         virtual_file_system::get_instance(),
