@@ -1,8 +1,6 @@
 use crate::host::virtual_machine::{CustomData, Result, module::Module, runtime::Runtime};
-use alloc::{boxed::Box, vec, vec::Vec};
-use wamr_rust_sdk::{
-    function::Function, instance, sys::wasm_runtime_get_custom_data, value::WasmValue,
-};
+use alloc::boxed::Box;
+use wamr_rust_sdk::{instance, sys::wasm_runtime_get_custom_data};
 
 pub struct Instance<'module> {
     instance: instance::Instance<'module>,
