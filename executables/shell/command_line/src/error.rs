@@ -32,6 +32,7 @@ pub enum Error {
     FailedToRemoveDirectory(virtual_file_system::Error),
     FailedToOpenDirectory(virtual_file_system::Error),
     FailedToOpenFile(virtual_file_system::Error),
+    FailedToReadFile(virtual_file_system::Error),
     RequiresValue,
     DoesNotRequireValue,
     InvalidArgument,
@@ -141,6 +142,9 @@ impl Display for Error {
             }
             Error::FailedToOpenFile(error) => {
                 write!(formatter, translate!("Failed to open file: {}"), error)
+            }
+            Error::FailedToReadFile(error) => {
+                write!(formatter, translate!("Failed to read file: {}"), error)
             }
             Error::RequiresValue => {
                 write!(formatter, translate!("Option requires a value"))

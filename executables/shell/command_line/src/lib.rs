@@ -92,6 +92,7 @@ impl Shell {
             "pwd" => self.print_working_directory(&mut options).await,
             "printenv" => self.print_environment_variable(&mut options).await,
             "which" => self.which(&mut options, paths).await,
+            "wc" => self.word_count(&mut options).await,
             _ => self.execute(input, paths).await,
         };
 
