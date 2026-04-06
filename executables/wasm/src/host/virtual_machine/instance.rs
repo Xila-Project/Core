@@ -44,24 +44,6 @@ impl<'module> Instance<'module> {
         Ok(instance)
     }
 
-    pub fn call_exported_function(
-        &self,
-        name: &str,
-        parameters: &Vec<WasmValue>,
-    ) -> Result<Vec<WasmValue>> {
-        if parameters.is_empty() {
-            Ok(
-                Function::find_export_func(self.get_inner_reference(), name)?
-                    .call(&self.instance, &vec![WasmValue::I32(0)])?,
-            )
-        } else {
-            Ok(
-                Function::find_export_func(self.get_inner_reference(), name)?
-                    .call(&self.instance, parameters)?,
-            )
-        }
-    }
-
     pub fn get_inner_reference(&'_ self) -> &'_ instance::Instance<'_> {
         &self.instance
     }
