@@ -1,16 +1,22 @@
-use crate::Shell;
+use xila::file_system::Path;
 
-use core::fmt::Write;
+use super::{CommandContext, UserCommand};
 
-impl Shell {
-    pub async fn print_working_directory<'a, I>(
-        &mut self,
-        _: &mut getargs::Options<&'a str, I>,
+pub struct PrintWorkingDirectoryCommand;
+
+impl UserCommand for PrintWorkingDirectoryCommand {
+    async fn execute<'a, I, C>(
+        &self,
+        context: &mut C,
+        _options: &mut getargs::Options<&'a str, I>,
+        _paths: &[&Path],
     ) -> crate::Result<()>
     where
         I: Iterator<Item = &'a str>,
+        C: CommandContext,
     {
-        writeln!(self.standard.out(), "{}", self.current_directory)?;
+        let current_directory = context.current_directory_owned();
+        context.write_out_fmt(format_args!("{}\n", current_directory.as_str()))?;
         Ok(())
     }
 }
