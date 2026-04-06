@@ -91,6 +91,7 @@ impl Shell {
             "ip" => self.ip(&mut options).await,
             "pwd" => self.print_working_directory(&mut options).await,
             "printenv" => self.print_environment_variable(&mut options).await,
+            "which" => self.which(&mut options, paths).await,
             _ => self.execute(input, paths).await,
         };
 
