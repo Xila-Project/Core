@@ -40,7 +40,7 @@ jobs:
         run: cargo make format-rust -- --check
 
       - name: Check | Formatting (JSON)
-        run: npx --no-install prettier --check "**/*.json"
+        run: npm exec prettier -- --check "**/*.json"
 
   host:
     name: Host checks
