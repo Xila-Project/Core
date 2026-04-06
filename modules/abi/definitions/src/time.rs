@@ -4,6 +4,12 @@ use time::get_instance;
 
 pub type XilaTime = u64;
 
+#[repr(C)]
+pub struct XilaTimePrecision {
+    seconds: XilaTime,
+    nanoseconds: u32,
+}
+
 #[repr(u8)]
 pub enum XilaTimeClockIdentifier {
     Monotonic,
@@ -67,5 +73,10 @@ pub extern "C" fn xila_time_nano_sleep(
     _time: *const c_void,
     _remaining: *mut XilaTime,
 ) -> c_int {
+    0
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn xila_time_dummy(_: XilaTimePrecision) -> XilaTime {
     0
 }

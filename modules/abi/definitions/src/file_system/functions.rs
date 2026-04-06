@@ -11,7 +11,7 @@ use virtual_file_system::{
     Error, SynchronousDirectory, SynchronousFile, get_instance as get_file_system_instance,
 };
 
-use crate::{XilaFileSystemState, XilaTime, file_system::into_position};
+use crate::{XilaFileSystemPollEvent, XilaFileSystemState, XilaTime, file_system::into_position};
 
 use super::{
     XilaFileIdentifier, XilaFileSystemMode, XilaFileSystemOpen, XilaFileSystemResult,
@@ -763,4 +763,9 @@ pub extern "C" fn xila_file_system_allocate(
     _length: XilaFileSystemSize,
 ) -> XilaFileSystemResult {
     todo!()
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn xila_file_system_dummy(_: XilaFileSystemPollEvent) -> XilaFileSystemResult {
+    into_u32(move || Ok(()))
 }

@@ -148,3 +148,10 @@ pub type XilaFileIdentifier = u16;
 pub type XilaFileSystemSize = u64;
 
 pub type XilaFileSystemResult = u32;
+
+#[repr(C)]
+pub struct XilaFileSystemPollEvent {
+    fd: XilaFileIdentifier,
+    events: u32,
+    revents: u32,
+}

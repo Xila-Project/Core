@@ -2052,3 +2052,29 @@ bool os_is_stderr_handle(os_file_handle fd)
 {
     return xila_file_system_is_stderr(fd);
 }
+
+/* Experimental */
+
+/* Used in posix.c around L2259 and expect the return code
+ * of ioctl() directly.
+ */
+int
+os_ioctl(os_file_handle handle, int request, ...) {
+    return -1;
+}
+
+/* Higher level API:
+ * __wasi_errno_t
+ * blocking_op_poll(wasm_exec_env_t exec_env, os_poll_file_handle *pfds,
+ *             os_nfds_t nfds, int timeout_ms, int *retp)
+ * Already format the errno and expect the return code of poll() directly.
+ */
+int
+os_poll(os_poll_file_handle *pfds, os_nfds_t nfs, int timeout) {
+    return -1;
+}
+
+bool
+os_compare_file_handle(os_file_handle handle1, os_file_handle handle2) {
+    return handle1 == handle2;
+}

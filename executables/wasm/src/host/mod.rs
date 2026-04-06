@@ -44,6 +44,8 @@ struct WasmArguments<'a> {
     install: bool,
     #[arg(default = DEFAULT_STACK_SIZE)]
     stack_size: usize,
+    #[arg(default = 200)]
+    instruction_limit: u32,
 }
 
 impl WasmExecutable {
@@ -68,6 +70,7 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
         install,
         stack_size,
         path,
+        instruction_limit,
     } = WasmArguments::parse(&mut options)?;
     let path = Path::new(path);
 
@@ -136,6 +139,7 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
                             function_name,
                             vec![],
                             task_identifier,
+                            instruction_limit,
                         )
                         .await
                 },
@@ -157,6 +161,7 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
                 function_name,
                 vec![],
                 task_identifier,
+                instruction_limit,
             )
             .await?;
     }

@@ -8,6 +8,7 @@ build = "build/main.rs"
 xila = { path = "../../", optional = true }
 wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git", features = [
   "multi-module",
+  "instruction-metering",
 ], optional = true }
 getargs = { version = "0.5" }
 executable_macros = { path = "../../modules/executable/macros" }
