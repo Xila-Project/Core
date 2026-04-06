@@ -1,5 +1,4 @@
 name: Check
-description: Run Rust checks including formatting, linting, documentation, examples build, and tests
 
 on:
   push:
@@ -7,14 +6,21 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  rust-checks:
-    name: Rust checks
+  format:
+    name: Format checks
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Setup | Checkout repository
         uses: actions/checkout@v4
@@ -23,9 +29,9 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Setup | Install cargo-taplo
-        run: |
-          curl -fsSL https://github.com/tamasfe/taplo/releases/latest/download/taplo-linux-x86_64.gz \
-          | gzip -d - | install -m 755 /dev/stdin /usr/local/bin/taplo
+        uses: taiki-e/install-action@v2
+        with:
+          tool: taplo-cli@0.9.3
 
       - name: Check | Formatting (TOML)
         run: cargo make format-toml --check
@@ -34,26 +40,28 @@ jobs:
         run: cargo make format-rust -- --check
 
       - name: Check | Formatting (JSON)
-        run: npx prettier --check "**/*.json"
+        run: npm exec prettier -- --check "**/*.json"
+
+  host:
+    name: Host checks
+    needs: [format]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Setup | Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
 
       - name: Check | Clippy (Host)
         run: cargo make clippy-host
 
-      - name: Check | Clippy (Guest)
-        run: cargo make clippy-guest
-
       - name: Check | Documentation (Host)
         run: RUSTDOCFLAGS="--deny warnings" cargo make doc-host
 
-      - name: Check | Documentation (Guest)
-        run: RUSTDOCFLAGS="--deny warnings" cargo make doc-guest
-
       - name: Build | Example (Native)
-        run: cargo make build -p native_example && cargo clean -p native_example
-
-      - name: Build | Example (WASM)
-        working-directory: ./examples/wasm
-        run: trunk build && cargo clean --target wasm32-unknown-unknown
+        run: cargo make build -p native_example
 
       - name: Run | Test
         run: cargo make coverage --lcov --output-path lcov.info
@@ -65,3 +73,25 @@ jobs:
           slug: Xila-Project/Core
           files: lcov.info
           fail_ci_if_error: true
+
+  guest:
+    name: Guest checks
+    needs: [format]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Setup | Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Check | Clippy (Guest)
+        run: cargo make clippy-guest
+
+      - name: Check | Documentation (Guest)
+        run: RUSTDOCFLAGS="--deny warnings" cargo make doc-guest
+
+      - name: Build | Example (WASM)
+        working-directory: ./examples/wasm
+        run: trunk build
