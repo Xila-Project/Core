@@ -51,8 +51,6 @@ void os_free(void *ptr)
 
 int os_printf(const char *format, ...)
 {
-    printf("os_printf: \n");
-
     int ret = 0;
     va_list args;
     va_start(args, format);
@@ -67,8 +65,6 @@ int os_printf(const char *format, ...)
 
 int os_vprintf(const char *format, va_list ap)
 {
-    printf("os_vprintf: \n");
-
 #ifndef BH_VPRINTF
     return vprintf(format, ap);
 #else

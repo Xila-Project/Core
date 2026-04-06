@@ -8,25 +8,33 @@
 
 #include "../../../../modules/abi/xila.h"
 
-// #include "stubs.h"
-#include <arpa/inet.h>
+#include "stubs.h"
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <math.h>
-#include <poll.h>
-#include <pthread.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <sys/uio.h>
-#include <unistd.h>
+
+int vprintf(const char *format, va_list ap);
+int snprintf(char *str, size_t size, const char *format, ...);
+int vsnprintf(char *str, size_t size, const char *format, va_list ap);
+void abort(void);
+long labs(long value);
+unsigned long strtoul(const char *nptr, char **endptr, int base);
+unsigned long long strtoull(const char *nptr, char **endptr, int base);
+float strtof(const char *nptr, char **endptr);
+double strtod(const char *nptr, char **endptr);
+long strtol(const char *nptr, char **endptr, int base);
+int atoi(const char *nptr);
+void qsort(void *base, size_t nmemb, size_t size,
+           int (*compar)(const void *, const void *));
+void *bsearch(const void *key, const void *base, size_t nmemb, size_t size,
+              int (*compar)(const void *, const void *));
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +50,7 @@ extern "C" {
 #define PATH_MAX 256
 #endif
 
-typedef size_t korp_tid;
+typedef uintptr_t korp_tid;
 
 struct RawMutex {
   uint8_t _[32];
@@ -50,7 +58,7 @@ struct RawMutex {
 
 typedef struct RawMutex korp_mutex;
 
-typedef pthread_cond_t korp_cond;
+typedef XilaConditionVariable korp_cond;
 typedef XilaThreadIdentifier korp_thread;
 
 struct RawRwLock {

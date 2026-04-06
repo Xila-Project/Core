@@ -198,7 +198,7 @@ int os_cond_init(korp_cond *cond)
  */
 int os_cond_destroy(korp_cond *cond)
 {
-    printf("os_cond_destroy called\n");
+    (void)cond;
     return 0;
     //return xila_condition_variable_remove(cond);
 }
@@ -213,7 +213,8 @@ int os_cond_destroy(korp_cond *cond)
  */
 int os_cond_wait(korp_cond *cond, korp_mutex *mutex)
 {
-    printf("os_cond_wait called\n");
+    (void)cond;
+    (void)mutex;
     return 0;
     //return xila_condition_variable_wait(cond, mutex);
 }
@@ -229,7 +230,9 @@ int os_cond_wait(korp_cond *cond, korp_mutex *mutex)
  */
 int os_cond_reltimedwait(korp_cond *cond, korp_mutex *mutex, uint64 useconds)
 {
-    printf("os_cond_reltimedwait called\n");
+    (void)cond;
+    (void)mutex;
+    (void)useconds;
     return 0;
     //return xila_condition_variable_try_wait(cond, mutex, useconds);
 }
@@ -243,7 +246,7 @@ int os_cond_reltimedwait(korp_cond *cond, korp_mutex *mutex, uint64 useconds)
  */
 int os_cond_signal(korp_cond *cond)
 {
-    printf("os_cond_signal called\n");
+    (void)cond;
     return 0;
     //return xila_condition_variable_signal(cond);
 }
@@ -257,7 +260,7 @@ int os_cond_signal(korp_cond *cond)
  */
 int os_cond_broadcast(korp_cond *cond)
 {
-    printf("os_cond_broadcast called\n");
+    (void)cond;
     return 0;
     //return xila_condition_variable_broadcast(cond);
 }
@@ -2060,6 +2063,9 @@ bool os_is_stderr_handle(os_file_handle fd)
  */
 int
 os_ioctl(os_file_handle handle, int request, ...) {
+    (void)handle;
+    (void)request;
+    /* Placeholder for future Xila ioctl-like ABI wiring. */
     return -1;
 }
 
@@ -2071,6 +2077,10 @@ os_ioctl(os_file_handle handle, int request, ...) {
  */
 int
 os_poll(os_poll_file_handle *pfds, os_nfds_t nfs, int timeout) {
+    (void)pfds;
+    (void)nfs;
+    (void)timeout;
+    /* Placeholder for future Xila poll-like ABI wiring. */
     return -1;
 }
 
