@@ -15,6 +15,7 @@ mod print_working_directory;
 mod statistics;
 mod web_request;
 mod which;
+mod word_count;
 
 fn check_no_more_options<'a, I>(options: &mut getargs::Options<&'a str, I>) -> crate::Result<()>
 where
