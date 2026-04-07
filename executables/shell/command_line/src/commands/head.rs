@@ -1,0 +1,159 @@
+use crate::{Error, Result};
+use alloc::{borrow::ToOwned, vec::Vec};
+use executable_macros::GetArgs;
+use xila::{
+    file_system::{AccessFlags, Path},
+    virtual_file_system::{self, File},
+};
+
+use super::{CommandContext, UserCommand};
+
+pub struct HeadCommand;
+
+impl UserCommand for HeadCommand {
+    async fn execute<'a, I, C>(
+        &self,
+        context: &mut C,
+        options: &mut getargs::Options<&'a str, I>,
+        _paths: &[&Path],
+    ) -> Result<()>
+    where
+        I: Iterator<Item = &'a str>,
+        C: CommandContext,
+    {
+        execute_head(context, options).await
+    }
+}
+
+#[derive(GetArgs)]
+struct HeadArguments<'a> {
+    path: &'a str,
+    #[arg(short = 'n', long = "lines", default = 10)]
+    lines: usize,
+}
+
+fn resolve_path<C: CommandContext>(
+    context: &C,
+    path: &str,
+) -> Result<xila::file_system::PathOwned> {
+    let path = Path::from_str(path);
+
+    if path.is_absolute() {
+        Ok(path.to_owned())
+    } else {
+        context
+            .current_directory_owned()
+            .join(path)
+            .ok_or(Error::FailedToJoinPath)
+    }
+}
+
+async fn read_head_bytes(mut file: File, lines_to_keep: usize) -> Result<Vec<u8>> {
+    let mut output = Vec::new();
+    if lines_to_keep == 0 {
+        return Ok(output);
+    }
+
+    let mut remaining_lines = lines_to_keep;
+    let mut buffer = [0u8; 256];
+
+    loop {
+        let bytes_read = file
+            .read(&mut buffer)
+            .await
+            .map_err(Error::FailedToReadFile)?;
+
+        if bytes_read == 0 {
+            break;
+        }
+
+        for &byte in &buffer[..bytes_read] {
+            output.push(byte);
+
+            if byte == b'\n' {
+                remaining_lines -= 1;
+                if remaining_lines == 0 {
+                    return Ok(output);
+                }
+            }
+        }
+    }
+
+    Ok(output)
+}
+
+async fn execute_head<'a, I, C>(
+    context: &mut C,
+    options: &mut getargs::Options<&'a str, I>,
+) -> Result<()>
+where
+    I: Iterator<Item = &'a str>,
+    C: CommandContext,
+{
+    let HeadArguments { path, lines } = HeadArguments::parse(options)?;
+    let path = resolve_path(context, path)?;
+
+    let file = File::open(
+        virtual_file_system::get_instance(),
+        context.task_id(),
+        &path,
+        AccessFlags::Read.into(),
+    )
+    .await
+    .map_err(Error::FailedToOpenFile)?;
+
+    let output = read_head_bytes(file, lines).await?;
+    context.write_out(&output).await;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::{vec, vec::Vec};
+
+    fn select_head_bytes(input: &[u8], lines_to_keep: usize) -> Vec<u8> {
+        let mut output = Vec::new();
+        if lines_to_keep == 0 {
+            return output;
+        }
+
+        let mut remaining_lines = lines_to_keep;
+        for &byte in input {
+            output.push(byte);
+            if byte == b'\n' {
+                remaining_lines -= 1;
+                if remaining_lines == 0 {
+                    break;
+                }
+            }
+        }
+
+        output
+    }
+
+    #[test]
+    fn keeps_first_two_lines_with_trailing_newline() {
+        let input = b"line1\nline2\nline3\n";
+        assert_eq!(select_head_bytes(input, 2), b"line1\nline2\n");
+    }
+
+    #[test]
+    fn keeps_all_when_fewer_than_requested() {
+        let input = b"line1\nline2\n";
+        assert_eq!(select_head_bytes(input, 10), input);
+    }
+
+    #[test]
+    fn handles_file_without_trailing_newline() {
+        let input = b"line1\nline2";
+        assert_eq!(select_head_bytes(input, 1), b"line1\n");
+        assert_eq!(select_head_bytes(input, 2), input);
+    }
+
+    #[test]
+    fn keeps_nothing_when_zero_lines_requested() {
+        let input = b"line1\nline2\n";
+        assert_eq!(select_head_bytes(input, 0), vec![]);
+    }
+}

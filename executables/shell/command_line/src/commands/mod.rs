@@ -8,11 +8,13 @@ mod echo;
 mod environment_variables;
 mod execute;
 mod exit;
+mod head;
 mod ip;
 mod list;
 mod ping;
 mod print_working_directory;
 mod statistics;
+mod tail;
 mod web_request;
 mod which;
 mod word_count;
@@ -35,11 +37,13 @@ use self::{
         SetEnvironmentVariableCommand,
     },
     exit::ExitCommand,
+    head::HeadCommand,
     ip::IpCommand,
     list::ListCommand,
     ping::PingCommand,
     print_working_directory::PrintWorkingDirectoryCommand,
     statistics::StatisticsCommand,
+    tail::TailCommand,
     web_request::WebRequestCommand,
     which::WhichCommand,
     word_count::WordCountCommand,
@@ -92,6 +96,8 @@ pub enum UserCommandKind {
     PrintEnvironmentVariable,
     Which,
     WordCount,
+    Head,
+    Tail,
 }
 
 pub fn resolve_user_command(name: &str) -> Option<UserCommandKind> {
@@ -115,6 +121,8 @@ pub fn resolve_user_command(name: &str) -> Option<UserCommandKind> {
         "printenv" => Some(UserCommandKind::PrintEnvironmentVariable),
         "which" => Some(UserCommandKind::Which),
         "wc" => Some(UserCommandKind::WordCount),
+        "head" => Some(UserCommandKind::Head),
+        "tail" => Some(UserCommandKind::Tail),
         _ => None,
     }
 }
@@ -173,6 +181,8 @@ where
         }
         UserCommandKind::Which => WhichCommand.execute(context, options, paths).await,
         UserCommandKind::WordCount => WordCountCommand.execute(context, options, paths).await,
+        UserCommandKind::Head => HeadCommand.execute(context, options, paths).await,
+        UserCommandKind::Tail => TailCommand.execute(context, options, paths).await,
     }
 }
 
@@ -268,6 +278,14 @@ mod tests {
         assert!(matches!(
             resolve_user_command("wc"),
             Some(UserCommandKind::WordCount)
+        ));
+        assert!(matches!(
+            resolve_user_command("head"),
+            Some(UserCommandKind::Head)
+        ));
+        assert!(matches!(
+            resolve_user_command("tail"),
+            Some(UserCommandKind::Tail)
         ));
         assert!(resolve_user_command("unknown").is_none());
     }
