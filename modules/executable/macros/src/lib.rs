@@ -212,15 +212,15 @@ pub fn derive_get_args(input: TokenStream) -> TokenStream {
             } else if is_str_reference_type(field_type) {
                 quote! {
                     let value = options
-                        .next_positional()
-                        .ok_or(crate::Error::MissingPositionalArgument(#long_name))?;
+                        .value()
+                        .map_err(|_| crate::Error::MissingPositionalArgument(#long_name))?;
                     #value_ident = value;
                 }
             } else {
                 quote! {
                     let value = options
-                        .next_positional()
-                        .ok_or(crate::Error::MissingPositionalArgument(#long_name))?;
+                        .value()
+                        .map_err(|_| crate::Error::MissingPositionalArgument(#long_name))?;
                     #value_ident = value.parse().map_err(|_| crate::Error::InvalidOption)?;
                 }
             };

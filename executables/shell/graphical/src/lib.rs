@@ -115,3 +115,21 @@ impl Shell {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use getargs::Options;
+
+    use super::GraphicalShellArguments;
+
+    #[test]
+    fn parses_show_keyboard_flag_without_panic() {
+        let args = ["--show-keyboard"];
+        let mut options = Options::new(args.into_iter());
+
+        let parsed = GraphicalShellArguments::parse(&mut options);
+
+        assert!(parsed.is_ok());
+        assert!(parsed.unwrap().show_keyboard);
+    }
+}
