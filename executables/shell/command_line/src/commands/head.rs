@@ -111,6 +111,9 @@ where
 #[cfg(test)]
 mod tests {
     use alloc::{vec, vec::Vec};
+    use getargs::Options;
+
+    use super::HeadArguments;
 
     fn select_head_bytes(input: &[u8], lines_to_keep: usize) -> Vec<u8> {
         let mut output = Vec::new();
@@ -155,5 +158,18 @@ mod tests {
     fn keeps_nothing_when_zero_lines_requested() {
         let input = b"line1\nline2\n";
         assert_eq!(select_head_bytes(input, 0), vec![]);
+    }
+
+    #[test]
+    fn parses_option_value_before_positional_path() {
+        let args = ["-n", "2", "notes.txt"];
+        let mut options = Options::new(args.into_iter());
+
+        let parsed = HeadArguments::parse(&mut options);
+
+        assert!(parsed.is_ok());
+        let parsed = parsed.unwrap();
+        assert_eq!(parsed.lines, 2);
+        assert_eq!(parsed.path, "notes.txt");
     }
 }
