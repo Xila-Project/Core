@@ -56,21 +56,13 @@ fn trim_to_last_lines(buffer: &mut Vec<u8>, lines_to_keep: usize) {
 
     let trailing_newline = buffer.last().copied() == Some(b'\n');
     let newline_count = buffer.iter().filter(|&&byte| byte == b'\n').count();
+    let line_count = newline_count + usize::from(!buffer.is_empty() && !trailing_newline);
 
-    let separator_count = if trailing_newline {
-        newline_count.saturating_sub(1)
-    } else {
-        newline_count
-    };
-
-    if separator_count < lines_to_keep {
+    if line_count <= lines_to_keep {
         return;
     }
 
-    let separators_to_skip = separator_count - lines_to_keep;
-    if separators_to_skip == 0 {
-        return;
-    }
+    let separators_to_skip = line_count - lines_to_keep;
 
     let mut skipped = 0;
     let mut start_index = 0;
