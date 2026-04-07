@@ -456,87 +456,87 @@ impl Desk {
         }
     }
 
-    // This function is intentionally private and is only used within this module.
-    async fn refresh_dock(&mut self) -> Result<()> {
-        let dock_child_count = unsafe { lvgl::lv_obj_get_child_count(self.dock) };
-
+    async fn get_visible_windows(&self) -> Result<Vec<(usize, String, Color)>> {
         let graphics_manager = graphics::get_instance();
-
         let window_count = graphics_manager.get_window_count().await?;
 
-        // Remove the icons of windows that do not exist anymore
-        for i in 0..dock_child_count {
-            let icon = unsafe { lvgl::lv_obj_get_child(self.dock, i as i32) };
+        let mut windows = Vec::new();
 
-            if icon.is_null() {
+        for index in 0..window_count {
+            let Ok(window_identifier) = graphics_manager.get_window_identifier(index).await else {
                 continue;
-            }
+            };
 
-            if icon == self.main_button {
-                continue;
-            }
-
-            let dock_window_identifier = unsafe { lvgl::lv_obj_get_user_data(icon) as usize };
-
-            let mut found = Option::None;
-
-            for j in 1..window_count {
-                if let Ok(window_identifier) = graphics_manager.get_window_identifier(j).await
-                    && window_identifier == dock_window_identifier
-                {
-                    found = Some(window_identifier);
-                    break;
-                }
-            }
-
-            if found.is_none() {
-                unsafe {
-                    lvgl::lv_obj_delete(icon);
-                }
-            }
-        }
-
-        // Add the new icons
-        for i in 0..window_count {
-            let window_identifier =
-                if let Ok(window_identifier) = graphics_manager.get_window_identifier(i).await {
-                    window_identifier
-                } else {
-                    continue;
-                };
-
-            // Check if the window is not desk
             if window_identifier == self.window.get_identifier() {
                 continue;
             }
 
-            // Find the index of the window in the dock
-            let found = (1..dock_child_count).find(|&dock_idx| {
-                let dock_window_identifier = unsafe {
-                    let icon = lvgl::lv_obj_get_child(self.dock, dock_idx as i32);
-
-                    if icon.is_null() {
-                        return false;
-                    }
-
-                    lvgl::lv_obj_get_user_data(icon) as usize
-                };
-
-                dock_window_identifier == window_identifier
-            });
-
-            // If the window is not in the dock, add it
-            if found.is_none() {
-                // Fetch the window identifier once and reuse it
-                let window_identifier = graphics_manager.get_window_identifier(i).await?;
-                let (icon_string, icon_color) = graphics_manager.get_window_icon(i).await?;
-
-                unsafe {
-                    let icon =
-                        create_icon(self.dock, icon_color, &icon_string, Self::DOCK_ICON_SIZE)?;
-
-                    lvgl::lv_obj_set_user_data(icon, window_identifier as *mut c_void);
+            match graphics_manager.get_window_icon(index).await {
+                Ok((icon_string, icon_color)) => {
+                    windows.push((window_identifier, icon_string, icon_color));
                 }
+                Err(error) => {
+                    warning!(
+                        "Failed to fetch icon for window {} during dock rebuild: {:?}",
+                        window_identifier,
+                        error
+                    );
+                }
+            }
+        }
+
+        Ok(windows)
+    }
+
+    unsafe fn clear_dock_icons(&self) {
+        unsafe {
+            let mut child_index = lvgl::lv_obj_get_child_count(self.dock) as i32;
+
+            while child_index > 0 {
+                child_index -= 1;
+
+                let child = lvgl::lv_obj_get_child(self.dock, child_index);
+
+                if child.is_null() || child == self.main_button {
+                    continue;
+                }
+
+                lvgl::lv_obj_delete(child);
+            }
+        }
+    }
+
+    unsafe fn rebuild_dock_icons(&self, windows: &[(usize, String, Color)]) -> Result<()> {
+        unsafe {
+            for (window_identifier, icon_string, icon_color) in windows {
+                let icon = create_icon(self.dock, *icon_color, icon_string, Self::DOCK_ICON_SIZE)?;
+
+                lvgl::lv_obj_set_user_data(icon, *window_identifier as *mut c_void);
+            }
+        }
+
+        Ok(())
+    }
+
+    // This function is intentionally private and is only used within this module.
+    async fn refresh_dock(&mut self) -> Result<()> {
+        let visible_windows = self.get_visible_windows().await?;
+
+        unsafe {
+            self.clear_dock_icons();
+            self.rebuild_dock_icons(&visible_windows)?;
+        }
+
+        if self
+            .dock_menu_target_window
+            .is_some_and(|window_identifier| {
+                !visible_windows
+                    .iter()
+                    .any(|(visible_identifier, _, _)| *visible_identifier == window_identifier)
+            })
+        {
+            unsafe {
+                self.close_dock_menu();
             }
         }
 
@@ -732,5 +732,42 @@ impl Desk {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::{string::String, vec, vec::Vec};
+
+    use xila::graphics::Color;
+
+    fn visible_window_identifiers(windows: &[(usize, String, Color)]) -> Vec<usize> {
+        windows
+            .iter()
+            .map(|(window_identifier, _, _)| *window_identifier)
+            .collect()
+    }
+
+    #[test]
+    fn preserves_original_order_of_non_desk_windows() {
+        let windows = vec![
+            (42, String::from("A"), Color::BLACK),
+            (77, String::from("B"), Color::WHITE),
+            (3, String::from("C"), Color::new(12, 34, 56)),
+        ];
+
+        assert_eq!(visible_window_identifiers(&windows), vec![42, 77, 3]);
+    }
+
+    #[test]
+    fn allows_detecting_disappeared_menu_target() {
+        let windows = vec![
+            (2, String::from("A"), Color::BLACK),
+            (3, String::from("B"), Color::WHITE),
+        ];
+
+        let visible = visible_window_identifiers(&windows);
+
+        assert!(!visible.contains(&99));
     }
 }
