@@ -864,3 +864,43 @@ async fn test_spawner_reuse_after_unregister() {
     let current_spawner = manager.get_spawner(current_task).await.unwrap();
     assert!(current_spawner != usize::MAX);
 }
+
+#[test(task_path = crate)]
+async fn test_choose_spawner_prefers_statistics_busy_idle_gap() {
+    let candidates = [
+        SpawnerCandidate {
+            identifier: 1,
+            telemetry: Some(crate::ExecutorStatisticsSnapshot::new(8_000, 2_000)),
+            task_count: 4,
+        },
+        SpawnerCandidate {
+            identifier: 2,
+            telemetry: Some(crate::ExecutorStatisticsSnapshot::new(4_000, 6_000)),
+            task_count: 1,
+        },
+    ];
+
+    let selected = Manager::choose_spawner_from_candidates(&candidates).unwrap();
+
+    assert_eq!(selected, 2);
+}
+
+#[test(task_path = crate)]
+async fn test_choose_spawner_falls_back_when_statistics_gap_small() {
+    let candidates = [
+        SpawnerCandidate {
+            identifier: 3,
+            telemetry: Some(crate::ExecutorStatisticsSnapshot::new(4_500, 5_500)),
+            task_count: 2,
+        },
+        SpawnerCandidate {
+            identifier: 4,
+            telemetry: Some(crate::ExecutorStatisticsSnapshot::new(4_200, 5_800)),
+            task_count: 1,
+        },
+    ];
+
+    let selected = Manager::choose_spawner_from_candidates(&candidates).unwrap();
+
+    assert_eq!(selected, 4);
+}
