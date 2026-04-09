@@ -101,6 +101,9 @@ async fn main() {
 
     // - - Create the default system hierarchy
     let _ = virtual_file_system::create_default_hierarchy(virtual_file_system, task).await;
+    let _ = virtual_file_system
+        .create_directory(task, "/devices/cpu")
+        .await;
 
     // - - Mount the devices
     virtual_file_system::clean_devices(virtual_file_system, task)
@@ -130,6 +133,11 @@ async fn main() {
                 &"/devices/time",
                 CharacterDevice,
                 drivers_wasm::devices::TimeDevice
+            ),
+            (
+                &"/devices/cpu/informations",
+                CharacterDevice,
+                drivers_wasm::devices::CpuInformationsDevice
             ),
             (
                 &"/devices/random",
