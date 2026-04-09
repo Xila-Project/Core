@@ -81,7 +81,7 @@ pub async fn initialize(graphics_enabled: bool, network_enabled: bool) -> Standa
         .unwrap();
 
     let _ = virtual_file_system
-        .create_directory(task, "/devices/cpu")
+        .create_directory(task, &"/devices/cpu")
         .await;
 
     virtual_file_system

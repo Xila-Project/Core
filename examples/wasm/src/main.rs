@@ -102,7 +102,7 @@ async fn main() {
     // - - Create the default system hierarchy
     let _ = virtual_file_system::create_default_hierarchy(virtual_file_system, task).await;
     let _ = virtual_file_system
-        .create_directory(task, "/devices/cpu")
+        .create_directory(task, &"/devices/cpu")
         .await;
 
     // - - Mount the devices
