@@ -80,6 +80,10 @@ pub async fn initialize(graphics_enabled: bool, network_enabled: bool) -> Standa
         .await
         .unwrap();
 
+    let _ = virtual_file_system
+        .create_directory(task, &"/devices/cpu")
+        .await;
+
     virtual_file_system
         .mount_static(
             task,
@@ -151,6 +155,11 @@ pub async fn initialize(graphics_enabled: bool, network_enabled: bool) -> Standa
                 &"/devices/time",
                 CharacterDevice,
                 drivers_std::devices::TimeDevice
+            ),
+            (
+                &"/devices/cpu/informations",
+                CharacterDevice,
+                drivers_std::devices::CpuInformationsDevice
             ),
             (&"/devices/null", CharacterDevice, drivers_core::NullDevice),
             (
