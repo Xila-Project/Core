@@ -43,6 +43,7 @@ pub enum Error {
     FailedToResolve(network::Error),
     FailedToCreateSocket(network::Error),
     Format,
+    FailedToSetMetadata(virtual_file_system::Error),
 }
 
 impl<A: getargs::Argument> From<getargs::Error<A>> for Error {
@@ -167,6 +168,9 @@ impl Display for Error {
             }
             Error::FailedToGetMetadata(error) => {
                 write!(formatter, translate!("Failed to get metadata: {}"), error)
+            }
+            Error::FailedToSetMetadata(error) => {
+                write!(formatter, translate!("Failed to set metadata: {}"), error)
             }
             Error::FailedToSetCurrentDirectory(error) => {
                 write!(
