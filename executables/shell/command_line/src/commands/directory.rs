@@ -3,14 +3,15 @@ use alloc::borrow::ToOwned;
 use executable_macros::GetArgs;
 use getargs::Options;
 use xila::{
-    file_system::Path,
+    file_system::{Kind, Path},
     virtual_file_system::{self, Directory},
 };
 
 use super::{CommandContext, UserCommand};
 
 pub struct CreateDirectoryCommand;
-pub struct RemoveCommand;
+pub struct RemoveFileCommand;
+pub struct RemoveDirectoryCommand;
 
 impl UserCommand for CreateDirectoryCommand {
     async fn execute<'a, I, C>(
@@ -27,7 +28,7 @@ impl UserCommand for CreateDirectoryCommand {
     }
 }
 
-impl UserCommand for RemoveCommand {
+impl UserCommand for RemoveFileCommand {
     async fn execute<'a, I, C>(
         &self,
         context: &mut C,
@@ -38,7 +39,22 @@ impl UserCommand for RemoveCommand {
         I: Iterator<Item = &'a str>,
         C: CommandContext,
     {
-        execute_remove(context, options).await
+        execute_remove_file(context, options).await
+    }
+}
+
+impl UserCommand for RemoveDirectoryCommand {
+    async fn execute<'a, I, C>(
+        &self,
+        context: &mut C,
+        options: &mut Options<&'a str, I>,
+        _paths: &[&Path],
+    ) -> Result<()>
+    where
+        I: Iterator<Item = &'a str>,
+        C: CommandContext,
+    {
+        execute_remove_directory(context, options).await
     }
 }
 
@@ -73,6 +89,14 @@ fn resolve_path<C: CommandContext>(
     }
 }
 
+fn can_remove_with_rm(kind: Kind) -> bool {
+    kind != Kind::Directory
+}
+
+fn can_remove_with_rmdir(kind: Kind) -> bool {
+    kind == Kind::Directory
+}
+
 async fn execute_create_directory<'a, I, C>(
     context: &mut C,
     options: &mut Options<&'a str, I>,
@@ -94,14 +118,51 @@ where
     .map_err(Error::FailedToCreateDirectory)
 }
 
-async fn execute_remove<'a, I, C>(context: &mut C, options: &mut Options<&'a str, I>) -> Result<()>
+async fn execute_remove_file<'a, I, C>(
+    context: &mut C,
+    options: &mut Options<&'a str, I>,
+) -> Result<()>
 where
     I: Iterator<Item = &'a str>,
     C: CommandContext,
 {
     let DirectoryRemoveArguments { path } = DirectoryRemoveArguments::parse(options)?;
-
     let path = resolve_path(context, path)?;
+
+    let statistics = virtual_file_system::get_instance()
+        .get_statistics(&path)
+        .await
+        .map_err(Error::FailedToGetMetadata)?;
+
+    if !can_remove_with_rm(statistics.kind) {
+        return Err(Error::InvalidArgument);
+    }
+
+    virtual_file_system::get_instance()
+        .remove(context.task_id(), &path)
+        .await
+        .map_err(Error::FailedToRemoveDirectory)
+}
+
+async fn execute_remove_directory<'a, I, C>(
+    context: &mut C,
+    options: &mut Options<&'a str, I>,
+) -> Result<()>
+where
+    I: Iterator<Item = &'a str>,
+    C: CommandContext,
+{
+    let DirectoryRemoveArguments { path } = DirectoryRemoveArguments::parse(options)?;
+    let path = resolve_path(context, path)?;
+
+    let statistics = virtual_file_system::get_instance()
+        .get_statistics(&path)
+        .await
+        .map_err(Error::FailedToGetMetadata)?;
+
+    if !can_remove_with_rmdir(statistics.kind) {
+        return Err(Error::InvalidArgument);
+    }
 
     virtual_file_system::get_instance()
         .remove(context.task_id(), &path)
@@ -111,13 +172,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::resolve_path;
+    use super::{can_remove_with_rm, can_remove_with_rmdir, resolve_path};
     use crate::{Error, Result};
     use alloc::borrow::ToOwned;
     use core::fmt;
     use xila::{
         executable::Standard,
-        file_system::{Path, PathOwned},
+        file_system::{Kind, Path, PathOwned},
         task::TaskIdentifier,
     };
 
@@ -184,5 +245,21 @@ mod tests {
         let result = resolve_path(&context, "bad path");
 
         assert!(matches!(result, Err(Error::InvalidPath)));
+    }
+
+    #[test]
+    fn rm_rejects_directories() {
+        assert!(!can_remove_with_rm(Kind::Directory));
+    }
+
+    #[test]
+    fn rm_accepts_files() {
+        assert!(can_remove_with_rm(Kind::File));
+    }
+
+    #[test]
+    fn rmdir_accepts_directories_only() {
+        assert!(can_remove_with_rmdir(Kind::Directory));
+        assert!(!can_remove_with_rmdir(Kind::File));
     }
 }

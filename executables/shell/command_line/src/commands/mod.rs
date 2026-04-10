@@ -29,7 +29,7 @@ use self::{
     change_directory::ChangeDirectoryCommand,
     clear::ClearCommand,
     concatenate::ConcatenateCommand,
-    directory::{CreateDirectoryCommand, RemoveCommand},
+    directory::{CreateDirectoryCommand, RemoveDirectoryCommand, RemoveFileCommand},
     dns::DnsResolveCommand,
     echo::EchoCommand,
     environment_variables::{
@@ -87,7 +87,8 @@ pub enum UserCommandKind {
     CreateDirectory,
     SetEnvironmentVariable,
     RemoveEnvironmentVariable,
-    Remove,
+    RemoveFile,
+    RemoveDirectory,
     WebRequest,
     DnsResolve,
     Ping,
@@ -112,7 +113,8 @@ pub fn resolve_user_command(name: &str) -> Option<UserCommandKind> {
         "mkdir" => Some(UserCommandKind::CreateDirectory),
         "export" => Some(UserCommandKind::SetEnvironmentVariable),
         "unset" => Some(UserCommandKind::RemoveEnvironmentVariable),
-        "rm" => Some(UserCommandKind::Remove),
+        "rm" => Some(UserCommandKind::RemoveFile),
+        "rmdir" => Some(UserCommandKind::RemoveDirectory),
         "web_request" => Some(UserCommandKind::WebRequest),
         "dns_resolve" => Some(UserCommandKind::DnsResolve),
         "ping" => Some(UserCommandKind::Ping),
@@ -164,7 +166,12 @@ where
                 .execute(context, options, paths)
                 .await
         }
-        UserCommandKind::Remove => RemoveCommand.execute(context, options, paths).await,
+        UserCommandKind::RemoveFile => RemoveFileCommand.execute(context, options, paths).await,
+        UserCommandKind::RemoveDirectory => {
+            RemoveDirectoryCommand
+                .execute(context, options, paths)
+                .await
+        }
         UserCommandKind::WebRequest => WebRequestCommand.execute(context, options, paths).await,
         UserCommandKind::DnsResolve => DnsResolveCommand.execute(context, options, paths).await,
         UserCommandKind::Ping => PingCommand.execute(context, options, paths).await,
@@ -245,7 +252,11 @@ mod tests {
         ));
         assert!(matches!(
             resolve_user_command("rm"),
-            Some(UserCommandKind::Remove)
+            Some(UserCommandKind::RemoveFile)
+        ));
+        assert!(matches!(
+            resolve_user_command("rmdir"),
+            Some(UserCommandKind::RemoveDirectory)
         ));
         assert!(matches!(
             resolve_user_command("web_request"),
