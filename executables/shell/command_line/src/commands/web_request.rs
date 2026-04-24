@@ -9,6 +9,14 @@ use xila::{
 
 use super::{CommandContext, UserCommand};
 
+fn select_client_device_path(url: &Url<'_>) -> Option<&'static str> {
+    match url.scheme {
+        "http" => Some("/devices/http_client"),
+        "https" => Some("/devices/https_client"),
+        _ => None,
+    }
+}
+
 pub struct WebRequestCommand;
 
 impl UserCommand for WebRequestCommand {
@@ -170,7 +178,10 @@ where
     let mut file = File::open(
         virtual_file_system,
         task,
-        "/devices/https_client",
+        select_client_device_path(
+            &Url::parse(parameters.url).ok_or(crate::error::Error::InvalidArgument)?,
+        )
+        .ok_or(crate::error::Error::InvalidArgument)?,
         AccessFlags::READ_WRITE.into(),
     )
     .await
@@ -203,8 +214,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::parse_web_request_parameters;
+    use super::{parse_web_request_parameters, select_client_device_path};
     use getargs::Options;
+    use xila::shared::Url;
 
     #[test]
     fn parse_web_request_parameters_uses_get_and_url_defaults() {
@@ -273,5 +285,23 @@ mod tests {
             result,
             Err(crate::error::Error::MissingPositionalArgument("url"))
         ));
+    }
+
+    #[test]
+    fn web_request_uses_https_device_for_https_scheme() {
+        let url = Url::parse("https://example.com").unwrap();
+        assert_eq!(
+            select_client_device_path(&url),
+            Some("/devices/https_client")
+        );
+    }
+
+    #[test]
+    fn web_request_uses_http_device_for_http_scheme() {
+        let url = Url::parse("http://example.com").unwrap();
+        assert_eq!(
+            select_client_device_path(&url),
+            Some("/devices/http_client")
+        );
     }
 }
