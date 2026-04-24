@@ -160,6 +160,11 @@ async fn main() {
             ),
             (&"/devices/null", CharacterDevice, drivers_core::NullDevice),
             (
+                &"/devices/http_client",
+                CharacterDevice,
+                drivers_shared::devices::HttpClientDevice
+            ),
+            (
                 &"/devices/https_client",
                 CharacterDevice,
                 drivers_shared::devices::HttpsClientDevice
