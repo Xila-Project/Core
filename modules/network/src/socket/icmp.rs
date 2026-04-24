@@ -322,7 +322,7 @@ impl IcmpSocket {
                     if is_valid_reply {
                         let end_time = crate::get_smoltcp_time();
                         let rtt = end_time - start_time;
-                        return Ok(Duration::from_milliseconds(rtt.total_millis() as u64));
+                        return Ok(Duration::from_milliseconds(rtt.total_millis()));
                     }
                 }
                 Ok(_) => {
