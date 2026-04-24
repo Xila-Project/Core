@@ -146,6 +146,11 @@ async fn main() {
             ),
             (&"/devices/null", CharacterDevice, drivers_core::NullDevice),
             (
+                &"/devices/http_client",
+                CharacterDevice,
+                drivers_wasm::devices::HttpClientDevice
+            ),
+            (
                 &"/devices/https_client",
                 CharacterDevice,
                 drivers_wasm::devices::HttpClientDevice

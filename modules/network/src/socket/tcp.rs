@@ -126,6 +126,7 @@ impl TcpSocket {
         poll_fn(|cx| {
             self.poll_with_mutable(cx, |s, cx| match s.recv_slice(buffer) {
                 Ok(0) if buffer.is_empty() => Poll::Ready(Ok(0)),
+                Ok(0) if !s.may_recv() => Poll::Ready(Ok(0)),
                 Ok(0) => {
                     s.register_recv_waker(cx.waker());
                     Poll::Pending

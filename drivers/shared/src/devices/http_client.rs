@@ -1,13 +1,10 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::time::Duration;
+
 use embassy_futures::select::{Either, select};
-use embedded_io as embedded_io_v06;
-use embedded_io_async as embedded_io_async_v06;
-use embedded_tls::{Aes128GcmSha256, NoVerify, TlsConfig, TlsConnection, TlsContext};
 use file_system::{BaseOperations, CharacterDevice, Context, Error, MountOperations, Result, Size};
 use network::{DnsQueryKind, Duration as NetworkDuration, Port, TcpSocket};
-use rand_core::{CryptoRng, RngCore};
 use shared::HttpRequestParser;
 use synchronization::{Arc, blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 
@@ -15,91 +12,11 @@ use super::http_common::{
     build_serialized_response_headers, compute_request_length, map_network_error, split_host_port,
 };
 
-const TLS_RECORD_BUFFER_SIZE: usize = 4096;
 const RESPONSE_SCAN_BUFFER_SIZE: usize = 3072;
 const RESPONSE_SERIALIZED_HEADER_SIZE: usize = 2048;
-const TLS_READ_CHUNK_SIZE: usize = 512;
-const DEFAULT_HTTPS_PORT: u16 = 443;
+const TCP_READ_CHUNK_SIZE: usize = 512;
+const DEFAULT_HTTP_PORT: u16 = 80;
 const IO_TIMEOUT_SECONDS: u64 = 15;
-
-struct SystemRng;
-
-impl CryptoRng for SystemRng {}
-
-impl RngCore for SystemRng {
-    fn next_u32(&mut self) -> u32 {
-        let mut bytes = [0u8; 4];
-        getrandom::fill(&mut bytes).expect("SystemRng failed to gather u32 entropy");
-        u32::from_le_bytes(bytes)
-    }
-
-    fn next_u64(&mut self) -> u64 {
-        let mut bytes = [0u8; 8];
-        getrandom::fill(&mut bytes).expect("SystemRng failed to gather u64 entropy");
-        u64::from_le_bytes(bytes)
-    }
-
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
-        getrandom::fill(dest).expect("SystemRng failed to gather entropy");
-    }
-
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> core::result::Result<(), rand_core::Error> {
-        getrandom::fill(dest).map_err(|_| rand_core::Error::from(core::num::NonZeroU32::MIN))
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-enum IoError {
-    FileSystem(Error),
-}
-
-impl embedded_io_v06::Error for IoError {
-    fn kind(&self) -> embedded_io_v06::ErrorKind {
-        match self {
-            IoError::FileSystem(Error::NotFound) => embedded_io_v06::ErrorKind::NotFound,
-            IoError::FileSystem(Error::PermissionDenied) => {
-                embedded_io_v06::ErrorKind::PermissionDenied
-            }
-            _ => embedded_io_v06::ErrorKind::Other,
-        }
-    }
-}
-
-struct TcpSocketAdapter {
-    socket: TcpSocket,
-}
-
-impl embedded_io_v06::ErrorType for TcpSocketAdapter {
-    type Error = IoError;
-}
-
-impl embedded_io_async_v06::Read for TcpSocketAdapter {
-    async fn read(&mut self, buffer: &mut [u8]) -> core::result::Result<usize, Self::Error> {
-        self.socket
-            .read(buffer)
-            .await
-            .map_err(map_network_error)
-            .map_err(IoError::FileSystem)
-    }
-}
-
-impl embedded_io_async_v06::Write for TcpSocketAdapter {
-    async fn write(&mut self, buffer: &[u8]) -> core::result::Result<usize, Self::Error> {
-        self.socket
-            .write(buffer)
-            .await
-            .map_err(map_network_error)
-            .map_err(IoError::FileSystem)
-    }
-
-    async fn flush(&mut self) -> core::result::Result<(), Self::Error> {
-        self.socket
-            .flush()
-            .await
-            .map_err(map_network_error)
-            .map_err(IoError::FileSystem)
-    }
-}
 
 enum State {
     Idle,
@@ -109,11 +26,11 @@ enum State {
     Failed(Error),
 }
 
-struct HttpsClientContext {
-    inner: Arc<Mutex<CriticalSectionRawMutex, HttpsClientInner>>,
+struct HttpClientContext {
+    inner: Arc<Mutex<CriticalSectionRawMutex, HttpClientInner>>,
 }
 
-struct HttpsClientInner {
+struct HttpClientInner {
     state: State,
     response_headers: [u8; RESPONSE_SERIALIZED_HEADER_SIZE],
     response_headers_len: usize,
@@ -122,15 +39,15 @@ struct HttpsClientInner {
     response_body_cursor: usize,
 }
 
-impl HttpsClientContext {
+impl HttpClientContext {
     fn new() -> Self {
         Self {
-            inner: Arc::new(Mutex::new(HttpsClientInner::new())),
+            inner: Arc::new(Mutex::new(HttpClientInner::new())),
         }
     }
 }
 
-impl HttpsClientInner {
+impl HttpClientInner {
     fn new() -> Self {
         Self {
             state: State::Idle,
@@ -160,40 +77,26 @@ impl HttpsClientInner {
     }
 }
 
-unsafe impl Send for HttpsClientContext {}
-unsafe impl Sync for HttpsClientContext {}
-
-fn map_tls_error(error: embedded_tls::TlsError) -> Error {
-    log::error!("https_client: tls error: {:?}", error);
-
-    match error {
-        embedded_tls::TlsError::ConnectionClosed => Error::InputOutput,
-        embedded_tls::TlsError::Io(embedded_io_v06::ErrorKind::TimedOut) => Error::InputOutput,
-        _ => Error::InputOutput,
-    }
-}
+unsafe impl Send for HttpClientContext {}
+unsafe impl Sync for HttpClientContext {}
 
 async fn read_response_headers_and_body(
-    tls: &mut TlsConnection<'_, TcpSocketAdapter, Aes128GcmSha256>,
+    socket: &mut TcpSocket,
     raw_headers: &mut [u8; RESPONSE_SCAN_BUFFER_SIZE],
 ) -> Result<(usize, Vec<u8>)> {
     let mut filled = 0usize;
-    let mut chunk = [0u8; TLS_READ_CHUNK_SIZE];
+    let mut chunk = [0u8; TCP_READ_CHUNK_SIZE];
 
     loop {
         let bytes_read = match select(
-            tls.read(&mut chunk),
+            socket.read(&mut chunk),
             task::sleep(Duration::from_secs(IO_TIMEOUT_SECONDS)),
         )
         .await
         {
-            Either::First(result) => match result {
-                Ok(size) => size,
-                Err(embedded_tls::TlsError::ConnectionClosed) => 0,
-                Err(error) => return Err(map_tls_error(error)),
-            },
+            Either::First(result) => result.map_err(map_network_error)?,
             Either::Second(_) => {
-                log::warning!("https_client: timeout waiting for response header bytes");
+                log::warning!("http_client: timeout waiting for response header bytes");
                 return Err(Error::InputOutput);
             }
         };
@@ -220,24 +123,22 @@ async fn read_response_headers_and_body(
 
             loop {
                 let bytes_read = match select(
-                    tls.read(&mut chunk),
+                    socket.read(&mut chunk),
                     task::sleep(Duration::from_secs(IO_TIMEOUT_SECONDS)),
                 )
                 .await
                 {
-                    Either::First(result) => match result {
-                        Ok(size) => size,
-                        Err(embedded_tls::TlsError::ConnectionClosed) => 0,
-                        Err(error) => return Err(map_tls_error(error)),
-                    },
+                    Either::First(result) => result.map_err(map_network_error)?,
                     Either::Second(_) => {
-                        log::warning!("https_client: timeout waiting for response body bytes");
+                        log::warning!("http_client: timeout waiting for response body bytes");
                         return Err(Error::InputOutput);
                     }
                 };
+
                 if bytes_read == 0 {
                     break;
                 }
+
                 body.extend_from_slice(&chunk[..bytes_read]);
             }
 
@@ -246,12 +147,9 @@ async fn read_response_headers_and_body(
     }
 }
 
-async fn write_tls_all(
-    tls: &mut TlsConnection<'_, TcpSocketAdapter, Aes128GcmSha256>,
-    mut payload: &[u8],
-) -> Result<()> {
+async fn write_tcp_all(socket: &mut TcpSocket, mut payload: &[u8]) -> Result<()> {
     while !payload.is_empty() {
-        let bytes_written = tls.write(payload).await.map_err(map_tls_error)?;
+        let bytes_written = socket.write(payload).await.map_err(map_network_error)?;
         if bytes_written == 0 {
             return Err(Error::InputOutput);
         }
@@ -261,16 +159,10 @@ async fn write_tls_all(
     Ok(())
 }
 
-async fn create_tls_connection<'a>(
-    host: &str,
-    port: u16,
-    read_record: &'a mut [u8; TLS_RECORD_BUFFER_SIZE],
-    write_record: &'a mut [u8; TLS_RECORD_BUFFER_SIZE],
-) -> Result<TlsConnection<'a, TcpSocketAdapter, Aes128GcmSha256>> {
-    log::information!("https_client: create session host='{}' port={}", host, port);
+async fn create_tcp_connection(host: &str, port: u16) -> Result<TcpSocket> {
+    log::information!("http_client: create session host='{}' port={}", host, port);
     let manager = network::get_instance();
 
-    log::information!("https_client: resolving host='{}'", host);
     let dns_socket = manager
         .new_dns_socket(None)
         .await
@@ -282,9 +174,7 @@ async fn create_tls_connection<'a>(
     dns_socket.close().await.map_err(map_network_error)?;
 
     let address = resolved.into_iter().next().ok_or(Error::NotFound)?;
-    log::information!("https_client: dns resolved host='{}'", host);
 
-    log::information!("https_client: creating tcp socket");
     let mut socket = manager
         .new_tcp_socket(4096, 4096, None)
         .await
@@ -292,11 +182,6 @@ async fn create_tls_connection<'a>(
     socket
         .set_timeout(Some(NetworkDuration::from_seconds(IO_TIMEOUT_SECONDS)))
         .await;
-    log::information!(
-        "https_client: connecting tcp socket to {}:{}",
-        address,
-        port
-    );
     socket
         .connect(address, Port::from_inner(port))
         .await
@@ -304,32 +189,15 @@ async fn create_tls_connection<'a>(
     socket
         .set_timeout(Some(NetworkDuration::from_seconds(IO_TIMEOUT_SECONDS)))
         .await;
-    log::information!("https_client: tcp connected");
 
-    let mut tls = TlsConnection::new(TcpSocketAdapter { socket }, read_record, write_record);
-
-    let configuration = TlsConfig::new().with_server_name(host);
-    let mut random = SystemRng;
-    let context = TlsContext::new(&configuration, &mut random);
-
-    log::information!("https_client: starting tls handshake");
-    tls.open::<SystemRng, NoVerify>(context)
-        .await
-        .map_err(map_tls_error)?;
-    log::information!("https_client: tls handshake done");
-
-    Ok(tls)
+    Ok(socket)
 }
 
 async fn run_request(
-    inner: Arc<Mutex<CriticalSectionRawMutex, HttpsClientInner>>,
+    inner: Arc<Mutex<CriticalSectionRawMutex, HttpClientInner>>,
     request: Vec<u8>,
 ) {
     let result = async {
-        log::information!(
-            "https_client: run_request begin (buffer_len={})",
-            request.len()
-        );
         let parser = HttpRequestParser::from_buffer(&request);
         let _ = parser.get_request().ok_or(Error::InvalidParameter)?;
 
@@ -339,20 +207,14 @@ async fn run_request(
             .map(|(_, value)| value)
             .ok_or(Error::InvalidParameter)?;
 
-        let (host, port) = split_host_port(host_header, DEFAULT_HTTPS_PORT);
-        log::information!("https_client: parsed host='{}' port={}", host, port);
+        let (host, port) = split_host_port(host_header, DEFAULT_HTTP_PORT);
 
-        let mut read_record = [0u8; TLS_RECORD_BUFFER_SIZE];
-        let mut write_record = [0u8; TLS_RECORD_BUFFER_SIZE];
-        let mut tls =
-            create_tls_connection(host, port, &mut read_record, &mut write_record).await?;
+        let mut socket = create_tcp_connection(host, port).await?;
 
         let request_length = compute_request_length(&request, parser)?;
         let payload = &request[..request_length];
-        log::information!("https_client: request length computed = {}", request_length);
 
-        log::information!("https_client: tls write_all begin");
-        write_tls_all(&mut tls, payload).await?;
+        write_tcp_all(&mut socket, payload).await?;
 
         let has_header_terminator = payload.windows(4).any(|window| window == b"\r\n\r\n");
         if !has_header_terminator {
@@ -362,30 +224,14 @@ async fn run_request(
                 b"\r\n\r\n".as_slice()
             };
 
-            log::warning!(
-                "https_client: request missing header terminator, appending {} bytes",
-                suffix.len()
-            );
-
-            write_tls_all(&mut tls, suffix).await?;
+            write_tcp_all(&mut socket, suffix).await?;
         }
 
-        log::information!("https_client: tls write_all done");
-
-        log::information!("https_client: tls flush begin");
-        tls.flush().await.map_err(map_tls_error)?;
-        log::information!("https_client: tls flush done");
+        socket.flush().await.map_err(map_network_error)?;
 
         let mut raw_headers = [0u8; RESPONSE_SCAN_BUFFER_SIZE];
-
-        log::information!("https_client: waiting response headers");
         let (raw_headers_end, response_body) =
-            read_response_headers_and_body(&mut tls, &mut raw_headers).await?;
-        log::information!(
-            "https_client: response headers received (headers_end={}, body_size={})",
-            raw_headers_end,
-            response_body.len()
-        );
+            read_response_headers_and_body(&mut socket, &mut raw_headers).await?;
 
         let mut response_headers = [0u8; RESPONSE_SERIALIZED_HEADER_SIZE];
         let serialized_headers_len = build_serialized_response_headers(
@@ -393,14 +239,7 @@ async fn run_request(
             &mut response_headers,
         )?;
 
-        match tls.close().await {
-            Ok(mut adapter) => {
-                adapter.socket.close().await;
-            }
-            Err((mut adapter, _)) => {
-                adapter.socket.close().await;
-            }
-        }
+        socket.close().await;
 
         Ok::<(usize, [u8; RESPONSE_SERIALIZED_HEADER_SIZE], Vec<u8>), Error>((
             serialized_headers_len,
@@ -427,31 +266,25 @@ async fn run_request(
             guard.response_body_cursor = 0;
 
             guard.state = State::HeadersReady;
-
-            log::information!(
-                "https_client: request complete, headers ready len={}",
-                serialized_headers_len
-            );
         }
         Err(error) => {
             if matches!(guard.state, State::InFlight) {
                 guard.set_failed(error);
-                log::error!("https_client: run_request failed: {:?}", error);
             }
         }
     }
 }
 
-pub struct HttpsClientDevice;
+pub struct HttpClientDevice;
 
-impl BaseOperations for HttpsClientDevice {
+impl BaseOperations for HttpClientDevice {
     fn open(&self, context: &mut Context) -> Result<()> {
-        context.set_private_data(Box::new(HttpsClientContext::new()));
+        context.set_private_data(Box::new(HttpClientContext::new()));
         Ok(())
     }
 
     fn close(&self, context: &mut Context) -> Result<()> {
-        if let Some(client_context) = context.take_private_data_of_type::<HttpsClientContext>() {
+        if let Some(client_context) = context.take_private_data_of_type::<HttpClientContext>() {
             let mut inner = task::block_on(client_context.inner.lock());
             inner.reset();
         }
@@ -461,16 +294,15 @@ impl BaseOperations for HttpsClientDevice {
 
     fn read(&self, context: &mut Context, buffer: &mut [u8], _: Size) -> Result<usize> {
         let context = context
-            .get_private_data_mutable_of_type::<HttpsClientContext>()
+            .get_private_data_mutable_of_type::<HttpClientContext>()
             .ok_or(Error::InvalidParameter)?;
 
         read_state_transition(context, buffer)
     }
 
     fn write(&self, context: &mut Context, buffer: &[u8], _: Size) -> Result<usize> {
-        log::information!("https_client: write called size={}", buffer.len());
         let context = context
-            .get_private_data_mutable_of_type::<HttpsClientContext>()
+            .get_private_data_mutable_of_type::<HttpClientContext>()
             .ok_or(Error::InvalidParameter)?;
 
         write_state_gate(context)?;
@@ -481,44 +313,39 @@ impl BaseOperations for HttpsClientDevice {
         let task_manager = task::get_instance();
         let parent = task::Manager::ROOT_TASK_IDENTIFIER;
 
-        if let Err(spawn_error) =
-            task::block_on(
-                task_manager.spawn(parent, "HTTPS request worker", None, move |_| {
-                    let inner_clone = inner.clone();
-                    let request_owned = request;
-                    async move { run_request(inner_clone, request_owned).await }
-                }),
-            )
+        if task::block_on(
+            task_manager.spawn(parent, "HTTP request worker", None, move |_| {
+                let inner_clone = inner.clone();
+                let request_owned = request;
+                async move { run_request(inner_clone, request_owned).await }
+            }),
+        )
+        .is_err()
         {
             let mut inner = task::block_on(context.inner.lock());
             inner.set_failed(Error::RessourceBusy);
-            log::error!(
-                "https_client: failed to spawn request worker: {:?}",
-                spawn_error
-            );
             return Err(Error::RessourceBusy);
         }
 
-        log::information!("https_client: write submitted successfully");
         Ok(buffer.len())
     }
 
     fn clone_context(&self, context: &Context) -> Result<Context> {
         let source = context
-            .get_private_data_of_type::<HttpsClientContext>()
+            .get_private_data_of_type::<HttpClientContext>()
             .ok_or(Error::InvalidParameter)?;
 
-        Ok(Context::new(Some(HttpsClientContext {
+        Ok(Context::new(Some(HttpClientContext {
             inner: source.inner.clone(),
         })))
     }
 }
 
-impl MountOperations for HttpsClientDevice {}
+impl MountOperations for HttpClientDevice {}
 
-impl CharacterDevice for HttpsClientDevice {}
+impl CharacterDevice for HttpClientDevice {}
 
-fn write_state_gate(context: &mut HttpsClientContext) -> Result<()> {
+fn write_state_gate(context: &mut HttpClientContext) -> Result<()> {
     let mut inner = task::block_on(context.inner.lock());
 
     match inner.state {
@@ -531,7 +358,7 @@ fn write_state_gate(context: &mut HttpsClientContext) -> Result<()> {
     }
 }
 
-fn read_state_transition(context: &mut HttpsClientContext, buffer: &mut [u8]) -> Result<usize> {
+fn read_state_transition(context: &mut HttpClientContext, buffer: &mut [u8]) -> Result<usize> {
     let mut inner = task::block_on(context.inner.lock());
 
     match inner.state {
@@ -587,43 +414,21 @@ mod tests {
 
     #[test]
     fn split_host_port_parses_default_port() {
-        let (host, port) = split_host_port("example.com", DEFAULT_HTTPS_PORT);
+        let (host, port) = split_host_port("example.com", DEFAULT_HTTP_PORT);
         assert_eq!(host, "example.com");
-        assert_eq!(port, 443);
+        assert_eq!(port, 80);
     }
 
     #[test]
     fn split_host_port_parses_explicit_port() {
-        let (host, port) = split_host_port("example.com:8443", DEFAULT_HTTPS_PORT);
+        let (host, port) = split_host_port("example.com:8080", DEFAULT_HTTP_PORT);
         assert_eq!(host, "example.com");
-        assert_eq!(port, 8443);
-    }
-
-    #[test]
-    fn compute_request_length_ignores_trailing_zeroes() {
-        let request = b"GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n";
-        let mut request_buffer = [0u8; 256];
-        request_buffer[..request.len()].copy_from_slice(request);
-        let parser = HttpRequestParser::from_buffer(&request_buffer);
-
-        let length = compute_request_length(&request_buffer, parser).unwrap();
-        assert_eq!(length, request.len());
-    }
-
-    #[test]
-    fn compute_request_length_accepts_no_header_terminator() {
-        let request = b"GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n";
-        let mut request_buffer = [0u8; 256];
-        request_buffer[..request.len()].copy_from_slice(request);
-        let parser = HttpRequestParser::from_buffer(&request_buffer);
-
-        let length = compute_request_length(&request_buffer, parser).unwrap();
-        assert_eq!(length, request.len());
+        assert_eq!(port, 8080);
     }
 
     #[test]
     fn write_rejected_when_request_in_flight() {
-        let mut context = HttpsClientContext::new();
+        let mut context = HttpClientContext::new();
         {
             let mut inner = task::block_on(context.inner.lock());
             inner.state = State::InFlight;
@@ -634,7 +439,7 @@ mod tests {
 
     #[test]
     fn read_returns_resource_busy_while_in_flight() {
-        let mut context = HttpsClientContext::new();
+        let mut context = HttpClientContext::new();
         let mut buffer = [0u8; 16];
         {
             let mut inner = task::block_on(context.inner.lock());
