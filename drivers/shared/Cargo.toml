@@ -14,7 +14,7 @@ synchronization = { workspace = true }
 embassy-futures = { workspace = true }
 embedded-io-async = "0.6.1"
 embedded-tls = { workspace = true }
-embedded-io = "0.6.1"
+embedded-io = "0.7.1"
 rand_core = "0.6"
 
 getrandom = { version = "0.4.2" }
