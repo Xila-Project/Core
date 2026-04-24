@@ -2,9 +2,9 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::time::Duration;
 use embassy_futures::select::{Either, select};
-use embedded_io as embedded_io_v06;
-use embedded_io_async as embedded_io_async_v06;
-use embedded_tls::{Aes128GcmSha256, NoVerify, TlsConfig, TlsConnection, TlsContext};
+use embedded_io;
+use embedded_io_async;
+use embedded_tls::{Aes128GcmSha256, TlsConfig, TlsConnection, TlsContext, UnsecureProvider};
 use file_system::{BaseOperations, CharacterDevice, Context, Error, MountOperations, Result, Size};
 use network::{DnsQueryKind, Duration as NetworkDuration, Port, TcpSocket};
 use rand_core::{CryptoRng, RngCore};
@@ -53,27 +53,37 @@ enum IoError {
     FileSystem(Error),
 }
 
-impl embedded_io_v06::Error for IoError {
-    fn kind(&self) -> embedded_io_v06::ErrorKind {
+impl embedded_io::Error for IoError {
+    fn kind(&self) -> embedded_io::ErrorKind {
         match self {
-            IoError::FileSystem(Error::NotFound) => embedded_io_v06::ErrorKind::NotFound,
+            IoError::FileSystem(Error::NotFound) => embedded_io::ErrorKind::NotFound,
             IoError::FileSystem(Error::PermissionDenied) => {
-                embedded_io_v06::ErrorKind::PermissionDenied
+                embedded_io::ErrorKind::PermissionDenied
             }
-            _ => embedded_io_v06::ErrorKind::Other,
+            _ => embedded_io::ErrorKind::Other,
         }
     }
 }
+
+impl core::fmt::Display for IoError {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            IoError::FileSystem(error) => write!(formatter, "filesystem error: {:?}", error),
+        }
+    }
+}
+
+impl core::error::Error for IoError {}
 
 struct TcpSocketAdapter {
     socket: TcpSocket,
 }
 
-impl embedded_io_v06::ErrorType for TcpSocketAdapter {
+impl embedded_io::ErrorType for TcpSocketAdapter {
     type Error = IoError;
 }
 
-impl embedded_io_async_v06::Read for TcpSocketAdapter {
+impl embedded_io_async::Read for TcpSocketAdapter {
     async fn read(&mut self, buffer: &mut [u8]) -> core::result::Result<usize, Self::Error> {
         self.socket
             .read(buffer)
@@ -83,7 +93,7 @@ impl embedded_io_async_v06::Read for TcpSocketAdapter {
     }
 }
 
-impl embedded_io_async_v06::Write for TcpSocketAdapter {
+impl embedded_io_async::Write for TcpSocketAdapter {
     async fn write(&mut self, buffer: &[u8]) -> core::result::Result<usize, Self::Error> {
         self.socket
             .write(buffer)
@@ -168,7 +178,7 @@ fn map_tls_error(error: embedded_tls::TlsError) -> Error {
 
     match error {
         embedded_tls::TlsError::ConnectionClosed => Error::InputOutput,
-        embedded_tls::TlsError::Io(embedded_io_v06::ErrorKind::TimedOut) => Error::InputOutput,
+        embedded_tls::TlsError::Io(embedded_io::ErrorKind::TimedOut) => Error::InputOutput,
         _ => Error::InputOutput,
     }
 }
@@ -309,13 +319,11 @@ async fn create_tls_connection<'a>(
     let mut tls = TlsConnection::new(TcpSocketAdapter { socket }, read_record, write_record);
 
     let configuration = TlsConfig::new().with_server_name(host);
-    let mut random = SystemRng;
-    let context = TlsContext::new(&configuration, &mut random);
+    let provider = UnsecureProvider::new::<Aes128GcmSha256>(SystemRng);
+    let context = TlsContext::new(&configuration, provider);
 
     log::information!("https_client: starting tls handshake");
-    tls.open::<SystemRng, NoVerify>(context)
-        .await
-        .map_err(map_tls_error)?;
+    tls.open(context).await.map_err(map_tls_error)?;
     log::information!("https_client: tls handshake done");
 
     Ok(tls)
