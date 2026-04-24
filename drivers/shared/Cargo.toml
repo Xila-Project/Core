@@ -12,9 +12,9 @@ network = { workspace = true }
 task = { workspace = true }
 synchronization = { workspace = true }
 embassy-futures = { workspace = true }
-embedded-io-async = "0.6.1"
+embedded-io-async = { workspace = true }
 embedded-tls = { workspace = true }
-embedded-io = "0.6.1"
+embedded-io = { workspace = true }
 rand_core = "0.6"
 
 getrandom = { version = "0.4.2" }
