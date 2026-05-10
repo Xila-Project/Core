@@ -10,6 +10,7 @@ use core::fmt::Debug;
 pub use file::*;
 
 use alloc::{collections::btree_map::BTreeMap, vec, vec::Vec};
+use core::time::Duration;
 use file_system::{Path, PathOwned};
 use smol_str::SmolStr;
 use synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
@@ -34,6 +35,7 @@ type FileEntry = SynchronousFile;
 
 struct Inner {
     task: Option<TaskIdentifier>,
+    sleep_requests: BTreeMap<TaskIdentifier, Duration>,
     directories: BTreeMap<UniqueFileIdentifier, DirectoryEntry>,
     files: BTreeMap<UniqueFileIdentifier, FileEntry>,
 }
@@ -50,6 +52,7 @@ impl Context {
     pub const fn new() -> Self {
         Self(RwLock::new(Inner {
             task: None,
+            sleep_requests: BTreeMap::new(),
             directories: BTreeMap::new(),
             files: BTreeMap::new(),
         }))
@@ -57,6 +60,26 @@ impl Context {
 
     pub fn get_current_task_identifier(&self) -> TaskIdentifier {
         block_on(self.0.read()).task.expect("No current task set")
+    }
+
+    pub fn try_get_current_task_identifier(&self) -> Option<TaskIdentifier> {
+        self.0.try_read().ok().and_then(|inner| inner.task)
+    }
+
+    pub fn request_sleep(&self, task: TaskIdentifier, duration: Duration) {
+        let mut inner = self
+            .0
+            .try_write()
+            .expect("Failed to lock ABI context for sleep request");
+        inner.sleep_requests.insert(task, duration);
+    }
+
+    pub fn take_sleep_request(&self, task: TaskIdentifier) -> Option<Duration> {
+        let mut inner = self
+            .0
+            .try_write()
+            .expect("Failed to lock ABI context for sleep request");
+        inner.sleep_requests.remove(&task)
     }
 
     fn get_new_identifier<V>(
