@@ -709,7 +709,9 @@ impl VirtualFileSystem {
                     .iter_mut()
                     .find_map(|fs| {
                         if ptr::eq(fs.file_system, *file_system) {
-                            fs.reference_count -= 1;
+                            if fs.reference_count > 0 {
+                                fs.reference_count -= 1;
+                            }
                             Some(())
                         } else {
                             None
@@ -724,7 +726,9 @@ impl VirtualFileSystem {
                     .iter_mut()
                     .find_map(|(key, p)| {
                         if ptr::eq(p.pipe, *pipe) {
-                            p.reference_count -= 1;
+                            if p.reference_count > 0 {
+                                p.reference_count -= 1;
+                            }
                             if p.reference_count == 1 {
                                 Some(Some(*key))
                             } else {
@@ -747,7 +751,9 @@ impl VirtualFileSystem {
                     .iter_mut()
                     .find_map(|(_, d)| {
                         if ptr::eq(d.device, *device) {
-                            d.reference_count -= 1;
+                            if d.reference_count > 0 {
+                                d.reference_count -= 1;
+                            }
                             Some(())
                         } else {
                             None
@@ -762,7 +768,9 @@ impl VirtualFileSystem {
                     .iter_mut()
                     .find_map(|(_, d)| {
                         if ptr::eq(d.device, *device) {
-                            d.reference_count -= 1;
+                            if d.reference_count > 0 {
+                                d.reference_count -= 1;
+                            }
                             Some(())
                         } else {
                             None
