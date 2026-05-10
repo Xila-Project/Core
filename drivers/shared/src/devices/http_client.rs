@@ -163,17 +163,13 @@ async fn create_tcp_connection(host: &str, port: u16) -> Result<TcpSocket> {
     log::information!("http_client: create session host='{}' port={}", host, port);
     let manager = network::get_instance();
 
-    let dns_socket = manager
-        .new_dns_socket(None)
+    let address = manager
+        .resolve(host, DnsQueryKind::A | DnsQueryKind::Aaaa, true, None)
         .await
-        .map_err(map_network_error)?;
-    let resolved = dns_socket
-        .resolve(host, DnsQueryKind::A | DnsQueryKind::Aaaa)
-        .await
-        .map_err(map_network_error)?;
-    dns_socket.close().await.map_err(map_network_error)?;
-
-    let address = resolved.into_iter().next().ok_or(Error::NotFound)?;
+        .map_err(map_network_error)?
+        .first()
+        .cloned()
+        .ok_or(Error::NotFound)?;
 
     let mut socket = manager
         .new_tcp_socket(4096, 4096, None)

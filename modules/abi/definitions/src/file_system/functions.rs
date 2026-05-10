@@ -5,8 +5,12 @@ use core::{
     num::NonZeroU32,
     ptr::copy_nonoverlapping,
 };
-use file_system::{AccessFlags, CreateFlags, Flags, StateFlags, character_device};
+use file_system::{
+    AccessFlags, CreateFlags, Flags, Kind, Permissions, StateFlags, Statistics, Time,
+    character_device,
+};
 use task::block_on;
+use users::{GroupIdentifier, UserIdentifier};
 use virtual_file_system::{
     Error, SynchronousDirectory, SynchronousFile, get_instance as get_file_system_instance,
 };
@@ -30,8 +34,21 @@ where
         Err(error) => {
             let non_zero: NonZeroU32 = error.into();
 
-            log::error!("File system error: {:?} ({})", error, non_zero);
-            log::error!("Context debug info: {:?}", context::get_instance());
+            if matches!(
+                error,
+                Error::RessourceBusy | Error::FileSystem(file_system::Error::RessourceBusy)
+            ) {
+                log::debug!(
+                    "File system busy (expected while polling): {:?} ({})",
+                    error,
+                    non_zero
+                );
+            } else {
+                log::error!("File system error: {:?} ({})", error, non_zero);
+                log::error!("Context debug info: {:?}", context::get_instance());
+            }
+
+            //panic!("File system error: {:?} ({})", error, non_zero.get());
 
             non_zero.get()
         }
@@ -63,6 +80,10 @@ pub unsafe extern "C" fn xila_file_system_get_statistics(
                 file.try_into()?,
                 SynchronousDirectory::get_statistics,
             ) {
+                log::information!(
+                    "File identifier {:?} is a directory, getting statistics",
+                    file
+                );
                 result.inspect_err(|&e| {
                     log::error!(
                         "Performing operation on directory to get statistics: {:?}",
@@ -70,12 +91,38 @@ pub unsafe extern "C" fn xila_file_system_get_statistics(
                     );
                 })?
             } else {
-                context
+                log::information!(
+                    "File identifier {:?} is not a directory, trying as a file",
+                    file
+                );
+                match context
                     .perform_operation_on_file(file.try_into()?, SynchronousFile::get_statistics)
                     .ok_or(Error::InvalidParameter)
                     .inspect_err(|&e| {
                         log::error!("Performing operation on file to get statistics: {:?}", e);
-                    })??
+                    })? {
+                    Ok(statistics) => statistics,
+                    // Some character devices don't expose attribute operations.
+                    // Return minimal synthetic metadata so POSIX callers (e.g. WASI libc)
+                    // can proceed after open/fstat.
+                    Err(Error::UnsupportedOperation)
+                    | Err(Error::FileSystem(file_system::Error::UnsupportedOperation)) => {
+                        Statistics::new(
+                            0,
+                            1,
+                            0,
+                            Time::new(0),
+                            Time::new(0),
+                            Time::new(0),
+                            Time::new(0),
+                            Kind::CharacterDevice,
+                            Permissions::DEVICE_DEFAULT,
+                            UserIdentifier::ROOT,
+                            GroupIdentifier::ROOT,
+                        )
+                    }
+                    Err(error) => return Err(error),
+                }
             };
 
             *statistics = XilaFileSystemStatistics::from_statistics(s);

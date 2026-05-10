@@ -3,13 +3,15 @@ mod device;
 mod runner;
 mod stack;
 
+use core::future::poll_fn;
+
 use alloc::{vec, vec::Vec};
 pub use context::*;
 use file_system::{DirectCharacterDevice, Path};
 pub use runner::*;
 use smoltcp::{
     phy::Device,
-    socket::{dns, icmp, tcp, udp},
+    socket::{icmp, tcp, udp},
 };
 use synchronization::once_lock::OnceLock;
 use synchronization::{
@@ -19,7 +21,7 @@ use task::{SpawnerIdentifier, TaskIdentifier};
 use virtual_file_system::VirtualFileSystem;
 
 use crate::{
-    DnsSocket, Error, IcmpSocket, Result, TcpSocket, UdpSocket,
+    DnsQueryKind, Error, IcmpSocket, IpAddress, Result, TcpSocket, UdpSocket,
     manager::{
         device::NetworkDevice,
         stack::{Stack, StackInner},
@@ -171,7 +173,17 @@ impl Manager {
         Ok(())
     }
 
-    pub async fn new_dns_socket(&self, interface_name: Option<&str>) -> Result<DnsSocket> {
+    pub async fn resolve(
+        &self,
+        host: &str,
+        kind: DnsQueryKind,
+        stop_on_first_match: bool,
+        interface_name: Option<&str>,
+    ) -> Result<Vec<IpAddress>> {
+        if let Ok(host) = IpAddress::try_from(host) {
+            return Ok(vec![host]);
+        }
+
         let stacks = self.stacks.read().await;
 
         let stack = if let Some(name) = interface_name {
@@ -184,21 +196,39 @@ impl Manager {
                 .ok_or(Error::NotFound)?
         };
 
-        let handle = stack
-            .with_mutable(|s| {
-                let socket = dns::Socket::new(&s.dns_servers, vec![]);
-                s.add_socket(socket)
+        let query_iterator = &[
+            DnsQueryKind::A,
+            DnsQueryKind::Aaaa,
+            DnsQueryKind::Cname,
+            DnsQueryKind::Soa,
+            DnsQueryKind::Ns,
+        ];
+
+        let mut resolved_addresses = vec![];
+
+        for query_kind in query_iterator {
+            if !kind.contains(*query_kind) {
+                continue;
+            }
+
+            let handle = stack
+                .with_mutable(|s| s.start_dns_query(host, kind))
+                .await?;
+
+            let result = poll_fn(|cx| {
+                stack
+                    .poll_with_mutable(cx, |s, cx| s.get_dns_query_result(handle, Some(cx.waker())))
             })
-            .await;
+            .await?;
 
-        let context = SocketContext {
-            handle,
-            stack: stack.clone(),
-            closed: false,
-        };
-        let socket = DnsSocket::new(context);
+            resolved_addresses.extend(result);
 
-        Ok(socket)
+            if !resolved_addresses.is_empty() && stop_on_first_match {
+                break;
+            }
+        }
+
+        Ok(resolved_addresses)
     }
 
     pub async fn new_tcp_socket(

@@ -1,10 +1,10 @@
-use crate::{Error, Result};
+use crate::Result;
 use executable_macros::GetArgs;
 use getargs::Options;
 use xila::{
     file_system::Path,
     internationalization::translate,
-    network::{self, DnsQueryKind, DnsSocket},
+    network::{self, DnsQueryKind},
 };
 
 use super::{CommandContext, UserCommand};
@@ -54,11 +54,11 @@ fn format_kind(kind: DnsQueryKind) -> &'static str {
 
 async fn resolve_record<C: CommandContext>(
     context: &mut C,
-    socket: &DnsSocket,
+    network_manager: &network::Manager,
     domain: &str,
     kind: DnsQueryKind,
 ) -> Result<()> {
-    match socket.resolve(domain, kind).await {
+    match network_manager.resolve(domain, kind, true, None).await {
         Ok(ip) => {
             context.write_out_fmt(format_args!(
                 "{}\n",
@@ -117,28 +117,23 @@ where
 
     let default = !a_enabled && !aaaa_enabled && !cname_enabled && !ns_enabled && !soa_enabled;
 
-    let socket = network::get_instance()
-        .new_dns_socket(None)
-        .await
-        .map_err(Error::FailedToCreateSocket)?;
+    let network_manager = network::get_instance();
 
     if a_enabled || default {
-        resolve_record(context, &socket, domain, DnsQueryKind::A).await?;
+        resolve_record(context, network_manager, domain, DnsQueryKind::A).await?;
     }
     if aaaa_enabled || default {
-        resolve_record(context, &socket, domain, DnsQueryKind::Aaaa).await?;
+        resolve_record(context, network_manager, domain, DnsQueryKind::Aaaa).await?;
     }
     if cname_enabled {
-        resolve_record(context, &socket, domain, DnsQueryKind::Cname).await?;
+        resolve_record(context, network_manager, domain, DnsQueryKind::Cname).await?;
     }
     if ns_enabled {
-        resolve_record(context, &socket, domain, DnsQueryKind::Ns).await?;
+        resolve_record(context, network_manager, domain, DnsQueryKind::Ns).await?;
     }
     if soa_enabled {
-        resolve_record(context, &socket, domain, DnsQueryKind::Soa).await?;
+        resolve_record(context, network_manager, domain, DnsQueryKind::Soa).await?;
     }
-
-    socket.close().await.map_err(Error::FailedToCreateSocket)?;
 
     Ok(())
 }

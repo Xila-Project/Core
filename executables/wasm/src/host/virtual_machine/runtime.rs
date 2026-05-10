@@ -20,7 +20,8 @@ use wamr_rust_sdk::{
 };
 use xila::{
     abi_context::{self, FileIdentifier},
-    task::{TaskIdentifier, yield_now},
+    log,
+    task::{self, TaskIdentifier, yield_now},
     virtual_file_system::File,
 };
 
@@ -274,6 +275,23 @@ impl Runtime {
                     let exception = Self::current_exception_string(instance.get_inner_reference());
 
                     if exception.contains("instruction limit exceeded") {
+                        if let Some(requested_sleep) =
+                            abi_context::get_instance().take_sleep_request(task)
+                        {
+                            if !requested_sleep.is_zero() {
+                                log::information!(
+                                    "Task {} requested sleep for {:?} ms",
+                                    task.into_inner(),
+                                    requested_sleep
+                                );
+                                task::sleep(requested_sleep).await;
+                            } else {
+                                yield_now().await;
+                            }
+                        } else {
+                            yield_now().await;
+                        }
+
                         unsafe {
                             wasm_runtime_clear_exception(
                                 instance.get_inner_reference().get_inner_instance(),
@@ -286,10 +304,10 @@ impl Runtime {
 
                         resume = true;
 
-                        yield_now().await;
-
                         continue;
                     }
+
+                    let _ = abi_context::get_instance().take_sleep_request(task);
 
                     break if exception.is_empty() {
                         Err(Error::Execution("WASM execution failed".into()))

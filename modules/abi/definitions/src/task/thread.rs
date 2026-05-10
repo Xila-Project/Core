@@ -2,9 +2,6 @@ use core::ffi::c_int;
 use core::ptr::null_mut;
 use core::{ffi::c_void, time::Duration};
 
-use task::Manager;
-use task::block_on;
-
 use abi_context as context;
 
 pub type XilaThreadIdentifier = usize;
@@ -18,12 +15,14 @@ pub extern "C" fn xila_get_current_thread_identifier() -> usize {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_thread_sleep(duration: u64) {
-    block_on(Manager::sleep(Duration::from_millis(duration)));
+    if let Some(task) = context::get_instance().try_get_current_task_identifier() {
+        context::get_instance().request_sleep(task, Duration::from_millis(duration));
+    }
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn xila_thread_sleep_exact(_duration: u32) {
-    todo!()
+pub extern "C" fn xila_thread_sleep_exact(duration: u32) {
+    xila_thread_sleep(duration as u64);
 }
 
 #[unsafe(no_mangle)]
@@ -57,14 +56,10 @@ pub extern "C" fn xila_thread_create(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn xila_thread_begin_blocking_operation() {
-    todo!()
-}
+pub extern "C" fn xila_thread_begin_blocking_operation() {}
 
 #[unsafe(no_mangle)]
-pub extern "C" fn xila_thread_end_blocking_operation() {
-    todo!()
-}
+pub extern "C" fn xila_thread_end_blocking_operation() {}
 
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_thread_wake_up(_thread: XilaThreadIdentifier) -> u32 {
@@ -73,5 +68,6 @@ pub extern "C" fn xila_thread_wake_up(_thread: XilaThreadIdentifier) -> u32 {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn xila_thread_yield() -> c_int {
-    todo!()
+    xila_thread_sleep(0);
+    0
 }

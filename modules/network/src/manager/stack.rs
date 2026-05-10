@@ -1,10 +1,10 @@
 use crate::{
-    Error, IpAddress, IpCidr, Ipv4, Ipv6, MacAddress, Port, Result, Route, WakeSignal,
-    get_smoltcp_time,
+    DnsQueryKind, Error, IpAddress, IpCidr, Ipv4, Ipv6, MacAddress, Port, Result, Route,
+    WakeSignal, get_smoltcp_time,
 };
 use alloc::{boxed::Box, vec, vec::Vec};
 use core::{
-    task::{Context, Poll},
+    task::{Context, Poll, Waker},
     time::Duration,
 };
 use file_system::DirectCharacterDevice;
@@ -12,10 +12,10 @@ use shared::poll_pin_ready;
 use smol_str::SmolStr;
 use smoltcp::{
     config::{DNS_MAX_SERVER_COUNT, IFACE_MAX_ADDR_COUNT},
-    iface::{self, SocketSet},
+    iface::{self, SocketHandle, SocketSet},
     phy::{Device, Medium},
-    socket::{AnySocket, Socket, dhcpv4},
-    wire::{self, EthernetAddress},
+    socket::{AnySocket, Socket, dhcpv4, dns},
+    wire::{self, DnsQueryType, EthernetAddress},
 };
 use synchronization::{Arc, blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 
@@ -27,6 +27,7 @@ pub struct StackInner {
     pub controller: Box<dyn DirectCharacterDevice>,
     pub sockets: smoltcp::iface::SocketSet<'static>,
     pub dhcp_socket: Option<smoltcp::iface::SocketHandle>,
+    pub dns_socket: Option<SocketHandle>,
     pub dns_servers: Vec<smoltcp::wire::IpAddress>,
     pub maximum_transmission_unit: usize,
     pub maximum_burst_size: Option<usize>,
@@ -158,6 +159,7 @@ impl StackInner {
             controller: Box::new(controller_device),
             sockets,
             dhcp_socket: None,
+            dns_socket: None,
             dns_servers: Vec::with_capacity(DNS_MAX_SERVER_COUNT),
             maximum_transmission_unit: capabilities.max_transmission_unit,
             maximum_burst_size: capabilities.max_burst_size,
@@ -237,6 +239,7 @@ impl StackInner {
         }
 
         self.dns_servers.push(server.into_smoltcp());
+        self.update_socket_dns_servers();
         Ok(())
     }
 
@@ -246,7 +249,15 @@ impl StackInner {
         }
 
         let server = self.dns_servers.remove(index);
+        self.update_socket_dns_servers();
         Some(IpAddress::from_smoltcp(&server))
+    }
+
+    fn update_socket_dns_servers(&mut self) {
+        if let Some(handle) = self.dns_socket {
+            let socket = self.sockets.get_mut::<dns::Socket>(handle);
+            socket.update_servers(&self.dns_servers);
+        }
     }
 
     pub fn get_dns_servers(&self) -> &[wire::IpAddress] {
@@ -379,5 +390,64 @@ impl StackInner {
         };
 
         port
+    }
+
+    pub fn get_dns_socket_handle(&mut self) -> SocketHandle {
+        match self.dns_socket {
+            Some(handle) => handle,
+            None => {
+                let dns_socket = dns::Socket::new(&self.dns_servers, vec![]);
+                let handle = self.sockets.add(dns_socket);
+                self.dns_socket = Some(handle);
+                handle
+            }
+        }
+    }
+
+    pub fn start_dns_query(&mut self, name: &str, kind: DnsQueryKind) -> Result<dns::QueryHandle> {
+        let query_type = if kind.contains(DnsQueryKind::A) {
+            DnsQueryType::A
+        } else if kind.contains(DnsQueryKind::Aaaa) {
+            DnsQueryType::Aaaa
+        } else if kind.contains(DnsQueryKind::Cname) {
+            DnsQueryType::Cname
+        } else if kind.contains(DnsQueryKind::Ns) {
+            DnsQueryType::Ns
+        } else if kind.contains(DnsQueryKind::Soa) {
+            DnsQueryType::Soa
+        } else {
+            return Err(Error::UnsupportedProtocol);
+        };
+
+        let socket_handle = self.get_dns_socket_handle();
+        let query_handle = self
+            .sockets
+            .get_mut::<dns::Socket>(socket_handle)
+            .start_query(self.interface.context(), name, query_type)?;
+
+        Ok(query_handle)
+    }
+
+    pub fn get_dns_query_result(
+        &mut self,
+        query_handle: dns::QueryHandle,
+        waker: Option<&Waker>,
+    ) -> Poll<Result<Vec<IpAddress>>> {
+        let socket_handle = self.get_dns_socket_handle();
+        let socket = self.sockets.get_mut::<dns::Socket>(socket_handle);
+
+        match socket.get_query_result(query_handle) {
+            Err(dns::GetQueryResultError::Pending) => {
+                if let Some(waker) = waker {
+                    socket.register_query_waker(query_handle, waker);
+                }
+                Poll::Pending
+            }
+            Err(e) => Poll::Ready(Err::<_, Error>(e.into())),
+            Ok(query_result) => Poll::Ready(Ok(query_result
+                .iter()
+                .map(IpAddress::from_smoltcp)
+                .collect())),
+        }
     }
 }

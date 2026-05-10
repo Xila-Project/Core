@@ -28,6 +28,10 @@ pub fn get() -> TokenStream {
             );
 
             pub fn percentage(value: i32) -> i32;
+
+            pub fn textarea_get_text(textarea: *mut lv_obj_t, buffer: *mut i8, buffer_size: usize) -> i32;
+
+            pub fn textarea_get_text_length(textarea: *mut lv_obj_t) -> i32;
         }
     }
 }

@@ -39,27 +39,6 @@ struct PingArguments<'a> {
     size: usize,
 }
 
-async fn resolve_target(target: &str) -> crate::Result<Option<xila::network::IpAddress>> {
-    let network = network::get_instance();
-    let dns_socket = network
-        .new_dns_socket(None)
-        .await
-        .map_err(Error::FailedToCreateSocket)?;
-
-    let resolved_target = dns_socket
-        .resolve(target, DnsQueryKind::A | DnsQueryKind::Aaaa)
-        .await
-        .map(|s| s.first().cloned())
-        .map_err(Error::FailedToResolve)?;
-
-    dns_socket
-        .close()
-        .await
-        .map_err(Error::FailedToCreateSocket)?;
-
-    Ok(resolved_target)
-}
-
 async fn write_ping_line<C: CommandContext>(
     context: &mut C,
     target: &str,
@@ -147,12 +126,23 @@ where
         size: payload_size,
     } = PingArguments::parse(options)?;
 
-    let Some(resolved_target) = resolve_target(target).await? else {
-        context.write_out_fmt(format_args!(
-            "{}\n",
-            format_args!(translate!("Cannot resolve {}: Unknown host"), target)
-        ))?;
-        return Ok(());
+    let manager = network::get_instance();
+
+    let resolved_target = manager
+        .resolve(target, DnsQueryKind::A | DnsQueryKind::Aaaa, true, None)
+        .await
+        .ok()
+        .and_then(|ips| ips.first().cloned());
+
+    let resolved_target = match resolved_target {
+        Some(ip) => ip,
+        None => {
+            context.write_out_fmt(format_args!(
+                "{}\n",
+                format_args!(translate!("Cannot resolve {}: Unknown host"), target)
+            ))?;
+            return Ok(());
+        }
     };
 
     write_ping_line(context, target, &resolved_target).await?;

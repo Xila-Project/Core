@@ -5,7 +5,10 @@ use embassy_futures::select::{Either, select};
 use embedded_io;
 use embedded_io_async;
 use embedded_tls::{Aes128GcmSha256, TlsConfig, TlsConnection, TlsContext, UnsecureProvider};
-use file_system::{BaseOperations, CharacterDevice, Context, Error, MountOperations, Result, Size};
+use file_system::{
+    BaseOperations, CharacterDevice, Context, DirectCharacterDevice, Error, MountOperations,
+    Result, Size,
+};
 use network::{DnsQueryKind, Duration as NetworkDuration, Port, TcpSocket};
 use rand_core::{CryptoRng, RngCore};
 use shared::HttpRequestParser;
@@ -15,36 +18,44 @@ use super::http_common::{
     build_serialized_response_headers, compute_request_length, map_network_error, split_host_port,
 };
 
-const TLS_RECORD_BUFFER_SIZE: usize = 4096;
-const RESPONSE_SCAN_BUFFER_SIZE: usize = 3072;
-const RESPONSE_SERIALIZED_HEADER_SIZE: usize = 2048;
+const TLS_RECORD_BUFFER_SIZE: usize = 16384; // TLS 1.2 max record size (2^14 bytes)
+const RESPONSE_SCAN_BUFFER_SIZE: usize = 4096; // HTTP headers buffer (typically 2-5 KB)
+const RESPONSE_SERIALIZED_HEADER_SIZE: usize = 2048; // Parsed header output buffer
 const TLS_READ_CHUNK_SIZE: usize = 512;
 const DEFAULT_HTTPS_PORT: u16 = 443;
 const IO_TIMEOUT_SECONDS: u64 = 15;
 
-struct SystemRng;
+struct RandomNumberGenerator<T: DirectCharacterDevice + 'static>(&'static T);
 
-impl CryptoRng for SystemRng {}
+impl<T: DirectCharacterDevice + 'static> CryptoRng for RandomNumberGenerator<T> {}
 
-impl RngCore for SystemRng {
+impl<T: DirectCharacterDevice + 'static> RngCore for RandomNumberGenerator<T> {
     fn next_u32(&mut self) -> u32 {
         let mut bytes = [0u8; 4];
-        getrandom::fill(&mut bytes).expect("SystemRng failed to gather u32 entropy");
+        self.0
+            .read(&mut bytes, 0)
+            .expect("Random device read failed");
         u32::from_le_bytes(bytes)
     }
 
     fn next_u64(&mut self) -> u64 {
         let mut bytes = [0u8; 8];
-        getrandom::fill(&mut bytes).expect("SystemRng failed to gather u64 entropy");
+        self.0
+            .read(&mut bytes, 0)
+            .expect("Random device read failed");
         u64::from_le_bytes(bytes)
     }
 
     fn fill_bytes(&mut self, dest: &mut [u8]) {
-        getrandom::fill(dest).expect("SystemRng failed to gather entropy");
+        self.0.read(dest, 0).expect("Random device read failed");
     }
 
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> core::result::Result<(), rand_core::Error> {
-        getrandom::fill(dest).map_err(|_| rand_core::Error::from(core::num::NonZeroU32::MIN))
+        self.0.read(dest, 0).map_err(|e| {
+            log::error!("Random device read failed: {:?}", e);
+            rand_core::Error::from(e.get_discriminant())
+        })?;
+        Ok(())
     }
 }
 
@@ -271,30 +282,23 @@ async fn write_tls_all(
     Ok(())
 }
 
-async fn create_tls_connection<'a>(
+async fn create_tls_connection<'a, T: DirectCharacterDevice + 'static>(
     host: &str,
     port: u16,
     read_record: &'a mut [u8; TLS_RECORD_BUFFER_SIZE],
     write_record: &'a mut [u8; TLS_RECORD_BUFFER_SIZE],
+    random_device: &'static T,
 ) -> Result<TlsConnection<'a, TcpSocketAdapter, Aes128GcmSha256>> {
-    log::information!("https_client: create session host='{}' port={}", host, port);
     let manager = network::get_instance();
 
-    log::information!("https_client: resolving host='{}'", host);
-    let dns_socket = manager
-        .new_dns_socket(None)
+    let address = manager
+        .resolve(host, DnsQueryKind::A | DnsQueryKind::Aaaa, true, None)
         .await
-        .map_err(map_network_error)?;
-    let resolved = dns_socket
-        .resolve(host, DnsQueryKind::A | DnsQueryKind::Aaaa)
-        .await
-        .map_err(map_network_error)?;
-    dns_socket.close().await.map_err(map_network_error)?;
+        .map_err(map_network_error)?
+        .first()
+        .cloned()
+        .ok_or(Error::NotFound)?;
 
-    let address = resolved.into_iter().next().ok_or(Error::NotFound)?;
-    log::information!("https_client: dns resolved host='{}'", host);
-
-    log::information!("https_client: creating tcp socket");
     let mut socket = manager
         .new_tcp_socket(4096, 4096, None)
         .await
@@ -302,11 +306,7 @@ async fn create_tls_connection<'a>(
     socket
         .set_timeout(Some(NetworkDuration::from_seconds(IO_TIMEOUT_SECONDS)))
         .await;
-    log::information!(
-        "https_client: connecting tcp socket to {}:{}",
-        address,
-        port
-    );
+
     socket
         .connect(address, Port::from_inner(port))
         .await
@@ -314,30 +314,24 @@ async fn create_tls_connection<'a>(
     socket
         .set_timeout(Some(NetworkDuration::from_seconds(IO_TIMEOUT_SECONDS)))
         .await;
-    log::information!("https_client: tcp connected");
 
     let mut tls = TlsConnection::new(TcpSocketAdapter { socket }, read_record, write_record);
 
     let configuration = TlsConfig::new().with_server_name(host);
-    let provider = UnsecureProvider::new::<Aes128GcmSha256>(SystemRng);
+    let provider = UnsecureProvider::new::<Aes128GcmSha256>(RandomNumberGenerator(random_device));
     let context = TlsContext::new(&configuration, provider);
 
-    log::information!("https_client: starting tls handshake");
     tls.open(context).await.map_err(map_tls_error)?;
-    log::information!("https_client: tls handshake done");
 
     Ok(tls)
 }
 
-async fn run_request(
+async fn run_request<T: DirectCharacterDevice + 'static>(
     inner: Arc<Mutex<CriticalSectionRawMutex, HttpsClientInner>>,
     request: Vec<u8>,
+    random_device: &'static T,
 ) {
     let result = async {
-        log::information!(
-            "https_client: run_request begin (buffer_len={})",
-            request.len()
-        );
         let parser = HttpRequestParser::from_buffer(&request);
         let _ = parser.get_request().ok_or(Error::InvalidParameter)?;
 
@@ -348,18 +342,21 @@ async fn run_request(
             .ok_or(Error::InvalidParameter)?;
 
         let (host, port) = split_host_port(host_header, DEFAULT_HTTPS_PORT);
-        log::information!("https_client: parsed host='{}' port={}", host, port);
 
         let mut read_record = [0u8; TLS_RECORD_BUFFER_SIZE];
         let mut write_record = [0u8; TLS_RECORD_BUFFER_SIZE];
-        let mut tls =
-            create_tls_connection(host, port, &mut read_record, &mut write_record).await?;
+        let mut tls = create_tls_connection(
+            host,
+            port,
+            &mut read_record,
+            &mut write_record,
+            random_device,
+        )
+        .await?;
 
         let request_length = compute_request_length(&request, parser)?;
         let payload = &request[..request_length];
-        log::information!("https_client: request length computed = {}", request_length);
 
-        log::information!("https_client: tls write_all begin");
         write_tls_all(&mut tls, payload).await?;
 
         let has_header_terminator = payload.windows(4).any(|window| window == b"\r\n\r\n");
@@ -378,22 +375,12 @@ async fn run_request(
             write_tls_all(&mut tls, suffix).await?;
         }
 
-        log::information!("https_client: tls write_all done");
-
-        log::information!("https_client: tls flush begin");
         tls.flush().await.map_err(map_tls_error)?;
-        log::information!("https_client: tls flush done");
 
         let mut raw_headers = [0u8; RESPONSE_SCAN_BUFFER_SIZE];
 
-        log::information!("https_client: waiting response headers");
         let (raw_headers_end, response_body) =
             read_response_headers_and_body(&mut tls, &mut raw_headers).await?;
-        log::information!(
-            "https_client: response headers received (headers_end={}, body_size={})",
-            raw_headers_end,
-            response_body.len()
-        );
 
         let mut response_headers = [0u8; RESPONSE_SERIALIZED_HEADER_SIZE];
         let serialized_headers_len = build_serialized_response_headers(
@@ -401,14 +388,10 @@ async fn run_request(
             &mut response_headers,
         )?;
 
-        match tls.close().await {
-            Ok(mut adapter) => {
-                adapter.socket.close().await;
-            }
-            Err((mut adapter, _)) => {
-                adapter.socket.close().await;
-            }
-        }
+        // Skip explicit TLS close as it may block indefinitely.
+        // The TLS connection and socket will be dropped naturally when this scope ends.
+        // This avoids deadlock while still cleaning up resources.
+        drop(tls);
 
         Ok::<(usize, [u8; RESPONSE_SERIALIZED_HEADER_SIZE], Vec<u8>), Error>((
             serialized_headers_len,
@@ -423,6 +406,7 @@ async fn run_request(
     match result {
         Ok((serialized_headers_len, response_headers, response_body)) => {
             if !matches!(guard.state, State::InFlight) {
+                log::warning!("https_client: state is not InFlight, returning early");
                 return;
             }
 
@@ -435,11 +419,6 @@ async fn run_request(
             guard.response_body_cursor = 0;
 
             guard.state = State::HeadersReady;
-
-            log::information!(
-                "https_client: request complete, headers ready len={}",
-                serialized_headers_len
-            );
         }
         Err(error) => {
             if matches!(guard.state, State::InFlight) {
@@ -450,9 +429,15 @@ async fn run_request(
     }
 }
 
-pub struct HttpsClientDevice;
+pub struct HttpsClientDevice<T: DirectCharacterDevice + 'static>(&'static T);
 
-impl BaseOperations for HttpsClientDevice {
+impl<T: DirectCharacterDevice + 'static> HttpsClientDevice<T> {
+    pub const fn new(random_device: &'static T) -> Self {
+        Self(random_device)
+    }
+}
+
+impl<T: DirectCharacterDevice + 'static> BaseOperations for HttpsClientDevice<T> {
     fn open(&self, context: &mut Context) -> Result<()> {
         context.set_private_data(Box::new(HttpsClientContext::new()));
         Ok(())
@@ -476,7 +461,6 @@ impl BaseOperations for HttpsClientDevice {
     }
 
     fn write(&self, context: &mut Context, buffer: &[u8], _: Size) -> Result<usize> {
-        log::information!("https_client: write called size={}", buffer.len());
         let context = context
             .get_private_data_mutable_of_type::<HttpsClientContext>()
             .ok_or(Error::InvalidParameter)?;
@@ -489,12 +473,14 @@ impl BaseOperations for HttpsClientDevice {
         let task_manager = task::get_instance();
         let parent = task::Manager::ROOT_TASK_IDENTIFIER;
 
+        let random_device = self.0;
+
         if let Err(spawn_error) =
             task::block_on(
                 task_manager.spawn(parent, "HTTPS request worker", None, move |_| {
                     let inner_clone = inner.clone();
                     let request_owned = request;
-                    async move { run_request(inner_clone, request_owned).await }
+                    async move { run_request(inner_clone, request_owned, random_device).await }
                 }),
             )
         {
@@ -507,7 +493,6 @@ impl BaseOperations for HttpsClientDevice {
             return Err(Error::RessourceBusy);
         }
 
-        log::information!("https_client: write submitted successfully");
         Ok(buffer.len())
     }
 
@@ -522,9 +507,9 @@ impl BaseOperations for HttpsClientDevice {
     }
 }
 
-impl MountOperations for HttpsClientDevice {}
+impl<T: DirectCharacterDevice + 'static> MountOperations for HttpsClientDevice<T> {}
 
-impl CharacterDevice for HttpsClientDevice {}
+impl<T: DirectCharacterDevice + 'static> CharacterDevice for HttpsClientDevice<T> {}
 
 fn write_state_gate(context: &mut HttpsClientContext) -> Result<()> {
     let mut inner = task::block_on(context.inner.lock());
@@ -570,7 +555,11 @@ fn read_state_transition(context: &mut HttpsClientContext, buffer: &mut [u8]) ->
         }
         State::BodyStreaming => {
             if inner.response_body_cursor >= inner.response_body.len() {
-                inner.reset();
+                // Only reset if we actually had a body (headers_len > 0).
+                // If headers_len is 0, we're being called prematurely during request setup.
+                if inner.response_headers_len > 0 {
+                    inner.reset();
+                }
                 return Ok(0);
             }
 
