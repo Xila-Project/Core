@@ -112,6 +112,7 @@ wasm = { path = "executables/wasm" }
 terminal = { path = "executables/terminal" }
 settings = { path = "executables/settings" }
 calculator = { path = "executables/calculator" }
+weather = { path = "executables/weather" }
 
 # - External crates
 miniserde = { version = "0.1" }
@@ -183,6 +184,7 @@ members = [
   "modules/graphics/fonts_generator",
   "modules/testing",
   "modules/device",
+  "executables/weather",
 ]
 
 [patch.crates-io]
