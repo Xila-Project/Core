@@ -100,3 +100,38 @@ pub unsafe fn window_set_icon(
 pub unsafe fn percentage(value: i32) -> i32 {
     unsafe { lvgl::lv_pct(value) }
 }
+
+pub unsafe fn textarea_get_text(
+    textarea: *mut lvgl::lv_obj_t,
+    buffer: *mut i8,
+    buffer_size: usize,
+) -> i32 {
+    let text = unsafe {
+        let text = lvgl::lv_textarea_get_text(textarea);
+        if text.is_null() {
+            log::warning!("lv_textarea_get_text returned null");
+            return 0;
+        }
+        CStr::from_ptr(text).to_string_lossy()
+    };
+
+    let len = core::cmp::min(text.len(), buffer_size - 1);
+    unsafe {
+        core::ptr::copy_nonoverlapping(text.as_ptr(), buffer as *mut u8, len);
+        *buffer.add(len) = 0; // Null-terminate
+    }
+    len as i32
+}
+
+pub unsafe fn textarea_get_text_length(textarea: *mut lvgl::lv_obj_t) -> i32 {
+    let text = unsafe {
+        let text = lvgl::lv_textarea_get_text(textarea);
+        if text.is_null() {
+            log::warning!("lv_textarea_get_text returned null");
+            return 0;
+        }
+        CStr::from_ptr(text).to_string_lossy()
+    };
+
+    text.len() as i32
+}
