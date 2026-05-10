@@ -172,6 +172,24 @@ pub async fn initialize(graphics_enabled: bool, network_enabled: bool) -> Standa
     .await
     .unwrap();
 
+    if network_enabled {
+        static HTTPS_CLIENT_DEVICE: drivers_shared::devices::HttpsClientDevice<
+            drivers_shared::devices::RandomDevice,
+        > = drivers_shared::devices::HttpsClientDevice::new(&drivers_shared::devices::RandomDevice);
+
+        mount_static!(
+            virtual_file_system,
+            task,
+            &[(
+                &"/devices/https_client",
+                CharacterDevice,
+                HTTPS_CLIENT_DEVICE
+            )]
+        )
+        .await
+        .unwrap();
+    }
+
     let group_identifier = GroupIdentifier::new(1000);
 
     authentication::create_group(virtual_file_system, "administrator", Some(group_identifier))

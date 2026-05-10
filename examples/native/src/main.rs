@@ -124,6 +124,10 @@ async fn main() {
 
     log::information!("Default hierarchy created.");
 
+    static HTTP_CLIENT_DEVICE: drivers_shared::devices::HttpsClientDevice<
+        drivers_shared::devices::RandomDevice,
+    > = drivers_shared::devices::HttpsClientDevice::new(&drivers_shared::devices::RandomDevice);
+
     mount_static!(
         virtual_file_system,
         task,
@@ -167,7 +171,7 @@ async fn main() {
             (
                 &"/devices/https_client",
                 CharacterDevice,
-                drivers_shared::devices::HttpsClientDevice
+                HTTP_CLIENT_DEVICE
             ),
             (
                 &"/devices/hasher",
