@@ -282,9 +282,33 @@ async fn main() {
     .await
     .unwrap();
 
+    let weather_binary_path = build_crate("weather").unwrap();
+
+    load_to_virtual_file_system(
+        virtual_file_system,
+        &weather_binary_path,
+        "/binaries/weather",
+    )
+    .await
+    .unwrap();
+
     let _ = executable::execute(
         "/binaries/wasm",
         vec!["--install".to_string(), "/binaries/calculator".to_string()],
+        standard
+            .duplicate()
+            .await
+            .expect("Failed to duplicate standard for calculator."),
+        None,
+    )
+    .await
+    .unwrap()
+    .join()
+    .await;
+
+    let _ = executable::execute(
+        "/binaries/wasm",
+        vec!["--install".to_string(), "/binaries/weather".to_string()],
         standard,
         None,
     )
