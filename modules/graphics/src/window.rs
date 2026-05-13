@@ -2,14 +2,17 @@ use super::lvgl;
 use crate::{Color, Error, EventKind, Result, event::Event};
 use alloc::boxed::Box;
 use alloc::collections::VecDeque;
-use core::{mem::forget, str};
+use core::{future::poll_fn, mem::forget, str, task::Poll};
+use synchronization::waitqueue::AtomicWaker;
 
 struct UserData {
     pub queue: VecDeque<Event>,
     pub icon_text: [u8; 2],
     pub icon_color: Color,
+    pub waker_registration: AtomicWaker,
 }
 
+#[derive(Clone)]
 pub struct Window {
     window: *mut lvgl::lv_obj_t,
 }
@@ -34,7 +37,7 @@ unsafe extern "C" fn event_callback(event: *mut lvgl::lv_event_t) {
     unsafe {
         let code = lvgl::lv_event_get_code(event);
 
-        let queue = lvgl::lv_event_get_user_data(event) as *mut VecDeque<Event>;
+        let user_data = lvgl::lv_event_get_user_data(event) as *mut UserData;
 
         let target = lvgl::lv_event_get_target(event) as *mut lvgl::lv_obj_t;
 
@@ -42,7 +45,10 @@ unsafe extern "C" fn event_callback(event: *mut lvgl::lv_event_t) {
             lvgl::lv_event_code_t_LV_EVENT_CHILD_CREATED => {
                 lvgl::lv_obj_add_flag(target, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_EVENT_BUBBLE);
 
-                (*queue).push_back(Event::new(EventKind::ChildCreated, target, None));
+                (*user_data)
+                    .queue
+                    .push_back(Event::new(EventKind::ChildCreated, target, None));
+                (*user_data).waker_registration.wake();
             }
             lvgl::lv_event_code_t_LV_EVENT_DRAW_MAIN
             | lvgl::lv_event_code_t_LV_EVENT_DRAW_MAIN_BEGIN
@@ -51,16 +57,25 @@ unsafe extern "C" fn event_callback(event: *mut lvgl::lv_event_t) {
             | lvgl::lv_event_code_t_LV_EVENT_DRAW_POST_BEGIN
             | lvgl::lv_event_code_t_LV_EVENT_DRAW_POST_END
             | lvgl::lv_event_code_t_LV_EVENT_GET_SELF_SIZE
-            | lvgl::lv_event_code_t_LV_EVENT_COVER_CHECK => {
+            | lvgl::lv_event_code_t_LV_EVENT_COVER_CHECK
+            | lvgl::lv_event_code_t_LV_EVENT_LAYOUT_CHANGED => {
                 // Ignore draw events
             }
             lvgl::lv_event_code_t_LV_EVENT_KEY => {
                 let key = lvgl::lv_indev_get_key(lvgl::lv_indev_active());
 
-                (*queue).push_back(Event::new(EventKind::Key, target, Some(key.into())));
+                (*user_data)
+                    .queue
+                    .push_back(Event::new(EventKind::Key, target, Some(key.into())));
+                (*user_data).waker_registration.wake();
             }
             _ => {
-                (*queue).push_back(Event::new(EventKind::from_lvgl_code(code), target, None));
+                (*user_data).queue.push_back(Event::new(
+                    EventKind::from_lvgl_code(code),
+                    target,
+                    None,
+                ));
+                (*user_data).waker_registration.wake();
             }
         }
     }
@@ -96,6 +111,7 @@ impl Window {
             queue: VecDeque::with_capacity(10),
             icon_text: [b'I', b'c'],
             icon_color: Color::BLACK,
+            waker_registration: AtomicWaker::new(),
         };
 
         let mut user_data = Box::new(user_data);
@@ -192,6 +208,14 @@ impl Window {
         user_data.icon_color = icon_color;
     }
 
+    pub fn register_waker(&mut self, waker: &core::task::Waker) {
+        let user_data = unsafe { lvgl::lv_obj_get_user_data(self.window) as *mut UserData };
+
+        let user_data = unsafe { &mut *user_data };
+
+        user_data.waker_registration.register(waker);
+    }
+
     /// Convert a raw pointer to a window object.
     ///
     /// # Returns
@@ -204,6 +228,19 @@ impl Window {
     ///
     pub unsafe fn from_raw(window: *mut lvgl::lv_obj_t) -> Self {
         Self { window }
+    }
+
+    pub fn yield_now(&mut self) -> impl core::future::Future<Output = ()> + '_ {
+        let mut yielded = false;
+        poll_fn(move |cx| {
+            if yielded {
+                Poll::Ready(())
+            } else {
+                self.register_waker(cx.waker());
+                yielded = true;
+                Poll::Pending
+            }
+        })
     }
 
     pub fn into_raw(self) -> *mut lvgl::lv_obj_t {
