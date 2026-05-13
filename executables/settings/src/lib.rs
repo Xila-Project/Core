@@ -12,12 +12,8 @@ pub use settings::*;
 
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use core::future::poll_fn;
 use core::num::NonZeroUsize;
-use core::time::Duration;
 use xila::executable::{self, ExecutableTrait, Standard};
-use xila::log;
-use xila::task;
 use xila::task::TaskIdentifier;
 use xila::virtual_file_system::{File, VirtualFileSystem};
 

@@ -1,17 +1,12 @@
-use core::future::poll_fn;
-use core::task::Poll;
-
 use alloc::string::String;
 use xila::file_system::Kind;
 use xila::graphics::{
     self, EventKind, Window, lvgl,
     palette::{self, Hue},
 };
-use xila::log;
-use xila::task::yield_now;
 
 use crate::error::Result;
-use crate::tabs::{self, AboutTab, GeneralTab, NetworkTab, PasswordTab, Tab};
+use crate::tabs::{AboutTab, GeneralTab, NetworkTab, PasswordTab, Tab};
 
 pub struct Settings {
     window: Window,
