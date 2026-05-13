@@ -96,6 +96,8 @@ impl FileManager {
             }
         });
 
+        self.window.yield_now().await;
+
         self.running
     }
 

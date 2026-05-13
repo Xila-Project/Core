@@ -56,25 +56,25 @@ impl Settings {
     }
 
     pub async fn handle_events(&mut self) -> bool {
-        let mut running = true;
-
         graphics::lock!({
             while let Some(event) = self.window.pop_event() {
+                // Logique de filtrage spécifique à Settings
                 if (event.code == EventKind::Delete || event.code == EventKind::CloseRequested)
                     && event.target == self.window.get_object()
                 {
-                    running = false;
-                } else {
-                    // Let each tab handle the event
-                    for tab in &mut self.tabs {
-                        if tab.handle_event(&event).await {
-                            break; // Event was handled, no need to check other tabs
-                        }
+                    return false;
+                }
+
+                for tab in &mut self.tabs {
+                    if tab.handle_event(&event).await {
+                        break;
                     }
                 }
             }
         });
 
-        running
+        self.window.yield_now().await;
+
+        true
     }
 }

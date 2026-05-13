@@ -8,9 +8,7 @@ mod file_manager;
 use alloc::boxed::Box;
 use alloc::string::{String, ToString};
 use core::num::NonZeroUsize;
-use core::time::Duration;
 use xila::executable::{self, ExecutableTrait, Standard};
-use xila::task;
 use xila::task::TaskIdentifier;
 use xila::virtual_file_system::{File, VirtualFileSystem};
 
@@ -62,9 +60,7 @@ pub async fn main(_: Standard, _: Vec<String>) -> core::result::Result<(), NonZe
         .await
         .map_err(|_| NonZeroUsize::new(1).unwrap())?;
 
-    while file_manager.handle_events().await {
-        task::sleep(Duration::from_millis(50)).await;
-    }
+    while file_manager.handle_events().await {}
 
     Ok(())
 }
