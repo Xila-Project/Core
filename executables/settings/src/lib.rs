@@ -12,9 +12,11 @@ pub use settings::*;
 
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use core::future::poll_fn;
 use core::num::NonZeroUsize;
 use core::time::Duration;
 use xila::executable::{self, ExecutableTrait, Standard};
+use xila::log;
 use xila::task;
 use xila::task::TaskIdentifier;
 use xila::virtual_file_system::{File, VirtualFileSystem};
@@ -70,9 +72,7 @@ pub async fn main(_: Standard, _: Vec<String>) -> core::result::Result<(), NonZe
         .map_err(|_| NonZeroUsize::new(1).unwrap())?;
 
     // Run the main loop
-    while settings.handle_events().await {
-        task::sleep(Duration::from_millis(50)).await;
-    }
+    while settings.handle_events().await {}
 
     Ok(())
 }

@@ -62,9 +62,7 @@ pub async fn main(_: Standard, _: Vec<String>) -> core::result::Result<(), NonZe
         .await
         .map_err(|_| NonZeroUsize::new(1).unwrap())?;
 
-    while file_manager.handle_events().await {
-        task::sleep(Duration::from_millis(50)).await;
-    }
+    while file_manager.handle_events().await {}
 
     Ok(())
 }
