@@ -12,9 +12,9 @@ memory = { workspace = true }
 network = { workspace = true }
 synchronization = { workspace = true }
 users = { workspace = true }
+shared = { workspace = true }
 
 log = { workspace = true }
-abi_context = { workspace = true }
 
 [features]
 default = []

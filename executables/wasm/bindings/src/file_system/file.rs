@@ -1,0 +1,178 @@
+use core::ffi::{CStr, c_char};
+
+use crate::host::bindings::file_system::{FileSystemItem, XilaFileSystemItem, into_result};
+use xila::abi_declarations::{
+    FileVariantKind, XilaFileSystemResult, XilaFileSystemState, xila_file_system_file_close,
+    xila_file_system_file_is_a_terminal, xila_file_system_file_read_at_vectored,
+    xila_file_system_file_read_vectored, xila_file_system_file_set_flags,
+    xila_file_system_file_write_at_vectored, xila_file_system_file_write_vectored,
+};
+use xila::{log, virtual_file_system};
+
+macro_rules! with_file {
+    ($ptr:expr, $file_var:ident => $body:expr) => {
+        unsafe {
+            match FileSystemItem::borrow_from_raw($ptr as _) {
+                FileSystemItem::File($file_var) => $body,
+                _ => virtual_file_system::Error::InvalidParameter.into(),
+            }
+        }
+    };
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_close(
+    item: *mut XilaFileSystemItem,
+) -> XilaFileSystemResult {
+    log::information!("Closing file {:?}", item);
+    unsafe {
+        let file = FileSystemItem::own_from_raw(item as _);
+
+        match *file {
+            FileSystemItem::File(mut file) => xila_file_system_file_close(&mut file.file as _),
+            _ => virtual_file_system::Error::InvalidParameter.into(),
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_write(
+    item: *mut XilaFileSystemItem,
+    buffers: *const *const u8,
+    buffer_lengths: *const usize,
+    buffer_count: usize,
+    written: *mut usize,
+) -> XilaFileSystemResult {
+    log::information!("Writing to file {:?} ", item);
+    with_file!(item, f => xila_file_system_file_write(
+        f.file,
+        buffers,
+        buffer_lengths,
+        buffer_count,
+        written
+    ))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_read(
+    item: *mut XilaFileSystemItem,
+    buffers: *const *mut u8,
+    buffer_lengths: *const usize,
+    buffer_count: usize,
+    read: *mut usize,
+) -> XilaFileSystemResult {
+    log::information!("Reading from file {:?} ", item);
+    with_file!(item, f => xila_file_system_file_read(
+        f.file,
+        buffers,
+        buffer_lengths,
+        buffer_count,
+        read
+    ))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_write_at(
+    item: *mut XilaFileSystemItem,
+    offset: XilaFileSystemSize,
+    buffers: *const *const u8,
+    buffer_lengths: *const usize,
+    buffer_count: usize,
+    written: *mut usize,
+) -> XilaFileSystemResult {
+    log::information!("Writing to file {:?} at offset {} ", item, offset);
+    with_file!(item, f => xila_file_system_file_write_at(
+        f.file,
+        offset,
+        buffers,
+        buffer_lengths,
+        buffer_count,
+        written
+    ))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_read_at(
+    item: *mut XilaFileSystemItem,
+    offset: XilaFileSystemSize,
+    buffers: *const *mut u8,
+    buffer_lengths: *const usize,
+    buffer_count: usize,
+    read: *mut usize,
+) -> XilaFileSystemResult {
+    log::information!("Reading from file {:?} at offset {} ", item, offset);
+    with_file!(item, f => xila_file_system_file_read_at(
+        f.file,
+        offset,
+        buffers,
+        buffer_lengths,
+        buffer_count,
+        read
+    ))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_is_a_terminal(
+    item: *mut XilaFileSystemItem,
+    is_terminal: *mut bool,
+) -> XilaFileSystemResult {
+    log::information!("Checking if file {:?} is a terminal ", item);
+    with_file!(item, f => xila_file_system_file_is_a_terminal(
+        &mut f.file,
+        is_terminal
+    ))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_is_standard_input(
+    item: *mut XilaFileSystemItem,
+) -> bool {
+    log::information!("Checking if file {:?} is standard input ", item);
+    let r = with_file!(item, f => f.kind == FileVariantKind::StandardInput);
+
+    r
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_is_standard_output(
+    item: *mut XilaFileSystemItem,
+) -> bool {
+    log::information!("Checking if file {:?} is standard output ", item);
+    let r = with_file!(item, f => f.kind == FileVariantKind::StandardOutput);
+
+    r
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_is_standard_error(
+    item: *mut XilaFileSystemItem,
+) -> bool {
+    log::information!("Checking if file {:?} is standard error ", item);
+    let r = with_file!(item, f => f.kind == FileVariantKind::StandardError);
+
+    r
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_set_flags(
+    item: *mut XilaFileSystemItem,
+    state: XilaFileSystemState,
+) -> XilaFileSystemResult {
+    log::information!("Setting flags for file {:?} to {:?} ", item, state);
+    with_file!(item, f => xila_file_system_file_set_flags(
+        &mut f.file,
+        flags
+    ))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_flush(
+    item: *mut XilaFileSystemItem,
+    flush_data: bool,
+) -> XilaFileSystemResult {
+    log::information!("Flushing file {:?} ", item);
+    with_file!(item, f => xila_file_system_file_flush(
+        &mut f.file,
+        flush_data
+    ))
+}

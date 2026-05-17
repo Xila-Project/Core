@@ -1,4 +1,4 @@
-#include "../../../../modules/abi/xila.h"
+#include "wasm.generated.h"
 
 #include "platform_api_extension.h"
 #include "platform_common.h"

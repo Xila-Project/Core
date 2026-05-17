@@ -1,5 +1,5 @@
 
-#include "../../../../modules/abi/xila.h"
+#include "wasm.generated.h"
 
 #define CLOCK_REALTIME XilaTimeClockIdentifier_Realtime
 #define CLOCK_MONOTONIC XilaTimeClockIdentifier_Monotonic

@@ -6,7 +6,7 @@
 #ifndef _XILA_PLATFORM_INTERNAL_H
 #define _XILA_PLATFORM_INTERNAL_H
 
-#include "../../../../modules/abi/xila.h"
+#include "wasm.generated.h"
 
 // #include "stubs.h"
 #include <arpa/inet.h>
@@ -36,7 +36,7 @@ extern "C" {
 #define BH_PLATFORM_XILA
 #endif
 
-#define bh_socket_t XilaFileIdentifier
+#define bh_socket_t XilaFileSystemItem*
 
 #ifndef PATH_MAX
 #define PATH_MAX 256
@@ -51,7 +51,7 @@ struct RawMutex {
 typedef struct RawMutex korp_mutex;
 
 typedef pthread_cond_t korp_cond;
-typedef XilaThreadIdentifier korp_thread;
+typedef XilaTaskIdentifier korp_thread;
 
 struct RawRwLock {
   uint8_t _[8];
@@ -123,13 +123,13 @@ typedef struct XilaSemaphore korp_sem;
 
 typedef struct timespec os_timespec;
 
-typedef XilaFileIdentifier os_dir_stream;
-typedef XilaFileIdentifier os_raw_file_handle;
-typedef XilaFileIdentifier os_file_handle;
+typedef XilaFileSystemItem* os_dir_stream;
+typedef XilaFileSystemItem* os_raw_file_handle;
+typedef XilaFileSystemItem* os_file_handle;
 typedef XilaFileSystemPollEvent os_poll_file_handle;
-typedef XilaFileIdentifier os_nfds_t;
+typedef XilaFileSystemItem* os_nfds_t;
 
-XilaFileIdentifier os_get_invalid_handle();
+os_file_handle os_get_invalid_handle();
 
 int os_getpagesize();
 

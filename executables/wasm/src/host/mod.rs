@@ -1,4 +1,3 @@
-mod bindings;
 mod virtual_machine;
 
 use alloc::boxed::Box;
@@ -6,14 +5,13 @@ use alloc::string::ToString;
 use alloc::{borrow::ToOwned, string::String, vec, vec::Vec};
 use core::fmt::Write;
 use core::num::NonZeroUsize;
-use core::pin::Pin;
 use executable_macros::GetArgs;
 use xila::executable::ExecutableTrait;
 use xila::executable::MainFuture;
 use xila::executable::Standard;
 use xila::file_system::{Kind, Path};
 use xila::synchronization::once_lock::OnceLock;
-use xila::task::{self, SpawnerIdentifier};
+use xila::task::{self};
 use xila::virtual_file_system::{self, File};
 
 #[cfg(feature = "graphics")]
@@ -24,10 +22,6 @@ pub use crate::host::virtual_machine::Error;
 
 pub struct WasmExecutable;
 
-type NewThreadExecutor =
-    fn() -> Pin<Box<dyn core::future::Future<Output = SpawnerIdentifier> + Send>>;
-
-static NEW_THREAD_EXECUTOR: OnceLock<NewThreadExecutor> = OnceLock::new();
 static RUNTIME: OnceLock<virtual_machine::Runtime> = OnceLock::new();
 const REGISTRABLES: &[&dyn Registrable] = &[
     #[cfg(feature = "graphics")]
@@ -46,16 +40,6 @@ struct WasmArguments<'a> {
     stack_size: usize,
     #[arg(default = 200)]
     instruction_limit: u32,
-}
-
-impl WasmExecutable {
-    pub fn new(new_thread_executor: Option<NewThreadExecutor>) -> Self {
-        if let Some(new_thread_executor) = new_thread_executor {
-            let _ = NEW_THREAD_EXECUTOR.init(new_thread_executor);
-        }
-
-        Self
-    }
 }
 
 impl ExecutableTrait for WasmExecutable {
@@ -121,50 +105,20 @@ pub async fn inner_main(standard: Standard, arguments: Vec<String>) -> Result<()
 
     let standard = standard.split();
 
-    if let Some(new_thread_executor) = NEW_THREAD_EXECUTOR.try_get() {
-        let spawner_identifier = new_thread_executor().await;
+    let task_identifier = task::get_instance().get_current_task_identifier().await;
 
-        task::get_instance()
-            .spawn(
-                task,
-                "WASM Execution",
-                Some(spawner_identifier),
-                move |task_identifier| async move {
-                    runtime
-                        .execute(
-                            &name,
-                            buffer,
-                            stack_size,
-                            standard,
-                            function_name,
-                            vec![],
-                            task_identifier,
-                            instruction_limit,
-                        )
-                        .await
-                },
-            )
-            .await
-            .map_err(Error::FailedToSpawnTask)?
-            .0
-            .join()
-            .await?;
-    } else {
-        let task_identifier = task::get_instance().get_current_task_identifier().await;
-
-        runtime
-            .execute(
-                &name,
-                buffer,
-                stack_size,
-                standard,
-                function_name,
-                vec![],
-                task_identifier,
-                instruction_limit,
-            )
-            .await?;
-    }
+    runtime
+        .execute(
+            &name,
+            buffer,
+            stack_size,
+            standard,
+            function_name,
+            vec![],
+            task_identifier,
+            instruction_limit,
+        )
+        .await?;
 
     Ok(())
 }

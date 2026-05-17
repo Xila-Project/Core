@@ -20,7 +20,6 @@ internationalization = { workspace = true }
 
 
 # - Host
-abi_context = { workspace = true, optional = true }
 abi_declarations = { workspace = true, optional = true }
 abi_definitions = { workspace = true, optional = true }
 little_fs = { workspace = true, optional = true }
@@ -42,7 +41,6 @@ network = { workspace = true, optional = true }
 
 [features]
 default = [
-  "dep:abi_context",
   "dep:abi_declarations",
   "dep:abi_definitions",
   "dep:little_fs",
@@ -72,7 +70,6 @@ graphics_rendering_xrgb8888 = ["graphics/rendering_xrgb8888"]
 
 
 [workspace.dependencies]
-abi_context = { path = "modules/abi/context" }
 abi_declarations = { path = "modules/abi/declarations" }
 abi_definitions = { path = "modules/abi/definitions" }
 little_fs = { path = "modules/little_fs" }
@@ -151,7 +148,6 @@ members = [
   "modules/time",
   "modules/abi/definitions",
   "modules/abi/declarations",
-  "modules/abi/context",
   "modules/virtual_file_system",
   "modules/little_fs",
   "modules/target",
@@ -160,6 +156,7 @@ members = [
   "modules/executable",
   "modules/executable/macros",
   "executables/wasm",
+  "executables/wasm/bindings",
   "executables/wasm/tests/wasm_test",
   "executables/shell/graphical",
   "executables/terminal",
