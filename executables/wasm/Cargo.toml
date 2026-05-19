@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 xila = { path = "../../", optional = true }
+wasm_abi_bindings = { path = "bindings", optional = true }
 wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git", features = [
   "multi-module",
   "instruction-metering",
@@ -12,7 +13,6 @@ wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git",
 getargs = { version = "0.5" }
 executable_macros = { path = "../../modules/executable/macros" }
 smol_str = { workspace = true }
-wasm_abi_bindings = { path = "bindings", optional = true }
 
 [features]
 default = []
@@ -20,8 +20,8 @@ graphics = []
 c_bindings = []
 host = ["dep:xila", "dep:wamr-rust-sdk", "dep:wasm_abi_bindings"]
 guest = []
-wasm32 = []
-wasm64 = []
+wasm32 = ["wasm_abi_bindings/wasm32"]
+wasm64 = ["wasm_abi_bindings/wasm64"]
 default_host = ["host", "graphics", "wasm32"]
 default_guest = ["guest", "graphics", "c_bindings"]
 

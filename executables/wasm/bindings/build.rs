@@ -1,10 +1,16 @@
 use std::{env, path::PathBuf};
 
-pub fn main() -> Result<(), String> {
+fn main() {
     // Tell Cargo to rerun this build script if any Rust source files change
 
     // Tell Cargo to rerun this build script if any Rust source files change
-    let definitions_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    println!("cargo:rerun-if-changed=src/");
+
+    println!("cargo:warning=Generating bindings for ABI definitions...");
+
+    let definitions_path: PathBuf = env::var("CARGO_MANIFEST_DIR")
+        .expect("CARGO_MANIFEST_DIR is not set")
+        .into();
 
     let header_file = "./wamr/include/wasm.generated.h".to_string();
 
@@ -37,7 +43,7 @@ pub fn main() -> Result<(), String> {
             "stdbool.h".to_string(),
             "stdint.h".to_string(),
         ],
-        includes: vec!["../../../modules/abi/xila.h".to_string()],
+        includes: vec!["../../../../../modules/abi/xila.h".to_string()],
         no_includes: true,
         enumeration: enumeration_configuration,
         parse: cbindgen::ParseConfig {
@@ -69,13 +75,11 @@ pub fn main() -> Result<(), String> {
         .with_crate(definitions_path)
         .with_config(configuration)
         .generate()
-        .map_err(|e| format!("Error generating bindings: {}", e))?
+        .expect("Unable to generate bindings")
         .write_to_file(&header_file);
 
     println!(
         "cargo:warning=Bindings generated successfully at {}",
         header_file
     );
-
-    Ok(())
 }

@@ -1,6 +1,7 @@
-use crate::host::virtual_machine::{CustomData, Result, module::Module, runtime::Runtime};
+use crate::host::virtual_machine::{Result, module::Module, runtime::Runtime};
 use alloc::boxed::Box;
 use wamr_rust_sdk::{instance, sys::wasm_runtime_get_custom_data};
+use wasm_abi_bindings::InstanceContext;
 
 pub struct Instance<'module> {
     instance: instance::Instance<'module>,
@@ -12,7 +13,7 @@ impl Drop for Instance<'_> {
     fn drop(&mut self) {
         let instance = self.get_inner_reference().get_inner_instance();
         unsafe {
-            let user_data = wasm_runtime_get_custom_data(instance) as *mut CustomData;
+            let user_data = wasm_runtime_get_custom_data(instance) as *mut InstanceContext;
 
             if !user_data.is_null() {
                 let _ = Box::from_raw(user_data);

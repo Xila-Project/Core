@@ -3,7 +3,7 @@ use core::mem::MaybeUninit;
 use core::ops::DerefMut;
 use core::{ffi::CStr, ptr::NonNull};
 
-use crate::{Context, FileSystemItem, FileVariantKind, XilaFileSystemItem};
+use crate::{EnvironmentContext, FileSystemItem, FileVariantKind, XilaFileSystemItem};
 use alloc::borrow::ToOwned;
 use xila::abi_declarations::{
     XILA_RESULT_OK, XilaFileSystemAccess, XilaFileSystemDirectory, XilaFileSystemFile,
@@ -65,7 +65,7 @@ pub unsafe extern "C" fn __wasm_file_system_open_at(
             "Opening file system item at path {path:?} in directory {parent:?} (is_directory: {is_directory}, access: {access:?}, open: {open:?}, status: {status:?})"
         );
 
-        let context = Context::get_global();
+        let context = EnvironmentContext::get();
 
         let task = context.get_task();
 
@@ -189,7 +189,7 @@ pub unsafe extern "C" fn __wasm_file_system_remove_at(
             Err(error) => return error.into(),
         };
 
-        let task = Context::get_global().get_task();
+        let task = EnvironmentContext::get().get_task();
 
         xila_file_system_remove(task.into(), resolved_path.as_str() as *const _ as _)
     }

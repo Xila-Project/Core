@@ -1,32 +1,29 @@
-use core::ffi::c_void;
+use core::time::Duration;
 
-use xila::{shared::BijectiveBTreeMap, task::TaskIdentifier};
+use xila::task::TaskIdentifier;
 
-use crate::host::virtual_machine::WasmPointer;
+unsafe extern "Rust" {
+    pub unsafe fn __wasm_get_environment_data() -> *mut EnvironmentContext;
+}
 
 #[derive(Debug, Clone)]
 pub enum EnvironmentState {
     Sleep(Duration),
     Running,
+    Exited,
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct CustomData {
-    pub translation_map: BijectiveBTreeMap<WasmPointer, *mut c_void>,
-    pub task: TaskIdentifier,
-    pub state: EnvironmentState,
+pub struct EnvironmentContext {
+    task: TaskIdentifier,
+    state: EnvironmentState,
 }
 
-impl CustomData {
-    pub fn new(task: TaskIdentifier) -> Self {
-        Self {
-            translation_map: BijectiveBTreeMap::new(),
-            task,
-            state: EnvironmentState::Running,
-        }
+impl EnvironmentContext {
+    pub unsafe fn get<'a>() -> &'a mut Self {
+        unsafe { &mut *__wasm_get_environment_data() }
     }
 
-    pub fn get_current_task_identifier(&self) -> TaskIdentifier {
+    pub fn get_task(&self) -> TaskIdentifier {
         self.task
     }
 
@@ -44,6 +41,10 @@ impl CustomData {
 
     pub fn wake_up(&mut self) {
         self.state = EnvironmentState::Running;
+    }
+
+    pub fn exit(&mut self) {
+        self.state = EnvironmentState::Exited;
     }
 
     pub fn get_state(&self) -> &EnvironmentState {

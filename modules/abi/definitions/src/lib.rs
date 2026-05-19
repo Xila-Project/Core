@@ -2,7 +2,6 @@
 
 extern crate alloc;
 
-mod common;
 mod file_system;
 mod memory;
 mod string;
@@ -10,7 +9,6 @@ mod task;
 mod time;
 mod user;
 
-pub use common::*;
 pub use file_system::*;
 pub use memory::*;
 pub use string::*;

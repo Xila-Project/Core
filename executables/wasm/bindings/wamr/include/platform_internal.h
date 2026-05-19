@@ -126,8 +126,15 @@ typedef struct timespec os_timespec;
 typedef XilaFileSystemItem* os_dir_stream;
 typedef XilaFileSystemItem* os_raw_file_handle;
 typedef XilaFileSystemItem* os_file_handle;
-typedef XilaFileSystemPollEvent os_poll_file_handle;
-typedef XilaFileSystemItem* os_nfds_t;
+
+typedef os_file_handle os_nfds_t;
+
+typedef struct {
+  os_nfds_t fd;
+  short revents;
+  short events;
+} os_poll_file_handle;
+
 
 os_file_handle os_get_invalid_handle();
 

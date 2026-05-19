@@ -4,9 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-xila = { path = "../../../" }
+xila = { path = "../../../", features = ["graphics_rendering_rgb565"] }
 smol_str = { workspace = true }
 
+[features]
+wasm32 = []
+wasm64 = []
 
 [build-dependencies]
 cbindgen = { workspace = true }

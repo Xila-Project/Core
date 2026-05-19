@@ -1,6 +1,6 @@
-#include "wasm.generated.h"
 #include "internal.h"
 #include "platform_internal.h"
+#include "wasm.generated.h"
 
 /***************************************************
  *                                                 *
@@ -32,7 +32,7 @@
  */
 int os_thread_create(korp_tid *p_tid, thread_start_routine_t start, void *arg,
                      unsigned int stack_size) {
-  return xila_task_create(start, arg, stack_size, p_tid);
+  return __wasm_task_create(start, arg, stack_size, p_tid);
 }
 
 /**
@@ -48,7 +48,7 @@ int os_thread_create(korp_tid *p_tid, thread_start_routine_t start, void *arg,
  */
 int os_thread_create_with_prio(korp_tid *p_tid, thread_start_routine_t start,
                                void *arg, unsigned int stack_size, int prio) {
-  return xila_task_create(start, arg, stack_size, p_tid);
+  return __wasm_task_create(start, arg, stack_size, p_tid);
 }
 
 /**
@@ -60,7 +60,7 @@ int os_thread_create_with_prio(korp_tid *p_tid, thread_start_routine_t start,
  * @return return 0 if success
  */
 int os_thread_join(korp_tid thread, void **retval) {
-  return xila_task_join(thread);
+  return __wasm_task_join(thread);
 }
 
 /**
@@ -70,14 +70,14 @@ int os_thread_join(korp_tid thread, void **retval) {
  *
  * @return return 0 if success
  */
-int os_thread_detach(korp_tid Thread) { return xila_task_detach(Thread); }
+int os_thread_detach(korp_tid Thread) { return __wasm_task_detach(Thread); }
 
 /**
  * Exit current thread
  *
  * @param retval the return value of the current thread
  */
-void os_thread_exit(void *retval) { xila_task_exit(); }
+void os_thread_exit(void *retval) { __wasm_task_exit(); }
 
 /* Try to define os_atomic_thread_fence if it isn't defined in
    platform's platform_internal.h */
@@ -147,7 +147,7 @@ void os_thread_exit(void *retval) { xila_task_exit(); }
  * @return 0 if success, -1 otherwise
  */
 int os_usleep(uint32 usec) {
-  xila_task_sleep_exact(usec);
+  __wasm_task_sleep_exact(usec);
 
   return 0;
 }
@@ -381,12 +381,12 @@ int os_blocking_op_init() { return 0; }
 /**
  * Start accepting os_wakeup_blocking_op requests for the calling thread.
  */
-void os_begin_blocking_op() { xila_task_begin_blocking_operation(); }
+void os_begin_blocking_op() { __wasm_task_begin_blocking_operation(); }
 
 /**
  * Stop accepting os_wakeup_blocking_op requests for the calling thread.
  */
-void os_end_blocking_op() { xila_task_end_blocking_operation(); }
+void os_end_blocking_op() { __wasm_task_end_blocking_operation(); }
 
 /**
  * Wake up the specified thread.
@@ -395,7 +395,7 @@ void os_end_blocking_op() { xila_task_end_blocking_operation(); }
  * sending a signal (w/o SA_RESTART) which interrupts a blocking
  * system call.
  */
-int os_wakeup_blocking_op(korp_tid tid) { return xila_task_wake_up(tid); }
+int os_wakeup_blocking_op(korp_tid tid) { return __wasm_task_wake_up(tid); }
 
 /****************************************************
  *                     Section 2                    *
@@ -1131,9 +1131,9 @@ int os_dumps_proc_mem_info(char *out, unsigned int size) { return -1; }
  *
  * @return the invalid handle
  */
-os_file_handle os_get_invalid_handle() { return 0; }
+os_file_handle os_get_invalid_handle() { return NULL; }
 
-os_raw_file_handle os_invalid_raw_handle() { return 0; }
+os_raw_file_handle os_invalid_raw_handle() { return NULL; }
 
 /**
  * NOTES:
@@ -1195,7 +1195,7 @@ __wasi_errno_t os_fstatat(os_file_handle handle, const char *path,
   XilaFileSystemStatistics file_system_statistics;
 
   XilaFileSystemResult file_system_result =
-      xila_file_system_get_statistics_from_path_at(
+      __wasm_file_system_get_statistics_at(
           handle, path, &file_system_statistics, follow_symlink);
 
   return into_wasi_error(file_system_result);
@@ -1212,8 +1212,7 @@ __wasi_errno_t os_file_get_fdflags(os_file_handle handle,
                                    __wasi_fdflags_t *flags) {
   XilaFileSystemState status;
 
-  XilaFileSystemResult result =
-      __wasm_file_system_get_access(handle, &status);
+  XilaFileSystemResult result = __wasm_file_system_get_access(handle, &status);
 
   if (result == XILA_RESULT_OK) {
     *flags = into_wasi_state(status);
@@ -1233,7 +1232,7 @@ __wasi_errno_t os_file_set_fdflags(os_file_handle handle,
                                    __wasi_fdflags_t flags) {
   XilaFileSystemState status = into_xila_state(flags);
 
-  return xila_file_system_set_flags(handle, status);
+  return __wasm_file_system_file_set_flags(handle, status);
 }
 
 /**
@@ -1262,7 +1261,8 @@ __wasi_errno_t os_fsync(os_file_handle handle) {
  * @param out a pointer in which to store the newly opened handle
  */
 __wasi_errno_t os_open_preopendir(const char *path, os_file_handle *out) {
-  XilaFileSystemResult result = xila_file_system_open_directory(path, out);
+  XilaFileSystemResult result = __wasm_file_system_open_at(
+      os_get_invalid_handle(), path, true, 0, 0, 0, out);
 
   return into_wasi_error(result);
 }
@@ -1290,7 +1290,7 @@ __wasi_errno_t os_openat(os_file_handle handle, const char *path,
   XilaFileSystemState status = into_xila_state(fd_flags);
 
   return into_wasi_error(__wasm_file_system_open_at(
-      handle, path, oflags & __WASI_O_DIRECTORY, mode, open, status, out));
+      handle, path, oflags & __WASI_O_DIRECTORY, access, open, status, out));
 }
 
 /**
@@ -1348,8 +1348,8 @@ __wasi_errno_t os_preadv(os_file_handle handle,
   }
 
   XilaFileSystemResult file_system_result =
-      xila_file_system_read_at_position_vectored(handle, buffers, lengths,
-                                                 iovcnt, offset, nread);
+      __wasm_file_system_file_read_at(handle, offset, buffers, lengths,
+                                                 iovcnt, nread);
 
   return into_wasi_error(file_system_result);
 }
@@ -1375,8 +1375,8 @@ __wasi_errno_t os_pwritev(os_file_handle handle,
   }
 
   XilaFileSystemResult file_system_result =
-      xila_file_system_write_at_position_vectored(handle, buffers, lengths,
-                                                  iovcnt, offset, nwritten);
+      __wasm_file_system_file_write_at(handle, offset, buffers, lengths,
+                                                  iovcnt, nwritten);
 
   return into_wasi_error(file_system_result);
 }
@@ -1399,8 +1399,7 @@ __wasi_errno_t os_readv(os_file_handle handle, const struct __wasi_iovec_t *iov,
     lengths[i] = iov[i].buf_len;
   }
 
-  return xila_file_system_read_vectored(handle, buffers, lengths, iovcnt,
-                                        nread);
+  return __wasm_file_system_file_read(handle, buffers, lengths, iovcnt, nread);
 }
 
 /**
@@ -1422,8 +1421,8 @@ __wasi_errno_t os_writev(os_file_handle handle,
     lengths[i] = iov[i].buf_len;
   }
 
-  return xila_file_system_write_vectored(handle, buffers, lengths, iovcnt,
-                                         nwritten);
+  return __wasm_file_system_file_write(handle, buffers, lengths, iovcnt,
+                                       nwritten);
 }
 
 /**
@@ -1436,7 +1435,7 @@ __wasi_errno_t os_writev(os_file_handle handle,
  */
 __wasi_errno_t os_fallocate(os_file_handle handle, __wasi_filesize_t offset,
                             __wasi_filesize_t length) {
-  return xila_file_system_allocate(handle, offset, length);
+  return __wasm_file_system_file_allocate(handle, offset, length);
 }
 
 /**
@@ -1446,7 +1445,7 @@ __wasi_errno_t os_fallocate(os_file_handle handle, __wasi_filesize_t offset,
  * @param size the new size of the file
  */
 __wasi_errno_t os_ftruncate(os_file_handle handle, __wasi_filesize_t size) {
-  return xila_file_system_truncate(handle, size);
+  return __wasm_file_system_file_truncate(handle, size);
 }
 
 /**
@@ -1462,8 +1461,8 @@ __wasi_errno_t os_futimens(os_file_handle handle,
                            __wasi_timestamp_t access_time,
                            __wasi_timestamp_t modification_time,
                            __wasi_fstflags_t fstflags) {
-  return xila_file_system_set_times(handle, access_time, modification_time,
-                                    fstflags);
+  return __wasm_file_system_file_set_times(handle, access_time,
+                                           modification_time, fstflags);
 }
 
 /**
@@ -1530,7 +1529,7 @@ __wasi_errno_t os_linkat(os_file_handle from_handle, const char *from_path,
 __wasi_errno_t os_symlinkat(const char *old_path, os_file_handle handle,
                             const char *new_path) {
   return into_wasi_error(
-      xila_file_system_create_symbolic_link_at(handle, old_path, new_path));
+      __wasm_file_system_create_symbolic_link_at(handle, old_path, new_path));
 }
 
 /**
@@ -1540,7 +1539,7 @@ __wasi_errno_t os_symlinkat(const char *old_path, os_file_handle handle,
  * @param path the relative path of the directory to create
  */
 __wasi_errno_t os_mkdirat(os_file_handle handle, const char *path) {
-  return into_wasi_error(xila_file_system_create_directory_at(handle, path));
+  return into_wasi_error(__wasm_file_system_directory_create_at(handle, path));
 }
 
 /**
@@ -1596,7 +1595,7 @@ __wasi_errno_t os_lseek(os_file_handle handle, __wasi_filedelta_t offset,
   XilaFileSystemWhence Whence = into_xila_whence(whence);
 
   return into_wasi_error(
-      xila_file_system_set_position(handle, offset, Whence, new_offset));
+      __wasm_file_system_file_set_position(handle, offset, Whence, new_offset));
 }
 
 /**
@@ -1613,7 +1612,7 @@ __wasi_errno_t os_lseek(os_file_handle handle, __wasi_filedelta_t offset,
  */
 __wasi_errno_t os_fadvise(os_file_handle handle, __wasi_filesize_t offset,
                           __wasi_filesize_t length, __wasi_advice_t advice) {
-  return xila_file_system_advise(handle, offset, length, advice);
+  return __wasm_file_system_file_advise(handle, offset, length, advice);
 }
 
 /**
@@ -1627,7 +1626,7 @@ __wasi_errno_t os_isatty(os_file_handle handle) {
   bool Is_Terminal = false;
 
   XilaFileSystemResult Result =
-      xila_file_system_is_a_terminal(handle, &Is_Terminal);
+      __wasm_file_system_file_is_a_terminal(handle, &Is_Terminal);
 
   if (Is_Terminal) {
     return __WASI_ESUCCESS;

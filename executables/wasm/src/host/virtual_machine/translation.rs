@@ -1,10 +1,10 @@
 use core::ffi::c_void;
 
-use crate::host::virtual_machine::{CustomData, Environment, Result, WasmPointer};
+use crate::host::virtual_machine::{Environment, InstanceData, Result, WasmPointer};
 
 pub struct Translator<'a> {
     environment: &'a mut Environment,
-    custom_data: &'a mut CustomData,
+    custom_data: &'a mut InstanceData,
 }
 
 impl<'a> Translator<'a> {

@@ -1,6 +1,6 @@
 use core::ffi::c_char;
 
-use crate::host::file_system::{FileSystemItem, XilaFileSystemItem};
+use crate::{FileSystemItem, XilaFileSystemItem};
 use xila::abi_declarations::{
     XilaFileKind, XilaFileSystemAccess, XilaFileSystemInode, XilaFileSystemResult,
     XilaFileSystemSize, XilaFileSystemStatistics, xila_file_system_directory_close,
@@ -96,7 +96,7 @@ pub extern "C" fn __wasm_file_system_directory_get_access(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn xila_file_system_directory_get_state(
+pub extern "C" fn __wasm_file_system_directory_get_state(
     item: *mut XilaFileSystemItem,
     state: *mut XilaFileSystemAccess,
 ) -> XilaFileSystemResult {

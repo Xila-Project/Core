@@ -1,7 +1,7 @@
 use core::num::NonZeroU32;
 use core::ops::DerefMut;
 
-use crate::host::file_system::{FileSystemItem, XilaFileSystemItem};
+use crate::{FileSystemItem, XilaFileSystemItem};
 use xila::abi_declarations::{
     XILA_RESULT_OK, XilaFileSystemAccess, XilaFileSystemResult, XilaFileSystemStatistics,
     xila_file_system_directory_get_access, xila_file_system_directory_get_statistics,

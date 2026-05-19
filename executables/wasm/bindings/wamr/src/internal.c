@@ -56,10 +56,10 @@ void into_wasi_file_statistics(const XilaFileSystemStatistics *statistics,
   wasi_statistics->st_filetype = into_wasi_file_type(statistics->kind);
 }
 
-wasi_libc_file_access_mode into_wasi_access_mode(XilaFileSystemMode mode) {
+wasi_libc_file_access_mode into_wasi_access_mode(XilaFileSystemAccess mode) {
 
-  if (mode & XILA_FILE_SYSTEM_MODE_WRITE_MASK) {
-    if (mode & XILA_FILE_SYSTEM_MODE_READ_MASK) {
+  if (mode & XILA_FILE_SYSTEM_ACCESS_WRITE_MASK) {
+    if (mode & XILA_FILE_SYSTEM_ACCESS_READ_MASK) {
       return WASI_LIBC_ACCESS_MODE_READ_WRITE;
     }
 
@@ -69,15 +69,15 @@ wasi_libc_file_access_mode into_wasi_access_mode(XilaFileSystemMode mode) {
   return WASI_LIBC_ACCESS_MODE_READ_ONLY;
 }
 
-XilaFileSystemMode into_xila_mode(wasi_libc_file_access_mode mode) {
+XilaFileSystemAccess into_xila_mode(wasi_libc_file_access_mode mode) {
   switch (mode) {
   case WASI_LIBC_ACCESS_MODE_READ_ONLY:
-    return XILA_FILE_SYSTEM_MODE_READ_MASK;
+    return XILA_FILE_SYSTEM_ACCESS_READ_MASK;
 
   case WASI_LIBC_ACCESS_MODE_WRITE_ONLY:
-    return XILA_FILE_SYSTEM_MODE_WRITE_MASK;
+    return XILA_FILE_SYSTEM_ACCESS_WRITE_MASK;
   case WASI_LIBC_ACCESS_MODE_READ_WRITE:
-    return XILA_FILE_SYSTEM_MODE_READ_MASK | XILA_FILE_SYSTEM_MODE_WRITE_MASK;
+    return XILA_FILE_SYSTEM_ACCESS_READ_MASK | XILA_FILE_SYSTEM_ACCESS_WRITE_MASK;
   default:
     return 0;
   }

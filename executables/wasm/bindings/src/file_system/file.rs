@@ -1,10 +1,11 @@
-use crate::FileVariantKind;
-use crate::host::file_system::{FileSystemItem, XilaFileSystemItem};
+use crate::{FileSystemItem, FileVariantKind, XilaFileSystemItem};
 use xila::abi_declarations::{
-    XilaFileSystemResult, XilaFileSystemSize, XilaFileSystemState, xila_file_system_file_close,
+    XilaFileSystemResult, XilaFileSystemSize, XilaFileSystemState, XilaFileSystemWhence, XilaTime,
+    xila_file_system_file_advise, xila_file_system_file_allocate, xila_file_system_file_close,
     xila_file_system_file_flush, xila_file_system_file_is_a_terminal, xila_file_system_file_read,
-    xila_file_system_file_read_at, xila_file_system_file_set_flags, xila_file_system_file_write,
-    xila_file_system_file_write_at,
+    xila_file_system_file_read_at, xila_file_system_file_set_flags,
+    xila_file_system_file_set_position, xila_file_system_file_write,
+    xila_file_system_file_write_at, xila_file_system_set_times,
 };
 use xila::{log, virtual_file_system};
 
@@ -179,5 +180,92 @@ pub unsafe extern "C" fn __wasm_file_system_file_flush(
     with_file!(item, f => xila_file_system_file_flush(
         &mut f.file,
         flush_data
+    ))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_advise(
+    item: *mut XilaFileSystemItem,
+    offset: XilaFileSystemSize,
+    length: XilaFileSystemSize,
+    advice: u8,
+) -> XilaFileSystemResult {
+    log::information!(
+        "Advising file {:?} with offset {}, length {} and advice {} ",
+        item,
+        offset,
+        length,
+        advice
+    );
+    with_file!(item, f => xila_file_system_file_advise(
+        &mut f.file,
+        offset,
+        length,
+        advice
+    ))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_allocate(
+    item: *mut XilaFileSystemItem,
+    offset: XilaFileSystemSize,
+    length: XilaFileSystemSize,
+) -> XilaFileSystemResult {
+    log::information!(
+        "Allocating file {:?} with offset {} and length {} ",
+        item,
+        offset,
+        length
+    );
+    with_file!(item, f => xila_file_system_file_allocate(
+        &mut f.file,
+        offset,
+        length
+    ))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_set_position(
+    item: *mut XilaFileSystemItem,
+    offset: i64,
+    whence: XilaFileSystemWhence,
+    new_offset: *mut XilaFileSystemSize,
+) -> XilaFileSystemResult {
+    log::information!(
+        "Setting position of file {:?} to offset {}, whence {} ",
+        item,
+        offset,
+        whence
+    );
+    with_file!(item, f => xila_file_system_file_set_position(
+        &mut f.file,
+        offset,
+        whence,
+        new_offset
+    ))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_set_times(
+    item: *mut XilaFileSystemItem,
+    access: XilaTime,
+    modification: XilaTime,
+    flags: u8,
+) -> XilaFileSystemResult {
+    log::information!("Setting time for file {:?} ", item);
+    with_file!(item, f => {
+       xila_file_system_set_times(file, access, modification, flags)
+    })
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __wasm_file_system_file_truncate(
+    item: *mut XilaFileSystemItem,
+    size: XilaFileSystemSize,
+) -> XilaFileSystemResult {
+    log::information!("Truncating file {:?} to size {} ", item, size);
+    with_file!(item, f => xila_file_system_file_truncate(
+        &mut f.file,
+        size
     ))
 }
