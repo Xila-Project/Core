@@ -1,6 +1,6 @@
-use core::ffi::{CStr, c_char};
+use core::ffi::c_char;
 
-use crate::file_system::{FileSystemItem, XilaFileSystemItem, into_result};
+use crate::host::file_system::{FileSystemItem, XilaFileSystemItem};
 use xila::abi_declarations::{
     XilaFileKind, XilaFileSystemAccess, XilaFileSystemInode, XilaFileSystemResult,
     XilaFileSystemSize, XilaFileSystemStatistics, xila_file_system_directory_close,

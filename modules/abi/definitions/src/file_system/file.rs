@@ -138,17 +138,17 @@ abi_unsafe_function! {
     /// This function may return an error if the file system fails to open the file.
     fn xila_file_system_file_read(
         file: *mut XilaFileSystemFile,
-        buffers: *mut *mut u8,
-        buffers_length: *mut usize,
+        buffers: *const *mut u8,
+        buffers_length: *const usize,
         buffer_count: usize,
         read: *mut usize,
     ) -> XilaFileSystemResult {
-        let buffers = core::slice::from_raw_parts_mut(buffers, buffer_count);
-        let buffers_length = core::slice::from_raw_parts_mut(buffers_length, buffer_count);
+        let buffers = core::slice::from_raw_parts(buffers, buffer_count);
+        let buffers_length = core::slice::from_raw_parts(buffers_length, buffer_count);
 
         let mut current_read = 0;
 
-        for (buffer_pointer, buffer_length) in buffers.iter_mut().zip(buffers_length.iter_mut()) {
+        for (buffer_pointer, buffer_length) in buffers.iter().zip(buffers_length.iter()) {
             let buffer = core::slice::from_raw_parts_mut(*buffer_pointer, *buffer_length);
             let read_count = (*file).read(buffer)?;
             current_read += read_count;
@@ -169,20 +169,20 @@ abi_unsafe_function! {
     /// This function is unsafe because it dereferences raw pointers.
     fn xila_file_system_file_read_at(
         file: *mut XilaFileSystemFile,
-        buffers: *mut *mut u8,
-        buffers_length: *mut usize,
-        buffer_count: usize,
         position: u64,
+        buffers: *const *mut u8,
+        buffers_length: *const usize,
+        buffer_count: usize,
         read: *mut usize,
     ) -> XilaFileSystemResult {
-        let buffers = core::slice::from_raw_parts_mut(buffers, buffer_count);
-        let buffers_length = core::slice::from_raw_parts_mut(buffers_length, buffer_count);
+        let buffers = core::slice::from_raw_parts(buffers, buffer_count);
+        let buffers_length = core::slice::from_raw_parts(buffers_length, buffer_count);
 
         (*file).set_position(&file_system::Position::Start(position))?;
 
         let mut current_read = 0;
 
-        for (buffer_pointer, buffer_length) in buffers.iter_mut().zip(buffers_length.iter_mut()) {
+        for (buffer_pointer, buffer_length) in buffers.iter().zip(buffers_length.iter()) {
             let buffer = core::slice::from_raw_parts_mut(*buffer_pointer, *buffer_length);
             let read_count = (*file).read(buffer)?;
             current_read += read_count;
@@ -203,10 +203,10 @@ abi_unsafe_function! {
     /// This function is unsafe because it dereferences raw pointers.
     fn xila_file_system_file_write_at(
         file: *mut XilaFileSystemFile,
+        position: u64,
         buffers: *const *const u8,
         buffers_length: *const usize,
         buffer_count: usize,
-        position: u64,
         written: *mut usize,
     ) -> XilaFileSystemResult {
         let buffers = core::slice::from_raw_parts(buffers, buffer_count);
@@ -279,7 +279,7 @@ abi_unsafe_function! {
 abi_unsafe_function! {
     fn xila_file_system_file_set_flags(
         _file: *mut XilaFileSystemFile,
-        _status: XilaFileSystemState,
+        _state: XilaFileSystemState,
     ) -> XilaFileSystemResult {
         todo!()
     }
@@ -302,7 +302,7 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
-    fn xila_file_system_flush(
+    fn xila_file_system_file_flush(
         file: *mut XilaFileSystemFile,
         _t: bool,
     ) -> XilaFileSystemResult {

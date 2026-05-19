@@ -1,24 +1,16 @@
-use core::ffi::c_char;
-use core::mem::MaybeUninit;
+use core::num::NonZeroU32;
 use core::ops::DerefMut;
-use core::{ffi::CStr, num::NonZeroU32, ptr::NonNull};
 
-use crate::host::bindings::common::{FileSystemIdentifier, global_context};
-use crate::host::bindings::file_system::{FileSystemItem, XilaFileSystemItem};
-use alloc::borrow::ToOwned;
-use smol_str::SmolStr;
+use crate::host::file_system::{FileSystemItem, XilaFileSystemItem};
 use xila::abi_declarations::{
-    XILA_FILE_SYSTEM_RESULT_SUCCESS, XilaFileSystemAccess, XilaFileSystemDirectory,
-    XilaFileSystemFile, XilaFileSystemOpen, XilaFileSystemResult, XilaFileSystemState,
-    XilaFileSystemStatistics, xila_file_system_directory_get_statistics,
-    xila_file_system_directory_open, xila_file_system_file_get_statistics,
-    xila_file_system_file_open, xila_file_system_get_statistics_from_path, xila_file_system_rename,
+    XILA_RESULT_OK, XilaFileSystemAccess, XilaFileSystemResult, XilaFileSystemStatistics,
+    xila_file_system_directory_get_access, xila_file_system_directory_get_statistics,
+    xila_file_system_file_get_access_flags, xila_file_system_file_get_statistics,
 };
-use xila::file_system::PathOwned;
 use xila::{
-    file_system::{self, Path},
+    file_system::{self},
     log,
-    virtual_file_system::{self, Error, SynchronousFile},
+    virtual_file_system::{self, Error},
 };
 
 /// This function is used to convert a function returning a Result into a u32.
@@ -27,7 +19,7 @@ where
     F: FnOnce() -> Result<(), virtual_file_system::Error>,
 {
     match function() {
-        Ok(()) => XILA_FILE_SYSTEM_RESULT_SUCCESS,
+        Ok(()) => XILA_RESULT_OK,
         Err(error) => {
             let non_zero: NonZeroU32 = error.into();
 
@@ -92,9 +84,8 @@ pub unsafe extern "C" fn __wasm_file_system_get_access(
                 xila_file_system_directory_get_access(&mut directory.directory as _, access)
             }
             FileSystemItem::File(file) => {
-                xila_file_system_file_get_access(&mut file.file as _, access)
+                xila_file_system_file_get_access_flags(&mut file.file as _, access)
             }
-            _ => virtual_file_system::Error::InvalidParameter.into(),
         }
     }
 }

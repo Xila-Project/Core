@@ -1,11 +1,10 @@
-use core::ffi::{CStr, c_char};
-
-use crate::host::bindings::file_system::{FileSystemItem, XilaFileSystemItem, into_result};
+use crate::FileVariantKind;
+use crate::host::file_system::{FileSystemItem, XilaFileSystemItem};
 use xila::abi_declarations::{
-    FileVariantKind, XilaFileSystemResult, XilaFileSystemState, xila_file_system_file_close,
-    xila_file_system_file_is_a_terminal, xila_file_system_file_read_at_vectored,
-    xila_file_system_file_read_vectored, xila_file_system_file_set_flags,
-    xila_file_system_file_write_at_vectored, xila_file_system_file_write_vectored,
+    XilaFileSystemResult, XilaFileSystemSize, XilaFileSystemState, xila_file_system_file_close,
+    xila_file_system_file_flush, xila_file_system_file_is_a_terminal, xila_file_system_file_read,
+    xila_file_system_file_read_at, xila_file_system_file_set_flags, xila_file_system_file_write,
+    xila_file_system_file_write_at,
 };
 use xila::{log, virtual_file_system};
 
@@ -14,7 +13,7 @@ macro_rules! with_file {
         unsafe {
             match FileSystemItem::borrow_from_raw($ptr as _) {
                 FileSystemItem::File($file_var) => $body,
-                _ => virtual_file_system::Error::InvalidParameter.into(),
+                _ => XilaFileSystemResult::from(virtual_file_system::Error::InvalidParameter),
             }
         }
     };
@@ -45,7 +44,7 @@ pub unsafe extern "C" fn __wasm_file_system_file_write(
 ) -> XilaFileSystemResult {
     log::information!("Writing to file {:?} ", item);
     with_file!(item, f => xila_file_system_file_write(
-        f.file,
+        &mut f.file,
         buffers,
         buffer_lengths,
         buffer_count,
@@ -63,7 +62,7 @@ pub unsafe extern "C" fn __wasm_file_system_file_read(
 ) -> XilaFileSystemResult {
     log::information!("Reading from file {:?} ", item);
     with_file!(item, f => xila_file_system_file_read(
-        f.file,
+        &mut f.file,
         buffers,
         buffer_lengths,
         buffer_count,
@@ -82,7 +81,7 @@ pub unsafe extern "C" fn __wasm_file_system_file_write_at(
 ) -> XilaFileSystemResult {
     log::information!("Writing to file {:?} at offset {} ", item, offset);
     with_file!(item, f => xila_file_system_file_write_at(
-        f.file,
+        &mut f.file,
         offset,
         buffers,
         buffer_lengths,
@@ -102,7 +101,7 @@ pub unsafe extern "C" fn __wasm_file_system_file_read_at(
 ) -> XilaFileSystemResult {
     log::information!("Reading from file {:?} at offset {} ", item, offset);
     with_file!(item, f => xila_file_system_file_read_at(
-        f.file,
+        &mut f.file,
         offset,
         buffers,
         buffer_lengths,
@@ -128,9 +127,11 @@ pub unsafe extern "C" fn __wasm_file_system_file_is_standard_input(
     item: *mut XilaFileSystemItem,
 ) -> bool {
     log::information!("Checking if file {:?} is standard input ", item);
-    let r = with_file!(item, f => f.kind == FileVariantKind::StandardInput);
+    with_file!(item, f => {
+        return f.kind == FileVariantKind::StandardInput;
+    });
 
-    r
+    return false;
 }
 
 #[unsafe(no_mangle)]
@@ -138,9 +139,11 @@ pub unsafe extern "C" fn __wasm_file_system_file_is_standard_output(
     item: *mut XilaFileSystemItem,
 ) -> bool {
     log::information!("Checking if file {:?} is standard output ", item);
-    let r = with_file!(item, f => f.kind == FileVariantKind::StandardOutput);
+    with_file!(item, f => {
+           return f.kind == FileVariantKind::StandardOutput;
+    });
 
-    r
+    return false;
 }
 
 #[unsafe(no_mangle)]
@@ -148,9 +151,11 @@ pub unsafe extern "C" fn __wasm_file_system_file_is_standard_error(
     item: *mut XilaFileSystemItem,
 ) -> bool {
     log::information!("Checking if file {:?} is standard error ", item);
-    let r = with_file!(item, f => f.kind == FileVariantKind::StandardError);
+    with_file!(item, f => {
+         return f.kind == FileVariantKind::StandardError;
+    });
 
-    r
+    return false;
 }
 
 #[unsafe(no_mangle)]
@@ -161,7 +166,7 @@ pub unsafe extern "C" fn __wasm_file_system_file_set_flags(
     log::information!("Setting flags for file {:?} to {:?} ", item, state);
     with_file!(item, f => xila_file_system_file_set_flags(
         &mut f.file,
-        flags
+        state
     ))
 }
 

@@ -1,8 +1,12 @@
 [package]
-name = "bindings"
+name = "wasm_abi_bindings"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-xila = { path = "../../../", optional = true }
+xila = { path = "../../../" }
 smol_str = { workspace = true }
+
+
+[build-dependencies]
+cbindgen = { workspace = true }

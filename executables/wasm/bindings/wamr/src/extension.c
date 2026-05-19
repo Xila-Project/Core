@@ -1,5 +1,5 @@
-#include "../../../../modules/abi/xila.h"
-#include "../include/internal.h"
+#include "wasm.generated.h"
+#include "internal.h"
 #include "platform_internal.h"
 
 /***************************************************

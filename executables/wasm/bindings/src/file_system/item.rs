@@ -9,6 +9,7 @@ use xila::{
     log,
 };
 
+#[derive(PartialEq, Eq)]
 pub enum FileVariantKind {
     Regular,
     StandardInput,

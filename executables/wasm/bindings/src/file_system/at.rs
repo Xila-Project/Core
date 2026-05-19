@@ -1,25 +1,21 @@
 use core::ffi::c_char;
 use core::mem::MaybeUninit;
 use core::ops::DerefMut;
-use core::{ffi::CStr, num::NonZeroU32, ptr::NonNull};
+use core::{ffi::CStr, ptr::NonNull};
 
-use crate::{FileSystemIdentifier, global_context};
-use crate::{FileSystemItem, FileVariantKind, XilaFileSystemItem};
+use crate::{Context, FileSystemItem, FileVariantKind, XilaFileSystemItem};
 use alloc::borrow::ToOwned;
-use smol_str::SmolStr;
 use xila::abi_declarations::{
-    XILA_FILE_SYSTEM_RESULT_SUCCESS, XilaFileSystemAccess, XilaFileSystemDirectory,
-    XilaFileSystemFile, XilaFileSystemOpen, XilaFileSystemResult, XilaFileSystemState,
-    XilaFileSystemStatistics, xila_file_system_directory_create,
-    xila_file_system_directory_get_statistics, xila_file_system_directory_open,
-    xila_file_system_file_get_statistics, xila_file_system_file_open,
+    XILA_RESULT_OK, XilaFileSystemAccess, XilaFileSystemDirectory, XilaFileSystemFile,
+    XilaFileSystemOpen, XilaFileSystemResult, XilaFileSystemState, XilaFileSystemStatistics,
+    xila_file_system_directory_create, xila_file_system_directory_open, xila_file_system_file_open,
     xila_file_system_get_statistics_from_path, xila_file_system_remove, xila_file_system_rename,
 };
 use xila::file_system::PathOwned;
 use xila::{
-    file_system::{self, Path},
+    file_system::Path,
     log,
-    virtual_file_system::{self, Error, SynchronousFile},
+    virtual_file_system::{self, Error},
 };
 
 unsafe fn resolve(
@@ -69,12 +65,9 @@ pub unsafe extern "C" fn __wasm_file_system_open_at(
             "Opening file system item at path {path:?} in directory {parent:?} (is_directory: {is_directory}, access: {access:?}, open: {open:?}, status: {status:?})"
         );
 
-        let context = match global_context::get_current_environment_context_synchronous() {
-            Some(context) => context,
-            None => return virtual_file_system::Error::InvalidParameter.into(),
-        };
+        let context = Context::get_global();
 
-        let task = context.get_current_task_identifier();
+        let task = context.get_task();
 
         let (parent, resolved_path) = match resolve(parent, path) {
             Ok((parent, path)) => (parent, path),
@@ -90,15 +83,20 @@ pub unsafe extern "C" fn __wasm_file_system_open_at(
 
             let r = xila_file_system_directory_open(task, resolved_path, directory.as_mut_ptr());
 
-            if r != XILA_FILE_SYSTEM_RESULT_SUCCESS {
+            if r != XILA_RESULT_OK {
                 return r;
             }
 
             let directory = directory.assume_init();
 
-            let path = CStr::from_ptr(path)
-                .to_str()
-                .map_err(|_| Error::InvalidParameter)?;
+            if path.is_null() {
+                return XilaFileSystemResult::from(Error::InvalidParameter);
+            }
+
+            let path = match CStr::from_ptr(path).to_str() {
+                Ok(path) => path,
+                Err(_) => return XilaFileSystemResult::from(Error::InvalidParameter),
+            };
 
             FileSystemItem::new_directory(directory, parent, path)
         } else {
@@ -113,7 +111,7 @@ pub unsafe extern "C" fn __wasm_file_system_open_at(
                 file.as_mut_ptr(),
             );
 
-            if r == XILA_FILE_SYSTEM_RESULT_SUCCESS {
+            if r == XILA_RESULT_OK {
                 return r;
             }
 
@@ -122,7 +120,7 @@ pub unsafe extern "C" fn __wasm_file_system_open_at(
 
         *out = item as _;
 
-        XILA_FILE_SYSTEM_RESULT_SUCCESS
+        XILA_RESULT_OK
     }
 }
 
@@ -191,15 +189,9 @@ pub unsafe extern "C" fn __wasm_file_system_remove_at(
             Err(error) => return error.into(),
         };
 
-        let task = match global_context::get_current_environment_context_synchronous() {
-            Some(context) => context.get_current_task_identifier(),
-            None => return virtual_file_system::Error::InvalidParameter.into(),
-        };
+        let task = Context::get_global().get_task();
 
-        xila_file_system_remove(
-            task.into_inner() as _,
-            resolved_path.as_str() as *const _ as _,
-        )
+        xila_file_system_remove(task.into(), resolved_path.as_str() as *const _ as _)
     }
 }
 
@@ -236,7 +228,6 @@ pub unsafe extern "C" fn __wasm_file_system_create_link_at(
     unimplemented!("Creating hard links is not supported in Xila")
 }
 
-#[unsafe(no_mangle)]
 #[unsafe(no_mangle)]
 pub extern "C" fn __wasm_file_system_read_link_at(
     _: *mut XilaFileSystemItem,

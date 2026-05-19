@@ -2,21 +2,20 @@ use core::ffi::c_int;
 use core::ptr::null_mut;
 use core::{ffi::c_void, time::Duration};
 
+use crate::host::Context;
+
 pub type XilaTaskIdentifier = usize;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn __wasm_task_get_identifier() -> XilaTaskIdentifier {
-    global_context::get_current_environment_context_synchronous()
-        .expect("Failed to get current environment context")
-        .get_current_task_identifier()
-        .into_inner() as XilaTaskIdentifier
+    unsafe { Context::get_global().get_task().into() }
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn __wasm_task_sleep(duration: u64) {
-    global_context::get_current_environment_context_synchronous()
-        .expect("Failed to get current environment context")
-        .sleep(Duration::from_millis(duration));
+    unsafe {
+        Context::get_global().sleep(Duration::from_millis(duration));
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -36,7 +35,9 @@ pub extern "C" fn __wasm_task_detach(_thread: usize) -> u32 {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn __wasm_task_exit() {
-    unreachable!("Thread exit is not supported in this environment");
+    unsafe {
+        Context::get_global().exit();
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -49,7 +50,7 @@ pub extern "C" fn __wasm_task_create(
     _function: extern "C" fn(*mut c_void) -> *mut c_void,
     _argument: *mut u8,
     _stack_size: usize,
-    _thread_identifier: *mut XilaThreadIdentifier,
+    _thread_identifier: *mut XilaTaskIdentifier,
 ) -> u32 {
     todo!()
 }
@@ -61,15 +62,14 @@ pub extern "C" fn __wasm_task_begin_blocking_operation() {}
 pub extern "C" fn __wasm_task_end_blocking_operation() {}
 
 #[unsafe(no_mangle)]
-pub extern "C" fn __wasm_task_wake_up(_thread: XilaThreadIdentifier) -> u32 {
+pub extern "C" fn __wasm_task_wake_up(_thread: XilaTaskIdentifier) -> u32 {
     todo!()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn __wasm_task_yield() -> c_int {
-    global_context::get_current_environment_context_synchronous()
-        .expect("Failed to get current environment context")
-        .yield_now();
-
+    unsafe {
+        Context::get_global().yield_now();
+    }
     0
 }

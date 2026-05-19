@@ -1,4 +1,4 @@
-#include "../../../../modules/abi/xila.h"
+#include "wasm.generated.h"
 #include "platform_api_vmcore.h"
 
 /****************************************************
@@ -108,7 +108,7 @@ korp_tid os_self_thread(void)
  */
 uint8 *os_thread_get_stack_boundary(void)
 {
-    return xila_thread_get_stack_boundary();
+    return xila_task_get_stack_boundary();
 }
 
 /**

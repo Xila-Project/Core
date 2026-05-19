@@ -2,7 +2,6 @@
 
 pub mod about;
 
-pub use abi_context;
 pub use abi_declarations;
 pub use authentication;
 pub use bootsplash;
