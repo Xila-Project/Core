@@ -86,7 +86,7 @@ async fn main() {
     let partition = Box::leak(Box::new(partition));
 
     // Print MBR information
-    let mbr = Mbr::read_from_device(&*drive).unwrap();
+    let mbr = Mbr::read_from_device(drive).unwrap();
     log::information!("MBR Information: {mbr}");
 
     // Mount the file system
