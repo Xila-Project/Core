@@ -4,6 +4,7 @@ use super::*;
 use crate::manager::Metadata;
 use alloc::vec::Vec;
 use smol_str::SmolStr;
+use synchronization::waitqueue::AtomicWaker;
 use users::{GroupIdentifier, UserIdentifier};
 
 impl Manager {
@@ -60,6 +61,7 @@ impl Manager {
             environment_variables: parent_environment_variables,
             signals: SignalAccumulator::new(),
             spawner_identifier: 0, // Will be set later
+            waker: AtomicWaker::new(),
         };
 
         let identifier = Self::find_first_available_identifier(

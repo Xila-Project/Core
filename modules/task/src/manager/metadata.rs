@@ -3,6 +3,7 @@
 use super::*;
 use alloc::vec::Vec;
 use smol_str::SmolStr;
+use synchronization::waitqueue::AtomicWaker;
 use users::{GroupIdentifier, UserIdentifier};
 
 /// Internal representation of a task.
@@ -23,4 +24,6 @@ pub(crate) struct Metadata {
     pub(crate) signals: SignalAccumulator,
     /// Index of the spawner that spawned this task (for tracking completion)
     pub(crate) spawner_identifier: usize,
+    /// Wakers waiting for the task to complete.
+    pub(crate) waker: AtomicWaker,
 }

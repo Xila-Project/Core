@@ -142,6 +142,38 @@ impl Manager {
         Timer::after(embassy_time::Duration::from_nanos(nano_seconds as u64)).await
     }
 
+    /// Wake up a task, putting it back in the ready queue if it was sleeping or waiting for a signal.
+    ///
+    /// If the task is already ready, this function does nothing.
+    /// If the task is sleeping or waiting for a signal, it will be woken up and put back in the ready queue.
+    pub async fn wake_up(&self, identifier: TaskIdentifier) -> Result<()> {
+        let inner = self.0.read().await;
+
+        let task = Self::get_task(&inner, identifier)?;
+
+        task.waker.wake();
+
+        Ok(())
+    }
+
+    /// Wake up a task when it is sleeping or waiting for a signal, by registering its waker in the manager.
+    ///
+    /// If the task is already ready, this function does nothing.
+    /// If the task is sleeping or waiting for a signal, it will be woken up and put back in the ready queue.
+    pub fn wake_up_synchronous(&self, identifier: TaskIdentifier) -> Result<()> {
+        let inner = loop {
+            if let Ok(inner) = self.0.try_read() {
+                break inner;
+            }
+        };
+
+        let task = Self::get_task(&inner, identifier)?;
+
+        task.waker.wake();
+
+        Ok(())
+    }
+
     pub async fn get_current_internal_identifier() -> usize {
         poll_fn(|context| {
             let task_reference = task_from_waker(context.waker());
