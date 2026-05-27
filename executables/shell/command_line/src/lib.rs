@@ -125,14 +125,12 @@ impl Shell {
             None => return Ok(()),
         };
 
-        let result = match next_positional {
-            command => match resolve_user_command(command) {
-                Some(user_command) => {
-                    let mut context = ShellCommandContext::new(self);
-                    dispatch_user_command(user_command, &mut context, &mut options, paths).await
-                }
-                None => self.execute(input, paths).await,
-            },
+        let result = match resolve_user_command(next_positional) {
+            Some(user_command) => {
+                let mut context = ShellCommandContext::new(self);
+                dispatch_user_command(user_command, &mut context, &mut options, paths).await
+            }
+            None => self.execute(input, paths).await,
         };
 
         if let Err(error) = result {
