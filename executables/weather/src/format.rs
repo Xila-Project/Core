@@ -26,33 +26,21 @@ pub fn format_hourly_tab(hourly: Option<&HourlyWeather>) -> String {
         return String::from("No hourly data.");
     };
 
-    let times = h.time.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
-    let temps = h
-        .temperature_2m
-        .as_ref()
-        .map(|v| v.as_slice())
-        .unwrap_or(&[]);
-    let probs = h
-        .precipitation_probability
-        .as_ref()
-        .map(|v| v.as_slice())
-        .unwrap_or(&[]);
-    let winds = h
-        .wind_speed_10m
-        .as_ref()
-        .map(|v| v.as_slice())
-        .unwrap_or(&[]);
+    let times = h.time.as_deref().unwrap_or(&[]);
+    let temps = h.temperature_2m.as_deref().unwrap_or(&[]);
+    let probs = h.precipitation_probability.as_deref().unwrap_or(&[]);
+    let winds = h.wind_speed_10m.as_deref().unwrap_or(&[]);
 
     let mut out = String::from("Next 24h\n");
     let count = core::cmp::min(times.len(), 24);
 
-    for i in 0..count {
+    for (i, time) in times.iter().enumerate().take(count) {
         let temp = temps.get(i).copied().unwrap_or_default();
         let prob = probs.get(i).copied().unwrap_or_default();
         let wind = winds.get(i).copied().unwrap_or_default();
         out.push_str(&format!(
             "{} | {:.1} C | {}% rain | {:.1} km/h\n",
-            times[i], temp, prob, wind
+            time, temp, prob, wind
         ));
     }
 
@@ -64,31 +52,19 @@ pub fn format_daily_tab(daily: Option<&DailyWeather>) -> String {
         return String::from("No daily data.");
     };
 
-    let times = d.time.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
-    let maxs = d
-        .temperature_2m_max
-        .as_ref()
-        .map(|v| v.as_slice())
-        .unwrap_or(&[]);
-    let mins = d
-        .temperature_2m_min
-        .as_ref()
-        .map(|v| v.as_slice())
-        .unwrap_or(&[]);
-    let weather = d.weather_code.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
-    let precip = d
-        .precipitation_probability_max
-        .as_ref()
-        .map(|v| v.as_slice())
-        .unwrap_or(&[]);
-    let sunrise = d.sunrise.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
-    let sunset = d.sunset.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
+    let times = d.time.as_deref().unwrap_or(&[]);
+    let maxs = d.temperature_2m_max.as_deref().unwrap_or(&[]);
+    let mins = d.temperature_2m_min.as_deref().unwrap_or(&[]);
+    let weather = d.weather_code.as_deref().unwrap_or(&[]);
+    let precip = d.precipitation_probability_max.as_deref().unwrap_or(&[]);
+    let sunrise = d.sunrise.as_deref().unwrap_or(&[]);
+    let sunset = d.sunset.as_deref().unwrap_or(&[]);
 
     let mut out = String::from("Next days\n");
-    for i in 0..times.len().min(10) {
+    for (i, time) in times.iter().enumerate().take(10) {
         out.push_str(&format!(
             "{} | min {:.1} / max {:.1} C | code {} | rain {}%\n  sunrise {} sunset {}\n",
-            times[i],
+            time,
             mins.get(i).copied().unwrap_or_default(),
             maxs.get(i).copied().unwrap_or_default(),
             weather.get(i).copied().unwrap_or_default(),
