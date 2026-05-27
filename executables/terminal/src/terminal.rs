@@ -1,15 +1,16 @@
 use crate::error::{Error, Result};
 use alloc::{collections::vec_deque::VecDeque, string::String};
 use core::ffi::CStr;
+use xila::graphics::OwnedWindow;
 use xila::graphics::fonts::get_font_monospace_medium;
 use xila::graphics::{
-    self, Color, EventKind, Key, Window,
+    self, Color, EventKind, Key,
     lvgl::{self, lv_obj_t},
 };
 use xila::synchronization::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
 
 pub(crate) struct Inner {
-    window: Window,
+    window: OwnedWindow,
     buffer: String,
     display: *mut lvgl::lv_obj_t,
     input: *mut lvgl::lv_obj_t,
@@ -34,13 +35,13 @@ impl Terminal {
                 window.set_icon(">_", Color::BLACK);
 
                 lvgl::lv_obj_set_flex_flow(
-                    window.get_object(),
+                    window.as_object_mutable(),
                     lvgl::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN,
                 );
             }
 
             let container = unsafe {
-                let container = lvgl::lv_obj_create(window.get_object());
+                let container = lvgl::lv_obj_create(window.as_object_mutable());
 
                 lvgl::lv_obj_set_width(container, lvgl::lv_pct(100));
                 lvgl::lv_obj_set_flex_grow(container, 1);
@@ -74,7 +75,7 @@ impl Terminal {
             };
 
             let input = unsafe {
-                let input = lvgl::lv_textarea_create(window.get_object());
+                let input = lvgl::lv_textarea_create(window.as_object_mutable());
 
                 if input.is_null() {
                     return Err(crate::error::Error::FailedToCreateObject);
@@ -191,10 +192,10 @@ impl Terminal {
 
             while let Some(event) = inner.window.pop_event() {
                 match event.code {
-                    EventKind::Delete | EventKind::CloseRequested => {
-                        if event.target == inner.window.get_object() {
-                            running = false;
-                        }
+                    EventKind::Delete | EventKind::CloseRequested
+                        if event.target == inner.window.as_object_mutable() =>
+                    {
+                        running = false;
                     }
                     EventKind::Key => {
                         if let Some(Key::Enter) = event.key {
