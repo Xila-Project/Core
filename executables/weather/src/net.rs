@@ -8,8 +8,6 @@ use std::fs::OpenOptions;
 #[cfg(target_arch = "wasm32")]
 use std::io::{ErrorKind, Read, Write};
 #[cfg(target_arch = "wasm32")]
-use std::println;
-#[cfg(target_arch = "wasm32")]
 use std::thread::{sleep, yield_now};
 
 #[cfg(target_arch = "wasm32")]
@@ -40,7 +38,7 @@ fn read_with_retry(
                     sleep(std::time::Duration::from_millis(1));
                 }
             }
-            Err(error) => {
+            Err(_error) => {
                 return Err(String::from(error_label));
             }
         }
@@ -167,7 +165,7 @@ pub fn https_get(url: &str) -> Result<Vec<u8>, String> {
         .read(true)
         .write(true)
         .open("/devices/https_client")
-        .map_err(|e| String::from("failed to open https device"))?;
+        .map_err(|_e| String::from("failed to open https device"))?;
 
     file.write_all(&request_buffer[..request_length])
         .map_err(|_| String::from("failed to write request"))?;
@@ -197,24 +195,24 @@ pub fn https_get(url: &str) -> Result<Vec<u8>, String> {
     let mut chunk = [0u8; 4096];
     let mut retry_count = 0usize;
     loop {
-        if let Some(expected_length) = expected_body_length {
-            if body.len() >= expected_length {
-                break;
-            }
+        if let Some(expected_length) = expected_body_length
+            && body.len() >= expected_length
+        {
+            break;
         }
 
         let count = read_with_retry(&mut file, &mut chunk, "failed to read body")?;
         if count == 0 {
-            if let Some(expected_length) = expected_body_length {
-                if body.len() < expected_length {
-                    retry_count += 1;
-                    if retry_count >= HTTPS_READ_MAX_RETRIES {
-                        return Err(String::from("timed out waiting for https response body"));
-                    }
-
-                    yield_now();
-                    continue;
+            if let Some(expected_length) = expected_body_length
+                && body.len() < expected_length
+            {
+                retry_count += 1;
+                if retry_count >= HTTPS_READ_MAX_RETRIES {
+                    return Err(String::from("timed out waiting for https response body"));
                 }
+
+                yield_now();
+                continue;
             }
 
             break;
@@ -225,9 +223,7 @@ pub fn https_get(url: &str) -> Result<Vec<u8>, String> {
 
     // Decode chunked transfer encoding if present
     let final_body = if has_chunked_encoding(&headers_buffer[..headers_len]) {
-        let decoded = decode_chunked_body(&body)?;
-
-        decoded
+        decode_chunked_body(&body)?
     } else {
         body
     };
