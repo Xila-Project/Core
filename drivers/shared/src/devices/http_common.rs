@@ -22,25 +22,24 @@ pub fn map_network_error(error: network::Error) -> Error {
 }
 
 pub fn split_host_port(host_value: &str, default_port: u16) -> (&str, u16) {
-    if let Some(stripped) = host_value.strip_prefix('[') {
-        if let Some(end) = stripped.find(']') {
-            let host = &stripped[..end];
-            let remainder = &stripped[end + 1..];
-            if let Some(port_string) = remainder.strip_prefix(':') {
-                if let Ok(port) = port_string.parse::<u16>() {
-                    return (host, port);
-                }
-            }
-            return (host, default_port);
+    if let Some(stripped) = host_value.strip_prefix('[')
+        && let Some(end) = stripped.find(']')
+    {
+        let host = &stripped[..end];
+        let remainder = &stripped[end + 1..];
+        if let Some(port_string) = remainder.strip_prefix(':')
+            && let Ok(port) = port_string.parse::<u16>()
+        {
+            return (host, port);
         }
+        return (host, default_port);
     }
 
-    if let Some((host, port_string)) = host_value.rsplit_once(':') {
-        if !host.contains(':') {
-            if let Ok(port) = port_string.parse::<u16>() {
-                return (host, port);
-            }
-        }
+    if let Some((host, port_string)) = host_value.rsplit_once(':')
+        && !host.contains(':')
+        && let Ok(port) = port_string.parse::<u16>()
+    {
+        return (host, port);
     }
 
     (host_value, default_port)

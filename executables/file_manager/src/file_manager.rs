@@ -6,20 +6,20 @@ pub(crate) use alloc::{
     vec::Vec,
 };
 use core::ptr::null_mut;
-use xila::internationalization::translate;
 use xila::log;
 use xila::task;
 use xila::virtual_file_system::{Directory, get_instance};
 use xila::{
     file_system::{Kind, Path, PathOwned},
     graphics::{
-        self, EventKind, Window, lvgl,
+        self, EventKind, lvgl,
         palette::{self, Hue},
     },
 };
+use xila::{graphics::OwnedWindow, internationalization::translate};
 
 pub struct FileManager {
-    window: Window,
+    window: OwnedWindow,
     toolbar: *mut lvgl::lv_obj_t,
     up_button: *mut lvgl::lv_obj_t,
     home_button: *mut lvgl::lv_obj_t,
@@ -63,15 +63,15 @@ impl FileManager {
             // Set up window layout for flex
             unsafe {
                 lvgl::lv_obj_set_layout(
-                    manager.window.get_object(),
+                    manager.window.as_object_mutable(),
                     lvgl::lv_layout_t_LV_LAYOUT_FLEX,
                 );
                 lvgl::lv_obj_set_flex_flow(
-                    manager.window.get_object(),
+                    manager.window.as_object_mutable(),
                     lvgl::lv_flex_flow_t_LV_FLEX_FLOW_COLUMN,
                 );
                 lvgl::lv_obj_set_style_pad_all(
-                    manager.window.get_object(),
+                    manager.window.as_object_mutable(),
                     0,
                     lvgl::LV_STATE_DEFAULT,
                 );
@@ -103,10 +103,10 @@ impl FileManager {
 
     pub async fn handle_event(&mut self, event: graphics::Event) -> Result<()> {
         match event.code {
-            EventKind::Delete | EventKind::CloseRequested => {
-                if event.target == self.window.get_object() {
-                    self.running = false;
-                }
+            EventKind::Delete | EventKind::CloseRequested
+                if event.target == self.window.as_object_mutable() =>
+            {
+                self.running = false;
             }
             EventKind::Clicked => {
                 let target = event.target;
@@ -133,7 +133,7 @@ impl FileManager {
 
     async fn create_toolbar(&mut self) -> Result<()> {
         unsafe {
-            self.toolbar = lvgl::lv_obj_create(self.window.get_object());
+            self.toolbar = lvgl::lv_obj_create(self.window.as_object_mutable());
             if self.toolbar.is_null() {
                 return Err(Error::FailedToCreateObject);
             }
@@ -223,7 +223,7 @@ impl FileManager {
 
     async fn create_file_list(&mut self) -> Result<()> {
         unsafe {
-            self.file_list = lvgl::lv_list_create(self.window.get_object());
+            self.file_list = lvgl::lv_list_create(self.window.as_object_mutable());
             if self.file_list.is_null() {
                 return Err(Error::FailedToCreateObject);
             }

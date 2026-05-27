@@ -12,7 +12,7 @@ use alloc::{
     vec,
     vec::Vec,
 };
-use xila::graphics::{self, Color, EventKind, Logo, Point, Window, lvgl};
+use xila::graphics::{self, Color, EventKind, Logo, OwnedWindow, Point, lvgl};
 use xila::log::{self, error, warning};
 use xila::task;
 use xila::virtual_file_system::{self, Directory};
@@ -26,7 +26,7 @@ use xila::{file_system::Kind, graphics::symbol};
 pub const WINDOWS_PARENT_CHILD_CHANGED: graphics::EventKind = graphics::EventKind::Custom2;
 
 pub struct Desk {
-    window: Window,
+    window: OwnedWindow,
     tile_view: *mut lvgl::lv_obj_t,
     drawer_tile: *mut lvgl::lv_obj_t,
     desk_tile: *mut lvgl::lv_obj_t,
@@ -72,8 +72,8 @@ impl Desk {
 
     pub const HOME_EVENT: EventKind = EventKind::Custom1;
 
-    pub fn get_window_object(&self) -> *mut lvgl::lv_obj_t {
-        self.window.get_object()
+    pub fn get_window_object(&mut self) -> *mut lvgl::lv_obj_t {
+        self.window.as_object_mutable()
     }
 
     pub fn is_hidden(&self) -> bool {
@@ -89,20 +89,20 @@ impl Desk {
             window.set_icon("De", Color::BLACK);
 
             unsafe {
-                lvgl::lv_obj_set_style_pad_all(window.get_object(), 0, lvgl::LV_STATE_DEFAULT);
+                lvgl::lv_obj_set_style_pad_all(window.as_mut(), 0, lvgl::LV_STATE_DEFAULT);
 
                 lvgl::lv_obj_add_event_cb(
                     windows_parent,
                     Some(event_handler),
                     EventKind::All as u32,
-                    window.get_object() as *mut core::ffi::c_void,
+                    window.as_object_mutable() as *mut _ as *mut _,
                 );
             }
 
             // - Create the logo
             unsafe {
                 // Create the logo in the background of the window
-                let logo = Logo::new(window.get_object(), 4, Color::BLACK)?;
+                let logo = Logo::new(window.as_mut(), 4, Color::BLACK)?;
                 let logo_inner_object = logo.get_inner_object();
                 forget(logo); // Prevent the logo from being dropped
 
@@ -133,7 +133,7 @@ impl Desk {
 
             // - Create a tile view
             let tile_view = unsafe {
-                let tile_view = lvgl::lv_tileview_create(window.get_object());
+                let tile_view = lvgl::lv_tileview_create(window.as_mut());
 
                 if tile_view.is_null() {
                     return Err(Error::FailedToCreateObject);
@@ -353,7 +353,7 @@ impl Desk {
         unsafe {
             self.close_dock_menu();
 
-            let menu = lvgl::lv_list_create(self.window.get_object());
+            let menu = lvgl::lv_list_create(self.window.as_object_mutable());
 
             if menu.is_null() {
                 return Err(Error::FailedToCreateObject);
@@ -560,17 +560,13 @@ impl Desk {
             Self::HOME_EVENT => unsafe {
                 lvgl::lv_tileview_set_tile_by_index(self.tile_view, 0, 0, true);
             },
-            EventKind::ValueChanged => {
-                if event.target == self.tile_view {
-                    unsafe {
-                        if lvgl::lv_tileview_get_tile_active(self.tile_view) == self.desk_tile {
-                            lvgl::lv_obj_clean(self.drawer_tile);
-                        } else if lvgl::lv_obj_get_child_count(self.drawer_tile) == 0 {
-                            let _ = self.create_drawer_interface(self.drawer_tile).await;
-                        }
-                    }
+            EventKind::ValueChanged if event.target == self.tile_view => unsafe {
+                if lvgl::lv_tileview_get_tile_active(self.tile_view) == self.desk_tile {
+                    lvgl::lv_obj_clean(self.drawer_tile);
+                } else if lvgl::lv_obj_get_child_count(self.drawer_tile) == 0 {
+                    let _ = self.create_drawer_interface(self.drawer_tile).await;
                 }
-            }
+            },
             EventKind::Clicked => {
                 if self
                     .dock_menu_maximize_button
@@ -668,43 +664,38 @@ impl Desk {
                     }
                 }
             }
-            EventKind::LongPressed => {
+            EventKind::LongPressed
                 if unsafe { lvgl::lv_obj_get_parent(event.target) == self.dock }
-                    && event.target != self.main_button
-                {
-                    let window_identifier =
-                        unsafe { lvgl::lv_obj_get_user_data(event.target) as usize };
+                    && event.target != self.main_button =>
+            {
+                let window_identifier =
+                    unsafe { lvgl::lv_obj_get_user_data(event.target) as usize };
 
-                    unsafe {
-                        self.open_dock_menu(event.target, window_identifier)?;
-                    }
+                unsafe {
+                    self.open_dock_menu(event.target, window_identifier)?;
                 }
             }
-            EventKind::Pressed => {
-                if event.target == self.main_button
-                    || unsafe { lvgl::lv_obj_get_parent(event.target) == self.main_button }
-                {
-                    unsafe {
-                        lvgl::lv_obj_add_state(self.main_button, lvgl::LV_STATE_PRESSED as u16);
-                        for i in 0..4 {
-                            let part = lvgl::lv_obj_get_child(self.main_button, i);
+            EventKind::Pressed
+                if (event.target == self.main_button
+                    || unsafe { lvgl::lv_obj_get_parent(event.target) == self.main_button }) =>
+            unsafe {
+                lvgl::lv_obj_add_state(self.main_button, lvgl::LV_STATE_PRESSED as u16);
+                for i in 0..4 {
+                    let part = lvgl::lv_obj_get_child(self.main_button, i);
 
-                            lvgl::lv_obj_add_state(part, lvgl::LV_STATE_PRESSED as u16);
-                        }
-                    }
+                    lvgl::lv_obj_add_state(part, lvgl::LV_STATE_PRESSED as u16);
                 }
-            }
-            EventKind::Released => {
-                if event.target == self.main_button
-                    || unsafe { lvgl::lv_obj_get_parent(event.target) == self.main_button }
-                {
-                    unsafe {
-                        self.clear_main_button_pressed_state();
-                    }
+            },
+            EventKind::Released
+                if (event.target == self.main_button
+                    || unsafe { lvgl::lv_obj_get_parent(event.target) == self.main_button }) =>
+            {
+                unsafe {
+                    self.clear_main_button_pressed_state();
+                }
 
-                    unsafe {
-                        lvgl::lv_tileview_set_tile_by_index(self.tile_view, 0, 1, true);
-                    }
+                unsafe {
+                    lvgl::lv_tileview_set_tile_by_index(self.tile_view, 0, 1, true);
                 }
             }
             EventKind::PressLost => unsafe {

@@ -9,17 +9,17 @@ use synchronization::mutex::{Mutex, MutexGuard};
 use synchronization::{once_lock::OnceLock, rwlock::RwLock};
 use task::block_on;
 
-use core::{future::Future, mem::forget};
+use core::future::Future;
 
 use core::time::Duration;
 
 use super::lvgl;
 
-use crate::Display;
 use crate::Input;
 use crate::InputKind;
 use crate::window::Window;
 use crate::{Color, theme};
+use crate::{Display, OwnedWindow};
 use crate::{Error, Result};
 
 static MANAGER_INSTANCE: OnceLock<Manager> = OnceLock::new();
@@ -163,12 +163,12 @@ impl Manager {
         Ok(())
     }
 
-    pub async fn create_window(&self) -> Result<Window> {
+    pub async fn create_window(&self) -> Result<OwnedWindow> {
         let parent_object = self.inner.write().await.window_parent;
 
         let window = unsafe { Window::new(parent_object)? };
 
-        Ok(window)
+        Ok(OwnedWindow::new(window))
     }
 
     pub async fn add_input_device(
@@ -209,14 +209,12 @@ impl Manager {
         let window = unsafe {
             let child = lvgl::lv_obj_get_child(window_parent, index as i32);
 
-            Window::from_raw(child)
+            Window::from_raw(child).ok_or(Error::InvalidWindowIdentifier)?
         };
 
-        let icon = window.get_icon();
+        let icon = unsafe { window.as_ref().get_icon() };
 
         let icon = (icon.0.to_string(), icon.1);
-
-        forget(window);
 
         Ok(icon)
     }

@@ -1,7 +1,8 @@
 use alloc::string::String;
 use xila::file_system::Kind;
+use xila::graphics::OwnedWindow;
 use xila::graphics::{
-    self, EventKind, Window, lvgl,
+    self, EventKind, lvgl,
     palette::{self, Hue},
 };
 
@@ -9,7 +10,7 @@ use crate::error::Result;
 use crate::tabs::{AboutTab, GeneralTab, NetworkTab, PasswordTab, Tab};
 
 pub struct Settings {
-    window: Window,
+    window: OwnedWindow,
     tabs: [Tab; 4],
 }
 
@@ -30,7 +31,7 @@ impl Settings {
 
         // Create tabview
         let tabview = unsafe {
-            let tabview = lvgl::lv_tabview_create(window.get_object());
+            let tabview = lvgl::lv_tabview_create(window.as_object_mutable());
 
             if tabview.is_null() {
                 return Err(crate::error::Error::FailedToCreateUiElement);
@@ -60,7 +61,7 @@ impl Settings {
             while let Some(event) = self.window.pop_event() {
                 // Logique de filtrage spécifique à Settings
                 if (event.code == EventKind::Delete || event.code == EventKind::CloseRequested)
-                    && event.target == self.window.get_object()
+                    && event.target == self.window.as_object_mutable()
                 {
                     return false;
                 }

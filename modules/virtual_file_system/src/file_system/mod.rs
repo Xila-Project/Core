@@ -175,14 +175,14 @@ impl VirtualFileSystem {
                 unsafe { Box::from_raw(file_system.file_system as *const _ as *mut _) };
         }
 
-        for (_, block_device) in block_devices.iter_mut() {
+        for block_device in block_devices.values_mut() {
             block_device.device.unmount()?;
             let _: Box<dyn BlockDevice> =
                 unsafe { Box::from_raw(block_device.device as *const _ as *mut _) };
         }
         block_devices.clear();
 
-        for (_, character_device) in character_devices.iter_mut() {
+        for character_device in character_devices.values_mut() {
             character_device.device.unmount()?;
             let _: Box<dyn CharacterDevice> =
                 unsafe { Box::from_raw(character_device.device as *const _ as *mut _) };

@@ -88,21 +88,17 @@ pub unsafe extern "C" fn screen_event_handler(event: *mut lvgl::lv_event_t) {
         }
 
         match code {
-            EventKind::Focused => {
-                if lvgl::lv_obj_has_class(target, &lvgl::lv_textarea_class) {
-                    lvgl::lv_keyboard_set_textarea(keyboard, target);
-                    lvgl::lv_obj_remove_flag(keyboard, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
-                    lvgl::lv_obj_move_foreground(keyboard);
+            EventKind::Focused if lvgl::lv_obj_has_class(target, &lvgl::lv_textarea_class) => {
+                lvgl::lv_keyboard_set_textarea(keyboard, target);
+                lvgl::lv_obj_remove_flag(keyboard, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
+                lvgl::lv_obj_move_foreground(keyboard);
 
-                    let width = lvgl::lv_obj_get_width(keyboard);
-                    lvgl::lv_obj_set_height(keyboard, (width as f64 / KEYBOARD_SIZE_RATIO) as i32);
-                }
+                let width = lvgl::lv_obj_get_width(keyboard);
+                lvgl::lv_obj_set_height(keyboard, (width as f64 / KEYBOARD_SIZE_RATIO) as i32);
             }
-            EventKind::Defocused => {
-                if lvgl::lv_obj_has_class(target, &lvgl::lv_textarea_class) {
-                    lvgl::lv_keyboard_set_textarea(keyboard, null_mut());
-                    lvgl::lv_obj_add_flag(keyboard, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
-                }
+            EventKind::Defocused if lvgl::lv_obj_has_class(target, &lvgl::lv_textarea_class) => {
+                lvgl::lv_keyboard_set_textarea(keyboard, null_mut());
+                lvgl::lv_obj_add_flag(keyboard, lvgl::lv_obj_flag_t_LV_OBJ_FLAG_HIDDEN);
             }
             _ => {}
         }

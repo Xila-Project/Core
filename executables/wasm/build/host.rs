@@ -155,7 +155,7 @@ pub fn generate_code(
             };
 
             unsafe {
-                let result = match __function {
+                match __function {
                     #(
                         #functions_call
                     )*

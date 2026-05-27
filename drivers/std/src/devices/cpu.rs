@@ -99,10 +99,10 @@ fn render_cpuinfo_text() -> String {
     let architecture = std::env::consts::ARCH;
     let cores = std::thread::available_parallelism().ok().map(usize::from);
 
-    if cfg!(target_os = "linux") {
-        if let Ok(content) = std::fs::read_to_string("/proc/cpuinfo") {
-            return build_cpuinfo_text_from_proc(&content, architecture, cores);
-        }
+    if cfg!(target_os = "linux")
+        && let Ok(content) = std::fs::read_to_string("/proc/cpuinfo")
+    {
+        return build_cpuinfo_text_from_proc(&content, architecture, cores);
     }
 
     build_cpuinfo_text_from_proc("", architecture, cores)

@@ -80,6 +80,7 @@ impl LvglContext {
             "lv_obj_null_on_delete",
             "lv_buttonmatrix_get_map",
             "lv_textarea_get_text",
+            "lv_obj_get_layer_type",
         ];
 
         let signature_ident_str = signature.ident.to_string();
