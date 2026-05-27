@@ -80,12 +80,13 @@ impl KeyboardDevice {
 
         let paste_closure = Closure::wrap(Box::new(move |event: ClipboardEvent| {
             if let Some(clipboard_data) = event.clipboard_data()
-                && let Ok(text) = clipboard_data.get_data("text") {
-                    for char in text.chars() {
-                        Self::handle_key_press_char(sender, char, true);
-                        Self::handle_key_press_char(sender, char, false);
-                    }
+                && let Ok(text) = clipboard_data.get_data("text")
+            {
+                for char in text.chars() {
+                    Self::handle_key_press_char(sender, char, true);
+                    Self::handle_key_press_char(sender, char, false);
                 }
+            }
         }) as Box<dyn FnMut(ClipboardEvent)>);
 
         window
