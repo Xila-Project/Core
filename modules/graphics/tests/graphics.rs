@@ -54,9 +54,9 @@ async fn main() {
         .await
         .unwrap();
 
-    let window = graphics.create_window().await.unwrap();
+    let mut window = graphics.create_window().await.unwrap();
 
-    let window = window.into_raw();
+    let window = window.as_object_mutable();
 
     let _calendar = unsafe { lvgl::lv_calendar_create(window) };
 
