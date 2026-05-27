@@ -3,7 +3,7 @@ use crate::{Color, Error, EventKind, Key, Result, event::Event, synchronous_lock
 use alloc::collections::VecDeque;
 use core::{
     future::poll_fn,
-    mem::{ManuallyDrop, forget},
+    mem::ManuallyDrop,
     ops::{Deref, DerefMut},
     ptr::{self, NonNull},
     str,
@@ -67,7 +67,7 @@ unsafe extern "C" fn window_constructor(
             &mut (*window).event_queue,
             VecDeque::with_capacity(WINDOW_QUEUE_DEFAULT_CAPACITY),
         );
-        ptr::write(&mut (*window).icon_text, [b'W', b'i']);
+        ptr::write(&mut (*window).icon_text, *b"Wi");
         ptr::write(&mut (*window).icon_color, Color::BLACK);
         ptr::write(&mut (*window).waker_registration, AtomicWaker::new());
 
@@ -305,9 +305,9 @@ impl From<NonNull<Window>> for OwnedWindow {
     }
 }
 
-impl Into<NonNull<Window>> for OwnedWindow {
-    fn into(self) -> NonNull<Window> {
-        let this = ManuallyDrop::new(self);
+impl From<OwnedWindow> for NonNull<Window> {
+    fn from(val: OwnedWindow) -> Self {
+        let this = ManuallyDrop::new(val);
         this.0
     }
 }
