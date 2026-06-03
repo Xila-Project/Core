@@ -28,20 +28,10 @@ async fn main() {
     .await
     .unwrap();
 
-    fn new_thread_executor_wrapper()
-    -> core::pin::Pin<Box<dyn Future<Output = task::SpawnerIdentifier> + Send>> {
-        use drivers_std::executor::new_thread_executor;
-
-        Box::pin(new_thread_executor())
-    }
-
     mount_executables!(
         virtual_file_system,
         task,
-        &[(
-            "/binaries/wasm",
-            WasmExecutable::new(Some(new_thread_executor_wrapper))
-        )]
+        &[("/binaries/wasm", WasmExecutable)]
     )
     .await
     .unwrap();
