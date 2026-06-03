@@ -15,3 +15,6 @@ pub type Color = ColorRGB888;
 pub type RenderingColor = ColorRGB565;
 #[cfg(feature = "rendering_xrgb8888")]
 pub type RenderingColor = ColorARGB8888;
+
+#[cfg(not(any(feature = "rendering_rgb565", feature = "rendering_xrgb8888")))]
+compile_error!("Either feature \"rendering_rgb565\" or \"rendering_xrgb8888\" must be enabled");
