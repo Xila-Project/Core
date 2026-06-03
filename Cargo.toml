@@ -156,6 +156,7 @@ members = [
   "modules/executable",
   "modules/executable/macros",
   "executables/wasm",
+  "executables/wasm/bindings",
   "executables/wasm/tests/wasm_test",
   "executables/shell/graphical",
   "executables/terminal",
