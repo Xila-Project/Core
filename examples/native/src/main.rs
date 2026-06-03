@@ -244,7 +244,7 @@ async fn main() {
             ),
             (
                 &"/binaries/terminal",
-                terminal::TerminalExecutable::new(virtual_file_system::get_instance(), task)
+                terminal::TerminalExecutable::new(virtual_file_system, task)
                     .await
                     .unwrap()
             ),
@@ -254,7 +254,7 @@ async fn main() {
                     .await
                     .unwrap()
             ),
-            (&"/binaries/wasm", wasm::WasmExecutable::new(None))
+            (&"/binaries/wasm", wasm::WasmExecutable)
         ]
     )
     .await
