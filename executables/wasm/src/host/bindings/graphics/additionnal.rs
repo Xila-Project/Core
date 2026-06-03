@@ -1,12 +1,13 @@
 use core::{ffi::CStr, ptr::NonNull};
 
+use wasm_abi_bindings::WasmPointer;
 use xila::{
     graphics::{self, Color, Window, lvgl},
     log,
     task::{self},
 };
 
-use crate::host::virtual_machine::{Translator, WasmPointer};
+use crate::host::virtual_machine::Translator;
 
 pub unsafe fn object_delete(__translator: &mut Translator, object: WasmPointer) {
     let object = __translator.remove_host_translation(object).unwrap();

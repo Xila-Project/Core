@@ -1,11 +1,13 @@
 mod additionnal;
 mod error;
+pub mod prelude;
 mod translate;
 
 use crate::host::virtual_machine::{
-    Environment, EnvironmentPointer, FunctionDescriptor, Registrable, Translator, WasmPointer,
-    WasmUsize,
+    EnvironmentReference, FunctionDescriptor, Registrable, Translator,
 };
+use wamr_rust_sdk::sys::WASMExecEnv;
+use wasm_abi_bindings::{WasmPointer, WasmUsize};
 use xila::{graphics, log, task::block_on};
 
 pub use error::{Error, Result};
@@ -30,7 +32,7 @@ impl Registrable for GraphicsBindings {
 /// The pointer must be valid and properly aligned (ensured by the virtual machine).
 #[allow(clippy::too_many_arguments)]
 unsafe fn call_inner(
-    environment: EnvironmentPointer,
+    environment: *mut WASMExecEnv,
     function: generated_bindings::FunctionCall,
     argument_0: WasmUsize,
     argument_1: WasmUsize,
@@ -47,7 +49,7 @@ unsafe fn call_inner(
 
         let _lock = block_on(instance.lock());
 
-        let environment = Environment::from_raw_pointer(environment);
+        let environment = EnvironmentReference::from_raw_pointer(environment);
 
         let mut translation_map = Translator::from_environment(environment)
             .map_err(|_| Error::EnvironmentRetrievalFailed)?;
@@ -74,7 +76,7 @@ unsafe fn call_inner(
 
 #[allow(clippy::too_many_arguments)]
 pub unsafe fn call(
-    environment: EnvironmentPointer,
+    environment: *mut WASMExecEnv,
     function: generated_bindings::FunctionCall,
     argument_0: WasmUsize,
     argument_1: WasmUsize,
