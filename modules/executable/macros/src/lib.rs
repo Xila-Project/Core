@@ -17,6 +17,19 @@ fn is_bool_type(ty: &Type) -> bool {
     }
 }
 
+// Added helper to detect NonZero types (e.g., NonZeroU32, NonZeroI64, NonZero, etc.)
+fn is_nonzero_type(ty: &Type) -> bool {
+    match ty {
+        Type::Path(path) => path
+            .path
+            .segments
+            .last()
+            .map(|segment| segment.ident.to_string().starts_with("NonZero"))
+            .unwrap_or(false),
+        _ => false,
+    }
+}
+
 fn is_str_reference_type(ty: &Type) -> bool {
     match ty {
         Type::Reference(reference) => match reference.elem.as_ref() {
@@ -181,9 +194,14 @@ pub fn derive_get_args(input: TokenStream) -> TokenStream {
 
         let is_required = config.default.is_none() && !config.flag;
 
+        // Adjusted default value resolution to handle NonZero types cleanly
         let default_value = config.default.unwrap_or_else(|| {
             if config.flag {
                 syn::parse_quote!(false)
+            } else if is_nonzero_type(field_type) {
+                // NonZero types don't implement Default. Use MIN (which is 1 for Unsigned)
+                // as a safe implicit fallback value if a default wasn't provided.
+                syn::parse_quote!(<#field_type>::MIN)
             } else {
                 syn::parse_quote!(Default::default())
             }
