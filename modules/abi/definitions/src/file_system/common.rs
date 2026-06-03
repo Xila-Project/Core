@@ -36,6 +36,8 @@ where
     }
 }
 
+/// # Safety
+/// The caller must ensure that the provided pointer is a vlid null-terminated C string.
 #[inline]
 pub unsafe fn parse_c_str(path: *const c_char) -> Result<&'static str, Error> {
     if path.is_null() {
@@ -49,7 +51,6 @@ pub unsafe fn parse_c_str(path: *const c_char) -> Result<&'static str, Error> {
 }
 
 #[macro_export]
-#[allow(clippy::macro_metavars_in_unsafe)]
 macro_rules! abi_unsafe_function {
     (
         $(#[$meta:meta])*
@@ -63,9 +64,12 @@ macro_rules! abi_unsafe_function {
             // We use an immediately invoked anonymous closure (|| { ... })()
             // This captures variables naturally and gives the `?` operator a target scope to return from.
             #[allow(unused_unsafe)]
-            let result: Result<(), virtual_file_system::Error> = (|| unsafe {
+            #[allow(clippy::macro_metavars_in_unsafe)]
+            let f = || unsafe {
                 $body
-            })();
+            };
+
+            let result: Result<(), virtual_file_system::Error> = f();
 
             match result {
                 Ok(()) => 0,

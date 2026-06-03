@@ -73,6 +73,10 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
+    /// This function is used to close a directory.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFile
     fn xila_file_system_directory_close(
         directory: *mut XilaFileSystemDirectory,
     ) -> XilaFileSystemResult {
@@ -81,6 +85,10 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
+    /// This function is used to rewind a directory.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a directory.
     fn xila_file_system_directory_rewind(
         directory: *mut XilaFileSystemDirectory,
     ) -> XilaFileSystemResult {
@@ -91,6 +99,10 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
+    /// This function is used to set the position in a directory.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a directory.
     fn xila_file_system_directory_set_position(
         directory: *mut XilaFileSystemDirectory,
         offset: XilaFileSystemSize,
@@ -104,6 +116,10 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
+    /// This function is used to get the statistics of a directory.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a directory.
     fn xila_file_system_directory_get_statistics(
         directory: *mut XilaFileSystemDirectory,
         statistics: *mut XilaFileSystemStatistics,
@@ -119,6 +135,10 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
+    /// This function is used to get the access flags of a directory.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a directory.
     fn xila_file_system_directory_get_access(
         directory: *mut XilaFileSystemDirectory,
         access: *mut XilaFileSystemAccess,
@@ -136,6 +156,10 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
+    /// This function is used to get the state flags of a directory.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a directory.
     fn xila_file_system_directory_get_state(
         directory: *mut XilaFileSystemDirectory,
         state: *mut u8,

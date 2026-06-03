@@ -21,6 +21,13 @@ use super::{
 generate_shadow_type!(XilaFileSystemFile, SynchronousFile);
 
 abi_unsafe_function! {
+    /// This function is used to get the statistics of a file.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a file.
+    ///
+    /// # Errors
+    /// This function may return an error if the file system fails to get the statistics of the file.
     fn xila_file_system_file_get_statistics(
         file: *mut XilaFileSystemFile,
         statistics: *mut XilaFileSystemStatistics,
@@ -81,6 +88,9 @@ abi_unsafe_function! {
 
 abi_unsafe_function! {
     /// This function is used to close a file.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a file.
     ///
     /// # Errors
     ///
@@ -302,6 +312,10 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
+    /// This function is used to set the flags of a file.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a file.
     fn xila_file_system_file_set_flags(
         _file: *mut XilaFileSystemFile,
         _state: XilaFileSystemState,
@@ -327,6 +341,10 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
+    /// This function is used to flush a file.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFile
     fn xila_file_system_file_flush(
         file: *mut XilaFileSystemFile,
         _t: bool,
@@ -357,6 +375,10 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
+    /// This function is used to advice the file system about the access pattern of a file.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a file.
     fn xila_file_system_set_times(
         _file: *mut XilaFileSystemFile,
         _access: XilaTime,
@@ -386,6 +408,9 @@ abi_unsafe_function! {
 
 abi_unsafe_function! {
     /// This function is used to truncate a file.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a file.
     fn xila_file_system_truncate(
         _file:  *mut XilaFileSystemFile,
         _length: XilaFileSystemSize,
@@ -410,6 +435,9 @@ abi_unsafe_function! {
 
 abi_unsafe_function! {
     /// This function is used to advice the file system about the access pattern of a file.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a file.
     fn xila_file_system_file_advise(
         _file:  *mut XilaFileSystemFile,
         _offset: XilaFileSystemSize,
@@ -421,6 +449,10 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
+    /// This function is used to allocate space for a file.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a file.
     fn xila_file_system_file_allocate(
         _file:  *mut XilaFileSystemFile,
         _offset: XilaFileSystemSize,
@@ -431,6 +463,10 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
+    /// This function is used to set the position in a file.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a file.
     fn xila_file_system_file_truncate(
         _file:  *mut XilaFileSystemFile,
         _length: XilaFileSystemSize,
@@ -440,6 +476,10 @@ abi_unsafe_function! {
 }
 
 abi_unsafe_function! {
+    /// This function is used to perform a poll operation on a file.
+    ///
+    /// # Safety
+    /// The caller must ensure that the provided pointer is valid and points to a properly initialized `XilaFileSystemItem` that is a file.
     fn xila_file_system_dummy(_event: XilaFileSystemPollEvent) -> XilaFileSystemResult {
         Ok(())
     }
