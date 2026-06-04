@@ -27,7 +27,9 @@ default_host = ["host", "graphics", "wasm32"]
 default_guest = ["guest", "graphics", "c_bindings"]
 
 [build-dependencies]
-wasm_abi_bindings = { path = "bindings", optional = true }                                              # To force the build script to run when the bindings are updated
+wasm_abi_bindings = { path = "bindings", optional = true, features = [
+  "bindings_generation",
+] } # To force the build script to run when the bindings are updated
 lvgl_rust_sys = { git = "https://github.com/Xila-Project/lvgl_rust_sys.git", default-features = false }
 bindgen = { workspace = true }
 quote = { workspace = true }
