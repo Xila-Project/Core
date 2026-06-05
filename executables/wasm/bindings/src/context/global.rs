@@ -16,12 +16,16 @@ unsafe impl Send for GlobalContext {}
 unsafe impl Sync for GlobalContext {}
 
 impl GlobalContext {
+    /// # Safety
+    /// This function is unsafe because it returns a mutable reference to the global environment context, which can lead to data races if accessed from multiple threads without proper synchronization. It is the caller's responsibility to ensure that the returned reference is not accessed concurrently from multiple threads.
     pub unsafe fn get_environment_context<'a>() -> Option<&'a mut EnvironmentContext> {
         let guard = block_on(GLOBAL_CONTEXT.read());
 
         unsafe { guard.as_ref()?.environment_context.as_mut() }
     }
 
+    /// # Safety
+    /// This function is unsafe because it returns a mutable reference to the global instance context, which can lead to data races if accessed from multiple threads without proper synchronization. It is the caller's responsibility to ensure that the returned reference is not accessed concurrently from multiple threads.
     pub unsafe fn get_instance_context<'a>() -> Option<&'a mut InstanceContext> {
         let guard = block_on(GLOBAL_CONTEXT.read());
 

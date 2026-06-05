@@ -25,6 +25,8 @@ impl EnvironmentContext {
         }
     }
 
+    /// # Safety
+    /// This function is unsafe because it returns a mutable reference to the global environment context, which can lead to data races if accessed from multiple threads without proper synchronization. It is the caller's responsibility to ensure that the returned reference is not accessed concurrently from multiple threads.
     pub unsafe fn get<'a>() -> Option<&'a mut Self> {
         unsafe { GlobalContext::get_environment_context() }
     }

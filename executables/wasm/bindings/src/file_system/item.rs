@@ -58,7 +58,7 @@ impl FileSystemItem {
 
     pub fn new_directory(directory: SynchronousDirectory, path: PathOwned) -> *mut Self {
         let item = FileSystemItem::Directory(DirectoryVariant {
-            path: path,
+            path,
             directory: ManuallyDrop::new(directory),
         });
 

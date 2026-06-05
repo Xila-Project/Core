@@ -21,6 +21,8 @@ macro_rules! with_directory {
     };
 }
 
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer, which can lead to undefined behavior if the pointer is null or invalid. It is the caller's responsibility to ensure that the pointer is valid and points to a properly initialized `XilaFileSystemItem` before calling this function.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn __wasm_file_system_directory_close(
     item: *mut XilaFileSystemItem,
@@ -38,6 +40,8 @@ pub unsafe extern "C" fn __wasm_file_system_directory_close(
     }
 }
 
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer, which can lead to undefined behavior if the pointer is null or invalid. It is the caller's responsibility to ensure that the pointer is valid and points to a properly initialized `XilaFileSystemItem` before calling this function.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn __wasm_file_system_directory_rewind(
     item: *mut XilaFileSystemItem,
@@ -46,6 +50,8 @@ pub unsafe extern "C" fn __wasm_file_system_directory_rewind(
     with_directory!(item, d => xila_file_system_directory_rewind(d.as_mut()))
 }
 
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer, which can lead to undefined behavior if the pointer is null or invalid. It is the caller's responsibility to ensure that the pointer is valid and points to a properly initialized `XilaFileSystemItem` before calling this function.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn __wasm_file_system_directory_read(
     item: *mut XilaFileSystemItem,
@@ -64,6 +70,8 @@ pub unsafe extern "C" fn __wasm_file_system_directory_read(
     ))
 }
 
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer, which can lead to undefined behavior if the pointer is null or invalid. It is the caller's responsibility to ensure that the pointer is valid and points to a properly initialized `XilaFileSystemItem` before calling this function.    
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn __wasm_file_system_directory_set_position(
     item: *mut XilaFileSystemItem,
@@ -77,6 +85,8 @@ pub unsafe extern "C" fn __wasm_file_system_directory_set_position(
     with_directory!(item, dir => xila_file_system_directory_set_position(dir.as_mut(), offset))
 }
 
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer, which can lead to undefined behavior if the pointer is null or invalid. It is the caller's responsibility to ensure that the pointer is valid and points to a properly initialized `XilaFileSystemItem` before calling this function.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn __wasm_file_system_directory_get_statistics(
     item: *mut XilaFileSystemItem,
@@ -86,8 +96,10 @@ pub unsafe extern "C" fn __wasm_file_system_directory_get_statistics(
     with_directory!(item, dir => xila_file_system_directory_get_statistics(dir.as_mut(), statistics))
 }
 
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer, which can lead to undefined behavior if the pointer is null or invalid. It is the caller's responsibility to ensure that the pointer is valid and points to a properly initialized `XilaFileSystemItem` before calling this function.
 #[unsafe(no_mangle)]
-pub extern "C" fn __wasm_file_system_directory_get_access(
+pub unsafe extern "C" fn __wasm_file_system_directory_get_access(
     item: *mut XilaFileSystemItem,
     access: *mut XilaFileSystemAccess,
 ) -> XilaFileSystemResult {
@@ -95,8 +107,10 @@ pub extern "C" fn __wasm_file_system_directory_get_access(
     with_directory!(item, dir => xila_file_system_directory_get_access(dir.as_mut(), access))
 }
 
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer, which can lead to undefined behavior if the pointer is null or invalid. It is the caller's responsibility to ensure that the pointer is valid and points to a properly initialized `XilaFileSystemItem` before calling this function.
 #[unsafe(no_mangle)]
-pub extern "C" fn __wasm_file_system_directory_get_state(
+pub unsafe extern "C" fn __wasm_file_system_directory_get_state(
     item: *mut XilaFileSystemItem,
     state: *mut XilaFileSystemAccess,
 ) -> XilaFileSystemResult {
