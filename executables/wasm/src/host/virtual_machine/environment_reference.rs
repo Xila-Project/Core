@@ -41,6 +41,7 @@ impl EnvironmentReference {
         }
     }
 
+    #[allow(clippy::mut_from_ref)]
     pub fn get_instance(&self) -> &mut InstanceReference {
         unsafe {
             let instance_ptr = wasm_runtime_get_module_inst(self.as_raw_pointer());
