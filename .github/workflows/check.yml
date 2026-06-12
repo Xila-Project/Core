@@ -58,7 +58,7 @@ jobs:
         run: cargo make clippy-host
 
       - name: Check | Clippy (Host - wasm_abi_bindings)
-        run: cargo +stable clippy -p wasm_abi_bindings --features bindings_generation
+        run: cargo +stable clippy -p wasm_abi_bindings --features bindings_generation,wasm32
 
       - name: Check | Documentation (Host)
         run: RUSTDOCFLAGS="--deny warnings" cargo make doc-host
