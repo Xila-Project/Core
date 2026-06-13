@@ -1,27 +1,26 @@
 use core::ffi::c_void;
 
-use crate::host::virtual_machine::{CustomData, Environment, Result, WasmPointer};
+use wasm_abi_bindings::WasmPointer;
+
+use crate::host::virtual_machine::{EnvironmentReference, InstanceReference, Result};
 
 pub struct Translator<'a> {
-    environment: &'a mut Environment,
-    custom_data: &'a mut CustomData,
+    instance: &'a mut InstanceReference,
 }
 
 impl<'a> Translator<'a> {
-    pub unsafe fn from_environment(environment: &'a mut Environment) -> Result<Self> {
-        let custom_data = unsafe { environment.get_or_initialize_custom_data()? };
-
-        Ok(Self {
-            environment,
-            custom_data,
-        })
+    pub unsafe fn from_environment(environment: &'a EnvironmentReference) -> Result<Self> {
+        let instance = environment.get_instance();
+        Ok(Self { instance })
     }
 
     pub fn add_host_translation<T>(&mut self, host_address: *mut T) -> WasmPointer {
+        let context = self.instance.get_context();
+
         let guest_address = {
             let mut next_id = 1; // Start from your preferred minimum (0 or 1)
 
-            for &id in self.custom_data.translation_map.get_left_keys() {
+            for &id in context.translation_map.get_left_keys() {
                 if id > next_id {
                     // We found a gap!
                     return next_id;
@@ -32,7 +31,7 @@ impl<'a> Translator<'a> {
             next_id
         };
 
-        self.custom_data
+        context
             .translation_map
             .insert(guest_address, host_address as *mut c_void);
 
@@ -40,7 +39,8 @@ impl<'a> Translator<'a> {
     }
 
     pub fn remove_host_translation<T>(&mut self, guest_address: WasmPointer) -> Option<*mut T> {
-        self.custom_data
+        self.instance
+            .get_context()
             .translation_map
             .remove_by_key(&guest_address)
             .map(|ptr| ptr as *mut T)
@@ -52,9 +52,10 @@ impl<'a> Translator<'a> {
         owned_by_guest: bool,
     ) -> Option<*mut T> {
         if owned_by_guest {
-            unsafe { self.environment.translate_to_host(wasm_address) }
+            unsafe { self.instance.translate_to_host(wasm_address) }
         } else {
-            self.custom_data
+            self.instance
+                .get_context()
                 .translation_map
                 .get_by_left(&wasm_address)
                 .copied()
@@ -68,9 +69,10 @@ impl<'a> Translator<'a> {
         owned_by_guest: bool,
     ) -> Option<WasmPointer> {
         if owned_by_guest {
-            unsafe { Some(self.environment.translate_to_guest(host_address)) }
+            unsafe { Some(self.instance.translate_to_guest(host_address)) }
         } else {
-            self.custom_data
+            self.instance
+                .get_context()
                 .translation_map
                 .get_by_right(&(host_address as *mut c_void))
                 .copied()

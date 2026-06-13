@@ -3,7 +3,8 @@ use core::{ffi::CStr, ptr::null_mut};
 use crate::host::virtual_machine::{Error, Result, runtime::Runtime};
 use alloc::vec::Vec;
 use wamr_rust_sdk::{module, sys::wasm_runtime_set_wasi_args_ex};
-use xila::{abi_context::FileIdentifier, task};
+use wasm_abi_bindings::{FileSystemItem, FileVariantKind};
+use xila::{log, task, virtual_file_system::File};
 
 pub struct Module<'runtime> {
     module: module::Module<'runtime>,
@@ -20,15 +21,15 @@ impl<'runtime> Module<'runtime> {
         runtime: &'runtime Runtime,
         buffer: Vec<u8>,
         name: &str,
-        standard_in: FileIdentifier,
-        standard_out: FileIdentifier,
-        standard_error: FileIdentifier,
+        standard_in: File,
+        standard_out: File,
+        standard_error: File,
     ) -> Result<Self> {
         // - Environment variables.
-        let task_instance = task::get_instance();
+        let task_manager = task::get_instance();
 
-        let task = task_instance.get_current_task_identifier().await;
-        let mut environment_variables_raw: Vec<*const i8> = task_instance
+        let task = task_manager.get_current_task_identifier().await;
+        let mut environment_variables_raw: Vec<*const i8> = task_manager
             .get_environment_variables(task)
             .await
             .map_err(Error::FailedToGetTaskInformations)?
@@ -40,17 +41,33 @@ impl<'runtime> Module<'runtime> {
 
         let environment_variables_length = environment_variables_raw.len();
 
-        // - Create the module.
         let module = Self {
             module: module::Module::from_vec(runtime.get_inner_reference(), buffer, name)?,
             _environment_variables_raw: environment_variables_raw,
         };
 
-        let standard_in = standard_in.into_inner();
-        let standard_out = standard_out.into_inner();
-        let standard_error = standard_error.into_inner();
+        let (standard_in, standard_out, standard_error) = (
+            standard_in.into_synchronous_file(),
+            standard_out.into_synchronous_file(),
+            standard_error.into_synchronous_file(),
+        );
 
-        // - Set WASI arguments.
+        let (standard_in, standard_out, standard_error) = (
+            FileSystemItem::new_file(standard_in, FileVariantKind::StandardInput),
+            FileSystemItem::new_file(standard_out, FileVariantKind::StandardOutput),
+            FileSystemItem::new_file(standard_error, FileVariantKind::StandardError),
+        );
+
+        let (standard_in, standard_out, standard_error) = (
+            u64::cast_signed(standard_in as u64),
+            u64::cast_signed(standard_out as u64),
+            u64::cast_signed(standard_error as u64),
+        );
+
+        log::information!(
+            "NIQUE SA MERE '{name}' with standard_in: {standard_in}, standard_out: {standard_out}, standard_error: {standard_error}"
+        );
+
         unsafe {
             wasm_runtime_set_wasi_args_ex(
                 module.module.get_inner_module(),
@@ -62,11 +79,13 @@ impl<'runtime> Module<'runtime> {
                 environment_variables_length as u32,
                 null_mut(),
                 0,
-                u64::cast_signed(standard_in as u64),
-                u64::cast_signed(standard_out as u64),
-                u64::cast_signed(standard_error as u64),
+                standard_in,
+                standard_out,
+                standard_error,
             )
         }
+
+        log::information!("TRALALA '{name}'");
 
         Ok(module)
     }

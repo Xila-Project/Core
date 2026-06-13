@@ -54,7 +54,7 @@ args = [
   "--target",
   "x86_64-unknown-linux-gnu",
   "--features",
-  "host,abi_definitions,graphics_rendering_xrgb8888",
+  "graphics,abi_definitions,graphics_rendering_xrgb8888",
 ]
 
 [tasks.check-guest]
@@ -76,7 +76,7 @@ command = "cargo"
 args = [
   "doc",
   "--features",
-  "host,abi_definitions,graphics_rendering_xrgb8888",
+  "graphics,abi_definitions,graphics_rendering_xrgb8888",
   "--target",
   "x86_64-unknown-linux-gnu",
 ]
@@ -109,7 +109,7 @@ args = [
   "--target",
   "x86_64-unknown-linux-gnu",
   "--features",
-  "host,abi_definitions,graphics_rendering_xrgb8888",
+  "graphics,abi_definitions,graphics_rendering_xrgb8888",
   "--all-targets",
   "--",
   "-D",

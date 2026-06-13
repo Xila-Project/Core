@@ -42,6 +42,12 @@ impl Error {
     }
 }
 
+impl From<Error> for u32 {
+    fn from(value: Error) -> Self {
+        NonZeroU32::from(value).get()
+    }
+}
+
 impl From<Error> for NonZeroU32 {
     fn from(value: Error) -> Self {
         let discriminant = value.get_discriminant();

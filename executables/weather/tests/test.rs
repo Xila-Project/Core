@@ -36,10 +36,7 @@ async fn main() {
     mount_executables!(
         virtual_file_system,
         task,
-        &[(
-            "/binaries/wasm",
-            WasmExecutable::new(Some(new_thread_executor_wrapper))
-        )]
+        &[("/binaries/wasm", WasmExecutable)]
     )
     .await
     .unwrap();

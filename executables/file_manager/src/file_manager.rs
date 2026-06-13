@@ -96,7 +96,10 @@ impl FileManager {
             }
         });
 
-        self.window.yield_now().await;
+        task::suspend(|ctx| {
+            self.window.register_waker(ctx.waker());
+        })
+        .await;
 
         self.running
     }

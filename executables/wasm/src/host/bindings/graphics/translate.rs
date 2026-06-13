@@ -2,8 +2,9 @@ use core::ffi::{c_char, c_void};
 use core::mem::transmute;
 
 use crate::host::bindings::graphics::{Error, Result};
-use crate::host::virtual_machine::{Translator, WasmPointer, WasmUsize};
+use crate::host::virtual_machine::Translator;
 use alloc::vec::Vec;
+use wasm_abi_bindings::{WasmPointer, WasmUsize};
 use xila::graphics::lvgl::{self, lv_style_value_t};
 
 pub trait TranslateFrom {

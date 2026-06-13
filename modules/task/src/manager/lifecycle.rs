@@ -9,7 +9,6 @@ use core::{
     time::Duration,
 };
 use embassy_executor::raw::{TaskPool, task_from_waker};
-use embassy_futures::yield_now;
 use embassy_time::Timer;
 
 impl Manager {
@@ -129,10 +128,6 @@ impl Manager {
         }
 
         Ok(())
-    }
-
-    pub async fn r#yield() {
-        yield_now().await;
     }
 
     /// Sleep the current thread for a given duration.

@@ -5,6 +5,7 @@ use xila::graphics::{
     self, EventKind, lvgl,
     palette::{self, Hue},
 };
+use xila::task;
 
 use crate::error::Result;
 use crate::tabs::{AboutTab, GeneralTab, NetworkTab, PasswordTab, Tab};
@@ -74,7 +75,10 @@ impl Settings {
             }
         });
 
-        self.window.yield_now().await;
+        task::suspend(|ctx| {
+            self.window.register_waker(ctx.waker());
+        })
+        .await;
 
         true
     }

@@ -1,4 +1,4 @@
-#include "../../../../modules/abi/xila.h"
+#include "wasm.generated.h"
 #include "platform_api_vmcore.h"
 
 /****************************************************
@@ -98,7 +98,7 @@ uint64 os_time_thread_cputime_us(void)
  */
 korp_tid os_self_thread(void)
 {
-    return xila_get_current_thread_identifier();
+    return __wasm_task_get_identifier();
 }
 
 /**
@@ -108,7 +108,7 @@ korp_tid os_self_thread(void)
  */
 uint8 *os_thread_get_stack_boundary(void)
 {
-    return xila_thread_get_stack_boundary();
+    return __wasm_task_get_stack_boundary();
 }
 
 /**
@@ -144,7 +144,7 @@ int os_mutex_destroy(korp_mutex *mutex)
 
 int os_mutex_lock(korp_mutex *mutex)
 {
-    if (xila_lock_mutex(mutex))
+    if (__wasm_mutex_lock(mutex))
         return 0;
 
     return 1;
@@ -152,7 +152,7 @@ int os_mutex_lock(korp_mutex *mutex)
 
 int os_mutex_unlock(korp_mutex *mutex)
 {
-    if (xila_unlock_mutex(mutex))
+    if (__wasm_mutex_unlock(mutex))
         return 0;
 
     return 1;

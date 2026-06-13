@@ -1,5 +1,5 @@
 
-#include "../../../../modules/abi/xila.h"
+#include "wasm.generated.h"
 
 #define CLOCK_REALTIME XilaTimeClockIdentifier_Realtime
 #define CLOCK_MONOTONIC XilaTimeClockIdentifier_Monotonic
@@ -13,6 +13,6 @@ typedef XilaConditionVariableAttribute pthread_condattr_t;
 #define pthread_condattr_setclock xila_condition_variable_attribute_set_clock
 #define pthread_condattr_destroy xila_condition_variable_attribute_destroy
 
-#define clock_nanosleep xila_time_nano_sleep
+#define clock_nanosleep __wasm_task_sleep
 
-#define sched_yield xila_thread_yield
+#define sched_yield __wasm_task_yield

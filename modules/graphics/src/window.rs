@@ -2,12 +2,10 @@ use super::lvgl;
 use crate::{Color, Error, EventKind, Key, Result, event::Event, synchronous_lock};
 use alloc::collections::VecDeque;
 use core::{
-    future::poll_fn,
     mem::ManuallyDrop,
     ops::{Deref, DerefMut},
     ptr::{self, NonNull},
     str,
-    task::Poll,
 };
 use synchronization::{once_lock::OnceLock, waitqueue::AtomicWaker};
 
@@ -53,7 +51,7 @@ pub struct Window {
     event_queue: VecDeque<Event>,
     icon_text: [u8; 2],
     icon_color: Color,
-    waker_registration: AtomicWaker,
+    waker: AtomicWaker,
 }
 
 unsafe extern "C" fn window_constructor(
@@ -69,7 +67,7 @@ unsafe extern "C" fn window_constructor(
         );
         ptr::write(&mut (*window).icon_text, *b"Wi");
         ptr::write(&mut (*window).icon_color, Color::BLACK);
-        ptr::write(&mut (*window).waker_registration, AtomicWaker::new());
+        ptr::write(&mut (*window).waker, AtomicWaker::new());
 
         lvgl::lv_obj_add_flag(
             &mut (*window).object,
@@ -134,7 +132,7 @@ unsafe extern "C" fn window_event_callback(
         (*window)
             .event_queue
             .push_back(Event::new(EventKind::from_lvgl_code(code), target, key));
-        (*window).waker_registration.wake();
+        (*window).waker.wake();
     }
 }
 
@@ -209,11 +207,11 @@ impl Window {
     }
 
     pub fn wake_up(&mut self) {
-        self.waker_registration.wake();
+        self.waker.wake();
     }
 
     pub fn register_waker(&mut self, waker: &core::task::Waker) {
-        self.waker_registration.register(waker);
+        self.waker.register(waker);
     }
 
     /// Convert a raw pointer to a window object.
@@ -238,19 +236,6 @@ impl Window {
         }
 
         NonNull::new(window as *mut Self)
-    }
-
-    pub fn yield_now(&mut self) -> impl core::future::Future<Output = ()> + '_ {
-        let mut yielded = false;
-        poll_fn(move |cx| {
-            if yielded {
-                Poll::Ready(())
-            } else {
-                self.register_waker(cx.waker());
-                yielded = true;
-                Poll::Pending
-            }
-        })
     }
 
     pub fn delete(&mut self) {
