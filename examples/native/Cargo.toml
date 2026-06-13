@@ -5,8 +5,9 @@ edition = "2024"
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]
 xila = { path = "../../", features = [
-  "host",
+  "graphics",
   "graphics_rendering_xrgb8888",
+  "bootsplash",
   "executable_building",
 ] }
 file_manager = { workspace = true }

@@ -45,7 +45,6 @@ default = [
   "dep:abi_definitions",
   "dep:little_fs",
   "dep:virtual_file_system",
-  "dep:graphics",
   "dep:task",
   "dep:time",
   "dep:users",
@@ -57,16 +56,16 @@ default = [
   "dep:log",
   "dep:shared",
   "dep:synchronization",
-  "dep:bootsplash",
   "abi_definitions",
   "dep:network",
 ]
 
 executable_building = ["executable/building"]
-host = []
 abi_definitions = ["dep:abi_definitions"]
-graphics_rendering_rgb565 = ["graphics/rendering_rgb565"]
-graphics_rendering_xrgb8888 = ["graphics/rendering_xrgb8888"]
+bootsplash = ["dep:bootsplash"]
+graphics = ["dep:graphics"]
+graphics_rendering_rgb565 = ["graphics", "graphics/rendering_rgb565"]
+graphics_rendering_xrgb8888 = ["graphics", "graphics/rendering_xrgb8888"]
 
 
 [workspace.dependencies]
