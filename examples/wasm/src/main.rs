@@ -197,6 +197,7 @@ async fn main() {
                     .await
                     .unwrap()
             ),
+            (&"/binaries/wasm", wasm::WasmExecutable)
         ]
     )
     .await

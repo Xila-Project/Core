@@ -2,12 +2,14 @@
 
 extern crate alloc;
 
+mod condition_variable;
 mod context;
 mod file_system;
 mod fundamentals;
 mod mutex;
 mod task;
 
+pub use condition_variable::*;
 pub use context::*;
 pub use file_system::*;
 pub use fundamentals::*;

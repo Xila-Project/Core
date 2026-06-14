@@ -46,6 +46,10 @@ fn main() {
         includes: vec!["../../../../../modules/abi/xila.h".to_string()],
         no_includes: true,
         enumeration: enumeration_configuration,
+        export: cbindgen::ExportConfig {
+            exclude: vec!["XilaTaskIdentifier".to_string()],
+            ..Default::default()
+        },
         parse: cbindgen::ParseConfig {
             expand: cbindgen::ParseExpandConfig {
                 crates: vec!["wasm_abi_bindings".to_string()],

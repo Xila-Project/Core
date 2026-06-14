@@ -31,8 +31,7 @@ LITTLEFS_CONFIG = { value = "modules/little_fs/include/little_fs_config.h", rela
 INTERNATIONALIZATION_LOCALE = "en"
 INTERNATIONALIZATION_FALLBACK = "en"
 
-[target.wasm32-unknown-unknown]
-rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
+CMAKE_TOOLCHAIN_FILE_wasm32_unknown_unknown = { value = "wasm_toolchain.cmake", relative = true }
 
 [build]
 rustdocflags = ["--default-theme=ayu"]

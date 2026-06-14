@@ -173,10 +173,7 @@ int os_recursive_mutex_init(korp_mutex *mutex) {
  *
  * @return 0 if success
  */
-int os_cond_init(korp_cond *cond) {
-  // return xila_condition_variable_new(cond);
-  return 0;
-}
+int os_cond_init(korp_cond *cond) { return xila_condition_variable_new(cond); }
 
 /**
  * This function destroys condition variable
@@ -186,9 +183,7 @@ int os_cond_init(korp_cond *cond) {
  * @return 0 if success
  */
 int os_cond_destroy(korp_cond *cond) {
-  printf("os_cond_destroy called\n");
-  return 0;
-  // return xila_condition_variable_remove(cond);
+  return xila_condition_variable_remove(cond);
 }
 
 /**
@@ -200,9 +195,7 @@ int os_cond_destroy(korp_cond *cond) {
  * @return 0 if success
  */
 int os_cond_wait(korp_cond *cond, korp_mutex *mutex) {
-  printf("os_cond_wait called\n");
-  return 0;
-  // return xila_condition_variable_wait(cond, mutex);
+  return xila_condition_variable_wait(cond, mutex);
 }
 
 /**
@@ -215,9 +208,8 @@ int os_cond_wait(korp_cond *cond, korp_mutex *mutex) {
  * @return 0 if success
  */
 int os_cond_reltimedwait(korp_cond *cond, korp_mutex *mutex, uint64 useconds) {
-  printf("os_cond_reltimedwait called\n");
-  return 0;
-  // return xila_condition_variable_try_wait(cond, mutex, useconds);
+
+  return xila_condition_variable_try_wait(cond, mutex, useconds);
 }
 
 /**
@@ -228,9 +220,7 @@ int os_cond_reltimedwait(korp_cond *cond, korp_mutex *mutex, uint64 useconds) {
  * @return 0 if success
  */
 int os_cond_signal(korp_cond *cond) {
-  printf("os_cond_signal called\n");
-  return 0;
-  // return xila_condition_variable_signal(cond);
+  return xila_condition_variable_signal(cond);
 }
 
 /**
@@ -241,9 +231,7 @@ int os_cond_signal(korp_cond *cond) {
  * @return 0 if success
  */
 int os_cond_broadcast(korp_cond *cond) {
-  printf("os_cond_broadcast called\n");
-  return 0;
-  // return xila_condition_variable_broadcast(cond);
+  return xila_condition_variable_broadcast(cond);
 }
 
 /**
@@ -1347,9 +1335,8 @@ __wasi_errno_t os_preadv(os_file_handle handle,
     lengths[i] = iov[i].buf_len;
   }
 
-  XilaFileSystemResult file_system_result =
-      __wasm_file_system_file_read_at(handle, offset, buffers, lengths,
-                                                 iovcnt, nread);
+  XilaFileSystemResult file_system_result = __wasm_file_system_file_read_at(
+      handle, offset, buffers, lengths, iovcnt, nread);
 
   return into_wasi_error(file_system_result);
 }
@@ -1374,9 +1361,8 @@ __wasi_errno_t os_pwritev(os_file_handle handle,
     lengths[i] = iov[i].buf_len;
   }
 
-  XilaFileSystemResult file_system_result =
-      __wasm_file_system_file_write_at(handle, offset, buffers, lengths,
-                                                  iovcnt, nwritten);
+  XilaFileSystemResult file_system_result = __wasm_file_system_file_write_at(
+      handle, offset, buffers, lengths, iovcnt, nwritten);
 
   return into_wasi_error(file_system_result);
 }

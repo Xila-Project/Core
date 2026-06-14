@@ -1,32 +1,22 @@
-/*
- * Copyright (C) 2019 Intel Corporation.  All rights reserved.
- * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- */
-
 #ifndef _XILA_PLATFORM_INTERNAL_H
 #define _XILA_PLATFORM_INTERNAL_H
 
 #include "wasm.generated.h"
 
 // #include "stubs.h"
-#include <arpa/inet.h>
-#include <assert.h>
-#include <ctype.h>
-#include <errno.h>
+/* Safe Standard C Libraries */
+//#include <assert.h>
+//#include <ctype.h>
+//#include <errno.h>
 #include <limits.h>
-#include <math.h>
-#include <poll.h>
-#include <pthread.h>
+//#include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <sys/uio.h>
-#include <unistd.h>
+#include <stddef.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,7 +26,7 @@ extern "C" {
 #define BH_PLATFORM_XILA
 #endif
 
-#define bh_socket_t XilaFileSystemItem*
+#define bh_socket_t XilaFileSystemItem *
 
 #ifndef PATH_MAX
 #define PATH_MAX 256
@@ -50,8 +40,11 @@ struct RawMutex {
 
 typedef struct RawMutex korp_mutex;
 
-typedef pthread_cond_t korp_cond;
+typedef XilaConditionVariable korp_cond;
 typedef XilaTaskIdentifier korp_thread;
+
+#define memcpy xila_memory_copy
+#define printf xila_print
 
 struct RawRwLock {
   uint8_t _[8];
@@ -123,9 +116,9 @@ typedef struct XilaSemaphore korp_sem;
 
 typedef struct timespec os_timespec;
 
-typedef XilaFileSystemItem* os_dir_stream;
-typedef XilaFileSystemItem* os_raw_file_handle;
-typedef XilaFileSystemItem* os_file_handle;
+typedef XilaFileSystemItem *os_dir_stream;
+typedef XilaFileSystemItem *os_raw_file_handle;
+typedef XilaFileSystemItem *os_file_handle;
 
 typedef os_file_handle os_nfds_t;
 
@@ -134,7 +127,6 @@ typedef struct {
   short revents;
   short events;
 } os_poll_file_handle;
-
 
 os_file_handle os_get_invalid_handle();
 

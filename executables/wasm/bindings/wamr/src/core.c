@@ -51,29 +51,57 @@ void os_free(void *ptr)
 
 int os_printf(const char *format, ...)
 {
-    printf("os_printf: \n");
-
-    int ret = 0;
     va_list args;
     va_start(args, format);
-#ifndef BH_VPRINTF
-    ret += vprintf(format, args);
-#else
-    ret += BH_VPRINTF(format, args);
-#endif
+    int result = os_vprintf(format, args);
     va_end(args);
-    return ret;
+    return result;
 }
 
-int os_vprintf(const char *format, va_list ap)
+int os_vprintf(const char *format, va_list args)
 {
-    printf("os_vprintf: \n");
+  unsigned char stack_buf[256]; // Allocated on the WebAssembly stack
+    size_t idx = 0;
+    size_t max_size = sizeof(stack_buf) - 1;
 
-#ifndef BH_VPRINTF
-    return vprintf(format, ap);
-#else
-    return BH_VPRINTF(format, ap);
-#endif
+    const char *p = format;
+    while (*p && idx < max_size) {
+        if (*p == '%') {
+            p++;
+            if (*p == 's') {
+                char *s = va_arg(args, char*);
+                while (*s && idx < max_size) {
+                    stack_buf[idx++] = *s++;
+                }
+            } else if (*p == 'd') {
+                int n = va_arg(args, int);
+                // Simple stack-based integer to string conversion
+                char int_buf[12];
+                int i = 0;
+                if (n == 0) int_buf[i++] = '0';
+                if (n < 0) { stack_buf[idx++] = '-'; n = -n; }
+                while (n > 0 && i < 12) {
+                    int_buf[i++] = (n % 10) + '0';
+                    n /= 10;
+                }
+                while (i > 0 && idx < max_size) {
+                    stack_buf[idx++] = int_buf[--i];
+                }
+            } else {
+                stack_buf[idx++] = *p;
+            }
+        } else {
+            stack_buf[idx++] = *p;
+        }
+        p++;
+    }
+    
+    stack_buf[idx] = '\0';
+    
+    if (idx > 0) {
+        xila_print(&stack_buf);
+    }
+    return idx;
 }
 
 /**

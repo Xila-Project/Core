@@ -21,7 +21,7 @@ console_error_panic_hook = "0.1"
 drivers_wasm = { workspace = true }
 drivers_core = { workspace = true }
 drivers_shared = { workspace = true }
-
+wasm = { workspace = true, features = ["default_host"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.34"
