@@ -1539,21 +1539,7 @@ __wasi_errno_t os_mkdirat(os_file_handle handle, const char *path) {
  */
 __wasi_errno_t os_renameat(os_file_handle old_handle, const char *old_path,
                            os_file_handle new_handle, const char *new_path) {
-  size_t old_path_size = strlen(old_path) + 2;
-
-  char old_new_path[old_path_size];
-
-  old_new_path[0] = '/';
-  strncpy(old_new_path + 1, old_path, old_path_size);
-
-  size_t new_path_size = strlen(new_path) + 2;
-
-  char new_new_path[new_path_size];
-
-  new_new_path[0] = '/';
-  strncpy(new_new_path + 1, new_path, new_path_size);
-
-  return into_wasi_error(xila_file_system_rename(old_new_path, new_new_path));
+  return into_wasi_error(__wasm_file_system_rename_at(old_handle, old_path, new_handle, new_path));
 }
 
 /**

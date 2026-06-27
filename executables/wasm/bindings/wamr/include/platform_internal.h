@@ -44,7 +44,26 @@ typedef XilaConditionVariable korp_cond;
 typedef XilaTaskIdentifier korp_thread;
 
 #define memcpy xila_memory_copy
+#define memcmp xila_memory_compare
 #define printf xila_print
+#define memset xila_memory_set
+#define strncpy xila_string_copy_bounded
+#define abort() xila_panic("wasm runtime abort")
+#define memmove xila_memory_move
+#define strlen xila_string_get_length
+#define abs xila_mathematics_absolute_value
+#define isnan xila_mathematics_is_not_a_number
+#define strncasecmp xila_string_compare_case_insensitive_bounded
+#define strcmp xila_string_compare
+#define strtod xila_string_to_double
+#define strcmp xila_string_compare
+#define strok_r xila_string_tokenize_reentrant
+#define strtoul xila_string_to_unsigned_long
+#define strtoull xila_string_to_unsigned_long_long
+#define snprintf xila_string_format
+#define strtok_r xila_string_tokenize_reentrant
+#define strtof xila_string_to_float
+
 
 struct RawRwLock {
   uint8_t _[8];

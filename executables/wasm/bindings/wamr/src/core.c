@@ -60,7 +60,7 @@ int os_printf(const char *format, ...)
 
 int os_vprintf(const char *format, va_list args)
 {
-  unsigned char stack_buf[256]; // Allocated on the WebAssembly stack
+    unsigned char stack_buf[256]; // Allocated on the WebAssembly stack
     size_t idx = 0;
     size_t max_size = sizeof(stack_buf) - 1;
 
@@ -99,7 +99,7 @@ int os_vprintf(const char *format, va_list args)
     stack_buf[idx] = '\0';
     
     if (idx > 0) {
-        xila_print(&stack_buf);
+        xila_print(stack_buf);
     }
     return idx;
 }

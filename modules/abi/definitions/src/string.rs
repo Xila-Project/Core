@@ -33,13 +33,13 @@ pub unsafe extern "C" fn xila_string_get_length(str: *const c_char) -> usize {
             return 0;
         }
 
-        let mut len = 0;
+        let start = str;
         let mut ptr = str;
         while *ptr != 0 {
-            len += 1;
             ptr = ptr.add(1);
         }
-        len
+
+        ptr.offset_from(start) as usize
     }
 }
 
@@ -213,66 +213,52 @@ pub unsafe extern "C" fn xila_string_copy_bounded(
     }
 }
 
-/// Tokenize a string using delimiters
-///
-/// # Safety
-/// This function is unsafe because it dereferences raw pointers.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn xila_string_tokenize(
-    _string: *mut c_char,
-    delimiters: *const c_char,
-) -> *mut c_char {
-    // Note: This is a simplified implementation
-    // A full strtok implementation requires static state management
-    if delimiters.is_null() {
-        return null_mut();
-    }
-
-    // This is a basic implementation that doesn't maintain state
-    // In a real implementation, you'd need to track the current position
-    null_mut()
-}
-
-/// Find substring in a string
+/// Find substring in a string (equivalent to `strstr`)
 ///
 /// # Safety
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_find_substring(
-    haystack: *const c_char,
-    needle: *const c_char,
+    mut hs: *const c_char,
+    ne: *const c_char,
 ) -> *mut c_char {
     unsafe {
-        if haystack.is_null() || needle.is_null() {
-            return null_mut();
+        let c = *ne as i32;
+
+        // If the needle is empty, return the haystack immediately
+        if c == 0 {
+            return hs as *mut c_char;
         }
 
-        let needle_len = xila_string_get_length(needle);
-        if needle_len == 0 {
-            return haystack as *mut c_char;
-        }
-
-        let haystack_len = xila_string_get_length(haystack);
-        if needle_len > haystack_len {
-            return null_mut();
-        }
-
-        // Use slice operations for efficient searching
-        let haystack_slice = slice::from_raw_parts(haystack as *const u8, haystack_len);
-        let needle_slice = slice::from_raw_parts(needle as *const u8, needle_len);
-
-        // Use Rust's windows iterator for efficient substring search
-        for (i, window) in haystack_slice.windows(needle_len).enumerate() {
-            if window == needle_slice {
-                return haystack.add(i) as *mut c_char;
+        // Outer loop: iterate through the haystack until a null terminator is reached
+        while *hs != 0 {
+            if *hs as i32 != c {
+                hs = hs.add(1);
+                continue;
             }
+
+            // Inner loop: check if the subsequent characters match the needle
+            let mut i: usize = 1;
+            while *ne.add(i) != 0 {
+                if *hs.add(i) != *ne.add(i) {
+                    break;
+                }
+                i += 1;
+            }
+
+            // If we reached the end of the needle successfully, match found!
+            if *ne.add(i) == 0 {
+                return hs as *mut c_char;
+            }
+
+            hs = hs.add(1);
         }
 
         null_mut()
     }
 }
 
-/// Convert string to double
+/// Convert string to double (equivalent to `strtod`)
 ///
 /// # Safety
 /// This function is unsafe because it dereferences raw pointers.
@@ -310,14 +296,14 @@ pub unsafe extern "C" fn xila_string_to_double(
     }
 }
 
-/// Case-insensitive string comparison up to n characters
+/// Case-insensitive string comparison up to n characters (equivalent to `strncasecmp`)
 ///
 /// # Safety
 /// This function is unsafe because it dereferences raw pointers.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xila_string_compare_case_insensitive_bounded(
-    str1: *const c_char,
-    str2: *const c_char,
+    mut str1: *const c_char,
+    mut str2: *const c_char,
     num: usize,
 ) -> c_int {
     unsafe {
@@ -325,29 +311,21 @@ pub unsafe extern "C" fn xila_string_compare_case_insensitive_bounded(
             return 0;
         }
 
-        let len1 = min(xila_string_get_length(str1), num);
-        let len2 = min(xila_string_get_length(str2), num);
-        let min_len = min(len1, len2);
+        for _ in 0..num {
+            let c1 = *str1 as u8 as char;
+            let c2 = *str2 as u8 as char;
 
-        // Convert both slices to lowercase and compare
-        let slice1 = slice::from_raw_parts(str1 as *const u8, min_len);
-        let slice2 = slice::from_raw_parts(str2 as *const u8, min_len);
+            let c1_lower = c1.to_ascii_lowercase();
+            let c2_lower = c2.to_ascii_lowercase();
 
-        for (a, b) in slice1.iter().zip(slice2.iter()) {
-            let lower_a = a.to_ascii_lowercase();
-            let lower_b = b.to_ascii_lowercase();
-            if lower_a != lower_b {
-                return if lower_a < lower_b { -1 } else { 1 };
+            if c1_lower != c2_lower {
+                return c1_lower as c_int - c2_lower as c_int;
             }
-        }
 
-        // If compared parts are equal, compare lengths
-        use core::cmp::Ordering;
-        match len1.cmp(&len2) {
-            Ordering::Less => -1,
-            Ordering::Equal => 0,
-            Ordering::Greater => 1,
+            str1 = str1.add(1);
+            str2 = str2.add(1);
         }
+        return 0; // Strings are equal up to num characters
     }
 }
 
@@ -661,4 +639,90 @@ pub unsafe extern "C" fn xila_string_concatenate(
     }
 
     destination
+}
+
+/// Tokenize a string using delimiters in a reentrant way
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
+///
+/// # Credits
+///
+/// Rust translation of picolibc [`__strtok_r`](https://github.com/picolibc/picolibc/blob/main/libc/string/strtok_r.c).
+unsafe fn xila_string_to_token_reentrant_internal(
+    mut s: *mut c_char,
+    delim: *const c_char,
+    lasts: *mut *mut c_char,
+    skip_leading_delim: c_int,
+) -> *mut c_char {
+    unsafe {
+        if s.is_null() {
+            s = *lasts;
+            if s.is_null() {
+                return null_mut();
+            }
+        }
+
+        // Skip leading delimiters
+        'cont: loop {
+            let c = *s;
+            s = s.add(1);
+
+            let mut spanp = delim;
+            while *spanp != 0 {
+                let sc = *spanp;
+                spanp = spanp.add(1);
+
+                if c == sc {
+                    if skip_leading_delim != 0 {
+                        continue 'cont;
+                    } else {
+                        *lasts = s;
+                        *s.offset(-1) = 0;
+                        return s.offset(-1);
+                    }
+                }
+            }
+
+            if c == 0 {
+                *lasts = null_mut();
+                return null_mut();
+            }
+            break;
+        }
+
+        let tok = s.offset(-1);
+
+        // Scan token
+        loop {
+            let c = *s;
+            s = s.add(1);
+            let mut spanp = delim;
+            loop {
+                let sc = *spanp;
+                spanp = spanp.add(1);
+                if sc == c {
+                    if c == 0 {
+                        s = null_mut();
+                    } else {
+                        *s.offset(-1) = 0;
+                    }
+                    *lasts = s;
+                    return tok;
+                }
+                if sc == 0 {
+                    break;
+                }
+            }
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xila_string_tokenize_reentrant(
+    s: *mut c_char,
+    delim: *const c_char,
+    lasts: *mut *mut c_char,
+) -> *mut c_char {
+    unsafe { xila_string_to_token_reentrant_internal(s, delim, lasts, 1) }
 }

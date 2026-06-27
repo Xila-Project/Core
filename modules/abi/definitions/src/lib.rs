@@ -3,7 +3,9 @@
 extern crate alloc;
 
 mod file_system;
+mod mathematics;
 mod memory;
+mod panic;
 mod print;
 mod string;
 mod task;
@@ -11,7 +13,9 @@ mod time;
 mod user;
 
 pub use file_system::*;
+pub use mathematics::*;
 pub use memory::*;
+pub use panic::*;
 pub use print::*;
 pub use string::*;
 pub use task::*;
