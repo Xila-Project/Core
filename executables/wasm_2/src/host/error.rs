@@ -1,23 +1,42 @@
 use core::fmt::Display;
 
+use xila::virtual_file_system;
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
     InvalidArgument(getargs_derive::Error),
-    WasmError(wasmi::Error),
-    LinkError(wasmi::errors::LinkerError),
+    Wasm(wasmi::Error),
+    Linker(wasmi::errors::LinkerError),
+    Runtime(i32),
+    FileSystem(virtual_file_system::Error),
+    Task(xila::task::Error),
+    InvalidPath,
+    NotAWasmFile,
 }
 
 impl From<wasmi::Error> for Error {
     fn from(error: wasmi::Error) -> Self {
-        Self::WasmError(error)
+        Self::Wasm(error)
     }
 }
 
 impl From<wasmi::errors::LinkerError> for Error {
     fn from(error: wasmi::errors::LinkerError) -> Self {
-        Self::LinkError(error)
+        Self::Linker(error)
+    }
+}
+
+impl From<virtual_file_system::Error> for Error {
+    fn from(error: virtual_file_system::Error) -> Self {
+        Self::FileSystem(error)
+    }
+}
+
+impl From<xila::task::Error> for Error {
+    fn from(error: xila::task::Error) -> Self {
+        Self::Task(error)
     }
 }
 

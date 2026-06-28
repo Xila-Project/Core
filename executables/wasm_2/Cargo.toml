@@ -5,8 +5,8 @@ edition = "2024"
 
 [dependencies]
 wasmi = { version = "1.1.0", default-features = false, features = [
-    "prefer-btree-collections",
-    "extra-checks",
+  "prefer-btree-collections",
+  "extra-checks",
 ], optional = true }
 xila = { path = "../../", optional = true }
 getargs-derive = { git = "https://github.com/AlixANNERAUD/getargs-derive.git", branch = "main", optional = true }
