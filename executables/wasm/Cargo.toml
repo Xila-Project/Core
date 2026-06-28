@@ -12,7 +12,7 @@ wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk.git",
   "instruction-metering",
 ], optional = true }
 getargs = { version = "0.5" }
-executable_macros = { path = "../../modules/executable/macros" }
+getargs-derive = { workspace = true }
 smol_str = { workspace = true }
 
 [features]

@@ -2,14 +2,12 @@
 
 extern crate alloc;
 
-mod arguments_parser;
 #[cfg(feature = "building")]
 mod building;
 mod error;
 mod standard;
 mod traits;
 
-pub use arguments_parser::*;
 #[cfg(feature = "building")]
 pub use building::*;
 pub use error::*;

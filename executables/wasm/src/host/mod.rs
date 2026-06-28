@@ -6,7 +6,7 @@ use alloc::string::ToString;
 use alloc::{borrow::ToOwned, string::String, vec, vec::Vec};
 use core::fmt::Write;
 use core::num::{NonZeroU32, NonZeroUsize};
-use executable_macros::GetArgs;
+use getargs_derive::GetArgs;
 use xila::executable::ExecutableTrait;
 use xila::executable::MainFuture;
 use xila::executable::Standard;

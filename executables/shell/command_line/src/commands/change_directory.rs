@@ -1,6 +1,6 @@
 use crate::{Error, Result};
 use alloc::borrow::ToOwned;
-use executable_macros::GetArgs;
+use getargs_derive::GetArgs;
 use xila::{
     file_system::Path,
     virtual_file_system::{self, Directory},
