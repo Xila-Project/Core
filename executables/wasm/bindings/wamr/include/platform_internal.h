@@ -43,6 +43,10 @@ typedef struct RawMutex korp_mutex;
 typedef XilaConditionVariable korp_cond;
 typedef XilaTaskIdentifier korp_thread;
 
+
+int xila_string_format(char *buf, size_t size, const char *format, ...);
+int xila_string_format_varidic(char *buf, size_t size, const char *format, va_list args);
+
 #define memcpy xila_memory_copy
 #define memcmp xila_memory_compare
 #define printf xila_print
@@ -60,9 +64,38 @@ typedef XilaTaskIdentifier korp_thread;
 #define strok_r xila_string_tokenize_reentrant
 #define strtoul xila_string_to_unsigned_long
 #define strtoull xila_string_to_unsigned_long_long
+
 #define snprintf xila_string_format
+#define vsnprintf xila_string_format_varidic
+
 #define strtok_r xila_string_tokenize_reentrant
 #define strtof xila_string_to_float
+#define strncmp xila_string_compare_bounded
+#define bsearch xila_binary_search
+#define qsort xila_quick_sort
+#define strstr xila_string_search
+#define strtol xila_string_to_unsigned_long
+#define strnlen xila_string_get_length_bounded
+
+#define fabsf xila_mathematics_absolute_value_f32
+#define ceilf xila_mathematics_ceiling_f32
+#define floorf xila_mathematics_floor_f32
+#define truncf xila_mathematics_truncate_f32
+#define rintf xila_mathematics_round_f32
+#define sqrtf xila_mathematics_square_root_f32
+
+#define fabs xila_mathematics_absolute_value_f64
+#define ceil xila_mathematics_ceiling_f64
+#define floor xila_mathematics_floor_f64
+#define trunc xila_mathematics_truncate_f64
+#define rint xila_mathematics_round_f64
+#define sqrt xila_mathematics_square_root_f64
+
+#define signbit(x) ((x) < 0 ? -1 : ((x) > 0 ? 1 : 0))
+
+#define unsigned signed
+typedef __SIZE_TYPE__ ssize_t;
+#undef unsigned
 
 
 struct RawRwLock {

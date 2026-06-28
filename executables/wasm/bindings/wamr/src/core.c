@@ -49,46 +49,64 @@ void os_free(void *ptr)
  *       Refer to wasm_runtime_full_init().
  */
 
-int os_printf(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    int result = os_vprintf(format, args);
-    va_end(args);
-    return result;
-}
-
 int os_vprintf(const char *format, va_list args)
 {
-    unsigned char stack_buf[256]; // Allocated on the WebAssembly stack
+    char stack_buf[256]; // Utilisation de char standard pour xila_print
     size_t idx = 0;
-    size_t max_size = sizeof(stack_buf) - 1;
+    size_t max_size = sizeof(stack_buf) - 1; // Garde 1 octet pour le '\0'
 
     const char *p = format;
     while (*p && idx < max_size) {
         if (*p == '%') {
-            p++;
+            p++; // Avance après le '%'
+            if (*p == '\0') {
+                stack_buf[idx++] = '%';
+                break;
+            }
+
             if (*p == 's') {
                 char *s = va_arg(args, char*);
+                if (!s) s = "(null)"; // Sécurité si le pointeur est NULL
                 while (*s && idx < max_size) {
                     stack_buf[idx++] = *s++;
                 }
-            } else if (*p == 'd') {
+            } 
+            else if (*p == 'd') {
                 int n = va_arg(args, int);
-                // Simple stack-based integer to string conversion
                 char int_buf[12];
                 int i = 0;
-                if (n == 0) int_buf[i++] = '0';
-                if (n < 0) { stack_buf[idx++] = '-'; n = -n; }
-                while (n > 0 && i < 12) {
-                    int_buf[i++] = (n % 10) + '0';
-                    n /= 10;
+
+                // Cas particulier de 0
+                if (n == 0) {
+                    int_buf[i++] = '0';
+                } else {
+                    // Utilisation d'un type non-signé pour éviter le bug d'overflow sur INT_MIN (-2147483648)
+                    unsigned int num = n;
+                    if (n < 0) {
+                        if (idx < max_size) {
+                            stack_buf[idx++] = '-';
+                        }
+                        num = (unsigned int)(-n);
+                    }
+                    while (num > 0 && i < 12) {
+                        int_buf[i++] = (num % 10) + '0';
+                        num /= 10;
+                    }
                 }
+
+                // Copie inversée du tampon entier vers le tampon principal
                 while (i > 0 && idx < max_size) {
                     stack_buf[idx++] = int_buf[--i];
                 }
-            } else {
-                stack_buf[idx++] = *p;
+            } 
+            else if (*p == '%') {
+                // Gestion du "%%" pour afficher un vrai pourcentage
+                stack_buf[idx++] = '%';
+            } 
+            else {
+                // Spécificateur inconnu (ex: %x non géré), on réaffiche le % et le caractère
+                if (idx < max_size) stack_buf[idx++] = '%';
+                if (idx < max_size) stack_buf[idx++] = *p;
             }
         } else {
             stack_buf[idx++] = *p;
@@ -101,7 +119,94 @@ int os_vprintf(const char *format, va_list args)
     if (idx > 0) {
         xila_print(stack_buf);
     }
-    return idx;
+    return (int)idx;
+}
+
+int os_printf(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int result = os_vprintf(format, args);
+    va_end(args);
+    return result;
+}
+
+
+int xila_string_format_varidic(char *buf, size_t size, const char *format, va_list args)
+{
+    // Si la taille du tampon est 0, on ne peut rien écrire, 
+    // mais on doit théoriquement renvoyer le nombre de caractères requis.
+    // Pour rester léger, on gère ici le cas de sécurité minimal.
+    if (!buf || size == 0) return 0;
+
+    size_t idx = 0;
+    size_t max_size = size - 1; // On garde 1 octet pour le '\0' final
+
+    const char *p = format;
+    while (*p && idx < max_size) {
+        if (*p == '%') {
+            p++;
+            if (*p == '\0') {
+                buf[idx++] = '%';
+                break;
+            }
+
+            if (*p == 's') {
+                char *s = va_arg(args, char*);
+                if (!s) s = "(null)";
+                while (*s && idx < max_size) {
+                    buf[idx++] = *s++;
+                }
+            } 
+            else if (*p == 'd') {
+                int n = va_arg(args, int);
+                char int_buf[12];
+                int i = 0;
+
+                if (n == 0) {
+                    int_buf[i++] = '0';
+                } else {
+                    unsigned int num = n;
+                    if (n < 0) {
+                        if (idx < max_size) {
+                            buf[idx++] = '-';
+                        }
+                        num = (unsigned int)(-n);
+                    }
+                    while (num > 0 && i < 12) {
+                        int_buf[i++] = (num % 10) + '0';
+                        num /= 10;
+                    }
+                }
+
+                while (i > 0 && idx < max_size) {
+                    buf[idx++] = int_buf[--i];
+                }
+            } 
+            else if (*p == '%') {
+                buf[idx++] = '%';
+            } 
+            else {
+                if (idx < max_size) buf[idx++] = '%';
+                if (idx < max_size) buf[idx++] = *p;
+            }
+        } else {
+            buf[idx++] = *p;
+        }
+        p++;
+    }
+    
+    buf[idx] = '\0';
+    return (int)idx; // Retourne le nombre de caractères effectivement écrits
+}
+
+int xila_string_format(char *buf, size_t size, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int result = xila_string_format_varidic(buf, size, format, args);
+    va_end(args);
+    return result;
 }
 
 /**

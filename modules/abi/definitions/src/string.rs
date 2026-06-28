@@ -1,6 +1,6 @@
 use core::{
     cmp::{Ordering, min},
-    ffi::{c_char, c_int},
+    ffi::{CStr, c_char, c_int},
     ptr::null_mut,
     slice,
 };
@@ -648,7 +648,7 @@ pub unsafe extern "C" fn xila_string_concatenate(
 ///
 /// # Credits
 ///
-/// Rust translation of picolibc [`__strtok_r`](https://github.com/picolibc/picolibc/blob/main/libc/string/strtok_r.c).
+/// Rust translation of [picolibc `__strtok_r`](https://github.com/picolibc/picolibc/blob/main/libc/string/strtok_r.c).
 unsafe fn xila_string_to_token_reentrant_internal(
     mut s: *mut c_char,
     delim: *const c_char,
@@ -725,4 +725,44 @@ pub unsafe extern "C" fn xila_string_tokenize_reentrant(
     lasts: *mut *mut c_char,
 ) -> *mut c_char {
     unsafe { xila_string_to_token_reentrant_internal(s, delim, lasts, 1) }
+}
+
+/// C-compatible strstr implementation.
+///
+/// # Safety
+/// This function is unsafe because it handles raw pointers. The caller must guarantee
+/// that both `hs` (haystack) and `ne` (needle) point to valid, null-terminated C strings.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xila_string_search(hs: *const c_char, ne: *const c_char) -> *mut c_char {
+    // 1. Guard against null pointers
+    if hs.is_null() || ne.is_null() {
+        return null_mut();
+    }
+
+    // 2. Wrap raw C pointers into safe, zero-cost Rust CStr views.
+    // This does NOT copy or allocate memory; it just calculates lengths up to '\0'.
+    let haystack_cstr = unsafe { CStr::from_ptr(hs) };
+    let needle_cstr = unsafe { CStr::from_ptr(ne) };
+
+    let haystack = haystack_cstr.to_bytes();
+    let needle = needle_cstr.to_bytes();
+
+    // 3. Handle the edge case: if the needle is empty, C specification
+    // mandates returning the original haystack pointer.
+    if needle.is_empty() {
+        return hs as *mut c_char;
+    }
+
+    // 4. Use Rust's native, highly-optimized substring window matching.
+    // This compiles down to incredibly fast vectorized assembly instructions.
+    if let Some(index) = haystack
+        .windows(needle.len())
+        .position(|window| window == needle)
+    {
+        // Return the exact pointer position matching the substring start offset
+        return unsafe { hs.add(index) } as *mut c_char;
+    }
+
+    // If no match was found, return NULL
+    null_mut()
 }

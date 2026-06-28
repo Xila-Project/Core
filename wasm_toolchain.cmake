@@ -28,6 +28,6 @@ set(WAMR_BUILD_INTERP 1 CACHE INTERNAL "Force enable Interpreter" FORCE)
 set(WAMR_BUILD_FAST_INTERP 1 CACHE INTERNAL "Use Fast Interpreter" FORCE)
 
 # Strip out unnecessary features to minimize browser footprint
-set(WAMR_BUILD_LIBC_WASI 0 CACHE INTERNAL "Disable WASI standard imports" FORCE)
+set(WAMR_BUILD_LIBC_WASI 1 CACHE INTERNAL "Enable WASI standard imports (via custom platform abstraction)" FORCE)
 set(WAMR_BUILD_MULTI_MODULE 0 CACHE INTERNAL "Disable multi-module" FORCE)
 set(WAMR_BUILD_LIB_PTHREAD 0 CACHE INTERNAL "Disable native threads" FORCE)

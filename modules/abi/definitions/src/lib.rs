@@ -2,6 +2,8 @@
 
 extern crate alloc;
 
+mod array;
+mod error;
 mod file_system;
 mod mathematics;
 mod memory;
@@ -12,6 +14,8 @@ mod task;
 mod time;
 mod user;
 
+pub use array::*;
+pub use error::*;
 pub use file_system::*;
 pub use mathematics::*;
 pub use memory::*;
