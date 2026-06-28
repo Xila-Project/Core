@@ -180,6 +180,7 @@ members = [
   "modules/testing",
   "modules/device",
   "executables/weather",
+  "executables/wasm_2",
 ]
 
 [patch.crates-io]
