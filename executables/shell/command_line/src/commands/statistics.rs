@@ -1,7 +1,7 @@
 use crate::{Error, Result};
 use alloc::{borrow::ToOwned, format, string::String};
-use executable_macros::GetArgs;
 use getargs::Options;
+use getargs_derive::GetArgs;
 use xila::{
     file_system::Path,
     internationalization::translate,

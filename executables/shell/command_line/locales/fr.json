@@ -1,4 +1,5 @@
 {
+  "Argument parsing error: {}": "Erreur d'analyse des arguments: {}",
   "Accessed": "Accédé",
   "Authentication failed: {}": "Échec de l'authentification: {}",
   "Cannot resolve {}: Unknown host": "Impossible de résoudre {}: Hôte inconnu",

@@ -35,6 +35,7 @@ pub enum Error {
     FailedToReadFile(virtual_file_system::Error),
     RequiresValue,
     DoesNotRequireValue,
+    ArgumentParsing(getargs_derive::Error),
     InvalidArgument,
     MissingPositionalArgument(&'static str),
     InvalidOption,
@@ -52,6 +53,12 @@ impl<A: getargs::Argument> From<getargs::Error<A>> for Error {
             getargs::Error::DoesNotRequireValue(_) => Error::DoesNotRequireValue,
             _ => Error::InvalidOption,
         }
+    }
+}
+
+impl From<getargs_derive::Error> for Error {
+    fn from(value: getargs_derive::Error) -> Self {
+        Error::ArgumentParsing(value)
     }
 }
 
@@ -187,6 +194,9 @@ impl Display for Error {
             }
             Error::FailedToCreateSocket(error) => {
                 write!(formatter, translate!("Failed to create socket: {}"), error)
+            }
+            Error::ArgumentParsing(error) => {
+                write!(formatter, translate!("Argument parsing error: {}"), error)
             }
             Error::Format => {
                 write!(formatter, translate!("Format error"))

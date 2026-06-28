@@ -15,7 +15,7 @@ use alloc::{boxed::Box, string::String, vec::Vec};
 use core::fmt::Write;
 use core::num::NonZeroUsize;
 use core::time::Duration;
-use executable_macros::GetArgs;
+use getargs_derive::GetArgs;
 use home::Home;
 use layout::Layout;
 use login::Login;

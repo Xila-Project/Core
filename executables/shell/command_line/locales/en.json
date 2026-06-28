@@ -1,4 +1,5 @@
 {
+  "Argument parsing error: {}": "Argument parsing error: {}",
   "Accessed": "Accessed",
   "Authentication failed: {}": "Authentication failed: {}",
   "Cannot resolve {}: Unknown host": "Cannot resolve {}: Unknown host",

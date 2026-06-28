@@ -135,6 +135,7 @@ embedded-io = { version = "0.7", features = ["alloc"] }
 embedded-tls = { version = "0.19", default-features = false, features = [
   "alloc",
 ] }
+getargs-derive = { git = "https://github.com/AlixANNERAUD/getargs-derive.git", branch = "main" }
 
 [workspace]
 members = [
@@ -153,7 +154,6 @@ members = [
   "executables/file_manager",
   "executables/shell/command_line",
   "modules/executable",
-  "modules/executable/macros",
   "executables/wasm",
   "executables/wasm/bindings",
   "executables/wasm/tests/wasm_test",

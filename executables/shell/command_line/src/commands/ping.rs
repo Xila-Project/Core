@@ -1,4 +1,4 @@
-use executable_macros::GetArgs;
+use getargs_derive::GetArgs;
 use xila::{
     file_system::Path,
     internationalization::translate,

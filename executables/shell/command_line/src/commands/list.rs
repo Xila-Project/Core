@@ -1,7 +1,7 @@
 use crate::{Error, Result};
 use alloc::borrow::ToOwned;
 use alloc::string::ToString;
-use executable_macros::GetArgs;
+use getargs_derive::GetArgs;
 use xila::{
     file_system::{Kind, Path},
     log, users,

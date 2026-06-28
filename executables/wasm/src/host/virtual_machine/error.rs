@@ -108,6 +108,20 @@ impl From<RuntimeError> for Error {
         }
     }
 }
+impl From<getargs_derive::Error> for Error {
+    fn from(value: getargs_derive::Error) -> Self {
+        match value {
+            getargs_derive::Error::MissingPositionalArgument(name) => {
+                Error::MissingPositionalArgument(name)
+            }
+            getargs_derive::Error::UnknownOption => Error::InvalidOption,
+            getargs_derive::Error::MissingOptionValue(name) => Error::MissingArgument(name),
+            getargs_derive::Error::ParseError(_) => Error::InvalidOption,
+            getargs_derive::Error::InvalidNumberOfArguments => Error::InvalidNumberOfArguments,
+        }
+    }
+}
+
 impl From<task::Error> for Error {
     fn from(error: task::Error) -> Self {
         Error::FailedToGetTaskInformations(error)

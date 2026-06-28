@@ -1,5 +1,5 @@
-use executable_macros::GetArgs;
 use getargs::Options;
+use getargs_derive::GetArgs;
 use xila::file_system::Path;
 
 use crate::Result;
