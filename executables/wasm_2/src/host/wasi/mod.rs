@@ -8,8 +8,26 @@ mod path;
 mod poll;
 mod process;
 mod random;
+mod register;
 mod scheduling;
 mod socket;
 mod time;
 
 pub use context::*;
+
+#[macro_export]
+macro_rules! wasi_result {
+    ( $($tokens:tt)* ) => {
+        // Wrapping the expansion in an outer block turns it into an expression
+        {
+            let __result: core::result::Result<(), $crate::host::wasi::Error> = {
+                $($tokens)*
+            };
+
+            match __result {
+                Ok(()) => Ok(0),
+                Err(err) => Ok(core::num::NonZeroI32::from(err).into()),
+            }
+        }
+    };
+}

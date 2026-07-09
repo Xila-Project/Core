@@ -1,4 +1,6 @@
-use core::num::NonZeroU32;
+use core::num::{NonZeroI32, NonZeroU32};
+
+pub type WasiResult = i32;
 
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -84,8 +86,8 @@ pub enum Error {
     Unknown = 79,
 }
 
-impl From<Error> for NonZeroU32 {
+impl From<Error> for NonZeroI32 {
     fn from(error: Error) -> Self {
-        NonZeroU32::new(error as u32).unwrap()
+        NonZeroI32::new(error as i32).unwrap()
     }
 }

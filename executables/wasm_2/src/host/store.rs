@@ -1,3 +1,5 @@
+use crate::host::wasi::WasiContext;
+
 pub struct GlobalStore {
-    wasi: WasiContext,
+    pub wasi: WasiContext,
 }

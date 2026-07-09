@@ -1,11 +1,14 @@
 use alloc::vec::Vec;
-use xila::virtual_file_system::{SynchronousDirectory, SynchronousFile};
+use xila::{
+    task::TaskIdentifier,
+    virtual_file_system::{SynchronousDirectory, SynchronousFile},
+};
 
 pub struct WasiContext {
     pub fds: Vec<FileDescriptor>,
     pub next_fd: u32,
     pub args: Vec<Vec<u8>>,
-    pub env: Vec<(Vec<u8>, Vec<u8>)>,
+    pub task: TaskIdentifier,
     pub random_state: u64,
 }
 
