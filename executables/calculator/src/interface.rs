@@ -1,5 +1,5 @@
 use crate::{evaluator::Evaluator, parser::Parser};
-use internationalization::translate;
+use embedded_i18n::translate;
 use std::{ptr::null_mut, thread::sleep};
 use wasm::{
     self, Color, EventCode, FlexFlow, Object, ObjectFlag, buttonmatrix_create,

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-internationalization = { workspace = true }
+embedded-i18n = { workspace = true }
 miniserde = { workspace = true }
 shared = { workspace = true }
 task = { workspace = true }
