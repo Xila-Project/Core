@@ -4,9 +4,9 @@ pub mod about;
 
 pub use abi_declarations;
 pub use authentication;
+pub use embedded_i18n as internationalization;
 pub use executable;
 pub use file_system;
-pub use internationalization;
 pub use little_fs;
 pub use log;
 pub use memory;

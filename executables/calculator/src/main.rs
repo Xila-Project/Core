@@ -24,8 +24,6 @@ fn main() {
 fn main() {
     println!(
         "{}",
-        internationalization::translate!(
-            "This executable is intended to be run in a WASM environment."
-        )
+        embedded_i18n::translate!("This executable is intended to be run in a WASM environment.")
     );
 }

@@ -10,7 +10,7 @@ embassy-executor = { workspace = true, default-features = false }
 embassy-futures = { workspace = true }
 smol_str = { workspace = true }
 synchronization = { workspace = true }
-internationalization = { workspace = true }
+embedded-i18n = { workspace = true }
 
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dependencies]

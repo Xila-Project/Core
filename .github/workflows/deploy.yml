@@ -40,7 +40,7 @@ jobs:
       - name: Build | WASM demonstration (en)
         working-directory: ./examples/wasm
         env:
-          INTERNATIONALIZATION_LOCALE: en
+          EMBEDDED_I18N_LOCALE: en
         run: |
           (cd ../../ && cargo make generate-fonts)
           trunk build --release --public-url ./
@@ -50,7 +50,7 @@ jobs:
       - name: Build | WASM demonstration (fr)
         working-directory: ./examples/wasm
         env:
-          INTERNATIONALIZATION_LOCALE: fr
+          EMBEDDED_I18N_LOCALE: fr
         run: |
           (cd ../../ && cargo make generate-fonts)
           trunk build --release --public-url ./

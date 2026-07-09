@@ -1,7 +1,7 @@
 use core::{fmt::Display, num::NonZeroU32};
 
+use embedded_i18n::translate;
 use embedded_io_async::ErrorKind;
-use internationalization::translate;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
