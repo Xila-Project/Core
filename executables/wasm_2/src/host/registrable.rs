@@ -17,7 +17,10 @@ macro_rules! define_wasi_module {
     ) => {
         // 1. Generate the actual functions
         $(
-            pub fn $fn_name ( $($arg : $arg_ty),* ) -> $ret $body
+            pub fn $fn_name ( $($arg : $arg_ty),* ) -> $ret {
+                xila::log::information!("WASI: {}", stringify!($fn_name));
+                $body
+            }
         )*
 
         // 2. Generate the linker registration function automatically

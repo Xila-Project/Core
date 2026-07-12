@@ -1,9 +1,6 @@
-use core::{
-    num::{NonZeroU32, NonZeroUsize},
-    time::Duration,
-};
+use core::num::{NonZeroU32, NonZeroUsize};
 
-use alloc::{borrow::ToOwned, string::String, vec::Vec};
+use alloc::{string::String, vec::Vec};
 use core::fmt::Write;
 use getargs_derive::GetArgs;
 use wasmi::{Caller, Config, Engine, Linker, Module, Store, TypedResumableCall};
@@ -17,6 +14,7 @@ use xila::{
 use crate::host::{
     error::{Error, Result},
     store::GlobalStore,
+    wasi::{self, FdType, FileDescriptor, Prestat, WasiContext},
 };
 
 const DEFAULT_STACK_SIZE: usize = 4096;
@@ -30,7 +28,7 @@ struct WasmArguments<'a> {
     install: bool,
     #[arg(default = DEFAULT_STACK_SIZE)]
     stack_size: usize,
-    #[arg(default = NonZeroU32::new(200).unwrap())]
+    #[arg(default = NonZeroU32::new(100_000).unwrap())]
     instruction_limit: NonZeroU32,
 }
 
@@ -79,35 +77,94 @@ async fn read_file(path: &str) -> Result<Vec<u8>> {
 pub async fn main_inner(standard: Standard, arguments: WasmArguments<'_>) -> Result<()> {
     let WasmArguments {
         path,
-        install,
-        stack_size,
+        install: _,
+        stack_size: _,
         instruction_limit,
     } = arguments;
 
     let mut configuration = Config::default();
     configuration.consume_fuel(true);
 
-    // First step is to create the Wasm execution engine with some config.
-    //
-    // In this example we are using the default configuration.
     let engine = Engine::new(&configuration);
 
     let buffer = read_file(path).await?;
 
-    // Now we can compile the above Wasm module with the given Wasm source.
     let module = Module::new(&engine, &buffer)?;
 
-    // Wasm objects operate within the context of a Wasm `Store`.
-    //
-    // Each `Store` has a type parameter to store host specific data.
-    // In this example the host state is a simple `u32` type with value `42`.
-    let mut store = Store::new(&engine, 42);
+    let task = xila::task::get_instance()
+        .get_current_task_identifier()
+        .await;
+    let (_standard_in, standard_out, standard_error) = standard.split();
+    let root_dir = xila::virtual_file_system::SynchronousDirectory::open(
+        xila::virtual_file_system::get_instance(),
+        task,
+        xila::file_system::Path::from_str("/"),
+    );
 
-    // A linker can be used to instantiate Wasm modules.
-    // The job of a linker is to satisfy the Wasm module's imports.
+    let mut store = Store::new(
+        &engine,
+        GlobalStore {
+            wasi: WasiContext {
+                fds: Vec::new(),
+                next_fd: 3,
+                args: Vec::new(),
+                task,
+                random_state: 0,
+                prestats: Vec::new(),
+                exit_code: None,
+            },
+        },
+    );
+
+    {
+        let data = store.data_mut();
+        data.wasi.fds = alloc::vec![
+            FileDescriptor {
+                fd: 0,
+                ty: FdType::CharacterDevice,
+                offset: 0,
+                rights: 2,
+                rights_inheriting: 2,
+                flags: 0
+            },
+            FileDescriptor {
+                fd: 1,
+                ty: FdType::Stdout(standard_out.into_synchronous_file()),
+                offset: 0,
+                rights: 32,
+                rights_inheriting: 32,
+                flags: 0
+            },
+            FileDescriptor {
+                fd: 2,
+                ty: FdType::Stderr(standard_error.into_synchronous_file()),
+                offset: 0,
+                rights: 32,
+                rights_inheriting: 32,
+                flags: 0
+            },
+        ];
+        data.wasi.next_fd = 3;
+        if let Ok(dir) = root_dir {
+            data.wasi.fds.push(FileDescriptor {
+                fd: 3,
+                ty: FdType::Directory(dir, b"/".to_vec()),
+                offset: 0,
+                rights: u64::MAX,
+                rights_inheriting: u64::MAX,
+                flags: 0,
+            });
+            data.wasi.next_fd = 4;
+            data.wasi.prestats.push(Prestat {
+                name: b"/".to_vec(),
+            });
+        }
+    }
+
     let mut linker = Linker::<GlobalStore>::new(&engine);
 
-    // We are required to define all imports before instantiating a Wasm module.
+    wasi::register::add_wasi_to_linker(&mut linker)?;
+
     linker.func_wrap(
         "host",
         "hello",
@@ -120,39 +177,43 @@ pub async fn main_inner(standard: Standard, arguments: WasmArguments<'_>) -> Res
         },
     )?;
 
-    let instance = linker.instantiate_and_start(&mut store, &module)?;
-    // Now we can finally query the exported "hello" function and call it.
+    match linker.instantiate_and_start(&mut store, &module) {
+        Ok(instance) => {
+            let start = instance.get_typed_func::<(), ()>(&store, START_FUNCTION_NAME)?;
+            store.set_fuel(instruction_limit.get() as u64)?;
 
-    let function_name = if arguments.install {
-        INSTALL_FUNCTION_NAME
-    } else {
-        START_FUNCTION_NAME
-    };
-
-    let function = instance.get_typed_func::<(), i32>(&store, function_name)?;
-
-    loop {
-        store.set_fuel(arguments.instruction_limit.get() as u64)?;
-
-        match function.call_resumable(&mut store, ()) {
-            Ok(TypedResumableCall::Finished(r)) => {
-                log::information!("Function finished with result: {:?}", r);
-                if r == 0 {
-                    break Ok(());
+            let mut call = start.call_resumable(&mut store, ())?;
+            loop {
+                call = match call {
+                    TypedResumableCall::Finished(()) => return Ok(()),
+                    TypedResumableCall::OutOfFuel(call) => {
+                        store.set_fuel(instruction_limit.get() as u64)?;
+                        call.resume(&mut store)?
+                    }
+                    TypedResumableCall::HostTrap(_) => {
+                        let code = store
+                            .data()
+                            .wasi
+                            .exit_code
+                            .ok_or_else(|| wasmi::Error::new("unhandled WASI host trap"))?;
+                        return if code == 0 {
+                            Ok(())
+                        } else {
+                            Err(Error::Runtime(code))
+                        };
+                    }
+                };
+            }
+        }
+        Err(e) => {
+            if let Some(code) = store.data().wasi.exit_code {
+                if code == 0 {
+                    Ok(())
                 } else {
-                    break Err(Error::Runtime(r));
+                    Err(Error::Runtime(code))
                 }
-            }
-            Ok(TypedResumableCall::HostTrap(r)) => {
-                log::information!("Function is resumable with result: {:?}", r);
-                task::sleep(Duration::from_millis(10)).await;
-            }
-            Ok(TypedResumableCall::OutOfFuel(r)) => {
-                log::information!("Function trapped with result: {:?}", r);
-                task::sleep(Duration::from_millis(10)).await;
-            }
-            Err(e) => {
-                break Err(Error::Wasm(e));
+            } else {
+                Err(Error::Wasm(e))
             }
         }
     }

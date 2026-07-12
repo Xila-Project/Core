@@ -8,12 +8,14 @@ mod path;
 mod poll;
 mod process;
 mod random;
-mod register;
+pub mod register;
 mod scheduling;
 mod socket;
 mod time;
+mod types;
 
 pub use context::*;
+pub use error::Error;
 
 #[macro_export]
 macro_rules! wasi_result {

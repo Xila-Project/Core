@@ -1,4 +1,4 @@
-use core::num::{NonZeroI32, NonZeroU32};
+use core::num::NonZeroI32;
 
 pub type WasiResult = i32;
 
@@ -89,5 +89,19 @@ pub enum Error {
 impl From<Error> for NonZeroI32 {
     fn from(error: Error) -> Self {
         NonZeroI32::new(error as i32).unwrap()
+    }
+}
+
+pub fn vfs_error(err: xila::virtual_file_system::Error) -> Error {
+    use xila::virtual_file_system::Error as Vfs;
+    match err {
+        Vfs::PermissionDenied => Error::Access,
+        Vfs::NotADirectory => Error::Notdir,
+        Vfs::InvalidPath => Error::Inval,
+        Vfs::AlreadyExists => Error::Exist,
+        Vfs::RessourceBusy => Error::Again,
+        Vfs::TooManyOpenFiles => Error::Nfile,
+        Vfs::InvalidIdentifier => Error::Badf,
+        _ => Error::Io,
     }
 }

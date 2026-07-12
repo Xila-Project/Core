@@ -254,7 +254,7 @@ async fn main() {
                     .await
                     .unwrap()
             ),
-            (&"/binaries/wasm", wasm::WasmExecutable)
+            (&"/binaries/wasm", wasm_2::WasmExecutable),
         ]
     )
     .await

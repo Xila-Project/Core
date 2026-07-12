@@ -1,17 +1,13 @@
-use core::cell::RefMut;
-
 use wasmi::Caller;
 
-use crate::GlobalStore;
+use crate::host::store::GlobalStore;
 
-/// Wrapper to access WASM linear memory safely
 pub struct WasmMemory<'a> {
-    data: RefMut<'a, [u8]>,
+    data: &'a mut [u8],
 }
 
 impl<'a> WasmMemory<'a> {
-    /// Extract memory from Wasmi Caller
-    pub fn from_caller(caller: &mut Caller<'a, GlobalStore>) -> Result<Self, wasmi::Error> {
+    pub fn from_caller(caller: &'a mut Caller<'a, GlobalStore>) -> Result<Self, wasmi::Error> {
         let memory = caller
             .get_export("memory")
             .and_then(|export| export.into_memory())
@@ -22,28 +18,51 @@ impl<'a> WasmMemory<'a> {
         })
     }
 
-    /// Read a value from memory
     pub fn read<T: Copy>(&self, offset: usize) -> Result<T, wasmi::Error> {
         let size = size_of::<T>();
         let bytes: &[u8] = &self.data[offset..offset + size];
         Ok(unsafe { *(bytes.as_ptr() as *const T) })
     }
 
-    /// Write a value to memory
     pub fn write<T: AsRef<[u8]>>(&mut self, offset: usize, value: T) -> Result<(), wasmi::Error> {
         let bytes = value.as_ref();
         self.data[offset..offset + bytes.len()].copy_from_slice(bytes);
         Ok(())
     }
 
-    /// Read bytes
     pub fn read_bytes(&self, offset: usize, len: usize) -> Result<&[u8], wasmi::Error> {
         Ok(&self.data[offset..offset + len])
     }
 
-    /// Write bytes
     pub fn write_bytes(&mut self, offset: usize, data: &[u8]) -> Result<(), wasmi::Error> {
         self.data[offset..offset + data.len()].copy_from_slice(data);
         Ok(())
     }
+}
+
+pub fn get_memory(caller: &Caller<GlobalStore>) -> Result<wasmi::Memory, wasmi::Error> {
+    caller
+        .get_export("memory")
+        .and_then(|e| e.into_memory())
+        .ok_or_else(|| wasmi::Error::new("missing memory"))
+}
+
+pub fn read_i32(data: &[u8], offset: usize) -> i32 {
+    i32::from_le_bytes(data[offset..offset + 4].try_into().unwrap())
+}
+
+pub fn write_i32(data: &mut [u8], offset: usize, value: i32) {
+    data[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+}
+
+pub fn read_u32(data: &[u8], offset: usize) -> u32 {
+    u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap())
+}
+
+pub fn write_u64(data: &mut [u8], offset: usize, value: u64) {
+    data[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+}
+
+pub fn read_u64(data: &[u8], offset: usize) -> u64 {
+    u64::from_le_bytes(data[offset..offset + 8].try_into().unwrap())
 }

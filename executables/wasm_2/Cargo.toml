@@ -16,3 +16,17 @@ getargs = { version = "0.5", optional = true }
 guest = []
 host = ["dep:wasmi", "dep:xila", "dep:getargs-derive", "dep:getargs"]
 default = ["host"]
+
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
+drivers_native = { workspace = true }
+drivers_core = { workspace = true }
+drivers_shared = { workspace = true }
+drivers_std = { workspace = true }
+abi_definitions = { workspace = true }
+command_line_shell = { workspace = true }
+executable = { workspace = true, features = ["building"] }
+testing = { workspace = true }
+
+[[test]]
+name = "integration_test"
+path = "tests/integration_test.rs"

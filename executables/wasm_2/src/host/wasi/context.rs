@@ -10,6 +10,12 @@ pub struct WasiContext {
     pub args: Vec<Vec<u8>>,
     pub task: TaskIdentifier,
     pub random_state: u64,
+    pub prestats: Vec<Prestat>,
+    pub exit_code: Option<i32>,
+}
+
+pub struct Prestat {
+    pub name: Vec<u8>,
 }
 
 pub struct FileDescriptor {
@@ -17,9 +23,14 @@ pub struct FileDescriptor {
     pub ty: FdType,
     pub offset: u64,
     pub rights: u64,
+    pub rights_inheriting: u64,
+    pub flags: u16,
 }
 
 pub enum FdType {
     File(SynchronousFile),
-    Directory(SynchronousDirectory),
+    Directory(SynchronousDirectory, Vec<u8>),
+    CharacterDevice,
+    Stdout(SynchronousFile),
+    Stderr(SynchronousFile),
 }
