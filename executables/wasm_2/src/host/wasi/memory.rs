@@ -47,6 +47,32 @@ pub fn get_memory(caller: &Caller<GlobalStore>) -> Result<wasmi::Memory, wasmi::
         .ok_or_else(|| wasmi::Error::new("missing memory"))
 }
 
+pub unsafe fn read_memory<T>(data: &[u8], offset: usize) -> Option<T>
+where
+    T: Copy,
+{
+    let size = core::mem::size_of::<T>();
+    if offset + size > data.len() {
+        return None;
+    }
+    let bytes: &[u8] = &data[offset..offset + size];
+    Some(unsafe { *(bytes.as_ptr() as *const T) })
+}
+
+pub unsafe fn write_memory<T>(data: &mut [u8], offset: usize, value: T) -> Option<()>
+where
+    T: Copy,
+{
+    let size = core::mem::size_of::<T>();
+    if offset + size > data.len() {
+        return None;
+    }
+    let bytes: &[u8] =
+        unsafe { core::slice::from_raw_parts((&value as *const T) as *const u8, size) };
+    data[offset..offset + size].copy_from_slice(bytes);
+    Some(())
+}
+
 pub fn read_i32(data: &[u8], offset: usize) -> i32 {
     i32::from_le_bytes(data[offset..offset + 4].try_into().unwrap())
 }

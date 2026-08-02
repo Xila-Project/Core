@@ -6,22 +6,23 @@ use crate::{
     define_wasi_module,
     host::{
         store::GlobalStore,
+        translation::WasmUsize,
         wasi::{
-            context::FdType,
+            context::FileSystemItem,
             error::vfs_error,
-            memory::{get_memory, read_u32, write_i32, write_u64},
+            memory::{get_memory, read_memory, read_u32, write_i32, write_u64},
             types::Filestat,
         },
     },
 };
 
-fn fd_type(ty: &FdType) -> u8 {
+fn fd_type(ty: &FileSystemItem) -> u8 {
     match ty {
-        FdType::File(_) => 4,
-        FdType::Directory(_, _) => 3,
-        FdType::CharacterDevice => 2,
-        FdType::Stdout(_) => 2,
-        FdType::Stderr(_) => 2,
+        FileSystemItem::File(_) => 4,
+        FileSystemItem::Directory(_, _) => 3,
+        FileSystemItem::CharacterDevice => 2,
+        FileSystemItem::Stdout(_) => 2,
+        FileSystemItem::Stderr(_) => 2,
     }
 }
 
@@ -59,7 +60,10 @@ define_wasi_module! {
             let data = memory.data(&caller);
             (0..iovs_len as usize).map(|i| {
                 let off = (iovs_ptr + i as i32 * 8) as usize;
-                (read_u32(data, off), read_u32(data, off + 4))
+                unsafe {
+
+                    (read_memory(data, off).unwrap(), read_memory(data, off + 4).unwrap())
+                }
             }).collect()
         };
 
@@ -69,16 +73,16 @@ define_wasi_module! {
 
         let nread = {
             let store = caller.data_mut();
-            let entry = match store.wasi.fds.iter_mut().find(|e| e.fd == fd) {
+            let entry = match store.wasi.files.iter_mut().find(|e| e.fd == fd) {
                 Some(e) => e,
                 None => return Ok(8), // Error::Badf
             };
             match &mut entry.ty {
-                FdType::File(file) => match file.read(&mut buf) {
+                FileSystemItem::File(file) => match file.read(&mut buf) {
                     Ok(n) => n,
                     Err(e) => return Ok(vfs_error(e) as i32),
                 },
-                FdType::CharacterDevice => 0,
+                FileSystemItem::CharacterDevice => 0,
                 _ => return Ok(8),
             }
         };
@@ -135,17 +139,17 @@ define_wasi_module! {
 
         let nwritten = {
             let store = caller.data_mut();
-            let entry = match store.wasi.fds.iter_mut().find(|e| e.fd == fd) {
+            let entry = match store.wasi.files.iter_mut().find(|e| e.fd == fd) {
                 Some(e) => e,
                 None => return Ok(8),
             };
             match &mut entry.ty {
-                FdType::File(file) => match file.write(&buf) {
+                FileSystemItem::File(file) => match file.write(&buf) {
                     Ok(n) => n,
                     Err(e) => return Ok(vfs_error(e) as i32),
                 },
-                FdType::CharacterDevice => buf.len(),
-                FdType::Stdout(file) | FdType::Stderr(file) => match file.write(&buf) {
+                FileSystemItem::CharacterDevice => buf.len(),
+                FileSystemItem::Stdout(file) | FileSystemItem::Stderr(file) => match file.write(&buf) {
                     Ok(n) => n,
                     Err(e) => return Ok(vfs_error(e) as i32),
                 },
@@ -168,9 +172,9 @@ define_wasi_module! {
     ) -> Result<i32, wasmi::Error> {
         let mut caller = caller;
         let store = caller.data_mut();
-        let pos = store.wasi.fds.iter().position(|e| e.fd == fd);
+        let pos = store.wasi.files.iter().position(|e| e.fd == fd);
         match pos {
-            Some(p) => { store.wasi.fds.remove(p); Ok(0) }
+            Some(p) => { store.wasi.files.remove(p); Ok(0) }
             None => Ok(8),
         }
     }
@@ -187,12 +191,12 @@ define_wasi_module! {
 
         let new_offset = {
             let store = caller.data_mut();
-            let entry = match store.wasi.fds.iter_mut().find(|e| e.fd == fd) {
+            let entry = match store.wasi.files.iter_mut().find(|e| e.fd == fd) {
                 Some(e) => e,
                 None => return Ok(8),
             };
             match &mut entry.ty {
-                FdType::File(file) => {
+                FileSystemItem::File(file) => {
                     let pos = match whence {
                         0 => Position::Start(offset as u64),
                         1 => Position::Current(offset),
@@ -225,7 +229,7 @@ define_wasi_module! {
         let memory = get_memory(&caller)?;
         let (ftype, flags, rights, rights_inheriting) = {
             let store = caller.data();
-            let entry = match store.wasi.fds.iter().find(|e| e.fd == fd) {
+            let entry = match store.wasi.files.iter().find(|e| e.fd == fd) {
                 Some(e) => e,
                 None => return Ok(8),
             };
@@ -304,12 +308,12 @@ define_wasi_module! {
 
         let stats = {
             let store = caller.data_mut();
-            let entry = match store.wasi.fds.iter_mut().find(|e| e.fd == fd) {
+            let entry = match store.wasi.files.iter_mut().find(|e| e.fd == fd) {
                 Some(e) => e,
                 None => return Ok(8),
             };
             match &mut entry.ty {
-                FdType::File(file) => match file.get_statistics() {
+                FileSystemItem::File(file) => match file.get_statistics() {
                     Ok(s) => s,
                     Err(e) => return Ok(vfs_error(e) as i32),
                 },

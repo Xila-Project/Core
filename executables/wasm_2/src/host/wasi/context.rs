@@ -1,12 +1,12 @@
-use alloc::vec::Vec;
+use alloc::{collections::btree_map::BTreeMap, vec::Vec};
 use xila::{
+    file_system::PathOwned,
     task::TaskIdentifier,
     virtual_file_system::{SynchronousDirectory, SynchronousFile},
 };
 
 pub struct WasiContext {
-    pub fds: Vec<FileDescriptor>,
-    pub next_fd: u32,
+    pub files: BTreeMap<i32, FileSystemItem>,
     pub args: Vec<Vec<u8>>,
     pub task: TaskIdentifier,
     pub random_state: u64,
@@ -18,19 +18,24 @@ pub struct Prestat {
     pub name: Vec<u8>,
 }
 
-pub struct FileDescriptor {
-    pub fd: i32,
-    pub ty: FdType,
-    pub offset: u64,
-    pub rights: u64,
-    pub rights_inheriting: u64,
-    pub flags: u16,
+pub enum FileVariantKind {
+    Regular,
+    StandardInput,
+    StandardOutput,
+    StandardError,
 }
 
-pub enum FdType {
-    File(SynchronousFile),
-    Directory(SynchronousDirectory, Vec<u8>),
-    CharacterDevice,
-    Stdout(SynchronousFile),
-    Stderr(SynchronousFile),
+pub struct FileVariant {
+    pub file: SynchronousFile,
+    pub kind: FileVariantKind,
+}
+
+pub struct DirectoryVariant {
+    pub path: PathOwned,
+    pub directory: SynchronousDirectory,
+}
+
+pub enum FileSystemItem {
+    File(FileVariant),
+    Directory(DirectoryVariant),
 }

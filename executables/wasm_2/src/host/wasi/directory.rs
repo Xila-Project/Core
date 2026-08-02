@@ -5,7 +5,7 @@ use crate::{
     define_wasi_module,
     host::{
         store::GlobalStore,
-        wasi::{context::FdType, error::vfs_error, memory::get_memory},
+        wasi::{context::FileSystemItem, error::vfs_error, memory::get_memory},
     },
 };
 
@@ -40,12 +40,12 @@ define_wasi_module! {
         let mut caller = caller;
         let entries = {
             let store = caller.data_mut();
-            let entry = match store.wasi.fds.iter_mut().find(|e| e.fd == fd) {
+            let entry = match store.wasi.files.iter_mut().find(|e| e.fd == fd) {
                 Some(e) => e,
                 None => return Ok(8),
             };
             let dir = match &mut entry.ty {
-                FdType::Directory(dir, _) => dir,
+                FileSystemItem::Directory(dir, _) => dir,
                 _ => return Ok(8),
             };
             if let Err(e) = dir.rewind() {

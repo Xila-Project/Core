@@ -2,6 +2,8 @@ use core::fmt::Display;
 
 use xila::virtual_file_system;
 
+use crate::host::translation::TranslationError;
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug)]
@@ -14,6 +16,14 @@ pub enum Error {
     Task(xila::task::Error),
     InvalidPath,
     NotAWasmFile,
+    UnalignedTranslation,
+    OutOfBoundsTranslation,
+}
+
+impl From<TranslationError> for Error {
+    fn from(error: TranslationError) -> Self {
+        Self::Translation(error)
+    }
 }
 
 impl From<wasmi::Error> for Error {

@@ -7,7 +7,7 @@ use crate::{
     host::{
         store::GlobalStore,
         wasi::{
-            context::{FdType, FileDescriptor},
+            context::{FileDescriptor, FileSystemItem},
             error::vfs_error,
             memory::get_memory,
             types::Filestat,
@@ -50,12 +50,12 @@ define_wasi_module! {
             let data = memory.data(caller);
             let rel = data[path_ptr as usize..path_ptr as usize + path_len as usize].to_vec();
             let store = caller.data();
-            let entry = match store.wasi.fds.iter().find(|e| e.fd == fd) {
+            let entry = match store.wasi.files.iter().find(|e| e.fd == fd) {
                 Some(e) => e,
                 None => return Ok(8),
             };
             let dir = match &entry.ty {
-                FdType::Directory(_, p) => p.clone(),
+                FileSystemItem::Directory(_, p) => p.clone(),
                 _ => return Ok(8),
             };
             (rel, store.wasi.task, dir)
@@ -112,9 +112,9 @@ define_wasi_module! {
                         let store = caller.data_mut();
                         new_fd = store.wasi.next_fd as i32;
                         store.wasi.next_fd += 1;
-                        store.wasi.fds.push(FileDescriptor {
+                        store.wasi.files.push(FileDescriptor {
                             fd: new_fd,
-                            ty: FdType::Directory(dir, path_string),
+                            ty: FileSystemItem::Directory(dir, path_string),
                             offset: 0,
                             rights: fs_rights_base as u64,
                             rights_inheriting: fs_rights_inheriting as u64,
@@ -137,9 +137,9 @@ define_wasi_module! {
                         let store = caller.data_mut();
                         new_fd = store.wasi.next_fd as i32;
                         store.wasi.next_fd += 1;
-                        store.wasi.fds.push(FileDescriptor {
+                        store.wasi.files.push(FileDescriptor {
                             fd: new_fd,
-                            ty: FdType::File(file),
+                            ty: FileSystemItem::File(file),
                             offset: 0,
                             rights: fs_rights_base as u64,
                             rights_inheriting: fs_rights_inheriting as u64,
@@ -175,12 +175,12 @@ define_wasi_module! {
             let data = memory.data(caller);
             let rel = data[path_ptr as usize..path_ptr as usize + path_len as usize].to_vec();
             let store = caller.data();
-            let entry = match store.wasi.fds.iter().find(|e| e.fd == fd) {
+            let entry = match store.wasi.files.iter().find(|e| e.fd == fd) {
                 Some(e) => e,
                 None => return Ok(8),
             };
             let dir = match &entry.ty {
-                FdType::Directory(_, p) => p.clone(),
+                FileSystemItem::Directory(_, p) => p.clone(),
                 _ => return Ok(8),
             };
             (rel, store.wasi.task, dir)

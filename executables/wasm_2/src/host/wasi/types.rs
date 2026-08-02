@@ -40,3 +40,9 @@ impl Filestat {
 }
 
 const _: () = assert!(core::mem::size_of::<Filestat>() == 64);
+
+#[repr(C)]
+pub struct __wasi_ciovec_t {
+    pub buffer: WasmUsize,
+    pub buf_len: WasmUsize,
+}

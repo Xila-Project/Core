@@ -14,7 +14,7 @@ use xila::{
 use crate::host::{
     error::{Error, Result},
     store::GlobalStore,
-    wasi::{self, FdType, FileDescriptor, Prestat, WasiContext},
+    wasi::{self, FileDescriptor, FileSystemItem, Prestat, WasiContext},
 };
 
 const DEFAULT_STACK_SIZE: usize = 4096;
@@ -105,7 +105,7 @@ pub async fn main_inner(standard: Standard, arguments: WasmArguments<'_>) -> Res
         &engine,
         GlobalStore {
             wasi: WasiContext {
-                fds: Vec::new(),
+                files: Vec::new(),
                 next_fd: 3,
                 args: Vec::new(),
                 task,
@@ -118,10 +118,10 @@ pub async fn main_inner(standard: Standard, arguments: WasmArguments<'_>) -> Res
 
     {
         let data = store.data_mut();
-        data.wasi.fds = alloc::vec![
+        data.wasi.files = alloc::vec![
             FileDescriptor {
                 fd: 0,
-                ty: FdType::CharacterDevice,
+                ty: FileSystemItem::CharacterDevice,
                 offset: 0,
                 rights: 2,
                 rights_inheriting: 2,
@@ -129,7 +129,7 @@ pub async fn main_inner(standard: Standard, arguments: WasmArguments<'_>) -> Res
             },
             FileDescriptor {
                 fd: 1,
-                ty: FdType::Stdout(standard_out.into_synchronous_file()),
+                ty: FileSystemItem::Stdout(standard_out.into_synchronous_file()),
                 offset: 0,
                 rights: 32,
                 rights_inheriting: 32,
@@ -137,7 +137,7 @@ pub async fn main_inner(standard: Standard, arguments: WasmArguments<'_>) -> Res
             },
             FileDescriptor {
                 fd: 2,
-                ty: FdType::Stderr(standard_error.into_synchronous_file()),
+                ty: FileSystemItem::Stderr(standard_error.into_synchronous_file()),
                 offset: 0,
                 rights: 32,
                 rights_inheriting: 32,
@@ -146,9 +146,9 @@ pub async fn main_inner(standard: Standard, arguments: WasmArguments<'_>) -> Res
         ];
         data.wasi.next_fd = 3;
         if let Ok(dir) = root_dir {
-            data.wasi.fds.push(FileDescriptor {
+            data.wasi.files.push(FileDescriptor {
                 fd: 3,
-                ty: FdType::Directory(dir, b"/".to_vec()),
+                ty: FileSystemItem::Directory(dir, b"/".to_vec()),
                 offset: 0,
                 rights: u64::MAX,
                 rights_inheriting: u64::MAX,
