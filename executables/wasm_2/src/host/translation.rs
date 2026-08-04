@@ -1,15 +1,18 @@
-use wasmi::Caller;
+use wasmi::{AsContextMut, Caller};
 
 use crate::host::error::{Error, Result};
 
 pub type WasmUsize = u32;
 pub type WasmPointer = u32;
 
-pub fn get_memory<T>(caller: &Caller<T>) -> core::result::Result<wasmi::Memory, wasmi::Error> {
-    caller
+pub fn get_memory<'a, T>(
+    caller: &'a mut Caller<T>,
+) -> core::result::Result<&'a mut [u8], wasmi::Error> {
+    Ok(caller
         .get_export("memory")
         .and_then(|e| e.into_memory())
-        .ok_or_else(|| wasmi::Error::new("missing memory"))
+        .ok_or_else(|| wasmi::Error::new("missing memory"))?
+        .data_mut(caller.as_context_mut()))
 }
 
 pub trait TranslateFrom<I> {
