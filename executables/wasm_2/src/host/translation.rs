@@ -15,8 +15,8 @@ pub fn get_memory<'a, T>(
         .data_mut(caller.as_context_mut()))
 }
 
-pub trait TranslateFrom<I> {
-    unsafe fn translate_from(parameters: I, memory: &mut [u8]) -> Result<Self>
+pub trait TranslateFrom<'a, I> {
+    unsafe fn translate_from(parameters: I, memory: &'a mut [u8]) -> Result<Self>
     where
         Self: Sized;
 }
@@ -30,7 +30,7 @@ pub trait TranslateInto<I>: Sized {
 macro_rules! implicit_usize_cast {
     ($($t:ty),* $(,)?) => {
         $(
-            impl TranslateFrom<WasmUsize> for $t{
+            impl<'a> TranslateFrom<'a, WasmUsize> for $t{
                 #[inline]
                 unsafe fn translate_from(parameters: WasmUsize, _: &mut [u8]) -> Result<Self> {
                     Ok(parameters as $t)
@@ -51,20 +51,20 @@ macro_rules! implicit_usize_cast {
 macro_rules! implicit_pointer_translation {
     ($($t:ty),* $(,)?) => {
         $(
-            impl TranslateFrom<WasmUsize> for *mut $t {
+            impl<'a> TranslateFrom<'a, WasmUsize> for *mut $t {
                 #[inline]
-                unsafe fn translate_from(pointer: WasmUsize, memory: &mut [u8]) -> Result<Self> {
+                unsafe fn translate_from(pointer: WasmUsize, memory: &'a mut [u8]) -> Result<Self> {
                     if pointer == 0 {
                         return Ok(core::ptr::null_mut());
                     }
 
-                    let stard = pointer as usize;
-                    let end = (pointer as usize).checked_add(core::mem::size_of::<$t>())
+                    let start = pointer as usize;
+                    let end = start
+                        .checked_add(core::mem::size_of::<$t>())
                         .ok_or(Error::OutOfBoundsTranslation)?;
 
-                    let slice = memory.get_mut(pointer as usize..end)
+                    let slice = memory.get_mut(start..end)
                         .ok_or(Error::OutOfBoundsTranslation)?;
-
 
                     if slice.as_mut_ptr() as usize % core::mem::align_of::<$t>() != 0 {
                         return Err(Error::UnalignedTranslation);
@@ -74,21 +74,30 @@ macro_rules! implicit_pointer_translation {
                 }
             }
 
-            impl TranslateFrom<WasmUsize> for *const $t {
+            impl<'a> TranslateFrom<'a, WasmUsize> for *const $t {
                 #[inline]
-                unsafe fn translate_from(wasm_usize: WasmUsize, memory: &mut [u8]) -> Result<Self> {
-                    if wasm_usize == 0 {
+                unsafe fn translate_from(pointer: WasmUsize, memory: &'a mut [u8]) -> Result<Self> {
+                    if pointer == 0 {
                         return Ok(core::ptr::null());
                     }
 
-                    let slice = memory.get_mut(wasm_usize as usize..wasm_usize as usize + core::mem::size_of::<$t>())
+                    let start = pointer as usize;
+                    // Was a plain `+`, which could overflow before the bounds check
+                    // ever runs. `*mut` sibling already used checked_add; mirrored here.
+                    let end = start
+                        .checked_add(core::mem::size_of::<$t>())
                         .ok_or(Error::OutOfBoundsTranslation)?;
 
-                    if slice.as_mut_ptr() as usize % core::mem::align_of::<$t>() != 0 {
+                    // `.get()` instead of `.get_mut()` — we only need a `*const`, no
+                    // need to require exclusive access to produce it.
+                    let slice = memory.get(start..end)
+                        .ok_or(Error::OutOfBoundsTranslation)?;
+
+                    if slice.as_ptr() as usize % core::mem::align_of::<$t>() != 0 {
                         return Err(Error::UnalignedTranslation);
                     }
 
-                    Ok(slice.as_mut_ptr() as *const $t)
+                    Ok(slice.as_ptr() as *const $t)
                 }
             }
 
@@ -164,53 +173,90 @@ implicit_usize_cast!(u8, u16, u32, usize, i8, i16, i32, isize, f32);
 #[cfg(target_pointer_width = "64")]
 implicit_usize_cast!(u64, i64, f64);
 
-impl<T> TranslateFrom<(WasmUsize, WasmUsize)> for &mut [T] {
+pub struct TranslationSliceIterator<'a, S, D> {
+    memory: &'a mut [u8],
+    _marker: core::marker::PhantomData<(S, D)>,
+}
+
+impl<'a, S, D> TranslateFrom<'a, (WasmUsize, WasmUsize)> for TranslationSliceIterator<'a, S, D>
+where
+    D: Sized + TranslateFrom<'a, S>,
+{
     #[inline]
     unsafe fn translate_from(
         (pointer, length): (WasmUsize, WasmUsize),
-        data: &mut [u8],
+        data: &'a mut [u8],
     ) -> Result<Self> {
         let start = pointer as usize;
-        let end = start
-            .checked_add(length as usize * core::mem::size_of::<T>())
+
+        // `length` is guest-controlled: multiply with `checked_mul` before it
+        // ever reaches `checked_add`, or it can overflow/wrap first.
+        let byte_len = (length as usize)
+            .checked_mul(core::mem::size_of::<S>())
             .ok_or(Error::OutOfBoundsTranslation)?;
 
+        let end = start
+            .checked_add(byte_len)
+            .ok_or(Error::OutOfBoundsTranslation)?;
+
+        // Bounds-check as an offset into `data` (consistent with every other
+        // impl in this file), not against `data.as_ptr()`'s absolute host
+        // address — comparing offsets to an absolute pointer value made this
+        // reject essentially all legitimate input.
         let slice = data
             .get_mut(start..end)
             .ok_or(Error::OutOfBoundsTranslation)?;
 
-        if slice.as_mut_ptr() as usize % core::mem::align_of::<T>() != 0 {
+        // Alignment check was missing entirely for this path; every other
+        // translation impl in the file enforces one.
+        if slice.as_mut_ptr() as usize % core::mem::align_of::<S>() != 0 {
             return Err(Error::UnalignedTranslation);
         }
 
-        Ok(unsafe {
-            core::slice::from_raw_parts_mut(slice.as_mut_ptr() as *mut T, length as usize)
+        Ok(Self {
+            memory: slice,
+            _marker: core::marker::PhantomData,
         })
     }
 }
 
-impl<T> TranslateInto<(WasmUsize, WasmUsize)> for &mut [T] {
-    type Output = (WasmUsize, WasmUsize);
+impl<'a, S, D> Iterator for TranslationSliceIterator<'a, S, D>
+where
+    D: Sized + TranslateFrom<'a, S>,
+{
+    type Item = Result<D>;
 
-    #[inline]
-    unsafe fn translate_into(self, data: &mut [u8]) -> Result<Self::Output> {
-        let start = self.as_mut_ptr() as usize;
-        let end = start
-            .checked_add(self.len() * core::mem::size_of::<T>())
-            .ok_or(Error::OutOfBoundsTranslation)?;
-
-        if start < data.as_ptr() as usize || end > data.as_ptr() as usize + data.len() {
-            return Err(Error::OutOfBoundsTranslation);
+    fn next(&mut self) -> Option<Self::Item> {
+        let elem_size = core::mem::size_of::<S>();
+        if self.memory.len() < elem_size {
+            return None;
         }
 
-        if start % core::mem::align_of::<T>() != 0 {
-            return Err(Error::UnalignedTranslation);
-        }
+        // `&mut self.memory[..]` would be a *reborrow* through `&mut self`,
+        // whose lifetime is bounded by this call to `next`, not by `'a` —
+        // that's the "lifetime may not live long enough" error, since
+        // `D: TranslateFrom<'a, S>` needs a genuine `&'a mut [u8]`.
+        //
+        // `mem::take` moves the real `&'a mut [u8]` out of `self` (leaving
+        // an empty slice behind), so splitting it keeps the original `'a`
+        // lifetime on both halves. We hand out `current` and store `rest`
+        // back for the next call.
+        let memory = core::mem::take(&mut self.memory);
+        let (current, rest) = memory.split_at_mut(elem_size);
+        self.memory = rest;
 
-        let start = start
-            .checked_sub(data.as_ptr() as usize)
-            .ok_or(Error::OutOfBoundsTranslation)?;
+        let parameters = unsafe { core::ptr::read_unaligned(current.as_ptr() as *const S) };
 
-        Ok((start as WasmUsize, self.len() as WasmUsize))
+        Some(unsafe { D::translate_from(parameters, current) })
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining = self.memory.len() / core::mem::size_of::<S>();
+        (remaining, Some(remaining))
+    }
+}
+
+impl<'a, S, D> ExactSizeIterator for TranslationSliceIterator<'a, S, D> where
+    D: Sized + TranslateFrom<'a, S>
+{
 }

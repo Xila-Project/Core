@@ -6,7 +6,7 @@ use xila::{
 };
 
 pub struct WasiContext {
-    pub files: BTreeMap<i32, FileSystemItem>,
+    pub files: BTreeMap<u32, FileSystemItem>,
     pub args: Vec<Vec<u8>>,
     pub task: TaskIdentifier,
     pub random_state: u64,
@@ -18,16 +18,8 @@ pub struct Prestat {
     pub name: Vec<u8>,
 }
 
-pub enum FileVariantKind {
-    Regular,
-    StandardInput,
-    StandardOutput,
-    StandardError,
-}
-
 pub struct FileVariant {
     pub file: SynchronousFile,
-    pub kind: FileVariantKind,
 }
 
 pub struct DirectoryVariant {
@@ -36,6 +28,9 @@ pub struct DirectoryVariant {
 }
 
 pub enum FileSystemItem {
+    StandardInput(FileVariant),
+    StandardOutput(FileVariant),
+    StandardError(FileVariant),
     File(FileVariant),
     Directory(DirectoryVariant),
 }
