@@ -20,12 +20,6 @@ pub enum Error {
     OutOfBoundsTranslation,
 }
 
-impl From<TranslationError> for Error {
-    fn from(error: TranslationError) -> Self {
-        Self::Translation(error)
-    }
-}
-
 impl From<wasmi::Error> for Error {
     fn from(error: wasmi::Error) -> Self {
         Self::Wasm(error)

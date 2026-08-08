@@ -6,13 +6,11 @@ use crate::{
     define_wasi_module,
     host::{
         store::GlobalStore,
-        translation::WasmUsize,
-        wasi::{
-            context::FileSystemItem,
-            error::vfs_error,
-            memory::{get_memory, read_memory, read_u32, write_i32, write_u64},
-            types::Filestat,
+        translation::{
+            TranslateFrom, TranslationSliceIterator, TranslationSliceStream, WasiVector,
+            WasmPointer, WasmUsize, get_memory,
         },
+        wasi::{context::FileSystemItem, error::vfs_error, types::Filestat},
     },
 };
 
@@ -53,20 +51,22 @@ define_wasi_module! {
             "fd_read: fd={}, iovs={:#x}, iovs_len={}, nread={:#x}",
             fd, iovs_ptr, iovs_len, nread_ptr
         );
-        let mut caller = caller;
-        let memory = get_memory(&caller)?;
+        let memory = get_memory(&mut caller)?;
 
-        let iovs: Vec<(u32, u32)> = {
-            let data = memory.data(&caller);
-            (0..iovs_len as usize).map(|i| {
-                let off = (iovs_ptr + i as i32 * 8) as usize;
-                unsafe {
 
-                    (read_memory(data, off).unwrap(), read_memory(data, off + 4).unwrap())
-                }
-            }).collect()
-        };
+        let stream = WasiVector::new(iovs_ptr as _, iovs_len as _);
+        let mut stream = unsafe { TranslationSliceStream::translate_from(stream, memory)? };
 
+
+        while let Some(buf) = stream.next() {
+            let buf: &mut [u8] = buf?;
+
+
+
+        }
+
+
+        let iovs: TranslationSliceIterator<
         let total_len: usize = iovs.iter().map(|i| i.1 as usize).sum();
         xila::log::information!("fd_read: total buffer length={}", total_len);
         let mut buf = alloc::vec![0u8; total_len];

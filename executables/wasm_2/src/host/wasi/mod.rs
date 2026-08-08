@@ -3,7 +3,6 @@ mod directory;
 mod environment;
 mod error;
 mod file;
-mod memory;
 mod path;
 mod poll;
 mod process;
