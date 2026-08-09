@@ -1,9 +1,6 @@
 use wasmi::Caller;
 
-use crate::{
-    define_wasi_module,
-    host::{store::GlobalStore, wasi::memory::get_memory},
-};
+use crate::{define_wasi_module, host::store::GlobalStore};
 
 define_wasi_module! {
     module: "wasi_snapshot_preview1";

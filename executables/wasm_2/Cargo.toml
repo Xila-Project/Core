@@ -15,7 +15,9 @@ getargs = { version = "0.5", optional = true }
 [features]
 guest = []
 host = ["dep:wasmi", "dep:xila", "dep:getargs-derive", "dep:getargs"]
-default = ["host"]
+default = ["host", "memory_32"]
+memory_32 = []
+memory_64 = []
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))'.dev-dependencies]
 drivers_native = { workspace = true }

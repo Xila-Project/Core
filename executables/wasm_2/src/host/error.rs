@@ -2,8 +2,6 @@ use core::fmt::Display;
 
 use xila::virtual_file_system;
 
-use crate::host::translation::TranslationError;
-
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug)]

@@ -6,12 +6,7 @@ use crate::{
     define_wasi_module,
     host::{
         store::GlobalStore,
-        wasi::{
-            context::{FileDescriptor, FileSystemItem},
-            error::vfs_error,
-            memory::get_memory,
-            types::Filestat,
-        },
+        wasi::{context::FileSystemItem, error::vfs_error, types::Filestat},
     },
 };
 

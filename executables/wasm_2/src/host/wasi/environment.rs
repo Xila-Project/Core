@@ -1,14 +1,23 @@
+use alloc::{string::String, vec::Vec};
 use wasmi::Caller;
 use xila::task::{self, block_on};
 
 use crate::{
     define_wasi_module,
-    host::{store::GlobalStore, wasi::memory::WasmMemory},
-    wasi_result,
+    host::{
+        store::GlobalStore,
+        translation::{FromGuest, GuestPointer, GuestSlice, WasmAdress, WasmUsize, get_memory},
+        wasi::{
+            Error,
+            error::{WasiResult, wrap_function},
+        },
+    },
 };
 
-fn write(memory: &mut WasmMemory, offset: usize, bytes: &[u8]) {
-    memory.write(offset, bytes).ok();
+fn count_arguments_sizes(caller: &Vec<String>) -> (WasmUsize, WasmUsize) {
+    let argc = caller.len() as WasmUsize;
+    let argv_buf_size = caller.iter().map(|arg| arg.len() + 1).sum::<usize>() as WasmUsize;
+    (argc, argv_buf_size)
 }
 
 define_wasi_module! {
@@ -16,48 +25,66 @@ define_wasi_module! {
 
     fn args_get(
         caller: Caller<GlobalStore>,
-        argc_ptr: i32,
-        argv_buf_size_ptr: i32,
-    ) -> Result<i32, wasmi::Error> {
-        let mut caller = caller;
-        let arguments = caller.data().wasi.args.clone();
-        let mut memory = WasmMemory::from_caller(&mut caller)?;
+        argv: WasmAdress,
+        argv_buf: WasmAdress,
+    ) -> Result<WasiResult, wasmi::Error> {
+        wrap_function!({
+            let mut caller = caller;
 
-        wasi_result! {
-            let mut argv_offset = argc_ptr as usize;
-            let mut buf_offset = argv_buf_size_ptr as usize;
+            let (argc, argv_buf_size) = count_arguments_sizes(&caller.data().wasi.arguments);
+            let memory = get_memory(&mut caller).ok_or(Error::Fault)?;
 
-            for arg in &arguments {
-                write(&mut memory, argv_offset, &(buf_offset as i32).to_le_bytes());
-                argv_offset += 4;
-                write(&mut memory, buf_offset, arg);
-                buf_offset += arg.len();
-                write(&mut memory, buf_offset, &[0u8; 1]);
-                buf_offset += 1;
+
+
+            let argv : *mut [GuestPointer<u8>] = GuestSlice::new(argv, argc).from_guest(memory).ok_or(Error::Fault)?;
+            let argv_buf : *mut [u8] = GuestSlice::new(argv_buf, argv_buf_size).from_guest(memory).ok_or(Error::Fault)?;
+
+            let mut argv_buf_offset = 0;
+
+            for (arg, arg_str) in unsafe { &mut *argv }.iter_mut().zip(caller.data().wasi.arguments.iter()) {
+                let arg_bytes = arg_str.as_bytes();
+                let arg_len = arg_bytes.len();
+
+                if argv_buf_offset + arg_len + 1 > argv_buf_size as _ {
+                    return Err(Error::Fault.into());
+                }
+
+                unsafe {
+                    *arg = GuestPointer::new(argv_buf_offset as WasmUsize);
+                    let arg_buf = &mut (*argv_buf)[argv_buf_offset..argv_buf_offset + arg_len];
+                    arg_buf.copy_from_slice(arg_bytes);
+                    (*argv_buf)[argv_buf_offset + arg_len] = 0; // Null-terminate
+                }
+                argv_buf_offset += arg_len + 1;
+
             }
 
+
             Ok(())
-        }
+        })
     }
 
     fn args_sizes_get(
         caller: Caller<GlobalStore>,
-        argc_ptr: i32,
-        argv_buf_size_ptr: i32,
-    ) -> Result<i32, wasmi::Error> {
-        let mut caller = caller;
-        let arguments = caller.data().wasi.args.clone();
-        let mut memory = WasmMemory::from_caller(&mut caller)?;
+        argc_ptr: WasmAdress,
+        argv_buf_size_ptr: WasmAdress,
+    ) -> Result<WasiResult, wasmi::Error> {
+        wrap_function!({
+            let mut caller = caller;
+            let memory = get_memory(&mut caller).ok_or(Error::Fault)?;
 
-        wasi_result! {
-            let argc = arguments.len() as i32;
-            let argv_buf_size = arguments.iter().map(|a| a.len() + 1).sum::<usize>() as i32;
+            let argc : *mut WasmUsize = GuestPointer::new(argc_ptr).from_guest(memory).ok_or(Error::Fault)?;
+            let argv_buf_size : *mut WasmUsize = GuestPointer::new(argv_buf_size_ptr).from_guest(memory).ok_or(Error::Fault)?;
 
-            write(&mut memory, argc_ptr as usize, &argc.to_le_bytes());
-            write(&mut memory, argv_buf_size_ptr as usize, &argv_buf_size.to_le_bytes());
+            let result = count_arguments_sizes(&caller.data().wasi.arguments);
+
+            unsafe {
+                *argc = result.0;
+                *argv_buf_size = result.1;
+            }
 
             Ok(())
-        }
+        })
     }
 
     fn environ_get(
@@ -65,65 +92,73 @@ define_wasi_module! {
         environ: i32,
         environ_buf: i32,
     ) -> Result<i32, wasmi::Error> {
-        xila::log::information!(
-            "environ_get: pointers={:#x}, buffer={:#x}",
-            environ, environ_buf
-        );
-        let mut caller = caller;
-        let task = caller.data().wasi.task;
-        let mut memory = WasmMemory::from_caller(&mut caller)?;
-        let environment_variables =
-            block_on(task::get_instance().get_environment_variables(task))
+        wrap_function!({
+            let mut caller = caller;
+
+            let task = caller.data().wasi.task;
+
+            let environment_variables =
+                block_on(task::get_instance().get_environment_variables(task))
                 .map_err(|_| wasmi::Error::new("Failed to get environment variables"))?;
-        xila::log::information!("environ_get: {} variables", environment_variables.len());
 
-        wasi_result! {
-            let mut environ_offset = environ as usize;
-            let mut environ_buf_offset = environ_buf as usize;
+            let memory = get_memory(&mut caller).ok_or(Error::Fault)?;
 
-            for variable in &environment_variables {
-                write(&mut memory, environ_offset, &(environ_buf_offset as i32).to_le_bytes());
-                environ_offset += 4;
-                write(&mut memory, environ_buf_offset, variable.get_name().as_bytes());
-                environ_buf_offset += variable.get_name().len();
-                write(&mut memory, environ_buf_offset, b"=");
-                environ_buf_offset += 1;
-                write(&mut memory, environ_buf_offset, variable.get_value().as_bytes());
-                environ_buf_offset += variable.get_value().len();
-                write(&mut memory, environ_buf_offset, &[0u8; 1]);
-                environ_buf_offset += 1;
+            let environ : *mut [GuestPointer<u8>] = GuestSlice::new(environ as WasmUsize, environment_variables.len() as WasmUsize).from_guest(memory).ok_or(Error::Fault)?;
+            let environ_buf : *mut [u8] = GuestSlice::new(environ_buf as WasmUsize, environment_variables.iter().map(|var| var.get_name().len() + 1 + var.get_value().len() + 1).sum::<usize>() as WasmUsize).from_guest(memory).ok_or(Error::Fault)?;
+
+            let mut environ_buf_offset = 0;
+
+            for (env_var, env_var_str) in unsafe { &mut *environ }.iter_mut().zip(environment_variables.iter()) {
+                // do not use format!() here to avoid heap allocation, instead just use an offset into the buffer and copy the bytes directly
+                let mut env_var_offset = environ_buf_offset;
+
+
+
+                let env_var_bytes = format!("{}={}", env_var_str.get_name(), env_var_str.get_value()).as_bytes();
+                let env_var_len = env_var_bytes.len();
+
+                if environ_buf_offset + env_var_len + 1 > environ_buf.len() {
+                    return Err(Error::Fault.into());
+                }
+
+                unsafe {
+                    *env_var = GuestPointer::new(environ_buf_offset as WasmUsize);
+                    let env_var_buf = &mut (*environ_buf)[environ_buf_offset..environ_buf_offset + env_var_len];
+                    env_var_buf.copy_from_slice(env_var_bytes);
+                    (*environ_buf)[environ_buf_offset + env_var_len] = 0; // Null-terminate
+                }
+                environ_buf_offset += env_var_len + 1;
             }
 
-            xila::log::information!(
-                "environ_get: wrote pointers through {:#x}, buffer through {:#x}",
-                environ_offset, environ_buf_offset
-            );
             Ok(())
-        }
+        })
     }
 
     fn environ_sizes_get(
         caller: Caller<GlobalStore>,
-        environ_count_ptr: i32,
-        environ_buf_size_ptr: i32,
-    ) -> Result<i32, wasmi::Error> {
-        let mut caller = caller;
-        let task = caller.data().wasi.task;
-        let mut memory = WasmMemory::from_caller(&mut caller)?;
-        let environment_variables =
-            block_on(task::get_instance().get_environment_variables(task))
+        environ_count_ptr: WasmAdress,
+        environ_buf_size_ptr: WasmAdress,
+    ) -> Result<WasiResult, wasmi::Error> {
+        wrap_function!({
+            let mut caller = caller;
+            let task = caller.data().wasi.task;
+
+            let environment_variables =
+                block_on(task::get_instance().get_environment_variables(task))
                 .map_err(|_| wasmi::Error::new("Failed to get environment variables"))?;
 
-        wasi_result! {
-            let count = environment_variables.len() as i32;
-            let total_size = environment_variables.iter()
-                .map(|var| var.get_name().len() + 1 + var.get_value().len() + 1)
-                .sum::<usize>() as i32;
+            let memory = get_memory(&mut caller).ok_or(Error::Fault)?;
 
-            write(&mut memory, environ_count_ptr as usize, &count.to_le_bytes());
-            write(&mut memory, environ_buf_size_ptr as usize, &total_size.to_le_bytes());
+            let environ_count : *mut WasmUsize = GuestPointer::new(environ_count_ptr).from_guest(memory).ok_or(Error::Fault)?;
+            let environ_buf_size : *mut WasmUsize = GuestPointer::new(environ_buf_size_ptr).from_guest(memory).ok_or(Error::Fault)?;
+
+
+            unsafe {
+                *environ_count = environment_variables.len() as WasmUsize;
+                *environ_buf_size = environment_variables.iter().map(|var| var.get_name().len() + 1 + var.get_value().len() + 1).sum::<usize>() as WasmUsize;
+            }
 
             Ok(())
-        }
+        })
     }
 }

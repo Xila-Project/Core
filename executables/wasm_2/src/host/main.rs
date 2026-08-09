@@ -14,7 +14,7 @@ use xila::{
 use crate::host::{
     error::{Error, Result},
     store::GlobalStore,
-    wasi::{self, FileDescriptor, FileSystemItem, Prestat, WasiContext},
+    wasi::{self, FileSystemItem, Prestat, WasiContext},
 };
 
 const DEFAULT_STACK_SIZE: usize = 4096;
@@ -107,7 +107,7 @@ pub async fn main_inner(standard: Standard, arguments: WasmArguments<'_>) -> Res
             wasi: WasiContext {
                 files: Vec::new(),
                 next_fd: 3,
-                args: Vec::new(),
+                arguments: Vec::new(),
                 task,
                 random_state: 0,
                 prestats: Vec::new(),
