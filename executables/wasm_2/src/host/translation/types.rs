@@ -13,7 +13,7 @@ pub type WasmUsize = u64;
 #[cfg(feature = "memory_32")]
 pub type WasmAdress = u32;
 #[cfg(feature = "memory_64")]
-pub type WasmPointer = u64;
+pub type WasmAdress = u64;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]

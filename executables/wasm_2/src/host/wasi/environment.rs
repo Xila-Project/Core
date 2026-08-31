@@ -1,12 +1,15 @@
 use alloc::{string::String, vec::Vec};
-use wasmi::Caller;
+use wasmi::{AsContextMut, Caller};
 use xila::task::{self, block_on};
 
 use crate::{
     define_wasi_module,
     host::{
         store::GlobalStore,
-        translation::{FromGuest, GuestPointer, GuestSlice, WasmAdress, WasmUsize, get_memory},
+        translation::{
+            FromGuest, GuestPointer, GuestSlice, IntoGuest, WasmAdress, WasmUsize, borrow_memory,
+            get_memory,
+        },
         wasi::{
             Error,
             error::{WasiResult, wrap_function},
@@ -23,7 +26,7 @@ fn count_arguments_sizes(caller: &Vec<String>) -> (WasmUsize, WasmUsize) {
 define_wasi_module! {
     module: "wasi_snapshot_preview1";
 
-    fn args_get(
+  fn args_get(
         caller: Caller<GlobalStore>,
         argv: WasmAdress,
         argv_buf: WasmAdress,
@@ -32,33 +35,43 @@ define_wasi_module! {
             let mut caller = caller;
 
             let (argc, argv_buf_size) = count_arguments_sizes(&caller.data().wasi.arguments);
+
             let memory = get_memory(&mut caller).ok_or(Error::Fault)?;
 
-
-
-            let argv : *mut [GuestPointer<u8>] = GuestSlice::new(argv, argc).from_guest(memory).ok_or(Error::Fault)?;
-            let argv_buf : *mut [u8] = GuestSlice::new(argv_buf, argv_buf_size).from_guest(memory).ok_or(Error::Fault)?;
+            // 1. Mutably borrow caller strictly to resolve guest slices, then drop the borrow immediately
+            let (argv_slice, argv_buf_slice) = {
+                let memory = get_memory(&mut caller).ok_or(Error::Fault)?;
+                let argv_ptr: *mut [GuestPointer<u8>] = GuestSlice::new(argv, argc)
+                    .from_guest(borrow_memory(&memory, &mut caller))
+                    .ok_or(Error::Fault)?;
+                let argv_buf_ptr: *mut [u8] = GuestSlice::new(argv_buf, argv_buf_size)
+                    .from_guest(borrow_memory(&memory, &mut caller))
+                    .ok_or(Error::Fault)?;
+                unsafe { (&mut *argv_ptr, &mut *argv_buf_ptr) }
+            }; // `memory` and `&mut caller` are dropped here!
 
             let mut argv_buf_offset = 0;
 
-            for (arg, arg_str) in unsafe { &mut *argv }.iter_mut().zip(caller.data().wasi.arguments.iter()) {
+            // 2. Iterate safely: caller can be immutably accessed without borrow conflicts
+            for (arg_index, arg) in argv_slice.iter_mut().enumerate() {
+                let arg_str = &caller.data().wasi.arguments.get(arg_index).ok_or(Error::Fault)?.as_str();
                 let arg_bytes = arg_str.as_bytes();
                 let arg_len = arg_bytes.len();
 
-                if argv_buf_offset + arg_len + 1 > argv_buf_size as _ {
+                if argv_buf_offset + arg_len + 1 > argv_buf_size as usize {
                     return Err(Error::Fault.into());
                 }
 
-                unsafe {
-                    *arg = GuestPointer::new(argv_buf_offset as WasmUsize);
-                    let arg_buf = &mut (*argv_buf)[argv_buf_offset..argv_buf_offset + arg_len];
-                    arg_buf.copy_from_slice(arg_bytes);
-                    (*argv_buf)[argv_buf_offset + arg_len] = 0; // Null-terminate
-                }
+                // Copy bytes and null-terminate
+                let target = &mut argv_buf_slice[argv_buf_offset..argv_buf_offset + arg_len + 1];
+                target[..arg_len].copy_from_slice(arg_bytes);
+                target[arg_len] = 0;
+
+                // Calculate absolute WASM address by incrementing base offset
+                *arg = target.as_mut_ptr().into_guest(borrow_memory(&memory, &mut caller)).ok_or(Error::Fault)?;
+
                 argv_buf_offset += arg_len + 1;
-
             }
-
 
             Ok(())
         })
@@ -72,6 +85,7 @@ define_wasi_module! {
         wrap_function!({
             let mut caller = caller;
             let memory = get_memory(&mut caller).ok_or(Error::Fault)?;
+            let memory = borrow_memory(&memory, &mut caller);
 
             let argc : *mut WasmUsize = GuestPointer::new(argc_ptr).from_guest(memory).ok_or(Error::Fault)?;
             let argv_buf_size : *mut WasmUsize = GuestPointer::new(argv_buf_size_ptr).from_guest(memory).ok_or(Error::Fault)?;
@@ -87,47 +101,58 @@ define_wasi_module! {
         })
     }
 
-    fn environ_get(
+  fn environ_get(
         caller: Caller<GlobalStore>,
-        environ: i32,
-        environ_buf: i32,
-    ) -> Result<i32, wasmi::Error> {
+        environ: WasmAdress,
+        environ_buf: WasmAdress,
+    ) -> Result<WasiResult, wasmi::Error> {
         wrap_function!({
             let mut caller = caller;
 
             let task = caller.data().wasi.task;
+            let environment_variables = block_on(task::get_instance().get_environment_variables(task))
+                .map_err(|_| Error::Fault)?;
 
-            let environment_variables =
-                block_on(task::get_instance().get_environment_variables(task))
-                .map_err(|_| wasmi::Error::new("Failed to get environment variables"))?;
+            let env_count = environment_variables.len() as WasmUsize;
+            let env_buf_size: usize = environment_variables
+                .iter()
+                .map(|var| var.get_name().len() + 1 + var.get_value().len() + 1)
+                .sum();
 
             let memory = get_memory(&mut caller).ok_or(Error::Fault)?;
 
-            let environ : *mut [GuestPointer<u8>] = GuestSlice::new(environ as WasmUsize, environment_variables.len() as WasmUsize).from_guest(memory).ok_or(Error::Fault)?;
-            let environ_buf : *mut [u8] = GuestSlice::new(environ_buf as WasmUsize, environment_variables.iter().map(|var| var.get_name().len() + 1 + var.get_value().len() + 1).sum::<usize>() as WasmUsize).from_guest(memory).ok_or(Error::Fault)?;
+            let environ_slice: *mut [GuestPointer<u8>] = GuestSlice::new(environ, env_count)
+                .from_guest(borrow_memory(&memory, &mut caller))
+                .ok_or(Error::Fault)?;
+            let environ_buf_slice: *mut [u8] = GuestSlice::new(environ_buf, env_buf_size as WasmUsize)
+                .from_guest(borrow_memory(&memory, &mut caller))
+                .ok_or(Error::Fault)?;
 
             let mut environ_buf_offset = 0;
 
-            for (env_var, env_var_str) in unsafe { &mut *environ }.iter_mut().zip(environment_variables.iter()) {
-                // do not use format!() here to avoid heap allocation, instead just use an offset into the buffer and copy the bytes directly
-                let mut env_var_offset = environ_buf_offset;
+            for (env_ptr, env_var) in unsafe { &mut *environ_slice }.iter_mut().zip(environment_variables.iter()) {
+                let name = env_var.get_name().as_bytes();
+                let value = env_var.get_value().as_bytes();
+                let var_total_len = name.len() + 1 + value.len() + 1; // "KEY=VALUE\0"
 
-
-
-                let env_var_bytes = format!("{}={}", env_var_str.get_name(), env_var_str.get_value()).as_bytes();
-                let env_var_len = env_var_bytes.len();
-
-                if environ_buf_offset + env_var_len + 1 > environ_buf.len() {
+                if environ_buf_offset + var_total_len > env_buf_size {
                     return Err(Error::Fault.into());
                 }
 
                 unsafe {
-                    *env_var = GuestPointer::new(environ_buf_offset as WasmUsize);
-                    let env_var_buf = &mut (*environ_buf)[environ_buf_offset..environ_buf_offset + env_var_len];
-                    env_var_buf.copy_from_slice(env_var_bytes);
-                    (*environ_buf)[environ_buf_offset + env_var_len] = 0; // Null-terminate
+                    let target = &mut (*environ_buf_slice)[environ_buf_offset..environ_buf_offset + var_total_len];
+
+                    // Copy "KEY=VALUE\0" directly without format!() allocation
+                    target[..name.len()].copy_from_slice(name);
+                    target[name.len()] = b'=';
+                    target[name.len() + 1..name.len() + 1 + value.len()].copy_from_slice(value);
+                    target[var_total_len - 1] = 0;
+
+                    // Convert host pointer to GuestPointer<u8> using IntoGuest trait
+                    *env_ptr = target.as_mut_ptr().into_guest(borrow_memory(&memory, &mut caller)).ok_or(Error::Fault)?;
                 }
-                environ_buf_offset += env_var_len + 1;
+
+                environ_buf_offset += var_total_len;
             }
 
             Ok(())
@@ -143,19 +168,28 @@ define_wasi_module! {
             let mut caller = caller;
             let task = caller.data().wasi.task;
 
-            let environment_variables =
-                block_on(task::get_instance().get_environment_variables(task))
-                .map_err(|_| wasmi::Error::new("Failed to get environment variables"))?;
+            let environment_variables = block_on(task::get_instance().get_environment_variables(task))
+                .map_err(|_| Error::Fault)?;
 
             let memory = get_memory(&mut caller).ok_or(Error::Fault)?;
+            let memory = borrow_memory(&memory, &mut caller);
 
-            let environ_count : *mut WasmUsize = GuestPointer::new(environ_count_ptr).from_guest(memory).ok_or(Error::Fault)?;
-            let environ_buf_size : *mut WasmUsize = GuestPointer::new(environ_buf_size_ptr).from_guest(memory).ok_or(Error::Fault)?;
+            let environ_count: *mut WasmUsize = GuestPointer::new(environ_count_ptr)
+                .from_guest(memory)
+                .ok_or(Error::Fault)?;
+            let environ_buf_size: *mut WasmUsize = GuestPointer::new(environ_buf_size_ptr)
+                .from_guest(memory)
+                .ok_or(Error::Fault)?;
 
+            let count = environment_variables.len() as WasmUsize;
+            let total_buf_size: usize = environment_variables
+                .iter()
+                .map(|var| var.get_name().len() + 1 + var.get_value().len() + 1)
+                .sum();
 
             unsafe {
-                *environ_count = environment_variables.len() as WasmUsize;
-                *environ_buf_size = environment_variables.iter().map(|var| var.get_name().len() + 1 + var.get_value().len() + 1).sum::<usize>() as WasmUsize;
+                *environ_count = count;
+                *environ_buf_size = total_buf_size as WasmUsize;
             }
 
             Ok(())

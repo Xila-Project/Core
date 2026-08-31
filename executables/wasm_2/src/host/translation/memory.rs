@@ -1,14 +1,15 @@
 use wasmi::{AsContextMut, Caller};
 
 use crate::host::translation::{
-    FromGuest, GuestPointer, WasiVector, WasmPod, WasmPointee, WasmUsize,
+    FromGuest, GuestPointer, WasiVector, WasmAdress, WasmPod, WasmPointee, WasmUsize,
 };
 
-pub fn get_memory<'a, T>(caller: &'a mut Caller<T>) -> Option<&'a mut [u8]> {
-    caller
-        .get_export("memory")
-        .and_then(|e| e.into_memory())
-        .map(|m| m.data_mut(caller.as_context_mut()))
+pub fn get_memory<'a, T>(caller: &'a mut Caller<T>) -> Option<wasmi::Memory> {
+    caller.get_export("memory").and_then(|e| e.into_memory())
+}
+
+pub fn borrow_memory<'a, T>(memory: &'a wasmi::Memory, caller: &'a mut Caller<T>) -> &'a mut [u8] {
+    memory.data_mut(caller.as_context_mut())
 }
 
 /// Bounds-check + align-check `start..start + count * size_of::<T>()`
@@ -39,7 +40,7 @@ pub fn validate_and_slice<T>(start: usize, memory: &mut [u8]) -> Option<&mut [u8
 /// `memory` — it cannot *prove* `pointer` actually originated from
 /// `memory`. Only pass in pointers this module produced via a matching
 /// `TranslateFrom` call against the same memory.
-fn validate_offset<T>(pointer: *const T, memory: &[u8]) -> Option<WasmUsize> {
+pub fn validate_offset<T>(pointer: *const T, memory: &[u8]) -> Option<WasmAdress> {
     let offset = (pointer as usize).checked_sub(memory.as_ptr() as usize)?;
 
     let end = offset.checked_add(core::mem::size_of::<T>())?;
